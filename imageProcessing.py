@@ -171,7 +171,7 @@ def calculate_zrange(idata, parameters):
 
     zmin=max(parameters.param['process']['windowSecurity'],
              focusPlane-parameters.param['process']['zwindows'])
-    zmax=min(parameters.param['process']['windowSecurity']+numPlanes,
+    zmax=min(numPlanes, parameters.param['process']['windowSecurity']+numPlanes,
               focusPlane+parameters.param['process']['zwindows'])
     zrange = range(zmin, zmax + 1)
         

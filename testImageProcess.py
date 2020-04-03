@@ -83,13 +83,19 @@ if __name__ == '__main__':
     filesFolder=glob.glob(dataFolder.listFolders[0]+os.sep+'*.tif')
     log1.report('About to read {} files\n'.format(len(filesFolder)))
 
-    # Processes all files
+    # Processes all DAPI masks
     for fileName in filesFolder:
         if fileName.split('_')[-1].split('.')[0]=='ch00' and 'DAPI' in fileName.split('_'):
             processImage(fileName,param,log1)
-        else:
-            log1.report("not a DAPI file")
-        
+    
+    # Processes all DAPI masks
+    for fileName in filesFolder:
+        res=[i for i in fileName.split('_') if 'RT' in i]
+        if len(res)>0 and fileName.split('_')[-1].split('.')[0]=='ch00':
+            barcodeNumber=res[0].split('RT')[1]
+            log1.report("Processing barcode: {}".format(barcodeNumber))
+            processImage(fileName,param,log1)
+            
     # exits
     log1.report('Normal exit.')
 
