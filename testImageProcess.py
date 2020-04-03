@@ -9,6 +9,14 @@ Created on Wed Apr  1 18:16:10 2020
 
 
 #Imports
+'''import logging
+logging.basicConfig(level=logging.INFO
+                #,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                #,datefmt='%d/%m/%Y %I:%M:%S %p'
+                #,filename='testImageProcessing.log'
+                )  
+'''
+
 import glob,os,sys
 #from copy import deepcopy
 import matplotlib.pylab as plt
@@ -19,7 +27,8 @@ from matplotlib import cm
 from skimage import io
 from imageProcessing import Image
 import parameters as parameters
-import logging
+from fileManagement import log
+from fileManagement import folders
 
 #import cPickle as pickle
 #from scipy.spatial import ConvexHull
@@ -30,67 +39,59 @@ import logging
 #import Fitting_v4 as ft
 #import workers_cells_v3 as wkc
 
-def loggerInitialize(logFileName='tmp.log'):
-    # create logger
-    logger = logging.getLogger('Main logger')
-    logger.setLevel(logging.DEBUG)
-    logging.basicConfig(filename='example.log', filemode='w')
-    
-    # create console handler and set level to debug
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    
-    # create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
-    # add formatter to ch
-    ch.setFormatter(formatter)
-    
-    # add ch to logger
-    logger.addHandler(ch)
-    
-    return logger
 
-if __name__ == '__main__':
-    
-    param = parameters.Parameters()
-
-    # defines folder
-    folder='/home/marcnol/Documents/Images/'
-    tiffFile='scan_001_DAPI_001_ROI_converted_decon_ch00.tif'
-    logFile='testImageProcess.log'
-    fileName=folder+tiffFile
-    logFileName=folder+logFile
-    log=loggerInitialize()
-    #log.basicConfig(filename=logFileName,level=log.INFO)
-    
+def processImage(fileName,param,log1):
+    log1.report('Analysing file: {}\n'.format(fileName))
+      
     # creates image object
     Im = Image()
     
     # loads image
     Im.loadImage(fileName)
-
+    
+    Im.zProjectionRange(param,log1)
+    
     if Im.fileName:
         Im.printImageProperties()
-        
-    Im.zProjectionRange(param,log)
-    print("zRange={}".format(Im.zRange))
-    
-    # calculates MIP
-    #Im.maxIntensityProjection()
-    
-    # Show an image in each subplot
-    '''
-    fig, ax = plt.subplots(nrows=1, ncols=3)
-    ax[0].imshow(Im.data[25])
-    ax[1].imshow(Im.normalizeImage(Im.data)[25])
-    ax[2].imshow(Im.data_2D,cmap=cm.plasma)
-    '''
     
     Im.imageShow(save=False)
-    log.info('Normal exit.')
     
+    del Im
+     
+
+if __name__ == '__main__':
+    
+    # defines folders
+    rootFolder='/home/marcnol/Documents/Images'
+    logFile='testImageProcess.log'
+
+    # sets parameters
+    param = parameters.Parameters()
+    param.initializeStandardParameters()
+    paramFile = rootFolder+os.sep+'infoList.inf'
+    param.loadParametersFile(paramFile)
+    
+    # setup logs
+    logFileName=rootFolder+os.sep+logFile
+    log1=log(logFileName)
+    log1.eraseFile()
+
+    # processes folders and files 
+    dataFolder=folders(rootFolder)
+    dataFolder.setsFolders()
+    log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
+    filesFolder=glob.glob(dataFolder.listFolders[0]+os.sep+'*.tif')
+    log1.report('About to read {} files\n'.format(len(filesFolder)))
+
+    # Processes all files
+    for fileName in filesFolder:
+        if fileName.split('_')[-1].split('.')[0]=='ch00' and 'DAPI' in fileName.split('_'):
+            processImage(fileName,param,log1)
+        else:
+            log1.report("not a DAPI file")
+        
     # exits
+    log1.report('Normal exit.')
 
     
     

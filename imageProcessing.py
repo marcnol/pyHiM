@@ -75,7 +75,7 @@ class Image():
     def zProjectionRange(self, parameters,log):
         # find the correct range for the
         if parameters.param['process']['zmax'] > self.imageSize[0]:
-            log.info("Setting z max to the last plane")
+            log.report("Setting z max to the last plane")
             parameters.param['process']['zmax'] = self.imageSize[0]
         if parameters.param['options']['autoPlanes']:
             print("Calculating planes...")
@@ -84,7 +84,7 @@ class Image():
             # Check the last plane an put the closest to the required value
             zRange = (zmin, zmax) = (parameters.param['process']['zmin'],
                                      parameters.param['process']['zmax'])
-        log.info("Processing zRange:{}".format(zRange))
+        log.report("Processing zRange:{}".format(zRange))
  
         # sums images
         I_collapsed = np.zeros((2048, 2048))
@@ -109,8 +109,6 @@ class Image():
         if show:
             fig.add_axes(ax)
             ax.imshow(self.data_2D, aspect='equal')
-            #if save:
-            #    plt.savefig(outputName, dpi=dpi)
 
         if save:
             plt.imsave(outputName, self.data_2D)
@@ -142,10 +140,12 @@ def calculate_zrange(idata, parameters):
     maxStd = np.max(stdMatrix)
     ifocusPlane = np.where(stdMatrix == maxStd)[0][0]
     # Select a window to avoid being on the edges of the stack
+    '''
     zmin = max(ifocusPlane - parameters.param['process']['windowSecurity'],
                           parameters.param['process']['zmin'])
     zmax = min(ifocusPlane + parameters.param['process']['windowSecurity'],
                           parameters.param['process']['zmax'])
+    '''
     if (ifocusPlane < parameters.param['process']['windowSecurity']
         or (ifocusPlane > numPlanes
         - parameters.param['process']['windowSecurity'])):
@@ -161,16 +161,19 @@ def calculate_zrange(idata, parameters):
         stdMatrix -= np.min(stdMatrix)
         stdMatrix /= np.max(stdMatrix)
         #plt.plot(stdMatrix)
-    
-        fitgauss = spo.curve_fit(gaussian, axisZ, stdMatrix[axisZ[0]:axisZ[-1]+1])
+        try:
+            fitgauss = spo.curve_fit(gaussian, axisZ, stdMatrix[axisZ[0]:axisZ[-1]+1])
+            print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
+            focusPlane = int(fitgauss[0][1])
+        except RuntimeError:
+            print('Warning, too many iterations')
+            focusPlane = ifocusPlane
 
-        print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
-        focusPlane = int(fitgauss[0][1])
-        zmin=max(parameters.param['process']['windowSecurity'],
-                 focusPlane-parameters.param['process']['zwindows'])
-        zmax=min(parameters.param['process']['windowSecurity']+numPlanes,
-                  focusPlane+parameters.param['process']['zwindows'])
-
+    zmin=max(parameters.param['process']['windowSecurity'],
+             focusPlane-parameters.param['process']['zwindows'])
+    zmax=min(parameters.param['process']['windowSecurity']+numPlanes,
+              focusPlane+parameters.param['process']['zwindows'])
     zrange = range(zmin, zmax + 1)
         
     return focusPlane, zrange
+
