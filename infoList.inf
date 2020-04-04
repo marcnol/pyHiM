@@ -1,1 +1,22 @@
-"{\"image\": {\"currentPlane\": 1, \"claheGridH\": 8, \"claheGridW\": 8}, \"options\": {\"autoPlanes\": true}, \"process\": {\"zmin\": 1, \"zmax\": 59, \"zwindows\": 10, \"windowSecurity\": 2, \"zProjectOption\": \"sum\"}}"
+{
+    "acquisition": {
+        "label": "DAPI"
+    },
+    "image": {
+        "claheGridH": 8,
+        "claheGridW": 8,
+        "currentPlane": 1
+    },
+    "zProject": {
+        "display": true,
+        "folder": "zProject",
+        "mode": "full",
+        "operation": "overwrite",
+        "saveImage": true,
+        "windowSecurity": 2,
+        "zProjectOption": "sum",
+        "zmax": 59,
+        "zmin": 1,
+        "zwindows": 10
+    }
+}
