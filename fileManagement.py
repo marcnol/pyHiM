@@ -40,32 +40,50 @@ class log:
         now=datetime.now()
         return "{}|{}>{}".format(now.strftime("%d/%m/%Y %H:%M:%S"),status,text)
     
-    
-    
+    def addSimpleText(self,title):
+        print("{}".format(title))
+        with open(self.fileName, 'a') as file:
+            file.write(title)
+        
+        
 class folders():
 
     def __init__(self,masterFolder=r'/home/marcnol/Documents/Images'):
         self.masterFolder=masterFolder
         self.listFolders=[];
         self.zProjectFolder=''
-        
+        self.outputFolders={}
+        self.outputFiles={}
+       
     # returns list of directories with given extensions
     def setsFolders(self,extension='tif'):
         
-        hfolders = [folder for folder in glob.glob(self.masterFolder+os.sep+'*')
-                   if os.path.isdir(folder) and 
-                   len(glob.glob(folder+os.sep+'*.'+extension))>0 and 
-                   os.path.basename(folder)[0]!='F']
-    
-        self.listFolders=hfolders
+        # checks if there are files with the required extension in the root folder provided
+        if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder+os.sep+'*.'+extension))>0:
+            self.listFolders=self.masterFolder
+        else:
+            # finds more folders inside the given folder 
+            hfolders = [folder for folder in glob.glob(self.masterFolder+os.sep+'*')
+                       if os.path.isdir(folder) and 
+                       len(glob.glob(folder+os.sep+'*.'+extension))>0] 
+                       #os.path.name(folder)[0]!='F']
+            self.listFolders=hfolders
         
     # creates folders for outputs
     def createsFolders(self,filesFolder,param):
         self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
-        if not path.exists(self.zProjectFolder):
-            os.mkdir(self.zProjectFolder)            
-            print("Folder created: {}".format(self.zProjectFolder))
-            
+        self.createSingleFolder(self.zProjectFolder)            
+
+        self.outputFolders['alignImages']=filesFolder+os.sep+param.param['alignImages']['folder']
+        self.createSingleFolder(self.outputFolders['alignImages'])            
+
+        self.outputFiles['alignImages']=self.outputFolders['alignImages']+os.sep+param.param['alignImages']['outputFile']
+
+    def createSingleFolder(self,folder):
+        if not path.exists(folder):
+            os.mkdir(folder)            
+            print("Folder created: {}".format(folder))
+
 class session:
     def __init__(self,name='dummy',fileName='session.json'):
         self.name=name
@@ -95,10 +113,13 @@ class session:
         else:
             self.data[key] = [self.data[key],value]
         
+    def clearData(self):
+        self.data={}
+        
 class Parameters:
-    def __init__(self):
-        #self.parameters = param
-        self.paramFile = "infoList.inf"
+    def __init__(self,label=''):
+        self.label= label
+        self.paramFile = "infoList.json"
         self.param = {
                         'image': {
                                     'currentPlane': 1,
@@ -108,11 +129,12 @@ class Parameters:
                                     'claheGridW': 8
                         },
                         'acquisition': {
-                                    'label': 'DAPI' # barcode, fiducial
+                                    'label': 'DAPI', # barcode, fiducial
+                                    'positionROIinformation': 3
                         },
                         'zProject': {
                                     'folder':'zProject', # output folder
-                                    'operation': 'overwrite', # overwrite, skip
+                                    'operation': 'skip', # overwrite, skip
                                     'mode': 'full', # full, manual, automatic
                                     'display': True,
                                     'saveImage': True,
@@ -121,7 +143,14 @@ class Parameters:
                                     'zwindows': 10,
                                     'windowSecurity': 2,
                                     'zProjectOption': 'sum'  # sum or MIP
+                        },
+                       'alignImages': {
+                                    'folder':'alignImages', # output folder
+                                    'operation': 'overwrite', # overwrite, skip
+                                    'outputFile': 'alignImages.bed',
+                                    'referenceFiducial': 'RT18'
                         }
+                          
         }
 
 
@@ -146,16 +175,35 @@ class Parameters:
     
     # method returns label specific filenames from filename list
     def files2Process(self, filesFolder):
+
+        # selects DAPI files
         if self.param['acquisition']['label']=='DAPI':
             self.fileList2Process=[file for file in filesFolder 
                       if file.split('_')[-1].split('.')[0]=='ch00' and 'DAPI' in file.split('_')]
+
+        # selects barcode files
         elif self.param['acquisition']['label']=='barcode':
             self.fileList2Process=[file for file in filesFolder 
-                                   if len([i for i in file.split('_') if 'RT' in i])>0 
-                                          and file.split('_')[-1].split('.')[0]=='ch00']
+               if len([i for i in file.split('_') if 'RT' in i])>0 and file.split('_')[-1].split('.')[0]=='ch01'] 
+
+        # selects fiducial files
         elif self.param['acquisition']['label']=='fiducial':
             self.fileList2Process=[file for file in filesFolder 
-                                   if file.split('_')[-1].split('.')[0]=='ch01']
-        
+               if (len([i for i in file.split('_') if 'RT' in i])>0 and file.split('_')[-1].split('.')[0]=='ch00') or 
+                   ('DAPI' in file.split('_') and file.split('_')[-1].split('.')[0]=='ch01')] 
+
+
+#################################################################################
+# Functions
+#################################################################################
 
         
+def writeListFile(fileName,list2output,attribute='a'):
+    
+    with open(fileName,attribute) as fileHandle:
+        fileHandle.write("{}\n".format(list2output))
+
+
+
+
+    

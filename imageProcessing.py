@@ -11,8 +11,11 @@ import cv2
 from skimage import io
 import scipy.optimize as spo
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from PIL import Image as pil
+#from matplotlib import cm
+#from PIL import Image as pil
+from skimage import exposure
+from skimage.feature.register_translation import _upsampled_dft
+from scipy.ndimage import fourier_shift
 
 class Image():
     def __init__(self):
@@ -37,7 +40,7 @@ class Image():
         fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName)+'_2d'
         if self.data_2D.shape>(1,1):
             np.save(fileName,self.data_2D)
-            log.report("Saving 2d projection to disk:{}".format(fileName),'info')
+            log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
         else:
             log.report("Warning, data_2D does not exist",'Warning')
             
@@ -48,7 +51,7 @@ class Image():
         fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName)+'_2d.npy'
 
         self.data_2D=np.load(fileName)
-        log.report("Loading 2d projection from disk:{}".format(fileName),'info')
+        log.report("Loading 2d projection from disk:{}".format(os.path.basename(fileName)),'info')
         #print("Loading 2d projection from disk:{}".format(fileName))
 
     # max intensity projection using all z planes
@@ -143,8 +146,8 @@ class Image():
 
         if save:
             plt.imsave(outputName, self.data_2D)
-        
-#################################################################################
+    
+################################################################################
 # Functions
 #################################################################################
 
@@ -208,3 +211,43 @@ def calculate_zrange(idata, parameters):
         
     return focusPlane, zrange
 
+
+def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold=.9999,display=False):
+    # rescales image to [0,1]
+    image1=exposure.rescale_intensity(image,out_range=(0,1))
+    
+    # calculates histogram of intensities
+    hist1_before=exposure.histogram(image1)
+
+    sum=np.zeros(len(hist1_before[0]))
+    for i in range(len(hist1_before[0])-1):
+        sum[i+1]=sum[i]+hist1_before[0][i]
+        
+    sum_normalized=sum/sum.max()
+    lower_cutoff=np.where(sum_normalized>lower_threshold)[0][0]/255
+    higher_cutoff=np.where(sum_normalized>higher_threshold)[0][0]/255
+    ###############################################################
+    
+    log1.report("Lower-Upper thresholds for {}: {:.2f}-{:.2f}".format(os.path.basename(fileName),lower_cutoff,higher_cutoff))
+
+    # adjusts image intensities from (lower_threshold,higher_threshold) --> [0,1]
+    image1=exposure.rescale_intensity(image1,in_range=(lower_cutoff,higher_cutoff),out_range=(0,1))
+    
+    # calculates histogram of intensities of adjusted image
+    hist1=exposure.histogram(image1)
+    
+    if display:
+        plt.figure(figsize=(30, 30))
+        plt.imsave(fileName+'_adjusted.png',image1,cmap='hot')
+    
+    return image1,hist1_before, hist1, lower_cutoff, higher_cutoff
+
+
+def save2imagesRGB(I1,I2,outputFileName):
+    '''
+    Overlays two images as R and B and saves them to output file
+    '''
+    RGB_falsecolor_image=np.dstack([I1,np.zeros([2048,2048]),I2])
+    plt.figure(figsize=(30, 30))
+    plt.imsave(outputFileName, RGB_falsecolor_image)
+        

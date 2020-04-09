@@ -27,10 +27,10 @@ def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
             Im = Image()
             Im.loadImage2D(fileName,log1,dataFolder)
             Im.imageShow()
-        log1.report("File already projected: {}".format(fileName))        
+        log1.report("File already projected: {}".format(os.path.basename(fileName)))        
     else:
         
-        log1.report('Analysing file: {}\n'.format(fileName))
+        log1.report('Analysing file: {}'.format(os.path.basename(fileName)))
           
         # creates image object
         Im = Image()
@@ -55,20 +55,14 @@ def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
         
         del Im
         
-def makeProjections(param,log1):
-    
-    # session
+def makeProjections(param,log1,session1):
     sessionName='makesProjections'
-    sessionFileName=param.param['rootFolder']+os.sep+sessionName+'.json'
-    session1=session(sessionName,sessionFileName)
-    if path.exists(sessionFileName):
-        session1.load()
-        
+ 
     # processes folders and files 
     dataFolder=folders(param.param['rootFolder'])
     dataFolder.setsFolders()
+    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
-
     currentFolder=dataFolder.listFolders[0]
     filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
     dataFolder.createsFolders(currentFolder,param)
@@ -80,9 +74,6 @@ def makeProjections(param,log1):
     for fileName in param.fileList2Process:
         makes2DProjectionsFile(fileName,param,log1,session1,dataFolder)
         session1.add(fileName,sessionName)
-
-    # exits
-    session1.save(log1)
 
 
     

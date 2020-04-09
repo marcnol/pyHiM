@@ -1,10 +1,12 @@
 {
     "acquisition": {
-        "label": "DAPI"
+        "label": "DAPI",
+        "positionROIinformation": 3
     },
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
+        "outputFile": "alignImages.bed",
         "referenceFiducial": "RT18"
     },
     "image": {
