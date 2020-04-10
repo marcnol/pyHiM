@@ -34,21 +34,16 @@ class Image():
         self.imageSize=self.data.shape
         self.extension=fileName.split('.')[-1]
         
+    # save 2D projection as numpy array
+    def saveImage2D(self,log,rootFolder,tag='_2d'):
+        fileName=rootFolder+os.sep+os.path.basename(self.fileName).split('.')[0]+tag
+        saveImage2Dcmd(self.data_2D,fileName,log)
+
     # read an image as a numpy array
-    def saveImage2D(self,log,dataFolder):
-        #fileName=self.fileName.split('.'+self.extension)[0]+'_2d'
-        fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName)+'_2d'
-        if self.data_2D.shape>(1,1):
-            np.save(fileName,self.data_2D)
-            log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        else:
-            log.report("Warning, data_2D does not exist",'Warning')
-            
-    # read an image as a numpy array
-    def loadImage2D(self,fileName,log,dataFolder):
+    def loadImage2D(self,fileName,log,dataFolder,tag='_2d'):
         self.fileName=fileName
         #fileName=self.fileName.split('.'+self.extension)[0]+'_2d.npy'
-        fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName)+'_2d.npy'
+        fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName).split('.')[0]+tag+'.npy'
 
         self.data_2D=np.load(fileName)
         log.report("Loading 2d projection from disk:{}".format(os.path.basename(fileName)),'info')
@@ -251,3 +246,11 @@ def save2imagesRGB(I1,I2,outputFileName):
     plt.figure(figsize=(30, 30))
     plt.imsave(outputFileName, RGB_falsecolor_image)
         
+    
+def saveImage2Dcmd(image,fileName,log):
+    if image.shape>(1,1):
+        np.save(fileName,image)
+        log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
+    else:
+        log.report("Warning, data_2D does not exist",'Warning')
+

@@ -7,7 +7,7 @@ Created on Sat Apr  4 09:11:01 2020
 """
 
 from makeProjections import makeProjections
-from alignImages import alignImages
+from alignImages import alignImages, appliesRegistrations
 from fileManagement import Parameters, log, session
 import os
 from datetime import datetime
@@ -19,9 +19,9 @@ if __name__ == '__main__':
     #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
     rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
     
-    labels2Process = [{'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
-                      {'label': 'barcode', 'parameterFile': 'infoList_barcode.json'},
-                      {'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'}] 
+    labels2Process = [{'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'},
+                      {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
+                      {'label': 'barcode', 'parameterFile': 'infoList_barcode.json'}] 
                         
      # session
     now=datetime.now()
@@ -53,10 +53,15 @@ if __name__ == '__main__':
         # [projects 3D images in 2d]
         makeProjections(param,log1,session1)
 
+        # [registers fiducials using a barcode as reference]
         if label=='fiducial' and param.param['acquisition']['label']=='fiducial':
-            # [aligns images]
-            print('Making image registrations, ilabel: {}, label: {}'.format(ilabel,label))
+            log1.report('Making image registrations, ilabel: {}, label: {}'.format(ilabel,label),'info')
             alignImages(param,log1,session1)
+
+        # [applies registration to DAPI and barcodes]
+        if label!='fiducial' and param.param['acquisition']['label']!='fiducial':
+            log1.report('Applying image registrations, ilabel: {}, label: {}'.format(ilabel,label),'info')
+            appliesRegistrations(param,log1,session1)
 
         print("\n")        
         del param    
@@ -64,5 +69,6 @@ if __name__ == '__main__':
     # exits
     session1.save(log1)
     log1.addSimpleText("\n===================={}====================\n".format('Normal termination'))
-
+    
+    del log1, session1
     print("Elapsed time: {}".format(datetime.now()-begin_time))

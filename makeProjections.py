@@ -51,7 +51,7 @@ def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
             Im.imageShow(save=param.param['zProject']['saveImage'],outputName=pngFileName)
         
         # saves output 2d zProjection as matrix
-        Im.saveImage2D(log1,dataFolder)
+        Im.saveImage2D(log1,dataFolder.zProjectFolder)
         
         del Im
         
@@ -63,17 +63,19 @@ def makeProjections(param,log1,session1):
     dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
-    currentFolder=dataFolder.listFolders[0]
-    filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
-    dataFolder.createsFolders(currentFolder,param)
-
-    # generates lists of files to process    
-    param.files2Process(filesFolder)
-    log1.report('About to read {} files\n'.format(len(param.fileList2Process)))
     
-    for fileName in param.fileList2Process:
-        makes2DProjectionsFile(fileName,param,log1,session1,dataFolder)
-        session1.add(fileName,sessionName)
+    for currentFolder in dataFolder.listFolders:
+        #currentFolder=dataFolder.listFolders[0]
+        filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
+        dataFolder.createsFolders(currentFolder,param)
+    
+        # generates lists of files to process    
+        param.files2Process(filesFolder)
+        log1.report('About to read {} files\n'.format(len(param.fileList2Process)))
+        
+        for fileName in param.fileList2Process:
+            makes2DProjectionsFile(fileName,param,log1,session1,dataFolder)
+            session1.add(fileName,sessionName)
 
 
     

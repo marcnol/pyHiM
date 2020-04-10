@@ -13,9 +13,9 @@ from skimage.feature.register_translation import _upsampled_dft
 from skimage import exposure
 #from scipy.ndimage import fourier_shift
 from scipy.ndimage import shift as shiftImage
-from imageProcessing import Image, imageAdjust, save2imagesRGB
-from fileManagement import folders
-from fileManagement import writeListFile
+from imageProcessing import Image, imageAdjust, save2imagesRGB, saveImage2Dcmd
+from fileManagement import folders,writeString2File,saveJSON,loadJSON
+from collections import defaultdict
 
  
 def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):    
@@ -106,6 +106,7 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
     # corrects image
     # The shift corresponds to the pixel offset relative to the reference image
     image2_corrected = shiftImage(image2_adjusted,shift)
+    image2_corrected_raw = shiftImage(Im2.data_2D,shift)
     image2_corrected = exposure.rescale_intensity(image2_corrected ,out_range=(0,1))
     
     log1.report(f"Detected subpixel offset (y, x): {shift} px\n")
@@ -127,7 +128,13 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
                                               shift[1],
                                               error,
                                               diffphase)
-    writeListFile(alignmentOutput, list2output,'a')
+    writeString2File(alignmentOutput+'.bed', list2output,'a')
+
+    # saves raw registered image of fiducial
+    saveImage2Dcmd(image2_corrected_raw,outputFileName+'_2d_registered',log1)
+    
+    del Im2
+    return shift
 
 def alignImages(param,log1,session1):
 
@@ -144,39 +151,139 @@ def alignImages(param,log1,session1):
         log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
 
-        currentFolder=dataFolder.listFolders[0]
-        filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
-        dataFolder.createsFolders(currentFolder,param)
+        for currentFolder in dataFolder.listFolders:
+            #currentFolder=dataFolder.listFolders[0]
+            filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
+            dataFolder.createsFolders(currentFolder,param)
+            dictShifts = {} #defaultdict(dict) # contains dictionary of shifts for each folder      
+            
+            # generates lists of files to process    
+            param.files2Process(filesFolder)
+            log1.report('About to process {} files\n'.format(len(param.fileList2Process)))
+            writeString2File(dataFolder.outputFiles['alignImages']+'.bed', 
+                          "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
+                          'w')
+        
+            # Finds and loads Reference fiducial
+            positionROIinformation=param.param['acquisition']['positionROIinformation']
+            referenceBarcode=param.param['alignImages']['referenceFiducial']
+            fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process,referenceBarcode,positionROIinformation)    
+            if len(fileNameReferenceList)>0:                        
+                # loops over reference fiducials one ROI at a time
+                for fileNameReference in fileNameReferenceList:
+                    ROI = ROIList[fileNameReference]
+                    imReference = Image()
+                    imReference.loadImage2D(fileNameReference,log1,dataFolder)
+                    dictShiftROI={}
+                    
+                    # loops over files in file list
+                    for fileName in param.fileList2Process:
+                        # excludes the reference fiducial and processes files in the same ROI
+                        label=os.path.basename(fileName).split('_')[2]
+                        if (fileName not in fileNameReference) and \
+                                os.path.basename(fileName).split('_')[positionROIinformation]==ROI:
+                            shift = align2Files(fileName,imReference,param,log1,session1,dataFolder,verbose)
+                            session1.add(fileName,sessionName)
+                            dictShiftROI[label]=shift.tolist()
+                    dictShifts['ROI:'+ROI]=dictShiftROI
+                    del imReference
+                    
+                #saves dicShifts
+                saveJSON(dataFolder.outputFiles['dictShifts']+'.json',dictShifts)
+            else:
+                log1.report("Reference Barcode file does not exist: {}",format(referenceBarcode))
+
+        del dataFolder, dictShifts
+
+def appliesRegistrations(param,log1,session1):
+    '''This function will 
+    - load DAPI and barcode 2D projected images, 
+    - apply registrations
+    - save registered images as npy arrays 
+    '''
     
-        # generates lists of files to process    
-        param.files2Process(filesFolder)
-        log1.report('About to process {} files\n'.format(len(param.fileList2Process)))
-        writeListFile(dataFolder.outputFiles['alignImages'], 
-                      "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
-                      'w')
+    verbose=False
+    if param.param['alignImages']['operation']=='overwrite':
+
+        # session
+        sessionName='registersImages'
     
-        # Finds and loads Reference fiducial
+        # processes folders and files 
+        dataFolder=folders(param.param['rootFolder'])
+        dataFolder.setsFolders()
+        log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+        log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
+ 
         positionROIinformation=param.param['acquisition']['positionROIinformation']
-        referenceBarcode=param.param['alignImages']['referenceFiducial']
-        fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process,referenceBarcode,positionROIinformation)    
-        if len(fileNameReferenceList)>0:                        
-            # loops over reference fiducials one ROI at a time
-            for fileNameReference in fileNameReferenceList:
-                ROI = ROIList[fileNameReference]
-                imReference = Image()
-                imReference.loadImage2D(fileNameReference,log1,dataFolder)
-                
+
+        for currentFolder in dataFolder.listFolders:
+            #currentFolder=dataFolder.listFolders[0] # only one folder processed so far...
+            filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
+            dataFolder.createsFolders(currentFolder,param)
+
+            #loads dicShifts with shifts for all ROIs and all labels
+            dictShifts = loadJSON(dataFolder.outputFiles['dictShifts']+'.json')
+        
+            # generates lists of files to process    
+            param.files2Process(filesFolder)
+            log1.report('About to process {} files\n'.format(len(param.fileList2Process)))
+
+            if len(param.fileList2Process)>0:                        
                 # loops over files in file list
-                for fileName in param.fileList2Process:
-                    # excludes the reference fiducial and processes files in the same ROI
-                    if (fileName not in fileNameReference) and os.path.basename(fileName).split('_')[positionROIinformation]==ROI:
-                        align2Files(fileName,imReference,param,log1,session1,dataFolder,verbose)
+                 for fileName in param.fileList2Process:
+
+                    # gets shift from dictionary
+                    ROI = os.path.basename(fileName).split('_')[positionROIinformation]
+                    label=os.path.basename(fileName).split('_')[2]
+                    try:
+                         shiftArray=dictShifts['ROI:'+ROI][label]
+                    except KeyError:
+                         shiftArray=None
+                    
+                    if shiftArray!=None:
+                        
+                        shift = np.asarray(shiftArray)
+                        # loads 2D image and applies registration
+                        Im = Image()
+                        Im.loadImage2D(fileName,log1,dataFolder)
+                        Im.data_2D = shiftImage(Im.data_2D,shift)
+                        log1.report('Image registered using ROI:{}, label:{}, shift={}'.format(ROI,label,shift),'info')
+                        
+                        # saves registered 2D image
+                        Im.saveImage2D(log1,dataFolder.outputFolders['alignImages'],tag='_2d_registered')
+
+                        # logs output
                         session1.add(fileName,sessionName)
-    
-        else:
-            log1.report("Reference Barcode file does not exist: {}",format(referenceBarcode))
+                    else:
+                        log1.report('No shift found in dictionary for ROI:{}, label:{}'.format(ROI,label),'Warning')
+                        
+            del dataFolder
 
 
 
 
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

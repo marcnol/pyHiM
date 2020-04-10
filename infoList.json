@@ -6,7 +6,7 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
+        "outputFile": "alignImages",
         "referenceFiducial": "RT18"
     },
     "image": {

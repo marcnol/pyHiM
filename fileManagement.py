@@ -50,7 +50,7 @@ class folders():
 
     def __init__(self,masterFolder=r'/home/marcnol/Documents/Images'):
         self.masterFolder=masterFolder
-        self.listFolders=[];
+        self.listFolders=[]; # list of sub-folders in rootFilder with images
         self.zProjectFolder=''
         self.outputFolders={}
         self.outputFiles={}
@@ -78,6 +78,7 @@ class folders():
         self.createSingleFolder(self.outputFolders['alignImages'])            
 
         self.outputFiles['alignImages']=self.outputFolders['alignImages']+os.sep+param.param['alignImages']['outputFile']
+        self.outputFiles['dictShifts']=self.masterFolder+os.sep+param.param['alignImages']['outputFile']
 
     def createSingleFolder(self,folder):
         if not path.exists(folder):
@@ -92,22 +93,16 @@ class session:
         
     # loads existing session    
     def load(self):
-        if path.exists(self.fileName):
-            with open(self.fileName) as json_file:
-                self.data = json.load(json_file)
-                
-            #self.data=json.loads(data)
-            print("Session information read: {}".format(self.fileName))
+        self.data = loadJSON(self.fileName)
+        print("Session information read: {}".format(self.fileName))
     
     # saves session to file        
     def save(self,log):
-        with open(self.fileName, 'w') as f:
-            json.dump(self.data, f, ensure_ascii=False, sort_keys=True, indent=4)
+        saveJSON(self.fileName,self.data)
         log.info("Saved json session file to {}".format(self.fileName))
-            
-    # add new task to session
+
+   # add new task to session
     def add(self,key,value):
-        d={key:value}
         if key not in self.data:
             self.data[key] = value
         else:
@@ -147,7 +142,7 @@ class Parameters:
                        'alignImages': {
                                     'folder':'alignImages', # output folder
                                     'operation': 'overwrite', # overwrite, skip
-                                    'outputFile': 'alignImages.bed',
+                                    'outputFile': 'alignImages',
                                     'referenceFiducial': 'RT18'
                         }
                           
@@ -198,12 +193,18 @@ class Parameters:
 #################################################################################
 
         
-def writeListFile(fileName,list2output,attribute='a'):
-    
-    with open(fileName,attribute) as fileHandle:
+def writeString2File(fileName,list2output,attribute='a'):
+   with open(fileName,attribute) as fileHandle:
         fileHandle.write("{}\n".format(list2output))
 
-
-
-
-    
+def saveJSON(fileName,data):
+    with open(fileName, 'w') as f:
+        json.dump(data, f, ensure_ascii=False, sort_keys=True, indent=4)
+   
+def loadJSON(fileName):
+    if path.exists(fileName):
+        with open(fileName) as json_file:
+            data = json.load(json_file)
+    else:
+        data = {}
+    return data            
