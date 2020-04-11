@@ -16,10 +16,12 @@ import json
 class log:
     def __init__(self,fileName='test.log'):
         self.fileName=fileName
-        
+        self.fileNameMD=fileName.split('.')[0]+'.md'
+
     def eraseFile(self):
-        with open(self.fileName, 'w') as file:
-            file.write("")
+        #with open(self.fileName, 'w') as file:
+        #    file.write("")
+        writeString2File(self.fileName,"",'w')
         
     # cmd line output only
     def info(self,text):
@@ -27,8 +29,9 @@ class log:
 
    # saves to logfile, no display to cmd line
     def save(self,text='',status='info'):
-        with open(self.fileName, 'a') as file:
-            file.write(self.getFullString(text,status)+'\n')
+        #with open(self.fileName, 'a') as file:
+        #    file.write(self.getFullString(text,status)+'\n')
+        writeString2File(self.fileName,self.getFullString(text,status),'a')
 
     # thisfunction will output to cmd line and save in logfile
     def report(self,text,status='info'):
@@ -42,10 +45,10 @@ class log:
     
     def addSimpleText(self,title):
         print("{}".format(title))
-        with open(self.fileName, 'a') as file:
-            file.write(title)
-        
-        
+        #with open(self.fileName, 'a') as file:
+        #    file.write(title)
+        writeString2File(self.fileName,title,'a')
+       
 class folders():
 
     def __init__(self,masterFolder=r'/home/marcnol/Documents/Images'):

@@ -17,7 +17,7 @@ from matplotlib import cm
 from skimage import io
 from imageProcessing import Image
 from fileManagement import folders
-from fileManagement import session
+from fileManagement import session,writeString2File
 
 def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
     
@@ -49,7 +49,8 @@ def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
         if param.param['zProject']['display']:
             pngFileName=dataFolder.zProjectFolder+os.sep+os.path.basename(fileName)+'_2d.png'
             Im.imageShow(save=param.param['zProject']['saveImage'],outputName=pngFileName)
-        
+            writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),pngFileName),'a') # initialises MD file
+
         # saves output 2d zProjection as matrix
         Im.saveImage2D(log1,dataFolder.zProjectFolder)
         
@@ -63,6 +64,7 @@ def makeProjections(param,log1,session1):
     dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
+    writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
     
     for currentFolder in dataFolder.listFolders:
         #currentFolder=dataFolder.listFolders[0]

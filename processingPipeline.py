@@ -8,16 +8,16 @@ Created on Sat Apr  4 09:11:01 2020
 
 from makeProjections import makeProjections
 from alignImages import alignImages, appliesRegistrations
-from fileManagement import Parameters, log, session
+from fileManagement import Parameters, log, session,writeString2File
 import os
 from datetime import datetime
 
 if __name__ == '__main__':
     begin_time = datetime.now()
     
-    #rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+    rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
     #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
-    rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
+    #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
     
     labels2Process = [{'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'},
                       {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
@@ -35,6 +35,7 @@ if __name__ == '__main__':
     log1.eraseFile()
     log1.report("Starting to log to: {}".format(logFileName))
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format('processingPipeline'))
+    writeString2File(log1.fileNameMD,"# Hi-M analysis {}".format(now.strftime("%d/%m/%Y %H:%M:%S")),'w') # initialises MD file
     
     for ilabel in range(len(labels2Process)):
         label=labels2Process[ilabel]['label']
@@ -62,6 +63,14 @@ if __name__ == '__main__':
         if label!='fiducial' and param.param['acquisition']['label']!='fiducial':
             log1.report('Applying image registrations, ilabel: {}, label: {}'.format(ilabel,label),'info')
             appliesRegistrations(param,log1,session1)
+
+        # [segments DAPI and spot masks]
+        
+        # [refits spots in 3D]
+
+        # [local drift correction]
+        
+        # [fits spots and DAPI masks]
 
         print("\n")        
         del param    

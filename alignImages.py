@@ -29,7 +29,7 @@ def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):
                     
     return fileNameReferenceList, ROIList
 
-def displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,verbose=False):
+def displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,log1,verbose=False):
         # hist1_before, hist1_after,hist2_before, hist2_after, , vebose=False, fileName='test'):
     fig= plt.figure(figsize=(6, 3))
     ax1 = plt.subplot(2, 2, 1)
@@ -46,6 +46,8 @@ def displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,ve
     ax1.vlines(lower_threshold['Im1'],0,I_histogram['Im1'][0][0].max(),colors='r')
     ax2.vlines(lower_threshold['Im2'],0,I_histogram['Im2'][0][0].max(),colors='r')
     plt.savefig(outputFileName+'_intensityHist.png')
+    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),outputFileName+'_intensityHist.png'),'a')
+
     if not verbose:
         plt.close(fig)
 
@@ -97,7 +99,7 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
     # displays intensity histograms
     lower_threshold={'Im1':lower_cutoff1, 'Im2':lower_cutoff2}
     I_histogram={'Im1':(hist1_before,hist1_after),'Im2':(hist2_before,hist2_after)} 
-    displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,verbose)
+    displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,log1,verbose)
     
     # calculates shift
     shift, error, diffphase = register_translation(image1_adjusted, 
@@ -114,6 +116,8 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
    # saves uncrrected images to file
     save2imagesRGB(image1_uncorrected,image2_uncorrected,
                    outputFileName+'_overlay_uncorrected.png')
+    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),outputFileName+'_overlay_uncorrected.png'),'a')
+
     
     # thresholds corrected images for better display and saves
     image1_corrected=image1_adjusted>0.1
@@ -150,6 +154,7 @@ def alignImages(param,log1,session1):
         dataFolder.setsFolders()
         log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
+        writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
 
         for currentFolder in dataFolder.listFolders:
             #currentFolder=dataFolder.listFolders[0]
@@ -213,7 +218,8 @@ def appliesRegistrations(param,log1,session1):
         dataFolder.setsFolders()
         log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
- 
+        #writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
+
         positionROIinformation=param.param['acquisition']['positionROIinformation']
 
         for currentFolder in dataFolder.listFolders:

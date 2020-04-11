@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from skimage import exposure
 from skimage.feature.register_translation import _upsampled_dft
 from scipy.ndimage import fourier_shift
+from fileManagement import writeString2File
 
 class Image():
     def __init__(self):
@@ -221,10 +222,7 @@ def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold
     sum_normalized=sum/sum.max()
     lower_cutoff=np.where(sum_normalized>lower_threshold)[0][0]/255
     higher_cutoff=np.where(sum_normalized>higher_threshold)[0][0]/255
-    ###############################################################
-    
-    log1.report("Lower-Upper thresholds for {}: {:.2f}-{:.2f}".format(os.path.basename(fileName),lower_cutoff,higher_cutoff))
-
+ 
     # adjusts image intensities from (lower_threshold,higher_threshold) --> [0,1]
     image1=exposure.rescale_intensity(image1,in_range=(lower_cutoff,higher_cutoff),out_range=(0,1))
     
@@ -234,9 +232,11 @@ def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold
     if display:
         plt.figure(figsize=(30, 30))
         plt.imsave(fileName+'_adjusted.png',image1,cmap='hot')
+        writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),fileName+'_adjusted.png'),'a')
     
-    return image1,hist1_before, hist1, lower_cutoff, higher_cutoff
+    log1.report("Lower-Upper thresholds for {}: {:.2f}-{:.2f}".format(os.path.basename(fileName),lower_cutoff,higher_cutoff))
 
+    return image1,hist1_before, hist1, lower_cutoff, higher_cutoff
 
 def save2imagesRGB(I1,I2,outputFileName):
     '''
@@ -245,7 +245,6 @@ def save2imagesRGB(I1,I2,outputFileName):
     RGB_falsecolor_image=np.dstack([I1,np.zeros([2048,2048]),I2])
     plt.figure(figsize=(30, 30))
     plt.imsave(outputFileName, RGB_falsecolor_image)
-        
     
 def saveImage2Dcmd(image,fileName,log):
     if image.shape>(1,1):
