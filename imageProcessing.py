@@ -7,7 +7,7 @@ Created on Thu Apr  2 16:00:52 2020
 """
 import os
 import numpy as np
-import cv2
+#import cv2
 from skimage import io
 import scipy.optimize as spo
 import matplotlib.pyplot as plt
@@ -17,6 +17,8 @@ from skimage import exposure
 from skimage.feature.register_translation import _upsampled_dft
 from scipy.ndimage import fourier_shift
 from fileManagement import writeString2File
+from astropy.visualization.mpl_normalize import ImageNormalize
+from astropy.visualization import SqrtStretch,simple_norm
 
 class Image():
     def __init__(self):
@@ -41,10 +43,10 @@ class Image():
         saveImage2Dcmd(self.data_2D,fileName,log)
 
     # read an image as a numpy array
-    def loadImage2D(self,fileName,log,dataFolder,tag='_2d'):
+    def loadImage2D(self,fileName,log,masterFolder,tag='_2d'):
         self.fileName=fileName
         #fileName=self.fileName.split('.'+self.extension)[0]+'_2d.npy'
-        fileName=dataFolder.zProjectFolder+os.sep+os.path.basename(self.fileName).split('.')[0]+tag+'.npy'
+        fileName=masterFolder+os.sep+os.path.basename(self.fileName).split('.')[0]+tag+'.npy'
 
         self.data_2D=np.load(fileName)
         log.report("Loading 2d projection from disk:{}".format(os.path.basename(fileName)),'info')
@@ -56,14 +58,14 @@ class Image():
     
     # Normalize a 3d image <im> by subtracting local gaussian blur of std <sz>
     def normalizeImage(self,im,sz=30,ratio=False):
-        im_ = np.array(im,dtype=np.float32)
+        '''im_ = np.array(im,dtype=np.float32)
         im_blur = np.array([cv2.blur(im__,(sz,sz)) for im__ in im_])
         if ratio:
             im_ =im_/im_blur
         else:
             im_ =(im_-im_blur)/np.median(im_blur)
         return im_
-    
+        '''
     # returns the imagename
     def getImageFilename(self):
         return self.fileName
@@ -135,14 +137,23 @@ class Image():
         fig.set_size_inches(size)
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
-        plt.set_cmap(cmap)
+
+        norm = ImageNormalize(stretch=SqrtStretch())
+        #norm = simple_norm(self.data_2D, 'sqrt', percent=99.9)
+        ax.set_title('2D Data')
+
         if show:
             fig.add_axes(ax)
-            ax.imshow(self.data_2D, aspect='equal')
+            #ax.imshow(self.data_2D, aspect='equal')
+            ax.imshow(self.data_2D, origin='lower', cmap='Greys_r', norm=norm)
 
         if save:
-            plt.imsave(outputName, self.data_2D)
+            plt.savefig(outputName)
+            plt.close()
     
+    
+            
+
 ################################################################################
 # Functions
 #################################################################################
@@ -233,7 +244,8 @@ def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold
         plt.figure(figsize=(30, 30))
         plt.imsave(fileName+'_adjusted.png',image1,cmap='hot')
         writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),fileName+'_adjusted.png'),'a')
-    
+        plt.close()
+
     log1.report("Lower-Upper thresholds for {}: {:.2f}-{:.2f}".format(os.path.basename(fileName),lower_cutoff,higher_cutoff))
 
     return image1,hist1_before, hist1, lower_cutoff, higher_cutoff
@@ -245,6 +257,7 @@ def save2imagesRGB(I1,I2,outputFileName):
     RGB_falsecolor_image=np.dstack([I1,np.zeros([2048,2048]),I2])
     plt.figure(figsize=(30, 30))
     plt.imsave(outputFileName, RGB_falsecolor_image)
+    plt.close()
     
 def saveImage2Dcmd(image,fileName,log):
     if image.shape>(1,1):

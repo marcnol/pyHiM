@@ -16,6 +16,7 @@ from scipy.ndimage import shift as shiftImage
 from imageProcessing import Image, imageAdjust, save2imagesRGB, saveImage2Dcmd
 from fileManagement import folders,writeString2File,saveJSON,loadJSON
 from collections import defaultdict
+from astropy.table import Table, vstack, Column
 
  
 def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):    
@@ -69,6 +70,8 @@ def showCCimage(image1_uncorrected,image2_uncorrected,outputFileName,shift,verbo
     else:
         plt.figure(figsize=(30, 30))
         plt.imsave(outputFileName+'_CC.png',cc_image)
+        plt.close()
+
         
 def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
 
@@ -79,7 +82,7 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
 
     # loads image
     Im2 = Image()
-    Im2.loadImage2D(fileName2,log1,dataFolder)
+    Im2.loadImage2D(fileName2,log1,dataFolder.outputFolders['zProject'])
     
     # adjusts image levels
     image1_uncorrected=imReference.data_2D/imReference.data_2D.max()
@@ -116,7 +119,8 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
    # saves uncrrected images to file
     save2imagesRGB(image1_uncorrected,image2_uncorrected,
                    outputFileName+'_overlay_uncorrected.png')
-    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),outputFileName+'_overlay_uncorrected.png'),'a')
+    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),
+                                                             outputFileName+'_overlay_uncorrected.png'),'a')
 
     
     # thresholds corrected images for better display and saves
@@ -134,11 +138,18 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
                                               diffphase)
     writeString2File(alignmentOutput+'.bed', list2output,'a')
 
+    tableEntry=[os.path.basename(fileName2),
+                os.path.basename(fileName1),
+                shift[0],
+                shift[1],
+                error,
+                diffphase]
+
     # saves raw registered image of fiducial
     saveImage2Dcmd(image2_corrected_raw,outputFileName+'_2d_registered',log1)
     
     del Im2
-    return shift
+    return shift,tableEntry
 
 def alignImages(param,log1,session1):
 
@@ -154,8 +165,13 @@ def alignImages(param,log1,session1):
         dataFolder.setsFolders()
         log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
-        writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
-
+        writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,
+                                                              param.param['acquisition']['label']),'a') # initialises MD file
+        
+        alignmentResultsTable = Table(names=('aligned file','reference file',
+                                             'shift_x','shift_y','error','diffphase'),
+                                              dtype=('S2','S2','f4','f4','f4','f4'))
+        
         for currentFolder in dataFolder.listFolders:
             #currentFolder=dataFolder.listFolders[0]
             filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
@@ -172,13 +188,17 @@ def alignImages(param,log1,session1):
             # Finds and loads Reference fiducial
             positionROIinformation=param.param['acquisition']['positionROIinformation']
             referenceBarcode=param.param['alignImages']['referenceFiducial']
-            fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process,referenceBarcode,positionROIinformation)    
+            fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process,
+                                                         referenceBarcode,
+                                                         positionROIinformation)    
             if len(fileNameReferenceList)>0:                        
                 # loops over reference fiducials one ROI at a time
                 for fileNameReference in fileNameReferenceList:
                     ROI = ROIList[fileNameReference]
                     imReference = Image()
-                    imReference.loadImage2D(fileNameReference,log1,dataFolder)
+                    imReference.loadImage2D(fileNameReference,log1,dataFolder.outputFolders['zProject'])
+                    # saves reference 2D image for later segmentation
+                    imReference.saveImage2D(log1,dataFolder.outputFolders['alignImages'],tag='_2d_registered')
                     dictShiftROI={}
                     
                     # loops over files in file list
@@ -187,9 +207,10 @@ def alignImages(param,log1,session1):
                         label=os.path.basename(fileName).split('_')[2]
                         if (fileName not in fileNameReference) and \
                                 os.path.basename(fileName).split('_')[positionROIinformation]==ROI:
-                            shift = align2Files(fileName,imReference,param,log1,session1,dataFolder,verbose)
+                            shift, tableEntry = align2Files(fileName,imReference,param,log1,session1,dataFolder,verbose)
                             session1.add(fileName,sessionName)
                             dictShiftROI[label]=shift.tolist()
+                            alignmentResultsTable.add_row(tableEntry)
                     dictShifts['ROI:'+ROI]=dictShiftROI
                     del imReference
                     
@@ -198,6 +219,7 @@ def alignImages(param,log1,session1):
             else:
                 log1.report("Reference Barcode file does not exist: {}",format(referenceBarcode))
 
+        alignmentResultsTable.write(dataFolder.outputFiles['alignImages']+'.dat',format='ascii.ecsv',overwrite=True)
         del dataFolder, dictShifts
 
 def appliesRegistrations(param,log1,session1):
@@ -251,7 +273,7 @@ def appliesRegistrations(param,log1,session1):
                         shift = np.asarray(shiftArray)
                         # loads 2D image and applies registration
                         Im = Image()
-                        Im.loadImage2D(fileName,log1,dataFolder)
+                        Im.loadImage2D(fileName,log1,dataFolder.outputFolders['zProject'])
                         Im.data_2D = shiftImage(Im.data_2D,shift)
                         log1.report('Image registered using ROI:{}, label:{}, shift={}'.format(ROI,label,shift),'info')
                         
@@ -260,10 +282,17 @@ def appliesRegistrations(param,log1,session1):
 
                         # logs output
                         session1.add(fileName,sessionName)
+                    elif shiftArray==None and label==param.param['alignImages']['referenceFiducial']:
+                        Im = Image()
+                        Im.loadImage2D(fileName,log1,dataFolder.outputFolders['zProject'])
+                        Im.saveImage2D(log1,dataFolder.outputFolders['alignImages'],tag='_2d_registered')
+                        log1.report('Saving image for referenceRT ROI:{}, label:{}'.format(ROI,label),'Warning')
+                        
                     else:
                         log1.report('No shift found in dictionary for ROI:{}, label:{}'.format(ROI,label),'Warning')
                         
-            del dataFolder
+                        
+        del dataFolder
 
 
 

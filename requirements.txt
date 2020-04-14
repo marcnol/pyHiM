@@ -11,7 +11,10 @@ tensorflow==1.5.0
 tqdm: progressbar
 
 conda install pandas scikit-image numpy matplotlib tqdm
-conda install -c anaconda h5py
-conda install -c conda-forge opencv imageio keras pillow tensorflow tifffile
+conda install astropy
+conda install photutils -c astropy
 
+conda install -c anaconda h5py
+#conda install -c conda-forge opencv
+conda install -c conda-forge imageio keras pillow tensorflow tifffile
 

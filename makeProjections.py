@@ -11,7 +11,7 @@ import glob,os,sys
 from os import path
 import matplotlib.pylab as plt
 import numpy as np
-import cv2
+#import cv2
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from skimage import io
@@ -22,10 +22,10 @@ from fileManagement import session,writeString2File
 def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
     
     if fileName in session1.data and param.param['zProject']['operation']!='overwrite':
+        # creates image object
+        Im = Image()
+        Im.loadImage2D(fileName,log1,dataFolder.outputFolders['zProject'])
         if param.param['zProject']['display']:
-            # creates image object
-            Im = Image()
-            Im.loadImage2D(fileName,log1,dataFolder)
             Im.imageShow()
         log1.report("File already projected: {}".format(os.path.basename(fileName)))        
     else:
@@ -47,12 +47,12 @@ def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
         
         # saves output 2d zProjection as png
         if param.param['zProject']['display']:
-            pngFileName=dataFolder.zProjectFolder+os.sep+os.path.basename(fileName)+'_2d.png'
+            pngFileName=dataFolder.outputFolders['zProject']+os.sep+os.path.basename(fileName)+'_2d.png'
             Im.imageShow(save=param.param['zProject']['saveImage'],outputName=pngFileName)
             writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),pngFileName),'a') # initialises MD file
 
         # saves output 2d zProjection as matrix
-        Im.saveImage2D(log1,dataFolder.zProjectFolder)
+        Im.saveImage2D(log1,dataFolder.outputFolders['zProject'])
         
         del Im
         

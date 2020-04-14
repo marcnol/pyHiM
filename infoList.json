@@ -14,6 +14,19 @@
         "claheGridW": 8,
         "currentPlane": 1
     },
+    "segmentedObjects": {
+        "area_max": 500,
+        "area_min": 50,
+        "background_method": "inhomogeneous",
+        "background_sigma": 3.0,
+        "folder": "segmentedObjects",
+        "fwhm": 3.0,
+        "intensity_max": 59,
+        "intensity_min": 0,
+        "operation": "overwrite",
+        "outputFile": "segmentedObjects",
+        "threshold_over_std": 1.0
+    },
     "zProject": {
         "display": true,
         "folder": "zProject",

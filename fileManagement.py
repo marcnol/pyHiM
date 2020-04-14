@@ -74,14 +74,21 @@ class folders():
         
     # creates folders for outputs
     def createsFolders(self,filesFolder,param):
-        self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
-        self.createSingleFolder(self.zProjectFolder)            
+        #self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
+        #self.createSingleFolder(self.zProjectFolder)            
 
+        self.outputFolders['zProject']=filesFolder+os.sep+param.param['zProject']['folder']
         self.outputFolders['alignImages']=filesFolder+os.sep+param.param['alignImages']['folder']
-        self.createSingleFolder(self.outputFolders['alignImages'])            
+        self.outputFolders['segmentedObjects']=filesFolder+os.sep+param.param['segmentedObjects']['folder']
 
+        self.createSingleFolder(self.outputFolders['zProject'])            
+        self.createSingleFolder(self.outputFolders['alignImages'])            
+        self.createSingleFolder(self.outputFolders['segmentedObjects'])            
+
+        #self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
         self.outputFiles['alignImages']=self.outputFolders['alignImages']+os.sep+param.param['alignImages']['outputFile']
         self.outputFiles['dictShifts']=self.masterFolder+os.sep+param.param['alignImages']['outputFile']
+        self.outputFiles['segmentedObjects']=self.outputFolders['segmentedObjects']+os.sep+param.param['segmentedObjects']['outputFile']
 
     def createSingleFolder(self,folder):
         if not path.exists(folder):
@@ -147,8 +154,20 @@ class Parameters:
                                     'operation': 'overwrite', # overwrite, skip
                                     'outputFile': 'alignImages',
                                     'referenceFiducial': 'RT18'
+                        },
+                       'segmentedObjects':{
+                                    'folder':'segmentedObjects', # output folder
+                                    'operation': 'overwrite', # overwrite, skip
+                                    'outputFile': 'segmentedObjects',
+                                    'background_method': 'inhomogeneous', # flat or inhomogeneous
+                                    'background_sigma': 3.0, # used to remove inhom background
+                                    'threshold_over_std': 1.0, # threshold used to detect sources
+                                    'fwhm': 3.0, # source size in px
+                                    'intensity_min': 0, # min int to keep object
+                                    'intensity_max': 59, # max int to keeep object
+                                    'area_min': 50, # min area to keeep object
+                                    'area_max': 500 # max area to keeep object
                         }
-                          
         }
 
 
