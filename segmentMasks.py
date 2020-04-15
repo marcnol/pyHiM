@@ -6,15 +6,14 @@ Created on Sat Apr 11 14:59:43 2020
 @author: marcnol
 """
 
+# =============================================================================
+# IMPORTS
+# =============================================================================
 
 
 import glob,os
 import matplotlib.pylab as plt
 import numpy as np
-#import cv2
-#import matplotlib.pyplot as plt
-#from matplotlib import cm
-#from skimage import io
 from astropy.stats import sigma_clipped_stats,SigmaClip,gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch,simple_norm
@@ -23,11 +22,13 @@ from astropy.table import Table, vstack, Column
 from photutils import DAOStarFinder,CircularAperture,find_peaks,detect_sources
 from photutils import detect_threshold,deblend_sources
 from photutils import background, Background2D, MedianBackground
-
 from imageProcessing import Image,saveImage2Dcmd
 from fileManagement import folders
 from fileManagement import session,writeString2File
 
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
 
 def showsImageSources(im,im1_bkg_substracted,log1,sources,outputFileName):
     # show results

@@ -5,6 +5,9 @@ Created on Sat Apr  4 09:11:01 2020
 
 @author: marcnol
 """
+# =============================================================================
+# IMPORTS
+# =============================================================================
 
 from makeProjections import makeProjections
 from alignImages import alignImages, appliesRegistrations
@@ -13,6 +16,10 @@ from fileManagement import Parameters, log, session,writeString2File
 import os
 from datetime import datetime
 
+
+# =============================================================================
+# MAIN
+# =============================================================================
 
 if __name__ == '__main__':
     begin_time = datetime.now()

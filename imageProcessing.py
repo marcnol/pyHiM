@@ -5,6 +5,10 @@ Created on Thu Apr  2 16:00:52 2020
 
 @author: marcnol
 """
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
 import os
 import numpy as np
 #import cv2
@@ -14,12 +18,15 @@ import matplotlib.pyplot as plt
 #from matplotlib import cm
 #from PIL import Image as pil
 from skimage import exposure
-from skimage.feature.register_translation import _upsampled_dft
 from scipy.ndimage import fourier_shift
 from fileManagement import writeString2File
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch,simple_norm
 
+# =============================================================================
+# CLASSES
+# =============================================================================
+ 
 class Image():
     def __init__(self):
         self.data=[]
@@ -152,11 +159,10 @@ class Image():
             plt.close()
     
     
-            
-
-################################################################################
-# Functions
-#################################################################################
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
+ 
 
 # Gaussian function
 def gaussian(x, a=1, mean=0, std=0.5):

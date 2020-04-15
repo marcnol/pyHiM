@@ -5,20 +5,26 @@ Created on Fri Apr  3 23:17:58 2020
 
 @author: marcnol
 """
+# =============================================================================
+# IMPORTS
+# =============================================================================
 
 
-import glob,os,sys
-from os import path
-import matplotlib.pylab as plt
+import glob,os
+#import matplotlib.pylab as plt
 import numpy as np
 #import cv2
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from skimage import io
 from imageProcessing import Image
 from fileManagement import folders
 from fileManagement import session,writeString2File
 
+
+    
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
+ 
 def makes2DProjectionsFile(fileName,param,log1,session1,dataFolder):
     
     if fileName in session1.data and param.param['zProject']['operation']!='overwrite':

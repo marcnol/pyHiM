@@ -18,3 +18,5 @@ conda install -c anaconda h5py
 #conda install -c conda-forge opencv
 conda install -c conda-forge imageio keras pillow tensorflow tifffile
 
+apt install texlive-xetex pandoc
+

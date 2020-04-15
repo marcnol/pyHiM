@@ -5,6 +5,11 @@ Created on Sun Apr  5 09:22:18 2020
 
 @author: marcnol
 """
+
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
 import numpy as np
 import matplotlib.pyplot as plt
 import os,glob
@@ -15,9 +20,14 @@ from skimage import exposure
 from scipy.ndimage import shift as shiftImage
 from imageProcessing import Image, imageAdjust, save2imagesRGB, saveImage2Dcmd
 from fileManagement import folders,writeString2File,saveJSON,loadJSON
-from collections import defaultdict
-from astropy.table import Table, vstack, Column
+from astropy.table import Table
 
+
+    
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
+ 
  
 def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):    
     fileNameReferenceList = []
@@ -219,7 +229,7 @@ def alignImages(param,log1,session1):
             else:
                 log1.report("Reference Barcode file does not exist: {}",format(referenceBarcode))
 
-        alignmentResultsTable.write(dataFolder.outputFiles['alignImages']+'.dat',format='ascii.ecsv',overwrite=True)
+        alignmentResultsTable.write(dataFolder.outputFiles['alignImages'].split('.')[0]+'.dat',format='ascii.ecsv',overwrite=True)
         del dataFolder, dictShifts
 
 def appliesRegistrations(param,log1,session1):
