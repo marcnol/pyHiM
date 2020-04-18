@@ -9,8 +9,6 @@ Created on Sat Apr 11 14:59:43 2020
 # =============================================================================
 # IMPORTS
 # =============================================================================
-
-
 import glob,os
 import matplotlib.pylab as plt
 import numpy as np
@@ -19,12 +17,12 @@ from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch,simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.table import Table, vstack, Column
-from photutils import DAOStarFinder,CircularAperture,find_peaks,detect_sources
+from photutils import DAOStarFinder,CircularAperture,detect_sources
 from photutils import detect_threshold,deblend_sources
-from photutils import background, Background2D, MedianBackground
+from photutils import Background2D, MedianBackground
 from imageProcessing import Image,saveImage2Dcmd
 from fileManagement import folders
-from fileManagement import session,writeString2File
+from fileManagement import writeString2File
 
 # =============================================================================
 # FUNCTIONS
@@ -55,28 +53,20 @@ def showsImageMasks(im,log1,segm_deblend,outputFileName):
     fig.set_size_inches((30,30))
     plt.imshow(im, cmap='Greys_r', origin='lower', norm=norm)
     plt.imshow(segm_deblend , origin='lower', cmap=cmap)
-    
-    '''
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12.5))
-    ax1.imshow(im, origin='lower', cmap='Greys_r', norm=norm)
-    ax1.set_title('Data')
-    ax2.imshow(segm_deblend , origin='lower', cmap=cmap)
-    ax2.set_title('Segmentation Image')
-    '''
     plt.savefig(outputFileName+'_segmentedMasks.png')
     plt.close()
     writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),outputFileName+'_segmentedMasks.png'),'a')
 
 
-def segmentSourceInhomogBackground(im,param,log1,outputFileName):
+def segmentSourceInhomogBackground(im,param):
     threshold_over_std=param.param['segmentedObjects']['threshold_over_std']
     fwhm=param.param['segmentedObjects']['fwhm']
-    brightest=1000 # keeps brightest sources
+    brightest=param.param['segmentedObjects']['brightest'] # keeps brightest sources
 
     # estimates inhomogeneous background
     sigma_clip = SigmaClip(sigma=3.)
     bkg_estimator = MedianBackground()
-    bkg = Background2D(im, (50, 50), filter_size=(3, 3),
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3),
                        sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
     
     im1_bkg_substracted=im-bkg.background
@@ -89,12 +79,9 @@ def segmentSourceInhomogBackground(im,param,log1,outputFileName):
                             exclude_border=True)  
     sources = daofind(im1_bkg_substracted) 
     
-    # show results
-    showsImageSources(im,im1_bkg_substracted,log1,sources,outputFileName)
+    return sources, im1_bkg_substracted
 
-    return sources
-
-def segmentSourceFlatBackground(im,param,log1,outputFileName):
+def segmentSourceFlatBackground(im,param):
     threshold_over_std=param.param['segmentedObjects']['threshold_over_std']
     fwhm=param.param['segmentedObjects']['fwhm']
 
@@ -108,19 +95,16 @@ def segmentSourceFlatBackground(im,param,log1,outputFileName):
                             exclude_border=True)  
     sources = daofind(im - median)  
     
-    # show results
-    showsImageSources(im,im1_bkg_substracted,log1,sources,outputFileName)
+    return sources, im1_bkg_substracted
 
-    return sources
-
-def segmentMaskInhomogBackground(im,param,log1,outputFileName):
+def segmentMaskInhomogBackground(im,param):
 
     # removes background
     threshold = detect_threshold(im, nsigma=2.)
     sigma_clip = SigmaClip(sigma=param.param['segmentedObjects']['background_sigma'])
     
     bkg_estimator = MedianBackground()
-    bkg = Background2D(im, (50, 50), filter_size=(3, 3),
+    bkg = Background2D(im, (64,64), filter_size=(3, 3),
                        sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
     threshold = bkg.background + (param.param['segmentedObjects']['threshold_over_std'] * bkg.background_rms)  # background-only error image, typically 1.0
     
@@ -129,13 +113,30 @@ def segmentMaskInhomogBackground(im,param,log1,outputFileName):
     kernel.normalize()
 
     # estimates masks and deblends
-    segm = detect_sources(im, threshold, npixels=5, filter_kernel=kernel)
+    segm = detect_sources(im, threshold, 
+                          npixels=param.param['segmentedObjects']['area_min'],
+                          filter_kernel=kernel)
     
+    # removes masks too close to border
+    segm.remove_border_labels(border_width=10) # parameter to add to infoList
+
     segm_deblend = deblend_sources(im, segm, npixels=param.param['segmentedObjects']['area_min'], # typically 50 for DAPI
                                    filter_kernel=kernel, nlevels=32,
-                                   contrast=0.001)
-    # show results
-    showsImageMasks(im,log1,segm_deblend,outputFileName)
+                                   contrast=0.001, # try 0.2 or 0.3
+                                   relabel=True)
+    
+    # removes Masks too big or too small
+    for label in segm_deblend.labels:
+        # take regions with large enough areas
+        area=segm_deblend.get_area(label)
+        #print('label {}, with area {}'.format(label,area))
+        if area < param.param['segmentedObjects']['area_min'] or \
+            area > param.param['segmentedObjects']['area_max']:
+                segm_deblend.remove_label(label=label)
+                #print('label {} removed'.format(label))
+                
+    # relabel so masks numbers are consecutive
+    segm_deblend.relabel_consecutive()
     
     return segm_deblend
 
@@ -160,30 +161,39 @@ def makesSegmentations(fileName,param,log1,session1,dataFolder):
             
         if label=='barcode' and len([i for i in rootFileName.split('_') if 'RT' in i])>0:        
             if param.param['segmentedObjects']['background_method']=='flat':
-                output=segmentSourceFlatBackground(im,param,log1,outputFileName)
+                output=segmentSourceFlatBackground(im,param)
             elif param.param['segmentedObjects']['background_method']=='inhomogeneous':
-                output=segmentSourceInhomogBackground(im,param,log1,outputFileName)
+                output,im1_bkg_substracted=segmentSourceInhomogBackground(im,param)
             else:
                 log1.report('segmentedObjects/background_method not specified in json file','ERROR')
-                output=Table()            
+                return Table()
 
+            # show results
+            showsImageSources(im,im1_bkg_substracted,log1,output,outputFileName)
+
+            # formats results for output by adding barcodeID, CellID and ROI
             barcodeID=os.path.basename(fileName).split('_')[2].split('RT')[1]
-            colROI=Column(int(ROI)*np.ones(len(output)),name='ROI #')
-            colBarcode=Column(int(barcodeID)*np.ones(len(output)),name='Barcode #')
+            colROI=Column(int(ROI)*np.ones(len(output)),name='ROI #',dtype=int)
+            colBarcode=Column(int(barcodeID)*np.ones(len(output)),name='Barcode #',dtype=int)
+            colCellID=Column(np.zeros(len(output)),name='CellID #',dtype=int)
             output.add_column(colBarcode,index=0)
             output.add_column(colROI,index=0)
+            output.add_column(colCellID,index=2)
                
             for col in output.colnames:  
                 output[col].info.format = '%.8g'  # for consistent table output
 
         elif label=='DAPI' and rootFileName.split('_')[2]=='DAPI':
             if param.param['segmentedObjects']['background_method']=='flat':
-                output = segmentMaskInhomogBackground(im,param,log1,outputFileName)
+                output = segmentMaskInhomogBackground(im,param)
             elif param.param['segmentedObjects']['background_method']=='inhomogeneous':
-                output = segmentMaskInhomogBackground(im,param,log1,outputFileName)
+                output = segmentMaskInhomogBackground(im,param)
             else:
                 log1.report('segmentedObjects/background_method not specified in json file','ERROR')
                 output=np.zeros(1)
+                return output
+            # show results
+            showsImageMasks(im,log1,output,outputFileName)
             
             # saves output 2d zProjection as matrix
             Im.saveImage2D(log1,dataFolder.outputFolders['zProject'])

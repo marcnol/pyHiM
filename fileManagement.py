@@ -170,6 +170,7 @@ class Parameters:
                                     'background_sigma': 3.0, # used to remove inhom background
                                     'threshold_over_std': 1.0, # threshold used to detect sources
                                     'fwhm': 3.0, # source size in px
+                                    'brightest': 1100, # max number of objects segmented per FOV
                                     'intensity_min': 0, # min int to keep object
                                     'intensity_max': 59, # max int to keeep object
                                     'area_min': 50, # min area to keeep object

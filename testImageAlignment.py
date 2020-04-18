@@ -92,6 +92,10 @@ fileName1='scan_001_DAPI_017_ROI_converted_decon_ch01.tif'
 #fileName1='scan_004_RT18_017_ROI_converted_decon_ch00.tif'
 fileName2='scan_004_RT20_017_ROI_converted_decon_ch00.tif'
 
+rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+fileName2='scan_001_DAPI_018_ROI_converted_decon_ch01.tif'
+fileName1='scan_004_RT18_018_ROI_converted_decon_ch00.tif'
+
 #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001/rawImages'
 #fileName1='scan_001_RT14_002_ROI_converted_decon_ch01.tif'
 #fileName2='scan_001_RT1_002_ROI_converted_decon_ch01.tif'

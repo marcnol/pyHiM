@@ -1,14 +1,9 @@
-h5py==2.9.0
-imageio==2.5.0
-Keras==2.2.5
 matplotlib==3.1.1
 numpy==1.17.1
-pandas==0.25.1
-Pillow==6.1.0
 scikit-image==0.15.0
 scipy==1.3.1
-tensorflow==1.5.0
-tqdm: progressbar
+h5py==2.9.0
+imageio==2.5.0
 
 conda install pandas scikit-image numpy matplotlib tqdm
 conda install astropy
@@ -18,5 +13,23 @@ conda install -c anaconda h5py
 #conda install -c conda-forge opencv
 conda install -c conda-forge imageio keras pillow tensorflow tifffile
 
+##################
+## not really used
+##################
+tqdm: progressbar
+Keras==2.2.5
+tensorflow==1.5.0
+Pillow==6.1.0
+pandas==0.25.1
+
+from conda (base) shell, run:
+#pip install imreg
+#pip install astroalign
+#conda install -c juliotux image_registration 
+
+##################
+## not for python
+##################
+ 
 apt install texlive-xetex pandoc
 

@@ -12,10 +12,9 @@ Created on Sat Apr  4 09:11:01 2020
 from makeProjections import makeProjections
 from alignImages import alignImages, appliesRegistrations
 from segmentMasks import segmentMasks
-from fileManagement import Parameters, log, session,writeString2File
+from fileManagement import Parameters, log,writeString2File, session
 import os
 from datetime import datetime
-
 
 # =============================================================================
 # MAIN
@@ -25,6 +24,7 @@ if __name__ == '__main__':
     begin_time = datetime.now()
     
     rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+    rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
     #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
     #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
     #rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
@@ -76,12 +76,14 @@ if __name__ == '__main__':
 
         # [segments DAPI and spot masks]
             segmentMasks(param,log1,session1)
+            
         # [refits spots in 3D]
 
         # [local drift correction]
         
         # [fits spots and DAPI masks]
-
+        
+        
         print("\n")        
         del param    
     

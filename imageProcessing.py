@@ -22,6 +22,8 @@ from scipy.ndimage import fourier_shift
 from fileManagement import writeString2File
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch,simple_norm
+from skimage.feature import register_translation
+from scipy.ndimage import shift as shiftImage
 
 # =============================================================================
 # CLASSES
@@ -225,7 +227,7 @@ def calculate_zrange(idata, parameters):
     return focusPlane, zrange
 
 
-def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold=.9999,display=False):
+def imageAdjust(image,lower_threshold=0.3, higher_threshold=.9999):
     # rescales image to [0,1]
     image1=exposure.rescale_intensity(image,out_range=(0,1))
     
@@ -246,20 +248,14 @@ def imageAdjust(image,log1,fileName='test',lower_threshold=0.3, higher_threshold
     # calculates histogram of intensities of adjusted image
     hist1=exposure.histogram(image1)
     
-    if display:
-        plt.figure(figsize=(30, 30))
-        plt.imsave(fileName+'_adjusted.png',image1,cmap='hot')
-        writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),fileName+'_adjusted.png'),'a')
-        plt.close()
-
-    log1.report("Lower-Upper thresholds for {}: {:.2f}-{:.2f}".format(os.path.basename(fileName),lower_cutoff,higher_cutoff))
-
     return image1,hist1_before, hist1, lower_cutoff, higher_cutoff
 
 def save2imagesRGB(I1,I2,outputFileName):
     '''
     Overlays two images as R and B and saves them to output file
     '''
+    I1,I2 = I1/I1.max(), I2/I2.max()
+    
     RGB_falsecolor_image=np.dstack([I1,np.zeros([2048,2048]),I2])
     plt.figure(figsize=(30, 30))
     plt.imsave(outputFileName, RGB_falsecolor_image)
@@ -272,3 +268,60 @@ def saveImage2Dcmd(image,fileName,log):
     else:
         log.report("Warning, data_2D does not exist",'Warning')
 
+def align2ImagesCrossCorrelation(image1_uncorrected,image2_uncorrected):
+    '''
+    Aligns 2 images by contrast adjust and cross correlation
+    Parameters
+    ----------
+    imReference : TYPE
+        DESCRIPTION.
+    Im2 : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    shift : TYPE
+        DESCRIPTION.
+    error : TYPE
+        DESCRIPTION.
+    diffphase : TYPE
+        DESCRIPTION.
+    lower_threshold : TYPE
+        DESCRIPTION.
+    I_histogram : TYPE
+        DESCRIPTION.
+    image2_corrected : TYPE
+        DESCRIPTION.
+    image1_adjusted : TYPE
+        DESCRIPTION.
+    image2_adjusted : TYPE
+        DESCRIPTION.
+    image2_corrected_raw : TYPE
+        DESCRIPTION.
+
+    '''
+    # adjusts image levels
+    #image1_uncorrected=imReference.data_2D/imReference.data_2D.max()
+    #image2_uncorrected=Im2.data_2D/Im2.data_2D.max()
+    
+    image1_adjusted,hist1_before,hist1_after, lower_cutoff1, higher_cutoff1 = imageAdjust(image1_uncorrected,
+                                                  lower_threshold=0.999,
+                                                  higher_threshold=.9999999) 
+    image2_adjusted,hist2_before,hist2_after, lower_cutoff2, higher_cutoff2 = imageAdjust(image2_uncorrected,
+                                                  lower_threshold=0.999,
+                                                  higher_threshold=.9999999) 
+    
+    # zips histograms
+    lower_threshold={'Im1':lower_cutoff1, 'Im2':lower_cutoff2}
+    I_histogram={'Im1':(hist1_before,hist1_after),'Im2':(hist2_before,hist2_after)} 
+    
+    # calculates shift
+    shift, error, diffphase = register_translation(image1_adjusted, 
+                                                   image2_adjusted, 100)
+    
+    # corrects image
+    # The shift corresponds to the pixel offset relative to the reference image
+    image2_corrected = shiftImage(image2_adjusted,shift)
+    image2_corrected = exposure.rescale_intensity(image2_corrected ,out_range=(0,1))
+
+    return shift, error, diffphase, lower_threshold, I_histogram, image2_corrected, image1_adjusted, image2_adjusted

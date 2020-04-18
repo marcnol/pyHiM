@@ -13,17 +13,13 @@ Created on Sun Apr  5 09:22:18 2020
 import numpy as np
 import matplotlib.pyplot as plt
 import os,glob
-from skimage.feature import register_translation
 from skimage.feature.register_translation import _upsampled_dft
-from skimage import exposure
 #from scipy.ndimage import fourier_shift
-from scipy.ndimage import shift as shiftImage
-from imageProcessing import Image, imageAdjust, save2imagesRGB, saveImage2Dcmd
+from imageProcessing import Image, save2imagesRGB, saveImage2Dcmd, align2ImagesCrossCorrelation
 from fileManagement import folders,writeString2File,saveJSON,loadJSON
 from astropy.table import Table
-
-
-    
+from scipy.ndimage import shift as shiftImage
+  
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -82,9 +78,42 @@ def showCCimage(image1_uncorrected,image2_uncorrected,outputFileName,shift,verbo
         plt.imsave(outputFileName+'_CC.png',cc_image)
         plt.close()
 
+def saveImageAdjusted(fileName,fileNameMD,image1):
+    plt.figure(figsize=(30, 30))
+    plt.imsave(fileName+'_adjusted.png',image1,cmap='hot')
+    writeString2File(fileNameMD,"{}\n ![]({})\n".format(os.path.basename(fileName),fileName+'_adjusted.png'),'a')
+    plt.close()
+    
         
 def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
+    '''
+    Uses preloaded ImReference Object and aligns it against filename
 
+    Parameters
+    ----------
+    fileName : npy 2D array
+        file of image to be aligned
+    imReference : Image Class
+        Object type <Image> with image reference
+    param : Parameters Class
+        Running parameters
+    log1 : Log Class
+        Logging object
+    session1 : session Class
+        info for session update
+    dataFolder : folders Class
+        DESCRIPTION.
+    verbose : boolean
+        True for display images
+
+    Returns
+    -------
+    shift : float list, 2 dimensions
+        offset in Y and X
+    tableEntry : Table Class
+        results zipped in Table Class form
+
+    '''
     fileName1=imReference.fileName
     fileName2=fileName
        
@@ -93,51 +122,39 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
     # loads image
     Im2 = Image()
     Im2.loadImage2D(fileName2,log1,dataFolder.outputFolders['zProject'])
-    
-    # adjusts image levels
     image1_uncorrected=imReference.data_2D/imReference.data_2D.max()
     image2_uncorrected=Im2.data_2D/Im2.data_2D.max()
-    image1_adjusted,hist1_before,hist1_after, lower_cutoff1, higher_cutoff1 = imageAdjust(image1_uncorrected,
-                                                  log1,
-                                                  outputFileName+'_ref',
-                                                  lower_threshold=0.999,
-                                                  higher_threshold=.9999999, 
-                                                  display=verbose) 
-    image2_adjusted,hist2_before,hist2_after, lower_cutoff2, higher_cutoff2 = imageAdjust(image2_uncorrected,
-                                                  log1,
-                                                  outputFileName,
-                                                  lower_threshold=0.999,
-                                                  higher_threshold=.9999999, 
-                                                  display=verbose) 
-    # displays intensity histograms
-    lower_threshold={'Im1':lower_cutoff1, 'Im2':lower_cutoff2}
-    I_histogram={'Im1':(hist1_before,hist1_after),'Im2':(hist2_before,hist2_after)} 
-    displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,log1,verbose)
     
-    # calculates shift
-    shift, error, diffphase = register_translation(image1_adjusted, 
-                                                   image2_adjusted, 100)
+    shift, error, diffphase, lower_threshold, I_histogram, image2_corrected, image1_adjusted, image2_adjusted= align2ImagesCrossCorrelation(image1_uncorrected,image2_uncorrected)
+ 
+    image2_corrected_raw = shiftImage(image2_uncorrected,shift)
+    image2_corrected_raw[image2_corrected_raw<0]=0
+
+    #saveImageAdjusted(outputFileName+'_ref',log1.fileNameMD, image1_adjusted)
+    #saveImageAdjusted(outputFileName,log1.fileNameMD, image2_adjusted)
     
-    # corrects image
-    # The shift corresponds to the pixel offset relative to the reference image
-    image2_corrected = shiftImage(image2_adjusted,shift)
-    image2_corrected_raw = shiftImage(Im2.data_2D,shift)
-    image2_corrected = exposure.rescale_intensity(image2_corrected ,out_range=(0,1))
-    
+    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName+'_ref'),lower_threshold['Im1']))
+    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName),lower_threshold['Im2']))
+
     log1.report(f"Detected subpixel offset (y, x): {shift} px\n")
     
-   # saves uncrrected images to file
+    # displays intensity histograms
+    displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,log1,verbose)
+
+    '''
+    # saves uncrrected images to file
     save2imagesRGB(image1_uncorrected,image2_uncorrected,
                    outputFileName+'_overlay_uncorrected.png')
-    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),
-                                                             outputFileName+'_overlay_uncorrected.png'),'a')
-
+    '''
     
     # thresholds corrected images for better display and saves
     image1_corrected=image1_adjusted>0.1
     image2_corrected=image2_corrected>0.1
-    save2imagesRGB(image1_corrected,image2_corrected,
+    image1_uncorrected[image1_uncorrected<0]=0
+    save2imagesRGB(image1_uncorrected,image2_corrected_raw,
                    outputFileName+'_overlay_corrected.png')
+    writeString2File(log1.fileNameMD,"{}\n ![]({})\n".format(os.path.basename(outputFileName),
+                                                             outputFileName+'_overlay_corrected.png'),'a')
 
     alignmentOutput = dataFolder.outputFiles['alignImages']
     list2output = "{}\t{}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}".format(os.path.basename(fileName2),

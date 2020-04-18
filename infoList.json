@@ -19,6 +19,7 @@
         "area_min": 50,
         "background_method": "inhomogeneous",
         "background_sigma": 3.0,
+        "brightest": 1100,
         "folder": "segmentedObjects",
         "fwhm": 3.0,
         "intensity_max": 59,
