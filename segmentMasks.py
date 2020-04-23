@@ -59,6 +59,42 @@ def showsImageMasks(im,log1,segm_deblend,outputFileName):
 
 
 def segmentSourceInhomogBackground(im,param):
+    '''
+    Segments barcodes by estimating inhomogeneous background
+    Parameters
+    ----------
+    im : NPY 2D
+        image to be segmented
+    param : Parameters
+        parameters object.
+
+    Returns
+    -------
+    table : `~astropy.table.Table` or `None`
+    A table of found stars with the following parameters:
+    
+    * ``id``: unique object identification number.
+    * ``xcentroid, ycentroid``: object centroid.
+    * ``sharpness``: object sharpness.
+    * ``roundness1``: object roundness based on symmetry.
+    * ``roundness2``: object roundness based on marginal Gaussian
+      fits.
+    * ``npix``: the total number of pixels in the Gaussian kernel
+      array.
+    * ``sky``: the input ``sky`` parameter.
+    * ``peak``: the peak, sky-subtracted, pixel value of the object.
+    * ``flux``: the object flux calculated as the peak density in
+      the convolved image divided by the detection threshold.  This
+      derivation matches that of `DAOFIND`_ if ``sky`` is 0.0.
+    * ``mag``: the object instrumental magnitude calculated as
+      ``-2.5 * log10(flux)``.  The derivation matches that of
+      `DAOFIND`_ if ``sky`` is 0.0.
+    
+    `None` is returned if no stars are found.
+    
+    img_bkc_substracted: 2D NPY array with background substracted image
+    '''        
+            
     threshold_over_std=param.param['segmentedObjects']['threshold_over_std']
     fwhm=param.param['segmentedObjects']['fwhm']
     brightest=param.param['segmentedObjects']['brightest'] # keeps brightest sources
@@ -82,6 +118,42 @@ def segmentSourceInhomogBackground(im,param):
     return sources, im1_bkg_substracted
 
 def segmentSourceFlatBackground(im,param):
+    '''
+    Segments barcodes using flat background
+    Parameters
+    ----------
+    im : NPY 2D
+        image to be segmented
+    param : Parameters
+        parameters object.
+
+    Returns
+    -------
+    table : `~astropy.table.Table` or `None`
+    A table of found stars with the following parameters:
+    
+    * ``id``: unique object identification number.
+    * ``xcentroid, ycentroid``: object centroid.
+    * ``sharpness``: object sharpness.
+    * ``roundness1``: object roundness based on symmetry.
+    * ``roundness2``: object roundness based on marginal Gaussian
+      fits.
+    * ``npix``: the total number of pixels in the Gaussian kernel
+      array.
+    * ``sky``: the input ``sky`` parameter.
+    * ``peak``: the peak, sky-subtracted, pixel value of the object.
+    * ``flux``: the object flux calculated as the peak density in
+      the convolved image divided by the detection threshold.  This
+      derivation matches that of `DAOFIND`_ if ``sky`` is 0.0.
+    * ``mag``: the object instrumental magnitude calculated as
+      ``-2.5 * log10(flux)``.  The derivation matches that of
+      `DAOFIND`_ if ``sky`` is 0.0.
+    
+    `None` is returned if no stars are found.
+
+    img_bkc_substracted: 2D NPY array with background substracted image
+    '''        
+
     threshold_over_std=param.param['segmentedObjects']['threshold_over_std']
     fwhm=param.param['segmentedObjects']['fwhm']
 
@@ -134,7 +206,7 @@ def segmentMaskInhomogBackground(im,param):
             area > param.param['segmentedObjects']['area_max']:
                 segm_deblend.remove_label(label=label)
                 #print('label {} removed'.format(label))
-                
+            
     # relabel so masks numbers are consecutive
     segm_deblend.relabel_consecutive()
     

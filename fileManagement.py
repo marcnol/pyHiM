@@ -87,15 +87,18 @@ class folders():
         self.outputFolders['zProject']=filesFolder+os.sep+param.param['zProject']['folder']
         self.outputFolders['alignImages']=filesFolder+os.sep+param.param['alignImages']['folder']
         self.outputFolders['segmentedObjects']=filesFolder+os.sep+param.param['segmentedObjects']['folder']
+        self.outputFolders['buildsPWDmatrix']=filesFolder+os.sep+'buildsPWDmatrix'
 
         self.createSingleFolder(self.outputFolders['zProject'])            
         self.createSingleFolder(self.outputFolders['alignImages'])            
         self.createSingleFolder(self.outputFolders['segmentedObjects'])            
+        self.createSingleFolder(self.outputFolders['buildsPWDmatrix'])            
 
         #self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
         self.outputFiles['alignImages']=self.outputFolders['alignImages']+os.sep+param.param['alignImages']['outputFile']
         self.outputFiles['dictShifts']=self.masterFolder+os.sep+param.param['alignImages']['outputFile']
         self.outputFiles['segmentedObjects']=self.outputFolders['segmentedObjects']+os.sep+param.param['segmentedObjects']['outputFile']
+        self.outputFiles['buildsPWDmatrix']=self.outputFolders['buildsPWDmatrix']+os.sep+'buildsPWDmatrix'
 
     def createSingleFolder(self,folder):
         if not path.exists(folder):
@@ -240,3 +243,27 @@ def loadJSON(fileName):
     else:
         data = {}
     return data            
+
+
+def isnotebook():
+    '''
+    This function detects if you are running on an ipython console or in the shell.
+    It is used to either kill plots or leave them open.
+
+    Returns
+    -------
+    TYPE Boolean
+        true if running in Jupyter or Ipython consoles within spyder.
+        false otherwise (terminal)
+
+    '''
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter

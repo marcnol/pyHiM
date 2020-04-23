@@ -14,7 +14,9 @@ from alignImages import alignImages, appliesRegistrations
 from segmentMasks import segmentMasks
 from fileManagement import Parameters, log,writeString2File, session
 import os
+import argparse
 from datetime import datetime
+from alignBarcodesMasks import processesPWDmatrices
 
 # =============================================================================
 # MAIN
@@ -23,11 +25,27 @@ from datetime import datetime
 if __name__ == '__main__':
     begin_time = datetime.now()
     
-    rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
-    rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-    #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
-    #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
-    #rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F","--rootFolder", help="Folder with images")
+    args = parser.parse_args()
+    
+    print("\n--------------------------------------------------------------------------")
+    
+    if args.rootFolder:
+        rootFolder=args.rootFolder
+    else:
+        #rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+        #rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+        
+        rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
+    
+        #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
+        #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
+        #rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
+
+    print("parameters> rootFolder: {}".format(rootFolder))
+
+
     
     labels2Process = [{'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'},
                       {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
@@ -74,18 +92,28 @@ if __name__ == '__main__':
             log1.report('Applying image registrations, ilabel: {}, label: {}'.format(ilabel,label),'info')
             appliesRegistrations(param,log1,session1)
 
-        # [segments DAPI and spot masks]
+            # [segments DAPI and spot masks]
             segmentMasks(param,log1,session1)
             
         # [refits spots in 3D]
 
         # [local drift correction]
         
-        # [fits spots and DAPI masks]
-        
         
         print("\n")        
         del param    
+
+    # [builds PWD matrix for all folders with images]
+    ilabel=1 # uses DAPI for parameters file
+    label=labels2Process[ilabel]['label'] 
+    labelParameterFile=labels2Process[1]['parameterFile']
+   
+    # sets parameters
+    param = Parameters(labelParameterFile)
+    param.loadParametersFile(rootFolder+os.sep+labelParameterFile)
+    param.param['rootFolder']=rootFolder
+  
+    processesPWDmatrices(param,log1,session1)        
     
     # exits
     session1.save(log1)
