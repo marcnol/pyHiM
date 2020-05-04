@@ -4,6 +4,9 @@
 Created on Fri Apr  3 11:16:58 2020
 
 @author: marcnol
+
+Classes and functions for file management
+
 """
 # =============================================================================
 # IMPORTS
@@ -21,9 +24,14 @@ import json
 # =============================================================================
  
 class log:
-    def __init__(self,fileName='test.log'):
-        self.fileName=fileName
-        self.fileNameMD=fileName.split('.')[0]+'.md'
+    def __init__(self,rootFolder='./'):
+        now=datetime.now()
+        dateTime=now.strftime("%d%m%Y_%H%M%S")
+        self.fileName=rootFolder+os.sep+'HiM_analysis'+dateTime+'.log'
+        self.fileNameMD=self.fileName.split('.')[0]+'.md'
+
+        self.eraseFile()
+        self.report("Starting to log to: {}".format(self.fileName))
 
     def eraseFile(self):
         #with open(self.fileName, 'w') as file:
@@ -64,21 +72,28 @@ class folders():
         self.zProjectFolder=''
         self.outputFolders={}
         self.outputFiles={}
-       
+        self.setsFolders()
+
     # returns list of directories with given extensions
     def setsFolders(self,extension='tif'):
         
+        # finds more folders inside the given folder 
+        hfolders = [folder for folder in glob.glob(self.masterFolder+os.sep+'*')
+                   if os.path.isdir(folder) and 
+                   len(glob.glob(folder+os.sep+'*.'+extension))>0] 
+                   #os.path.name(folder)[0]!='F']
+        if len(hfolders)>0:
+            self.listFolders=hfolders
+        else:
+            self.listFolders=[]
+        
         # checks if there are files with the required extension in the root folder provided
         if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder+os.sep+'*.'+extension))>0:
-            self.listFolders=self.masterFolder
-        else:
-            # finds more folders inside the given folder 
-            hfolders = [folder for folder in glob.glob(self.masterFolder+os.sep+'*')
-                       if os.path.isdir(folder) and 
-                       len(glob.glob(folder+os.sep+'*.'+extension))>0] 
-                       #os.path.name(folder)[0]!='F']
-            self.listFolders=hfolders
-        
+            #self.listFolders=self.masterFolder
+            self.listFolders.append(self.masterFolder)
+                
+        print("Detected {} folders with images".format(len(self.listFolders)))
+
     # creates folders for outputs
     def createsFolders(self,filesFolder,param):
         #self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
@@ -88,17 +103,20 @@ class folders():
         self.outputFolders['alignImages']=filesFolder+os.sep+param.param['alignImages']['folder']
         self.outputFolders['segmentedObjects']=filesFolder+os.sep+param.param['segmentedObjects']['folder']
         self.outputFolders['buildsPWDmatrix']=filesFolder+os.sep+'buildsPWDmatrix'
+        self.outputFolders['projectsBarcodes']=filesFolder+os.sep+param.param['projectsBarcodes']['folder']
 
         self.createSingleFolder(self.outputFolders['zProject'])            
         self.createSingleFolder(self.outputFolders['alignImages'])            
         self.createSingleFolder(self.outputFolders['segmentedObjects'])            
         self.createSingleFolder(self.outputFolders['buildsPWDmatrix'])            
+        self.createSingleFolder(self.outputFolders['projectsBarcodes'])            
 
         #self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
         self.outputFiles['alignImages']=self.outputFolders['alignImages']+os.sep+param.param['alignImages']['outputFile']
         self.outputFiles['dictShifts']=self.masterFolder+os.sep+param.param['alignImages']['outputFile']
         self.outputFiles['segmentedObjects']=self.outputFolders['segmentedObjects']+os.sep+param.param['segmentedObjects']['outputFile']
         self.outputFiles['buildsPWDmatrix']=self.outputFolders['buildsPWDmatrix']+os.sep+'buildsPWDmatrix'
+        self.outputFiles['projectsBarcodes']=self.outputFolders['projectsBarcodes']+os.sep+param.param['projectsBarcodes']['outputFile']
 
     def createSingleFolder(self,folder):
         if not path.exists(folder):
@@ -106,9 +124,11 @@ class folders():
             print("Folder created: {}".format(folder))
 
 class session:
-    def __init__(self,name='dummy',fileName='session.json'):
+    def __init__(self,rootFolder,name='dummy'):
+        now=datetime.now()
+        sessionRootName=now.strftime("%d%m%Y_%H%M%S")
+        self.fileName=rootFolder+os.sep+'Session_'+sessionRootName+'.json'
         self.name=name
-        self.fileName=fileName
         self.data={}   
         
     # loads existing session    
@@ -130,9 +150,18 @@ class session:
         
     def clearData(self):
         self.data={}
+
+class FileHandling:
+    def __init__(self, fileName):
+        self.fileName=fileName
+        self.positionROIinformation=3
+        
+    def getROI(self):
+        return os.path.basename(self.fileName).split('_')[self.positionROIinformation]
+        
         
 class Parameters:
-    def __init__(self,label=''):
+    def __init__(self,rootFolder='./',label=''):
         self.label= label
         self.paramFile = "infoList.json"
         self.param = {
@@ -165,6 +194,11 @@ class Parameters:
                                     'outputFile': 'alignImages',
                                     'referenceFiducial': 'RT18'
                         },
+                       'projectsBarcodes': {
+                                    'folder':'projectsBarcodes', # output folder
+                                    'operation': 'overwrite', # overwrite, skip
+                                    'outputFile': 'projectsBarcodes',
+                        },
                        'segmentedObjects':{
                                     'folder':'segmentedObjects', # output folder
                                     'operation': 'overwrite', # overwrite, skip
@@ -180,7 +214,10 @@ class Parameters:
                                     'area_max': 500 # max area to keeep object
                         }
         }
-
+        self.initializeStandardParameters()
+        self.paramFile = rootFolder+os.sep+label
+        self.loadParametersFile(self.paramFile)
+        self.param['rootFolder']=rootFolder
 
     def get_param(self, param=False):
         if not param:
@@ -267,3 +304,35 @@ def isnotebook():
             return False  # Other type (?)
     except NameError:
         return False      # Probably standard Python interpreter
+    
+def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):    
+    '''
+    Finds the files in a list that contain the ReferenceBarcode in their name
+    Also returs the ROI of each file in this list
+
+    Parameters
+    ----------
+    fileList2Process : TYPE
+        DESCRIPTION.
+    referenceBarcode : TYPE
+        DESCRIPTION.
+    positionROIinformation : TYPE, optional
+        DESCRIPTION. The default is 3.
+
+    Returns
+    -------
+    fileNameReferenceList : TYPE
+        List of filenames with referenceBarcode in their RT field
+    ROIList : TYPE
+        Dictionary of ROIs for each file in list
+
+    '''
+    fileNameReferenceList = []
+    ROIList = {}
+    
+    for file in fileList2Process:
+        if referenceBarcode in file.split('_'):
+            fileNameReferenceList.append(file)
+            ROIList[file]= os.path.basename(file).split('_')[positionROIinformation]
+                    
+    return fileNameReferenceList, ROIList    

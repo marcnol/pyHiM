@@ -4,6 +4,8 @@
 Created on Thu Apr  2 16:00:52 2020
 
 @author: marcnol
+
+Classes and functions for common image processing
 """
 # =============================================================================
 # IMPORTS
@@ -141,14 +143,17 @@ class Image():
         self.focusPlane=zRange[0]
         
     # displays image and shows it
-    def imageShow(self,show=True,cmap='plasma',size=(10,10),dpi=300,outputName='tmp.png',save=True):
+    def imageShow(self,show=True,cmap='plasma',size=(10,10),dpi=300,outputName='tmp.png',save=True,normalization='stretch'):
         fig = plt.figure()
         fig.set_size_inches(size)
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
 
-        norm = ImageNormalize(stretch=SqrtStretch())
-        #norm = simple_norm(self.data_2D, 'sqrt', percent=99.9)
+        if normalization == 'simple':
+            norm = simple_norm(self.data_2D, 'sqrt', percent=99.9)
+        else:
+            norm = ImageNormalize(stretch=SqrtStretch())
+            
         ax.set_title('2D Data')
 
         if show:
@@ -264,7 +269,8 @@ def save2imagesRGB(I1,I2,outputFileName):
 def saveImage2Dcmd(image,fileName,log):
     if image.shape>(1,1):
         np.save(fileName,image)
-        log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
+        #log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
+        log.report("Saved 2d projection to disk: {}\n".format(fileName+'.npy'),'info')
     else:
         log.report("Warning, data_2D does not exist",'Warning')
 

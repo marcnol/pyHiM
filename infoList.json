@@ -14,6 +14,11 @@
         "claheGridW": 8,
         "currentPlane": 1
     },
+    "projectsBarcodes": {
+        "folder": "projectsBarcodes",
+        "operation": "overwrite",
+        "outputFile": "projectsBarcodes"
+    },
     "segmentedObjects": {
         "area_max": 500,
         "area_min": 50,

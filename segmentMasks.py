@@ -4,6 +4,13 @@
 Created on Sat Apr 11 14:59:43 2020
 
 @author: marcnol
+
+File containing all functions responsible for segmentation of masks for Hi-M,
+including DNA masks, barcodes, and fiducials
+
+At the moment, fittings of the 2D positions of barcodes is also performed just 
+after image segmentation.
+
 """
 
 # =============================================================================
@@ -284,7 +291,6 @@ def segmentMasks(param,log1,session1):
  
     # processes folders and files 
     dataFolder=folders(param.param['rootFolder'])
-    dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}:{}====================\n".format(sessionName,
                                                           param.param['acquisition']['label']))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
@@ -299,6 +305,7 @@ def segmentMasks(param,log1,session1):
     
         # generates lists of files to process    
         param.files2Process(filesFolder)
+        log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report('About to read {} files\n'.format(len(param.fileList2Process)))
         
         for fileName in param.fileList2Process:

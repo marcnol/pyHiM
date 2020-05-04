@@ -4,6 +4,15 @@
 Created on Fri Apr  3 23:17:58 2020
 
 @author: marcnol
+
+This file contains functions to project 3D images to 2D
+
+Operation will be defined in the parameters file. Options are:
+    - user-defined range
+    - all z range
+    - optimal range based on detection of focal plane and use of user defined window around it
+    
+
 """
 # =============================================================================
 # IMPORTS
@@ -67,7 +76,6 @@ def makeProjections(param,log1,session1):
  
     # processes folders and files 
     dataFolder=folders(param.param['rootFolder'])
-    dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
     writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
@@ -79,6 +87,7 @@ def makeProjections(param,log1,session1):
     
         # generates lists of files to process    
         param.files2Process(filesFolder)
+        log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report('About to read {} files\n'.format(len(param.fileList2Process)))
         
         for fileName in param.fileList2Process:

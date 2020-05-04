@@ -7,6 +7,13 @@ Created on Fri Apr 17 09:23:36 2020
 
 test fitting barcode spots to masks
 
+
+TO SOLVE:
+    - I need to find a simple way of specifying the genomic coordinates of 
+    barcodes for the production of the Hi-M matrix. At the moment it is just 
+    using barcodeID from the file name.
+    
+
 """
 
 # =============================================================================
@@ -157,11 +164,11 @@ class cellID():
 def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md'):
     meanSCmatrix=pixelSize*np.nanmedian(SCmatrixCollated,axis=2)
     #print('ROIs detected: {}'.format(ROIs))
-    fig=plt.figure()
+    fig=plt.figure(figsize=(10, 10))
     pos = plt.imshow(meanSCmatrix,cmap='seismic')
     plt.xlabel('barcode #')
     plt.ylabel('barcode #')
-    plt.title('PWD matrix'+' | n='+str(SCmatrixCollated.shape[2])+' | ROIs='+str(numberROIs))
+    plt.title('PWD matrix'+' | ' + str(meanSCmatrix.shape[0]) + ' barcodes | n='+str(SCmatrixCollated.shape[2])+' | ROIs='+str(numberROIs))
     plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
     plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
     cbar=plt.colorbar(pos)
@@ -213,7 +220,7 @@ def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logN
 
     writeString2File(logNameMD,"![]({})\n".format(outputFileName+'_PWDhistograms.png'),'a')
 
-def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates,outputFileName,pixelSize=0.1,logNameMD='log.md'):     
+def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize=0.1, logNameMD='log.md'):     
     
     # Processes Tables 
     barcodeMap = Table.read(fileNameBarcodeCoordinates,format='ascii.ecsv')
@@ -235,39 +242,42 @@ def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates,outputFileName,pix
                   if file.split('_')[-1].split('.')[0]=='ch00' and
                   'DAPI' in file.split('_')
                   and int(os.path.basename(file).split('_')[3])==nROI]
-       
+        
         if len(fileList2Process)>0:
         
             # loads Masks
             fileNameROImasks = os.path.basename(fileList2Process[0]).split('.')[0]+'_Masks.npy'
-            Masks=np.load(os.path.dirname(fileNameBarcodeCoordinates)+os.sep+fileNameROImasks)
+            fullFileNameROImasks = os.path.dirname(fileNameBarcodeCoordinates)+os.sep+fileNameROImasks 
+            if os.path.exists(fullFileNameROImasks):
+                Masks=np.load(fullFileNameROImasks)
                 
-            # Assigns barcodes to Masks for a given ROI
-            cellROI = cellID(barcodeMapSingleROI,Masks,ROI)
+                # Assigns barcodes to Masks for a given ROI
+                cellROI = cellID(barcodeMapSingleROI,Masks,ROI)
+                
+                cellROI.alignByMasking()
+                
+                cellROI.buildsdistanceMatrix('min') # mean min last
+                
+                print('ROI: {}, N cells assigned: {} out of {}'.format(ROI,cellROI.NcellsAssigned,cellROI.numberMasks))
             
-            cellROI.alignByMasking()
-            
-            cellROI.buildsdistanceMatrix('min') # mean min last
-            
-            print('ROI: {}, N cells assigned: {} out of {}'.format(ROI,cellROI.NcellsAssigned,cellROI.numberMasks))
-        
-            uniqueBarcodes = cellROI.uniqueBarcodes    
-            
-            # saves Table with results per ROI
-            
-            cellROI.SCdistanceTable.write(outputFileName+'_ROI'+str(nROI)+'.ecsv',format='ascii.ecsv',overwrite=True)
-
-            if len(SCmatrixCollated)>0:
-                SCmatrixCollated=np.concatenate((SCmatrixCollated,cellROI.SCmatrix),axis=2)
+                uniqueBarcodes = cellROI.uniqueBarcodes    
+                
+                # saves Table with results per ROI
+                
+                cellROI.SCdistanceTable.write(outputFileName+'_ROI'+str(nROI)+'.ecsv',format='ascii.ecsv',overwrite=True)
+    
+                if len(SCmatrixCollated)>0:
+                    SCmatrixCollated=np.concatenate((SCmatrixCollated,cellROI.SCmatrix),axis=2)
+                else:
+                    SCmatrixCollated=cellROI.SCmatrix
+                del cellROI
             else:
-                SCmatrixCollated=cellROI.SCmatrix
-            del cellROI
-
+                print('Error, no DAPI mask file found for {}\n Expected: {}',format(fileNameBarcodeCoordinates, fullFileNameROImasks))
+                
     # saves output
     np.save(outputFileName+'_HiMscMatrix.npy',SCmatrixCollated)
     np.savetxt(outputFileName+'_uniqueBarcodes.ecsv', uniqueBarcodes, delimiter=" ",fmt='%d')
-    
-    
+   
     # plots outputs
     plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs, outputFileName,logNameMD)
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName,logNameMD)
@@ -278,7 +288,6 @@ def processesPWDmatrices(param,log1,session1):
  
     # processes folders and files 
     dataFolder=folders(param.param['rootFolder'])
-    dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report('folders read: {}'.format(len(dataFolder.listFolders)))
     writeString2File(log1.fileNameMD,"## {}\n".format(sessionName),'a') 
@@ -286,6 +295,7 @@ def processesPWDmatrices(param,log1,session1):
     for currentFolder in dataFolder.listFolders:
         #filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
         dataFolder.createsFolders(currentFolder,param)
+        log1.report("-------> Processing Folder: {}".format(currentFolder))
 
         fileNameBarcodeCoordinates = dataFolder.outputFiles['segmentedObjects']+'_barcode.dat'
         #segmentedMasksFolder=dataFolder.outputFolders['segmentedObjects']

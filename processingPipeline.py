@@ -4,6 +4,13 @@
 Created on Sat Apr  4 09:11:01 2020
 
 @author: marcnol
+
+This file contains routines to process Hi-M datasets
+
+The user needs to provide either a folder by argument or in the source code.
+The main() will search for parameter files within the folder provided. All ope-export PATH="$PATH:/home/marcnol/Repositories/pyHiM/"
+-ration of the code will be defined in the parameters file.
+
 """
 # =============================================================================
 # IMPORTS
@@ -17,6 +24,8 @@ import os
 import argparse
 from datetime import datetime
 from alignBarcodesMasks import processesPWDmatrices
+from projectsBarcodes import projectsBarcodes
+
 
 # =============================================================================
 # MAIN
@@ -34,50 +43,38 @@ if __name__ == '__main__':
     if args.rootFolder:
         rootFolder=args.rootFolder
     else:
-        #rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+        rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
         #rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
         
-        rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
+        #rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
     
         #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
         #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
         #rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
 
     print("parameters> rootFolder: {}".format(rootFolder))
-
-
+    now=datetime.now()
     
     labels2Process = [{'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'},
-                      {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
-                      {'label': 'barcode', 'parameterFile': 'infoList_barcode.json'}] 
+                      {'label': 'barcode', 'parameterFile': 'infoList_barcode.json'},
+                      {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'}]
                         
      # session
-    now=datetime.now()
-    sessionRootName=now.strftime("%d%m%Y_%H%M%S")
-    sessionFileName=rootFolder+os.sep+'Session_'+sessionRootName+'.json'
-    session1=session('processingPipeline',sessionFileName)
+    session1=session(rootFolder,'processingPipeline')
  
     # setup logs
-    logFileName=rootFolder+os.sep+'HiM_analysis'+sessionRootName+'.log'
-    log1=log(logFileName)
-    log1.eraseFile()
-    log1.report("Starting to log to: {}".format(logFileName))
+    log1=log(rootFolder)
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format('processingPipeline'))
+    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(log1.fileNameMD,"# Hi-M analysis {}".format(now.strftime("%d/%m/%Y %H:%M:%S")),'w') # initialises MD file
     
     for ilabel in range(len(labels2Process)):
         label=labels2Process[ilabel]['label']
         labelParameterFile=labels2Process[ilabel]['parameterFile']
-
         log1.addSimpleText("**Analyzing label: {}**".format(label))
        
         # sets parameters
-        param = Parameters(labelParameterFile)
-        param.initializeStandardParameters()
-        paramFile = rootFolder+os.sep+labelParameterFile
-        param.loadParametersFile(paramFile)
-        
-        param.param['rootFolder']=rootFolder
+        param = Parameters(rootFolder,labelParameterFile)
         
         # [projects 3D images in 2d]
         makeProjections(param,log1,session1)
@@ -94,28 +91,23 @@ if __name__ == '__main__':
 
             # [segments DAPI and spot masks]
             segmentMasks(param,log1,session1)
+
+        # [2D projects all barcodes in an ROI]
+        if label=='barcode':
+            projectsBarcodes(param,log1,session1)
             
         # [refits spots in 3D]
 
         # [local drift correction]
         
+        # [builds PWD matrix for all folders with images]
+        if label=='DAPI':
+            processesPWDmatrices(param,log1,session1)        
         
         print("\n")        
         del param    
 
-    # [builds PWD matrix for all folders with images]
-    ilabel=1 # uses DAPI for parameters file
-    label=labels2Process[ilabel]['label'] 
-    labelParameterFile=labels2Process[1]['parameterFile']
-   
-    # sets parameters
-    param = Parameters(labelParameterFile)
-    param.loadParametersFile(rootFolder+os.sep+labelParameterFile)
-    param.param['rootFolder']=rootFolder
-  
-    processesPWDmatrices(param,log1,session1)        
-    
-    # exits
+   # exits
     session1.save(log1)
     log1.addSimpleText("\n===================={}====================\n".format('Normal termination'))
     

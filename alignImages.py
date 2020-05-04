@@ -4,6 +4,13 @@
 Created on Sun Apr  5 09:22:18 2020
 
 @author: marcnol
+
+Sets of functions that do alignment of 2D fiducial images. It also contains
+code to apply these alignments to other channels (DAPI/ barcodes)
+
+For the time being alignment is purely based on optimized sub-pixed accuracy
+image cross correlation
+
 """
 
 # =============================================================================
@@ -16,7 +23,7 @@ import os,glob
 from skimage.feature.register_translation import _upsampled_dft
 #from scipy.ndimage import fourier_shift
 from imageProcessing import Image, save2imagesRGB, saveImage2Dcmd, align2ImagesCrossCorrelation
-from fileManagement import folders,writeString2File,saveJSON,loadJSON
+from fileManagement import folders,writeString2File,saveJSON,loadJSON, RT2fileName
 from astropy.table import Table
 from scipy.ndimage import shift as shiftImage
   
@@ -24,18 +31,6 @@ from scipy.ndimage import shift as shiftImage
 # FUNCTIONS
 # =============================================================================
  
- 
-def RT2fileName(fileList2Process,referenceBarcode,positionROIinformation=3):    
-    fileNameReferenceList = []
-    ROIList = {}
-    
-    for file in fileList2Process:
-        if referenceBarcode in file.split('_'):
-            fileNameReferenceList.append(file)
-            ROIList[file]= os.path.basename(file).split('_')[positionROIinformation]
-                    
-    return fileNameReferenceList, ROIList
-
 def displaysEqualizationHistograms(I_histogram,lower_threshold,outputFileName,log1,verbose=False):
         # hist1_before, hist1_after,hist2_before, hist2_after, , vebose=False, fileName='test'):
     fig= plt.figure(figsize=(6, 3))
@@ -148,7 +143,7 @@ def align2Files(fileName,imReference, param,log1,session1,dataFolder,verbose):
     '''
     
     # thresholds corrected images for better display and saves
-    image1_corrected=image1_adjusted>0.1
+    #image1_corrected=image1_adjusted>0.1
     image2_corrected=image2_corrected>0.1
     image1_uncorrected[image1_uncorrected<0]=0
     save2imagesRGB(image1_uncorrected,image2_corrected_raw,
@@ -207,6 +202,7 @@ def alignImages(param,log1,session1):
             
             # generates lists of files to process    
             param.files2Process(filesFolder)
+            log1.report("-------> Processing Folder: {}".format(currentFolder))
             log1.report('About to process {} files\n'.format(len(param.fileList2Process)))
             writeString2File(dataFolder.outputFiles['alignImages']+'.bed', 
                           "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
@@ -256,7 +252,7 @@ def appliesRegistrations(param,log1,session1):
     - save registered images as npy arrays 
     '''
     
-    verbose=False
+    #verbose=False
     if param.param['alignImages']['operation']=='overwrite':
 
         # session
@@ -275,6 +271,7 @@ def appliesRegistrations(param,log1,session1):
             #currentFolder=dataFolder.listFolders[0] # only one folder processed so far...
             filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
             dataFolder.createsFolders(currentFolder,param)
+            log1.report("-------> Processing Folder: {}".format(currentFolder))
 
             #loads dicShifts with shifts for all ROIs and all labels
             dictShifts = loadJSON(dataFolder.outputFiles['dictShifts']+'.json')
