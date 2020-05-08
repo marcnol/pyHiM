@@ -19,6 +19,7 @@ after image segmentation.
 import glob,os
 import matplotlib.pylab as plt
 import numpy as np
+import uuid
 from astropy.stats import sigma_clipped_stats,SigmaClip,gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch,simple_norm
@@ -250,17 +251,29 @@ def makesSegmentations(fileName,param,log1,session1,dataFolder):
             # show results
             showsImageSources(im,im1_bkg_substracted,log1,output,outputFileName)
 
-            # formats results for output by adding barcodeID, CellID and ROI
+            # [ formats results Table for output by adding buid, barcodeID, CellID and ROI]
+            
+            # buid
+            buid=[]
+            for i in range(len(output)):
+                buid.append(str(uuid.uuid4()))   
+            colBuid = Column(buid,name='Buid',dtype=str)
+            
+           # barcodeID, cellID and ROI
             barcodeID=os.path.basename(fileName).split('_')[2].split('RT')[1]
             colROI=Column(int(ROI)*np.ones(len(output)),name='ROI #',dtype=int)
             colBarcode=Column(int(barcodeID)*np.ones(len(output)),name='Barcode #',dtype=int)
             colCellID=Column(np.zeros(len(output)),name='CellID #',dtype=int)
+            
+            # adds to table
             output.add_column(colBarcode,index=0)
             output.add_column(colROI,index=0)
+            output.add_column(colBuid,index=0)
             output.add_column(colCellID,index=2)
-               
-            for col in output.colnames:  
-                output[col].info.format = '%.8g'  # for consistent table output
+ 
+            # changes format of table              
+            #for col in output.colnames:  
+            #    output[col].info.format = '%.8g'  # for consistent table output
 
         elif label=='DAPI' and rootFileName.split('_')[2]=='DAPI':
             if param.param['segmentedObjects']['background_method']=='flat':

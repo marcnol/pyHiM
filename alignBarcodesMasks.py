@@ -23,7 +23,7 @@ TO SOLVE:
 
 import glob,os
 import argparse
-
+import uuid
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist
@@ -92,8 +92,11 @@ class cellID():
                 NbarcodesinMask[maskID]+=1
                 self.barcodesinMask['maskID_'+str(maskID)].append(i)
             
+        # Total number of masks assigned and not assigned    
         self.NcellsAssigned = np.count_nonzero(NbarcodesinMask>0)
         self.NcellsUnAssigned = self.numberMasks - self.NcellsAssigned
+        
+        # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask=NbarcodesinMask
         
     def buildsdistanceMatrix(self,mode='mean'):
@@ -106,9 +109,12 @@ class cellID():
         barcodeMapROI=self.barcodeMapROI
 
         # [ builds SCdistanceTable ]
-        barcodeMapROI_cellID=barcodeMapROI.group_by('CellID #') # ROI data sorted by cellID
-        ROIs,cellID,nBarcodes,barcodeIDs,p=[],[],[],[],[]
         
+        # sorts Table by cellID
+        barcodeMapROI_cellID=barcodeMapROI.group_by('CellID #') # ROI data sorted by cellID
+        ROIs,cellID,nBarcodes,barcodeIDs,p,cuid,buid=[],[],[],[],[],[],[]
+        
+        # iterates over all cell masks in an ROI  
         for key, group in zip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
             
             if key['CellID #']>1: # excludes cellID 0 as this is background
@@ -117,15 +123,21 @@ class cellID():
                 cellID.append(key['CellID #'])
                 nBarcodes.append(len(group))
                 barcodeIDs.append(group['Barcode #'].data)
+                buid.append(group['Buid'].data)
                 p.append(pairwise_distances(R))
+                cuid.append(str(uuid.uuid4())) # creates cell unique identifier
                 #print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
 
         SCdistanceTable=Table() #[],names=('CellID', 'barcode1', 'barcode2', 'distances'))
+        SCdistanceTable['Cuid']=cuid
         SCdistanceTable['ROI #']=ROIs
         SCdistanceTable['CellID #']=cellID
         SCdistanceTable['nBarcodes']=nBarcodes
         SCdistanceTable['Barcode #']=barcodeIDs
+        SCdistanceTable['Buid']=buid
         SCdistanceTable['PWDmatrix']=p
+        
+        # NEEED TO ADD THE IDENTITIES OF THE BARCODES
         
         self.SCdistanceTable=SCdistanceTable
 
@@ -161,20 +173,27 @@ class cellID():
 # FUNCTIONS
 # =============================================================================
 
-def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md'):
-    meanSCmatrix=pixelSize*np.nanmedian(SCmatrixCollated,axis=2)
-    #print('ROIs detected: {}'.format(ROIs))
+def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0):
+
+    # projects matrix by calculating median in the nCell direction
+    if len(SCmatrixCollated.shape)==3:
+        meanSCmatrix = pixelSize*np.nanmedian(SCmatrixCollated,axis=2)
+        nCells=SCmatrixCollated.shape[2]
+    else:
+        meanSCmatrix = pixelSize*SCmatrixCollated
+
+    # plots figure   
     fig=plt.figure(figsize=(10, 10))
-    pos = plt.imshow(meanSCmatrix,cmap='seismic')
+    pos = plt.imshow(meanSCmatrix,cmap=cm) # colormaps RdBu seismic
     plt.xlabel('barcode #')
     plt.ylabel('barcode #')
-    plt.title('PWD matrix'+' | ' + str(meanSCmatrix.shape[0]) + ' barcodes | n='+str(SCmatrixCollated.shape[2])+' | ROIs='+str(numberROIs))
+    plt.title(figtitle+ ' | ' + str(meanSCmatrix.shape[0]) + ' barcodes | n='+str(nCells)+' | ROIs='+str(numberROIs))
     plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
     plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
-    cbar=plt.colorbar(pos)
+    cbar=plt.colorbar(pos,fraction=0.046, pad=0.04)
     cbar.minorticks_on()
-    cbar.set_label('distance, um')
-    plt.clim(0,1.4)
+    cbar.set_label(cmtitle)
+    plt.clim(0,clim)
 
     plt.savefig(outputFileName+'_HiMmatrix.png')
     
@@ -182,7 +201,7 @@ def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputF
         plt.close()
     
     writeString2File(logNameMD,"![]({})\n".format(outputFileName+'_HiMmatrix.png'),'a')
-    
+
 def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logNameMD='log.md'):
     
     if not isnotebook():
@@ -204,15 +223,6 @@ def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logN
                     
     plt.xlabel('distance, um')
     plt.ylabel('counts')
-
-    '''
-    ax1.hist(pixelSize*SCmatrixCollated[0,1,:])
-    ax2.hist(pixelSize*SCmatrixCollated[0,2,:])
-    ax3.hist(pixelSize*SCmatrixCollated[1,2,:])
-    plt.xlabel('distance, um')
-    plt.ylabel('counts')
-    
-    '''
     plt.savefig(outputFileName+'_PWDhistograms.png')
    
     if not isnotebook():

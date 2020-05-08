@@ -43,8 +43,8 @@ if __name__ == '__main__':
     if args.rootFolder:
         rootFolder=args.rootFolder
     else:
-        rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
-        #rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+        #rootFolder='/home/marcnol/data/Embryo_debug_dataset'
+        rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
         
         #rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
     
