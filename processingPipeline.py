@@ -14,7 +14,7 @@ The main() will search for parameter files within the folder provided. All ope-e
 """
 # =============================================================================
 # IMPORTS
-# =============================================================================
+# =============================================================================q
 
 from makeProjections import makeProjections
 from alignImages import alignImages, appliesRegistrations

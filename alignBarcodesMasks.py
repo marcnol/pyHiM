@@ -39,6 +39,10 @@ from astropy.stats import sigma_clip,sigma_clipped_stats
 from photutils.segmentation import SegmentationImage
 from sklearn.metrics import pairwise_distances
 
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import LeaveOneOut
+from sklearn.neighbors import KernelDensity
+
 # =============================================================================
 # CLASSES
 # =============================================================================
@@ -172,16 +176,75 @@ class cellID():
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
+def findsOptimalKernelWidth(distanceDistribution):
+    bandwidths = 10 ** np.linspace(-1, 1, 100)
+    grid = GridSearchCV(KernelDensity(kernel='gaussian'),
+                        {'bandwidth': bandwidths},
+                        cv=LeaveOneOut())
+    grid.fit(distanceDistribution[:, None]);
+    return grid.best_params_    
 
-def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0):
+def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth = False): 
 
+    nan_array = np.isnan(distanceDistribution0)
+    
+    not_nan_array = ~ nan_array
+    
+    distanceDistribution = distanceDistribution0[not_nan_array]
+    
+        
+    # instantiate and fit the KDE model
+    if optimizeKernelWidth:
+        kernelWidth = findsOptimalKernelWidth(distanceDistribution)['bandwidth']
+    else:
+        kernelWidth  = 0.3
+        
+    kde = KernelDensity(bandwidth=kernelWidth, kernel='gaussian')
+    kde.fit(distanceDistribution[:, None])
+    
+    # score_samples returns the log of the probability density
+    logprob = kde.score_samples(x_d[:, None])
+    
+    return logprob,distanceDistribution
+
+def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize,optimizeKernelWidth=False):
+    distanceDistribution0 = pixelSize*SCmatrixCollated[bin1,bin2,:]
+    x_d = np.linspace(0, 5, 2000)
+    
+    logprob,distanceDistribution  = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
+    kernelDistribution=10*np.exp(logprob)
+    maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
+    
+    return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
+
+def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0,mode='median',inverseMatrix=False):
+    Nbarcodes = SCmatrixCollated.shape[0]
     # projects matrix by calculating median in the nCell direction
+    
     if len(SCmatrixCollated.shape)==3:
-        meanSCmatrix = pixelSize*np.nanmedian(SCmatrixCollated,axis=2)
-        nCells=SCmatrixCollated.shape[2]
+        if mode=='median':
+            # calculates the median of all values
+            meanSCmatrix = pixelSize*np.nanmedian(SCmatrixCollated,axis=2)
+            nCells=SCmatrixCollated.shape[2]
+        elif mode=='KDE':
+            # performs a Kernel Estimation to calculate the max of the distribution
+            meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
+            for bin1 in range(Nbarcodes):
+                for bin2 in range(Nbarcodes):
+                    if bin1!=bin2:
+                        maximumKernelDistribution, _, _, _= distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                                                                                       bin1,
+                                                                                                       bin2, 
+                                                                                                       pixelSize,
+                                                                                                       optimizeKernelWidth=False)
+                        meanSCmatrix[bin1,bin2]= maximumKernelDistribution
     else:
         meanSCmatrix = pixelSize*SCmatrixCollated
 
+    # Calculates the inverse distance matrix if requested in the argument. 
+    if inverseMatrix:
+        meanSCmatrix = np.reciprocal(meanSCmatrix)
+        
     # plots figure   
     fig=plt.figure(figsize=(10, 10))
     pos = plt.imshow(meanSCmatrix,cmap=cm) # colormaps RdBu seismic
@@ -202,12 +265,17 @@ def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputF
     
     writeString2File(logNameMD,"![]({})\n".format(outputFileName+'_HiMmatrix.png'),'a')
 
-def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logNameMD='log.md'):
+
+
+def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logNameMD='log.md',mode='hist',limitNplots=10):
     
     if not isnotebook():
         NplotsX = NplotsY =  SCmatrixCollated.shape[0]
     else:
-        NplotsX = NplotsY =  min([10,SCmatrixCollated.shape[0]]) # sets a max of subplots if you are outputing to screen!
+        if limitNplots==0:
+            NplotsX = NplotsY =  SCmatrixCollated.shape[0]
+        else:
+            NplotsX = NplotsY =  min([limitNplots,SCmatrixCollated.shape[0]]) # sets a max of subplots if you are outputing to screen!
             
     bins=np.arange(0,4,0.25)
     
@@ -219,8 +287,18 @@ def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logN
         for j in range(NplotsY):
             if i!=j:
                 #print('Printing [{}:{}]'.format(i,j))
-                axs[i,j].hist(pixelSize*SCmatrixCollated[i,j,:],bins=bins)
-                    
+                if mode=='hist':
+                    axs[i,j].hist(pixelSize*SCmatrixCollated[i,j,:],bins=bins)
+                else:
+                    maxKDE, distanceDistribution, KDE, x_d = distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                                                                                        i,
+                                                                                                        j, 
+                                                                                                        pixelSize,
+                                                                                                        optimizeKernelWidth=False)
+                    axs[i,j].fill_between(x_d, KDE, alpha=0.5)
+                    axs[i,j].plot(distanceDistribution, np.full_like(distanceDistribution, -0.01), '|k', markeredgewidth=1)
+                    axs[i,j].vlines(maxKDE,0,KDE.max(),colors='r')
+
     plt.xlabel('distance, um')
     plt.ylabel('counts')
     plt.savefig(outputFileName+'_PWDhistograms.png')
@@ -230,6 +308,23 @@ def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logN
 
     writeString2File(logNameMD,"![]({})\n".format(outputFileName+'_PWDhistograms.png'),'a')
 
+def calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold=0.25):    
+    #SCthresholdMatrix=iSCmatrixCollated<threshold
+    
+    nX = nY =  iSCmatrixCollated.shape[0]
+    nCells = iSCmatrixCollated.shape[2]
+    SCmatrix=np.zeros((nX,nY))
+    
+    for i in range(nX):
+        for j in range(nY):
+            if i!=j:
+                distanceDistribution = pixelSize*iSCmatrixCollated[i,j,:]
+                probability = len(np.nonzero(distanceDistribution<threshold)[0])/nCells
+                SCmatrix[i,j] = probability
+                
+
+    return SCmatrix,nCells
+    
 def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize=0.1, logNameMD='log.md'):     
     
     # Processes Tables 
@@ -289,7 +384,7 @@ def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, p
     np.savetxt(outputFileName+'_uniqueBarcodes.ecsv', uniqueBarcodes, delimiter=" ",fmt='%d')
    
     # plots outputs
-    plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs, outputFileName,logNameMD)
+    plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs, outputFileName,logNameMD,mode='KernelDensityEstimator') # experimental
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName,logNameMD)
     
 
