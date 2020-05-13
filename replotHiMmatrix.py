@@ -29,7 +29,7 @@ ListRootFolders=[\
                  '/mnt/disk2/marcnol/data/Experiment_3/007_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_3/016_Embryo/buildsPWDmatrix'\
                  ]
-
+outputFolder='/mnt/disk2/marcnol/data/Experiment_3/'
 
 
 pixelSize=0.1
@@ -95,8 +95,9 @@ cScale=SCmatrix.max()/20
 plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
     
-  
-    
+np.savetxt(outputFolder+os.sep+'CombinedMatrix.dat', SCmatrix, fmt='%.4f', \
+           delimiter=' ', newline='\n', header='Combined contact probability matrix', \
+           footer='', comments='# ', encoding=None)
     
     
     

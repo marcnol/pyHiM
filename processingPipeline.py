@@ -57,7 +57,8 @@ if __name__ == '__main__':
     
     labels2Process = [{'label':'fiducial', 'parameterFile': 'infoList_fiducial.json'},
                       {'label': 'barcode', 'parameterFile': 'infoList_barcode.json'},
-                      {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'}]
+                      {'label':'DAPI', 'parameterFile': 'infoList_DAPI.json'},
+                      {'label':'RNA', 'parameterFile': 'infoList_RNA.json'}]
                         
      # session
     session1=session(rootFolder,'processingPipeline')

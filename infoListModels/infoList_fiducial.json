@@ -1,0 +1,48 @@
+{
+    "acquisition": {
+        "label": "fiducial",
+        "positionROIinformation": 3
+    },
+    "alignImages": {
+        "folder": "alignImages",
+        "operation": "overwrite",
+        "outputFile": "alignImages.bed",
+        "referenceFiducial": "RT33"
+    },
+    "image": {
+        "claheGridH": 8,
+        "claheGridW": 8,
+        "currentPlane": 1
+    },
+    "projectsBarcodes": {
+        "folder": "projectsBarcodes",
+        "operation": "overwrite",
+        "outputFile": "projectsBarcodes"
+    },
+    "segmentedObjects": {
+        "area_max": 10,
+        "area_min": 10,
+        "background_method": "inhomogeneous",
+        "background_sigma": 3.0,
+        "folder": "segmentedObjects",
+        "fwhm": 3.0,
+        "brightest": 1100, 
+        "intensity_max": 59,
+        "intensity_min": 0,
+        "operation": "overwrite",
+        "outputFile": "segmentedObjects",
+        "threshold_over_std": 1.0
+    },
+    "zProject": {
+        "display": true,
+        "folder": "zProject",
+        "mode": "full",
+        "operation": "skip",
+        "saveImage": true,
+        "windowSecurity": 2,
+        "zProjectOption": "sum",
+        "zmax": 59,
+        "zmin": 1,
+        "zwindows": 10
+    }
+}
