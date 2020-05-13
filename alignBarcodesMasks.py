@@ -211,11 +211,14 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
     distanceDistribution0 = pixelSize*SCmatrixCollated[bin1,bin2,:]
     x_d = np.linspace(0, 5, 2000)
     
-    logprob,distanceDistribution  = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
-    kernelDistribution=10*np.exp(logprob)
-    maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
-    
-    return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
+    # checks that distribution is not empty
+    if distanceDistribution0.shape[0]>0: 
+        logprob,distanceDistribution  = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
+        kernelDistribution=10*np.exp(logprob)
+        maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
+        return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
+    else:
+        return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
 
 def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0,mode='median',inverseMatrix=False):
     Nbarcodes = SCmatrixCollated.shape[0]
@@ -384,7 +387,7 @@ def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, p
     np.savetxt(outputFileName+'_uniqueBarcodes.ecsv', uniqueBarcodes, delimiter=" ",fmt='%d')
    
     # plots outputs
-    plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs, outputFileName,logNameMD,mode='KernelDensityEstimator') # experimental
+    plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs, outputFileName,logNameMD,mode='median') # need to validate use of KDE. For the moment it does not handle well null distributions
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName,logNameMD)
     
 

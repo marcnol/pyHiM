@@ -81,7 +81,6 @@ def makeProjections(param,log1,session1):
     writeString2File(log1.fileNameMD,"## {}: {}\n".format(sessionName,param.param['acquisition']['label']),'a') # initialises MD file
     
     for currentFolder in dataFolder.listFolders:
-        #currentFolder=dataFolder.listFolders[0]
         filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
         dataFolder.createsFolders(currentFolder,param)
     

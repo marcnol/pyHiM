@@ -247,7 +247,7 @@ def alignImages(param,log1,session1):
 
 def appliesRegistrations(param,log1,session1):
     '''This function will 
-    - load DAPI and barcode 2D projected images, 
+    - load DAPI, RNA and barcode 2D projected images, 
     - apply registrations
     - save registered images as npy arrays 
     '''
@@ -291,6 +291,7 @@ def appliesRegistrations(param,log1,session1):
                          shiftArray=dictShifts['ROI:'+ROI][label]
                     except KeyError:
                          shiftArray=None
+                         log1.report("Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(ROI,label),'ERROR')
                     
                     if shiftArray!=None:
                         

@@ -246,6 +246,11 @@ class Parameters:
             self.fileList2Process=[file for file in filesFolder 
                       if file.split('_')[-1].split('.')[0]=='ch00' and 'DAPI' in file.split('_')]
 
+        # selects DAPIch2 files
+        if self.param['acquisition']['label']=='RNA':
+            self.fileList2Process=[file for file in filesFolder 
+                      if file.split('_')[-1].split('.')[0]=='ch02' and 'DAPI' in file.split('_')]
+
         # selects barcode files
         elif self.param['acquisition']['label']=='barcode':
             self.fileList2Process=[file for file in filesFolder 

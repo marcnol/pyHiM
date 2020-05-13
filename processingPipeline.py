@@ -91,7 +91,8 @@ if __name__ == '__main__':
             appliesRegistrations(param,log1,session1)
 
             # [segments DAPI and spot masks]
-            segmentMasks(param,log1,session1)
+            if label!='RNA' and param.param['acquisition']['label']!='RNA':
+                segmentMasks(param,log1,session1)
 
         # [2D projects all barcodes in an ROI]
         if label=='barcode':
