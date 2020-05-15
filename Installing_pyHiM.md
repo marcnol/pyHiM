@@ -76,6 +76,12 @@ then copy the configuration files to the directory where you want to run pyHiM
 cp /home/rata/Repositories/pyHiM/infoListModels/* /mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/
 ```
 
+specify the RT that should be used as referenceFiducial
+
+```bash
+bash infoList_changeRT.sh
+```
+
 run by:
 
 ```bash
