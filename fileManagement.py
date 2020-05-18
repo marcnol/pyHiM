@@ -241,6 +241,18 @@ class Parameters:
     # method returns label specific filenames from filename list
     def files2Process(self, filesFolder):
 
+        # finds if there is 2 or 3 channels for DAPI
+        fileList2Process=[file for file in filesFolder 
+                  if file.split('_')[-1].split('.')[0]=='ch02' and 'DAPI' in file.split('_')]
+        
+        if len(fileList2Process)>0:
+            channelDAPI_fiducial='ch02'
+            channelDAPI_RNA='ch01'
+        else:
+            channelDAPI_fiducial='ch01'
+            channelDAPI_RNA='ch04'
+            
+        
         # selects DAPI files
         if self.param['acquisition']['label']=='DAPI':
             self.fileList2Process=[file for file in filesFolder 
@@ -249,7 +261,7 @@ class Parameters:
         # selects DAPIch2 files
         if self.param['acquisition']['label']=='RNA':
             self.fileList2Process=[file for file in filesFolder 
-                      if file.split('_')[-1].split('.')[0]=='ch02' and 'DAPI' in file.split('_')]
+                      if file.split('_')[-1].split('.')[0]==channelDAPI_RNA and 'DAPI' in file.split('_')]
 
         # selects barcode files
         elif self.param['acquisition']['label']=='barcode':
@@ -260,7 +272,7 @@ class Parameters:
         elif self.param['acquisition']['label']=='fiducial':
             self.fileList2Process=[file for file in filesFolder 
                if (len([i for i in file.split('_') if 'RT' in i])>0 and file.split('_')[-1].split('.')[0]=='ch00') or 
-                   ('DAPI' in file.split('_') and file.split('_')[-1].split('.')[0]=='ch01')] 
+                   ('DAPI' in file.split('_') and file.split('_')[-1].split('.')[0]==channelDAPI_fiducial)] 
 
 
 

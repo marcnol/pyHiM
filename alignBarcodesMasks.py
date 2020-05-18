@@ -220,7 +220,7 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
     else:
         return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
 
-def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0,mode='median',inverseMatrix=False):
+def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputFileName='test',logNameMD='log.md',clim=1.4,cm='seismic',figtitle='PWD matrix',cmtitle='distance, um',nCells=0,mode='median',inverseMatrix=False,cMin=0):
     Nbarcodes = SCmatrixCollated.shape[0]
     # projects matrix by calculating median in the nCell direction
     
@@ -259,7 +259,7 @@ def plotMatrix(SCmatrixCollated,uniqueBarcodes, pixelSize, numberROIs=1, outputF
     cbar=plt.colorbar(pos,fraction=0.046, pad=0.04)
     cbar.minorticks_on()
     cbar.set_label(cmtitle)
-    plt.clim(0,clim)
+    plt.clim(cMin,clim)
 
     plt.savefig(outputFileName+'_HiMmatrix.png')
     
