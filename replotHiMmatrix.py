@@ -91,7 +91,7 @@ print('{} datasets loaded'.format(len(SCmatrixCollated)))
 
 #%% plots distance matrix for each dataset
 for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
-    plotMatrix(iSCmatrixCollated,iuniqueBarcodes, pixelSize,cm='terrain',clim=1.4,mode='KDE') # twilight_shifted_r 1.4, mode: median KDE
+    plotMatrix(iSCmatrixCollated,iuniqueBarcodes, pixelSize,cm='terrain',clim=1.4,mode='KDE',nCells=SCmatrixCollated.shape[2]) # twilight_shifted_r 1.4, mode: median KDE
 
 #%% plots histograms for each dataset
 for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
@@ -107,7 +107,8 @@ for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
                clim=6, 
                figtitle='Inverse PWD',
                cmtitle='inverse distance, 1/nm',
-               inverseMatrix=True, 
+               inverseMatrix=True,
+               nCells=SCmatrixCollated.shape[2],
                mode='KDE') # twilight_shifted_r
 
 #%% Plots contact prpbability matrices for each dataset
@@ -132,10 +133,10 @@ for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
     
     commonSetUniqueBarcodes = iuniqueBarcodes
     
-SCmatrix, nCells=calculateContactProbabilityMatrix(SCmatrixAllDatasets,commonSetUniqueBarcodes,pixelSize,threshold)
-cScale=SCmatrix.max()/10            
+SCmatrix, nCells=calculateContactProbabilityMatrix(SCmatrixAllDatasets,commonSetUniqueBarcodes,pixelSize,threshold,norm='nonNANs')# norm: nCells (default), nonNANs
+cScale=SCmatrix.max()/15          
 
-plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
+plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, cMin=0.01,figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
 np.savetxt(outputFolder+os.sep+'CombinedMatrix'+fileTag+'.dat', SCmatrix, fmt='%.4f', \
            delimiter=' ', newline='\n', header='Combined contact probability matrix', \

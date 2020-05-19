@@ -311,7 +311,7 @@ def plotDistanceHistograms(SCmatrixCollated,pixelSize,outputFileName='test',logN
 
     writeString2File(logNameMD,"![]({})\n".format(outputFileName+'_PWDhistograms.png'),'a')
 
-def calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold=0.25):    
+def calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold=0.25,norm = 'nCells'):    
     #SCthresholdMatrix=iSCmatrixCollated<threshold
     
     nX = nY =  iSCmatrixCollated.shape[0]
@@ -322,7 +322,16 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSiz
         for j in range(nY):
             if i!=j:
                 distanceDistribution = pixelSize*iSCmatrixCollated[i,j,:]
-                probability = len(np.nonzero(distanceDistribution<threshold)[0])/nCells
+                if norm == 'nCells':
+                    probability = len(np.nonzero(distanceDistribution<threshold)[0])/nCells
+                    # print('Using nCells normalisation')
+                elif norm == 'nonNANs':
+                    numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
+                    if nCells == numberNANs:
+                        probability = 1
+                    else:
+                        probability = len(np.nonzero(distanceDistribution<threshold)[0])/(nCells-numberNANs)
+                    # print('Using NonNANs normalisation {}'.format(nCells-numberNANs))
                 SCmatrix[i,j] = probability
                 
 

@@ -160,10 +160,12 @@ class Image():
             fig.add_axes(ax)
             #ax.imshow(self.data_2D, aspect='equal')
             ax.imshow(self.data_2D, origin='lower', cmap='Greys_r', norm=norm)
-
-        if save:
+            return ax
+        
+        if save and not show:
             plt.savefig(outputName)
             plt.close()
+            
     
     
 # =============================================================================
