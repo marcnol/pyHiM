@@ -32,7 +32,7 @@ if nArgs > 2:
     
     for i in range(2,nArgs): 
         print("Processing Embryo #{}".format(sys.argv[i]))
-        command2Run1='nice -19 processingPipeline.py -F '+rootDir+EmbryoTag+str(i)
+        command2Run1='nice -19 processingPipeline.py -F '+rootDir+EmbryoTag+sys.argv[i]
         os.system(command2Run1)
         command2Run2='zipHuMrun.py -F '+rootDir+EmbryoTag+str(i)
         os.system(command2Run2)

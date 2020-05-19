@@ -41,6 +41,7 @@ ListRootFolders=[\
 fileTag='wt_HresDocLocus'    
 '''
 # HiRes doc TAD -zld
+fileTag='zld_docTAD'    
 ListRootFolders=[\
               '/mnt/disk2/marcnol/data/Experiment_5/0_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/1_Embryo/buildsPWDmatrix',\
@@ -53,7 +54,16 @@ ListRootFolders=[\
              '/mnt/disk2/marcnol/data/Experiment_5/8_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/9_Embryo/buildsPWDmatrix'\
              ]
-fileTag='zld_docTAD'    
+
+# HiRes doc TAD -zld
+fileTag='HiRes_snaTAD'    
+ListRootFolders=[\
+              '/mnt/disk2/marcnol/data/Experiment_4/0_Embryo/buildsPWDmatrix',\
+              '/mnt/disk2/marcnol/data/Experiment_4/1_Embryo/buildsPWDmatrix',\
+              '/mnt/disk2/marcnol/data/Experiment_4/2_Embryo/buildsPWDmatrix',\
+              '/mnt/disk2/marcnol/data/Experiment_4/4_Embryo/buildsPWDmatrix',\
+              '/mnt/disk2/marcnol/data/Experiment_4/5_Embryo/buildsPWDmatrix'\
+             ]
 
 embryoStage = [\
                 #'fucked-up',\

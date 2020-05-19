@@ -338,17 +338,19 @@ def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, p
     numberROIs=len(barcodeMapROI.groups.keys)
     filesinFolder=glob.glob(currentFolder+os.sep+'*.tif')
 
+    print('\nROIs detected: {}'.format(barcodeMapROI.groups.keys))
+
     for ROI in range(numberROIs):
         nROI=barcodeMapROI.groups.keys[ROI][0] # need to iterate over the first index
     
-        print('\nROIs detected: {}'.format(barcodeMapROI.groups.keys))
+        print('Working on ROI# {}'.format(nROI))
         
         barcodeMapSingleROI=barcodeMap.group_by('ROI #').groups[ROI]
         
         # finds file for masks
         fileList2Process=[file for file in filesinFolder 
                   if file.split('_')[-1].split('.')[0]=='ch00' and
-                  'DAPI' in file.split('_')
+                  'DAPI' in os.path.basename(file).split('_')
                   and int(os.path.basename(file).split('_')[3])==nROI]
         
         if len(fileList2Process)>0:
@@ -380,7 +382,15 @@ def buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, p
                     SCmatrixCollated=cellROI.SCmatrix
                 del cellROI
             else:
-                print('Error, no DAPI mask file found for {}\n Expected: {}',format(fileNameBarcodeCoordinates, fullFileNameROImasks))
+                print('Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n'.format(nROI,fileNameBarcodeCoordinates))
+                print('File I was searching for: {}'.format(fullFileNameROImasks))
+                print('Debug: ')
+                for file in filesinFolder:
+                    if file.split('_')[-1].split('.')[0]=='ch00' and 'DAPI' in file.split('_') and int(os.path.basename(file).split('_')[3])==nROI:
+                        print('Hit found!')
+                    print('fileSplit:{}, DAPI in filename: {}, ROI: {}'.format(file.split('_')[-1].split('.')[0],\
+                                                         'DAPI' in os.path.basename(file).split('_'),\
+                                                          int(os.path.basename(file).split('_')[3])))
                 
     # saves output
     np.save(outputFileName+'_HiMscMatrix.npy',SCmatrixCollated)
