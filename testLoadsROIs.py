@@ -45,3 +45,30 @@ for imask in range(masks.shape[2]):
 plt.show()
 
 
+#%%
+
+from astropy.table import Table, Column,vstack
+
+
+ROI=1
+fileNameDAPImask='./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch00_Masks.npy'
+fileName='./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered_SNDmask_sna.npy'
+# load DAPI mask
+maskDAPI=Image()
+maskDAPI.data_2D=np.load(fileNameDAPImask).squeeze()
+
+# load SND mask
+maskSND=Image()
+maskSND.data_2D=np.load(fileName).squeeze()
+
+# matches cells and SND masks
+newMatrix=maskDAPI.data_2D*maskSND.data_2D
+cellsWithinMask=np.unique(newMatrix)
+allResults=Table()
+
+if len(cellsWithinMask)>0:
+    newTable=Table()
+    newTable['ROI #']=int(ROI)*np.ones(len(cellsWithinMask))
+    newTable['CellID #']=cellsWithinMask
+    allResults=vstack([allResults,newTable])
+    

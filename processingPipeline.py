@@ -44,13 +44,14 @@ if __name__ == '__main__':
         rootFolder=args.rootFolder
     else:
         #rootFolder='/home/marcnol/data/Embryo_debug_dataset'
-        rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
         
         #rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
     
         #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
         #rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
         #rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
+        rootFolder='.'
 
     print("parameters> rootFolder: {}".format(rootFolder))
     now=datetime.now()

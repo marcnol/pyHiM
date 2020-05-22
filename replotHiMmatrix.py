@@ -16,6 +16,17 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 from alignBarcodesMasks import distributionMaximumKernelDensityEstimation,calculateContactProbabilityMatrix
 
+def normalizeMatrix(SCmatrix_wt):
+    SCmatrix_wt_normalized=SCmatrix_wt 
+    nBins = SCmatrix_wt.shape[0]
+    
+    for iRow in range(nBins):
+        rowSum = np.sum(SCmatrix_wt[iRow,:])
+        for iCol in range(nBins):
+            SCmatrix_wt_normalized[iRow,iCol] = SCmatrix_wt_normalized[iRow,iCol] / rowSum
+            SCmatrix_wt_normalized[iCol,iRow] = SCmatrix_wt_normalized[iCol,iRow] / rowSum
+    return SCmatrix_wt_normalized
+
 
 #%% Lists and loads datasets from different embryos
 
@@ -42,6 +53,12 @@ fileTag='wt_HresDocLocus'
 '''
 # HiRes doc TAD -zld
 fileTag='zld_docTAD'    
+# 5:OK, 
+# 4: 1173, nc13-14. Increased max area to 2000 to make it work better
+# 2: 221, early embryo nc12?
+# 1: 1467, 
+# 0:174 very early embryo nc10-11?
+
 ListRootFolders=[\
               '/mnt/disk2/marcnol/data/Experiment_5/0_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/1_Embryo/buildsPWDmatrix',\
@@ -116,7 +133,7 @@ for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
 threshold=.25
 
 for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
-    SCmatrix, nCells=calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold)
+    SCmatrix, nCells=calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold,norm='nonNANs')# norm: nCells (default), nonNANs
     cScale=SCmatrix.max()/15            
     plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
@@ -134,7 +151,7 @@ for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
     commonSetUniqueBarcodes = iuniqueBarcodes
     
 SCmatrix, nCells=calculateContactProbabilityMatrix(SCmatrixAllDatasets,commonSetUniqueBarcodes,pixelSize,threshold,norm='nonNANs')# norm: nCells (default), nonNANs
-cScale=SCmatrix.max()/15          
+cScale=SCmatrix.max()/20          
 
 plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, cMin=0.01,figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
@@ -147,8 +164,13 @@ np.savetxt(outputFolder+os.sep+'UniqueBarcodes'+fileTag+'.dat', iuniqueBarcodes,
            footer='', comments='# ', encoding=None)
     
     
-    
-    
+#%%
+
+# SCmatrix_wt_normalized=normalizeMatrix(SCmatrix)    
+
+# cScale,cMin = SCmatrix_wt_normalized.max(), SCmatrix_wt_normalized.min()
+# plotMatrix(SCmatrix_wt_normalized,uniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells,cMin=cMin) 
+
     
     
     

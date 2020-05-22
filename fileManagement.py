@@ -24,10 +24,10 @@ import json
 # =============================================================================
  
 class log:
-    def __init__(self,rootFolder='./'):
+    def __init__(self,rootFolder='./',fileNameRoot='HiM_analysis'):
         now=datetime.now()
         dateTime=now.strftime("%d%m%Y_%H%M%S")
-        self.fileName=rootFolder+os.sep+'HiM_analysis'+dateTime+'.log'
+        self.fileName=rootFolder+os.sep+fileNameRoot+dateTime+'.log'
         self.fileNameMD=self.fileName.split('.')[0]+'.md'
 
         self.eraseFile()
@@ -96,6 +96,21 @@ class folders():
 
     # creates folders for outputs
     def createsFolders(self,filesFolder,param):
+        '''
+        this function will create all the folders required for processingPipeline
+
+        Parameters
+        ----------
+        filesFolder : string 
+            rootFolder
+        param : Parameters Class 
+            with filenames of folders to be created
+
+        Returns
+        -------
+        None.
+
+        '''
         #self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
         #self.createSingleFolder(self.zProjectFolder)            
 

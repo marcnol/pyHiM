@@ -39,4 +39,6 @@ if nArgs == 3:
         
         
 else:
-    print('not enough arguments.')
+    print('not enough arguments!\n')
+    print('Please specify the label of the old RT and that of the new RT, as follows:\n')
+    print('$ changeRT_infolist.py RT33 RT95\n')
