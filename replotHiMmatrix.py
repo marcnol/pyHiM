@@ -31,14 +31,13 @@ def normalizeMatrix(SCmatrix_wt):
 #%% Lists and loads datasets from different embryos
 
 # HiRes doc TAD
-ListRootFolders=['/mnt/disk2/marcnol/data/Experiment_19/026_Embryo/buildsPWDmatrix',\
+    
+ListData={}
+ListData['wt_docTAD']=['/mnt/disk2/marcnol/data/Experiment_19/026_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_19/009_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_19/006_Embryo/buildsPWDmatrix']
-fileTag='wt_docTAD'    
-    
-'''    
-# HiRes doc locus    
-ListRootFolders=[\
+
+ListData['wt_HresDocLocus']=[\
                  #'/mnt/disk2/marcnol/data/Experiment_3/019_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_3/007_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_3/016_Embryo/buildsPWDmatrix',\
@@ -49,17 +48,7 @@ ListRootFolders=[\
                  '/mnt/disk2/marcnol/data/Experiment_3/004_Embryo/buildsPWDmatrix',\
                  '/mnt/disk2/marcnol/data/Experiment_3/005_Embryo/buildsPWDmatrix'\
                  ]
-fileTag='wt_HresDocLocus'    
-'''
-# HiRes doc TAD -zld
-fileTag='zld_docTAD'    
-# 5:OK, 
-# 4: 1173, nc13-14. Increased max area to 2000 to make it work better
-# 2: 221, early embryo nc12?
-# 1: 1467, 
-# 0:174 very early embryo nc10-11?
-
-ListRootFolders=[\
+ListData['zld_docTAD']=[\
               '/mnt/disk2/marcnol/data/Experiment_5/0_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/1_Embryo/buildsPWDmatrix',\
              # '/mnt/disk2/marcnol/data/Experiment_5/2_Embryo/buildsPWDmatrix',\
@@ -70,11 +59,14 @@ ListRootFolders=[\
              '/mnt/disk2/marcnol/data/Experiment_5/7_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/8_Embryo/buildsPWDmatrix',\
              '/mnt/disk2/marcnol/data/Experiment_5/9_Embryo/buildsPWDmatrix'\
-             ]
+             ]    
+# 5:OK, 
+# 4: 1173, nc13-14. Increased max area to 2000 to make it work better
+# 2: 221, early embryo nc12?
+# 1: 1467, 
+# 0:174 very early embryo nc10-11?
 
-# HiRes doc TAD -zld
-fileTag='HiRes_snaTAD'    
-ListRootFolders=[\
+ListData['HiRes_snaTAD']=[\
               '/mnt/disk2/marcnol/data/Experiment_4/0_Embryo/buildsPWDmatrix',\
               '/mnt/disk2/marcnol/data/Experiment_4/1_Embryo/buildsPWDmatrix',\
               '/mnt/disk2/marcnol/data/Experiment_4/2_Embryo/buildsPWDmatrix',\
@@ -94,8 +86,12 @@ os.chdir(outputFolder)
 
 pixelSize=0.1
 SCmatrixCollated, uniqueBarcodes = [], []
+tags2process=list(ListData.keys())
+print('Datasets that can be loaded: {}'.format(tags2process))
+dataset2Load=3
+print('Dataset to load: {}'.format(tags2process[dataset2Load]))
 
-for rootFolder in ListRootFolders:
+for rootFolder in ListData[tags2process[dataset2Load]]:
     
     fileNamMatrix=rootFolder+os.sep+'buildsPWDmatrix_HiMscMatrix.npy'
     fileNameBarcodes=rootFolder+os.sep+'buildsPWDmatrix_uniqueBarcodes.ecsv'
@@ -108,7 +104,7 @@ print('{} datasets loaded'.format(len(SCmatrixCollated)))
 
 #%% plots distance matrix for each dataset
 for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
-    plotMatrix(iSCmatrixCollated,iuniqueBarcodes, pixelSize,cm='terrain',clim=1.4,mode='KDE',nCells=SCmatrixCollated.shape[2]) # twilight_shifted_r 1.4, mode: median KDE
+    plotMatrix(iSCmatrixCollated,iuniqueBarcodes, pixelSize,cm='terrain',clim=1.4,mode='KDE',nCells=iSCmatrixCollated.shape[2]) # twilight_shifted_r 1.4, mode: median KDE
 
 #%% plots histograms for each dataset
 for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
@@ -125,17 +121,18 @@ for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
                figtitle='Inverse PWD',
                cmtitle='inverse distance, 1/nm',
                inverseMatrix=True,
-               nCells=SCmatrixCollated.shape[2],
+               nCells=iSCmatrixCollated.shape[2],
                mode='KDE') # twilight_shifted_r
 
 #%% Plots contact prpbability matrices for each dataset
 
 threshold=.25
 
-for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated,uniqueBarcodes):
+for iSCmatrixCollated, iuniqueBarcodes,iTag,i in zip(SCmatrixCollated,uniqueBarcodes,tags2process,range(len(tags2process))):
     SCmatrix, nCells=calculateContactProbabilityMatrix(iSCmatrixCollated,iuniqueBarcodes,pixelSize,threshold,norm='nonNANs')# norm: nCells (default), nonNANs
     cScale=SCmatrix.max()/15            
-    plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
+    plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM:'+iTag+':'+str(i) \
+               ,cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
 #%% combines matrices from different embryos and calculates integrated contact probability matrix
 threshold=0.25
@@ -155,11 +152,11 @@ cScale=SCmatrix.max()/20
 
 plotMatrix(SCmatrix,iuniqueBarcodes, pixelSize,cm='terrain',clim=cScale, cMin=0.01,figtitle='HiM counts',cmtitle='probability',nCells=nCells) # twilight_shifted_r
     
-np.savetxt(outputFolder+os.sep+'CombinedMatrix'+fileTag+'.dat', SCmatrix, fmt='%.4f', \
+np.savetxt(outputFolder+os.sep+'CombinedMatrix'+tags2process[dataset2Load]+'.dat', SCmatrix, fmt='%.4f', \
            delimiter=' ', newline='\n', header='Combined contact probability matrix', \
            footer='', comments='# ', encoding=None)
     
-np.savetxt(outputFolder+os.sep+'UniqueBarcodes'+fileTag+'.dat', iuniqueBarcodes, fmt='%.4f', \
+np.savetxt(outputFolder+os.sep+'UniqueBarcodes'+tags2process[dataset2Load]+'.dat', iuniqueBarcodes, fmt='%.4f', \
            delimiter=' ', newline='\n', header='unique barcodes', \
            footer='', comments='# ', encoding=None)
     
