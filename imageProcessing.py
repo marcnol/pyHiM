@@ -162,7 +162,7 @@ class Image:
     # displays image and shows it
     def imageShow(
         self,
-        show=True,
+        show=False,
         cmap="plasma",
         size=(10, 10),
         dpi=300,

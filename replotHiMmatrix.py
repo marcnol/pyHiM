@@ -35,7 +35,6 @@ def normalizeMatrix(SCmatrix_wt):
             )
     return SCmatrix_wt_normalized
 
-
 #%% Lists and loads datasets from different embryos
 
 # HiRes doc TAD

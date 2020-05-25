@@ -25,7 +25,7 @@ and accept all the questions and default installation folder. Then update anacon
 
 ```bash
 bash
-conda update anaconda
+yes
 ```
 
 You are set.
