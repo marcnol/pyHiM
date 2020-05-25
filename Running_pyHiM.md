@@ -81,7 +81,46 @@ Other utilities have been written to retrieve data from a run to a remote server
 
 If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data. 
 
- 
+### Running several samples at once
+
+You can now use a new script to call several samples in one go:
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import os
+import sys
+import argparse
+
+nArgs=len(sys.argv)
+print("Total arguments passed: {}".format(nArgs))
+EmbryoTag='Embryo_'
+if nArgs > 2: 
+    rootDir=sys.argv[1]
+    print("parameters> rootFolder: {}".format(rootDir))
+    
+    for i in range(2,nArgs): 
+        print("Processing Embryo #{}".format(sys.argv[i]))
+        command2Run1='nice -19 processingPipeline.py -F '+rootDir+EmbryoTag+sys.argv[i]
+        os.system(command2Run1)
+        command2Run2='zipHuMrun.py -F '+rootDir+EmbryoTag+str(i)
+        os.system(command2Run2)
+        print('Commands: {}\n{}'.format(command2Run1,command2Run2))
+else:
+    print('not enough arguments.')
+```
+
+
+
+To run just do:
+
+```bash
+processingMultipleDatasets.py -F rootFolder 0 1 33 
+```
+
+to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
+
+
 
 ## Combine results from runs
 

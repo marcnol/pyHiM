@@ -24,72 +24,101 @@ import tarfile
 # MAIN
 # =============================================================================
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F","--rootFolder", help="Folder with images, default: .")
-    parser.add_argument("-P","--fileParameters", help="parameters file, default: infoList_barcode.json")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
+    parser.add_argument(
+        "-P", "--fileParameters", help="parameters file, default: infoList_barcode.json"
+    )
 
     args = parser.parse_args()
-    
+
     if args.rootFolder:
-        rootFolder=args.rootFolder
+        rootFolder = args.rootFolder
     else:
-        rootFolder=os.getcwd()
+        rootFolder = os.getcwd()
 
     if args.fileParameters:
-        fileParameters=args.fileParameters
+        fileParameters = args.fileParameters
     else:
-        fileParameters='infoList.json'
-    
+        fileParameters = "infoList.json"
+
     # opens tarfile
     os.chdir(rootFolder)
-    tarFileName='HiMrun.tar'
-    print('creating archive: {}'.format(tarFileName))
-    
-    # tar files in rootFolder
-    filesMD = [os.path.basename(f) for f in glob.glob(rootFolder+os.sep+'HiM_analysis*.md',recursive=True)]
-    filesLOGMD = [os.path.basename(f) for f in glob.glob(rootFolder+os.sep+'log*.txt',recursive=True)]
-    filesLOG= [os.path.basename(f) for f in glob.glob(rootFolder+os.sep+'HiM_analysis*.log',recursive=True)]
-    filesSession= [os.path.basename(f) for f in glob.glob(rootFolder+os.sep+'Session*.json',recursive=True)]
+    tarFileName = "HiMrun.tar"
+    print("creating archive: {}".format(tarFileName))
 
-    tarcmd='tar -cvf ' + tarFileName+ ' ' + " ".join(filesMD+filesLOG+filesSession+filesLOGMD)
-    print('Archiving:\n{}'.format("\n".join(filesMD+filesLOG+filesSession+filesLOGMD)))
+    # tar files in rootFolder
+    filesMD = [
+        os.path.basename(f)
+        for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.md", recursive=True)
+    ]
+    filesLOGMD = [
+        os.path.basename(f)
+        for f in glob.glob(rootFolder + os.sep + "log*.txt", recursive=True)
+    ]
+    filesLOG = [
+        os.path.basename(f)
+        for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.log", recursive=True)
+    ]
+    filesSession = [
+        os.path.basename(f)
+        for f in glob.glob(rootFolder + os.sep + "Session*.json", recursive=True)
+    ]
+
+    tarcmd = (
+        "tar -cvf "
+        + tarFileName
+        + " "
+        + " ".join(filesMD + filesLOG + filesSession + filesLOGMD)
+    )
+    print(
+        "Archiving:\n{}".format(
+            "\n".join(filesMD + filesLOG + filesSession + filesLOGMD)
+        )
+    )
 
     os.system(tarcmd)
-    
-    # tars directories produced during previous runs
-    param = Parameters(rootFolder,fileParameters)
-    
-    dataFolder=folders(param.param['rootFolder'])
-    
-    for currentFolder in dataFolder.listFolders:
-     
-        folders2Remove=[]
-        folders2Remove.append(currentFolder+os.sep+param.param['zProject']['folder'])
-        folders2Remove.append(currentFolder+os.sep+param.param['alignImages']['folder'])
-        folders2Remove.append(currentFolder+os.sep+param.param['segmentedObjects']['folder'])
-        folders2Remove.append(currentFolder+os.sep+'buildsPWDmatrix')
-        folders2Remove.append(currentFolder+os.sep+param.param['projectsBarcodes']['folder'])
-        
-        
-        for newFolder in folders2Remove:
-            if rootFolder=='.':
-                newFolderRelative = '.'+newFolder.split(os.getcwd())[1]
-            else:
-                newFolderRelative = '.'+newFolder.split(rootFolder)[1]
 
-            fileExtensions = ['/*.png','/*.dat','/*.ecsv']
+    # tars directories produced during previous runs
+    param = Parameters(rootFolder, fileParameters)
+
+    dataFolder = folders(param.param["rootFolder"])
+
+    for currentFolder in dataFolder.listFolders:
+
+        folders2Remove = []
+        folders2Remove.append(
+            currentFolder + os.sep + param.param["zProject"]["folder"]
+        )
+        folders2Remove.append(
+            currentFolder + os.sep + param.param["alignImages"]["folder"]
+        )
+        folders2Remove.append(
+            currentFolder + os.sep + param.param["segmentedObjects"]["folder"]
+        )
+        folders2Remove.append(currentFolder + os.sep + "buildsPWDmatrix")
+        folders2Remove.append(
+            currentFolder + os.sep + param.param["projectsBarcodes"]["folder"]
+        )
+
+        for newFolder in folders2Remove:
+            if rootFolder == ".":
+                newFolderRelative = "." + newFolder.split(os.getcwd())[1]
+            else:
+                newFolderRelative = "." + newFolder.split(rootFolder)[1]
+
+            fileExtensions = ["/*.png", "/*.dat", "/*.ecsv"]
             for newFileExtension in fileExtensions:
 
-                newFiles=newFolderRelative + newFileExtension
+                newFiles = newFolderRelative + newFileExtension
 
-                if len(glob.glob(newFiles))>0:
-                    tarcmd='tar -rf ' + tarFileName+ ' ' + newFiles
+                if len(glob.glob(newFiles)) > 0:
+                    tarcmd = "tar -rf " + tarFileName + " " + newFiles
                     os.system(tarcmd)
-                    print('Archiving: {}'.format(newFiles))
+                    print("Archiving: {}".format(newFiles))
 
- 
     if os.path.exists(tarFileName):
-        print('Zipping {}'.format(tarFileName))
-        os.system('gzip '+tarFileName)
+        print("Zipping {}".format(tarFileName))
+        os.system("gzip " + tarFileName)
