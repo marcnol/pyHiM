@@ -189,6 +189,8 @@ class Image:
             return ax
 
         if save and not show:
+            fig.add_axes(ax)
+            ax.imshow(self.data_2D, origin="lower", cmap="Greys_r", norm=norm)
             plt.savefig(outputName)
             plt.close()
 
