@@ -452,7 +452,7 @@ def buildsPWDmatrix(
     filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
 
     print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
-
+    processingOrder=0
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
@@ -499,10 +499,11 @@ def buildsPWDmatrix(
                 # saves Table with results per ROI
 
                 cellROI.SCdistanceTable.write(
-                    outputFileName + "_ROI" + str(nROI) + ".ecsv",
+                    outputFileName + "_order:" + str(processingOrder) + "_ROI:" + str(nROI) + ".ecsv",
                     format="ascii.ecsv",
                     overwrite=True,
                 )
+                
 
                 if len(SCmatrixCollated) > 0:
                     SCmatrixCollated = np.concatenate(
@@ -511,6 +512,9 @@ def buildsPWDmatrix(
                 else:
                     SCmatrixCollated = cellROI.SCmatrix
                 del cellROI
+
+                processingOrder+=1
+
             else:
                 print(
                     "Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
@@ -550,6 +554,7 @@ def buildsPWDmatrix(
         logNameMD,
         mode="median",
     )  # need to validate use of KDE. For the moment it does not handle well null distributions
+    
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName, logNameMD)
 
 

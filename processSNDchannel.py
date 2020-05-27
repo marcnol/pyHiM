@@ -200,7 +200,8 @@ def processesUserMasks(param, log1, session1, processingList):
                 tableOutputFileName, format="ascii.ecsv"
             )  # ascii.ecsv
             allresultsTable = vstack([previousresultsTable, allresultsTable])
-        allresultsTable.write(tableOutputFileName, format="ascii.ecsv", overwrite=True)
+        if len(allresultsTable)>0:
+            allresultsTable.write(tableOutputFileName, format="ascii.ecsv", overwrite=True)
 
         return numberMaskedFiles
     else:

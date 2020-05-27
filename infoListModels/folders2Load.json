@@ -1,0 +1,16 @@
+{
+    "wt_docTAD": {
+        "Folders": [
+            "/mnt/disk2/marcnol/data/Experiment_19/026_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_19/009_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_19/006_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "ContactProbability_scale": 15,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.25
+    }
+}
