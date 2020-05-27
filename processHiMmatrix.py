@@ -279,17 +279,15 @@ def plotsEnsembleContactProbabilityMatrix(
 if __name__ == "__main__":
     begin_time = datetime.now()
 
+    pixelSize = 0.1
+
+    # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
         "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default"
     )
-
     args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-    processingList = {}
-
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
@@ -300,21 +298,20 @@ if __name__ == "__main__":
     else:
         parametersFileName = "folders2Load.json"
 
-    pixelSize = 0.1
-
-    # initialises MD file
+    # [ initialises MD file]
     now = datetime.now()
     dateTime = now.strftime("%d%m%Y_%H%M%S")
     fileNameRoot = "processHiMmatrixAnalysis_"
 
-    # Lists and loads datasets from different embryos
+    # [ Lists and loads datasets from different embryos]
     fileNameListDataJSON = rootFolder + os.sep + parametersFileName
+    print("\n--------------------------------------------------------------------------")
     if os.path.exists(fileNameListDataJSON):
         with open(fileNameListDataJSON) as json_file:
             ListData = json.load(json_file)
         print("Loaded JSON file with {} datasets from {}\n".format(len(ListData), fileNameListDataJSON))
 
-    # creates output folder
+    # [ creates output folder]
     outputFolder = rootFolder + os.sep + "scHiMmatrices"
     if not os.path.exists(outputFolder):
         os.mkdir(outputFolder)
@@ -323,12 +320,13 @@ if __name__ == "__main__":
     # [loops over lists of datafolders]
     for datasetName in list(ListData.keys()):
 
+        # [loads SC matrices]
         SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName = loadsSCdata(ListData, datasetName)
         fileNameMD = rootFolder + os.sep + fileNameRoot + "_" + datasetName + "_" + dateTime + ".md"
         writeString2File(fileNameMD, "# Post-processing of Hi-M matrices", "w")
         writeString2File(fileNameMD, "**dataset: {}**".format(datasetName), "a")
 
-        # plots distance matrix for each dataset
+        # [plots distance matrix for each dataset]
         writeString2File(fileNameMD, "## single cell PWD matrices", "a")
         print('>>> Producing {} PWD matrices for dataset {}\n'.format(len(SCmatrixCollated),datasetName))
         plotsSinglePWDmatrices(
@@ -339,27 +337,28 @@ if __name__ == "__main__":
         # for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated, uniqueBarcodes):
         #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)
 
-        # plots inverse distance matrix for each dataset
+        # [plots inverse distance matrix for each dataset]
         writeString2File(fileNameMD, "## single cell inverse PWD matrices", "a")
         print('>>> Producing {} inverse PWD matrices for dataset {}\n'.format(len(SCmatrixCollated),datasetName))
         plotsInversePWDmatrice(
             SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], fileNameMD, datasetName=datasetName,
         )
 
-        # Plots contact probability matrices for each dataset
+        # [Plots contact probability matrices for each dataset]
         writeString2File(fileNameMD, "## single cell Contact Probability matrices", "a")
         print('>>> Producing {} contact matrices for dataset {}\n'.format(len(SCmatrixCollated),datasetName))
         plotsSingleContactProbabilityMatrix(
             SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], fileNameMD=fileNameMD, datasetName=datasetName,
         )
 
-        # combines matrices from different embryos and calculates integrated contact probability matrix
+        # [combines matrices from different embryos and calculates integrated contact probability matrix]
         writeString2File(fileNameMD, "## Ensemble contact probability", "a")
         print('>>> Producing ensemble contact matrix for dataset {}\n'.format(datasetName))
         plotsEnsembleContactProbabilityMatrix(
             SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], fileNameMD=fileNameMD, datasetName=datasetName,
         )
 
+        # [deletes variables before starting new iteration]
         del SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName
         print('Done with dataset {}'.format(datasetName))
 
@@ -372,44 +371,3 @@ print('Finished execution')
     # cScale,cMin = SCmatrix_wt_normalized.max(), SCmatrix_wt_normalized.min()
     # plotMatrix(SCmatrix_wt_normalized,uniqueBarcodes, pixelSize,cm='terrain',clim=cScale, figtitle='HiM counts',cmtitle='probability',nCells=nCells,cMin=cMin)
 
-
-
-   #%% links matrices to SND masks
-
-    # ListData["wt_docTAD"] = [
-    #     "/mnt/disk2/marcnol/data/Experiment_19/026_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_19/009_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_19/006_Embryo/buildsPWDmatrix",
-    # ]
-
-    # ListData[
-    #     "wt_HresDocLocus"
-    # ] = [  #'/mnt/disk2/marcnol/data/Experiment_3/019_Embryo/buildsPWDmatrix',\
-    #     "/mnt/disk2/marcnol/data/Experiment_3/007_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_3/016_Embryo/buildsPWDmatrix",  #'/mnt/disk2/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix'\
-    #     "/mnt/disk2/marcnol/data/Experiment_3/001_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_3/002_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_3/003_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_3/004_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_3/005_Embryo/buildsPWDmatrix",
-    # ]
-    # ListData["zld_docTAD"] = [
-    #     "/mnt/disk2/marcnol/data/Experiment_5/0_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/1_Embryo/buildsPWDmatrix",  # '/mnt/disk2/marcnol/data/Experiment_5/2_Embryo/buildsPWDmatrix',\
-    #     "/mnt/disk2/marcnol/data/Experiment_5/3_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/4_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/5_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/6_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/7_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/8_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_5/9_Embryo/buildsPWDmatrix",
-    # ]
-
-    # ListData["HiRes_snaTAD"] = [
-    #     "/mnt/disk2/marcnol/data/Experiment_4/0_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_4/1_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_4/2_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_4/4_Embryo/buildsPWDmatrix",
-    #     "/mnt/disk2/marcnol/data/Experiment_4/5_Embryo/buildsPWDmatrix",
-    # ]
-      

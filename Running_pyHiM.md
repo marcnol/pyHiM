@@ -1,18 +1,16 @@
 # Running pyHiM
 
-
-
 ### Run pyHiM
 
 Ensure you followed the steps described previously during installation when you did the test run:
 
 1. Identify a ```destination_directory``` where your data are stored. The raw deconvolved files can be in your ```destination_directory``` or within a sub-folder.
 2. Be aware of not putting more than ONE sub-folder with TIFF files in the ```destination_directory```. If your ```destination_directory``` already has the raw deconvolved TIFFs then remvove any other directory with TIFFs from ```destination_directory```
-3. copy files to your ```destination_directory``` 
+3. copy files to your ```destination_directory```  (names are self-explanatory)
    1. infoList_DAPI.json
-   2. infoList_DAPI.json
-   3. infoList_DAPI.json
-   4. infoList_DAPI.json
+   2. infoList_RNA.json
+   3. infoList_fiducial.json
+   4. infoList_barcode.json
 4. Change the fiducial RT by running ```changeRT_infoList.py``` at the command line in the ```destination_directory```. The input arguments are the RT currently present in the infoList files and the RT that you want to change it for. For instance: ```changeRT_infoList.py RT33 RT95```changes RT33 to RT95 in all the infoList files.
 5. Run pyHiM by the following command at the command line:
 
@@ -21,8 +19,6 @@ processingPipeline.py
 ```
 
 This assumes that you are running it from the ```destination_directory```. If it is not the case, use the ``-F`` flag with the directory with your data.
-
-
 
 ### Process second channel (i.e RNA, segments, etc)
 
@@ -81,7 +77,7 @@ Other utilities have been written to retrieve data from a run to a remote server
 
 If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data. 
 
-### Running several samples at once
+### Analysis of several samples at once
 
 You can now use a new script to call several samples in one go:
 
@@ -122,11 +118,11 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 
 
-## Combine results from runs
+## Combining results from different experiments
 
 Once you run a bunch of datasets, you will want to combine the PWD matrices together. For this:
 
-1. Retrieve the matrices and barcodes files by for instance:
+1. Retrieve the matrices and barcodes files by scp:
 
 ```bash
 scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/buildsPWDmatrix/*ecsv /home/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix/
@@ -134,29 +130,69 @@ scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_D
 scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/buildsPWDmatrix/*npy /home/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix/
 ```
 
-Now, you can run ```replotHiMmatrix.py``` locally and just add the data to the list as follows:
+Now, you can run ```processHiMmatrix.py``` locally. You should setup your files in a directory. For instance the directory ```/mnt/disk2/marcnol/data/Experiment_19``` contains three folders:
 
-```python
-ListRootFolders=[\
-                 #'/mnt/disk2/marcnol/data/Experiment_3/019_Embryo/buildsPWDmatrix',\
-                 '/mnt/disk2/marcnol/data/Experiment_3/007_Embryo/buildsPWDmatrix',\
-                 '/mnt/disk2/marcnol/data/Experiment_3/016_Embryo/buildsPWDmatrix'\
-                 '/mnt/disk2/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix'\
-                 ]
-
+```bash
+006_Embryo  009_Embryo  026_Embryo
 ```
 
-You should be able to run the following sections that will load all the datasets together and produce:
+containing each of the analysis from different embryos of the same experiment. Now, in this directory, you should create a file called ```folders2Load.json``` with the following:
+
+```python
+{
+    "wt_docTAD": {
+        "Folders": [
+            "/mnt/disk2/marcnol/data/Experiment_19/026_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_19/009_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_19/006_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "ContactProbability_scale": 15,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.25
+    }
+}
+```
+
+This file contains the directories with the data to be analyzed and some parameters for the analysis (more on this later).
+
+Go to the root folder (```/mnt/disk2/marcnol/data/Experiment_19```) and run 
+
+```bash
+ processHiMmatrix.py 
+```
+
+If you use a parameter file with another name (e.g. ```myparameters.json```) then run:
+
+```bash
+ processHiMmatrix.py --parameters myparameters.json
+```
+
+This will produce an MD file (e.g. ```processHiMmatrixAnalysis__wt_docTAD_27052020_140943.md```) with the following output:
 
 - PWD matrix for each dataset
-- HistogramMatrix for each dataset
 - Inverse distance matrices for each dataset
 - Contact probability matrices for each dataset
 - Combined contact probability matrix
 
-This last matrix is save as a file ```'CombinedMatrix.dat'```in the ```outputFolder``` directory defined in the first block of code. It is saved as plain text so that it can be opened in MATLAB. Each row in the matrix is separated by a ```\n``` . 
+This last matrix will be outputed in the ```scHiMmatrices``` directory as two files. Examples:
 
-For info, the barcodes used are always stored in the ```buildsPWDmatrix_uniqueBarcodes.ecsv```
+- ```CombinedMatrixwt_docTAD.dat```: plain text ensemble HiM contact probability matrix (can be opened in MATLAB). Each row in the matrix is separated by a ```\n``` .
+-  ```UniqueBarcodeswt_docTAD.dat```: plain text file with the barcodes used.
 
-file within the ```buildsPWDmatrix``` directory.
+### options in parameter file
+
+Options:
+
+- ```PWD_clim```: 1.4. Maximum of colormap for PWD matrices.
+- ```PWD_mode```: Mode used to calculate value for each mean from many measurements. ```median``` is the median excluding NaNs, ```KDE``` uses kernel density estimator and peaks up the maximum (uses 0.2 as size of kernel as this works for most situations).
+- ```iPWD_clim```: 6. Same as for ```PWD_clim.```
+- ```iPWD_mode```: Same as for ```PWD_mode```.
+- ```ContactProbability_scale```:  normalization factor for the contact probability. Plotted contact probability is calculated as the ratio of the calculated contact probability and ```ContactProbability_scale```.
+- ```ContactProbability_cmin```: Minimum of colormap in the the contact probability map.
+- ```ContactProbability_distanceThreshold```: distance used for the calculation of the contact probabilities in pixel units.
+
 
