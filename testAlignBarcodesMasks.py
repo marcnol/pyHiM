@@ -98,22 +98,13 @@ class cellID:
         barcodeMapROI = self.barcodeMapROI
 
         # [ builds SCdistanceTable ]
-        barcodeMapROI_cellID = barcodeMapROI.group_by(
-            "CellID #"
-        )  # ROI data sorted by cellID
+        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
         ROIs, cellID, nBarcodes, barcodeIDs, p = [], [], [], [], []
 
-        for key, group in zip(
-            barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups
-        ):
+        for key, group in zip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
 
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
-                R = np.column_stack(
-                    (
-                        np.array(group["xcentroid"].data),
-                        np.array(group["ycentroid"].data),
-                    )
-                )
+                R = np.column_stack((np.array(group["xcentroid"].data), np.array(group["ycentroid"].data),))
                 ROIs.append(group["ROI #"].data[0])
                 cellID.append(key["CellID #"])
                 nBarcodes.append(len(group))
@@ -121,9 +112,7 @@ class cellID:
                 p.append(pairwise_distances(R))
                 # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
 
-        SCdistanceTable = (
-            Table()
-        )  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
+        SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
         SCdistanceTable["ROI #"] = ROIs
         SCdistanceTable["CellID #"] = cellID
         SCdistanceTable["nBarcodes"] = nBarcodes
@@ -137,23 +126,15 @@ class cellID:
         # [ builds SCmatrix ]
         numberMatrices = len(SCdistanceTable)  # z dimensions of SCmatrix
         uniqueBarcodes = np.unique(barcodeMapROI["Barcode #"].data)
-        numberUniqueBarcodes = uniqueBarcodes.shape[
-            0
-        ]  # number of unique Barcodes for xy dimensions of SCmatrix
-        SCmatrix = np.zeros(
-            (numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices)
-        )
+        numberUniqueBarcodes = uniqueBarcodes.shape[0]  # number of unique Barcodes for xy dimensions of SCmatrix
+        SCmatrix = np.zeros((numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices))
         SCmatrix[:] = np.NaN
 
         for iCell, scPWDitem in zip(range(numberMatrices), SCdistanceTable):
             barcodes2Process = scPWDitem["Barcode #"]
-            for barcode1, ibarcode1 in zip(
-                barcodes2Process, range(len(barcodes2Process))
-            ):
+            for barcode1, ibarcode1 in zip(barcodes2Process, range(len(barcodes2Process))):
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
-                for barcode2, ibarcode2 in zip(
-                    barcodes2Process, range(len(barcodes2Process))
-                ):
+                for barcode2, ibarcode2 in zip(barcodes2Process, range(len(barcodes2Process))):
                     indexBarcode2 = np.nonzero(uniqueBarcodes == barcode2)[0][0]
                     if barcode1 != barcode2:
                         newdistance = scPWDitem["PWDmatrix"][ibarcode1][ibarcode2]
@@ -161,17 +142,11 @@ class cellID:
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = newdistance
                         elif mode == "mean":
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmean(
-                                [
-                                    newdistance,
-                                    SCmatrix[indexBarcode1][indexBarcode2][iCell],
-                                ]
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
                             )
                         elif mode == "min":
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmin(
-                                [
-                                    newdistance,
-                                    SCmatrix[indexBarcode1][indexBarcode2][iCell],
-                                ]
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
                             )
 
         self.SCmatrix = SCmatrix
@@ -227,9 +202,7 @@ for ROI in range(len(barcodeMapROI.groups.keys)):
     if len(fileList2Process) > 0:
 
         # loads Masks
-        fileNameROImasks = (
-            os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
-        )
+        fileNameROImasks = os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
         Masks = np.load(fullFolder + fileNameROImasks)
 
         # Assigns barcodes to Masks for a given ROI
@@ -239,18 +212,12 @@ for ROI in range(len(barcodeMapROI.groups.keys)):
 
         cellROI.buildsdistanceMatrix("min")  # mean min last
 
-        print(
-            "ROI: {}, N cells assigned: {} out of {}".format(
-                ROI, cellROI.NcellsAssigned, cellROI.numberMasks
-            )
-        )
+        print("ROI: {}, N cells assigned: {} out of {}".format(ROI, cellROI.NcellsAssigned, cellROI.numberMasks))
 
         uniqueBarcodes = cellROI.uniqueBarcodes
 
         if len(SCmatrixCollated) > 0:
-            SCmatrixCollated = np.concatenate(
-                (SCmatrixCollated, cellROI.SCmatrix), axis=2
-            )
+            SCmatrixCollated = np.concatenate((SCmatrixCollated, cellROI.SCmatrix), axis=2)
         else:
             SCmatrixCollated = cellROI.SCmatrix
         del cellROI
@@ -264,13 +231,7 @@ fig = plt.figure()
 pos = plt.imshow(meanSCmatrix, cmap="seismic")
 plt.xlabel("barcode #")
 plt.ylabel("barcode #")
-plt.title(
-    "PWD matrix"
-    + " | n="
-    + str(SCmatrixCollated.shape[2])
-    + " | ROIs="
-    + str(len(barcodeMapROI.groups.keys))
-)
+plt.title("PWD matrix" + " | n=" + str(SCmatrixCollated.shape[2]) + " | ROIs=" + str(len(barcodeMapROI.groups.keys)))
 plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
 plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
 cbar = plt.colorbar(pos)

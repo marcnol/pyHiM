@@ -22,9 +22,7 @@ masks = np.load("masks.npy")
 
 # Create image
 rootFolder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
-fileNameRNA = (
-    rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
-)
+fileNameRNA = rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
 img = np.load(fileNameRNA).squeeze()
 Im = Image()
 Im.data_2D = img
@@ -53,9 +51,7 @@ from astropy.table import Table, Column, vstack
 
 
 ROI = 1
-fileNameDAPImask = (
-    "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
-)
+fileNameDAPImask = "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
 fileName = "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered_SNDmask_sna.npy"
 # load DAPI mask
 maskDAPI = Image()

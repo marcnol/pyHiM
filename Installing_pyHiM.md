@@ -55,7 +55,7 @@ Now, install the necessary packages using conda, by running:
 ```sh
 conda install pandas scikit-image numpy matplotlib tqdm astropy
 conda install photutils -c astropy
-
+pip install roipoly
 ```
 
 You should be set!
@@ -73,16 +73,18 @@ Select a folder with data to analyse, for instance: ```/mnt/tronador/Sergio/RAMM
 then copy the configuration files to the directory where you want to run pyHiM
 
 ```bash
-cp /home/rata/Repositories/pyHiM/infoListModels/* /mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/
+cp /home/rata/Repositories/pyHiM/modelParameterFiles_JSON/* /mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/
 ```
 
 specify the RT that should be used as referenceFiducial
 
 ```bash
-bash infoList_changeRT.sh
+changeRT_infolist.py RT33 RT95
 ```
 
-run by:
+In this example, RT33 was the reference fiducial previously in the infoList.json files, RT95 is the new fiducial you want to use for your dataset.
+
+Then you can test run by:
 
 ```bash
 processingPipeline.py -F /mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/

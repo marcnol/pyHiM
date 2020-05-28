@@ -25,6 +25,7 @@ import glob, os
 import argparse
 import uuid
 import numpy as np
+import numpy.ma as npmasked
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist
 from imageProcessing import Image
@@ -116,23 +117,14 @@ class cellID:
         # [ builds SCdistanceTable ]
 
         # sorts Table by cellID
-        barcodeMapROI_cellID = barcodeMapROI.group_by(
-            "CellID #"
-        )  # ROI data sorted by cellID
+        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
         ROIs, cellID, nBarcodes, barcodeIDs, p, cuid, buid = [], [], [], [], [], [], []
 
         # iterates over all cell masks in an ROI
-        for key, group in zip(
-            barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups
-        ):
+        for key, group in zip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
 
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
-                R = np.column_stack(
-                    (
-                        np.array(group["xcentroid"].data),
-                        np.array(group["ycentroid"].data),
-                    )
-                )
+                R = np.column_stack((np.array(group["xcentroid"].data), np.array(group["ycentroid"].data),))
                 ROIs.append(group["ROI #"].data[0])
                 cellID.append(key["CellID #"])
                 nBarcodes.append(len(group))
@@ -142,9 +134,7 @@ class cellID:
                 cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
                 # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
 
-        SCdistanceTable = (
-            Table()
-        )  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
+        SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
         SCdistanceTable["Cuid"] = cuid
         SCdistanceTable["ROI #"] = ROIs
         SCdistanceTable["CellID #"] = cellID
@@ -162,23 +152,16 @@ class cellID:
         # [ builds SCmatrix ]
         numberMatrices = len(SCdistanceTable)  # z dimensions of SCmatrix
         uniqueBarcodes = np.unique(barcodeMapROI["Barcode #"].data)
-        numberUniqueBarcodes = uniqueBarcodes.shape[
-            0
-        ]  # number of unique Barcodes for xy dimensions of SCmatrix
-        SCmatrix = np.zeros(
-            (numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices)
-        )
+        # number of unique Barcodes for xy dimensions of SCmatrix
+        numberUniqueBarcodes = uniqueBarcodes.shape[0]
+        SCmatrix = np.zeros((numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices))
         SCmatrix[:] = np.NaN
 
         for iCell, scPWDitem in zip(range(numberMatrices), SCdistanceTable):
             barcodes2Process = scPWDitem["Barcode #"]
-            for barcode1, ibarcode1 in zip(
-                barcodes2Process, range(len(barcodes2Process))
-            ):
+            for barcode1, ibarcode1 in zip(barcodes2Process, range(len(barcodes2Process))):
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
-                for barcode2, ibarcode2 in zip(
-                    barcodes2Process, range(len(barcodes2Process))
-                ):
+                for barcode2, ibarcode2 in zip(barcodes2Process, range(len(barcodes2Process))):
                     indexBarcode2 = np.nonzero(uniqueBarcodes == barcode2)[0][0]
                     if barcode1 != barcode2:
                         newdistance = scPWDitem["PWDmatrix"][ibarcode1][ibarcode2]
@@ -186,17 +169,11 @@ class cellID:
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = newdistance
                         elif mode == "mean":
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmean(
-                                [
-                                    newdistance,
-                                    SCmatrix[indexBarcode1][indexBarcode2][iCell],
-                                ]
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
                             )
                         elif mode == "min":
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmin(
-                                [
-                                    newdistance,
-                                    SCmatrix[indexBarcode1][indexBarcode2][iCell],
-                                ]
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
                             )
 
         self.SCmatrix = SCmatrix
@@ -209,16 +186,12 @@ class cellID:
 # =============================================================================
 def findsOptimalKernelWidth(distanceDistribution):
     bandwidths = 10 ** np.linspace(-1, 1, 100)
-    grid = GridSearchCV(
-        KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut()
-    )
+    grid = GridSearchCV(KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut())
     grid.fit(distanceDistribution[:, None])
     return grid.best_params_
 
 
-def retrieveKernelDensityEstimator(
-    distanceDistribution0, x_d, optimizeKernelWidth=False
-):
+def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
 
     nan_array = np.isnan(distanceDistribution0)
 
@@ -241,17 +214,13 @@ def retrieveKernelDensityEstimator(
     return logprob, distanceDistribution
 
 
-def distributionMaximumKernelDensityEstimation(
-    SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False
-):
+def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
     distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
     x_d = np.linspace(0, 5, 2000)
 
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
-        logprob, distanceDistribution = retrieveKernelDensityEstimator(
-            distanceDistribution0, x_d, optimizeKernelWidth
-        )
+        logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
         kernelDistribution = 10 * np.exp(logprob)
         maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
         return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
@@ -274,32 +243,30 @@ def plotMatrix(
     mode="median",
     inverseMatrix=False,
     cMin=0,
+    cells2Plot=[],
 ):
     Nbarcodes = SCmatrixCollated.shape[0]
     # projects matrix by calculating median in the nCell direction
 
+    
+    # Calculates ensemble matrix from single cell matrices
     if len(SCmatrixCollated.shape) == 3:
-        if mode == "median":
+       if len(cells2Plot)==0:
+            cells2Plot=range(len(SCmatrixCollated.shape[2]))
+       
+       if mode == "median":
             # calculates the median of all values
-            meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated, axis=2)
-            nCells = SCmatrixCollated.shape[2]
-        elif mode == "KDE":
+            meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:,:,cells2Plot], axis=2)
+            nCells = SCmatrixCollated[:,:,cells2Plot].shape[2]
+            print('nCells={}'.format(nCells))
+       elif mode == "KDE":
             # performs a Kernel Estimation to calculate the max of the distribution
             meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
             for bin1 in range(Nbarcodes):
                 for bin2 in range(Nbarcodes):
                     if bin1 != bin2:
-                        (
-                            maximumKernelDistribution,
-                            _,
-                            _,
-                            _,
-                        ) = distributionMaximumKernelDensityEstimation(
-                            SCmatrixCollated,
-                            bin1,
-                            bin2,
-                            pixelSize,
-                            optimizeKernelWidth=False,
+                        (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
+                            SCmatrixCollated[:,:,cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
                         )
                         meanSCmatrix[bin1, bin2] = maximumKernelDistribution
     else:
@@ -314,15 +281,7 @@ def plotMatrix(
     pos = plt.imshow(meanSCmatrix, cmap=cm)  # colormaps RdBu seismic
     plt.xlabel("barcode #")
     plt.ylabel("barcode #")
-    plt.title(
-        figtitle
-        + " | "
-        + str(meanSCmatrix.shape[0])
-        + " barcodes | n="
-        + str(nCells)
-        + " | ROIs="
-        + str(numberROIs)
-    )
+    plt.title(figtitle + " | " + str(meanSCmatrix.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs))
     plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
     plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
     cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
@@ -335,18 +294,11 @@ def plotMatrix(
     if not isnotebook():
         plt.close()
 
-    writeString2File(
-        logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a"
-    )
+    writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
 
 
 def plotDistanceHistograms(
-    SCmatrixCollated,
-    pixelSize,
-    outputFileName="test",
-    logNameMD="log.md",
-    mode="hist",
-    limitNplots=10,
+    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,
 ):
 
     if not isnotebook():
@@ -363,9 +315,7 @@ def plotDistanceHistograms(
 
     sizeX, sizeY = NplotsX * 4, NplotsY * 4
 
-    fig, axs = plt.subplots(
-        figsize=(sizeX, sizeY), ncols=NplotsX, nrows=NplotsY, sharex=True
-    )
+    fig, axs = plt.subplots(figsize=(sizeX, sizeY), ncols=NplotsX, nrows=NplotsY, sharex=True)
 
     for i in range(NplotsX):
         for j in range(NplotsY):
@@ -374,20 +324,12 @@ def plotDistanceHistograms(
                 if mode == "hist":
                     axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
                 else:
-                    (
-                        maxKDE,
-                        distanceDistribution,
-                        KDE,
-                        x_d,
-                    ) = distributionMaximumKernelDensityEstimation(
+                    (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
                         SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=False
                     )
                     axs[i, j].fill_between(x_d, KDE, alpha=0.5)
                     axs[i, j].plot(
-                        distanceDistribution,
-                        np.full_like(distanceDistribution, -0.01),
-                        "|k",
-                        markeredgewidth=1,
+                        distanceDistribution, np.full_like(distanceDistribution, -0.01), "|k", markeredgewidth=1,
                     )
                     axs[i, j].vlines(maxKDE, 0, KDE.max(), colors="r")
 
@@ -398,14 +340,10 @@ def plotDistanceHistograms(
     if not isnotebook():
         plt.close()
 
-    writeString2File(
-        logNameMD, "![]({})\n".format(outputFileName + "_PWDhistograms.png"), "a"
-    )
+    writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_PWDhistograms.png"), "a")
 
 
-def calculateContactProbabilityMatrix(
-    iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells"
-):
+def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells"):
     # SCthresholdMatrix=iSCmatrixCollated<threshold
 
     nX = nY = iSCmatrixCollated.shape[0]
@@ -417,18 +355,14 @@ def calculateContactProbabilityMatrix(
             if i != j:
                 distanceDistribution = pixelSize * iSCmatrixCollated[i, j, :]
                 if norm == "nCells":
-                    probability = (
-                        len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
-                    )
+                    probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
                     # print('Using nCells normalisation')
                 elif norm == "nonNANs":
                     numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
                     if nCells == numberNANs:
                         probability = 1
                     else:
-                        probability = len(
-                            np.nonzero(distanceDistribution < threshold)[0]
-                        ) / (nCells - numberNANs)
+                        probability = len(np.nonzero(distanceDistribution < threshold)[0]) / (nCells - numberNANs)
                     # print('Using NonNANs normalisation {}'.format(nCells-numberNANs))
                 SCmatrix[i, j] = probability
 
@@ -436,11 +370,7 @@ def calculateContactProbabilityMatrix(
 
 
 def buildsPWDmatrix(
-    currentFolder,
-    fileNameBarcodeCoordinates,
-    outputFileName,
-    pixelSize=0.1,
-    logNameMD="log.md",
+    currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize=0.1, logNameMD="log.md",
 ):
 
     # Processes Tables
@@ -452,7 +382,7 @@ def buildsPWDmatrix(
     filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
 
     print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
-    processingOrder=0
+    processingOrder = 0
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
@@ -472,12 +402,8 @@ def buildsPWDmatrix(
         if len(fileList2Process) > 0:
 
             # loads Masks
-            fileNameROImasks = (
-                os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
-            )
-            fullFileNameROImasks = (
-                os.path.dirname(fileNameBarcodeCoordinates) + os.sep + fileNameROImasks
-            )
+            fileNameROImasks = os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
+            fullFileNameROImasks = os.path.dirname(fileNameBarcodeCoordinates) + os.sep + fileNameROImasks
             if os.path.exists(fullFileNameROImasks):
                 Masks = np.load(fullFileNameROImasks)
 
@@ -488,11 +414,7 @@ def buildsPWDmatrix(
 
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
-                print(
-                    "ROI: {}, N cells assigned: {} out of {}".format(
-                        ROI, cellROI.NcellsAssigned, cellROI.numberMasks
-                    )
-                )
+                print("ROI: {}, N cells assigned: {} out of {}".format(ROI, cellROI.NcellsAssigned, cellROI.numberMasks))
 
                 uniqueBarcodes = cellROI.uniqueBarcodes
 
@@ -503,24 +425,17 @@ def buildsPWDmatrix(
                     format="ascii.ecsv",
                     overwrite=True,
                 )
-                
 
                 if len(SCmatrixCollated) > 0:
-                    SCmatrixCollated = np.concatenate(
-                        (SCmatrixCollated, cellROI.SCmatrix), axis=2
-                    )
+                    SCmatrixCollated = np.concatenate((SCmatrixCollated, cellROI.SCmatrix), axis=2)
                 else:
                     SCmatrixCollated = cellROI.SCmatrix
                 del cellROI
 
-                processingOrder+=1
+                processingOrder += 1
 
             else:
-                print(
-                    "Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
-                        nROI, fileNameBarcodeCoordinates
-                    )
-                )
+                print("Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(nROI, fileNameBarcodeCoordinates))
                 print("File I was searching for: {}".format(fullFileNameROImasks))
                 print("Debug: ")
                 for file in filesinFolder:
@@ -540,21 +455,13 @@ def buildsPWDmatrix(
 
     # saves output
     np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
-    np.savetxt(
-        outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d"
-    )
+    np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
 
     # plots outputs
     plotMatrix(
-        SCmatrixCollated,
-        uniqueBarcodes,
-        pixelSize,
-        numberROIs,
-        outputFileName,
-        logNameMD,
-        mode="median",
+        SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median",
     )  # need to validate use of KDE. For the moment it does not handle well null distributions
-    
+
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName, logNameMD)
 
 
@@ -563,9 +470,7 @@ def processesPWDmatrices(param, log1, session1):
 
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
-    log1.addSimpleText(
-        "\n===================={}====================\n".format(sessionName)
-    )
+    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(log1.fileNameMD, "## {}\n".format(sessionName), "a")
 
@@ -574,19 +479,13 @@ def processesPWDmatrices(param, log1, session1):
         dataFolder.createsFolders(currentFolder, param)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
 
-        fileNameBarcodeCoordinates = (
-            dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
-        )
+        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
         # segmentedMasksFolder=dataFolder.outputFolders['segmentedObjects']
         outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
         pixelSize = 0.1
 
         buildsPWDmatrix(
-            currentFolder,
-            fileNameBarcodeCoordinates,
-            outputFileName,
-            pixelSize,
-            log1.fileNameMD,
+            currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize, log1.fileNameMD,
         )
         session1.add(currentFolder, sessionName)
 
@@ -603,9 +502,7 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n--------------------------------------------------------------------------")
 
     if args.rootFolder:
         rootFolder = args.rootFolder
@@ -624,6 +521,4 @@ if __name__ == "__main__":
     outputFileName = rootFolder.split("/")[-1]
     pixelSize = 0.1
 
-    buildsPWDmatrix(
-        currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize
-    )
+    buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize)

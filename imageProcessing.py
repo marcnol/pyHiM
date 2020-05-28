@@ -53,27 +53,18 @@ class Image:
 
     # save 2D projection as numpy array
     def saveImage2D(self, log, rootFolder, tag="_2d"):
-        fileName = (
-            rootFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag
-        )
+        fileName = rootFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag
         saveImage2Dcmd(self.data_2D, fileName, log)
 
     # read an image as a numpy array
     def loadImage2D(self, fileName, log, masterFolder, tag="_2d"):
         self.fileName = fileName
         # fileName=self.fileName.split('.'+self.extension)[0]+'_2d.npy'
-        fileName = (
-            masterFolder
-            + os.sep
-            + os.path.basename(self.fileName).split(".")[0]
-            + tag
-            + ".npy"
-        )
+        fileName = masterFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag + ".npy"
 
         self.data_2D = np.load(fileName)
         log.report(
-            "Loading 2d projection from disk:{}".format(os.path.basename(fileName)),
-            "info",
+            "Loading 2d projection from disk:{}".format(os.path.basename(fileName)), "info",
         )
         # print("Loading 2d projection from disk:{}".format(fileName))
 
@@ -161,14 +152,7 @@ class Image:
 
     # displays image and shows it
     def imageShow(
-        self,
-        show=False,
-        cmap="plasma",
-        size=(10, 10),
-        dpi=300,
-        outputName="tmp.png",
-        save=True,
-        normalization="stretch",
+        self, show=False, cmap="plasma", size=(10, 10), dpi=300, outputName="tmp.png", save=True, normalization="stretch",
     ):
         fig = plt.figure()
         fig.set_size_inches(size)
@@ -195,8 +179,6 @@ class Image:
             plt.close()
 
 
-
-
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -204,11 +186,7 @@ class Image:
 
 # Gaussian function
 def gaussian(x, a=1, mean=0, std=0.5):
-    return (
-        a
-        * (1 / (std * (np.sqrt(2 * np.pi))))
-        * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
-    )
+    return a * (1 / (std * (np.sqrt(2 * np.pi)))) * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
@@ -217,9 +195,7 @@ def calculate_zrange(idata, parameters):
     Calculates the focal planes based max standard deviation
     """
     zwin = parameters.param["zProject"]["zwindows"]
-    numPlanes = (
-        parameters.param["zProject"]["zmax"] - parameters.param["zProject"]["zmin"]
-    )
+    numPlanes = parameters.param["zProject"]["zmax"] - parameters.param["zProject"]["zmin"]
     stdMatrix = np.zeros(numPlanes)
     meanMatrix = np.zeros(numPlanes)
     # calculate STD in each plane
@@ -247,10 +223,7 @@ def calculate_zrange(idata, parameters):
             max(
                 parameters.param["zProject"]["zmin"],
                 ifocusPlane - parameters.param["zProject"]["windowSecurity"],
-                min(
-                    parameters.param["zProject"]["zmax"],
-                    ifocusPlane + parameters.param["zProject"]["windowSecurity"],
-                ),
+                min(parameters.param["zProject"]["zmax"], ifocusPlane + parameters.param["zProject"]["windowSecurity"],),
             )
         )
 
@@ -258,19 +231,14 @@ def calculate_zrange(idata, parameters):
         stdMatrix /= np.max(stdMatrix)
         # plt.plot(stdMatrix)
         try:
-            fitgauss = spo.curve_fit(
-                gaussian, axisZ, stdMatrix[axisZ[0] : axisZ[-1] + 1]
-            )
+            fitgauss = spo.curve_fit(gaussian, axisZ, stdMatrix[axisZ[0] : axisZ[-1] + 1])
             # print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
             focusPlane = int(fitgauss[0][1])
         except RuntimeError:
             print("Warning, too many iterations")
             focusPlane = ifocusPlane
 
-    zmin = max(
-        parameters.param["zProject"]["windowSecurity"],
-        focusPlane - parameters.param["zProject"]["zwindows"],
-    )
+    zmin = max(parameters.param["zProject"]["windowSecurity"], focusPlane - parameters.param["zProject"]["zwindows"],)
     zmax = min(
         numPlanes,
         parameters.param["zProject"]["windowSecurity"] + numPlanes,
@@ -297,9 +265,7 @@ def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
     higher_cutoff = np.where(sum_normalized > higher_threshold)[0][0] / 255
 
     # adjusts image intensities from (lower_threshold,higher_threshold) --> [0,1]
-    image1 = exposure.rescale_intensity(
-        image1, in_range=(lower_cutoff, higher_cutoff), out_range=(0, 1)
-    )
+    image1 = exposure.rescale_intensity(image1, in_range=(lower_cutoff, higher_cutoff), out_range=(0, 1))
 
     # calculates histogram of intensities of adjusted image
     hist1 = exposure.histogram(image1)
@@ -323,9 +289,7 @@ def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
         np.save(fileName, image)
         # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        log.report(
-            "Saved 2d projection to disk: {}\n".format(fileName + ".npy"), "info"
-        )
+        log.report("Saved 2d projection to disk: {}\n".format(fileName + ".npy"), "info")
     else:
         log.report("Warning, data_2D does not exist", "Warning")
 
@@ -366,22 +330,10 @@ def align2ImagesCrossCorrelation(image1_uncorrected, image2_uncorrected):
     # image1_uncorrected=imReference.data_2D/imReference.data_2D.max()
     # image2_uncorrected=Im2.data_2D/Im2.data_2D.max()
 
-    (
-        image1_adjusted,
-        hist1_before,
-        hist1_after,
-        lower_cutoff1,
-        higher_cutoff1,
-    ) = imageAdjust(
+    (image1_adjusted, hist1_before, hist1_after, lower_cutoff1, higher_cutoff1,) = imageAdjust(
         image1_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999
     )
-    (
-        image2_adjusted,
-        hist2_before,
-        hist2_after,
-        lower_cutoff2,
-        higher_cutoff2,
-    ) = imageAdjust(
+    (image2_adjusted, hist2_before, hist2_after, lower_cutoff2, higher_cutoff2,) = imageAdjust(
         image2_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999
     )
 
@@ -393,9 +345,7 @@ def align2ImagesCrossCorrelation(image1_uncorrected, image2_uncorrected):
     }
 
     # calculates shift
-    shift, error, diffphase = register_translation(
-        image1_adjusted, image2_adjusted, 100
-    )
+    shift, error, diffphase = register_translation(image1_adjusted, image2_adjusted, 100)
 
     # corrects image
     # The shift corresponds to the pixel offset relative to the reference image

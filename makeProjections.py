@@ -38,10 +38,7 @@ from fileManagement import session, writeString2File
 
 def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
-    if (
-        fileName in session1.data
-        and param.param["zProject"]["operation"] != "overwrite"
-    ):
+    if fileName in session1.data and param.param["zProject"]["operation"] != "overwrite":
         # creates image object
         Im = Image()
         Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])
@@ -67,19 +64,10 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
         # saves output 2d zProjection as png
         if param.param["zProject"]["display"]:
-            pngFileName = (
-                dataFolder.outputFolders["zProject"]
-                + os.sep
-                + os.path.basename(fileName)
-                + "_2d.png"
-            )
-            Im.imageShow(
-                save=param.param["zProject"]["saveImage"], outputName=pngFileName
-            )
+            pngFileName = dataFolder.outputFolders["zProject"] + os.sep + os.path.basename(fileName) + "_2d.png"
+            Im.imageShow(save=param.param["zProject"]["saveImage"], outputName=pngFileName)
             writeString2File(
-                log1.fileNameMD,
-                "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName),
-                "a",
+                log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
             )  # initialises MD file
 
         # saves output 2d zProjection as matrix
@@ -93,14 +81,10 @@ def makeProjections(param, log1, session1):
 
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
-    log1.addSimpleText(
-        "\n===================={}====================\n".format(sessionName)
-    )
+    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
-        log1.fileNameMD,
-        "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]),
-        "a",
+        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
 
     for currentFolder in dataFolder.listFolders:

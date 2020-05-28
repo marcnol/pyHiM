@@ -73,8 +73,6 @@ if __name__ == "__main__":
 
     # Create image
     rootFolder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
-    fileNameRNA = (
-        rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
-    )
+    fileNameRNA = rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
 
     createsUserMask(fileNameRNA)

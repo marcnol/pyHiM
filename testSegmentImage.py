@@ -27,9 +27,7 @@ from fileManagement import loadJSON
 rootDir = "/home/marcnol/Documents/Images/Embryo_debug_dataset"
 
 file = "scan_004_RT19_017_ROI_converted_decon_ch01.tif"
-fileName = (
-    rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
-)
+fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
 im = np.load(fileName)
 im = exposure.rescale_intensity(im, out_range=(0, 1))
 
@@ -54,14 +52,7 @@ for region in measure.regionprops(label_image):
     if region.area >= 25 and region.area < 500:
         # draw rectangle around segmented coins
         minr, minc, maxr, maxc = region.bbox
-        rect = mpatches.Rectangle(
-            (minc, minr),
-            maxc - minc,
-            maxr - minr,
-            fill=False,
-            edgecolor="red",
-            linewidth=1,
-        )
+        rect = mpatches.Rectangle((minc, minr), maxc - minc, maxr - minr, fill=False, edgecolor="red", linewidth=1,)
         ax.add_patch(rect)
 
 
@@ -85,9 +76,7 @@ from photutils import Background2D, MedianBackground
 rootDir = "/home/marcnol/Documents/Images/Embryo_debug_dataset"
 
 file = "scan_004_RT18_017_ROI_converted_decon_ch01.tif"
-fileName = (
-    rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
-)
+fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
 
 im = np.load(fileName)
 
@@ -101,20 +90,14 @@ fwhm = 3.0
 
 sigma_clip = SigmaClip(sigma=3.0)
 bkg_estimator = MedianBackground()
-bkg = Background2D(
-    im, (50, 50), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator
-)
-threshold_image = bkg.background + (
-    1.0 * bkg.background_rms
-)  # background-only error image
+bkg = Background2D(im, (50, 50), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator)
+threshold_image = bkg.background + (1.0 * bkg.background_rms)  # background-only error image
 
 im1_bkg_substracted = im - bkg.background
 mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
 
 # estimates sources
-daofind = DAOStarFinder(
-    fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest
-)
+daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest)
 sources = daofind(im1_bkg_substracted)
 """for col in sources.colnames:  
     sources[col].info.format = '%.8g'  # for consistent table output
@@ -138,22 +121,14 @@ plt.ylim(0, im.shape[0] - 1)
 
 
 file = "scan_001_DAPI_017_ROI_converted_decon_ch00.tif"
-fileName = (
-    rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
-)
+fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
 data = np.load(fileName)
 
 threshold = detect_threshold(data, nsigma=2.0)
 
 sigma_clip = SigmaClip(sigma=3.0)
 bkg_estimator = MedianBackground()
-bkg = Background2D(
-    data,
-    (50, 50),
-    filter_size=(3, 3),
-    sigma_clip=sigma_clip,
-    bkg_estimator=bkg_estimator,
-)
+bkg = Background2D(data, (50, 50), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
 threshold = bkg.background + (1.0 * bkg.background_rms)  # background-only error image
 
 sigma = 3.0 * gaussian_fwhm_to_sigma  # FWHM = 3.
@@ -161,9 +136,7 @@ kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
 kernel.normalize()
 segm = detect_sources(data, threshold, npixels=5, filter_kernel=kernel)
 
-segm_deblend = deblend_sources(
-    data, segm, npixels=50, filter_kernel=kernel, nlevels=32, contrast=0.001
-)
+segm_deblend = deblend_sources(data, segm, npixels=50, filter_kernel=kernel, nlevels=32, contrast=0.001)
 
 norm = ImageNormalize(stretch=SqrtStretch())
 
@@ -197,16 +170,7 @@ for region in measure.regionprops(label_image, im):
         subImage3D = I_3D.data[:, minr:maxr, minc:maxc]
 
         RTmatrix.append(
-            [
-                ROI,
-                barcode,
-                x,
-                y,
-                region.equivalent_diameter,
-                region.max_intensity,
-                region.mean_intensity,
-                region.convex_area,
-            ]
+            [ROI, barcode, x, y, region.equivalent_diameter, region.max_intensity, region.mean_intensity, region.convex_area,]
         )
 
 

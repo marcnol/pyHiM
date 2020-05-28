@@ -183,6 +183,15 @@ This last matrix will be outputed in the ```scHiMmatrices``` directory as two fi
 - ```CombinedMatrixwt_docTAD.dat```: plain text ensemble HiM contact probability matrix (can be opened in MATLAB). Each row in the matrix is separated by a ```\n``` .
 -  ```UniqueBarcodeswt_docTAD.dat```: plain text file with the barcodes used.
 
+### Analyzing labeled datasets
+
+If you run ```processSNDchannel.py``` before, you may want now to look at cells with different labels (ON, OFF, etc). For this, you need to run ```processHiMmatrix.py``` with two more parameters:
+- ```--label```: indicates the name used when you run processSNDchannel.py with the option ```--addMask```. Typical names: doc, sna.Running
+- ```--action```: three options are available:
+  - ```all```: selects all cells for analysis irrespective of whether they are labeled
+  - ```labeled``` only runs analysis on labeled cells
+  - ```unlabeled```: only runs analysis on unlabeled cells
+
 ### options in parameter file
 
 Options:

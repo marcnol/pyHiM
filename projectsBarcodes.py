@@ -62,21 +62,13 @@ def gets2DcorrectedImage(fileName, param, log1, session1, dataFolder):
     """
 
     rootFileName = os.path.basename(fileName).split(".")[0]
-    fileName_2d_aligned = (
-        dataFolder.outputFolders["alignImages"]
-        + os.sep
-        + rootFileName
-        + "_2d_registered.npy"
-    )
+    fileName_2d_aligned = dataFolder.outputFolders["alignImages"] + os.sep + rootFileName + "_2d_registered.npy"
 
     if os.path.exists(fileName_2d_aligned):  # file exists
         # loading registered 2D projection
         Im = Image()
         Im.loadImage2D(
-            fileName,
-            log1,
-            dataFolder.outputFolders["alignImages"],
-            tag="_2d_registered",
+            fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
         im = Im.data_2D
         del Im
@@ -94,15 +86,11 @@ def projectsBarcodes(param, log1, session1):
         # processes folders and files
         dataFolder = folders(param.param["rootFolder"])
         log1.addSimpleText(
-            "\n===================={}:{}====================\n".format(
-                sessionName, param.param["acquisition"]["label"]
-            )
+            "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
         )
         log1.report("folders read: {}".format(len(dataFolder.listFolders)))
         writeString2File(
-            log1.fileNameMD,
-            "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]),
-            "a",
+            log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
         )
         # barcodesCoordinates=Table()
 
@@ -124,19 +112,11 @@ def projectsBarcodes(param, log1, session1):
                 newFile = FileHandling(fileName)
                 ROI = newFile.getROI()
 
-                newImage, errorCode = gets2DcorrectedImage(
-                    fileName, param, log1, session1, dataFolder
-                )
+                newImage, errorCode = gets2DcorrectedImage(fileName, param, log1, session1, dataFolder)
 
                 if errorCode == 0:
                     # adjusts image levels before stacking
-                    (
-                        newImage,
-                        hist1_before,
-                        hist1,
-                        lower_cutoff,
-                        higher_cutoff,
-                    ) = imageAdjust(
+                    (newImage, hist1_before, hist1, lower_cutoff, higher_cutoff,) = imageAdjust(
                         newImage, lower_threshold=0.3, higher_threshold=0.9999
                     )
 
@@ -148,16 +128,12 @@ def projectsBarcodes(param, log1, session1):
                     else:
                         imageStack[ROI] = newImage  # starts dict entry
                     log1.report(
-                        "File {} accumulated to stack of ROI {}.".format(fileName, ROI),
-                        "info",
+                        "File {} accumulated to stack of ROI {}.".format(fileName, ROI), "info",
                     )
 
                 else:
                     log1.report(
-                        "No 2d corrected image for file {} could be found --> not accumulated".format(
-                            fileName
-                        ),
-                        "warning",
+                        "No 2d corrected image for file {} could be found --> not accumulated".format(fileName), "warning",
                     )
 
                 # saves projected image into file
@@ -165,16 +141,12 @@ def projectsBarcodes(param, log1, session1):
 
             # [saves imageStack to file before starting a new currentFolder ]
             for ROI in imageStack:
-                imageFileNameOutput = (
-                    dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".npy"
-                )
+                imageFileNameOutput = dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".npy"
                 saveImage2Dcmd(imageStack[ROI], imageFileNameOutput, log1)
 
                 ImtoSave = Image()
                 ImtoSave.data_2D = imageStack[ROI]
-                outputName = (
-                    dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".png"
-                )
+                outputName = dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".png"
                 ImtoSave.imageShow(outputName=outputName, normalization="simple")
 
                 log1.report("Output image File {}".format(outputName), "info")
@@ -191,9 +163,7 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n--------------------------------------------------------------------------")
 
     if args.rootFolder:
         rootFolder = args.rootFolder

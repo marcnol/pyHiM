@@ -24,13 +24,7 @@ import cv2
 
 
 def displaysEquializationHistograms(
-    hist1_before,
-    hist1_after,
-    hist2_before,
-    hist2_after,
-    min_threshold,
-    vebose=False,
-    fileName="test",
+    hist1_before, hist1_after, hist2_before, hist2_after, min_threshold, vebose=False, fileName="test",
 ):
     fig = plt.figure(figsize=(6, 3))
     ax1 = plt.subplot(2, 2, 1)
@@ -51,17 +45,13 @@ def displaysEquializationHistograms(
         plt.close(fig)
 
 
-def imageAdjust(
-    image, fileName="test", lower_threshold=0.3, higher_threshold=0.9999, display=False
-):
+def imageAdjust(image, fileName="test", lower_threshold=0.3, higher_threshold=0.9999, display=False):
 
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
 
     hist1_before = exposure.histogram(image1)
 
-    image1 = exposure.rescale_intensity(
-        image1, in_range=(lower_threshold, higher_threshold), out_range=(0, 1)
-    )
+    image1 = exposure.rescale_intensity(image1, in_range=(lower_threshold, higher_threshold), out_range=(0, 1))
 
     hist1 = exposure.histogram(image1)
 
@@ -156,29 +146,15 @@ lower_threshold1 = 2 * filters.threshold_otsu(image1_uncorrected)
 lower_threshold2 = 2 * filters.threshold_otsu(image2_uncorrected)
 
 image1, hist1_before, hist1_after = imageAdjust(
-    image1_uncorrected,
-    outputFileName + "_ref",
-    lower_threshold1,
-    higher_threshold=0.9999,
-    display=verbose,
+    image1_uncorrected, outputFileName + "_ref", lower_threshold1, higher_threshold=0.9999, display=verbose,
 )
 image2, hist2_before, hist2_after = imageAdjust(
-    image2_uncorrected,
-    outputFileName,
-    lower_threshold2,
-    higher_threshold=0.9999,
-    display=verbose,
+    image2_uncorrected, outputFileName, lower_threshold2, higher_threshold=0.9999, display=verbose,
 )
 
 # shows eq histograms
 displaysEquializationHistograms(
-    hist1_before,
-    hist1_after,
-    hist2_before,
-    hist2_after,
-    (lower_threshold1, lower_threshold2),
-    verbose,
-    outputFileName,
+    hist1_before, hist1_after, hist2_before, hist2_after, (lower_threshold1, lower_threshold2), verbose, outputFileName,
 )
 
 # calculates shift
@@ -198,9 +174,7 @@ print(f"Detected subpixel offset (y, x): {shift}")
 if verbose:
     showCCimage(image1, image2, verbose, outputFileName)
 
-save2imagesRGB(
-    image1_uncorrected, image2_uncorrected, outputFileName + "_overlay_uncorrected.png"
-)
+save2imagesRGB(image1_uncorrected, image2_uncorrected, outputFileName + "_overlay_uncorrected.png")
 image1 = image1 > 0.1
 image2_corrected = image2_corrected > 0.1
 save2imagesRGB(image1, image2_corrected, outputFileName + "_overlay_corrected.png")

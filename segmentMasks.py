@@ -54,11 +54,7 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     plt.savefig(outputFileName + "_segmentedSources.png")
     plt.close()
     writeString2File(
-        log1.fileNameMD,
-        "{}\n ![]({})\n".format(
-            os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"
-        ),
-        "a",
+        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"), "a",
     )
 
 
@@ -74,11 +70,7 @@ def showsImageMasks(im, log1, segm_deblend, outputFileName):
     plt.savefig(outputFileName + "_segmentedMasks.png")
     plt.close()
     writeString2File(
-        log1.fileNameMD,
-        "{}\n ![]({})\n".format(
-            os.path.basename(outputFileName), outputFileName + "_segmentedMasks.png"
-        ),
-        "a",
+        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedMasks.png"), "a",
     )
 
 
@@ -126,24 +118,13 @@ def segmentSourceInhomogBackground(im, param):
     # estimates inhomogeneous background
     sigma_clip = SigmaClip(sigma=3.0)
     bkg_estimator = MedianBackground()
-    bkg = Background2D(
-        im,
-        (64, 64),
-        filter_size=(3, 3),
-        sigma_clip=sigma_clip,
-        bkg_estimator=bkg_estimator,
-    )
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
 
     im1_bkg_substracted = im - bkg.background
     mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
 
     # estimates sources
-    daofind = DAOStarFinder(
-        fwhm=fwhm,
-        threshold=threshold_over_std * std,
-        brightest=brightest,
-        exclude_border=True,
-    )
+    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest, exclude_border=True,)
     sources = daofind(im1_bkg_substracted)
 
     return sources, im1_bkg_substracted
@@ -190,15 +171,11 @@ def segmentSourceFlatBackground(im, param):
     fwhm = param.param["segmentedObjects"]["fwhm"]
 
     # removes background
-    mean, median, std = sigma_clipped_stats(
-        im, param.param["segmentedObjects"]["background_sigma"]
-    )
+    mean, median, std = sigma_clipped_stats(im, param.param["segmentedObjects"]["background_sigma"])
     im1_bkg_substracted = im - median
 
     # estimates sources
-    daofind = DAOStarFinder(
-        fwhm=fwhm, threshold=threshold_over_std * std, exclude_border=True
-    )
+    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, exclude_border=True)
     sources = daofind(im - median)
 
     return sources, im1_bkg_substracted
@@ -211,30 +188,17 @@ def segmentMaskInhomogBackground(im, param):
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
 
     bkg_estimator = MedianBackground()
-    bkg = Background2D(
-        im,
-        (64, 64),
-        filter_size=(3, 3),
-        sigma_clip=sigma_clip,
-        bkg_estimator=bkg_estimator,
-    )
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
     threshold = bkg.background + (
         param.param["segmentedObjects"]["threshold_over_std"] * bkg.background_rms
     )  # background-only error image, typically 1.0
 
-    sigma = (
-        param.param["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma
-    )  # FWHM = 3.
+    sigma = param.param["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
     kernel.normalize()
 
     # estimates masks and deblends
-    segm = detect_sources(
-        im,
-        threshold,
-        npixels=param.param["segmentedObjects"]["area_min"],
-        filter_kernel=kernel,
-    )
+    segm = detect_sources(im, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
 
     # removes masks too close to border
     segm.remove_border_labels(border_width=10)  # parameter to add to infoList
@@ -254,10 +218,7 @@ def segmentMaskInhomogBackground(im, param):
         # take regions with large enough areas
         area = segm_deblend.get_area(label)
         # print('label {}, with area {}'.format(label,area))
-        if (
-            area < param.param["segmentedObjects"]["area_min"]
-            or area > param.param["segmentedObjects"]["area_max"]
-        ):
+        if area < param.param["segmentedObjects"]["area_min"] or area > param.param["segmentedObjects"]["area_max"]:
             segm_deblend.remove_label(label=label)
             # print('label {} removed'.format(label))
 
@@ -270,15 +231,8 @@ def segmentMaskInhomogBackground(im, param):
 def makesSegmentations(fileName, param, log1, session1, dataFolder):
 
     rootFileName = os.path.basename(fileName).split(".")[0]
-    outputFileName = (
-        dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
-    )
-    fileName_2d_aligned = (
-        dataFolder.outputFolders["alignImages"]
-        + os.sep
-        + rootFileName
-        + "_2d_registered.npy"
-    )
+    outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
+    fileName_2d_aligned = dataFolder.outputFolders["alignImages"] + os.sep + rootFileName + "_2d_registered.npy"
 
     if (
         (fileName in session1.data)
@@ -286,40 +240,25 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         and os.path.exists(fileName_2d_aligned)
     ):  # file exists
 
-        ROI = os.path.basename(fileName).split("_")[
-            param.param["acquisition"]["positionROIinformation"]
-        ]
+        ROI = os.path.basename(fileName).split("_")[param.param["acquisition"]["positionROIinformation"]]
         label = param.param["acquisition"]["label"]
 
         # loading registered 2D projection
         Im = Image()
         Im.loadImage2D(
-            fileName,
-            log1,
-            dataFolder.outputFolders["alignImages"],
-            tag="_2d_registered",
+            fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
         im = Im.data_2D
-        log1.report(
-            "[{}] Loaded 2D registered file: {}".format(
-                label, os.path.basename(fileName)
-            )
-        )
+        log1.report("[{}] Loaded 2D registered file: {}".format(label, os.path.basename(fileName)))
 
-        if (
-            label == "barcode"
-            and len([i for i in rootFileName.split("_") if "RT" in i]) > 0
-        ):
+        if label == "barcode" and len([i for i in rootFileName.split("_") if "RT" in i]) > 0:
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentSourceFlatBackground(im, param)
-            elif (
-                param.param["segmentedObjects"]["background_method"] == "inhomogeneous"
-            ):
+            elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
                 output, im1_bkg_substracted = segmentSourceInhomogBackground(im, param)
             else:
                 log1.report(
-                    "segmentedObjects/background_method not specified in json file",
-                    "ERROR",
+                    "segmentedObjects/background_method not specified in json file", "ERROR",
                 )
                 return Table()
 
@@ -337,9 +276,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             # barcodeID, cellID and ROI
             barcodeID = os.path.basename(fileName).split("_")[2].split("RT")[1]
             colROI = Column(int(ROI) * np.ones(len(output)), name="ROI #", dtype=int)
-            colBarcode = Column(
-                int(barcodeID) * np.ones(len(output)), name="Barcode #", dtype=int
-            )
+            colBarcode = Column(int(barcodeID) * np.ones(len(output)), name="Barcode #", dtype=int)
             colCellID = Column(np.zeros(len(output)), name="CellID #", dtype=int)
 
             # adds to table
@@ -355,14 +292,11 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         elif label == "DAPI" and rootFileName.split("_")[2] == "DAPI":
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentMaskInhomogBackground(im, param)
-            elif (
-                param.param["segmentedObjects"]["background_method"] == "inhomogeneous"
-            ):
+            elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
                 output = segmentMaskInhomogBackground(im, param)
             else:
                 log1.report(
-                    "segmentedObjects/background_method not specified in json file",
-                    "ERROR",
+                    "segmentedObjects/background_method not specified in json file", "ERROR",
                 )
                 output = np.zeros(1)
                 return output
@@ -378,9 +312,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
 
         return output
     else:
-        log1.report(
-            "2D aligned file does not exist:{}".format(fileName_2d_aligned), "Error"
-        )
+        log1.report("2D aligned file does not exist:{}".format(fileName_2d_aligned), "Error")
         return []
 
 
@@ -390,15 +322,11 @@ def segmentMasks(param, log1, session1):
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
     log1.addSimpleText(
-        "\n===================={}:{}====================\n".format(
-            sessionName, param.param["acquisition"]["label"]
-        )
+        "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
     )
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
-        log1.fileNameMD,
-        "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]),
-        "a",
+        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )
     barcodesCoordinates = Table()
 
@@ -417,15 +345,8 @@ def segmentMasks(param, log1, session1):
             if label != "fiducial":
                 output = makesSegmentations(fileName, param, log1, session1, dataFolder)
                 if label == "barcode":
-                    outputFile = (
-                        dataFolder.outputFiles["segmentedObjects"]
-                        + "_"
-                        + label
-                        + ".dat"
-                    )
+                    outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
                     barcodesCoordinates = vstack([barcodesCoordinates, output])
-                    barcodesCoordinates.write(
-                        outputFile, format="ascii.ecsv", overwrite=True
-                    )
+                    barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
                     log1.report("File {} written to file.".format(outputFile), "info")
                 session1.add(fileName, sessionName)

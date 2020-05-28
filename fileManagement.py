@@ -83,8 +83,7 @@ class folders:
         hfolders = [
             folder
             for folder in glob.glob(self.masterFolder + os.sep + "*")
-            if os.path.isdir(folder)
-            and len(glob.glob(folder + os.sep + "*." + extension)) > 0
+            if os.path.isdir(folder) and len(glob.glob(folder + os.sep + "*." + extension)) > 0
         ]
         # os.path.name(folder)[0]!='F']
         if len(hfolders) > 0:
@@ -93,10 +92,7 @@ class folders:
             self.listFolders = []
 
         # checks if there are files with the required extension in the root folder provided
-        if (
-            os.path.isdir(self.masterFolder)
-            and len(glob.glob(self.masterFolder + os.sep + "*." + extension)) > 0
-        ):
+        if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder + os.sep + "*." + extension)) > 0:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
 
@@ -122,19 +118,11 @@ class folders:
         # self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
         # self.createSingleFolder(self.zProjectFolder)
 
-        self.outputFolders["zProject"] = (
-            filesFolder + os.sep + param.param["zProject"]["folder"]
-        )
-        self.outputFolders["alignImages"] = (
-            filesFolder + os.sep + param.param["alignImages"]["folder"]
-        )
-        self.outputFolders["segmentedObjects"] = (
-            filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
-        )
+        self.outputFolders["zProject"] = filesFolder + os.sep + param.param["zProject"]["folder"]
+        self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
+        self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
         self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"
-        self.outputFolders["projectsBarcodes"] = (
-            filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
-        )
+        self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
 
         self.createSingleFolder(self.outputFolders["zProject"])
         self.createSingleFolder(self.outputFolders["alignImages"])
@@ -143,26 +131,14 @@ class folders:
         self.createSingleFolder(self.outputFolders["projectsBarcodes"])
 
         # self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
-        self.outputFiles["alignImages"] = (
-            self.outputFolders["alignImages"]
-            + os.sep
-            + param.param["alignImages"]["outputFile"]
-        )
-        self.outputFiles["dictShifts"] = (
-            self.masterFolder + os.sep + param.param["alignImages"]["outputFile"]
-        )
+        self.outputFiles["alignImages"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        self.outputFiles["dictShifts"] = self.masterFolder + os.sep + param.param["alignImages"]["outputFile"]
         self.outputFiles["segmentedObjects"] = (
-            self.outputFolders["segmentedObjects"]
-            + os.sep
-            + param.param["segmentedObjects"]["outputFile"]
+            self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
         )
-        self.outputFiles["buildsPWDmatrix"] = (
-            self.outputFolders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
-        )
+        self.outputFiles["buildsPWDmatrix"] = self.outputFolders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
         self.outputFiles["projectsBarcodes"] = (
-            self.outputFolders["projectsBarcodes"]
-            + os.sep
-            + param.param["projectsBarcodes"]["outputFile"]
+            self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
         )
 
     def createSingleFolder(self, folder):
@@ -221,10 +197,7 @@ class Parameters:
                 "claheGridH": 8,
                 "claheGridW": 8,
             },
-            "acquisition": {
-                "label": "DAPI",  # barcode, fiducial
-                "positionROIinformation": 3,
-            },
+            "acquisition": {"label": "DAPI", "positionROIinformation": 3,},  # barcode, fiducial
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
@@ -278,11 +251,7 @@ class Parameters:
         with open(self.paramFile, "w") as f:
             # json.dump(json.dumps(self.param), f, ensure_ascii=False, indent=4)
             json.dump(self.param, f, ensure_ascii=False, sort_keys=True, indent=4)
-        print(
-            "Model parameters file saved to: {}".format(
-                os.getcwd() + os.sep + self.paramFile
-            )
-        )
+        print("Model parameters file saved to: {}".format(os.getcwd() + os.sep + self.paramFile))
 
     def loadParametersFile(self, fileName):
         if path.exists(fileName):
@@ -296,9 +265,7 @@ class Parameters:
 
         # finds if there is 2 or 3 channels for DAPI
         fileList2Process = [
-            file
-            for file in filesFolder
-            if file.split("_")[-1].split(".")[0] == "ch02" and "DAPI" in file.split("_")
+            file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch02" and "DAPI" in file.split("_")
         ]
 
         if len(fileList2Process) > 0:
@@ -311,19 +278,13 @@ class Parameters:
         # selects DAPI files
         if self.param["acquisition"]["label"] == "DAPI":
             self.fileList2Process = [
-                file
-                for file in filesFolder
-                if file.split("_")[-1].split(".")[0] == "ch00"
-                and "DAPI" in file.split("_")
+                file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in file.split("_")
             ]
 
         # selects DAPIch2 files
         if self.param["acquisition"]["label"] == "RNA":
             self.fileList2Process = [
-                file
-                for file in filesFolder
-                if file.split("_")[-1].split(".")[0] == channelDAPI_RNA
-                and "DAPI" in file.split("_")
+                file for file in filesFolder if file.split("_")[-1].split(".")[0] == channelDAPI_RNA and "DAPI" in file.split("_")
             ]
 
         # selects barcode files
@@ -331,8 +292,7 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if len([i for i in file.split("_") if "RT" in i]) > 0
-                and file.split("_")[-1].split(".")[0] == "ch01"
+                if len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == "ch01"
             ]
 
         # selects fiducial files
@@ -340,14 +300,8 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if (
-                    len([i for i in file.split("_") if "RT" in i]) > 0
-                    and file.split("_")[-1].split(".")[0] == "ch00"
-                )
-                or (
-                    "DAPI" in file.split("_")
-                    and file.split("_")[-1].split(".")[0] == channelDAPI_fiducial
-                )
+                if (len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == "ch00")
+                or ("DAPI" in file.split("_") and file.split("_")[-1].split(".")[0] == channelDAPI_fiducial)
             ]
 
 

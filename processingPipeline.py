@@ -38,9 +38,7 @@ if __name__ == "__main__":
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n--------------------------------------------------------------------------")
 
     if args.rootFolder:
         rootFolder = args.rootFolder
@@ -70,16 +68,10 @@ if __name__ == "__main__":
 
     # setup logs
     log1 = log(rootFolder)
-    log1.addSimpleText(
-        "\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(
-            "processingPipeline"
-        )
-    )
+    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
-        log1.fileNameMD,
-        "# Hi-M analysis {}".format(now.strftime("%d/%m/%Y %H:%M:%S")),
-        "w",
+        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%d/%m/%Y %H:%M:%S")), "w",
     )  # initialises MD file
 
     for ilabel in range(len(labels2Process)):
@@ -96,20 +88,14 @@ if __name__ == "__main__":
         # [registers fiducials using a barcode as reference]
         if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
             log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(
-                    ilabel, label
-                ),
-                "info",
+                "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
             )
             alignImages(param, log1, session1)
 
         # [applies registration to DAPI and barcodes]
         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
             log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(
-                    ilabel, label
-                ),
-                "info",
+                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
             )
             appliesRegistrations(param, log1, session1)
 
@@ -134,9 +120,7 @@ if __name__ == "__main__":
 
     # exits
     session1.save(log1)
-    log1.addSimpleText(
-        "\n===================={}====================\n".format("Normal termination")
-    )
+    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
     del log1, session1
     print("Elapsed time: {}".format(datetime.now() - begin_time))

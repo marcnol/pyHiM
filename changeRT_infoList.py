@@ -33,9 +33,7 @@ if nArgs == 3:
         label = labels2Process[ilabel]["label"]
         labelParameterFile = labels2Process[ilabel]["parameterFile"]
         print("**Modifying label {}: {}**".format(label, labelParameterFile))
-        command2Run1 = (
-            "sed -i '" + "s+" + oldRT + "+" + newRT + "+g' " + labelParameterFile
-        )
+        command2Run1 = "sed -i '" + "s+" + oldRT + "+" + newRT + "+g' " + labelParameterFile
         print("Command: {}".format(command2Run1))
 
         os.system(command2Run1)
@@ -43,7 +41,5 @@ if nArgs == 3:
 
 else:
     print("not enough arguments!\n")
-    print(
-        "Please specify the label of the old RT and that of the new RT, as follows:\n"
-    )
+    print("Please specify the label of the old RT and that of the new RT, as follows:\n")
     print("$ changeRT_infolist.py RT33 RT95\n")

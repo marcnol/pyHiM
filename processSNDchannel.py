@@ -88,9 +88,7 @@ def processesUserMasks(param, log1, session1, processingList):
         # processes folders and files
         dataFolder = folders(param.param["rootFolder"])
         dataFolder.setsFolders()
-        log1.addSimpleText(
-            "\n===================={}====================\n".format(sessionName)
-        )
+        log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         log1.report("folders read: {}".format(len(dataFolder.listFolders)))
 
         positionROIinformation = param.param["acquisition"]["positionROIinformation"]
@@ -105,16 +103,12 @@ def processesUserMasks(param, log1, session1, processingList):
 
             # generates lists of files to process
             param.files2Process(filesFolder)
-            log1.report(
-                "About to process {} files\n".format(len(param.fileList2Process))
-            )
+            log1.report("About to process {} files\n".format(len(param.fileList2Process)))
 
             if len(param.fileList2Process) > 0:
                 fileList2Process = [
                     file
-                    for file in glob.glob(
-                        dataFolder.outputFolders["segmentedObjects"] + os.sep + "*"
-                    )
+                    for file in glob.glob(dataFolder.outputFolders["segmentedObjects"] + os.sep + "*")
                     if "SNDmask" in file.split("_")
                 ]
 
@@ -125,36 +119,25 @@ def processesUserMasks(param, log1, session1, processingList):
                     for fileName in fileList2Process:
                         os.remove(fileName)
                         log1.report(
-                            "Removing SND mask: {}".format(os.path.basename(fileName)),
-                            "info",
+                            "Removing SND mask: {}".format(os.path.basename(fileName)), "info",
                         )
 
-                elif (
-                    processingList["addMask"] == ""
-                    and not processingList["cleanAllMasks"]
-                ):
+                elif processingList["addMask"] == "" and not processingList["cleanAllMasks"]:
 
                     # [assigns cells to exsting masks]
-                    resultsTable = assignsSNDmask2Cells(
-                        fileList2Process, positionROIinformation
-                    )
+                    resultsTable = assignsSNDmask2Cells(fileList2Process, positionROIinformation)
                     allresultsTable = vstack([allresultsTable, resultsTable])
                     # allresultsTable=resultsTable
 
                     log1.report("assigning masks", "info")
 
-                elif (
-                    not processingList["cleanAllMasks"]
-                    and len(processingList["addMask"]) > 0
-                ):
+                elif not processingList["cleanAllMasks"] and len(processingList["addMask"]) > 0:
 
                     # [makes new set of masks]
                     for fileName in param.fileList2Process:
 
                         # gets filename information
-                        ROI = os.path.basename(fileName).split("_")[
-                            positionROIinformation
-                        ]
+                        ROI = os.path.basename(fileName).split("_")[positionROIinformation]
 
                         # checks that SND channel was projected and aligned
                         registeredFileName = (
@@ -177,30 +160,18 @@ def processesUserMasks(param, log1, session1, processingList):
                             createsUserMask(registeredFileName, outputFileName)
                             numberMaskedFiles += 1
                             log1.report(
-                                "Segmented image for SND channel ROI#{}: {}".format(
-                                    ROI, outputFileName
-                                ),
-                                "info",
+                                "Segmented image for SND channel ROI#{}: {}".format(ROI, outputFileName), "info",
                             )
                         else:
                             log1.report(
-                                "Could not find registered image for SND channel:{}".format(
-                                    registeredFileName
-                                ),
-                                "error",
+                                "Could not find registered image for SND channel:{}".format(registeredFileName), "error",
                             )
 
-        tableOutputFileName = (
-            dataFolder.outputFolders["segmentedObjects"]
-            + os.sep
-            + "SNDassignedCells.ecsv"
-        )
+        tableOutputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + "SNDassignedCells.ecsv"
         if os.path.exists(tableOutputFileName):
-            previousresultsTable = Table.read(
-                tableOutputFileName, format="ascii.ecsv"
-            )  # ascii.ecsv
+            previousresultsTable = Table.read(tableOutputFileName, format="ascii.ecsv")  # ascii.ecsv
             allresultsTable = vstack([previousresultsTable, allresultsTable])
-        if len(allresultsTable)>0:
+        if len(allresultsTable) > 0:
             allresultsTable.write(tableOutputFileName, format="ascii.ecsv", overwrite=True)
 
         return numberMaskedFiles
@@ -217,10 +188,7 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
 
         # [checks if DAPI mask exists for the file to process]
         fileNameDAPImask = (
-            os.path.dirname(fileName)
-            + os.sep
-            + "_".join(os.path.basename(fileName).split("_")[0:7])
-            + "_ch00_Masks.npy"
+            os.path.dirname(fileName) + os.sep + "_".join(os.path.basename(fileName).split("_")[0:7]) + "_ch00_Masks.npy"
         )
         if os.path.exists(fileNameDAPImask):
 
@@ -241,14 +209,8 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
             if len(cellsWithinMask) > 0:
 
                 newTable = Table()
-                colMask = Column(
-                    [fileName.split("_")[-1].split(".")[0]] * len(cellsWithinMask),
-                    name="MaskID #",
-                    dtype=str,
-                )
-                colROI = Column(
-                    int(ROI) * np.ones(len(cellsWithinMask)), name="ROI #", dtype=int
-                )
+                colMask = Column([fileName.split("_")[-1].split(".")[0]] * len(cellsWithinMask), name="MaskID #", dtype=str,)
+                colROI = Column(int(ROI) * np.ones(len(cellsWithinMask)), name="ROI #", dtype=int)
                 colCellID = Column(cellsWithinMask, name="CellID #", dtype=int)
                 newTable.add_column(colROI, index=0)
                 newTable.add_column(colCellID, index=1)
@@ -265,18 +227,14 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
             # outputs list of cells within (1) and outside SND mask (0)
 
             log1.report(
-                "Matched DAPI and SND masks: \n SND: {}\n DAPI: {}\n".format(
-                    fileName, fileNameDAPImask
-                ),
-                "info",
+                "Matched DAPI and SND masks: \n SND: {}\n DAPI: {}\n".format(fileName, fileNameDAPImask), "info",
             )
             numberFilesProcessed += 1
 
         else:
 
             log1.report(
-                "Could not find expected DAPI mask: {}".format(fileNameDAPImask),
-                "warning",
+                "Could not find expected DAPI mask: {}".format(fileNameDAPImask), "warning",
             )
 
     return resultsTable
@@ -298,9 +256,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n--------------------------------------------------------------------------")
     processingList = {}
 
     if args.rootFolder:
@@ -333,16 +289,10 @@ if __name__ == "__main__":
 
     # setup logs
     log1 = log(rootFolder, fileNameRoot=sessionName)
-    log1.addSimpleText(
-        "\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(
-            sessionName
-        )
-    )
+    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
     log1.report("Process SND channel MD: {}".format(log1.fileNameMD))
     writeString2File(
-        log1.fileNameMD,
-        "# Process SND channel {}".format(now.strftime("%d/%m/%Y %H:%M:%S")),
-        "w",
+        log1.fileNameMD, "# Process SND channel {}".format(now.strftime("%d/%m/%Y %H:%M:%S")), "w",
     )  # initialises MD file
 
     for ilabel in range(len(labels2Process)):
@@ -355,9 +305,7 @@ if __name__ == "__main__":
 
         # processes Secondary masks
         if label == "RNA":
-            numberMaskedFiles = processesUserMasks(
-                param, log1, session1, processingList
-            )
+            numberMaskedFiles = processesUserMasks(param, log1, session1, processingList)
             if numberMaskedFiles > 0:
                 log1.report("Files processed: {}".format(numberMaskedFiles), "info")
             else:
@@ -367,9 +315,7 @@ if __name__ == "__main__":
 
     # exits
     session1.save(log1)
-    log1.addSimpleText(
-        "\n===================={}====================\n".format("Normal termination")
-    )
+    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
     del log1, session1
     print("Elapsed time: {}".format(datetime.now() - begin_time))

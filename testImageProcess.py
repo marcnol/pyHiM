@@ -86,9 +86,7 @@ if __name__ == "__main__":
 
     # Processes all DAPI masks
     for fileName in filesFolder:
-        if fileName.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in fileName.split(
-            "_"
-        ):
+        if fileName.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in fileName.split("_"):
             processImage(fileName, param, log1)
 
     # Processes all DAPI masks

@@ -28,9 +28,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    parser.add_argument(
-        "-P", "--fileParameters", help="parameters file, default: infoList_barcode.json"
-    )
+    parser.add_argument("-P", "--fileParameters", help="parameters file, default: infoList_barcode.json")
 
     args = parser.parse_args()
 
@@ -50,34 +48,13 @@ if __name__ == "__main__":
     print("creating archive: {}".format(tarFileName))
 
     # tar files in rootFolder
-    filesMD = [
-        os.path.basename(f)
-        for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.md", recursive=True)
-    ]
-    filesLOGMD = [
-        os.path.basename(f)
-        for f in glob.glob(rootFolder + os.sep + "log*.txt", recursive=True)
-    ]
-    filesLOG = [
-        os.path.basename(f)
-        for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.log", recursive=True)
-    ]
-    filesSession = [
-        os.path.basename(f)
-        for f in glob.glob(rootFolder + os.sep + "Session*.json", recursive=True)
-    ]
+    filesMD = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.md", recursive=True)]
+    filesLOGMD = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "log*.txt", recursive=True)]
+    filesLOG = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "HiM_analysis*.log", recursive=True)]
+    filesSession = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "Session*.json", recursive=True)]
 
-    tarcmd = (
-        "tar -cvf "
-        + tarFileName
-        + " "
-        + " ".join(filesMD + filesLOG + filesSession + filesLOGMD)
-    )
-    print(
-        "Archiving:\n{}".format(
-            "\n".join(filesMD + filesLOG + filesSession + filesLOGMD)
-        )
-    )
+    tarcmd = "tar -cvf " + tarFileName + " " + " ".join(filesMD + filesLOG + filesSession + filesLOGMD)
+    print("Archiving:\n{}".format("\n".join(filesMD + filesLOG + filesSession + filesLOGMD)))
 
     os.system(tarcmd)
 
@@ -89,19 +66,11 @@ if __name__ == "__main__":
     for currentFolder in dataFolder.listFolders:
 
         folders2Remove = []
-        folders2Remove.append(
-            currentFolder + os.sep + param.param["zProject"]["folder"]
-        )
-        folders2Remove.append(
-            currentFolder + os.sep + param.param["alignImages"]["folder"]
-        )
-        folders2Remove.append(
-            currentFolder + os.sep + param.param["segmentedObjects"]["folder"]
-        )
+        folders2Remove.append(currentFolder + os.sep + param.param["zProject"]["folder"])
+        folders2Remove.append(currentFolder + os.sep + param.param["alignImages"]["folder"])
+        folders2Remove.append(currentFolder + os.sep + param.param["segmentedObjects"]["folder"])
         folders2Remove.append(currentFolder + os.sep + "buildsPWDmatrix")
-        folders2Remove.append(
-            currentFolder + os.sep + param.param["projectsBarcodes"]["folder"]
-        )
+        folders2Remove.append(currentFolder + os.sep + param.param["projectsBarcodes"]["folder"])
 
         for newFolder in folders2Remove:
             if rootFolder == ".":
@@ -109,7 +78,7 @@ if __name__ == "__main__":
             else:
                 newFolderRelative = "." + newFolder.split(rootFolder)[1]
 
-            fileExtensions = ["/*.png", "/*.dat", "/*.ecsv"]
+            fileExtensions = ["/*.png", "/*.dat", "/*.ecsv", "/buildsPWDmatrix*.npy"]
             for newFileExtension in fileExtensions:
 
                 newFiles = newFolderRelative + newFileExtension

@@ -60,9 +60,7 @@ image2_corrected_raw[image2_corrected_raw < 0] = 0
 # thresholds corrected images for better display and saves
 image1_corrected = image1_adjusted > 0.1
 image2_corrected = image2_corrected > 0.1
-save2imagesRGB(
-    image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png"
-)
+save2imagesRGB(image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png")
 
 #%% image_registration package from astropy
 """ 
@@ -75,22 +73,16 @@ from image_registration import chi2_shift
 # import image_registration
 
 # on raw images. There is a 1px difference with respect to non-adjusted images
-dx, dy, edx, edy = chi2_shift(
-    image1_uncorrected, image2_uncorrected, upsample_factor="auto"
-)
+dx, dy, edx, edy = chi2_shift(image1_uncorrected, image2_uncorrected, upsample_factor="auto")
 
 shift1 = -np.array((dy, dx))
 image2_corrected = shiftImage(image2_adjusted, shift1)
 image2_corrected[image2_corrected < 0] = 0
 image2_corrected /= image2_corrected.max()
-save2imagesRGB(
-    image1_uncorrected, image2_corrected, outputFileName + "_overlay_corrected_chi2.png"
-)
+save2imagesRGB(image1_uncorrected, image2_corrected, outputFileName + "_overlay_corrected_chi2.png")
 
 # on adjusted images
-dx2, dy2, edx2, edy2 = chi2_shift(
-    image1_adjusted, image2_adjusted, upsample_factor="auto"
-)
+dx2, dy2, edx2, edy2 = chi2_shift(image1_adjusted, image2_adjusted, upsample_factor="auto")
 
 shift2 = -np.array((dy2, dx2))
 
@@ -110,9 +102,7 @@ image2_corrected[image2_corrected < 0] = 0
 image2_corrected /= image2_corrected.max()
 # thresholds corrected images for better display and saves
 save2imagesRGB(
-    image1_uncorrected,
-    image2_corrected,
-    outputFileName + "_overlay_corrected_imregdft.png",
+    image1_uncorrected, image2_corrected, outputFileName + "_overlay_corrected_imregdft.png",
 )
 
 #%% uses imreg
