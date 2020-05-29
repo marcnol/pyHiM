@@ -34,7 +34,7 @@ if nArgs > 2:
         print("Processing Embryo #{}".format(sys.argv[i]))
         command2Run1 = "nice -19 processingPipeline.py -F " + rootDir + EmbryoTag + sys.argv[i]
         os.system(command2Run1)
-        command2Run2 = "zipHuMrun.py -F " + rootDir + EmbryoTag + str(i)
+        command2Run2 = "zipHiM_run.py -F " + rootDir + EmbryoTag + str(i)
         os.system(command2Run2)
         print("Commands: {}\n{}".format(command2Run1, command2Run2))
 

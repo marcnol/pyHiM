@@ -252,7 +252,7 @@ def plotMatrix(
     # Calculates ensemble matrix from single cell matrices
     if len(SCmatrixCollated.shape) == 3:
        if len(cells2Plot)==0:
-            cells2Plot=range(len(SCmatrixCollated.shape[2]))
+            cells2Plot=range(SCmatrixCollated.shape[2])
        
        if mode == "median":
             # calculates the median of all values
