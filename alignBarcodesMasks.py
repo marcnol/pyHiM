@@ -256,11 +256,18 @@ def plotMatrix(
        
        if mode == "median":
             # calculates the median of all values
-            meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:,:,cells2Plot], axis=2)
-            nCells = SCmatrixCollated[:,:,cells2Plot].shape[2]
-            print('nCells={}'.format(nCells))
+            if max(cells2Plot)>SCmatrixCollated.shape[2]:
+                print('Error with range in cells2plot {} as it is larger than the number of available cells {}'.format(max(cells2Plot),SCmatrixCollated.shape[2]))
+                keepPlotting=False
+            else:
+                meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:,:,cells2Plot], axis=2)
+                nCells = SCmatrixCollated[:,:,cells2Plot].shape[2]
+                print('Dataset {} cells2plot: {}'.format(figtitle,nCells))
+                # print('nCells={}'.format(nCells))
+                keepPlotting=True
        elif mode == "KDE":
             # performs a Kernel Estimation to calculate the max of the distribution
+            keepPlotting=True
             meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
             for bin1 in range(Nbarcodes):
                 for bin2 in range(Nbarcodes):
@@ -271,31 +278,35 @@ def plotMatrix(
                         meanSCmatrix[bin1, bin2] = maximumKernelDistribution
     else:
         meanSCmatrix = pixelSize * SCmatrixCollated
+        keepPlotting=True
 
-    # Calculates the inverse distance matrix if requested in the argument.
-    if inverseMatrix:
-        meanSCmatrix = np.reciprocal(meanSCmatrix)
 
-    # plots figure
-    fig = plt.figure(figsize=(10, 10))
-    pos = plt.imshow(meanSCmatrix, cmap=cm)  # colormaps RdBu seismic
-    plt.xlabel("barcode #")
-    plt.ylabel("barcode #")
-    plt.title(figtitle + " | " + str(meanSCmatrix.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs))
-    plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
-    plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
-    cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-    cbar.minorticks_on()
-    cbar.set_label(cmtitle)
-    plt.clim(cMin, clim)
+    if keepPlotting:
+        # Calculates the inverse distance matrix if requested in the argument.
+        if inverseMatrix:
+            meanSCmatrix = np.reciprocal(meanSCmatrix)
 
-    plt.savefig(outputFileName + "_HiMmatrix.png")
-
-    if not isnotebook():
-        plt.close()
-
-    writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
-
+        # plots figure
+        fig = plt.figure(figsize=(10, 10))
+        pos = plt.imshow(meanSCmatrix, cmap=cm)  # colormaps RdBu seismic
+        plt.xlabel("barcode #")
+        plt.ylabel("barcode #")
+        plt.title(figtitle + " | " + str(meanSCmatrix.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs))
+        plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
+        plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
+        cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+        cbar.minorticks_on()
+        cbar.set_label(cmtitle)
+        plt.clim(cMin, clim)
+    
+        plt.savefig(outputFileName + "_HiMmatrix.png")
+    
+        if not isnotebook():
+            plt.close()
+    
+        writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
+    else:
+        print('Error plotting figure. Not executing script to avoid crash.')
 
 def plotDistanceHistograms(
     SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,
