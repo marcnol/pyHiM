@@ -43,15 +43,7 @@ if __name__ == "__main__":
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
-        # rootFolder='/home/marcnol/data/Embryo_debug_dataset'
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-
-        # rootFolder='/home/marcnol/data/Experiment_20/Embryo_1'
-
-        # rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001'
-        # rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001_test'
-        # rootFolder='/mnt/PALM_dataserv/DATA/merFISH_2019/Experiment_15/2019_05_15/deconvolved_RT_1/006_Embryo/rawData'
-        rootFolder = "."
+        rootFolder = os.getcwd()
 
     print("parameters> rootFolder: {}".format(rootFolder))
     now = datetime.now()
@@ -71,7 +63,7 @@ if __name__ == "__main__":
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%d/%m/%Y %H:%M:%S")), "w",
+        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
     )  # initialises MD file
 
     for ilabel in range(len(labels2Process)):

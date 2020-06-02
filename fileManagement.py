@@ -27,7 +27,7 @@ import json
 class log:
     def __init__(self, rootFolder="./", fileNameRoot="HiM_analysis"):
         now = datetime.now()
-        dateTime = now.strftime("%d%m%Y_%H%M%S")
+        dateTime = now.strftime("%Y%m%d_%H%M%S")
         self.fileName = rootFolder + os.sep + fileNameRoot + dateTime + ".log"
         self.fileNameMD = self.fileName.split(".")[0] + ".md"
 
