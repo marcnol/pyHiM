@@ -25,6 +25,7 @@ conda install pandas scikit-image numpy matplotlib tqdm astropy
 conda install photutils -c astropy
 
 pip install roipoly
+pip install scaleogram
 
 ##################
 ## not really used

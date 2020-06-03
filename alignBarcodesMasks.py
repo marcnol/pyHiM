@@ -277,10 +277,13 @@ def plotMatrix(
                         )
                         meanSCmatrix[bin1, bin2] = maximumKernelDistribution
     else:
-        meanSCmatrix = pixelSize * SCmatrixCollated
-        keepPlotting=True
-
-
+        if mode == "counts":
+            meanSCmatrix = SCmatrixCollated
+            keepPlotting=True
+        else:
+            meanSCmatrix = pixelSize * SCmatrixCollated
+            keepPlotting=True
+            
     if keepPlotting:
         # Calculates the inverse distance matrix if requested in the argument.
         if inverseMatrix:
@@ -299,7 +302,13 @@ def plotMatrix(
         cbar.set_label(cmtitle)
         plt.clim(cMin, clim)
     
-        plt.savefig(outputFileName + "_HiMmatrix.png")
+        if len(outputFileName.split('.'))>1:
+            if outputFileName.split('.')[1]!='png':
+                plt.savefig(outputFileName)
+            else:
+                plt.savefig(outputFileName.split('.')[0] + "_HiMmatrix.png")
+        else:
+            plt.savefig(outputFileName + "_HiMmatrix.png")
     
         if not isnotebook():
             plt.close()
