@@ -4,15 +4,170 @@
 Created on Tue Jun  2 21:21:02 2020
 
 @author: marcnol
+
+contains functions and classes needed for the analysis and plotting of HiM matrices
+
 """
+
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
+
 import numpy as np
 import os
 import glob
+import json,csv
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 from astropy.table import Table, vstack
 
 from fileManagement import writeString2File
 from alignBarcodesMasks import plotMatrix
+
+
+# =============================================================================
+# CLASSES
+# =============================================================================
+
+class analysisHiMmatrix():
+    '''
+    this class is used for loading data processed by processHiMmatrix.py 
+    Main use is to produce paper quality figures of HiM matrices, 3-way interaction matrices and HiM matrix ratios
+    '''
+   
+    def __init__(self, runParameters, rootFolder="." ):
+        self.dataFolder= rootFolder+os.sep+'scHiMmatrices'
+        self.runParameters=runParameters
+        self.rootFolder=rootFolder
+        self.data = []
+        self.dataFiles = []
+        self.folders2Load = []
+        
+    def loadData(self):
+        '''
+        loads dataset
+
+        Returns
+        -------
+        self.foldes2Load contains the parameters used for the processing of HiM matrices. 
+        self.dataFiles dictionary containing the extensions needed to load data files
+        self.data dictionary containing the datasets loaded
+        '''
+        
+        # loads datasets: parameter files
+        fileNameListDataJSON = self.rootFolder + os.sep + self.runParameters["parametersFileName"] 
+        with open(fileNameListDataJSON) as json_file:
+            ListData = json.load(json_file)
+        
+        datasetName  = list(ListData.keys())[0]
+        print('Dataset: {}'.format(datasetName))
+        
+        outputFileName = self.dataFolder+ os.sep + datasetName  + "_label:" + self.runParameters['label'] + "_action:" + self.runParameters['action']
+        
+        fileNameParametersJSON = outputFileName+ "_parameters.json"
+        with open(fileNameParametersJSON ) as json_file:
+            folders2Load = json.load(json_file)
+        print('Loading parameter file:'.format(outputFileName))
+        
+        # Creates filenames to be loaded
+        dataFiles={}
+        dataFiles['ensembleContactProbability']= "_ensembleContactProbability.npy"
+        dataFiles['SCmatrixCollated']="_SCmatrixCollated.npy"
+        dataFiles['SClabeledCollated']="_SClabeledCollated.npy"
+        
+        if "3wayContacts_anchors" in ListData[datasetName]:
+            for iAnchor in ListData[datasetName]["3wayContacts_anchors"]:
+                newKey='anchor:'+str(iAnchor-1)
+                dataFiles[newKey]='_'+newKey+'_ensemble3wayContacts.npy'
+        else:
+            print('No anchors found')
+            
+        
+        # loads datasets: numpy matrices
+        data={}
+        for idataFile in dataFiles.keys():
+            print('Loaded: {}'.format(idataFile))
+            data[idataFile] = np.load(outputFileName+dataFiles[idataFile]).squeeze()
+        
+        # loads datasets: lists
+        runName=loadList(outputFileName+"_runName.csv")
+        data['runName']=runName
+        print('Loaded runNames: {}'.format(data['runName']))
+        
+        data['uniqueBarcodes']=loadList(outputFileName+"_uniqueBarcodes.csv")
+        print('Loaded barcodes #: {}'.format(data['uniqueBarcodes']))
+    
+        # Exports data
+        self.data = data
+        self.dataFiles = dataFiles
+        # self.folders2Load = folders2Load 
+        self.ListData=ListData
+        self.datasetName=datasetName
+      
+# functions
+
+    def plot2DMatrixSimple(self,ifigure,matrix,uniqueBarcodes,yticks,xticks,cmtitle='probability',cMin=0, cMax=1,cm='coolwarm',fontsize=12,colorbar=False,axisTicks=False):
+    
+            pos = ifigure.imshow(matrix, cmap=cm)  # colormaps RdBu seismic
+            # plots figure
+            if xticks:
+                ifigure.set_xlabel("barcode #",fontsize=fontsize)
+                if not axisTicks:
+                    ifigure.set_xticklabels( () )
+                else:
+                    print('barcodes:{}'.format(uniqueBarcodes))
+                    # ifigure.set_xticks(np.arange(matrix.shape[0]),uniqueBarcodes)
+                    ifigure.set_xticklabels(uniqueBarcodes)
+                    
+            else:
+                ifigure.set_xticklabels( () )
+            if yticks:
+                ifigure.set_ylabel("barcode #",fontsize=fontsize)
+                if not axisTicks:
+                    ifigure.set_yticklabels( () )
+                else:
+                    # ifigure.set_yticks(np.arange(matrix.shape[0]), uniqueBarcodes)
+                    ifigure.set_yticklabels(uniqueBarcodes)
+            else:
+                ifigure.set_yticklabels( () )
+    
+            for xtick,ytick in zip(ifigure.xaxis.get_majorticklabels(),ifigure.yaxis.get_majorticklabels()):  
+                xtick.set_fontsize(fontsize)
+                ytick.set_fontsize(fontsize)
+    
+            if colorbar:
+                cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+                cbar.minorticks_on()
+                cbar.set_label(cmtitle)
+                pos.set_clim(vmin=cMin, vmax=cMax)
+            return pos
+    
+    def update_clims(self,cMin, cMax, axes):
+        for ax in axes:
+            ax.set_clim(vmin=cMin, vmax=cMax)
+        
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
+
+        
+def loadList(fileName):
+    with open(fileName, newline='') as csvfile:
+        spamreader= csv.reader(csvfile, delimiter=' ', quotechar='|')
+        runName=[]
+        for row in spamreader:
+            # print(', '.join(row))
+            if len(runName)>0:
+                runName.append(row)
+            else:
+                runName=row
+                
+    return runName
+
+
+
 
 def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
 
@@ -263,7 +418,9 @@ def plotsEnsemble3wayContactMatrix(
             norm="nonNANs",
         )  # norm: nonNANs (default)
 
-        outputFileName = p['outputFolder'] + os.sep + datasetName + "_Cells:" + p['action'] + "_ensemble3wayContacts"
+        # outputFileName = p['outputFolder'] + os.sep + datasetName + "_Cells:" + p['action'] + "_ensemble3wayContacts"
+        outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + "_ensemble3wayContacts"
+
         outputFileName += "_anchor_" + str(anchor)
         writeString2File(fileNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
 
@@ -284,6 +441,11 @@ def plotsEnsemble3wayContactMatrix(
             nCells=0,
             mode="counts"
         )  # twilight_shifted_r
+        
+        # saves matrices as individual files for further plotting
+        rootOutputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + '_anchor:'+str(anchor)
+        np.save(rootOutputFileName + "_ensemble3wayContacts.npy", SCmatrix)
+
 
 def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize,
         anchor, sOut, threshold=0.25, norm="nonNANs"):

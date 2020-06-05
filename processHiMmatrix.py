@@ -45,6 +45,16 @@ warnings.filterwarnings("ignore")
 # FUNCTIONS
 # =============================================================================q
 
+def joinsListArrays(ListArrays,axis=0):
+    joinedArray=np.zeros(0)
+    for iArray in ListArrays:
+        if joinedArray.shape[0]==0:
+            joinedArray = iArray
+        else:
+            joinedArray = np.concatenate((joinedArray,iArray) ,axis=axis)
+    return joinedArray
+    
+   
 
 def plotsSinglePWDmatrices(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
@@ -102,7 +112,9 @@ def plotsSingleContactProbabilityMatrix(
 
     for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
         cells2Plot = listsSCtoKeep(p, mask)
-
+        if not cells2Plot:
+            break
+        
         if max(cells2Plot) > iSCmatrixCollated.shape[2]:
             print(
                 "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
@@ -148,6 +160,9 @@ def plotsEnsembleContactProbabilityMatrix(
 
     for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
         cells2Plot = listsSCtoKeep(p, mask)
+
+        if not cells2Plot:
+            break
 
         if max(cells2Plot) > iSCmatrixCollated.shape[2]:
             print(
@@ -332,11 +347,7 @@ if __name__ == "__main__":
                 datasetName=datasetName,
             )
 
-            # plot 3way contact maps
-            anchors = [7, 11, 17]
-            # promoter; starting from barcode 25, one-based
-            anchors += [5, 10, 14]
-            # CRM
+            anchors=ListData[datasetName]['3wayContacts_anchors']
             anchors = [a - 1 for a in anchors]  # convert to zero-based
             sOut = "Probability"  # Probability or Counts
             writeString2File(fileNameMD, "## Ensemble 3way contacts", "a")
@@ -359,13 +370,20 @@ if __name__ == "__main__":
         else:
             print("\n Could not load ANY dataset!\n")
 
-        # saves output files
-        outputFileName = p["outputFolder"] + os.sep + datasetName + "_Cells:" + p["action"]
+        # [saves output files]
+
+        # creates outputFileName root
+        outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"]
+        
+        # saves npy arrays
         np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
-        np.save(outputFileName + "_uniqueBarcodes.npy", uniqueBarcodes)
-        np.save(outputFileName + "_SCmatrixCollated.npy", SCmatrixCollated)
-        np.save(outputFileName + "_SClabeledCollated.npy", SClabeledCollated)
-        # np.save(outputFileName + "_runName.npy", SClabeledCollated)
+        np.save(outputFileName + "_SCmatrixCollated.npy", joinsListArrays(SCmatrixCollated,axis=2))
+        np.save(outputFileName + "_SClabeledCollated.npy", joinsListArrays(SClabeledCollated,axis=0))
+
+        # saves lists
+        with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+            spamwriter.writerow(uniqueBarcodes)
 
         p["SClabeledCollated"] = []
         with open(outputFileName + "_parameters.json", "w") as f:
@@ -374,4 +392,40 @@ if __name__ == "__main__":
         with open(outputFileName + "_runName.csv", "w", newline="") as csvfile:
             spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
             spamwriter.writerow(runName)
-print("Finished execution")
+        
+        print("Finished execution")
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

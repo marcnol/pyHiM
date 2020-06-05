@@ -12,6 +12,7 @@
         "ContactProbability_scale": 12,
         "ContactProbability_cmin": 0.0,
         "ContactProbability_distanceThreshold": 0.25,
-	"ContactProbability_cm": "coolwarm"
+	"ContactProbability_cm": "coolwarm",
+	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
     }
 }
