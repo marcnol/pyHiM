@@ -19,7 +19,6 @@ import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 import scaleogram as scg
-from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact
 
 from HIMmatrixOperations import analysisHiMmatrix
 
@@ -107,6 +106,7 @@ if __name__ == "__main__":
     cScale = HiMdata.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
     print("scalingParameters={}".format(runParameters["scalingParameter"]))
     nCells = HiMdata.data["SCmatrixCollated"].shape[2]
+    nDatasets = len(HiMdata.data["runName"])
     plottingFileExtension = ".svg"
     outputFileName = (
         HiMdata.dataFolder
@@ -135,8 +135,13 @@ if __name__ == "__main__":
         fontsize=runParameters["fontsize"],
         colorbar=True,
         axisTicks=runParameters["axisTicks"],
+        nCells=nCells,
+        nDatasets=nDatasets,
+        showTitle=True
     )
     plt.savefig(outputFileName)
+    titleText="N = {} | n = {}".format(nCells,nDatasets)
+    print('Title: {}'.format(titleText))
     print("Output figure: {}".format(outputFileName))
 
     print("\nDone\n\n")

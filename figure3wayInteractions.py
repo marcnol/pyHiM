@@ -18,9 +18,8 @@ import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 import scaleogram as scg
-from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact
 
-from HIMmatrixOperations import analysisHiMmatrix
+from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact, analysisHiMmatrix
 
 #%% define and loads datasets
 def parseArguments():

@@ -17,9 +17,11 @@ contains functions and classes needed for the analysis and plotting of HiM matri
 import numpy as np
 import os
 import glob
-import json,csv
+import json, csv
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from scipy import interpolate
+from scipy.interpolate import interp1d
 
 from astropy.table import Table, vstack
 
@@ -31,22 +33,23 @@ from alignBarcodesMasks import plotMatrix
 # CLASSES
 # =============================================================================
 
-class analysisHiMmatrix():
-    '''
+
+class analysisHiMmatrix:
+    """
     this class is used for loading data processed by processHiMmatrix.py 
     Main use is to produce paper quality figures of HiM matrices, 3-way interaction matrices and HiM matrix ratios
-    '''
-   
-    def __init__(self, runParameters, rootFolder="." ):
-        self.dataFolder= rootFolder+os.sep+'scHiMmatrices'
-        self.runParameters=runParameters
-        self.rootFolder=rootFolder
+    """
+
+    def __init__(self, runParameters, rootFolder="."):
+        self.dataFolder = rootFolder + os.sep + "scHiMmatrices"
+        self.runParameters = runParameters
+        self.rootFolder = rootFolder
         self.data = []
         self.dataFiles = []
         self.folders2Load = []
-        
+
     def loadData(self):
-        '''
+        """
         loads dataset
 
         Returns
@@ -54,119 +57,236 @@ class analysisHiMmatrix():
         self.foldes2Load contains the parameters used for the processing of HiM matrices. 
         self.dataFiles dictionary containing the extensions needed to load data files
         self.data dictionary containing the datasets loaded
-        '''
-        
+        """
+
         # loads datasets: parameter files
-        fileNameListDataJSON = self.rootFolder + os.sep + self.runParameters["parametersFileName"] 
+        fileNameListDataJSON = self.rootFolder + os.sep + self.runParameters["parametersFileName"]
         with open(fileNameListDataJSON) as json_file:
             ListData = json.load(json_file)
-        
-        datasetName  = list(ListData.keys())[0]
-        print('Dataset: {}'.format(datasetName))
-        
-        outputFileName = self.dataFolder+ os.sep + datasetName  + "_label:" + self.runParameters['label'] + "_action:" + self.runParameters['action']
-        
-        fileNameParametersJSON = outputFileName+ "_parameters.json"
-        with open(fileNameParametersJSON ) as json_file:
+
+        datasetName = list(ListData.keys())[0]
+        print("Dataset: {}".format(datasetName))
+
+        outputFileName = (
+            self.dataFolder
+            + os.sep
+            + datasetName
+            + "_label:"
+            + self.runParameters["label"]
+            + "_action:"
+            + self.runParameters["action"]
+        )
+
+        fileNameParametersJSON = outputFileName + "_parameters.json"
+        with open(fileNameParametersJSON) as json_file:
             folders2Load = json.load(json_file)
-        print('Loading parameter file:'.format(outputFileName))
-        
+        print("Loading parameter file:".format(outputFileName))
+
         # Creates filenames to be loaded
-        dataFiles={}
-        dataFiles['ensembleContactProbability']= "_ensembleContactProbability.npy"
-        dataFiles['SCmatrixCollated']="_SCmatrixCollated.npy"
-        dataFiles['SClabeledCollated']="_SClabeledCollated.npy"
-        
+        dataFiles = {}
+        dataFiles["ensembleContactProbability"] = "_ensembleContactProbability.npy"
+        dataFiles["SCmatrixCollated"] = "_SCmatrixCollated.npy"
+        dataFiles["SClabeledCollated"] = "_SClabeledCollated.npy"
+
         if "3wayContacts_anchors" in ListData[datasetName]:
             for iAnchor in ListData[datasetName]["3wayContacts_anchors"]:
-                newKey='anchor:'+str(iAnchor-1)
-                dataFiles[newKey]='_'+newKey+'_ensemble3wayContacts.npy'
+                newKey = "anchor:" + str(iAnchor - 1)
+                dataFiles[newKey] = "_" + newKey + "_ensemble3wayContacts.npy"
         else:
-            print('No anchors found')
-            
-        
+            print("No anchors found")
+
         # loads datasets: numpy matrices
-        data={}
+        data = {}
         for idataFile in dataFiles.keys():
-            print('Loaded: {}'.format(idataFile))
-            data[idataFile] = np.load(outputFileName+dataFiles[idataFile]).squeeze()
-        
+            print("Loaded: {}".format(idataFile))
+            data[idataFile] = np.load(outputFileName + dataFiles[idataFile]).squeeze()
+
         # loads datasets: lists
-        runName=loadList(outputFileName+"_runName.csv")
-        data['runName']=runName
-        print('Loaded runNames: {}'.format(data['runName']))
-        
-        data['uniqueBarcodes']=loadList(outputFileName+"_uniqueBarcodes.csv")
-        print('Loaded barcodes #: {}'.format(data['uniqueBarcodes']))
-    
+        runName = loadList(outputFileName + "_runName.csv")
+        data["runName"] = runName
+        print("Loaded runNames: {}".format(data["runName"]))
+
+        data["uniqueBarcodes"] = loadList(outputFileName + "_uniqueBarcodes.csv")
+        print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
+
+        print("Number cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
+        print("Number Datasets loaded: {}".format(len(data["runName"])))
+
         # Exports data
         self.data = data
         self.dataFiles = dataFiles
-        # self.folders2Load = folders2Load 
-        self.ListData=ListData
-        self.datasetName=datasetName
-      
-# functions
+        # self.folders2Load = folders2Load
+        self.ListData = ListData
+        self.datasetName = datasetName
 
-    def plot2DMatrixSimple(self,ifigure,matrix,uniqueBarcodes,yticks,xticks,cmtitle='probability',cMin=0, cMax=1,cm='coolwarm',fontsize=12,colorbar=False,axisTicks=False):
-    
-            pos = ifigure.imshow(matrix, cmap=cm)  # colormaps RdBu seismic
-            # plots figure
-            if xticks:
-                ifigure.set_xlabel("barcode #",fontsize=fontsize)
-                if not axisTicks:
-                    ifigure.set_xticklabels( () )
-                else:
-                    print('barcodes:{}'.format(uniqueBarcodes))
-                    # ifigure.set_xticks(np.arange(matrix.shape[0]),uniqueBarcodes)
-                    ifigure.set_xticklabels(uniqueBarcodes)
-                    
+    # functions
+
+    def plot2DMatrixSimple(
+        self,
+        ifigure,
+        matrix,
+        uniqueBarcodes,
+        yticks,
+        xticks,
+        cmtitle="probability",
+        cMin=0,
+        cMax=1,
+        cm="coolwarm",
+        fontsize=12,
+        colorbar=False,
+        axisTicks=False,
+        nCells=0,
+        nDatasets=0,
+        showTitle=False
+    ):
+
+        pos = ifigure.imshow(matrix, cmap=cm)  # colormaps RdBu seismic
+
+        if showTitle:
+            titleText="N = {} | n = {}".format(nCells,nDatasets)
+            ifigure.title.set_text(titleText)
+
+        # plots figure
+        if xticks:
+            ifigure.set_xlabel("barcode #", fontsize=fontsize)
+            if not axisTicks:
+                ifigure.set_xticklabels(())
             else:
-                ifigure.set_xticklabels( () )
-            if yticks:
-                ifigure.set_ylabel("barcode #",fontsize=fontsize)
-                if not axisTicks:
-                    ifigure.set_yticklabels( () )
-                else:
-                    # ifigure.set_yticks(np.arange(matrix.shape[0]), uniqueBarcodes)
-                    ifigure.set_yticklabels(uniqueBarcodes)
+                print("barcodes:{}".format(uniqueBarcodes))
+                # ifigure.set_xticks(np.arange(matrix.shape[0]),uniqueBarcodes)
+                ifigure.set_xticklabels(uniqueBarcodes)
+
+        else:
+            ifigure.set_xticklabels(())
+        if yticks:
+            ifigure.set_ylabel("barcode #", fontsize=fontsize)
+            if not axisTicks:
+                ifigure.set_yticklabels(())
             else:
-                ifigure.set_yticklabels( () )
+                # ifigure.set_yticks(np.arange(matrix.shape[0]), uniqueBarcodes)
+                ifigure.set_yticklabels(uniqueBarcodes)
+        else:
+            ifigure.set_yticklabels(())
+
+        for xtick, ytick in zip(ifigure.xaxis.get_majorticklabels(), ifigure.yaxis.get_majorticklabels()):
+            xtick.set_fontsize(fontsize)
+            ytick.set_fontsize(fontsize)
+
+        if colorbar:
+            cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+            cbar.minorticks_on()
+            cbar.set_label(cmtitle,fontsize=float(fontsize)*0.85)
+            pos.set_clim(vmin=cMin, vmax=cMax)
+        return pos
     
-            for xtick,ytick in zip(ifigure.xaxis.get_majorticklabels(),ifigure.yaxis.get_majorticklabels()):  
-                xtick.set_fontsize(fontsize)
-                ytick.set_fontsize(fontsize)
-    
-            if colorbar:
-                cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-                cbar.minorticks_on()
-                cbar.set_label(cmtitle)
-                pos.set_clim(vmin=cMin, vmax=cMax)
-            return pos
-    
-    def update_clims(self,cMin, cMax, axes):
+
+    def update_clims(self, cMin, cMax, axes):
         for ax in axes:
             ax.set_clim(vmin=cMin, vmax=cMax)
+
+
+
+    def plot1Dprofile1Dataset(self,ifigure, anchor, iFigLabel, yticks, xticks):
+
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        colors = prop_cycle.by_key()['color']
+        lwbase = plt.rcParams['lines.linewidth']
+        thin, thick = lwbase / 2, lwbase * 3
+
+        profile = self.data["ensembleContactProbability"][:,anchor-1] 
+        x = np.linspace(0, profile.shape[0], num=profile.shape[0], endpoint=True)
+        # f = interp1d(x, profile,kind = 'linear') # linear
+        tck = interpolate.splrep(x, profile, s=0)
+        xnew = np.linspace(0, profile.shape[0], num=100, endpoint=True)
+        ynew = interpolate.splev(xnew, tck, der=0)
+        if self.runParameters["splines"]:
+            ifigure.plot(xnew, ynew, '-') # x, profile, 'o',
+        else:
+            ifigure.plot(x, profile, '-') # x, profile, 'o',
+
+        ifigure.set_xlim([0,profile.shape[0]])
+        ifigure.axvline(x=anchor-0.5, color=colors[4], lw=thick, alpha=0.5)
+        ifigure.set_ylim([0,self.runParameters["cAxis"]])
         
+        if xticks:
+            ifigure.set_xlabel("barcode #", fontsize=self.runParameters['fontsize'])
+            if not self.runParameters["axisTicks"]:
+                ifigure.set_xticklabels(())
+            else:
+                ifigure.set_xticklabels(self.data['uniqueBarcodes'])
+        else:
+            ifigure.set_xticklabels(())
+
+        if yticks:
+            ifigure.set_ylabel("Probability", fontsize=self.runParameters['fontsize'])
+            if not self.runParameters["axisTicks"]:
+                ifigure.set_yticklabels(())
+            else:
+                ifigure.set_yticks([0, self.runParameters["cAxis"]/2, self.runParameters["cAxis"]])
+        else:
+            ifigure.set_yticklabels(())
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
-        
+def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2,runParameters, anchor, iFigLabel, yticks, xticks,legend=False):
+
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    lwbase = plt.rcParams['lines.linewidth']
+    thin, thick = lwbase / 2, lwbase * 3
+    
+    profile1 = HiMdata1.data["ensembleContactProbability"][:,anchor-1] 
+    profile2 = HiMdata2.data["ensembleContactProbability"][:,anchor-1] 
+    x = np.linspace(0, profile1.shape[0], num=profile1.shape[0], endpoint=True)
+    tck1 = interpolate.splrep(x, profile1, s=0)
+    tck2 = interpolate.splrep(x, profile2, s=0)
+    xnew = np.linspace(0, profile1.shape[0], num=100, endpoint=True)
+    ynew1 = interpolate.splev(xnew, tck1, der=0)
+    ynew2 = interpolate.splev(xnew, tck2, der=0)
+    if runParameters["splines"]:
+        ifigure.plot(xnew, ynew1, '-',xnew, ynew2, '-') # x, profile, 'o',
+    else:
+        ifigure.plot(x, profile1, '-',x, profile2, '-') # x, profile, 'o',
+    
+    ifigure.set_xlim([0,profile1.shape[0]])
+    ifigure.axvline(x=anchor-0.5, color=colors[4], lw=thick, alpha=0.5)
+    ifigure.set_ylim([0,runParameters["cAxis"]])
+    
+    if xticks:
+        ifigure.set_xlabel("barcode #", fontsize=runParameters['fontsize'])
+        if not runParameters["axisTicks"]:
+            ifigure.set_xticklabels(())
+        else:
+            ifigure.set_xticklabels(HiMdata1.data['uniqueBarcodes'])
+    else:
+        ifigure.set_xticklabels(())
+
+    if yticks:
+        ifigure.set_ylabel("Probability", fontsize=runParameters['fontsize'])
+        if not runParameters["axisTicks"]:
+            ifigure.set_yticklabels(())
+        else:
+            ifigure.set_yticks([0, runParameters["cAxis"]/2, runParameters["cAxis"]])
+    else:
+        ifigure.set_yticklabels(())
+    
+    if legend:
+        ifigure.legend([HiMdata1.datasetName, HiMdata2.datasetName], loc='best')
+
 def loadList(fileName):
-    with open(fileName, newline='') as csvfile:
-        spamreader= csv.reader(csvfile, delimiter=' ', quotechar='|')
-        runName=[]
+    with open(fileName, newline="") as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=" ", quotechar="|")
+        runName = []
         for row in spamreader:
             # print(', '.join(row))
-            if len(runName)>0:
+            if len(runName) > 0:
                 runName.append(row)
             else:
-                runName=row
-                
+                runName = row
+
     return runName
-
-
 
 
 def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
@@ -192,18 +312,14 @@ def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
         ROIsinSNDTablewithLabel = list(SNDTablewithLabel.group_by("ROI #").groups.keys["ROI #"].data)
 
         # index of ROI within the keys of SNDTablewithLabel
-        indexROIs = [
-            index for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel))) if i == ROI["ROI #"]
-        ]
+        indexROIs = [index for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel))) if i == ROI["ROI #"]]
 
         # subtable of cells with label and ROI that we are looking for
         SNDTablewithLabelROI = SNDTablewithLabel.group_by("ROI #").groups[indexROIs[0]]
         cellswithLabel = list(SNDTablewithLabelROI["CellID #"].data)
 
         # finds which cell indeces in Table have label
-        listofSelectedCells = [
-            index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel
-        ]
+        listofSelectedCells = [index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel]
 
         if len(CUIDs) > 0:
             CUIDs = vstack([CUIDs, cells2ProcessUID[listofSelectedCells]])
@@ -219,9 +335,7 @@ def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
     # from list of CUIDs from cells that show label, I construct a binary vector of the same size as SCmatrix. Labeled cells have a 1.
     SClabeled = np.zeros(len(ResultsTable))
     CUIDsList = CUIDs["Cuid"].data.compressed()
-    indexCellsWithLabel = [
-        iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList
-    ]
+    indexCellsWithLabel = [iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList]
     SClabeled[indexCellsWithLabel] = 1
 
     return SClabeled, CUIDsList
@@ -384,34 +498,38 @@ def normalizeMatrix(SCmatrix_wt):
             SCmatrix_wt_normalized[iCol, iRow] = SCmatrix_wt_normalized[iCol, iRow] / rowSum
     return SCmatrix_wt_normalized
 
+
 def plotsEnsemble3wayContactMatrix(
-    SCmatrixCollated, uniqueBarcodes, anchors, sOut, runName, iListData, p,fileNameMD="tmp.md", datasetName=""):
+    SCmatrixCollated, uniqueBarcodes, anchors, sOut, runName, iListData, p, fileNameMD="tmp.md", datasetName=""
+):
 
     # combines matrices from different embryos and calculates integrated contact probability matrix
 
-
     SCmatrixAllDatasets = []  # np.zeros((nBarcodes,nBarcodes))
-    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes,p['SClabeledCollated'],runName):
+    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
         cells2Plot = listsSCtoKeep(p, mask)
 
-        if max(cells2Plot)>iSCmatrixCollated.shape[2]:
-            print('Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}'.format(max(cells2Plot),iTag,iSCmatrixCollated.shape[2]))
+        if max(cells2Plot) > iSCmatrixCollated.shape[2]:
+            print(
+                "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
+                    max(cells2Plot), iTag, iSCmatrixCollated.shape[2]
+                )
+            )
         else:
             if len(SCmatrixAllDatasets) > 0:
-                SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:,:,cells2Plot]), axis=2)
+                SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
             else:
-                SCmatrixAllDatasets = iSCmatrixCollated[:,:,cells2Plot]
+                SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
 
             commonSetUniqueBarcodes = iuniqueBarcodes
 
-
     # print(commonSetUniqueBarcodes)
     for anchor in anchors:
-        print('nCells processed: {}'.format(SCmatrixAllDatasets.shape[2]))
+        print("nCells processed: {}".format(SCmatrixAllDatasets.shape[2]))
         SCmatrix = calculate3wayContactMatrix(
             SCmatrixAllDatasets,
             uniqueBarcodes,
-            p['pixelSize'],
+            p["pixelSize"],
             anchor,
             sOut,
             threshold=iListData["ContactProbability_distanceThreshold"],
@@ -419,7 +537,9 @@ def plotsEnsemble3wayContactMatrix(
         )  # norm: nonNANs (default)
 
         # outputFileName = p['outputFolder'] + os.sep + datasetName + "_Cells:" + p['action'] + "_ensemble3wayContacts"
-        outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + "_ensemble3wayContacts"
+        outputFileName = (
+            p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + "_ensemble3wayContacts"
+        )
 
         outputFileName += "_anchor_" + str(anchor)
         writeString2File(fileNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
@@ -431,7 +551,7 @@ def plotsEnsemble3wayContactMatrix(
         plotMatrix(
             SCmatrix,
             uniqueBarcodes,
-            p['pixelSize'],
+            p["pixelSize"],
             cm=iListData["ContactProbability_cm"],
             outputFileName=outputFileName,
             clim=cScale,
@@ -439,17 +559,26 @@ def plotsEnsemble3wayContactMatrix(
             figtitle="3way contacts",
             cmtitle=sOut,
             nCells=0,
-            mode="counts"
+            mode="counts",
         )  # twilight_shifted_r
-        
+
         # saves matrices as individual files for further plotting
-        rootOutputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + '_anchor:'+str(anchor)
+        rootOutputFileName = (
+            p["outputFolder"]
+            + os.sep
+            + datasetName
+            + "_label:"
+            + p["label"]
+            + "_action:"
+            + p["action"]
+            + "_anchor:"
+            + str(anchor)
+        )
         np.save(rootOutputFileName + "_ensemble3wayContacts.npy", SCmatrix)
 
 
-def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize,
-        anchor, sOut, threshold=0.25, norm="nonNANs"):
-    
+def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, anchor, sOut, threshold=0.25, norm="nonNANs"):
+
     nX = nY = iSCmatrixCollated.shape[0]
     SCmatrix = np.zeros((nX, nY))
 
@@ -459,15 +588,15 @@ def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize,
     # print(nX, nY)
     for bait1 in range(nX):
         for bait2 in range(nY):
-            if ( bait1 == bait2 ):
+            if bait1 == bait2:
                 continue
 
             # print("current bait1", bait1, "bait2", bait2)
-            n_contacts, n_nonNaN = getMultiContact(mat,anchor,bait1,bait2,threshold)
-            if ( sOut == "Counts"):
-                SCmatrix[bait1,bait2] = n_contacts
-            elif (sOut == "Probability"):
-                SCmatrix[bait1,bait2] = n_contacts / n_nonNaN;
+            n_contacts, n_nonNaN = getMultiContact(mat, anchor, bait1, bait2, threshold)
+            if sOut == "Counts":
+                SCmatrix[bait1, bait2] = n_contacts
+            elif sOut == "Probability":
+                SCmatrix[bait1, bait2] = n_contacts / n_nonNaN
             else:
                 print("Unexpected sOut.")
                 return -1
@@ -475,11 +604,11 @@ def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize,
             # print(n_contacts / n_nonNaN)
             # print(type(n_contacts), type(n_nonNaN))
 
-    SCmatrix[np.isnan(SCmatrix)] = 0 # set NaN to zero
+    SCmatrix[np.isnan(SCmatrix)] = 0  # set NaN to zero
     return SCmatrix
 
 
-def getMultiContact(mat,anchor,bait1,bait2,threshold):
+def getMultiContact(mat, anchor, bait1, bait2, threshold):
     """
     Input:
     mat        : pwd matrix, including only the bins of used RTs
@@ -492,13 +621,11 @@ def getMultiContact(mat,anchor,bait1,bait2,threshold):
     n_nonNaN   : number of cells where the distances anchor-bait1 and anchor-bait2 are present
     """
 
-    A = mat[anchor,bait1,:]
-    B = mat[anchor,bait2,:]
+    A = mat[anchor, bait1, :]
+    B = mat[anchor, bait2, :]
 
     # get fraction of points in quadrant
-    n1 = np.sum( (A<threshold) & (B<threshold) );
-    totN = np.sum( (~np.isnan(A)) & (~np.isnan(B)) );
-
+    n1 = np.sum((A < threshold) & (B < threshold))
+    totN = np.sum((~np.isnan(A)) & (~np.isnan(B)))
 
     return n1, totN
-
