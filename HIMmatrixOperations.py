@@ -176,9 +176,10 @@ class analysisHiMmatrix:
             cbar = plt.colorbar(pos, ax=ifigure, fraction=0.046, pad=0.04)
             cbar.minorticks_on()
             cbar.set_label(cmtitle,fontsize=float(fontsize)*0.85)
-            pos.set_clim(vmin=cMin, vmax=cMax)
         return pos
-    
+
+        pos.set_clim(vmin=cMin, vmax=cMax)
+   
 
     def update_clims(self, cMin, cMax, axes):
         for ax in axes:

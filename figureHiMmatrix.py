@@ -120,7 +120,7 @@ if __name__ == "__main__":
     # matrix=normalizeMatrix(matrix)
 
     cScale = matrix.max() / runParameters["scalingParameter"]
-    print("scalingParameters={}".format(runParameters["scalingParameter"]))
+    print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
     nCells = HiMdata.data["SCmatrixCollated"].shape[2]
     nDatasets = len(HiMdata.data["runName"])
     plottingFileExtension = ".svg"
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         f1 = fig1.add_subplot(gs1[0:-1,5:-1])
         f2 = fig1.add_subplot(gs1[:-1, 3],sharey=f1)
         f3 = fig1.add_subplot(gs1[-1, 5:-1],sharex=f1)
-        ATACseqMatrix = np.array([0.4,0.4,0.4,0.4,.8, 0.4,.3,0.4,0.4,.8,.3,0.4,0.4,.8,0.4,.8,.3])
+        ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]['BarcodeColormap'])/10
         ATACseqMatrixV = np.copy(ATACseqMatrix).reshape((-1, 1))
         pos1=f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap='tab10')  # colormaps RdBu seismic
         f2.set_xticklabels(())
@@ -161,8 +161,8 @@ if __name__ == "__main__":
         
         barcodeLabels=np.arange(1,ATACseqMatrix.shape[0]+1)
         for j in range(len(ATACseqMatrix)):
-            text = f3.text(j, 0, barcodeLabels[j], ha="center", va="center", color="w", fontsize=15)    
-            text = f2.text(0, j, barcodeLabels[j], ha="center", va="center", color="w", fontsize=15)    
+            text = f3.text(j, 0, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
+            text = f2.text(0, j, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
         
         colorbar=False
     else:               
@@ -189,6 +189,7 @@ if __name__ == "__main__":
     )
     
 
+    # HiMdata.update_clims(0, cScale, f1)
     
     plt.savefig(outputFileName)
     titleText="N = {} | n = {}".format(nCells,nDatasets)
