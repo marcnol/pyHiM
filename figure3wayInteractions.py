@@ -25,12 +25,16 @@ from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayCon
 def parseArguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
+    parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
+    parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
     parser.add_argument(
         "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
     )
-    parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
+    parser.add_argument("-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)")
+    parser.add_argument("-W1", "--action1", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
+    parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
+    parser.add_argument("-W2", "--action2", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
     # parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     # parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
@@ -41,26 +45,47 @@ def parseArguments():
     runParameters = {}
     runParameters["pixelSize"] = 0.1
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
+    if args.rootFolder1:
+        rootFolder1 = args.rootFolder1
     else:
-        rootFolder = "."
-        # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
+        rootFolder1 = "."
 
+    if args.rootFolder2:
+        rootFolder2 = args.rootFolder2
+        runParameters['run2Datasets']=True
+    else:
+        rootFolder2 = "."
+        runParameters['run2Datasets']=False
+
+    if args.outputFolder:
+        outputFolder = args.outputFolder
+    else:
+        outputFolder = 'none'
+        
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
     else:
         runParameters["parametersFileName"] = "folders2Load.json"
 
-    if args.label:
-        runParameters["label"] = args.label
+    if args.label1:
+        runParameters["label1"] = args.label1
     else:
-        runParameters["label"] = "doc"
+        runParameters["label1"] = "doc"
 
-    if args.action:
-        runParameters["action"] = args.action
+    if args.label2:
+        runParameters["label2"] = args.label2
     else:
-        runParameters["action"] = "all"
+        runParameters["label2"] = "doc"
+
+    if args.action1:
+        runParameters["action1"] = args.action1
+    else:
+        runParameters["action1"] = "all"
+
+    if args.action2:
+        runParameters["action2"] = args.action2
+    else:
+        runParameters["action2"] = "unlabeled"
 
     if args.fontsize:
         runParameters["fontsize"] = args.fontsize
@@ -87,8 +112,8 @@ def parseArguments():
     else:
         runParameters["colorbar"] = False
 
-    return rootFolder, runParameters
 
+    return rootFolder1, rootFolder2, outputFolder, runParameters
 
 # =============================================================================
 # MAIN
@@ -96,31 +121,53 @@ def parseArguments():
 
 if __name__ == "__main__":
     print(">>> Producing HiM 3-way matrices")
-
-    # [parsing arguments
-
-    rootFolder, runParameters = parseArguments()
-
-    HiMdata = analysisHiMmatrix(runParameters, rootFolder)
-
-    HiMdata.loadData()
-
-    # panel D: 3-way interaction matrices
-
-    pixelSize = 0.1
-    cMax = HiMdata.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
-    nCells = HiMdata.data["SCmatrixCollated"].shape[2]
     plottingFileExtension = ".svg"
+    
+    # [parsing arguments
+    rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
+
+    print('>>> Loading first dataset from {}'.format(rootFolder1))
+    HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
+    HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
+    HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
+    HiMdata1.loadData()
+    
+    if outputFolder=='none':
+        outputFolder = HiMdata1.dataFolder
+        
     outputFileName = (
-        HiMdata.dataFolder
+        outputFolder
         + os.sep
-        + "Fig_3wayInteractions"
-        + "_label:"
-        + runParameters["label"]
-        + "_action:"
-        + runParameters["action"]
-        + plottingFileExtension
+        + "Fig_4Mcontacts"
+        + "_dataset1:"
+        + HiMdata1.datasetName
+        + "_label1:"
+        + runParameters["label1"]
+        + "_action1:"
+        + runParameters["action1"]
     )
+    
+    if runParameters['run2Datasets']:
+        print('>>> Loading second dataset from {}'.format(rootFolder2))
+        HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
+        HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
+        HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
+        HiMdata2.loadData()
+        outputFileName = (
+            outputFileName
+            + "_dataset2:"
+            + HiMdata2.datasetName
+            + "_label2:"
+            + runParameters["label2"]
+            + "_action2:"
+            + runParameters["action2"]
+        )        
+    outputFileName += plottingFileExtension
+
+    # 3-way interaction matrices
+    pixelSize = 0.1
+    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
+    nCells = HiMdata1.data["SCmatrixCollated"].shape[2]
 
     fig2 = plt.figure(constrained_layout=True)
     spec2 = gridspec.GridSpec(ncols=3, nrows=2, figure=fig2)
@@ -132,15 +179,23 @@ if __name__ == "__main__":
     f2_Ec = fig2.add_subplot(spec2[1, 2])  # 4
 
     FigList = [f2_P1, f2_P2, f2_P3, f2_Ea, f2_Eb, f2_Ec]
-    FigLabels = [i for i in list(HiMdata.dataFiles.keys()) if "anchor" in i]
+    FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     yticks = [False, False, True, True, False, False]
     xticks = [False, False, False, True, True, True]
 
     for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, yticks, xticks):
-        f2_ax1_im = HiMdata.plot2DMatrixSimple(
+        if runParameters['run2Datasets']:
+            matrix=HiMdata1.data[iFigLabel]
+            for i in range(matrix.shape[0]):
+                for j in range(0,i):
+                    matrix[i,j] = HiMdata2.data[iFigLabel][i,j]            
+        else:               
+            matrix=HiMdata1.data[iFigLabel]
+
+        f2_ax1_im = HiMdata1.plot2DMatrixSimple(
             ifigure,
-            HiMdata.data[iFigLabel],
-            list(HiMdata.data["uniqueBarcodes"]),
+            matrix,
+            list(HiMdata1.data["uniqueBarcodes"]),
             iyticks,
             ixticks,
             cmtitle="probability",

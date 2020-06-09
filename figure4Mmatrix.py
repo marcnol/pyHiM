@@ -62,13 +62,16 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
+        runParameters['run2Datasets']=True
     else:
         rootFolder2 = "."
+        runParameters['run2Datasets']=False
+
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = "."
+        outputFolder = 'none'
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -135,13 +138,15 @@ if __name__ == "__main__":
     plottingFileExtension = ".svg"
 
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
-
+    print('RootFolders: \n{}\n{}'.format(rootFolder1, rootFolder2))
     HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
-
-    print('aaa={}'.format(runParameters["action2"]))
+    
+    if outputFolder=='none':
+        outputFolder = HiMdata1.dataFolder
+        
     outputFileName = (
         outputFolder
         + os.sep
@@ -154,7 +159,7 @@ if __name__ == "__main__":
         + runParameters["action1"]
     )
 
-    if not rootFolder2 == '.aa':
+    if runParameters['run2Datasets']:
         HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]

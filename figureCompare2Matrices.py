@@ -56,13 +56,15 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
+        runParameters['run2Datasets']=True
     else:
         rootFolder2 = "."
+        runParameters['run2Datasets']=False
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = "."
+        outputFolder = 'none'
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -137,8 +139,11 @@ if __name__ == "__main__":
     # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
     # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
 
+    if outputFolder=='none':
+        outputFolder = HiMdata1.dataFolder
+        
     plottingFileExtension = ".svg"
-    outputFileName = (
+    outputFileName1 = (
         outputFolder
         + os.sep
         + "Fig_ratio2HiMmatrices"
@@ -157,34 +162,33 @@ if __name__ == "__main__":
         + plottingFileExtension
     )
 
-    fig1 = plt.figure(constrained_layout=True)
-    spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-    f1 = fig1.add_subplot(spec1[0, 0])  # 16
+    outputFileName2 = (
+        outputFolder
+        + os.sep
+        + "Fig_mixedHiMmatrices"
+        + "_dataset1:"
+        + HiMdata1.datasetName
+        + "_label1:"
+        + runParameters["label1"]
+        + "_action1:"
+        + runParameters["action1"]
+        + "_dataset2:"
+        + HiMdata2.datasetName
+        + "_label2:"
+        + runParameters["label2"]
+        + "_action2:"
+        + runParameters["action2"]
+        + plottingFileExtension
+    )
+
 
     if HiMdata1.data["ensembleContactProbability"].shape == HiMdata2.data["ensembleContactProbability"].shape:
+
+        fig1 = plt.figure(constrained_layout=True)
+        spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
+        f1 = fig1.add_subplot(spec1[0, 0])  # 16
+
         matrix = np.log(HiMdata1.data["ensembleContactProbability"] / HiMdata2.data["ensembleContactProbability"])
-
-        # HiMdata1.plot2DMatrixSimple(f1, HiMdata1.data['ensembleContactProbability'],\
-        #                    list(HiMdata1.data['uniqueBarcodes']),\
-        #                    runParameters['axisLabel'],\
-        #                    runParameters['axisLabel'],\
-        #                    cmtitle='probability',
-        #                    cMin=0, cMax=cScale1,\
-        #                    fontsize=runParameters['fontsize'],\
-        #                    colorbar=True,\
-        #                    axisTicks=runParameters["axisTicks"],\
-        #                    cm='coolwarm')
-
-        # HiMdata1.plot2DMatrixSimple(f1, HiMdata2.data['ensembleContactProbability'],\
-        #                     list(HiMdata2.data['uniqueBarcodes']),\
-        #                     runParameters['axisLabel'],\
-        #                     runParameters['axisLabel'],\
-        #                     cmtitle='probability',
-        #                     cMin=0, cMax=cScale2,\
-        #                     fontsize=runParameters['fontsize'],\
-        #                     colorbar=True,\
-        #                     axisTicks=runParameters["axisTicks"],\
-        #                     cm='coolwarm')
 
         f1_ax1_im = HiMdata1.plot2DMatrixSimple(
             f1,
@@ -200,8 +204,32 @@ if __name__ == "__main__":
             axisTicks=runParameters["axisTicks"],
             cm="RdBu",
         )
-        plt.savefig(outputFileName)
-        print("Output figure: {}".format(outputFileName))
+        plt.savefig(outputFileName1)
+        print("Output figure: {}".format(outputFileName1))
+        plt.close()
+        
+        # plots mixed matrix
+        fig2= plt.figure(constrained_layout=True)
+        spec2 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
+        f2 = fig2.add_subplot(spec2[0, 0])  # 16
+
+        matrix2 = HiMdata1.data['ensembleContactProbability']
+        for i in range(matrix2.shape[0]):
+            for j in range(0,i):
+                matrix2[i,j] = HiMdata2.data['ensembleContactProbability'][i,j]
+        HiMdata1.plot2DMatrixSimple(f2, matrix2,\
+                            list(HiMdata1.data['uniqueBarcodes']),\
+                            runParameters['axisLabel'],\
+                            runParameters['axisLabel'],\
+                            cmtitle='probability',
+                            cMin=0, cMax=0.6,\
+                            fontsize=runParameters['fontsize'],\
+                            colorbar=True,\
+                            axisTicks=runParameters["axisTicks"],\
+                            cm='coolwarm')
+        plt.savefig(outputFileName2)
+        print("Output figure: {}".format(outputFileName2))
+
 
     else:
         print("Error: matrices do not have the same dimensions!")

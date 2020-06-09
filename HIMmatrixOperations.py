@@ -173,7 +173,7 @@ class analysisHiMmatrix:
             ytick.set_fontsize(fontsize)
 
         if colorbar:
-            cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+            cbar = plt.colorbar(pos, ax=ifigure, fraction=0.046, pad=0.04)
             cbar.minorticks_on()
             cbar.set_label(cmtitle,fontsize=float(fontsize)*0.85)
             pos.set_clim(vmin=cMin, vmax=cMax)

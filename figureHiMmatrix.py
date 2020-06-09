@@ -20,7 +20,7 @@ import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix
+from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix
 
 #%% define and loads datasets
 
@@ -29,6 +29,8 @@ def parseArguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+
     parser.add_argument(
         "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
     )
@@ -37,6 +39,7 @@ def parseArguments():
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
     parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
+    parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
 
     args = parser.parse_args()
@@ -50,6 +53,11 @@ def parseArguments():
         rootFolder = "."
         # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
 
+    if args.outputFolder:
+        outputFolder = args.outputFolder
+    else:
+        outputFolder = 'none'
+        
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
     else:
@@ -80,12 +88,17 @@ def parseArguments():
     else:
         runParameters["axisTicks"] = False
 
+    if args.barcodes:
+        runParameters["barcodes"] = args.barcodes
+    else:
+        runParameters["barcodes"] = False
+
     if args.scalingParameter:
         runParameters["scalingParameter"] = float(args.scalingParameter)
     else:
         runParameters["scalingParameter"] = 1.0
 
-    return rootFolder, runParameters
+    return rootFolder, outputFolder,runParameters
 
 
 # =============================================================================
@@ -95,7 +108,7 @@ def parseArguments():
 if __name__ == "__main__":
 
     print(">>> Producing HiM matrix")
-    rootFolder, runParameters = parseArguments()
+    rootFolder, outputFolder, runParameters = parseArguments()
 
     HiMdata = analysisHiMmatrix(runParameters, rootFolder)
 
@@ -103,15 +116,22 @@ if __name__ == "__main__":
 
     # panel C: contact probability matrix
 
-    cScale = HiMdata.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
+    matrix=HiMdata.data["ensembleContactProbability"]
+    # matrix=normalizeMatrix(matrix)
+
+    cScale = matrix.max() / runParameters["scalingParameter"]
     print("scalingParameters={}".format(runParameters["scalingParameter"]))
     nCells = HiMdata.data["SCmatrixCollated"].shape[2]
     nDatasets = len(HiMdata.data["runName"])
     plottingFileExtension = ".svg"
+    if outputFolder=='none':
+        outputFolder = HiMdata.dataFolder
     outputFileName = (
-        HiMdata.dataFolder
+        outputFolder
         + os.sep
         + "Fig_HiMmatrix"
+        + "_dataset1:"
+        + HiMdata.datasetName
         + "_label:"
         + runParameters["label"]
         + "_action:"
@@ -119,13 +139,41 @@ if __name__ == "__main__":
         + plottingFileExtension
     )
 
-    fig1 = plt.figure(constrained_layout=True)
-    spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-    f1 = fig1.add_subplot(spec1[0, 0])  # 16
 
+    if runParameters["barcodes"]:
+        fig1 = plt.figure(figsize=(10,10), constrained_layout=False)
+        gs1 = fig1.add_gridspec(nrows=19, ncols=22, left=0.05, right=0.95,
+                                wspace=.05, hspace=.05)
+        f1 = fig1.add_subplot(gs1[0:-1,5:-1])
+        f2 = fig1.add_subplot(gs1[:-1, 3],sharey=f1)
+        f3 = fig1.add_subplot(gs1[-1, 5:-1],sharex=f1)
+        ATACseqMatrix = np.array([0.4,0.4,0.4,0.4,.8, 0.4,.3,0.4,0.4,.8,.3,0.4,0.4,.8,0.4,.8,.3])
+        ATACseqMatrixV = np.copy(ATACseqMatrix).reshape((-1, 1))
+        pos1=f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap='tab10')  # colormaps RdBu seismic
+        f2.set_xticklabels(())
+        f2.set_yticklabels(())
+        pos1.set_clim(vmin=-1, vmax=1)
+    
+        pos2=f3.imshow(np.atleast_2d(ATACseqMatrix), cmap='tab10')  # colormaps RdBu seismic
+        f3.set_xticklabels(())
+        f3.set_yticklabels(())
+        pos2.set_clim(vmin=-1, vmax=1)
+        
+        barcodeLabels=np.arange(1,ATACseqMatrix.shape[0]+1)
+        for j in range(len(ATACseqMatrix)):
+            text = f3.text(j, 0, barcodeLabels[j], ha="center", va="center", color="w", fontsize=15)    
+            text = f2.text(0, j, barcodeLabels[j], ha="center", va="center", color="w", fontsize=15)    
+        
+        colorbar=False
+    else:               
+        fig1 = plt.figure(constrained_layout=True)
+        spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
+        f1 = fig1.add_subplot(spec1[0, 0])  # 16
+        colorbar=True
+    
     f1_ax1_im = HiMdata.plot2DMatrixSimple(
         f1,
-        HiMdata.data["ensembleContactProbability"],
+        matrix,
         list(HiMdata.data["uniqueBarcodes"]),
         runParameters["axisLabel"],
         runParameters["axisLabel"],
@@ -133,12 +181,15 @@ if __name__ == "__main__":
         cMin=0,
         cMax=cScale,
         fontsize=runParameters["fontsize"],
-        colorbar=True,
+        colorbar=colorbar,
         axisTicks=runParameters["axisTicks"],
         nCells=nCells,
         nDatasets=nDatasets,
         showTitle=True
     )
+    
+
+    
     plt.savefig(outputFileName)
     titleText="N = {} | n = {}".format(nCells,nDatasets)
     print('Title: {}'.format(titleText))
