@@ -148,11 +148,16 @@ containing each of the analysis from different embryos of the same experiment. N
         ],
         "PWD_clim": 1.4,
         "PWD_mode": "median",
+        "PWD_cm": "terrain",
         "iPWD_clim": 6,
         "iPWD_mode": "median",
-        "ContactProbability_scale": 15,
+        "iPWD_cm": "terrain",
+        "ContactProbability_scale": 12,
         "ContactProbability_cmin": 0.0,
-        "ContactProbability_distanceThreshold": 0.25
+        "ContactProbability_distanceThreshold": 0.35,
+		"ContactProbability_cm": "coolwarm",
+		"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
+		"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
     }
 }
 ```
@@ -204,4 +209,88 @@ Options:
 - ```ContactProbability_cmin```: Minimum of colormap in the the contact probability map.
 - ```ContactProbability_distanceThreshold```: distance used for the calculation of the contact probabilities in pixel units.
 
+
+### Analyzing MATLAB datasets
+
+One can use this same pipeline to analyze data that was segmented using MATLAB routines (i.e merfish_main.m). For this, a few steps need to be taken.
+
+#### Make directory structure
+
+Make a directory structure where you will load your data to be read by processHiMmatrix.py. Follow this example closely:
+
+```bash
+.
+├── 000_Embryo
+│   └── buildsPWDmatrix
+│       ├── buildsPWDmatrix_uniqueBarcodes.ecsv
+│       └── HiMscMatrix.mat
+```
+
+place a MAT file with the name ```HiMscMatrix.mat``` in the ```buildsPWDmatrix``` directory. This file should contain the ```distanceMatrixCumulative``` variable, a 3-D matrix with the format barcode x barcode x nCells. Make sure you remove empty barcode rows by saving ```distanceMatrixCumulative(p.listofRTsusedGenomicallySorted,p.listofRTsusedGenomicallySorted,:)```
+
+Then, you need to have a file called ```buildsPWDmatrix_uniqueBarcodes.ecsv``` with the barcodes in a line separated list, for example:
+
+```bash
+3
+4
+5
+6
+7
+13
+23
+25
+29
+37
+43
+48
+60
+62
+66
+67
+68
+89
+90
+91
+92
+```
+
+#### Create folders2Load.json file
+
+Now you create the parameters file. An example follows:
+
+```bash
+{
+    "wt_Pc_Chr3R": {
+        "Folders": [
+            "/home/marcnol/data/Experiment_Julian/000_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "PWD_cm": "terrain",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "iPWD_cm": "terrain",
+        "ContactProbability_scale": 12,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.35,
+	"ContactProbability_cm": "coolwarm",
+	"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
+	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
+    }
+}
+```
+
+Make sure you edit the name of the dataset (here ```wt_Pc_Chr3R```) and add a folder for each dataset you want to analyze.
+
+#### Run processHiMmatrix.py
+
+You can now run the script. For instance, do
+
+```bash
+processHiMmatrix.py  --matlab
+```
+
+to run with default options. The important thing is to add the ```--matlab``` flag.
+
+You should be now set.
 

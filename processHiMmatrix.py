@@ -34,6 +34,7 @@ from HIMmatrixOperations import (
     loadsSCdata,
     plotsEnsemble3wayContactMatrix,
     listsSCtoKeep,
+    loadsSCdataMATLAB,
 )
 
 # to remove in a future version
@@ -70,7 +71,7 @@ def plotsSinglePWDmatrices(
             iuniqueBarcodes,
             p["pixelSize"],
             outputFileName=outputFileName,
-            figtitle="PWD:" + iTag,
+            figtitle="PWD:" + datasetName+ iTag,
             cm=iListData["PWD_cm"],
             clim=iListData["PWD_clim"],
             mode=iListData["PWD_mode"],
@@ -96,7 +97,7 @@ def plotsInversePWDmatrice(SCmatrixCollated, uniqueBarcodes, runName, iListData,
             outputFileName=outputFileName,
             clim=iListData["iPWD_clim"],
             mode=iListData["iPWD_mode"],
-            figtitle="inverse PWD:" + iTag,
+            figtitle="inverse PWD:" + datasetName+ iTag,
             cmtitle="inverse distance, 1/nm",
             inverseMatrix=True,
             nCells=iSCmatrixCollated.shape[2],
@@ -129,7 +130,7 @@ def plotsSingleContactProbabilityMatrix(
                 threshold=iListData["ContactProbability_distanceThreshold"],
                 norm="nonNANs",
             )  # norm: nCells (default), nonNANs
-            outputFileName = p["outputFolder"] + os.sep + iTag + "_Cells:" + p["action"] + "_contactProbability"
+            outputFileName = p["outputFolder"] + os.sep + datasetName+ iTag + "_Cells:" + p["action"] + "_contactProbability"
 
             print("Dataset {} cells2plot: {}".format(iTag, cells2Plot))
             cScale = SCmatrix.max() / iListData["ContactProbability_scale"]
@@ -142,7 +143,7 @@ def plotsSingleContactProbabilityMatrix(
                 outputFileName=outputFileName,
                 cMin=iListData["ContactProbability_cmin"],
                 clim=cScale,
-                figtitle="HiM:" + iTag,
+                figtitle="HiM:" + datasetName+ iTag,
                 cmtitle="probability",
                 nCells=nCells,
                 cells2Plot=cells2Plot,
@@ -245,6 +246,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
     parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
+    parser.add_argument("--matlab", help="Use to load matlab formatted data", action="store_true")
 
     args = parser.parse_args()
     if args.rootFolder:
@@ -270,6 +272,11 @@ if __name__ == "__main__":
     else:
         p["action"] = "all"
 
+    if args.matlab:
+        p["format"] = "matlab"
+    else:
+        p["format"] = "pyHiM"
+
     # [ initialises MD file]
     now = datetime.now()
     dateTime = now.strftime("%d%m%Y_%H%M%S")
@@ -293,9 +300,12 @@ if __name__ == "__main__":
     for datasetName in list(ListData.keys()):
 
         # [loads SC matrices]
-        (SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName, SClabeledCollated,) = loadsSCdata(
-            ListData, datasetName, p
-        )
+        if p["format"]=='pyHiM':
+            print('>>> Loading pyHiM-formatted dataset')
+            SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName, SClabeledCollated = loadsSCdata(ListData, datasetName, p)
+        elif p["format"]=='matlab':
+            print('>>> Loading MATLAB-formatted dataset')
+            SCmatrixCollated, uniqueBarcodes, runName, SClabeledCollated = loadsSCdataMATLAB(ListData, datasetName, p)
 
         fileNameMD = rootFolder + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
         writeString2File(fileNameMD, "# Post-processing of Hi-M matrices", "w")
@@ -309,7 +319,7 @@ if __name__ == "__main__":
             plotsSinglePWDmatrices(
                 SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], p, fileNameMD, datasetName=datasetName,
             )
-
+            
             # plots histograms for each dataset
             # for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated, uniqueBarcodes):
             #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)

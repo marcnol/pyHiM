@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy import interpolate
 from scipy.interpolate import interp1d
+from scipy.io import loadmat
 
 from astropy.table import Table, vstack
 
@@ -179,7 +180,6 @@ class analysisHiMmatrix:
         return pos
 
         pos.set_clim(vmin=cMin, vmax=cMax)
-   
 
     def update_clims(self, cMin, cMax, axes):
         for ax in axes:
@@ -468,6 +468,62 @@ def loadsSCdata(ListData, datasetName, p):
         runName,
         SClabeledCollated,
     )
+
+def loadsSCdataMATLAB(ListData, datasetName, p):
+
+
+    print("Dataset to load: {}\n\n".format(list(ListData.keys())[0]))
+
+    SCmatrixCollated, uniqueBarcodes = [], []
+    runName, SClabeledCollated = [], []
+
+    for rootFolder in ListData[datasetName]["Folders"]:
+        # [finds sample name]
+        runName.append(os.path.basename(os.path.dirname(rootFolder)))
+        
+        # [loads and accumulates barcodes and scHiM matrix]
+        fileNameMatrix = rootFolder + os.sep + "HiMscMatrix.mat"
+        fileNameBarcodes = rootFolder + os.sep + "buildsPWDmatrix_uniqueBarcodes.ecsv"
+
+        # loads barcodes
+        if os.path.exists(fileNameBarcodes):
+            uniqueBarcodes.append(np.loadtxt(fileNameBarcodes).astype(int))
+            print(">>> Loaded {}".format(fileNameMatrix))
+        else:
+            print("*** Error: could not find {}".format(fileNameBarcodes))
+
+        # loads SC matrix
+        if os.path.exists(fileNameMatrix):
+            data=loadmat(fileNameMatrix)
+            SCmatrix1 =data['distanceMatrixCumulative']
+            # print(">>> SC matrix 1 shape: {}".format(SCmatrix1.shape))
+            # SCmatrix2=SCmatrix1[uniqueBarcodes[0]-1,uniqueBarcodes[0]-1,:]
+            SCmatrixCollated.append(SCmatrix1)
+            print(">>> Loaded: {}\n SC matrix shape: {}".format(fileNameMatrix,SCmatrix1.shape))
+        else:
+            print("*** Error: could not find {}".format(fileNameMatrix))
+
+       # loads cell attributes
+        cellAttributesMatrix = data['cellAttributesMatrix']
+        ResultsTable = cellAttributesMatrix[0,:]
+
+        SClabeled = np.zeros(len(ResultsTable))
+        indexCellsWithLabel = [iRow for iRow, Row in enumerate(ResultsTable) if Row > 0 ]
+        SClabeled[indexCellsWithLabel] = 1
+        SClabeledCollated.append(SClabeled)
+
+        print("\n>>>Merging rootFolder: {}".format(rootFolder))
+        print("Cells added after merge: {}\n".format(SCmatrix1.shape[2]))
+
+    print("{} datasets loaded\n".format(len(SCmatrixCollated)))
+
+    return (
+        SCmatrixCollated,
+        uniqueBarcodes,
+        runName,
+        SClabeledCollated,
+    )
+
 
 
 def listsSCtoKeep(p, mask):

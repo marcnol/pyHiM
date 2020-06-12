@@ -138,7 +138,7 @@ if __name__ == "__main__":
     outputFileName = (
         outputFolder
         + os.sep
-        + "Fig_4Mcontacts"
+        + "Fig_3wayContacts"
         + "_dataset1:"
         + HiMdata1.datasetName
         + "_label1:"
