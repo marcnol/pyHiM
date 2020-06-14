@@ -40,6 +40,7 @@ def parseArguments():
     # parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument("--colorbar", help="Use if you want a colorbar", action="store_true")
+    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     args = parser.parse_args()
 
     runParameters = {}
@@ -92,16 +93,6 @@ def parseArguments():
     else:
         runParameters["fontsize"] = 12
 
-    # if args.axisLabel:
-    #     runParameters["axisLabel"] = args.axisLabel
-    # else:
-    #     runParameters["axisLabel"] = False
-
-    # if args.axisTicks:
-    #     runParameters["axisTicks"] = args.axisTicks
-    # else:
-    #     runParameters["axisTicks"] = False
-
     if args.scalingParameter:
         runParameters["scalingParameter"] = float(args.scalingParameter)
     else:
@@ -112,6 +103,11 @@ def parseArguments():
     else:
         runParameters["colorbar"] = False
 
+    if args.plottingFileExtension:
+        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+    else:
+        runParameters["plottingFileExtension"] = '.svg'
+
 
     return rootFolder1, rootFolder2, outputFolder, runParameters
 
@@ -121,7 +117,6 @@ def parseArguments():
 
 if __name__ == "__main__":
     print(">>> Producing HiM 3-way matrices")
-    plottingFileExtension = ".svg"
     
     # [parsing arguments
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
@@ -131,7 +126,8 @@ if __name__ == "__main__":
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
-    
+    nCells1 = HiMdata1.nCellsLoaded()
+
     if outputFolder=='none':
         outputFolder = HiMdata1.dataFolder
         
@@ -153,6 +149,8 @@ if __name__ == "__main__":
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
         HiMdata2.loadData()
+        nCells2 = HiMdata2.nCellsLoaded()
+
         outputFileName = (
             outputFileName
             + "_dataset2:"
@@ -162,13 +160,12 @@ if __name__ == "__main__":
             + "_action2:"
             + runParameters["action2"]
         )        
-    outputFileName += plottingFileExtension
+    outputFileName += runParameters["plottingFileExtension"]
 
     # 3-way interaction matrices
     pixelSize = 0.1
     cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
-    nCells = HiMdata1.data["SCmatrixCollated"].shape[2]
-
+       
     fig2 = plt.figure(constrained_layout=True)
     spec2 = gridspec.GridSpec(ncols=3, nrows=2, figure=fig2)
     f2_P3 = fig2.add_subplot(spec2[0, 0])  # 16

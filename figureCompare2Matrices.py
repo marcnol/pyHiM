@@ -42,7 +42,9 @@ def parseArguments():
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
     parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
+    parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
+    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
 
     args = parser.parse_args()
 
@@ -79,7 +81,7 @@ def parseArguments():
     if args.label2:
         runParameters["label2"] = args.label2
     else:
-        runParameters["label2"] = "doc"
+        runParameters["label2"] = "NE"
 
     if args.action1:
         runParameters["action1"] = args.action1
@@ -89,7 +91,7 @@ def parseArguments():
     if args.action2:
         runParameters["action2"] = args.action2
     else:
-        runParameters["action2"] = "unlabeled"
+        runParameters["action2"] = "labeled"
 
     if args.fontsize:
         runParameters["fontsize"] = args.fontsize
@@ -106,10 +108,21 @@ def parseArguments():
     else:
         runParameters["axisTicks"] = False
 
+    if args.ratio:
+        runParameters['ratio'] = args.ratio
+    else:
+        runParameters['ratio'] = False
+
+
     if args.cAxis:
         runParameters["cAxis"] = float(args.cAxis)
     else:
-        runParameters["cAxis"] = 2.0
+        runParameters["cAxis"] = .6
+
+    if args.plottingFileExtension:
+        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+    else:
+        runParameters["plottingFileExtension"] = '.svg'
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
@@ -129,11 +142,13 @@ if __name__ == "__main__":
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
+    nCells = HiMdata1.nCellsLoaded()
 
     HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
     HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
     HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
     HiMdata2.loadData()
+    nCells2 = HiMdata2.nCellsLoaded()
 
     # cScale1 = HiMdata1.data['ensembleContactProbability'].max() / runParameters['cAxis']
     # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
@@ -142,7 +157,6 @@ if __name__ == "__main__":
     if outputFolder=='none':
         outputFolder = HiMdata1.dataFolder
         
-    plottingFileExtension = ".svg"
     outputFileName1 = (
         outputFolder
         + os.sep
@@ -159,7 +173,7 @@ if __name__ == "__main__":
         + runParameters["label2"]
         + "_action2:"
         + runParameters["action2"]
-        + plottingFileExtension
+        + runParameters["plottingFileExtension"]
     )
 
     outputFileName2 = (
@@ -178,7 +192,7 @@ if __name__ == "__main__":
         + runParameters["label2"]
         + "_action2:"
         + runParameters["action2"]
-        + plottingFileExtension
+        + runParameters["plottingFileExtension"]
     )
 
 
@@ -187,8 +201,18 @@ if __name__ == "__main__":
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f1 = fig1.add_subplot(spec1[0, 0])  # 16
+        m1 = HiMdata1.data["ensembleContactProbability"]
+        m2 = HiMdata2.data["ensembleContactProbability"]
+        
+        m1=m1/m1.max()
+        m2=m2/m2.max()
 
-        matrix = np.log(HiMdata1.data["ensembleContactProbability"] / HiMdata2.data["ensembleContactProbability"])
+        if runParameters['ratio']==True:        
+            matrix = np.log( m1 / m2)
+            cmtitle="log(ratio)"
+        else:
+            matrix = (m1 - m2)
+            cmtitle="difference"
 
         f1_ax1_im = HiMdata1.plot2DMatrixSimple(
             f1,
@@ -196,7 +220,7 @@ if __name__ == "__main__":
             list(HiMdata1.data["uniqueBarcodes"]),
             runParameters["axisLabel"],
             runParameters["axisLabel"],
-            cmtitle="log(ratio)",
+            cmtitle=cmtitle,
             cMin=-runParameters["cAxis"],
             cMax=runParameters["cAxis"],
             fontsize=runParameters["fontsize"],
@@ -206,17 +230,19 @@ if __name__ == "__main__":
         )
         plt.savefig(outputFileName1)
         print("Output figure: {}".format(outputFileName1))
-        plt.close()
+        # plt.close()
         
         # plots mixed matrix
         fig2= plt.figure(constrained_layout=True)
         spec2 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f2 = fig2.add_subplot(spec2[0, 0])  # 16
 
+        # plots mixed matrix
         matrix2 = HiMdata1.data['ensembleContactProbability']
         for i in range(matrix2.shape[0]):
             for j in range(0,i):
                 matrix2[i,j] = HiMdata2.data['ensembleContactProbability'][i,j]
+                
         HiMdata1.plot2DMatrixSimple(f2, matrix2,\
                             list(HiMdata1.data['uniqueBarcodes']),\
                             runParameters['axisLabel'],\

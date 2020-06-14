@@ -294,3 +294,252 @@ to run with default options. The important thing is to add the ```--matlab``` fl
 
 You should be now set.
 
+### Plotting publication-quality figures
+
+The processing with ```processHiMmatrix.py``` produces plots but this routing is primarily concerned with the collection of different datasets, thus it does not have options for customization.
+
+This is performed in a series of ***py*** routines  that plot publication-quality figures with many options.
+
+#### Plotting single HiM matrices
+
+```figureHiMmatrix.py``` will plot a single matrix. It has many options, described when you run it with the --help parameter:
+
+```bash
+usage: figureHiMmatrix.py [-h] [-F ROOTFOLDER] [-O OUTPUTFOLDER]
+                          [-P PARAMETERS] [-A LABEL] [-W ACTION]
+                          [--fontsize FONTSIZE] [--axisLabel] [--axisTicks]
+                          [--barcodes] [--scalingParameter SCALINGPARAMETER]
+                          [--plottingFileExtension PLOTTINGFILEEXTENSION]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with dataset
+  -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+                        Folder for outputs
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --fontsize FONTSIZE   Size of fonts to be used in matrix
+  --axisLabel           Use if you want a label in x and y
+  --axisTicks           Use if you want axes ticks
+  --barcodes            Use if you want barcode images to be displayed
+  --scalingParameter SCALINGPARAMETER
+                        Scaling parameter of colormap
+  --plottingFileExtension PLOTTINGFILEEXTENSION
+                        By default: svg. Other options: pdf, png
+
+```
+
+
+
+Most of these options are self-explanatory. Here is the command to run to get Figure 1F made:
+
+```bash
+figureHiMmatrix.py -F "$DATA1" --fontsize 22 --label doc --action labeled --scalingParameter 1 --barcodes --outputFolder "$FIGS"/Figure1  --plottingFileExtension png
+```
+
+And here is the output:
+
+![Fig_HiMmatrix_dataset1:wt_docTAD_nc14_label:doc_action:labeled](Running_pyHiM.assets/Fig_HiMmatrix_dataset1wt_docTAD_nc14_labeldoc_actionlabeled.png)
+
+#### Plotting 3-way contact matrices
+
+figure3wayInteractions.py``` will plot 6 3-way contact matrices matrix. The anchors used are those provided in the folders2Load.json file of the analysis. This function has many options, described when you run it with the --help parameter:
+
+```bash
+usage: figure3wayInteractions.py [-h] [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
+                                 [-O OUTPUTFOLDER] [-P PARAMETERS]
+                                 [-A1 LABEL1] [-W1 ACTION1] [-A2 LABEL2]
+                                 [-W2 ACTION2] [--fontsize FONTSIZE]
+                                 [--scalingParameter SCALINGPARAMETER]
+                                 [--colorbar]
+                                 [--plottingFileExtension PLOTTINGFILEEXTENSION]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+                        Folder with dataset 1
+  -F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+                        Folder with dataset 2
+  -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+                        Folder for outputs
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A1 LABEL1, --label1 LABEL1
+                        Add name of label for dataset 1 (e.g. doc)
+  -W1 ACTION1, --action1 ACTION1
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  -A2 LABEL2, --label2 LABEL2
+                        Add name of label for dataset 1 (e.g. doc)
+  -W2 ACTION2, --action2 ACTION2
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  --fontsize FONTSIZE   Size of fonts to be used in matrix
+  --scalingParameter SCALINGPARAMETER
+                        Scaling parameter of colormap
+  --colorbar            Use if you want a colorbar
+  --plottingFileExtension PLOTTINGFILEEXTENSION
+                        By default: svg. Other options: pdf, png
+
+```
+
+
+
+Run to produce Figure 1G:
+
+```bash
+figure3wayInteractions.py -F1 "$DATA1" --label1 doc --action1 labeled --fontsize 12 --scalingParameter 1.0 --outputFolder "$FIGS"/Figure1  --plottingFileExtension png
+```
+
+
+
+which produces:
+
+![Fig_3wayContacts_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled](Running_pyHiM.assets/Fig_3wayContacts_dataset1wt_docTAD_nc14_label1doc_action1labeled.png)
+
+
+
+It is possible also to compare the 3-way matrices of two datasets, for this, run:
+
+```bash
+figure3wayInteractions.py -F1 "$DATA2" --label1 doc --action1 labeled -F2 "$DATA2" --label2 NE --action2 labeled --fontsize 22 --scalingParameter 1.0  --outputFolder "$FIGS"/Figure2 --plottingFileExtension png
+```
+
+to obtain:
+
+![Fig_3wayContacts_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:NE_action2:labeled](Running_pyHiM.assets/Fig_3wayContacts_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2NE_action2labeled.png)
+
+The first quadrant (top right) will represent the first dataset.
+
+
+
+#### Compare two HiM matrices
+
+```figureCompare2Matrices.py``` will make two panels to compare datasets. One will contain the HiM contact matrices of each datasets in different quadrants. The first dataset will be plotted on top right. The second plot will produce either a difference matrix (default) or the log(ratio) (see --ratio option). The options are described when you run it with the --help parameter:
+
+```bash
+usage: figureCompare2Matrices.py [-h] [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
+                                 [-O OUTPUTFOLDER] [-P PARAMETERS]
+                                 [-A1 LABEL1] [-W1 ACTION1] [-A2 LABEL2]
+                                 [-W2 ACTION2] [--fontsize FONTSIZE]
+                                 [--axisLabel] [--axisTicks] [--ratio]
+                                 [--cAxis CAXIS]
+                                 [--plottingFileExtension PLOTTINGFILEEXTENSION]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+                        Folder with dataset 1
+  -F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+                        Folder with dataset 2
+  -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+                        Folder for outputs
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A1 LABEL1, --label1 LABEL1
+                        Add name of label for dataset 1 (e.g. doc)
+  -W1 ACTION1, --action1 ACTION1
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  -A2 LABEL2, --label2 LABEL2
+                        Add name of label for dataset 1 (e.g. doc)
+  -W2 ACTION2, --action2 ACTION2
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  --fontsize FONTSIZE   Size of fonts to be used in matrix
+  --axisLabel           Use if you want a label in x and y
+  --axisTicks           Use if you want axes ticks
+  --ratio               Does ratio between matrices. Default: difference
+  --cAxis CAXIS         absolute cAxis value for colormap
+  --plottingFileExtension PLOTTINGFILEEXTENSION
+                        By default: svg. Other options: pdf, png
+
+```
+
+To produce Figure 2B you run
+
+```bash
+figureCompare2Matrices.py -F1 "$DATA2" -F2 "$DATA2" --label1 doc --label2 M --action1 labeled --action2 labeled --cAxis 2 --fontsize 22 --outputFolder "$FIGS"/Figure2 --plottingFileExtension png --ratio
+```
+
+and will obtain:
+
+![Fig_mixedHiMmatrices_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:M_action2:labeled](Running_pyHiM.assets/Fig_mixedHiMmatrices_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2M_action2labeled.png)
+
+and:
+
+<img src="Running_pyHiM.assets/Fig_ratio2HiMmatrices_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2M_action2labeled.png" alt="Fig_ratio2HiMmatrices_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:M_action2:labeled" style="zoom: 80%;" />
+
+
+
+#### Plot 4M profiles
+
+```figure4Mmatrix.py``` will plot 4M profiles using the anchors defined in folders2Load.json parameters file. The options are described when you run it with the --help parameter:
+
+```bash
+usage: figure4Mmatrix.py [-h] [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
+                         [-O OUTPUTFOLDER] [-P PARAMETERS] [-A1 LABEL1]
+                         [-W1 ACTION1] [-A2 LABEL2] [-W2 ACTION2]
+                         [--fontsize FONTSIZE] [--axisLabel] [--axisTicks]
+                         [--splines] [--cAxis CAXIS]
+                         [--plottingFileExtension PLOTTINGFILEEXTENSION]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+                        Folder with dataset 1
+  -F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+                        Folder with dataset 2
+  -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+                        Folder for outputs
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A1 LABEL1, --label1 LABEL1
+                        Add name of label for dataset 1 (e.g. doc)
+  -W1 ACTION1, --action1 ACTION1
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  -A2 LABEL2, --label2 LABEL2
+                        Add name of label for dataset 1 (e.g. doc)
+  -W2 ACTION2, --action2 ACTION2
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+                        for dataset 1
+  --fontsize FONTSIZE   Size of fonts to be used in matrix
+  --axisLabel           Use if you want a label in x and y
+  --axisTicks           Use if you want axes ticks
+  --splines             Use if you want plot data using spline interpolations
+  --cAxis CAXIS         absolute cAxis value for colormap
+  --plottingFileExtension PLOTTINGFILEEXTENSION
+                        By default: svg. Other options: pdf, png
+```
+
+
+
+To produce Figure S1H, one would run:
+
+```bash
+figure4Mmatrix.py  --rootFolder1 "$DATA1" --label1 doc --action1 all --cAxis 1 --outputFolder "$FIGS"/Figure1  --plottingFileExtension png
+```
+
+to obtain:
+
+![Fig_4Mcontacts_dataset1:wt_docTAD_nc14_label1:doc_action1:all](Running_pyHiM.assets/Fig_4Mcontacts_dataset1wt_docTAD_nc14_label1doc_action1all.png)
+
+One can also plot multiple datasets, for example:
+
+```bash
+figure4Mmatrix.py --rootFolder1 "$DATA2" --rootFolder2 "$DATA2" --label1 doc --label2 M --action1 labeled --action2 labeled --cAxis 1 --outputFolder "$FIGS"/Figure2 --plottingFileExtension png
+```
+
+produces
+
+![Fig_4Mcontacts_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:M_action2:labeled](Running_pyHiM.assets/Fig_4Mcontacts_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2M_action2labeled.png)

@@ -41,6 +41,7 @@ def parseArguments():
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
+    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
 
     args = parser.parse_args()
 
@@ -98,6 +99,12 @@ def parseArguments():
     else:
         runParameters["scalingParameter"] = 1.0
 
+    if args.plottingFileExtension:
+        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+    else:
+        runParameters["plottingFileExtension"] = '.svg'
+
+
     return rootFolder, outputFolder,runParameters
 
 
@@ -121,11 +128,14 @@ if __name__ == "__main__":
 
     cScale = matrix.max() / runParameters["scalingParameter"]
     print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
-    nCells = HiMdata.data["SCmatrixCollated"].shape[2]
+    
+    nCells = HiMdata.nCellsLoaded()
+     
     nDatasets = len(HiMdata.data["runName"])
-    plottingFileExtension = ".svg"
+
     if outputFolder=='none':
         outputFolder = HiMdata.dataFolder
+    
     outputFileName = (
         outputFolder
         + os.sep
@@ -136,9 +146,8 @@ if __name__ == "__main__":
         + runParameters["label"]
         + "_action:"
         + runParameters["action"]
-        + plottingFileExtension
+        + runParameters["plottingFileExtension"]
     )
-
 
     if runParameters["barcodes"]:
         fig1 = plt.figure(figsize=(10,10), constrained_layout=False)

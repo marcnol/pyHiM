@@ -49,6 +49,7 @@ def parseArguments():
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--splines", help="Use if you want plot data using spline interpolations", action="store_true")
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
+    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
 
     args = parser.parse_args()
 
@@ -66,7 +67,6 @@ def parseArguments():
     else:
         rootFolder2 = "."
         runParameters['run2Datasets']=False
-
 
     if args.outputFolder:
         outputFolder = args.outputFolder
@@ -123,6 +123,11 @@ def parseArguments():
     else:
         runParameters["cAxis"] = 0.8
 
+    if args.plottingFileExtension:
+        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+    else:
+        runParameters["plottingFileExtension"] = '.svg'
+
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
 
@@ -135,7 +140,6 @@ def parseArguments():
 
 if __name__ == "__main__":
     run2Datasets=False
-    plottingFileExtension = ".svg"
 
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
     print('RootFolders: \n{}\n{}'.format(rootFolder1, rootFolder2))
@@ -143,7 +147,8 @@ if __name__ == "__main__":
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
-    
+    nCells = HiMdata1.nCellsLoaded()
+
     if outputFolder=='none':
         outputFolder = HiMdata1.dataFolder
         
@@ -164,6 +169,8 @@ if __name__ == "__main__":
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
         HiMdata2.loadData()
+        nCells2 = HiMdata2.nCellsLoaded()
+
         run2Datasets=True
         outputFileName = (
             outputFileName
@@ -174,7 +181,7 @@ if __name__ == "__main__":
             + "_action2:"
             + runParameters["action2"]
         )        
-    outputFileName += plottingFileExtension
+    outputFileName += runParameters["plottingFileExtension"]
 
     # fig1 = plt.figure(constrained_layout=True)
     # spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)

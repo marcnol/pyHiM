@@ -81,7 +81,7 @@ class analysisHiMmatrix:
         fileNameParametersJSON = outputFileName + "_parameters.json"
         with open(fileNameParametersJSON) as json_file:
             folders2Load = json.load(json_file)
-        print("Loading parameter file:".format(outputFileName))
+        print("Loading parameter file:".format(fileNameParametersJSON))
 
         # Creates filenames to be loaded
         dataFiles = {}
@@ -99,7 +99,7 @@ class analysisHiMmatrix:
         # loads datasets: numpy matrices
         data = {}
         for idataFile in dataFiles.keys():
-            print("Loaded: {}".format(idataFile))
+            print("Loaded: {}: <{}>".format(idataFile,os.path.basename(outputFileName+dataFiles[idataFile])))
             data[idataFile] = np.load(outputFileName + dataFiles[idataFile]).squeeze()
 
         # loads datasets: lists
@@ -110,7 +110,7 @@ class analysisHiMmatrix:
         data["uniqueBarcodes"] = loadList(outputFileName + "_uniqueBarcodes.csv")
         print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
 
-        print("Number cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
+        print("Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
         print("Number Datasets loaded: {}".format(len(data["runName"])))
 
         # Exports data
@@ -177,6 +177,7 @@ class analysisHiMmatrix:
             cbar = plt.colorbar(pos, ax=ifigure, fraction=0.046, pad=0.04)
             cbar.minorticks_on()
             cbar.set_label(cmtitle,fontsize=float(fontsize)*0.85)
+            pos.set_clim(vmin=cMin, vmax=cMax)
         return pos
 
         pos.set_clim(vmin=cMin, vmax=cMax)
@@ -226,6 +227,19 @@ class analysisHiMmatrix:
                 ifigure.set_yticks([0, self.runParameters["cAxis"]/2, self.runParameters["cAxis"]])
         else:
             ifigure.set_yticklabels(())
+
+
+    def nCellsLoaded(self):    
+        if self.runParameters['action']=='labeled':
+            cellswithLabel=[idx for idx, x in enumerate(self.data['SClabeledCollated']) if x>0]
+            nCells=len(cellswithLabel)
+        elif self.runParameters['action']=='unlabeled':         
+            cellswithLabel=[idx for idx, x in enumerate(self.data['SClabeledCollated']) if x==0]
+            nCells=len(cellswithLabel)
+        else:
+            nCells = self.data["SCmatrixCollated"].shape[2]
+        print('nCells selected with label: {}'.format(nCells))
+        return nCells
 
 # =============================================================================
 # FUNCTIONS
@@ -295,52 +309,74 @@ def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
     sortedSNDTable = SNDtable.group_by("MaskID #")
     listKeys = list(sortedSNDTable.groups.keys["MaskID #"].data)
     indexKey = [index for i, index in zip(listKeys, range(len(listKeys))) if i == label]
-    SNDTablewithLabel = sortedSNDTable.groups[indexKey[0]]
-    print("\n>>> Matching labels")
-    print("Found {} out of {} cells with {} in dataset".format(len(SNDTablewithLabel), len(sortedSNDTable), label))
+    
+    # checks that there is at least one cell with the label
+    if len(indexKey)>0:
+    
+        SNDTablewithLabel = sortedSNDTable.groups[indexKey[0]]
+        print("\n>>> Matching labels")
+        print("Found {} out of {} cells with {} in dataset".format(len(SNDTablewithLabel), len(sortedSNDTable), label))
+    
+        # sorts Results Table by ROI
+        PWDTableSortedROI = ResultsTable.group_by("ROI #")
+        CUIDsList = []
+        CUIDs = Table()
+        CUIDs["Cuid"]=[]
+        
+        print("ROIs to process: {}".format(PWDTableSortedROI.groups.keys))
+        
+        for ROI, group in zip(PWDTableSortedROI.groups.keys, PWDTableSortedROI.groups):
+            # list of cellIDs in ROI
+            cells2Process = group["CellID #"].data.compressed()
+            cells2ProcessUID = group["Cuid"]
+    
+            # list of ROIs detected in SNDTablewithLabel
+            ROIsinSNDTablewithLabel = list(SNDTablewithLabel.group_by("ROI #").groups.keys["ROI #"].data)
+    
+            # index of ROI within the keys of SNDTablewithLabel
+            indexROIs = [index for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel))) if i == ROI["ROI #"]]
+    
+            # subtable of cells with label and ROI that we are looking for
+            SNDTablewithLabelROI = SNDTablewithLabel.group_by("ROI #").groups[indexROIs[0]]
+            cellswithLabel = list(SNDTablewithLabelROI["CellID #"].data)
+    
+            # finds which cell indeces in Table have label
+            listofSelectedCells = [index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel]
+    
+            if len(listofSelectedCells)>0:
+                print('Detected {} cells in ROI {} with label'.format(len(listofSelectedCells),ROI["ROI #"]))
+                if len(CUIDs) > 0:
+                    # CUIDs = vstack([CUIDs, cells2ProcessUID[listofSelectedCells]])
+                    # print('adding {} more cells'.format(len(cells2ProcessUID[listofSelectedCells])))
+                    CUIDsList += list(cells2ProcessUID[listofSelectedCells].data.compressed())
+                else:
+                    CUIDsList = list(cells2ProcessUID[listofSelectedCells].data.compressed())
+                    # CUIDs = cells2ProcessUID[listofSelectedCells]
 
-    # sorts Results Table by ROI
-    PWDTableSortedROI = ResultsTable.group_by("ROI #")
-
-    CUIDs = []
-
-    for ROI, group in zip(PWDTableSortedROI.groups.keys, PWDTableSortedROI.groups):
-        # list of cellIDs in ROI
-        cells2Process = group["CellID #"].data.compressed()
-        cells2ProcessUID = group["Cuid"]
-
-        # list of ROIs detected in SNDTablewithLabel
-        ROIsinSNDTablewithLabel = list(SNDTablewithLabel.group_by("ROI #").groups.keys["ROI #"].data)
-
-        # index of ROI within the keys of SNDTablewithLabel
-        indexROIs = [index for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel))) if i == ROI["ROI #"]]
-
-        # subtable of cells with label and ROI that we are looking for
-        SNDTablewithLabelROI = SNDTablewithLabel.group_by("ROI #").groups[indexROIs[0]]
-        cellswithLabel = list(SNDTablewithLabelROI["CellID #"].data)
-
-        # finds which cell indeces in Table have label
-        listofSelectedCells = [index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel]
-
-        if len(CUIDs) > 0:
-            CUIDs = vstack([CUIDs, cells2ProcessUID[listofSelectedCells]])
-        else:
-            CUIDs = cells2ProcessUID[listofSelectedCells]
-
-        print(
-            "Processed ROI # {}, found {} out of {} cells with {}".format(
-                ROI["ROI #"], len(listofSelectedCells), len(group), label
+            print(
+                "Processed ROI # {}, found {} out of {} cells with {}".format(
+                    ROI["ROI #"], len(listofSelectedCells), len(group), label
+                )
             )
-        )
-
-    # from list of CUIDs from cells that show label, I construct a binary vector of the same size as SCmatrix. Labeled cells have a 1.
-    SClabeled = np.zeros(len(ResultsTable))
-    CUIDsList = CUIDs["Cuid"].data.compressed()
-    indexCellsWithLabel = [iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList]
-    SClabeled[indexCellsWithLabel] = 1
-
-    return SClabeled, CUIDsList
-
+    
+        # from list of CUIDs from cells that show label, I construct a binary vector of the same size as SCmatrix. Labeled cells have a 1.
+        SClabeled = np.zeros(len(ResultsTable))
+        # print('CUID list: {}'.format(CUIDsList2))
+        # CUIDsList = CUIDs["Cuid"].data.compressed()
+        # CUIDsList = CUIDsList2
+        # checks that there are cells found with the label 
+        if len(CUIDsList)>0:
+            indexCellsWithLabel = [iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList]
+            SClabeled[indexCellsWithLabel] = 1
+        else:
+            SClabeled, CUIDsList = [], []
+            
+        return SClabeled, CUIDsList
+    else:
+        # otherwise returns an empty list
+        print("Warning: No cell with a mask labeled <{}> was found".format(label))
+        return [], []
+        
 
 def loadsSCdata(ListData, datasetName, p):
     """
@@ -388,7 +424,8 @@ def loadsSCdata(ListData, datasetName, p):
 
             # [initializes variables]
             buildsPWDmatrix = Table()
-            fileOrder, fileTimeStamp = (
+            fileOrder, fileOrderStamp, fileTimeStamp = (
+                np.zeros(len(files2Process), dtype=int),
                 np.zeros(len(files2Process), dtype=int),
                 np.zeros(len(files2Process)),
             )
@@ -398,24 +435,29 @@ def loadsSCdata(ListData, datasetName, p):
                 if "_order" in fileName:
                     for isplit in fileName.split("_"):
                         if "order" in isplit:
-                            fileOrder[ifileName] = int(isplit.split(":")[1])
-                            print("order= {}--> {}".format(os.path.basename(fileName), fileOrder[ifileName]))
+                            fileOrderStamp[ifileName] = int(isplit.split(":")[1])
+                            print("order {}= {}--> {}".format(ifileName, os.path.basename(fileName), fileOrderStamp[ifileName]))
                     fileTimeStamp[ifileName] = os.path.getmtime(fileName)
                     choosingTimeStamp = False
+                    
                 else:
                     fileTimeStamp[ifileName] = os.path.getmtime(fileName)
                     choosingTimeStamp = True
 
             if choosingTimeStamp:
                 fileOrder = np.argsort(fileTimeStamp).astype(int)
-
+            else:
+                fileOrder = np.argsort(fileOrderStamp).astype(int)
+                
+            # print('FileOrder: {}'.format(fileOrder))
             # [loads buildsPWDmatrix Tables]
             for ifileName in range(len(files2Process)):
                 fileName = files2Process[fileOrder[ifileName]]
                 newbuildsPWDmatrix = Table.read(fileName, format="ascii.ecsv")  # ascii.ecsv
                 buildsPWDmatrix = vstack([buildsPWDmatrix, newbuildsPWDmatrix])
                 print(
-                    "[{}:{}] From {}, Read: {} cells, Cummulative: {} cells".format(
+                    "[{}:{}:{}] From {}, Read: {} cells, Cummulative: {} cells".format(
+                        ifileName,
                         fileOrder[ifileName],
                         fileTimeStamp[fileOrder[ifileName]],
                         os.path.basename(fileName),
@@ -427,16 +469,26 @@ def loadsSCdata(ListData, datasetName, p):
             # [loads SNDassignedCells.ecsv files if available]
             fileNameSNDassignedCells = os.path.dirname(rootFolder) + os.sep + "segmentedObjects/SNDassignedCells.ecsv"
             if os.path.exists(fileNameSNDassignedCells):
+                print('Reading and processing: {}'.format(fileNameSNDassignedCells))
                 SNDassignedCells = Table.read(fileNameSNDassignedCells, format="ascii.ecsv")
 
-                # attributes masks to single cells
-                SClabeled, CUIDsList = attributesLabels2cells(SNDassignedCells, buildsPWDmatrix, label=p["label"])
-
-                SClabeledCollated.append(SClabeled)
+                # checks that table is not empty
+                if len(SNDassignedCells)>0: 
+                    # attributes masks to single cells
+                    SClabeled, CUIDsList = attributesLabels2cells(SNDassignedCells, buildsPWDmatrix, label=p["label"])
+                    
+                    # checks that at least one cell was found to have the label
+                    if len(SClabeled)==0:
+                        # if not available it makes a mock SClabeled matrix so that pipeline always works
+                        # SClabeled = np.ones(len(buildsPWDmatrix)).astype(int)
+                        SClabeled = np.zeros(len(buildsPWDmatrix)).astype(int)
+            
             else:
                 # if not available it makes a mock SClabeled matrix so that pipeline always works
-                SClabeled = np.ones(len(buildsPWDmatrix)).astype(int)
-                SClabeledCollated.append(SClabeled)
+                # SClabeled = np.ones(len(buildsPWDmatrix)).astype(int)
+                SClabeled = np.zeros(len(buildsPWDmatrix)).astype(int)
+ 
+            SClabeledCollated.append(SClabeled)
 
             # [loads and accumulates barcodes and scHiM matrix]
             fileNamMatrix = rootFolder + os.sep + "buildsPWDmatrix_HiMscMatrix.npy"
@@ -525,9 +577,8 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
     )
 
 
-
 def listsSCtoKeep(p, mask):
-    # print('{}'.format(p['action']))
+    print('{}:{}'.format(p['label'],p['action']))
     if p["action"] == "all":
         try:
             cells2Plot = range(len(mask))
@@ -565,21 +616,23 @@ def plotsEnsemble3wayContactMatrix(
     SCmatrixAllDatasets = []  # np.zeros((nBarcodes,nBarcodes))
     for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
         cells2Plot = listsSCtoKeep(p, mask)
-
-        if max(cells2Plot) > iSCmatrixCollated.shape[2]:
-            print(
-                "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
-                    max(cells2Plot), iTag, iSCmatrixCollated.shape[2]
+        if len(cells2Plot)>0:
+            if max(cells2Plot) > iSCmatrixCollated.shape[2]:
+                print(
+                    "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
+                        max(cells2Plot), iTag, iSCmatrixCollated.shape[2]
+                    )
                 )
-            )
-        else:
-            if len(SCmatrixAllDatasets) > 0:
-                SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
             else:
-                SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
-
-            commonSetUniqueBarcodes = iuniqueBarcodes
-
+                if len(SCmatrixAllDatasets) > 0:
+                    SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
+                else:
+                    SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
+    
+                commonSetUniqueBarcodes = iuniqueBarcodes
+        else:
+            print('Dataset: {} - {}  did not have any cell to plot'.format(datasetName,iTag))
+            
     # print(commonSetUniqueBarcodes)
     for anchor in anchors:
         print("nCells processed: {}".format(SCmatrixAllDatasets.shape[2]))
@@ -686,3 +739,4 @@ def getMultiContact(mat, anchor, bait1, bait2, threshold):
     totN = np.sum((~np.isnan(A)) & (~np.isnan(B)))
 
     return n1, totN
+

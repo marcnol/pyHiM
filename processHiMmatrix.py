@@ -64,8 +64,9 @@ def plotsSinglePWDmatrices(
     for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
         outputFileName = p["outputFolder"] + os.sep + iTag + "_Cells:" + p["action"] + "_PWDmatrix"
 
+        # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
-        # print('Dataset {} cells2plot: {}'.format(iTag,cells2Plot))
+
         plotMatrix(
             iSCmatrixCollated,
             iuniqueBarcodes,
@@ -86,6 +87,7 @@ def plotsInversePWDmatrice(SCmatrixCollated, uniqueBarcodes, runName, iListData,
     for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
         outputFileName = p["outputFolder"] + os.sep + iTag + "_Cells:" + p["action"] + "_invPWDmatrix"
 
+        # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
         # print('Dataset {} cells2plot: {}'.format(iTag,cells2Plot))
 
@@ -112,7 +114,9 @@ def plotsSingleContactProbabilityMatrix(
     # Plots contact probability matrices for each dataset
 
     for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
+        # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
+
         if not cells2Plot:
             break
         
@@ -158,28 +162,31 @@ def plotsEnsembleContactProbabilityMatrix(
     # combines matrices from different embryos and calculates integrated contact probability matrix
 
     SCmatrixAllDatasets = []  # np.zeros((nBarcodes,nBarcodes))
-
+    cells2Plot = []
+    NcellsTotal=0
+    
     for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
+        NcellsTotal+=mask.shape[0]
+        # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
 
-        if not cells2Plot:
-            break
-
-        if max(cells2Plot) > iSCmatrixCollated.shape[2]:
-            print(
-                "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
-                    max(cells2Plot), iTag, iSCmatrixCollated.shape[2]
+        if len(cells2Plot)>0:
+            if max(cells2Plot) > iSCmatrixCollated.shape[2]:
+                print(
+                    "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
+                        max(cells2Plot), iTag, iSCmatrixCollated.shape[2]
+                    )
                 )
-            )
-        else:
-            if len(SCmatrixAllDatasets) > 0:
-                SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
             else:
-                SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
+                if len(SCmatrixAllDatasets) > 0:
+                    SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
+                else:
+                    SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
+    
+                commonSetUniqueBarcodes = iuniqueBarcodes
 
-            commonSetUniqueBarcodes = iuniqueBarcodes
+    print("nCells selected / processed: {}/{}".format(SCmatrixAllDatasets.shape[2],NcellsTotal))
 
-    print("nCells processed: {}".format(SCmatrixAllDatasets.shape[2]))
     SCmatrix, nCells = calculateContactProbabilityMatrix(
         SCmatrixAllDatasets,
         commonSetUniqueBarcodes,
@@ -265,7 +272,7 @@ if __name__ == "__main__":
     if args.label:
         p["label"] = args.label
     else:
-        p["label"] = "doc"
+        p["label"] = "M"
 
     if args.action:
         p["action"] = args.action
