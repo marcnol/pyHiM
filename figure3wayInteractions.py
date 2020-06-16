@@ -81,7 +81,7 @@ def parseArguments():
     if args.action1:
         runParameters["action1"] = args.action1
     else:
-        runParameters["action1"] = "all"
+        runParameters["action1"] = "labeled"
 
     if args.action2:
         runParameters["action2"] = args.action2
@@ -164,23 +164,32 @@ if __name__ == "__main__":
 
     # 3-way interaction matrices
     pixelSize = 0.1
-    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
-       
+    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]      
+    
+    anchors= [int(i.split(':')[1]) for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     fig2 = plt.figure(constrained_layout=True)
-    spec2 = gridspec.GridSpec(ncols=3, nrows=2, figure=fig2)
-    f2_P3 = fig2.add_subplot(spec2[0, 0])  # 16
-    f2_P2 = fig2.add_subplot(spec2[0, 1])  # 10
-    f2_P1 = fig2.add_subplot(spec2[0, 2])  # 6
-    f2_Ea = fig2.add_subplot(spec2[1, 0])  # 13
-    f2_Eb = fig2.add_subplot(spec2[1, 1])  # 9
-    f2_Ec = fig2.add_subplot(spec2[1, 2])  # 4
-
-    FigList = [f2_P1, f2_P2, f2_P3, f2_Ea, f2_Eb, f2_Ec]
+    nCols=np.ceil(len(anchors)/2).astype(int)
+    nRows=2
+    spec2 = gridspec.GridSpec(ncols=nCols, nrows=nRows, figure=fig2)
+  
+    FigList,Yticks, Xticks =[], [], []
+    for iRow in range(nRows):
+        for iCol in range(nCols):
+            FigList.append(fig2.add_subplot(spec2[iRow, iCol]))
+            if iRow==nRows-1:
+               Xticks.append(False)
+            else:
+               Xticks.append(False)
+            if iCol==0:
+               Yticks.append(False)
+            else:
+               Yticks.append(False)
+               
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
-    yticks = [False, False, True, True, False, False]
-    xticks = [False, False, False, True, True, True]
+    legendList=[False]*len(anchors)
+    legendList[0]=True 
 
-    for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, yticks, xticks):
+    for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, Xticks, Yticks):
         if runParameters['run2Datasets']:
             matrix=HiMdata1.data[iFigLabel]
             for i in range(matrix.shape[0]):
@@ -205,6 +214,10 @@ if __name__ == "__main__":
         cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
         ticklabs = cbar.ax.get_yticklabels()
         cbar.ax.set_yticklabels(ticklabs, fontsize=12)
+        
+    # for ifigure in FigList:
+    #     HiMdata1.update_clims(0, cMax, ifigure)
+    
     # update_clims(0, cMax, FigList)
 
     plt.savefig(outputFileName)

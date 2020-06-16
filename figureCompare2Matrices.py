@@ -248,7 +248,7 @@ if __name__ == "__main__":
                             runParameters['axisLabel'],\
                             runParameters['axisLabel'],\
                             cmtitle='probability',
-                            cMin=0, cMax=0.6,\
+                            cMin=0, cMax=runParameters["cAxis"],\
                             fontsize=runParameters['fontsize'],\
                             colorbar=True,\
                             axisTicks=runParameters["axisTicks"],\
