@@ -957,3 +957,20 @@ def plotsEnsembleContactProbabilityMatrix(
 
     return SCmatrix, commonSetUniqueBarcodes
 
+
+def shuffleMatrix(matrix,index):
+
+    newSize=len(index)
+    newMatrix =np.zeros((newSize,newSize))
+ 
+    if newSize<=matrix.shape[0]:
+        for i in range(newSize):
+            for j in range(newSize):
+                if index[i]<matrix.shape[0] and index[j]<matrix.shape[0]:
+                    newMatrix[i,j] = matrix[index[i],index[j]]
+    else:
+        print("Error: shuffle size {} is larger than matrix dimensions {}".format(newSize,matrix.shape[0]))
+        print("Shuffle: {} ".format(index))
+   
+    return newMatrix
+

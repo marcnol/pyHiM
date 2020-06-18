@@ -332,7 +332,9 @@ optional arguments:
                         Scaling parameter of colormap
   --plottingFileExtension PLOTTINGFILEEXTENSION
                         By default: svg. Other options: pdf, png
-
+  --shuffle SHUFFLE     Provide shuffle vector: 0,1,2,3... of the same size or
+                        smaller than the original matrix. No spaces! comma-
+                        separated!                   
 ```
 
 
@@ -346,6 +348,20 @@ figureHiMmatrix.py -F "$DATA1" --fontsize 22 --label doc --action labeled --scal
 And here is the output:
 
 ![Fig_HiMmatrix_dataset1:wt_docTAD_nc14_label:doc_action:labeled](Running_pyHiM.assets/Fig_HiMmatrix_dataset1wt_docTAD_nc14_labeldoc_actionlabeled.png)
+
+If you want to remove some of the barcodes or change their order, then you need to use the --shuffle option. For this, you need to provide with the order of the new barcodes. For instance if you want to plot only the first 9 barcodes then run:
+
+```bash
+figureHiMmatrix.py -F "$DATA1" --fontsize 22 --label doc --action labeled --scalingParameter 1 --barcodes --outputFolder "$FIGS"/Figure1  --plottingFileExtension png --shuffle 0,1,2,3,4,5,6,7,8
+```
+
+If you want to change the order, for instance, put the last bin (bin 16) first. The run:
+
+```bash
+figureHiMmatrix.py -F "$DATA1" --fontsize 22 --label doc --action labeled --scalingParameter 1 --barcodes --outputFolder "$FIGS"/Figure1  --plottingFileExtension png --shuffle 16,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+```
+
+Be careful with the format of the ```--shuffle``` parameter. It should contain **no spaces**, and the indexes should be **comma-separated integers**. If the number of integers in the vector exceeds the number of dimensions of the matrix, the output plot will appear blue (matrix will contain zeros). If any given index exceeds the matrix dimensions, then it will be ignored but the matrix substitution will be wrong!
 
 #### Plotting 3-way contact matrices
 

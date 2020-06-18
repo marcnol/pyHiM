@@ -20,7 +20,7 @@ import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix
+from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix
 
 #%% define and loads datasets
 
@@ -42,6 +42,7 @@ def parseArguments():
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument("--shuffle", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
 
     args = parser.parse_args()
 
@@ -72,7 +73,7 @@ def parseArguments():
     if args.action:
         runParameters["action"] = args.action
     else:
-        runParameters["action"] = "all"
+        runParameters["action"] = "labeled"
 
     if args.fontsize:
         runParameters["fontsize"] = args.fontsize
@@ -103,6 +104,11 @@ def parseArguments():
         runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
     else:
         runParameters["plottingFileExtension"] = '.svg'
+
+    if args.shuffle:
+        runParameters["shuffle"] = args.shuffle
+    else:
+        runParameters["shuffle"] = 0
 
 
     return rootFolder, outputFolder,runParameters
@@ -179,7 +185,13 @@ if __name__ == "__main__":
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f1 = fig1.add_subplot(spec1[0, 0])  # 16
         colorbar=True
-    
+        
+    if runParameters["shuffle"]==0:
+        index=range(matrix.shape[0])
+    else:
+        index=[int(i) for i in runParameters["shuffle"].split(',')]
+        matrix=shuffleMatrix(matrix,index)
+        
     f1_ax1_im = HiMdata.plot2DMatrixSimple(
         f1,
         matrix,
