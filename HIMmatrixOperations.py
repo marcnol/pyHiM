@@ -21,6 +21,8 @@ import json, csv
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy import interpolate
+from pylab import contourf, colorbar
+
 from scipy.interpolate import interp1d
 from scipy.io import loadmat
 
@@ -974,3 +976,91 @@ def shuffleMatrix(matrix,index):
    
     return newMatrix
 
+def comp_func(A, nw):    
+    n1 = A.shape[0];
+    # th= 0;  # a threshold for a minimal distance above with calculate the signal 
+    #print "Size of the matrix entetered for the Compaction signal :"
+    #print n1;
+    
+    somme_short = np.zeros((n1, 1));
+    # somme_long = np.zeros((n1, 1));    
+    signal1 = np.zeros((n1, 1));
+    n_int =   np.zeros((n1, 1));
+    # mat_test = np.zeros((n1, n1));
+    
+    for i in range(0,n1) :  
+        if i<=nw:
+            p1=n1 + i-nw;
+            p2=i + nw;
+            for k in range(0,n1) :
+                if k<=p2 or k>=p1:
+                    somme_short[i] = somme_short[i] + A[i,k];
+                    n_int[i] = n_int[i] +1;
+
+        elif  (n1 - nw) <= i:
+            p1=i- nw;
+            p2=i+ nw-n1;
+            for k in range(0,n1) :
+                if k<=p2 or k>=p1:
+                    somme_short[i] = somme_short[i] + A[i,k];
+                    n_int[i] = n_int[i] +1;
+
+        else :
+            p1= i - nw;
+            p2= i + nw;
+            for k in range(0,n1) :
+                if p1<=k and k<=p2:
+                    somme_short[i] = somme_short[i] + A[i,k];
+                    n_int[i] = n_int[i] +1;
+      
+    signal1 = somme_short ;                       
+    return signal1;
+
+def plotScalogram(matrix2plot,outputFileName=''):
+    matrixSize=matrix2plot.shape[0]
+    
+    scales = range(0,6)
+    comp_scale1 = np.zeros(  (len(scales), matrixSize) );
+    for ii, nw in enumerate(scales):
+        c=comp_func(matrix2plot,nw);
+        comp_scale1[ii,] =  c.T;
+    
+    # definitions for the axes
+    left, width = 0.065, 0.65
+    bottom, height = 0.1, .8
+    bottom_h = left_h = left+width+0.02
+    
+    ax1_ = [0, 0.4, width, height]
+    ax2_= [left, bottom, width, 0.2]
+    
+    # fig = plt.figure()
+    fig1 = plt.figure(constrained_layout=True)
+    spec1 = gridspec.GridSpec(ncols=1, nrows=3, figure=fig1)
+    f1 = fig1.add_subplot(spec1[1, 0])  # 16
+    # ax2 = plt.axes(ax2_)#,sharex=ax1)
+    f1.contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
+    imColorBar=contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
+    f1.set_xlim([0,matrixSize])#list(data['uniqueBarcodes']))
+    f1.set_ylabel("Scales");
+    bounds = [0.,0.5, 1.0];
+    cb1 = colorbar(imColorBar,shrink = 1, orientation="vertical",ticks=bounds, spacing='proportional',pad=0.04);
+
+    # ax1 = plt.axes(ax1_)
+    # pos=ax1.imshow(matrix2plot,cmap='coolwarm')
+    # ax1.set_xlabel("barcode #")
+    # ax1.set_ylabel("barcode #")
+    # ax1.set_xlim([-0.5 , matrixSize-.5])#list(data['uniqueBarcodes']))
+    # ax1.set_ylim([matrixSize-.5,-0.5])#list(data['uniqueBarcodes']))
+    # cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+    
+    # ax2 = plt.axes(ax2_)#,sharex=ax1)
+    # ax2.contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
+    # imColorBar=contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
+    # ax2.set_xlim([-.5,matrixSize-.5])#list(data['uniqueBarcodes']))
+    # ax2.set_ylabel("Scales");
+    # bounds = [0.,0.5, 1.0];
+    # cb1 = colorbar(imColorBar,shrink = 1, orientation="vertical",ticks=bounds, spacing='proportional',pad=0.04);
+
+    if outputFileName:
+        plt.savefig(outputFileName)
+        print("Output scalogram: {}".format(outputFileName))        

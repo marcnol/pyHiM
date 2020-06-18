@@ -334,7 +334,9 @@ optional arguments:
                         By default: svg. Other options: pdf, png
   --shuffle SHUFFLE     Provide shuffle vector: 0,1,2,3... of the same size or
                         smaller than the original matrix. No spaces! comma-
-                        separated!                   
+                        separated!    
+  --scalogram           Use if you want scalogram image to be displayed
+                        
 ```
 
 
@@ -349,6 +351,8 @@ And here is the output:
 
 ![Fig_HiMmatrix_dataset1:wt_docTAD_nc14_label:doc_action:labeled](Running_pyHiM.assets/Fig_HiMmatrix_dataset1wt_docTAD_nc14_labeldoc_actionlabeled.png)
 
+##### Altering order or number of barcodes in displayed matrix
+
 If you want to remove some of the barcodes or change their order, then you need to use the --shuffle option. For this, you need to provide with the order of the new barcodes. For instance if you want to plot only the first 9 barcodes then run:
 
 ```bash
@@ -362,6 +366,12 @@ figureHiMmatrix.py -F "$DATA1" --fontsize 22 --label doc --action labeled --scal
 ```
 
 Be careful with the format of the ```--shuffle``` parameter. It should contain **no spaces**, and the indexes should be **comma-separated integers**. If the number of integers in the vector exceeds the number of dimensions of the matrix, the output plot will appear blue (matrix will contain zeros). If any given index exceeds the matrix dimensions, then it will be ignored but the matrix substitution will be wrong!
+
+##### Scalograms
+
+You can now produce a scalogram from the matrix. For this, use the --scalogram option, which will output a separate output image with the scalogram. As example:
+
+![Fig_HiMmatrix_scalogram_dataset1:wt_docTAD_nc14_label:doc_action:labeled](Running_pyHiM.assets/Fig_HiMmatrix_scalogram_dataset1wt_docTAD_nc14_labeldoc_actionlabeled.png)
 
 #### Plotting 3-way contact matrices
 

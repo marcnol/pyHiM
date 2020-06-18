@@ -20,7 +20,7 @@ import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix
+from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix,plotScalogram
 
 #%% define and loads datasets
 
@@ -43,6 +43,7 @@ def parseArguments():
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument("--shuffle", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
+    parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
 
     args = parser.parse_args()
 
@@ -110,6 +111,10 @@ def parseArguments():
     else:
         runParameters["shuffle"] = 0
 
+    if args.scalogram:
+        runParameters['scalogram']= args.scalogram
+    else:
+        runParameters['scalogram'] = True
 
     return rootFolder, outputFolder,runParameters
 
@@ -216,5 +221,22 @@ if __name__ == "__main__":
     titleText="N = {} | n = {}".format(nCells,nDatasets)
     print('Title: {}'.format(titleText))
     print("Output figure: {}".format(outputFileName))
+
+    if runParameters['scalogram']:
+        outputFileNameScalogram = (
+                outputFolder
+                + os.sep
+                + "Fig_HiMmatrix_scalogram"
+                + "_dataset1:"
+                + HiMdata.datasetName
+                + "_label:"
+                + runParameters["label"]
+                + "_action:"
+                + runParameters["action"]
+                + runParameters["plottingFileExtension"]
+            )
+
+
+        plotScalogram(matrix,outputFileNameScalogram)
 
     print("\nDone\n\n")
