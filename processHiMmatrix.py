@@ -74,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
     parser.add_argument("--matlab", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
+    parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
 
     args = parser.parse_args()
     if args.rootFolder:
@@ -108,6 +109,12 @@ if __name__ == "__main__":
         p["saveMatrix"] = True
     else:
         p["saveMatrix"] = False
+
+    if args.getStructure:
+        p["getStructure"] = True
+    else:
+        p["getStructure"] = False
+
 
     # [ initialises MD file]
     now = datetime.now()

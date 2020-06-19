@@ -25,6 +25,7 @@ from pylab import contourf, colorbar
 
 from scipy.interpolate import interp1d
 from scipy.io import loadmat
+from sklearn import manifold
 
 from astropy.table import Table, vstack
 
@@ -898,6 +899,22 @@ def fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runNa
             encoding=None,
         )
                 
+    if p["getStructure"]:
+        ## multi-dimensional scaling to get coordinates from PWDs
+        # make sure meanSCmatrix is symmetric
+        meanSCmatrix = 0.5*(meanSCmatrix + np.transpose(meanSCmatrix))
+        # run metric mds
+        verbosity = 0 # default: 0, quite verbose: 2
+        mds = manifold.MDS(n_components=3, metric=True, n_init=20,
+            max_iter=3000, verbose=verbosity, eps=1e-9, n_jobs=1, random_state=1,
+            dissimilarity="precomputed" # euclidean | precomputed
+            )
+        XYZ = mds.fit(meanSCmatrix).embedding_
+        # print(XYZ.shape)
+        print(XYZ)
+        outputFileNamePDB=p["outputFolder"] + os.sep + "CombinedMatrix_PWD_KDE" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + "_python.pdb"
+        write_XYZ_2_pdb(outputFileNamePDB, XYZ)
+
     return SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal
             
 def plotsEnsembleContactProbabilityMatrix(
@@ -1064,3 +1081,31 @@ def plotScalogram(matrix2plot,outputFileName=''):
     if outputFileName:
         plt.savefig(outputFileName)
         print("Output scalogram: {}".format(outputFileName))        
+        
+        
+def write_XYZ_2_pdb(fileName, XYZ):
+    # writes XYZ coordinates to a PDB file wth pseudoatoms
+    # fileName : string of output file path, e.g. '/foo/bar/test2.pdb'
+    # XYZ      : n-by-3 numpy array with atom coordinates
+
+    n_atoms = XYZ.shape[0]
+    with open(fileName, "w+") as fid:
+        ## atom coordinates
+        txt = "HETATM  {: 3d}  C{:02d} PSD P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
+        for i in range(n_atoms):
+            fid.write(txt.format(i+1, i+1, XYZ[i,0], XYZ[i,1], XYZ[i,2]))
+
+        ## connectivity
+        txt1 = "CONECT  {: 3d}  {: 3d}\n"
+        txt2 = "CONECT  {: 3d}  {: 3d}  {: 3d}\n"
+        # first line of connectivity
+        fid.write(txt1.format(1, 2))
+        # consecutive lines
+        for i in range(2, n_atoms):
+            fid.write(txt2.format(i, i-1, i+1))
+        # last line
+        fid.write(txt1.format(i+1, i))
+
+        print("Done writing {:s} with {:d} atoms.".format(fileName, n_atoms))
+
+        
