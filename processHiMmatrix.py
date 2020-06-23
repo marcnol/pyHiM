@@ -186,7 +186,7 @@ if __name__ == "__main__":
             # [combines matrices from different embryos and calculates integrated contact probability matrix]
             writeString2File(fileNameMD, "## Ensemble contact probability", "a")
             print(">>> Producing ensemble contact matrix for dataset {}\n".format(datasetName))
-            SCmatrixCollatedEnsemble, uniqueBarcodes = plotsEnsembleContactProbabilityMatrix(
+            SCmatrixCollatedEnsemble, commonSetUniqueBarcodes = plotsEnsembleContactProbabilityMatrix(
                 SCmatrixCollated,
                 uniqueBarcodes,
                 runName,
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         # saves lists
         with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
             spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow(uniqueBarcodes)
+            spamwriter.writerow(commonSetUniqueBarcodes)
 
         p["SClabeledCollated"] = []
         with open(outputFileName + "_parameters.json", "w") as f:

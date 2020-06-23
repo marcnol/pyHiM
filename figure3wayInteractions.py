@@ -41,6 +41,7 @@ def parseArguments():
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument("--colorbar", help="Use if you want a colorbar", action="store_true")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument("--normalize", help="Matrices get normalized by their maximum", action="store_true")
     args = parser.parse_args()
 
     runParameters = {}
@@ -108,7 +109,11 @@ def parseArguments():
     else:
         runParameters["plottingFileExtension"] = '.svg'
 
-
+    if args.normalize:
+        runParameters["normalize"] = args.normalize
+    else:
+        runParameters["normalize"] = False
+        
     return rootFolder1, rootFolder2, outputFolder, runParameters
 
 # =============================================================================
@@ -191,11 +196,20 @@ if __name__ == "__main__":
 
     for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, Xticks, Yticks):
         if runParameters['run2Datasets']:
-            matrix=HiMdata1.data[iFigLabel]
+            # mixed matrices from 2 datasets
+            if runParameters['normalize']:
+                matrix=HiMdata1.data[iFigLabel]/HiMdata1.data[iFigLabel].max()
+            else:
+                matrix=HiMdata1.data[iFigLabel]
+                
             for i in range(matrix.shape[0]):
                 for j in range(0,i):
-                    matrix[i,j] = HiMdata2.data[iFigLabel][i,j]            
+                    if runParameters['normalize']:
+                        matrix[i,j] = HiMdata2.data[iFigLabel][i,j]/HiMdata2.data[iFigLabel].max()            
+                    else:
+                        matrix[i,j] = HiMdata2.data[iFigLabel][i,j]
         else:               
+            # only one matrix
             matrix=HiMdata1.data[iFigLabel]
 
         f2_ax1_im = HiMdata1.plot2DMatrixSimple(

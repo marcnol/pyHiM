@@ -50,6 +50,7 @@ def parseArguments():
     parser.add_argument("--splines", help="Use if you want plot data using spline interpolations", action="store_true")
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument("--legend", help="Use if you want to show legends", action="store_true")
 
     args = parser.parse_args()
 
@@ -127,6 +128,11 @@ def parseArguments():
         runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
     else:
         runParameters["plottingFileExtension"] = '.svg'
+
+    if args.legend:
+        runParameters["legend"] = args.legend
+    else:
+        runParameters["legend"] = False
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
@@ -206,7 +212,8 @@ if __name__ == "__main__":
                
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     legendList=[False]*len(anchors)
-    legendList[0]=True 
+    if runParameters["legend"]:
+        legendList[0]=True 
     
     for anchor, ifigure, iFigLabel, yticks, xticks,legend in zip(anchors,FigList, FigLabels, Yticks, Xticks,legendList):
         if not run2Datasets:
