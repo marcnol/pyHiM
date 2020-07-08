@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
-import scaleogram as scg
+# import scaleogram as scg
 
 from HIMmatrixOperations import analysisHiMmatrix, plot1Dprofile2Datasets
 

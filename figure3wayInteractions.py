@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
-import scaleogram as scg
+# import scaleogram as scg
 
 from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact, analysisHiMmatrix
 

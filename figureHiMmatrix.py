@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
-import scaleogram as scg
+# import scaleogram as scg
 
 from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix,plotScalogram
 
@@ -114,7 +114,7 @@ def parseArguments():
     if args.scalogram:
         runParameters['scalogram']= args.scalogram
     else:
-        runParameters['scalogram'] = True
+        runParameters['scalogram'] = False
 
     return rootFolder, outputFolder,runParameters
 
