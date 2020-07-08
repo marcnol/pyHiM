@@ -101,6 +101,7 @@ class analysisHiMmatrix:
 
         # loads datasets: numpy matrices
         data = {}
+        print('Loading datasets from: {}'.format(outputFileName))
         for idataFile in dataFiles.keys():
             print("Loaded: {}: <{}>".format(idataFile,os.path.basename(outputFileName+dataFiles[idataFile])))
             data[idataFile] = np.load(outputFileName + dataFiles[idataFile]).squeeze()

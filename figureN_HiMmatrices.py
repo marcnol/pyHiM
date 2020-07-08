@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun  4 09:04:10 2020
+Created on Wed Jul  8 17:01:30 2020
 
+plots N Hi-M matrices in a subplot
 @author: marcnol
- Produces 
 """
 
 
@@ -128,115 +128,109 @@ if __name__ == "__main__":
     print(">>> Producing HiM matrix")
     rootFolder, outputFolder, runParameters = parseArguments()
 
-    HiMdata = analysisHiMmatrix(runParameters, rootFolder)
-
-    HiMdata.loadData()
-
-    # panel C: contact probability matrix
-
-    matrix=HiMdata.data["ensembleContactProbability"]
-    # matrix=normalizeMatrix(matrix)
-
-    cScale = matrix.max() / runParameters["scalingParameter"]
-    print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
-    
-    nCells = HiMdata.nCellsLoaded()
-     
-    nDatasets = len(HiMdata.data["runName"])
-
-    if outputFolder=='none':
-        outputFolder = HiMdata.dataFolder
-    
-    outputFileName = (
-        outputFolder
-        + os.sep
-        + "Fig_HiMmatrix"
-        + "_dataset1:"
-        + HiMdata.datasetName
-        + "_label:"
-        + runParameters["label"]
-        + "_action:"
-        + runParameters["action"]
-        + runParameters["plottingFileExtension"]
-    )
-
-    if runParameters["barcodes"]:
-        fig1 = plt.figure(figsize=(10,10), constrained_layout=False)
-        gs1 = fig1.add_gridspec(nrows=19, ncols=22, left=0.05, right=0.95,
-                                wspace=.05, hspace=.05)
-        f1 = fig1.add_subplot(gs1[0:-1,5:-1])
-        f2 = fig1.add_subplot(gs1[:-1, 3],sharey=f1)
-        f3 = fig1.add_subplot(gs1[-1, 5:-1],sharex=f1)
-        ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]['BarcodeColormap'])/10
-        ATACseqMatrixV = np.copy(ATACseqMatrix).reshape((-1, 1))
-        pos1=f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap='tab10')  # colormaps RdBu seismic
-        f2.set_xticklabels(())
-        f2.set_yticklabels(())
-        pos1.set_clim(vmin=-1, vmax=1)
-    
-        pos2=f3.imshow(np.atleast_2d(ATACseqMatrix), cmap='tab10')  # colormaps RdBu seismic
-        f3.set_xticklabels(())
-        f3.set_yticklabels(())
-        pos2.set_clim(vmin=-1, vmax=1)
+    # loads datasets: parameter files
+    fileNameListDataJSON = rootFolder + os.sep + runParameters["parametersFileName"]
+    with open(fileNameListDataJSON) as json_file:
+        ListData = json.load(json_file)
+            
+    dataSets= list(ListData.keys())
+  
+    for idataSet in dataSets:
         
-        barcodeLabels=np.arange(1,ATACseqMatrix.shape[0]+1)
-        for j in range(len(ATACseqMatrix)):
-            text = f3.text(j, 0, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
-            text = f2.text(0, j, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
+        Samples = ListData[idataSet]['Folders']
+
+        if outputFolder=='none':
+            outputFolder = rootFolder
+
+        outputFileName = (
+            outputFolder
+            + os.sep
+            + "Fig_HiMmatrix"
+            + "_dataset1:"
+            + idataSet
+            + "_label:"
+            + runParameters["label"]
+            + "_action:"
+            + runParameters["action"]
+            + runParameters["plottingFileExtension"]
+        )
         
-        colorbar=False
-    else:               
-        fig1 = plt.figure(constrained_layout=True)
-        spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f1 = fig1.add_subplot(spec1[0, 0])  # 16
-        colorbar=True
-        
-    if runParameters["shuffle"]==0:
-        index=range(matrix.shape[0])
-    else:
-        index=[int(i) for i in runParameters["shuffle"].split(',')]
-        matrix=shuffleMatrix(matrix,index)
-        
-    f1_ax1_im = HiMdata.plot2DMatrixSimple(
-        f1,
-        matrix,
-        list(HiMdata.data["uniqueBarcodes"]),
-        runParameters["axisLabel"],
-        runParameters["axisLabel"],
-        cmtitle="probability",
-        cMin=0,
-        cMax=cScale,
-        fontsize=runParameters["fontsize"],
-        colorbar=colorbar,
-        axisTicks=runParameters["axisTicks"],
-        nCells=nCells,
-        nDatasets=nDatasets,
-        showTitle=True
-    )
+        Nplots=len(Samples)
+
     
+        fig2 = plt.figure(constrained_layout=False,figsize=(5*Nplots, 5), dpi=80, facecolor='w', edgecolor='k')
+        # nCols=np.ceil(len(anchors)/2).astype(int)
+        nCols=Nplots
+        nRows=1
+        spec2 = gridspec.GridSpec(ncols=nCols, nrows=nRows, figure=fig2)
+      
+        FigList,Yticks, Xticks =[], [], []
+        for iRow in range(nRows):
+            for iCol in range(nCols):
+                FigList.append(fig2.add_subplot(spec2[iRow, iCol]))
+                if iRow==nRows-1:
+                    Xticks.append(False)
+                else:
+                    Xticks.append(False)
+                if iCol==0:
+                    Yticks.append(True)
+                else:
+                    Yticks.append(False)
 
-    # HiMdata.update_clims(0, cScale, f1)
-    print('Output written to {}'.format(outputFileName))
-    plt.savefig(outputFileName)
-    titleText="N = {} | n = {}".format(nCells,nDatasets)
-    print('Title: {}'.format(titleText))
-    print("Output figure: {}".format(outputFileName))
+        FigLabels = [isample.split(os.sep)[-2] for isample in Samples]
+        legendList=[False]*len(Samples)
+    
+        for isample in Samples:
+            
+            HiMdata = analysisHiMmatrix(runParameters, os.path.dirname(isample))
+            HiMdata.loadData()
+            
+            matrix=HiMdata.data["ensembleContactProbability"]
+            # matrix=normalizeMatrix(matrix)
 
-    if runParameters['scalogram']:
-        outputFileNameScalogram = (
-                outputFolder
-                + os.sep
-                + "Fig_HiMmatrix_scalogram"
-                + "_dataset1:"
-                + HiMdata.datasetName
-                + "_label:"
-                + runParameters["label"]
-                + "_action:"
-                + runParameters["action"]
-                + runParameters["plottingFileExtension"]
-            )
+            cScale = matrix.max() / runParameters["scalingParameter"]
+            print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
+            
+            nCells = HiMdata.nCellsLoaded()
+             
+            nDatasets = len(HiMdata.data["runName"])
+        
+            if runParameters["shuffle"]==0:
+                index=range(matrix.shape[0])
+            else:
+                index=[int(i) for i in runParameters["shuffle"].split(',')]
+                matrix=shuffleMatrix(matrix,index)
+  
+                 
+            colorbar=False
 
+            for ifigure, iFigLabel, yticks, xticks,legend in zip(FigList, FigLabels, Yticks, Xticks,legendList):
+                f1_ax1_im = HiMdata.plot2DMatrixSimple(
+                    ifigure,
+                    matrix,
+                    list(HiMdata.data["uniqueBarcodes"]),
+                    runParameters["axisLabel"],
+                    runParameters["axisLabel"],
+                    cmtitle="probability",
+                    cMin=0,
+                    cMax=cScale,
+                    fontsize=runParameters["fontsize"],
+                    colorbar=colorbar,
+                    axisTicks=runParameters["axisTicks"],
+                    nCells=nCells,
+                    nDatasets=nDatasets,
+                    showTitle=True
+                )
+            
+            del HiMdata
 
-        plotScalogram(matrix,outputFileNameScalogram)
+        
+        # HiMdata.update_clims(0, cScale, f1)
+        print('Output written to {}'.format(outputFileName))
+        plt.savefig(outputFileName)
+        titleText="N = {} | n = {}".format(nCells,nDatasets)
+        print('Title: {}'.format(titleText))
+        print("Output figure: {}".format(outputFileName))
+        
 
     print("\nDone\n\n")
