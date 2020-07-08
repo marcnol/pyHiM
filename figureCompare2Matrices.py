@@ -115,7 +115,7 @@ def parseArguments():
 
 
     if args.cAxis:
-        runParameters["cAxis"] = float(args.cAxis)
+        runParameters["cAxis"] =[float(i) for i in args.cAxis.split(',')]
     else:
         runParameters["cAxis"] = .6
 
@@ -214,6 +214,12 @@ if __name__ == "__main__":
             matrix = (m1 - m2)
             cmtitle="difference"
 
+        if len(runParameters["cAxis"])==2:        
+            cScale = runParameters["cAxis"][1]
+        else:
+            cScale = runParameters["cAxis"][0]
+        print('Clim used: {}\n'.format(cScale))
+        
         f1_ax1_im = HiMdata1.plot2DMatrixSimple(
             f1,
             matrix,
@@ -221,8 +227,8 @@ if __name__ == "__main__":
             runParameters["axisLabel"],
             runParameters["axisLabel"],
             cmtitle=cmtitle,
-            cMin=-runParameters["cAxis"],
-            cMax=runParameters["cAxis"],
+            cMin=-cScale ,
+            cMax=cScale ,
             fontsize=runParameters["fontsize"],
             colorbar=True,
             axisTicks=runParameters["axisTicks"],
@@ -248,7 +254,7 @@ if __name__ == "__main__":
                             runParameters['axisLabel'],\
                             runParameters['axisLabel'],\
                             cmtitle='probability',
-                            cMin=0, cMax=runParameters["cAxis"],\
+                            cMin=0, cMax=runParameters["cAxis"][0],\
                             fontsize=runParameters['fontsize'],\
                             colorbar=True,\
                             axisTicks=runParameters["axisTicks"],\
