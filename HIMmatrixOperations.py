@@ -142,13 +142,14 @@ class analysisHiMmatrix:
         axisTicks=False,
         nCells=0,
         nDatasets=0,
-        showTitle=False
+        showTitle=False,
+        figTitle=''
     ):
 
         pos = ifigure.imshow(matrix, cmap=cm)  # colormaps RdBu seismic
 
         if showTitle:
-            titleText="N = {} | n = {}".format(nCells,nDatasets)
+            titleText="{} | N = {} | n = {}".format(figTitle, nCells, nDatasets)
             ifigure.title.set_text(titleText)
 
         # plots figure

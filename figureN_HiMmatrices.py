@@ -20,7 +20,7 @@ import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 # import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix,plotScalogram
+from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix,plotScalogram,listsSCtoKeep
 
 #%% define and loads datasets
 
@@ -44,11 +44,12 @@ def parseArguments():
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument("--shuffle", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
     parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
+    parser.add_argument("--type", help="Provide one of the following: PWD, contact, iPWD")
+    parser.add_argument("--pixelSize", help="Provide pixelSize in um")
 
     args = parser.parse_args()
 
     runParameters = {}
-    runParameters["pixelSize"] = 0.1
 
     if args.rootFolder:
         rootFolder = args.rootFolder
@@ -116,8 +117,17 @@ def parseArguments():
     else:
         runParameters['scalogram'] = False
 
-    return rootFolder, outputFolder,runParameters
+    if args.type:
+        runParameters["type"] = args.type
+    else:
+        runParameters["type"] = 'contact'
 
+    if args.pixelSize:
+        runParameters["pixelSize"] = float(args.pixelSize)
+    else:
+        runParameters["pixelSize"] = 0.1
+
+    return rootFolder, outputFolder,runParameters
 
 # =============================================================================
 # MAIN
@@ -179,16 +189,33 @@ if __name__ == "__main__":
 
         FigLabels = [isample.split(os.sep)[-2] for isample in Samples]
         legendList=[False]*len(Samples)
-    
-        for isample in Samples:
-            
+        colorbar=[False]*len(Samples)
+        # colorbar[-1]=True
+        
+        for isample, ifigure, iFigLabel, yticks, xticks,legend, icolorbar in zip(Samples, FigList, FigLabels, Yticks, Xticks,legendList,colorbar):
+
             HiMdata = analysisHiMmatrix(runParameters, os.path.dirname(isample))
             HiMdata.loadData()
             
-            matrix=HiMdata.data["ensembleContactProbability"]
-            # matrix=normalizeMatrix(matrix)
+            if runParameters["type"]=='contact':
+                matrix=HiMdata.data["ensembleContactProbability"]
+                # matrix=normalizeMatrix(matrix)
+                cScale = matrix.max() / runParameters["scalingParameter"]
+            elif runParameters["type"]=='PWD':
+                matrixSC=HiMdata.data["SCmatrixCollated"]
+                cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
+                matrix = runParameters["pixelSize"] * np.nanmedian(matrixSC[:,:,cells2Plot], axis=2)
+                cScale = 3*np.nanmedian(matrix) / runParameters["scalingParameter"]
+                del matrixSC
 
-            cScale = matrix.max() / runParameters["scalingParameter"]
+            elif runParameters["type"]=='iPWD':
+                matrixSC=HiMdata.data["SCmatrixCollated"]
+                cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
+                matrixPWD = runParameters["pixelSize"] * np.nanmedian(matrixSC[:,:,cells2Plot], axis=2)
+                matrix = np.reciprocal(matrixPWD)
+                cScale = 3*np.reciprocal(np.nanmedian(matrix)) / runParameters["scalingParameter"]
+                del matrixPWD, matrixSC
+
             print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
             
             nCells = HiMdata.nCellsLoaded()
@@ -200,31 +227,34 @@ if __name__ == "__main__":
             else:
                 index=[int(i) for i in runParameters["shuffle"].split(',')]
                 matrix=shuffleMatrix(matrix,index)
-  
-                 
-            colorbar=False
 
-            for ifigure, iFigLabel, yticks, xticks,legend in zip(FigList, FigLabels, Yticks, Xticks,legendList):
-                f1_ax1_im = HiMdata.plot2DMatrixSimple(
-                    ifigure,
-                    matrix,
-                    list(HiMdata.data["uniqueBarcodes"]),
-                    runParameters["axisLabel"],
-                    runParameters["axisLabel"],
-                    cmtitle="probability",
-                    cMin=0,
-                    cMax=cScale,
-                    fontsize=runParameters["fontsize"],
-                    colorbar=colorbar,
-                    axisTicks=runParameters["axisTicks"],
-                    nCells=nCells,
-                    nDatasets=nDatasets,
-                    showTitle=True
-                )
-            
-            del HiMdata
-
+            f2_ax1_im = HiMdata.plot2DMatrixSimple(
+                ifigure,
+                matrix,
+                list(HiMdata.data["uniqueBarcodes"]),
+                runParameters["axisLabel"],
+                runParameters["axisLabel"],
+                cmtitle=runParameters["type"],
+                cMin=0,
+                cMax=cScale,
+                fontsize=runParameters["fontsize"],
+                colorbar=icolorbar,
+                axisTicks=runParameters["axisTicks"],
+                nCells=nCells,
+                nDatasets=nDatasets,
+                showTitle=True,
+                figTitle = iFigLabel
+            )
         
+            del HiMdata, matrix
+        
+        cbar_ax = fig2.add_axes([0.92, 0.20, 0.005, 0.6])
+        cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
+        ticklabs = cbar.ax.get_yticklabels()
+        ticklabs1=["{:04.2f}".format(i*cScale/(len(ticklabs)-1)) for i in range(len(ticklabs))]
+        cbar.ax.set_yticklabels(ticklabs1, fontsize=12)
+        cbar.set_label(runParameters["type"],fontsize=15)
+            
         # HiMdata.update_clims(0, cScale, f1)
         print('Output written to {}'.format(outputFileName))
         plt.savefig(outputFileName)
