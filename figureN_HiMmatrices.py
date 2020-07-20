@@ -148,7 +148,7 @@ if __name__ == "__main__":
     for idataSet in dataSets:
         
         Samples = ListData[idataSet]['Folders']
-
+      
         if outputFolder=='none':
             outputFolder = rootFolder
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         Nplots=len(Samples)
 
     
-        fig2 = plt.figure(constrained_layout=False,figsize=(5*Nplots, 5), dpi=80, facecolor='w', edgecolor='k')
+        fig2 = plt.figure(constrained_layout=False,figsize=(5*Nplots, 5), dpi=300, facecolor='w', edgecolor='k')
         # nCols=np.ceil(len(anchors)/2).astype(int)
         nCols=Nplots
         nRows=1
@@ -201,11 +201,16 @@ if __name__ == "__main__":
                 matrix=HiMdata.data["ensembleContactProbability"]
                 # matrix=normalizeMatrix(matrix)
                 cScale = matrix.max() / runParameters["scalingParameter"]
+                if "ContactProbability_cm" in ListData[idataSet].keys():
+                    colormap=ListData[idataSet]["ContactProbability_cm"] 
+                
             elif runParameters["type"]=='PWD':
                 matrixSC=HiMdata.data["SCmatrixCollated"]
                 cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
                 matrix = runParameters["pixelSize"] * np.nanmedian(matrixSC[:,:,cells2Plot], axis=2)
                 cScale = 3*np.nanmedian(matrix) / runParameters["scalingParameter"]
+                if "PWD_cm" in ListData[idataSet].keys():
+                    colormap=ListData[idataSet]["PWD_cm"] 
                 del matrixSC
 
             elif runParameters["type"]=='iPWD':
@@ -214,8 +219,11 @@ if __name__ == "__main__":
                 matrixPWD = runParameters["pixelSize"] * np.nanmedian(matrixSC[:,:,cells2Plot], axis=2)
                 matrix = np.reciprocal(matrixPWD)
                 cScale = 3*np.reciprocal(np.nanmedian(matrix)) / runParameters["scalingParameter"]
+                if "iPWD_cm" in ListData[idataSet].keys():
+                    colormap=ListData[idataSet]["iPWD_cm"] 
                 del matrixPWD, matrixSC
 
+      
             print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
             
             nCells = HiMdata.nCellsLoaded()
@@ -243,7 +251,8 @@ if __name__ == "__main__":
                 nCells=nCells,
                 nDatasets=nDatasets,
                 showTitle=True,
-                figTitle = iFigLabel
+                figTitle = iFigLabel,
+                cm=colormap
             )
         
             del HiMdata, matrix
