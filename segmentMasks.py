@@ -13,13 +13,20 @@ after image segmentation.
 
 """
 
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
+
+#---- stardist
+from __future__ import print_function, unicode_literals, absolute_import, division
+
 import glob, os
 import matplotlib.pylab as plt
 import numpy as np
 import uuid
+import argparse
+
 from astropy.stats import sigma_clipped_stats, SigmaClip, gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch, simple_norm
@@ -29,8 +36,27 @@ from photutils import DAOStarFinder, CircularAperture, detect_sources
 from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
 from imageProcessing import Image, saveImage2Dcmd
-from fileManagement import folders
+from fileManagement import folders,session, log, Parameters
 from fileManagement import writeString2File
+
+#---- stardist
+import sys
+import numpy as np
+import matplotlib
+matplotlib.rcParams["image.interpolation"] = None
+import matplotlib.pyplot as plt
+
+# from glob import glob
+# from tifffile import imread
+from csbdeep.utils import Path, normalize
+from csbdeep.io import save_tiff_imagej_compatible
+
+from stardist import random_label_cmap, _draw_polygons, export_imagej_rois
+from stardist.models import StarDist2D
+
+np.random.seed(6)
+lbl_cmap = random_label_cmap()
+
 
 # =============================================================================
 # FUNCTIONS
@@ -47,11 +73,17 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     )  # for some reason sources are always displays 1/2 px from center of spot
     apertures = CircularAperture(positions, r=4.0)
     norm = simple_norm(im, "sqrt", percent=99.9)
-    plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
-    apertures.plot(color="blue", lw=1.5, alpha=0.5)
+    plt.imshow(im1_bkg_substracted, clim=(0,1), cmap="Greys", origin="lower", norm=norm)
+    apertures.plot(color="blue", lw=1.5, alpha=0.3)
     plt.xlim(0, im.shape[1] - 1)
     plt.ylim(0, im.shape[0] - 1)
     plt.savefig(outputFileName + "_segmentedSources.png")
+    
+    # plt.figure(figsize=(8,8))
+    # plt.imshow(img, clim=(0,1), cmap='gray')
+    # plt.imshow(segm_deblend, cmap=lbl_cmap, alpha=0.5)
+    # plt.axis('off');
+    
     plt.close()
     writeString2File(
         log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"), "a",
@@ -61,12 +93,13 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
 
     norm = ImageNormalize(stretch=SqrtStretch())
-    cmap = segm_deblend.make_cmap(random_state=12345)
-
+    # cmap = segm_deblend.make_cmap(random_state=12345)
+    cmap=lbl_cmap
+    
     fig = plt.figure()
     fig.set_size_inches((30, 30))
     plt.imshow(im, cmap="Greys_r", origin="lower", norm=norm)
-    plt.imshow(segm_deblend, origin="lower", cmap=cmap)
+    plt.imshow(segm_deblend, origin="lower", cmap=cmap,alpha=0.5)
     plt.savefig(outputFileName + "_segmentedMasks.png")
     plt.close()
     writeString2File(
@@ -182,7 +215,21 @@ def segmentSourceFlatBackground(im, param):
 
 
 def segmentMaskInhomogBackground(im, param):
+    '''
+    Function used for segmenting DAPI masks with the ASTROPY library that uses image processing    
 
+    Parameters
+    ----------
+    im : 2D np array
+        image to be segmented.
+    param : Parameters class
+        parameters.
+
+    Returns
+    -------
+    segm_deblend: 2D np array where each pixel contains the label of the mask segmented. Background: 0
+
+    '''
     # removes background
     threshold = detect_threshold(im, nsigma=2.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
@@ -226,6 +273,103 @@ def segmentMaskInhomogBackground(im, param):
     segm_deblend.relabel_consecutive()
 
     return segm_deblend
+
+def segmentMaskStardist(im, param):
+    '''
+    Function used for segmenting DAPI masks with the STARDIST package that uses Deep Convolutional Networks
+
+    Parameters
+    ----------
+    im : 2D np array
+        image to be segmented.
+    param : Parameters class
+        parameters.
+
+    Returns
+    -------
+    segm_deblend: 2D np array where each pixel contains the label of the mask segmented. Background: 0
+
+    '''
+    # removes background
+    threshold = detect_threshold(im, nsigma=2.0)
+    sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
+
+    bkg_estimator = MedianBackground()
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+    threshold = bkg.background + (
+        param.param["segmentedObjects"]["threshold_over_std"] * bkg.background_rms
+    )  # background-only error image, typically 1.0
+
+    sigma = param.param["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma  # FWHM = 3.
+    kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
+    kernel.normalize()
+    # outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
+
+    n_channel = 1 if im.ndim == 2 else im.shape[-1]
+    axis_norm = (0,1)   # normalize channels independently
+
+    if n_channel > 1:
+        print("Normalizing image channels %s." % ('jointly' if axis_norm is None or 2 in axis_norm else 'independently'))
+        
+    
+    # demo_model = False
+    
+    # if demo_model:
+    #     print (
+    #         "NOTE: This is loading a previously trained demo model!\n"
+    #         "      Please set the variable 'demo_model = False' to load your own trained model.",
+    #         file=sys.stderr, flush=True
+    #     )
+    #     model = StarDist2D.from_pretrained('2D_demo')
+    # else:
+        # model = StarDist2D(None, name='stardist', basedir='models')
+        
+    model = StarDist2D(None, 
+                       name=param.param["segmentedObjects"]["stardist_network"], 
+                       basedir=param.param["segmentedObjects"]["stardist_basename"])
+        
+    # None;
+    
+    img = normalize(im, 1,99.8, axis=axis_norm)
+    labeled, details = model.predict_instances(img)
+    
+    plt.figure(figsize=(8,8))
+    plt.imshow(img, clim=(0,1), cmap='gray')
+    plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
+    plt.axis('off');
+
+    # estimates masks and deblends
+    threshold = 0.5
+    segm = detect_sources(labeled, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
+
+    # removes masks too close to border
+    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+
+    segm_deblend = deblend_sources(
+        im,
+        segm,
+        npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for DAPI
+        filter_kernel=kernel,
+        nlevels=32,
+        contrast=0.001,  # try 0.2 or 0.3
+        relabel=True,
+    )
+
+    # removes Masks too big or too small
+    for label in segm_deblend.labels:
+        # take regions with large enough areas
+        area = segm_deblend.get_area(label)
+        # print('label {}, with area {}'.format(label,area))
+        if area < param.param["segmentedObjects"]["area_min"] or area > param.param["segmentedObjects"]["area_max"]:
+            segm_deblend.remove_label(label=label)
+            # print('label {} removed'.format(label))
+
+    # relabel so masks numbers are consecutive
+    segm_deblend.relabel_consecutive()
+
+    return segm_deblend,labeled
+
+
 
 
 def makesSegmentations(fileName, param, log1, session1, dataFolder):
@@ -294,6 +438,8 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 output = segmentMaskInhomogBackground(im, param)
             elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
                 output = segmentMaskInhomogBackground(im, param)
+            elif param.param["segmentedObjects"]["background_method"] == "stardist":
+                output,labeled = segmentMaskStardist(im, param)
             else:
                 log1.report(
                     "segmentedObjects/background_method not specified in json file", "ERROR",
@@ -301,7 +447,11 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 output = np.zeros(1)
                 return output
             # show results
+            # if 'labeled' in locals():
+            #     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName+"_stardist"
+            #     showsImageMasks(im, log1, labeled, outputFileName)
             showsImageMasks(im, log1, output, outputFileName)
+                
 
             # saves output 2d zProjection as matrix
             Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])
@@ -312,7 +462,10 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
 
         return output
     else:
-        log1.report("2D aligned file does not exist:{}".format(fileName_2d_aligned), "Error")
+        log1.report("2D aligned file does not exist:{}\n{}\n{}\n{}".format(fileName_2d_aligned,
+                                                                           fileName in session1.data.keys(),
+                                                                           param.param["segmentedObjects"]["operation"] == "overwrite",
+                                                                           os.path.exists(fileName_2d_aligned)), "Error")
         return []
 
 
@@ -350,3 +503,62 @@ def segmentMasks(param, log1, session1):
                     barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
                     log1.report("File {} written to file.".format(outputFile), "info")
                 session1.add(fileName, sessionName)
+
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    args = parser.parse_args()
+
+    print("\n--------------------------------------------------------------------------")
+
+    if args.rootFolder:
+        rootFolder = args.rootFolder
+    else:
+        # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
+        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+        rootFolder='/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0'
+        
+    print("parameters> rootFolder: {}".format(rootFolder))
+    sessionName = "segmentMasks"
+
+    labels2Process = [
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+    ]
+
+    # session
+    session1 = session(rootFolder, sessionName)
+
+    # setup logs
+    log1 = log(rootFolder)
+    # labels2Process indeces: 0 fiducial, 1: 
+    labelParameterFile = labels2Process[2]["parameterFile"]
+    param = Parameters(rootFolder, labelParameterFile)
+    
+    dataFolder = folders(param.param["rootFolder"])
+
+    for currentFolder in dataFolder.listFolders:
+        # currentFolder=dataFolder.listFolders[0]
+        filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
+        dataFolder.createsFolders(currentFolder, param)
+
+        # generates lists of files to process
+        param.files2Process(filesFolder)
+
+        for fileName in param.fileList2Process:
+            session1.add(fileName, sessionName)
+
+    # for fileName in param.fileList2Process:
+    #     session1.add(fileName, sessionName)
+
+    segmentMasks(param, log1, session1)
+
+

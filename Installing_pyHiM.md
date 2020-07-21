@@ -58,6 +58,21 @@ conda install photutils -c astropy
 pip install roipoly
 ```
 
+
+
+### Installation of StarDist and TensorFlow
+For segmentation using these packages, you need to install as follows.
+
+```bash
+
+pip install --upgrade pip
+pip install tensorflow
+pip install stardist
+```
+
+
+
+
 You should be set!
 
 

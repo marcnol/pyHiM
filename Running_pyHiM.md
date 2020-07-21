@@ -20,6 +20,118 @@ processingPipeline.py
 
 This assumes that you are running it from the ```destination_directory```. If it is not the case, use the ``-F`` flag with the directory with your data.
 
+#### infoList parameters files
+
+a typical file (DAPI example) looks like:
+
+```bash
+{
+    "acquisition": {
+        "label": "DAPI",
+        "positionROIinformation": 3
+    },
+    "alignImages": {
+        "folder": "alignImages",
+        "operation": "overwrite",
+        "outputFile": "alignImages.bed",
+        "referenceFiducial": "RT41"
+    },
+    "image": {
+        "claheGridH": 8,
+        "claheGridW": 8,
+        "currentPlane": 1
+    },
+    "projectsBarcodes": {
+        "folder": "projectsBarcodes",
+        "operation": "overwrite",
+        "outputFile": "projectsBarcodes"
+    },
+    "segmentedObjects": {
+        "area_max": 1500,
+        "area_min": 200,
+        "background_method": "stardist",
+        "stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2",
+        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+        "background_sigma": 3.0,
+        "folder": "segmentedObjects",
+        "fwhm": 3.0,
+        "brightest": 1100, 
+        "intensity_max": 59,
+        "intensity_min": 0,
+        "operation": "overwrite",
+        "outputFile": "segmentedObjects",
+        "threshold_over_std": 1.0
+    },
+    "zProject": {
+        "display": true,
+        "folder": "zProject",
+        "mode": "full",
+        "operation": "skip",
+        "saveImage": true,
+        "windowSecurity": 2,
+        "zProjectOption": "sum",
+        "zmax": 59,
+        "zmin": 1,
+        "zwindows": 10
+    }
+}
+```
+
+
+
+Here are some options for the different parameters and a brief description
+
+- "image" - *not really used* 
+            - "currentPlane": 1,
+            - 'contrastMin': 0.1,
+            - 'contrastMax': 0.9,
+            - "claheGridH": 8,
+            -  "claheGridW": 8,
+        
+- "acquisition"
+            - "label": "DAPI"
+                - "positionROIinformation": 3 
+        
+- "zProject"
+            - "folder": "zProject",  *Description:* output folder
+                - "operation": "skip",  *Options:* overwrite | skip
+                - "mode": "full",  *Options:* full | manual | automatic
+                - "display": True,
+                - "saveImage": True,
+                - "zmin": 1,
+                - "zmax": 59,
+                - "zwindows": 10,
+                - "windowSecurity": 2,
+                - "zProjectOption": "sum",  *Options:* **sum** | **MIP**
+        
+- "alignImages"
+                "folder": "alignImages",  *Description:* output folder
+                "operation": "overwrite",  *Options:* overwrite | skip
+                "outputFile": "alignImages",
+                "referenceFiducial": "RT18"
+            
+- "projectsBarcodes"
+                "folder": "projectsBarcodes",  *Description:* output folder
+                "operation": "overwrite",  *Options:* overwrite | skip
+                "outputFile": "projectsBarcodes",
+            
+- "segmentedObjects": {
+                "folder": "segmentedObjects",  *Description:* output folder
+                "operation": "overwrite",  *Options:* overwrite | skip
+                "outputFile": "segmentedObjects",
+                "background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI) 
+                "stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
+            ​    "background_sigma": 3.0,  *Description:* used to remove inhomogenous background
+            ​    "threshold_over_std": 1.0,  *Description:* threshold used to detect sources
+            ​    "fwhm": 3.0,  *Description:* source size in pixels
+            ​    "brightest": 1100,  *Description:* max number of objects segmented per FOV (only for barcodes!)
+            ​    "intensity_min": 0,  *Description:* min intensity to keep object
+            ​    "intensity_max": 59,  *Description:* max intensity to keep object
+            ​    "area_min": 50,  *Description:* min area to keep object
+            ​    "area_max": 500,  *Description:* max area to keep object
+
+
 ### Process second channel (i.e RNA, segments, etc)
 
 ```processingPipeline.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```

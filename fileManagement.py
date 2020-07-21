@@ -225,7 +225,7 @@ class Parameters:
                 "folder": "segmentedObjects",  # output folder
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "segmentedObjects",
-                "background_method": "inhomogeneous",  # flat or inhomogeneous
+                "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist 
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px

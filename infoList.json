@@ -6,8 +6,8 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
-        "referenceFiducial": "RT41"
+        "outputFile": "alignImages",
+        "referenceFiducial": "RT18"
     },
     "image": {
         "claheGridH": 8,
@@ -20,15 +20,13 @@
         "outputFile": "projectsBarcodes"
     },
     "segmentedObjects": {
-        "area_max": 2000,
-        "area_min": 100,
-        "background_method": "stardist",
-        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+        "area_max": 500,
+        "area_min": 50,
+        "background_method": "inhomogeneous",
         "background_sigma": 3.0,
+        "brightest": 1100,
         "folder": "segmentedObjects",
         "fwhm": 3.0,
-        "brightest": 1100, 
         "intensity_max": 59,
         "intensity_min": 0,
         "operation": "overwrite",
