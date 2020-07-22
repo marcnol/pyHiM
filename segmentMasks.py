@@ -35,6 +35,8 @@ from astropy.table import Table, vstack, Column
 from photutils import DAOStarFinder, CircularAperture, detect_sources
 from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
+from photutils.segmentation.core import SegmentationImage
+
 from imageProcessing import Image, saveImage2Dcmd
 from fileManagement import folders,session, log, Parameters
 from fileManagement import writeString2File
@@ -78,12 +80,7 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     plt.xlim(0, im.shape[1] - 1)
     plt.ylim(0, im.shape[0] - 1)
     plt.savefig(outputFileName + "_segmentedSources.png")
-    
-    # plt.figure(figsize=(8,8))
-    # plt.imshow(img, clim=(0,1), cmap='gray')
-    # plt.imshow(segm_deblend, cmap=lbl_cmap, alpha=0.5)
-    # plt.axis('off');
-    
+    plt.axis('off');
     plt.close()
     writeString2File(
         log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"), "a",
@@ -311,49 +308,38 @@ def segmentMaskStardist(im, param):
     if n_channel > 1:
         print("Normalizing image channels %s." % ('jointly' if axis_norm is None or 2 in axis_norm else 'independently'))
         
-    
-    # demo_model = False
-    
-    # if demo_model:
-    #     print (
-    #         "NOTE: This is loading a previously trained demo model!\n"
-    #         "      Please set the variable 'demo_model = False' to load your own trained model.",
-    #         file=sys.stderr, flush=True
-    #     )
-    #     model = StarDist2D.from_pretrained('2D_demo')
-    # else:
-        # model = StarDist2D(None, name='stardist', basedir='models')
-        
     model = StarDist2D(None, 
                        name=param.param["segmentedObjects"]["stardist_network"], 
                        basedir=param.param["segmentedObjects"]["stardist_basename"])
-        
-    # None;
     
     img = normalize(im, 1,99.8, axis=axis_norm)
     labeled, details = model.predict_instances(img)
     
-    plt.figure(figsize=(8,8))
-    plt.imshow(img, clim=(0,1), cmap='gray')
-    plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
-    plt.axis('off');
-
+    if False:
+        plt.figure(figsize=(8,8))
+        plt.imshow(img, clim=(0,1), cmap='gray')
+        plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
+        plt.axis('off');
+        
     # estimates masks and deblends
-    threshold = 0.5
-    segm = detect_sources(labeled, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
+    segm=SegmentationImage(labeled)
+    # threshold = 0.5
+    # segm = detect_sources(labeled, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
 
     # removes masks too close to border
     segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-
-    segm_deblend = deblend_sources(
-        im,
-        segm,
-        npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for DAPI
-        filter_kernel=kernel,
-        nlevels=32,
-        contrast=0.001,  # try 0.2 or 0.3
-        relabel=True,
-    )
+    segm_deblend  = segm
+    
+    # watershed
+    # segm_deblend = deblend_sources(
+    #     im,
+    #     segm,
+    #     npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for DAPI
+    #     filter_kernel=kernel,
+    #     nlevels=32,
+    #     contrast=0.001,  # try 0.2 or 0.3
+    #     relabel=True,
+    # )
 
     # removes Masks too big or too small
     for label in segm_deblend.labels:
@@ -446,12 +432,12 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 )
                 output = np.zeros(1)
                 return output
+ 
             # show results
-            # if 'labeled' in locals():
-            #     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName+"_stardist"
-            #     showsImageMasks(im, log1, labeled, outputFileName)
+            if 'labeled' in locals():
+                outputFileNameStarDist = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName+"_stardist"
+                showsImageMasks(im, log1, labeled, outputFileNameStarDist)
             showsImageMasks(im, log1, output, outputFileName)
-                
 
             # saves output 2d zProjection as matrix
             Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])

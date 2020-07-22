@@ -145,14 +145,25 @@ if __name__ == "__main__":
     #      'modelName':'stardist'}
 
     # # my trained models
+    # net 1
     # run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
     #      'modelName':'stardist_nc14_nrays:32_epochs:20_grid:2'}
 
+    # net 2
     # run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
     #       'modelName':'stardist_nc14_nrays:64_epochs:20_grid:2'}
 
+    # net 3
+    # run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
+    #       'modelName':'stardist_nc14_nrays:32_epochs:40_grid:2'}
+
+    # net 4
+    # run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
+    #       'modelName':'stardist_nc14_nrays:64_epochs:40_grid:2'}    
+    
+    # net 5
     run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
-          'modelName':'stardist_nc14_nrays:32_epochs:40_grid:2'}
+          'modelName':'stardist_nc14_nrays:64_epochs:200_grid:2'}    
     
     # loads data
     ownTrainingSet = True
