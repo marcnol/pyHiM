@@ -617,8 +617,7 @@ def plotsEnsemble3wayContactMatrix(
     SCmatrixCollated, uniqueBarcodes, anchors, sOut, runName, iListData, p, fileNameMD="tmp.md", datasetName=""
 ):
 
-    # combines matrices from different embryos and calculates integrated contact probability matrix
-
+    # combines matrices from different samples and calculates integrated contact probability matrix
     SCmatrixAllDatasets = []  # np.zeros((nBarcodes,nBarcodes))
     for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
         cells2Plot = listsSCtoKeep(p, mask)
@@ -634,14 +633,17 @@ def plotsEnsemble3wayContactMatrix(
                     SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
                 else:
                     SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
-    
                 commonSetUniqueBarcodes = iuniqueBarcodes
         else:
             print('Dataset: {} - {}  did not have any cell to plot'.format(datasetName,iTag))
             
     # print(commonSetUniqueBarcodes)
+    
+    # loops over anchors 
     for anchor in anchors:
         print("nCells processed: {}".format(SCmatrixAllDatasets.shape[2]))
+        
+        # calculates the 3-way matrix for a given anchor
         SCmatrix = calculate3wayContactMatrix(
             SCmatrixAllDatasets,
             uniqueBarcodes,
@@ -657,6 +659,7 @@ def plotsEnsemble3wayContactMatrix(
             p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + "_ensemble3wayContacts"
         )
 
+        # outputs result
         outputFileName += "_anchor_" + str(anchor)
         writeString2File(fileNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
 
@@ -664,6 +667,7 @@ def plotsEnsemble3wayContactMatrix(
         # print(cScale)
         # print(SCmatrix.shape)
 
+        # plots 3-way matrix
         plotMatrix(
             SCmatrix,
             uniqueBarcodes,
@@ -923,11 +927,12 @@ def plotsEnsembleContactProbabilityMatrix(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
 ):
 
-    # combines matrices from different embryos and calculates integrated contact probability matrix    
+    # combines matrices from different samples/datasers and calculates integrated contact probability matrix    
     SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal = fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runName, iListData)
 
     print("nCells selected / processed: {}/{}".format(SCmatrixAllDatasets.shape[2],NcellsTotal))
 
+    # calculates contact probability matrix from merged samples/datasets
     SCmatrix, nCells = calculateContactProbabilityMatrix(
         SCmatrixAllDatasets,
         commonSetUniqueBarcodes,
@@ -935,10 +940,13 @@ def plotsEnsembleContactProbabilityMatrix(
         threshold=iListData["ContactProbability_distanceThreshold"],
         norm="nonNANs",
     )  # norm: nCells (default), nonNANs
+    
+    # outputs line for MD file and sets output filename
     cScale = SCmatrix.max() / iListData["ContactProbability_scale"]
     outputFileName = p["outputFolder"] + os.sep + datasetName + "_Cells:" + p["action"] + "_ensembleContactProbability"
     writeString2File(fileNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
 
+    # plots results
     plotMatrix(
         SCmatrix,
         commonSetUniqueBarcodes,
@@ -952,6 +960,7 @@ def plotsEnsembleContactProbabilityMatrix(
         nCells=nCells,
     )  # twilight_shifted_r
 
+    # saves SC matrix in text format
     np.savetxt(
         p["outputFolder"] + os.sep + "CombinedMatrix" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + ".dat",
         SCmatrix,
@@ -964,6 +973,7 @@ def plotsEnsembleContactProbabilityMatrix(
         encoding=None,
     )
 
+    # saves barcodes in text format
     np.savetxt(
         p["outputFolder"] + os.sep + "UniqueBarcodes" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + ".dat",
         commonSetUniqueBarcodes,
