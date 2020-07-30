@@ -315,7 +315,7 @@ def segmentMaskStardist(im, param):
     img = normalize(im, 1,99.8, axis=axis_norm)
     labeled, details = model.predict_instances(img)
     
-    if False:
+    if True:
         plt.figure(figsize=(8,8))
         plt.imshow(img, clim=(0,1), cmap='gray')
         plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)

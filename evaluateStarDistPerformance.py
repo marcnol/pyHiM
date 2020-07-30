@@ -27,7 +27,9 @@ import scipy.io as spio
 
 np.random.seed(42)
 lbl_cmap = random_label_cmap()
-
+# tf.autograph.set_verbosity(3,True) 
+ 
+ 
 # functions
 
 def plot_img_label(img, lbl, pred, **kwargs):
@@ -164,7 +166,10 @@ if __name__ == "__main__":
     # net 5
     run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
           'modelName':'stardist_nc14_nrays:64_epochs:200_grid:2'}    
-    
+
+    # net 6
+    run={'baseDir':'/mnt/grey/DATA/users/marcnol/models',
+          'modelName':'stardist_nc14_nrays:128_epochs:400_grid:2'}        
     # loads data
     ownTrainingSet = True
     if ownTrainingSet:
