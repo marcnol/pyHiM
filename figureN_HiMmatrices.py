@@ -130,12 +130,12 @@ def parseArguments():
     if args.pixelSize:
         runParameters["pixelSize"] = float(args.pixelSize)
     else:
-        runParameters["pixelSize"] = 0.1
+        runParameters["pixelSize"] = 1
 
     if args.cAxis:
         runParameters["cAxis"] =[float(i) for i in args.cAxis.split(',')]
     else:
-        runParameters["cAxis"] = [.3]
+        runParameters["cAxis"] = [.1]
         
     if args.ratio:
         runParameters['ratio'] = args.ratio
@@ -162,7 +162,7 @@ def plotTADs(ListData,runParameters):
     else:
         cScale = runParameters["cAxis"][0]
     print('--------\nClim used: {}\n--------------\n'.format(cScale))
-    fontsize = 8
+    fontsize = runParameters["fontsize"]
     
     for idataSet in dataSets:
 
@@ -271,13 +271,40 @@ def plotTADs(ListData,runParameters):
             print('Output written to {}'.format(outputFileName2))
             fig3.savefig(outputFileName2)
 
+
+            
+def makesplotHiMLineProfile(matrixSegmentAnchor,uniqueBarcodes,segmentLabels,cScale=0.3,cm='RdBu',fontsize=8):
+            
+    numberSegments = matrixSegmentAnchor.shape[1]
+    
+    fig1 = plt.figure(constrained_layout=True)
+    spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
+    f1 = fig1.add_subplot(spec1[0, 0])  # 16
+    pos = f1.imshow(matrixSegmentAnchor, cmap=cm)
+    f1.set_ylabel("barcode #", fontsize=1.5*float(fontsize))
+    f1.set_xlabel("segment ID", fontsize=1.5*float(fontsize))
+
+    f1.set_xticks(np.arange(numberSegments))
+    f1.set_xticklabels(segmentLabels,fontsize=fontsize)
+    f1.set_yticks(np.arange(len(uniqueBarcodes)))
+    f1.set_yticklabels(uniqueBarcodes,fontsize=fontsize)
+
+    colorbar=True
+    cbar = fig1.colorbar(pos, ax=f1, fraction=0.046, pad=0.04)
+    cbar.minorticks_on()
+    # cbar.set_label("difference",fontsize=float(fontsize)*0.85)
+    pos.set_clim(vmin=-cScale, vmax=cScale)
+
+    return fig1
+
+
 def plotHiMLineProfile(ListData,runParameters):
     if len(runParameters["cAxis"])==2:        
         cScale = runParameters["cAxis"][1]
     else:
         cScale = runParameters["cAxis"][0]
     print('--------\nClim used: {}\n--------------\n'.format(cScale))
-    fontsize = 8
+    fontsize = runParameters["fontsize"]
     
     for idataSet in dataSets:
         if runParameters["type"]=='contact' and "plotSegment_anchor" in ListData[idataSet].keys():
@@ -327,29 +354,31 @@ def plotHiMLineProfile(ListData,runParameters):
                 else:
                     matrixSegmentAnchor[:,iSample] = contactsAnchor-matrix[plotSegment_anchor,:] 
                     cmtitle="difference"
+ 
+            uniqueBarcodes = list(HiMdata.data["uniqueBarcodes"])
             
-            fig1 = plt.figure(constrained_layout=True)
-            spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-            f1 = fig1.add_subplot(spec1[0, 0])  # 16
-            pos = f1.imshow(matrixSegmentAnchor, cmap=cm)
-            f1.set_ylabel("barcode #", fontsize=1.5*fontsize)
-            f1.set_xlabel("segment ID", fontsize=1.5*fontsize)
-
-            f1.set_xticks(np.arange(numberSegments))
-            f1.set_xticklabels(segmentLabels,fontsize=fontsize)
-            f1.set_yticks(np.arange(len(list(HiMdata.data["uniqueBarcodes"]))))
-            f1.set_yticklabels(list(HiMdata.data["uniqueBarcodes"]),fontsize=fontsize)
-
-
-            colorbar=True
-            cbar = fig1.colorbar(pos, ax=f1, fraction=0.046, pad=0.04)
-            cbar.minorticks_on()
-            # cbar.set_label("difference",fontsize=float(fontsize)*0.85)
-            pos.set_clim(vmin=-cScale, vmax=cScale)
-            
+            fig1 = makesplotHiMLineProfile(matrixSegmentAnchor,
+                                           uniqueBarcodes,
+                                           segmentLabels,
+                                           cScale=cScale,
+                                           cm=cm,
+                                           fontsize=fontsize)
             outputFileName1=runParameters["outputFileName"].replace("Fig_HiMmatrix","Fig_Segment")
             print('Output written to {}'.format(outputFileName1))
             fig1.savefig(outputFileName1)
+            
+            if "barcodes2plot" in ListData[idataSet].keys():
+                barcodes2plot = ListData[idataSet]["barcodes2plot"] 
+                fig2 = makesplotHiMLineProfile(matrixSegmentAnchor[np.arange(barcodes2plot[0],barcodes2plot[1])],
+                                               uniqueBarcodes[barcodes2plot[0]:barcodes2plot[1]],
+                                               segmentLabels,
+                                               cScale=cScale,
+                                               cm=cm,
+                                               fontsize=fontsize)
+                outputFileName2=runParameters["outputFileName"].replace("Fig_HiMmatrix","Fig_Segment_subMatrix")
+                print('Output written to {}'.format(outputFileName2))
+                fig2.savefig(outputFileName2)
+        
             
 def plotMultipleHiMmatrices(ListData,runParameters):
     for idataSet in dataSets:
@@ -453,8 +482,8 @@ def plotMultipleHiMmatrices(ListData,runParameters):
         cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
         ticklabs = cbar.ax.get_yticklabels()
         ticklabs1=["{:04.2f}".format(i*cScale/(len(ticklabs)-1)) for i in range(len(ticklabs))]
-        cbar.ax.set_yticklabels(ticklabs1, fontsize=12)
-        cbar.set_label(runParameters["type"],fontsize=15)
+        cbar.ax.set_yticklabels(ticklabs1, fontsize=runParameters["fontsize"])
+        cbar.set_label(runParameters["type"],fontsize=1.2*float(runParameters["fontsize"]))
             
         # HiMdata.update_clims(0, cScale, f1)
         print('Output written to {}'.format(runParameters["outputFileName"]))
