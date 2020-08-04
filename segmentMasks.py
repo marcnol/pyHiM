@@ -42,11 +42,11 @@ from fileManagement import folders,session, log, Parameters
 from fileManagement import writeString2File
 
 #---- stardist
-import sys
-import numpy as np
+# import sys
+# import numpy as np
 import matplotlib
 matplotlib.rcParams["image.interpolation"] = None
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 # from glob import glob
 # from tifffile import imread

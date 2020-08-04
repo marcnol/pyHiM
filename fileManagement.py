@@ -96,7 +96,7 @@ class folders:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
 
-        print("Detected {} folders with images".format(len(self.listFolders)))
+        print("\n> SetsFolders> Detected {} folders with images".format(len(self.listFolders)))
 
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
@@ -190,14 +190,15 @@ class Parameters:
         self.label = label
         self.paramFile = "infoList.json"
         self.param = {
-            "image": {
-                "currentPlane": 1,
-                # 'contrastMin': 0.1,
-                # 'contrastMax': 0.9,
-                "claheGridH": 8,
-                "claheGridW": 8,
-            },
-            "acquisition": {"label": "DAPI", "positionROIinformation": 3,},  # barcode, fiducial
+            "acquisition": {
+                "label": "DAPI", 
+                "positionROIinformation": 3,
+                "DAPI_channel": 'ch00',                
+                "fiducialDAPI_channel": 'ch01',                
+                "RNA_channel": 'ch02',                
+                "fiducialBarcode_channel": 'ch00',                                
+                "barcode_channel": 'ch00',                
+                },  # barcode, fiducial
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
@@ -226,6 +227,8 @@ class Parameters:
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "segmentedObjects",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist 
+                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px
@@ -260,25 +263,39 @@ class Parameters:
 
             print("Parameters file read: {}".format(fileName))
 
+    def setsChannel(self,key,default):
+        if key in self.param["acquisition"].keys():
+            channel = self.param["acquisition"][key]
+        else:
+            channel= default
+        
+        return default
+    
     # method returns label specific filenames from filename list
     def files2Process(self, filesFolder):
 
-        # finds if there is 2 or 3 channels for DAPI
+        # defines channel for DAPI, fiducials and barcodes
+        channelDAPI = self.setsChannel("DAPI_channel","ch00")
+        channelbarcode = self.setsChannel("barcode_channel","ch01")
+        channelfiducial = self.setsChannel("fiducialBarcode_channel","ch00")
+         
+        # finds if there is 2 or 3 channels for DAPI acquisition
         fileList2Process = [
             file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch02" and "DAPI" in file.split("_")
         ]
 
+        # defines channels for RNA and DAPI-fiducial
         if len(fileList2Process) > 0:
-            channelDAPI_fiducial = "ch02"
-            channelDAPI_RNA = "ch01"
+            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel","ch02")
+            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel","ch01")
         else:
-            channelDAPI_fiducial = "ch01"
-            channelDAPI_RNA = "ch04"
-
+            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel","ch01")
+            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel","ch04")
+            
         # selects DAPI files
         if self.param["acquisition"]["label"] == "DAPI":
             self.fileList2Process = [
-                file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in file.split("_")
+                file for file in filesFolder if file.split("_")[-1].split(".")[0] == channelDAPI and "DAPI" in file.split("_")
             ]
 
         # selects DAPIch2 files
@@ -292,7 +309,7 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == "ch01"
+                if len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == channelbarcode
             ]
 
         # selects fiducial files
@@ -300,10 +317,11 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if (len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == "ch00")
+                if (len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == channelfiducial)
                 or ("DAPI" in file.split("_") and file.split("_")[-1].split(".")[0] == channelDAPI_fiducial)
             ]
 
+        # print("\n :::: {},{},{}".format(channelDAPI,channelbarcode,channelfiducial))
 
 # =============================================================================
 # FUNCTIONS
@@ -384,3 +402,53 @@ def RT2fileName(fileList2Process, referenceBarcode, positionROIinformation=3):
             ROIList[file] = os.path.basename(file).split("_")[positionROIinformation]
 
     return fileNameReferenceList, ROIList
+
+
+def ROI2ReferenceFiducialFileName(param, file, referenceBarcode, positionROIinformation=3):
+    """
+    Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
+    
+    Parameters
+    ----------
+    fileList2Process : TYPE
+        DESCRIPTION.
+    referenceBarcode : TYPE
+        DESCRIPTION.
+    positionROIinformation : TYPE, optional
+        DESCRIPTION. The default is 3.
+
+    Returns
+    -------
+    fileNameReferenceList : TYPE
+        List of filenames with referenceBarcode in their RT field
+    ROIList : TYPE
+        Dictionary of ROIs for each file in list
+
+    """
+    # gets rootFolder
+    rootFolder=os.path.dirname(file)
+    ROI = os.path.basename(file).split("_")[positionROIinformation]
+    channelFiducial=param.param["acquisition"]["fiducialBarcode_channel"]
+    
+    # looks for referenceFiducial file in folder
+    listFiles = glob.glob(rootFolder + os.sep + "*.tif")
+    
+    candidates = [x for x in listFiles if (referenceBarcode in x.split("_")) \
+                 and (ROI in os.path.basename(x).split("_")[positionROIinformation]) \
+                 and (channelFiducial in os.path.basename(x).split("_")[-1]) ]
+
+    return candidates
+
+
+
+
+
+
+
+
+
+
+
+
+
+

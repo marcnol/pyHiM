@@ -223,7 +223,7 @@ def alignImages(param, log1, session1):
         )
 
         for currentFolder in dataFolder.listFolders:
-            # currentFolder=dataFolder.listFolders[0]
+            # initializes variables
             filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
             dataFolder.createsFolders(currentFolder, param)
             dictShifts = {}  # defaultdict(dict) # contains dictionary of shifts for each folder
@@ -242,6 +242,7 @@ def alignImages(param, log1, session1):
             positionROIinformation = param.param["acquisition"]["positionROIinformation"]
             referenceBarcode = param.param["alignImages"]["referenceFiducial"]
             fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process, referenceBarcode, positionROIinformation)
+            
             if len(fileNameReferenceList) > 0:
                 # loops over reference fiducials one ROI at a time
                 for fileNameReference in fileNameReferenceList:
