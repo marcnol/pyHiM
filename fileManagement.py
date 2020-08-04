@@ -404,7 +404,7 @@ def RT2fileName(fileList2Process, referenceBarcode, positionROIinformation=3):
     return fileNameReferenceList, ROIList
 
 
-def ROI2ReferenceFiducialFileName(param, file, referenceBarcode, positionROIinformation=3):
+def ROI2FiducialFileName(param, file, barcodeName, positionROIinformation=3):
     """
     Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
     
@@ -433,9 +433,9 @@ def ROI2ReferenceFiducialFileName(param, file, referenceBarcode, positionROIinfo
     # looks for referenceFiducial file in folder
     listFiles = glob.glob(rootFolder + os.sep + "*.tif")
     
-    candidates = [x for x in listFiles if (referenceBarcode in x.split("_")) \
+    candidates = [x for x in listFiles if (barcodeName in x) \
                  and (ROI in os.path.basename(x).split("_")[positionROIinformation]) \
-                 and (channelFiducial in os.path.basename(x).split("_")[-1]) ]
+                 and (channelFiducial in os.path.basename(x)) ]
 
     return candidates
 
