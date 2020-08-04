@@ -110,7 +110,7 @@ def localDriftCorrection(param, log1, session1):
                 # - cross-correlate and obtain a second-order correction value
 
                 # - determine if we keep or not
-
+                # testing
                 # - store in database.                
 
     return 0
