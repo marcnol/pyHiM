@@ -23,32 +23,34 @@ steps for each ROI:
 
 """
 
+""
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
 
 import glob, os
 import matplotlib.pylab as plt
 import numpy as np
-import uuid
-import argparse
 from time import sleep
 
-from astropy.stats import SigmaClip
 from astropy.table import Table
-from photutils import Background2D, MedianBackground
-from sklearn.preprocessing import normalize
-from tqdm import tqdm,trange
+from tqdm import trange
 from skimage.util import montage
 import cv2
 
-from imageProcessing import Image, saveImage2Dcmd
-from fileManagement import folders, session, log, Parameters
-from fileManagement import writeString2File, ROI2FiducialFileName
-from alignImages import align2ImagesCrossCorrelation
+from imageProcessing.imageProcessing import Image
+from fileProcessing.fileManagement import (
+    folders, 
+    writeString2File,
+    ROI2FiducialFileName)
+
+from imageProcessing.alignImages import align2ImagesCrossCorrelation
 
 from stardist import random_label_cmap
 
 np.random.seed(6)
 lbl_cmap = random_label_cmap()
-
 
     
 def loadsFiducial(param, fileName, log1,dataFolder):
@@ -344,7 +346,8 @@ def localDriftCorrection(param, log1, session1):
             names=("aligned file", "reference file", "ROI #", "Barcode #", "CellID #","shift_x", "shift_y", "error", "diffphase",),
             dtype=("S2", "S2", 'int', 'int', 'int',"f4", "f4", "f4", "f4"),
         )
-                    
+    dictShift={}
+    
     for currentFolder in dataFolder.listFolders:
         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
         dataFolder.createsFolders(currentFolder, param)
@@ -463,62 +466,62 @@ def localDriftCorrection(param, log1, session1):
     return 0, dictShift, alignmentResultsTable
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+# # =============================================================================
+# # MAIN
+# # =============================================================================
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+#     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
+#     print("\n--------------------------------------------------------------------------")
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
-        # rootFolder='/home/marcnol/data/Embryo_debug_dataset/rawImages'
+#     if args.rootFolder:
+#         rootFolder = args.rootFolder
+#     else:
+#         # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
+#         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+#         rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
+#         # rootFolder='/home/marcnol/data/Embryo_debug_dataset/rawImages'
 
-    print("parameters> rootFolder: {}".format(rootFolder))
-    sessionName = "localDriftCorrection"
+#     print("parameters> rootFolder: {}".format(rootFolder))
+#     sessionName = "localDriftCorrection"
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-    ]
+#     labels2Process = [
+#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+#     ]
 
-    # session
-    session1 = session(rootFolder, sessionName)
+#     # session
+#     session1 = session(rootFolder, sessionName)
 
-    # setup logs
-    log1 = log(rootFolder)
-    # labels2Process indeces: 0 fiducial, 1:
-    labelParameterFile = labels2Process[2]["parameterFile"]
-    param = Parameters(rootFolder, labelParameterFile)
+#     # setup logs
+#     log1 = log(rootFolder)
+#     # labels2Process indeces: 0 fiducial, 1:
+#     labelParameterFile = labels2Process[2]["parameterFile"]
+#     param = Parameters(rootFolder, labelParameterFile)
 
-    dataFolder = folders(param.param["rootFolder"])
+#     dataFolder = folders(param.param["rootFolder"])
 
-    for currentFolder in dataFolder.listFolders:
-        filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-        dataFolder.createsFolders(currentFolder, param)
+#     for currentFolder in dataFolder.listFolders:
+#         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
+#         dataFolder.createsFolders(currentFolder, param)
 
-        # generates lists of files to process
-        param.files2Process(filesFolder)
+#         # generates lists of files to process
+#         param.files2Process(filesFolder)
 
-        for fileName in param.fileList2Process:
-            session1.add(fileName, sessionName)
+#         for fileName in param.fileList2Process:
+#             session1.add(fileName, sessionName)
 
-    errorCode, dictShift, alignmentResultsTable = localDriftCorrection(param, log1, session1)
+#     errorCode, dictShift, alignmentResultsTable = localDriftCorrection(param, log1, session1)
 
-    if errorCode != 0:
-        print("Error code reported: {}".format(errorCode))
-    else:
-        print("normal termination")
+#     if errorCode != 0:
+#         print("Error code reported: {}".format(errorCode))
+#     else:
+#         print("normal termination")
 
-    # for fileName in param.fileList2Process:
-    #     session1.add(fileName, sessionName)
+#     # for fileName in param.fileList2Process:
+#     #     session1.add(fileName, sessionName)

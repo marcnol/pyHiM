@@ -38,17 +38,16 @@ from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
 
-from imageProcessing import Image, saveImage2Dcmd
-from fileManagement import folders, session, log, Parameters
-from fileManagement import writeString2File
+from imageProcessing.imageProcessing import Image, saveImage2Dcmd
+from fileProcessing.fileManagement import (
+    folders, session, log, Parameters, writeString2File)
 
 # ---- stardist
 import matplotlib
 matplotlib.rcParams["image.interpolation"] = None
-from csbdeep.utils import Path, normalize
-from csbdeep.io import save_tiff_imagej_compatible
+from csbdeep.utils import normalize
 
-from stardist import random_label_cmap, _draw_polygons, export_imagej_rois
+from stardist import random_label_cmap
 from stardist.models import StarDist2D
 
 np.random.seed(6)
@@ -499,78 +498,16 @@ def segmentMasks(param, log1, session1,fileName=None):
                     session1.add(fileName2Process, sessionName)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", help="fileName to analyze")
-
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = os.getcwd()
-    
-    if args.fileName:
-        fileName = args.fileName
-    else:
-        fileName = None
-        
-    print("parameters> rootFolder: {}".format(rootFolder))
-    now = datetime.now()
-
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
-
-    # session
-    sessionName = "segmentMasks"
-    session1 = session(rootFolder, sessionName)
-    # setup logs
-    log1 = log(rootFolder)
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
-
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
-
-        # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
-
-        # [applies registration to DAPI and barcodes]
-        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            # [segments DAPI and spot masks]
-            if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
-                segmentMasks(param, log1, session1,fileName)
-
-        print("\n")
-        del param
-    # exits
-    session1.save(log1)
-    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
-
-    del log1, session1
-    print("Elapsed time: {}".format(datetime.now() - begin_time))
-
+# # =============================================================================
+# # MAIN
+# # =============================================================================
 # if __name__ == "__main__":
+#     begin_time = datetime.now()
 
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+#     parser.add_argument("-x", "--fileName", help="fileName to analyze")
+
 #     args = parser.parse_args()
 
 #     print("\n--------------------------------------------------------------------------")
@@ -578,42 +515,55 @@ if __name__ == "__main__":
 #     if args.rootFolder:
 #         rootFolder = args.rootFolder
 #     else:
-#         # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-#         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-#         rootFolder='/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0'
-
+#         rootFolder = os.getcwd()
+    
+#     if args.fileName:
+#         fileName = args.fileName
+#     else:
+#         fileName = None
+        
 #     print("parameters> rootFolder: {}".format(rootFolder))
-#     sessionName = "segmentMasks"
+#     now = datetime.now()
 
 #     labels2Process = [
 #         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
 #         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
 #         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+#         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
 #     ]
 
 #     # session
+#     sessionName = "segmentMasks"
 #     session1 = session(rootFolder, sessionName)
-
 #     # setup logs
 #     log1 = log(rootFolder)
-#     # labels2Process indeces: 0 fiducial, 1:
-#     labelParameterFile = labels2Process[2]["parameterFile"]
-#     param = Parameters(rootFolder, labelParameterFile)
+#     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
+#     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
+#     writeString2File(
+#         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
+#     )  # initialises MD file
 
-#     dataFolder = folders(param.param["rootFolder"])
+#     for ilabel in range(len(labels2Process)):
+#         label = labels2Process[ilabel]["label"]
+#         labelParameterFile = labels2Process[ilabel]["parameterFile"]
+#         log1.addSimpleText("**Analyzing label: {}**".format(label))
 
-#     for currentFolder in dataFolder.listFolders:
-#         # currentFolder=dataFolder.listFolders[0]
-#         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-#         dataFolder.createsFolders(currentFolder, param)
+#         # sets parameters
+#         param = Parameters(rootFolder, labelParameterFile)
 
-#         # generates lists of files to process
-#         param.files2Process(filesFolder)
+#         # [applies registration to DAPI and barcodes]
+#         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
+#             # [segments DAPI and spot masks]
+#             if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
+#                 segmentMasks(param, log1, session1,fileName)
 
-#         for fileName in param.fileList2Process:
-#             session1.add(fileName, sessionName)
+#         print("\n")
+#         del param
+#     # exits
+#     session1.save(log1)
+#     log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-#     # for fileName in param.fileList2Process:
-#     #     session1.add(fileName, sessionName)
+#     del log1, session1
+#     print("Elapsed time: {}".format(datetime.now() - begin_time))
 
-#     segmentMasks(param, log1, session1)
+# # 

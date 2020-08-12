@@ -25,9 +25,9 @@ from datetime import datetime
 import argparse
 import csv
 
-from fileManagement import writeString2File
+from fileProcessing.fileManagement import writeString2File
 
-from HIMmatrixOperations import (
+from matrixOperations.HIMmatrixOperations import (
     loadsSCdata,
     plotsEnsemble3wayContactMatrix,
     loadsSCdataMATLAB,

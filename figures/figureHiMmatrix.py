@@ -17,11 +17,11 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 
 # import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
 
 #%% define and loads datasets
 

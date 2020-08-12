@@ -17,12 +17,12 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
-from alignBarcodesMasks import calculateContactProbabilityMatrix
+from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+from matrixOperations.alignBarcodesMasks import calculateContactProbabilityMatrix
 
 # import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram, listsSCtoKeep
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram, listsSCtoKeep
 
 #%% define and loads datasets
 

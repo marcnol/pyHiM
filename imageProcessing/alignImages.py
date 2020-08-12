@@ -20,20 +20,20 @@ image cross correlation
 import numpy as np
 import matplotlib.pyplot as plt
 import os, glob
-import argparse
-from datetime import datetime
 
 from skimage.feature.register_translation import _upsampled_dft
 
-# from scipy.ndimage import fourier_shift
-from imageProcessing import (
+from imageProcessing.imageProcessing import (
     Image,
     save2imagesRGB,
     saveImage2Dcmd,
     align2ImagesCrossCorrelation,
 )
-from fileManagement import folders, writeString2File, saveJSON, loadJSON, RT2fileName
-from fileManagement import folders, session, log, Parameters
+
+from fileProcessing.fileManagement import (
+    folders, writeString2File, saveJSON, loadJSON, RT2fileName,
+    session, log, Parameters
+    )
 
 from astropy.table import Table
 from scipy.ndimage import shift as shiftImage
@@ -208,7 +208,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     del Im2
     return shift, tableEntry
 
-def alignImagesInCurrentFolder(currentFolder,dataFolder,log1,fileName=None):
+def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,fileName=None):
     # session
     sessionName = "alignImages"
     verbose = False    
@@ -302,6 +302,8 @@ def alignImages(param, log1, session1, fileName=None):
     None.
 
     """
+    sessionName = "registersImages"
+
     if param.param["alignImages"]["operation"] == "overwrite":
 
         # processes folders and adds information to log files
@@ -316,7 +318,7 @@ def alignImages(param, log1, session1, fileName=None):
 
         # loops over folders
         for currentFolder in dataFolder.listFolders:
-            alignmentResultsTable  = alignImagesInCurrentFolder(currentFolder,dataFolder,log1,fileName)
+            alignmentResultsTable  = alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,fileName)
 
         # saves Table with all shifts
         alignmentResultsTable.write(
@@ -441,7 +443,8 @@ def appliesRegistrations(param, log1, session1, fileName=None):
     - save registered images as npy arrays 
     """
 
-    
+    sessionName = "registersImages"
+
     # verbose=False
     if param.param["alignImages"]["operation"] == "overwrite":
 
@@ -456,79 +459,79 @@ def appliesRegistrations(param, log1, session1, fileName=None):
             
         del dataFolder
 
-# =============================================================================
-# MAIN
-# =============================================================================
+# # =============================================================================
+# # MAIN
+# # =============================================================================
 
-if __name__ == "__main__":
-    begin_time = datetime.now()
+# if __name__ == "__main__":
+#     begin_time = datetime.now()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", help="fileName to analyze")
-    args = parser.parse_args()
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+#     parser.add_argument("-x", "--fileName", help="fileName to analyze")
+#     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
+#     print("\n--------------------------------------------------------------------------")
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = os.getcwd()
+#     if args.rootFolder:
+#         rootFolder = args.rootFolder
+#     else:
+#         rootFolder = os.getcwd()
 
-    if args.fileName:
-        fileName = args.fileName
-    else:
-        fileName = None
+#     if args.fileName:
+#         fileName = args.fileName
+#     else:
+#         fileName = None
         
-    print("parameters> rootFolder: {}".format(rootFolder))
-    now = datetime.now()
+#     print("parameters> rootFolder: {}".format(rootFolder))
+#     now = datetime.now()
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
+#     labels2Process = [
+#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+#         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
+#     ]
 
-    # session
-    sessionName = "registersImages"
-    session1 = session(rootFolder, sessionName)
+#     # session
+#     sessionName = "registersImages"
+#     session1 = session(rootFolder, sessionName)
 
-    # setup logs
-    log1 = log(rootFolder)
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
+#     # setup logs
+#     log1 = log(rootFolder)
+#     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
+#     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
+#     writeString2File(
+#         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
+#     )  # initialises MD file
 
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
+#     for ilabel in range(len(labels2Process)):
+#         label = labels2Process[ilabel]["label"]
+#         labelParameterFile = labels2Process[ilabel]["parameterFile"]
+#         log1.addSimpleText("**Analyzing label: {}**".format(label))
 
-        # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
+#         # sets parameters
+#         param = Parameters(rootFolder, labelParameterFile)
 
-        # [registers fiducials using a barcode as reference]
-        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            alignImages(param, log1, session1,fileName)
+#         # [registers fiducials using a barcode as reference]
+#         if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
+#             log1.report(
+#                 "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
+#             )
+#             alignImages(param, log1, session1,fileName)
 
-        # [applies registration to DAPI and barcodes]
-        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            appliesRegistrations(param, log1, session1,fileName)
+#         # [applies registration to DAPI and barcodes]
+#         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
+#             log1.report(
+#                 "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
+#             )
+#             appliesRegistrations(param, log1, session1,fileName)
 
-        print("\n")
-        del param
-    # exits
-    session1.save(log1)
-    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+#         print("\n")
+#         del param
+#     # exits
+#     session1.save(log1)
+#     log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    del log1, session1
-    print("Elapsed time: {}".format(datetime.now() - begin_time))
+#     del log1, session1
+#     print("Elapsed time: {}".format(datetime.now() - begin_time))

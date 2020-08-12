@@ -1,46 +1,42 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Apr  4 09:11:01 2020
+Created on Wed Aug 12 17:31:14 2020
 
 @author: marcnol
-
-This file contains routines to process Hi-M datasets
-
-The user needs to provide either a folder by argument or in the source code.
-The main() will search for parameter files within the folder provided. All ope-export PATH="$PATH:/home/marcnol/Repositories/pyHiM/"
--ration of the code will be defined in the parameters file.
-
 """
+
 # =============================================================================
 # IMPORTS
-# =============================================================================q
+# =============================================================================
+
+# ---- stardist
+from __future__ import print_function, unicode_literals, absolute_import, division
 
 import os
 import argparse
 from datetime import datetime
 
-from imageProcessing import (
-    projectsBarcodes,
-    localDriftCorrection,
-    segmentMasks)
+from fileProcessing.fileManagement import (
+    session, log, Parameters, writeString2File)
+from imageProcessing.segmentMasks import segmentMasks
 
-from fileProcessing.fileManagement import Parameters, log, writeString2File, session
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
 
-from imageProcessing.alignImages import alignImages, appliesRegistrations
-from imageProcessing.makeProjections import makeProjections
 
-from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 
 # =============================================================================
 # MAIN
 # =============================================================================
-
 if __name__ == "__main__":
     begin_time = datetime.now()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-x", "--fileName", help="fileName to analyze")
+
     args = parser.parse_args()
 
     print("\n--------------------------------------------------------------------------")
@@ -49,7 +45,12 @@ if __name__ == "__main__":
         rootFolder = args.rootFolder
     else:
         rootFolder = os.getcwd()
-
+    
+    if args.fileName:
+        fileName = args.fileName
+    else:
+        fileName = None
+        
     print("parameters> rootFolder: {}".format(rootFolder))
     now = datetime.now()
 
@@ -61,11 +62,11 @@ if __name__ == "__main__":
     ]
 
     # session
-    session1 = session(rootFolder, "processingPipeline")
-
+    sessionName = "segmentMasks"
+    session1 = session(rootFolder, sessionName)
     # setup logs
     log1 = log(rootFolder)
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
+    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
@@ -79,47 +80,19 @@ if __name__ == "__main__":
         # sets parameters
         param = Parameters(rootFolder, labelParameterFile)
 
-        # [projects 3D images in 2d]
-        makeProjections(param, log1, session1)
-
-        # [registers fiducials using a barcode as reference]
-        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            alignImages(param, log1, session1)
-
         # [applies registration to DAPI and barcodes]
         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            appliesRegistrations(param, log1, session1)
-
             # [segments DAPI and spot masks]
             if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
-                segmentMasks(param, log1, session1)
-
-        # [2D projects all barcodes in an ROI]
-        if label == "barcode":
-            projectsBarcodes(param, log1, session1)
-
-        # [refits spots in 3D]
-
-        # [local drift correction]
-        if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
-            errorCode, _, _ = localDriftCorrection(param, log1, session1)
-
-        # [builds PWD matrix for all folders with images]
-        if label == "DAPI":
-            processesPWDmatrices(param, log1, session1)
+                segmentMasks(param, log1, session1,fileName)
 
         print("\n")
         del param
-
     # exits
     session1.save(log1)
     log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
     del log1, session1
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+# 

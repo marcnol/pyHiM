@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun  4 09:18:15 2020
+Created on Fri Jun  5 17:59:34 2020
 
 @author: marcnol
+
+plots 4M profiles given a list of anchors.
+
+Can work with up to two datasets
+
+
 """
 
 
@@ -16,24 +22,22 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
 
 # import scaleogram as scg
 
-from HIMmatrixOperations import (
-    plotsEnsemble3wayContactMatrix,
-    calculate3wayContactMatrix,
-    getMultiContact,
-    analysisHiMmatrix,
-)
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, plot1Dprofile2Datasets
 
 #%% define and loads datasets
+
+
 def parseArguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+
     parser.add_argument(
         "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
     )
@@ -42,12 +46,13 @@ def parseArguments():
     parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
     parser.add_argument("-W2", "--action2", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    # parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    # parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
-    parser.add_argument("--colorbar", help="Use if you want a colorbar", action="store_true")
+    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
+    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
+    parser.add_argument("--splines", help="Use if you want plot data using spline interpolations", action="store_true")
+    parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
-    parser.add_argument("--normalize", help="Matrices get normalized by their maximum", action="store_true")
+    parser.add_argument("--legend", help="Use if you want to show legends", action="store_true")
+
     args = parser.parse_args()
 
     runParameters = {}
@@ -100,25 +105,38 @@ def parseArguments():
     else:
         runParameters["fontsize"] = 12
 
-    if args.scalingParameter:
-        runParameters["scalingParameter"] = float(args.scalingParameter)
+    if args.axisLabel:
+        runParameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["scalingParameter"] = 1.0
+        runParameters["axisLabel"] = False
 
-    if args.colorbar:
-        runParameters["colorbar"] = args.colorbar
+    if args.axisTicks:
+        runParameters["axisTicks"] = args.axisTicks
     else:
-        runParameters["colorbar"] = False
+        runParameters["axisTicks"] = True
+
+    if args.splines:
+        runParameters["splines"] = args.splines
+    else:
+        runParameters["splines"] = False
+
+    if args.cAxis:
+        runParameters["cAxis"] = float(args.cAxis)
+    else:
+        runParameters["cAxis"] = 0.8
 
     if args.plottingFileExtension:
         runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
         runParameters["plottingFileExtension"] = ".svg"
 
-    if args.normalize:
-        runParameters["normalize"] = args.normalize
+    if args.legend:
+        runParameters["legend"] = args.legend
     else:
-        runParameters["normalize"] = False
+        runParameters["legend"] = False
+
+    print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
+    print("Input parameters:{}".format(runParameters))
 
     return rootFolder1, rootFolder2, outputFolder, runParameters
 
@@ -128,17 +146,15 @@ def parseArguments():
 # =============================================================================
 
 if __name__ == "__main__":
-    print(">>> Producing HiM 3-way matrices")
+    run2Datasets = False
 
-    # [parsing arguments
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
-
-    print(">>> Loading first dataset from {}".format(rootFolder1))
+    print("RootFolders: \n{}\n{}".format(rootFolder1, rootFolder2))
     HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
-    nCells1 = HiMdata1.nCellsLoaded()
+    nCells = HiMdata1.nCellsLoaded()
 
     if outputFolder == "none":
         outputFolder = HiMdata1.dataFolder
@@ -146,7 +162,7 @@ if __name__ == "__main__":
     outputFileName = (
         outputFolder
         + os.sep
-        + "Fig_3wayContacts"
+        + "Fig_4Mcontacts"
         + "_dataset1:"
         + HiMdata1.datasetName
         + "_label1:"
@@ -156,13 +172,13 @@ if __name__ == "__main__":
     )
 
     if runParameters["run2Datasets"]:
-        print(">>> Loading second dataset from {}".format(rootFolder2))
         HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
         HiMdata2.loadData()
         nCells2 = HiMdata2.nCellsLoaded()
 
+        run2Datasets = True
         outputFileName = (
             outputFileName
             + "_dataset2:"
@@ -174,11 +190,9 @@ if __name__ == "__main__":
         )
     outputFileName += runParameters["plottingFileExtension"]
 
-    # 3-way interaction matrices
-    pixelSize = 0.1
-    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
+    anchors = HiMdata1.ListData[HiMdata1.datasetName]["3wayContacts_anchors"]
+    print("Anchors: {}".format(anchors))
 
-    anchors = [int(i.split(":")[1]) for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     fig2 = plt.figure(constrained_layout=True)
     nCols = np.ceil(len(anchors) / 2).astype(int)
     nRows = 2
@@ -193,55 +207,24 @@ if __name__ == "__main__":
             else:
                 Xticks.append(False)
             if iCol == 0:
-                Yticks.append(False)
+                Yticks.append(True)
             else:
                 Yticks.append(False)
 
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     legendList = [False] * len(anchors)
-    legendList[0] = True
+    if runParameters["legend"]:
+        legendList[0] = True
 
-    for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, Xticks, Yticks):
-        if runParameters["run2Datasets"]:
-            # mixed matrices from 2 datasets
-            if runParameters["normalize"]:
-                matrix = HiMdata1.data[iFigLabel] / HiMdata1.data[iFigLabel].max()
-            else:
-                matrix = HiMdata1.data[iFigLabel]
-
-            for i in range(matrix.shape[0]):
-                for j in range(0, i):
-                    if runParameters["normalize"]:
-                        matrix[i, j] = HiMdata2.data[iFigLabel][i, j] / HiMdata2.data[iFigLabel].max()
-                    else:
-                        matrix[i, j] = HiMdata2.data[iFigLabel][i, j]
+    for anchor, ifigure, iFigLabel, yticks, xticks, legend in zip(
+        anchors, FigList, FigLabels, Yticks, Xticks, legendList
+    ):
+        if not run2Datasets:
+            HiMdata1.plot1Dprofile1Dataset(ifigure, anchor, iFigLabel, yticks, xticks)
         else:
-            # only one matrix
-            matrix = HiMdata1.data[iFigLabel]
-
-        f2_ax1_im = HiMdata1.plot2DMatrixSimple(
-            ifigure,
-            matrix,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            iyticks,
-            ixticks,
-            cmtitle="probability",
-            cMin=0,
-            cMax=cMax,
-            fontsize=12,
-        )
-    if runParameters["colorbar"]:
-        cbar_ax = fig2.add_axes([0.995, 0.25, 0.02, 0.6])
-        cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
-        ticklabs = cbar.ax.get_yticklabels()
-        cbar.ax.set_yticklabels(ticklabs, fontsize=12)
-
-    # for ifigure in FigList:
-    #     HiMdata1.update_clims(0, cMax, ifigure)
-
-    # update_clims(0, cMax, FigList)
+            plot1Dprofile2Datasets(
+                ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend
+            )
 
     plt.savefig(outputFileName)
     print("Output figure: {}".format(outputFileName))
-
-    print("\nDone\n\n")

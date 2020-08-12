@@ -23,13 +23,14 @@ import matplotlib.pyplot as plt
 # from PIL import Image as pil
 from skimage import exposure
 from scipy.ndimage import fourier_shift
-from fileManagement import writeString2File
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
 from skimage.feature import register_translation
 from scipy.ndimage import shift as shiftImage
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
+
+from fileProcessing.fileManagement import writeString2File
 
 # =============================================================================
 # CLASSES

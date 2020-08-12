@@ -16,21 +16,8 @@ or cluster. This could be used alternatively or in complement to DAPI segmentati
 import glob, os
 import argparse
 
-# import matplotlib.pylab as plt
-# import numpy as np
-# from astropy.stats import sigma_clipped_stats,SigmaClip,gaussian_fwhm_to_sigma
-# from astropy.convolution import Gaussian2DKernel
-# from astropy.visualization import SqrtStretch,simple_norm
-# from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.table import Table, vstack, Column
-
-# from photutils import DAOStarFinder,CircularAperture,detect_sources
-# from photutils import detect_threshold,deblend_sources
-# from photutils import Background2D, MedianBackground
-from imageProcessing import Image, saveImage2Dcmd, imageAdjust
-from fileManagement import folders, session, log, Parameters
-from fileManagement import writeString2File, FileHandling
-
+from imageProcessing.imageProcessing import Image, saveImage2Dcmd, imageAdjust
+from fileProcessing.fileManagement import (folders, session, log, Parameters,writeString2File, FileHandling)
 
 # =============================================================================
 # FUNCTIONS
@@ -154,40 +141,40 @@ def projectsBarcodes(param, log1, session1):
                 del ImtoSave
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+# # =============================================================================
+# # MAIN
+# # =============================================================================
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+#     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
+#     print("\n--------------------------------------------------------------------------")
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+#     if args.rootFolder:
+#         rootFolder = args.rootFolder
+#     else:
+#         rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
+#         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+#         # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
 
-    print("parameters> rootFolder: {}".format(rootFolder))
+#     print("parameters> rootFolder: {}".format(rootFolder))
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-    ]
+#     labels2Process = [
+#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+#     ]
 
-    # session
-    session1 = session(rootFolder, "processingPipeline")
+#     # session
+#     session1 = session(rootFolder, "processingPipeline")
 
-    # setup logs
-    log1 = log(rootFolder)
+#     # setup logs
+#     log1 = log(rootFolder)
 
-    labelParameterFile = labels2Process[1]["parameterFile"]
-    param = Parameters(rootFolder, labelParameterFile)
+#     labelParameterFile = labels2Process[1]["parameterFile"]
+#     param = Parameters(rootFolder, labelParameterFile)
 
-    projectsBarcodes(param, log1, session1)
+#     projectsBarcodes(param, log1, session1)

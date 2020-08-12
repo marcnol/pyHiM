@@ -21,7 +21,6 @@ $ processingMultipleDatasets.py /mnt/grey/DATA/rawData_2020/Experiment_4/deconvo
 
 import os
 import sys
-import argparse
 
 nArgs = len(sys.argv)
 print("Total arguments passed: {}".format(nArgs))

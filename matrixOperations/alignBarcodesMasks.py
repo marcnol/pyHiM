@@ -20,32 +20,30 @@ TO SOLVE:
 # IMPORTS
 # =============================================================================
 
-
 import glob, os
 import argparse
 
 from datetime import datetime
 import uuid
 import numpy as np
-import numpy.ma as npmasked
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import pdist
-from imageProcessing import Image
-from fileManagement import folders, isnotebook
-from fileManagement import session, writeString2File
-from fileManagement import Parameters, log
 
-from astropy.table import Table, vstack, Column
-from astropy.visualization import SqrtStretch, simple_norm
-from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.stats import sigma_clip, sigma_clipped_stats
-
-from photutils.segmentation import SegmentationImage
 from sklearn.metrics import pairwise_distances
-
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.neighbors import KernelDensity
+
+from astropy.table import Table
+
+from photutils.segmentation import SegmentationImage
+
+from fileProcessing.fileManagement import (
+    folders,
+    isnotebook,
+    session,
+    writeString2File,
+    Parameters, 
+    log)
 
 # =============================================================================
 # CLASSES
@@ -69,23 +67,23 @@ class cellID:
             self.barcodesinMask["maskID_" + str(mask)] = []
 
     def visualize(self):
+        pass
+        # imageBarcodes = np.zeros([2048, 2048])
+        # MasksBarcodes = Masks
+        # R = []
 
-        imageBarcodes = np.zeros([2048, 2048])
-        MasksBarcodes = Masks
-        R = []
+        # for i in range(len(self.barcodeMapROI.groups[0])):
+        #     y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+        #     x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+        #     barcodeID = self.barcodeMapROI.groups[0]["Barcode #"][i]
+        #     imageBarcodes[x_int][y_int] = barcodeID
+        #     MasksBarcodes[x_int][y_int] += 20 * barcodeID
+        #     R.append([y_int, x_int, barcodeID])
 
-        for i in range(len(self.barcodeMapROI.groups[0])):
-            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-            barcodeID = self.barcodeMapROI.groups[0]["Barcode #"][i]
-            imageBarcodes[x_int][y_int] = barcodeID
-            MasksBarcodes[x_int][y_int] += 20 * barcodeID
-            R.append([y_int, x_int, barcodeID])
-
-        # Shows results
-        Ra = np.array(R)
-        plt.imshow(Masks, origin="lower", cmap="jet")
-        plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
+        # # Shows results
+        # Ra = np.array(R)
+        # # plt.imshow(Masks, origin="lower", cmap="jet")
+        # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
 
     def alignByMasking(self):
         # [ Assigns barcodes to masks and creates <NbarcodesinMask> ]

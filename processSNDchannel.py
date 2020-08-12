@@ -19,18 +19,14 @@ import os, glob
 import argparse
 from datetime import datetime
 from matplotlib import pyplot as plt
-import logging
 import numpy as np
 from roipoly import MultiRoi
 from astropy.table import Table, Column, vstack
-from imageProcessing import Image
-from alignBarcodesMasks import processesPWDmatrices
-from projectsBarcodes import projectsBarcodes
-from fileManagement import folders, writeString2File, saveJSON, loadJSON, RT2fileName
-from makeProjections import makeProjections
-from alignImages import alignImages, appliesRegistrations
-from segmentMasks import segmentMasks
-from fileManagement import Parameters, log, writeString2File, session
+
+from imageProcessing.imageProcessingimageProcessing import Image
+
+from fileProcessing.fileManagement import ( Parameters, log, session, 
+                                           folders, writeString2File)
 
 """
 logging.basicConfig(format='%(levelname)s ''%(processName)-10s : %(asctime)s '
