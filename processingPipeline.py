@@ -20,16 +20,13 @@ import os
 import argparse
 from datetime import datetime
 
-from imageProcessing import (
-    projectsBarcodes,
-    localDriftCorrection,
-    segmentMasks)
-
 from fileProcessing.fileManagement import Parameters, log, writeString2File, session
 
 from imageProcessing.alignImages import alignImages, appliesRegistrations
 from imageProcessing.makeProjections import makeProjections
-
+from imageProcessing.segmentMasks import segmentMasks
+from imageProcessing.localDriftCorrection import localDriftCorrection
+from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 
 # =============================================================================
@@ -66,6 +63,9 @@ if __name__ == "__main__":
     # setup logs
     log1 = log(rootFolder)
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
+    if log1.fileNameMD=='.md':
+        log1.fileNameMD='HiM_report.md'
+        
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",

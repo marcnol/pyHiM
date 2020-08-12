@@ -72,7 +72,7 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     )  # for some reason sources are always displays 1/2 px from center of spot
 
     apertures = CircularAperture(positions, r=4.0)
-    norm = simple_norm(im, "sqrt", percent=99.99999)
+    norm = simple_norm(im, "sqrt", percent=99.99)
     # norm = ImageNormalize(stretch=SqrtStretch())
     # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
     plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)

@@ -322,8 +322,8 @@ def save2imagesRGB(I1, I2, outputFileName):
     # RGB_falsecolor_image = np.dstack([I1, np.zeros([2048, 2048]), I2])
     # plt.imsave(outputFileName, RGB_falsecolor_image)
     
-    plt.imshow(I1,cmap = 'Blues', alpha = 0.5)
-    plt.imshow(I2,cmap = 'Reds', alpha = 0.5)
+    plt.imshow(I1,cmap = 'Blues', alpha = 0.75)
+    plt.imshow(I2,cmap = 'Reds', alpha = 0.75)
     plt.savefig(outputFileName)
 
     plt.close()
