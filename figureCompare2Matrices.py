@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+
 # import scaleogram as scg
 from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact
 
@@ -58,15 +59,15 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters['run2Datasets']=True
+        runParameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters['run2Datasets']=False
+        runParameters["run2Datasets"] = False
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
+        outputFolder = "none"
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -109,20 +110,19 @@ def parseArguments():
         runParameters["axisTicks"] = False
 
     if args.ratio:
-        runParameters['ratio'] = args.ratio
+        runParameters["ratio"] = args.ratio
     else:
-        runParameters['ratio'] = False
-
+        runParameters["ratio"] = False
 
     if args.cAxis:
-        runParameters["cAxis"] =[float(i) for i in args.cAxis.split(',')]
+        runParameters["cAxis"] = [float(i) for i in args.cAxis.split(",")]
     else:
-        runParameters["cAxis"] = .6
+        runParameters["cAxis"] = 0.6
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = '.svg'
+        runParameters["plottingFileExtension"] = ".svg"
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
@@ -154,9 +154,9 @@ if __name__ == "__main__":
     # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
     # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
 
-    if outputFolder=='none':
+    if outputFolder == "none":
         outputFolder = HiMdata1.dataFolder
-        
+
     outputFileName1 = (
         outputFolder
         + os.sep
@@ -195,7 +195,6 @@ if __name__ == "__main__":
         + runParameters["plottingFileExtension"]
     )
 
-
     if HiMdata1.data["ensembleContactProbability"].shape == HiMdata2.data["ensembleContactProbability"].shape:
 
         fig1 = plt.figure(constrained_layout=True)
@@ -203,23 +202,23 @@ if __name__ == "__main__":
         f1 = fig1.add_subplot(spec1[0, 0])  # 16
         m1 = HiMdata1.data["ensembleContactProbability"]
         m2 = HiMdata2.data["ensembleContactProbability"]
-        
-        m1=m1/m1.max()
-        m2=m2/m2.max()
 
-        if runParameters['ratio']==True:        
-            matrix = np.log( m1 / m2)
-            cmtitle="log(ratio)"
+        m1 = m1 / m1.max()
+        m2 = m2 / m2.max()
+
+        if runParameters["ratio"] == True:
+            matrix = np.log(m1 / m2)
+            cmtitle = "log(ratio)"
         else:
-            matrix = (m1 - m2)
-            cmtitle="difference"
+            matrix = m1 - m2
+            cmtitle = "difference"
 
-        if len(runParameters["cAxis"])==2:        
+        if len(runParameters["cAxis"]) == 2:
             cScale = runParameters["cAxis"][1]
         else:
             cScale = runParameters["cAxis"][0]
-        print('Clim used: {}\n'.format(cScale))
-        
+        print("Clim used: {}\n".format(cScale))
+
         f1_ax1_im = HiMdata1.plot2DMatrixSimple(
             f1,
             matrix,
@@ -227,8 +226,8 @@ if __name__ == "__main__":
             runParameters["axisLabel"],
             runParameters["axisLabel"],
             cmtitle=cmtitle,
-            cMin=-cScale ,
-            cMax=cScale ,
+            cMin=-cScale,
+            cMax=cScale,
             fontsize=runParameters["fontsize"],
             colorbar=True,
             axisTicks=runParameters["axisTicks"],
@@ -237,31 +236,34 @@ if __name__ == "__main__":
         plt.savefig(outputFileName1)
         print("Output figure: {}".format(outputFileName1))
         # plt.close()
-        
+
         # plots mixed matrix
-        fig2= plt.figure(constrained_layout=True)
+        fig2 = plt.figure(constrained_layout=True)
         spec2 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f2 = fig2.add_subplot(spec2[0, 0])  # 16
 
         # plots mixed matrix
-        matrix2 = HiMdata1.data['ensembleContactProbability']
+        matrix2 = HiMdata1.data["ensembleContactProbability"]
         for i in range(matrix2.shape[0]):
-            for j in range(0,i):
-                matrix2[i,j] = HiMdata2.data['ensembleContactProbability'][i,j]
-                
-        HiMdata1.plot2DMatrixSimple(f2, matrix2,\
-                            list(HiMdata1.data['uniqueBarcodes']),\
-                            runParameters['axisLabel'],\
-                            runParameters['axisLabel'],\
-                            cmtitle='probability',
-                            cMin=0, cMax=runParameters["cAxis"][0],\
-                            fontsize=runParameters['fontsize'],\
-                            colorbar=True,\
-                            axisTicks=runParameters["axisTicks"],\
-                            cm='coolwarm')
+            for j in range(0, i):
+                matrix2[i, j] = HiMdata2.data["ensembleContactProbability"][i, j]
+
+        HiMdata1.plot2DMatrixSimple(
+            f2,
+            matrix2,
+            list(HiMdata1.data["uniqueBarcodes"]),
+            runParameters["axisLabel"],
+            runParameters["axisLabel"],
+            cmtitle="probability",
+            cMin=0,
+            cMax=runParameters["cAxis"][0],
+            fontsize=runParameters["fontsize"],
+            colorbar=True,
+            axisTicks=runParameters["axisTicks"],
+            cm="coolwarm",
+        )
         plt.savefig(outputFileName2)
         print("Output figure: {}".format(outputFileName2))
-
 
     else:
         print("Error: matrices do not have the same dimensions!")

@@ -131,7 +131,9 @@ class folders:
         self.createSingleFolder(self.outputFolders["projectsBarcodes"])
 
         # self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
-        self.outputFiles["alignImages"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        self.outputFiles["alignImages"] = (
+            self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        )
         self.outputFiles["dictShifts"] = self.masterFolder + os.sep + param.param["alignImages"]["outputFile"]
         self.outputFiles["segmentedObjects"] = (
             self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
@@ -191,14 +193,14 @@ class Parameters:
         self.paramFile = "infoList.json"
         self.param = {
             "acquisition": {
-                "label": "DAPI", 
+                "label": "DAPI",
                 "positionROIinformation": 3,
-                "DAPI_channel": 'ch00',                
-                "fiducialDAPI_channel": 'ch01',                
-                "RNA_channel": 'ch02',                
-                "fiducialBarcode_channel": 'ch00',                                
-                "barcode_channel": 'ch00',                
-                },  # barcode, fiducial
+                "DAPI_channel": "ch00",
+                "fiducialDAPI_channel": "ch01",
+                "RNA_channel": "ch02",
+                "fiducialBarcode_channel": "ch00",
+                "barcode_channel": "ch01",
+            },  # barcode, fiducial
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
@@ -214,8 +216,11 @@ class Parameters:
             "alignImages": {
                 "folder": "alignImages",  # output folder
                 "operation": "overwrite",  # overwrite, skip
+                "localAlignment": "overwrite",
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
+                "localShiftTolerance": 1,
+                "bezel": 20,                
             },
             "projectsBarcodes": {
                 "folder": "projectsBarcodes",  # output folder
@@ -226,7 +231,7 @@ class Parameters:
                 "folder": "segmentedObjects",  # output folder
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "segmentedObjects",
-                "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist 
+                "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
                 "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
                 "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
                 "background_sigma": 3.0,  # used to remove inhom background
@@ -263,22 +268,22 @@ class Parameters:
 
             print("Parameters file read: {}".format(fileName))
 
-    def setsChannel(self,key,default):
+    def setsChannel(self, key, default):
         if key in self.param["acquisition"].keys():
             channel = self.param["acquisition"][key]
         else:
-            channel= default
-        
-        return default
-    
+            channel = default
+
+        return channel
+
     # method returns label specific filenames from filename list
     def files2Process(self, filesFolder):
 
         # defines channel for DAPI, fiducials and barcodes
-        channelDAPI = self.setsChannel("DAPI_channel","ch00")
-        channelbarcode = self.setsChannel("barcode_channel","ch01")
-        channelfiducial = self.setsChannel("fiducialBarcode_channel","ch00")
-         
+        channelDAPI = self.setsChannel("DAPI_channel", "ch00")
+        channelbarcode = self.setsChannel("barcode_channel", "ch01")
+        channelfiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+
         # finds if there is 2 or 3 channels for DAPI acquisition
         fileList2Process = [
             file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch02" and "DAPI" in file.split("_")
@@ -286,22 +291,26 @@ class Parameters:
 
         # defines channels for RNA and DAPI-fiducial
         if len(fileList2Process) > 0:
-            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel","ch02")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel","ch01")
+            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch02")
+            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch01")
         else:
-            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel","ch01")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel","ch04")
-            
+            channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch01")
+            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch04")
+
         # selects DAPI files
         if self.param["acquisition"]["label"] == "DAPI":
             self.fileList2Process = [
-                file for file in filesFolder if file.split("_")[-1].split(".")[0] == channelDAPI and "DAPI" in file.split("_")
+                file
+                for file in filesFolder
+                if file.split("_")[-1].split(".")[0] == channelDAPI and "DAPI" in file.split("_")
             ]
 
         # selects DAPIch2 files
         if self.param["acquisition"]["label"] == "RNA":
             self.fileList2Process = [
-                file for file in filesFolder if file.split("_")[-1].split(".")[0] == channelDAPI_RNA and "DAPI" in file.split("_")
+                file
+                for file in filesFolder
+                if file.split("_")[-1].split(".")[0] == channelDAPI_RNA and "DAPI" in file.split("_")
             ]
 
         # selects barcode files
@@ -309,7 +318,8 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == channelbarcode
+                if len([i for i in file.split("_") if "RT" in i]) > 0
+                and file.split("_")[-1].split(".")[0] == channelbarcode
             ]
 
         # selects fiducial files
@@ -317,11 +327,15 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if (len([i for i in file.split("_") if "RT" in i]) > 0 and file.split("_")[-1].split(".")[0] == channelfiducial)
+                if (
+                    len([i for i in file.split("_") if "RT" in i]) > 0
+                    and file.split("_")[-1].split(".")[0] == channelfiducial
+                )
                 or ("DAPI" in file.split("_") and file.split("_")[-1].split(".")[0] == channelDAPI_fiducial)
             ]
 
         # print("\n :::: {},{},{}".format(channelDAPI,channelbarcode,channelfiducial))
+
 
 # =============================================================================
 # FUNCTIONS
@@ -426,29 +440,19 @@ def ROI2FiducialFileName(param, file, barcodeName, positionROIinformation=3):
 
     """
     # gets rootFolder
-    rootFolder=os.path.dirname(file)
+    rootFolder = os.path.dirname(file)
     ROI = os.path.basename(file).split("_")[positionROIinformation]
-    channelFiducial=param.param["acquisition"]["fiducialBarcode_channel"]
-    
+    channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
+
     # looks for referenceFiducial file in folder
     listFiles = glob.glob(rootFolder + os.sep + "*.tif")
-    
-    candidates = [x for x in listFiles if (barcodeName in x) \
-                 and (ROI in os.path.basename(x).split("_")[positionROIinformation]) \
-                 and (channelFiducial in os.path.basename(x)) ]
+
+    candidates = [
+        x
+        for x in listFiles
+        if (barcodeName in x)
+        and (ROI in os.path.basename(x).split("_")[positionROIinformation])
+        and (channelFiducial in os.path.basename(x))
+    ]
 
     return candidates
-
-
-
-
-
-
-
-
-
-
-
-
-
-

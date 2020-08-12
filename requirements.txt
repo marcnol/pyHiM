@@ -24,8 +24,7 @@ tifffile=2020.2.16=py_0
 conda install pandas scikit-image numpy matplotlib tqdm astropy
 conda install photutils -c astropy
 
-pip install roipoly
-pip install scaleogram
+pip install roipoly scaleogram opencv-python progress
 
 ##################
 ## not really used

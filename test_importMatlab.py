@@ -13,10 +13,10 @@ import numpy as np
 from astropy.table import Table, vstack
 
 
-rootFolder='/home/marcnol/data/Experiment_Julian'
+rootFolder = "/home/marcnol/data/Experiment_Julian"
+
 
 def loadsSCdataMATLAB(ListData, datasetName, p):
-
 
     print("Dataset to load: {}\n\n".format(list(ListData.keys())[0]))
 
@@ -32,8 +32,8 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
 
         # loads SC matrix
         if os.path.exists(fileNameMatrix):
-            data=loadmat(fileNameMatrix)
-            SCmatrix1 =data['distanceMatrixCumulative']
+            data = loadmat(fileNameMatrix)
+            SCmatrix1 = data["distanceMatrixCumulative"]
             SCmatrixCollated.append(SCmatrix1)
         else:
             print("*** Error: could not find {}".format(fileNameMatrix))
@@ -44,12 +44,12 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
         else:
             print("*** Error: could not find {}".format(fileNameBarcodes))
 
-       # loads cell attributes
-        cellAttributesMatrix = data['cellAttributesMatrix']
-        ResultsTable = cellAttributesMatrix[0,:]
+        # loads cell attributes
+        cellAttributesMatrix = data["cellAttributesMatrix"]
+        ResultsTable = cellAttributesMatrix[0, :]
 
         SClabeled = np.zeros(len(ResultsTable))
-        indexCellsWithLabel = [iRow for iRow, Row in enumerate(ResultsTable) if Row > 0 ]
+        indexCellsWithLabel = [iRow for iRow, Row in enumerate(ResultsTable) if Row > 0]
         SClabeled[indexCellsWithLabel] = 1
         SClabeledCollated.append(SClabeled)
 
@@ -64,4 +64,3 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
         runName,
         SClabeledCollated,
     )
-

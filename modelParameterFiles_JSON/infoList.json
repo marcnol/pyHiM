@@ -1,5 +1,10 @@
 {
     "acquisition": {
+        "DAPI_channel": "ch00",
+        "RNA_channel": "ch02",
+        "barcode_channel": "ch01",
+        "fiducialBarcode_channel": "ch00",
+        "fiducialDAPI_channel": "ch01",
         "label": "DAPI",
         "positionROIinformation": 3
     },
@@ -8,11 +13,6 @@
         "operation": "overwrite",
         "outputFile": "alignImages",
         "referenceFiducial": "RT18"
-    },
-    "image": {
-        "claheGridH": 8,
-        "claheGridW": 8,
-        "currentPlane": 1
     },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
@@ -31,6 +31,8 @@
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
+        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
         "threshold_over_std": 1.0
     },
     "zProject": {

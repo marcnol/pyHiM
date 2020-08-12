@@ -4,11 +4,15 @@
 Created on Mon May 18 15:49:07 2020
 
 @author: marcnol
+
+Usage: changeRT_infolist.py first_RT_label new_RT_label.
+Example changeRT_infolist.py RT33 RT95
 """
 
 import os
 import sys
-import argparse
+
+# import argparse
 
 nArgs = len(sys.argv)
 print("Total arguments passed: {}".format(nArgs))

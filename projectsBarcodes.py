@@ -133,7 +133,8 @@ def projectsBarcodes(param, log1, session1):
 
                 else:
                     log1.report(
-                        "No 2d corrected image for file {} could be found --> not accumulated".format(fileName), "warning",
+                        "No 2d corrected image for file {} could be found --> not accumulated".format(fileName),
+                        "warning",
                     )
 
                 # saves projected image into file
@@ -171,6 +172,7 @@ if __name__ == "__main__":
         rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
         # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+
     print("parameters> rootFolder: {}".format(rootFolder))
 
     labels2Process = [

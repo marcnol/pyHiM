@@ -23,6 +23,8 @@ TO SOLVE:
 
 import glob, os
 import argparse
+
+from datetime import datetime
 import uuid
 import numpy as np
 import numpy.ma as npmasked
@@ -31,6 +33,7 @@ from scipy.spatial.distance import pdist
 from imageProcessing import Image
 from fileManagement import folders, isnotebook
 from fileManagement import session, writeString2File
+from fileManagement import Parameters, log
 
 from astropy.table import Table, vstack, Column
 from astropy.visualization import SqrtStretch, simple_norm
@@ -60,7 +63,7 @@ class cellID:
         self.SegmentationMask = SegmentationImage(self.Masks)
         self.numberMasks = self.SegmentationMask.nlabels
         self.ROI = ROI
-
+        self.alignmentResultsTable=Table()
         self.barcodesinMask = dict()
         for mask in range(self.numberMasks + 1):
             self.barcodesinMask["maskID_" + str(mask)] = []
@@ -121,10 +124,34 @@ class cellID:
         ROIs, cellID, nBarcodes, barcodeIDs, p, cuid, buid = [], [], [], [], [], [], []
 
         # iterates over all cell masks in an ROI
+        foundMatch=[]
         for key, group in zip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
-
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
-                R = np.column_stack((np.array(group["xcentroid"].data), np.array(group["ycentroid"].data),))
+                if len(self.alignmentResultsTable)>0:
+                     # applies local drift correction
+                    x_uncorrected,y_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
+                    
+                    # searches for local alignment shift for this mask in this ROI
+                    _foundMatch=False
+                    for row in self.alignmentResultsTable:
+                        if row["ROI #"]==group["ROI #"].data[0] and row["CellID #"]==key["CellID #"]:
+                            _foundMatch=True
+                            x_corrected, y_corrected = x_uncorrected + row["shift_x"], y_uncorrected + row["shift_y"]
+                            # print(row)
+                            
+                    # keeps uncorrected values if no match is found                            
+                    if not _foundMatch:
+                        print("Did not find match for CellID #{} in ROI #{}".format(key["CellID #"],group["ROI #"].data[0]))
+                        x_corrected,y_corrected = x_uncorrected,y_uncorrected
+                        foundMatch.append(False)                    
+                    else:
+                        foundMatch.append(True)
+                        
+                    R = np.column_stack((x_corrected,y_corrected,)) 
+                else:
+                    # does not apply local drift correction
+                    R = np.column_stack((np.array(group["xcentroid"].data), np.array(group["ycentroid"].data),))
+
                 ROIs.append(group["ROI #"].data[0])
                 cellID.append(key["CellID #"])
                 nBarcodes.append(len(group))
@@ -133,7 +160,8 @@ class cellID:
                 p.append(pairwise_distances(R))
                 cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
                 # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
-
+                
+        print("Local correction applied to {}/{} barcodes in ROI {}".format(np.nonzero(foundMatch)[0].shape[0],len(foundMatch),group["ROI #"].data[0]))
         SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
         SCdistanceTable["Cuid"] = cuid
         SCdistanceTable["ROI #"] = ROIs
@@ -248,42 +276,45 @@ def plotMatrix(
     Nbarcodes = SCmatrixCollated.shape[0]
     # projects matrix by calculating median in the nCell direction
 
-    
     # Calculates ensemble matrix from single cell matrices
     if len(SCmatrixCollated.shape) == 3:
-       if len(cells2Plot)==0:
-            cells2Plot=range(SCmatrixCollated.shape[2])
-       
-       if mode == "median":
+        if len(cells2Plot) == 0:
+            cells2Plot = range(SCmatrixCollated.shape[2])
+
+        if mode == "median":
             # calculates the median of all values
-            if max(cells2Plot)>SCmatrixCollated.shape[2]:
-                print('Error with range in cells2plot {} as it is larger than the number of available cells {}'.format(max(cells2Plot),SCmatrixCollated.shape[2]))
-                keepPlotting=False
+            if max(cells2Plot) > SCmatrixCollated.shape[2]:
+                print(
+                    "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
+                        max(cells2Plot), SCmatrixCollated.shape[2]
+                    )
+                )
+                keepPlotting = False
             else:
-                meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:,:,cells2Plot], axis=2)
-                nCells = SCmatrixCollated[:,:,cells2Plot].shape[2]
-                print('Dataset {} cells2plot: {}'.format(figtitle,nCells))
+                meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:, :, cells2Plot], axis=2)
+                nCells = SCmatrixCollated[:, :, cells2Plot].shape[2]
+                print("Dataset {} cells2plot: {}".format(figtitle, nCells))
                 # print('nCells={}'.format(nCells))
-                keepPlotting=True
-       elif mode == "KDE":
+                keepPlotting = True
+        elif mode == "KDE":
             # performs a Kernel Estimation to calculate the max of the distribution
-            keepPlotting=True
+            keepPlotting = True
             meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
             for bin1 in range(Nbarcodes):
                 for bin2 in range(Nbarcodes):
                     if bin1 != bin2:
                         (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
-                            SCmatrixCollated[:,:,cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
+                            SCmatrixCollated[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
                         )
                         meanSCmatrix[bin1, bin2] = maximumKernelDistribution
     else:
         if mode == "counts":
             meanSCmatrix = SCmatrixCollated
-            keepPlotting=True
+            keepPlotting = True
         else:
             meanSCmatrix = pixelSize * SCmatrixCollated
-            keepPlotting=True
-            
+            keepPlotting = True
+
     if keepPlotting:
         # Calculates the inverse distance matrix if requested in the argument.
         if inverseMatrix:
@@ -294,28 +325,37 @@ def plotMatrix(
         pos = plt.imshow(meanSCmatrix, cmap=cm)  # colormaps RdBu seismic
         plt.xlabel("barcode #")
         plt.ylabel("barcode #")
-        plt.title(figtitle + " | " + str(meanSCmatrix.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs))
+        plt.title(
+            figtitle
+            + " | "
+            + str(meanSCmatrix.shape[0])
+            + " barcodes | n="
+            + str(nCells)
+            + " | ROIs="
+            + str(numberROIs)
+        )
         plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
         cbar.minorticks_on()
         cbar.set_label(cmtitle)
         plt.clim(cMin, clim)
-    
-        if len(outputFileName.split('.'))>1:
-            if outputFileName.split('.')[1]!='png':
+
+        if len(outputFileName.split(".")) > 1:
+            if outputFileName.split(".")[1] != "png":
                 plt.savefig(outputFileName)
             else:
-                plt.savefig(outputFileName.split('.')[0] + "_HiMmatrix.png")
+                plt.savefig(outputFileName.split(".")[0] + "_HiMmatrix.png")
         else:
             plt.savefig(outputFileName + "_HiMmatrix.png")
-    
+
         if not isnotebook():
             plt.close()
-    
+
         writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
     else:
-        print('Error plotting figure. Not executing script to avoid crash.')
+        print("Error plotting figure. Not executing script to avoid crash.")
+
 
 def plotDistanceHistograms(
     SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,
@@ -390,11 +430,25 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
 
 
 def buildsPWDmatrix(
-    currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize=0.1, logNameMD="log.md",
+    currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md",
 ):
 
-    # Processes Tables
-    barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+    # Loads localAlignment and coordinate Tables
+    localAlignmentFileName=dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat"
+    if os.path.exists(localAlignmentFileName):
+        alignmentResultsTable= Table.read(localAlignmentFileName, format="ascii.ecsv")
+        alignmentResultsTableRead=True
+    else:
+        print("\n\n *** Warning: could not found localAlignment: {}\n Proceeding with only global alignments...".format(localAlignmentFileName))
+        alignmentResultsTableRead=False
+        
+    if os.path.exists(fileNameBarcodeCoordinates):
+        barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+    else:
+        print("\n\n *** ERROR: could not found coordinates file: {}".format(fileNameBarcodeCoordinates))
+        return -1
+    
+    # processes tables 
     barcodeMapROI = barcodeMap.group_by("ROI #")
 
     SCmatrixCollated, uniqueBarcodes = [], []
@@ -420,7 +474,6 @@ def buildsPWDmatrix(
         ]
 
         if len(fileList2Process) > 0:
-
             # loads Masks
             fileNameROImasks = os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
             fullFileNameROImasks = os.path.dirname(fileNameBarcodeCoordinates) + os.sep + fileNameROImasks
@@ -429,17 +482,21 @@ def buildsPWDmatrix(
 
                 # Assigns barcodes to Masks for a given ROI
                 cellROI = cellID(barcodeMapSingleROI, Masks, ROI)
-
+                
+                if alignmentResultsTableRead:
+                    cellROI.alignmentResultsTable = alignmentResultsTable
+                    
                 cellROI.alignByMasking()
 
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
-                print("ROI: {}, N cells assigned: {} out of {}".format(ROI, cellROI.NcellsAssigned, cellROI.numberMasks))
+                print(
+                    "ROI: {}, N cells assigned: {} out of {}".format(ROI, cellROI.NcellsAssigned, cellROI.numberMasks)
+                )
 
                 uniqueBarcodes = cellROI.uniqueBarcodes
 
                 # saves Table with results per ROI
-
                 cellROI.SCdistanceTable.write(
                     outputFileName + "_order:" + str(processingOrder) + "_ROI:" + str(nROI) + ".ecsv",
                     format="ascii.ecsv",
@@ -455,7 +512,11 @@ def buildsPWDmatrix(
                 processingOrder += 1
 
             else:
-                print("Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(nROI, fileNameBarcodeCoordinates))
+                print(
+                    "Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
+                        nROI, fileNameBarcodeCoordinates
+                    )
+                )
                 print("File I was searching for: {}".format(fullFileNameROImasks))
                 print("Debug: ")
                 for file in filesinFolder:
@@ -505,7 +566,7 @@ def processesPWDmatrices(param, log1, session1):
         pixelSize = 0.1
 
         buildsPWDmatrix(
-            currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize, log1.fileNameMD,
+            currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
         )
         session1.add(currentFolder, sessionName)
 
@@ -517,6 +578,7 @@ def processesPWDmatrices(param, log1, session1):
 # =============================================================================
 
 if __name__ == "__main__":
+    begin_time = datetime.now()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
@@ -527,18 +589,65 @@ if __name__ == "__main__":
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
-        rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+        rootFolder = os.getcwd()
+        rootFolder = "."
+        rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
+
     print("parameters> rootFolder: {}".format(rootFolder))
+    now = datetime.now()
 
-    # sets name for coordinate file and for masks
-    segmentedMasksFolder = rootFolder + "/rawData/segmentedObjects/"
-    fileNameBarcodeCoordinates = segmentedMasksFolder + "segmentedObjects_barcode.dat"
-    # currentFolder=glob.glob(rootFolder+'/rawData/'+'*.tif')
-    currentFolder = rootFolder + "/rawData"
+    labels2Process = [
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
+    ]
 
-    outputFileName = rootFolder.split("/")[-1]
-    pixelSize = 0.1
+    # session
+    session1 = session(rootFolder, "processingPipeline")
 
-    buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, pixelSize)
+    # setup logs
+    log1 = log(rootFolder)
+    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
+    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
+    writeString2File(
+        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
+    )  # initialises MD file
+
+    for ilabel in range(len(labels2Process)):
+        label = labels2Process[ilabel]["label"]
+        labelParameterFile = labels2Process[ilabel]["parameterFile"]
+        log1.addSimpleText("**Analyzing label: {}**".format(label))
+
+        # sets parameters
+        param = Parameters(rootFolder, labelParameterFile)
+
+        # [builds PWD matrix for all folders with images]
+        if label == "DAPI":
+            processesPWDmatrices(param, log1, session1)
+            
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    # args = parser.parse_args()
+
+    # print("\n--------------------------------------------------------------------------")
+
+    # if args.rootFolder:
+    #     rootFolder = args.rootFolder
+    # else:
+    #     rootFolder = "."
+    #     # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+    #     # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+    # print("parameters> rootFolder: {}".format(rootFolder))
+
+    # # sets name for coordinate file and for masks
+    # segmentedMasksFolder = rootFolder + "/rawData/segmentedObjects/"
+    # fileNameBarcodeCoordinates = segmentedMasksFolder + "segmentedObjects_barcode.dat"
+    # # currentFolder=glob.glob(rootFolder+'/rawData/'+'*.tif')
+    # currentFolder = rootFolder + "/rawData"
+
+    # outputFileName = rootFolder.split("/")[-1]
+    # pixelSize = 0.1
+    # dataFolder = folders(param.param["rootFolder"])
+    
+    # buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize)

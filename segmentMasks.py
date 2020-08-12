@@ -18,7 +18,7 @@ after image segmentation.
 # IMPORTS
 # =============================================================================
 
-#---- stardist
+# ---- stardist
 from __future__ import print_function, unicode_literals, absolute_import, division
 
 import glob, os
@@ -26,6 +26,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import uuid
 import argparse
+from datetime import datetime
 
 from astropy.stats import sigma_clipped_stats, SigmaClip, gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
@@ -38,18 +39,12 @@ from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
 
 from imageProcessing import Image, saveImage2Dcmd
-from fileManagement import folders,session, log, Parameters
+from fileManagement import folders, session, log, Parameters
 from fileManagement import writeString2File
 
-#---- stardist
-# import sys
-# import numpy as np
+# ---- stardist
 import matplotlib
 matplotlib.rcParams["image.interpolation"] = None
-# import matplotlib.pyplot as plt
-
-# from glob import glob
-# from tifffile import imread
 from csbdeep.utils import Path, normalize
 from csbdeep.io import save_tiff_imagej_compatible
 
@@ -59,6 +54,9 @@ from stardist.models import StarDist2D
 np.random.seed(6)
 lbl_cmap = random_label_cmap()
 
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
 
 # =============================================================================
 # FUNCTIONS
@@ -73,34 +71,43 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     positions = np.transpose(
         (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
     )  # for some reason sources are always displays 1/2 px from center of spot
+
     apertures = CircularAperture(positions, r=4.0)
-    norm = simple_norm(im, "sqrt", percent=99.9)
-    plt.imshow(im1_bkg_substracted, clim=(0,1), cmap="Greys", origin="lower", norm=norm)
-    apertures.plot(color="blue", lw=1.5, alpha=0.3)
+    norm = simple_norm(im, "sqrt", percent=99.99999)
+    # norm = ImageNormalize(stretch=SqrtStretch())
+    # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
+    plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
+    apertures.plot(color="blue", lw=1.5, alpha=0.5)
     plt.xlim(0, im.shape[1] - 1)
     plt.ylim(0, im.shape[0] - 1)
     plt.savefig(outputFileName + "_segmentedSources.png")
-    plt.axis('off');
+    plt.axis("off")
     plt.close()
     writeString2File(
-        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"), "a",
+        log1.fileNameMD,
+        "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"),
+        "a",
     )
+    
+    # np.save('/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/segmentedObjects/im1_bkg_substracted.npy',im1_bkg_substracted)
 
 
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
 
     norm = ImageNormalize(stretch=SqrtStretch())
     # cmap = segm_deblend.make_cmap(random_state=12345)
-    cmap=lbl_cmap
-    
+    cmap = lbl_cmap
+
     fig = plt.figure()
     fig.set_size_inches((30, 30))
     plt.imshow(im, cmap="Greys_r", origin="lower", norm=norm)
-    plt.imshow(segm_deblend, origin="lower", cmap=cmap,alpha=0.5)
+    plt.imshow(segm_deblend, origin="lower", cmap=cmap, alpha=0.5)
     plt.savefig(outputFileName + "_segmentedMasks.png")
     plt.close()
     writeString2File(
-        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedMasks.png"), "a",
+        log1.fileNameMD,
+        "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedMasks.png"),
+        "a",
     )
 
 
@@ -116,7 +123,7 @@ def segmentSourceInhomogBackground(im, param):
 
     Returns
     -------
-    table : `~astropy.table.Table` or `None`
+    table : `astropy.table.Table` or `None`
     A table of found stars with the following parameters:
     
     * ``id``: unique object identification number.
@@ -212,7 +219,7 @@ def segmentSourceFlatBackground(im, param):
 
 
 def segmentMaskInhomogBackground(im, param):
-    '''
+    """
     Function used for segmenting DAPI masks with the ASTROPY library that uses image processing    
 
     Parameters
@@ -226,7 +233,7 @@ def segmentMaskInhomogBackground(im, param):
     -------
     segm_deblend: 2D np array where each pixel contains the label of the mask segmented. Background: 0
 
-    '''
+    """
     # removes background
     threshold = detect_threshold(im, nsigma=2.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
@@ -271,8 +278,9 @@ def segmentMaskInhomogBackground(im, param):
 
     return segm_deblend
 
+
 def segmentMaskStardist(im, param):
-    '''
+    """
     Function used for segmenting DAPI masks with the STARDIST package that uses Deep Convolutional Networks
 
     Parameters
@@ -286,7 +294,7 @@ def segmentMaskStardist(im, param):
     -------
     segm_deblend: 2D np array where each pixel contains the label of the mask segmented. Background: 0
 
-    '''
+    """
     # removes background
     threshold = detect_threshold(im, nsigma=2.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
@@ -303,43 +311,36 @@ def segmentMaskStardist(im, param):
     # outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
 
     n_channel = 1 if im.ndim == 2 else im.shape[-1]
-    axis_norm = (0,1)   # normalize channels independently
+    axis_norm = (0, 1)  # normalize channels independently
 
     if n_channel > 1:
-        print("Normalizing image channels %s." % ('jointly' if axis_norm is None or 2 in axis_norm else 'independently'))
-        
-    model = StarDist2D(None, 
-                       name=param.param["segmentedObjects"]["stardist_network"], 
-                       basedir=param.param["segmentedObjects"]["stardist_basename"])
-    
-    img = normalize(im, 1,99.8, axis=axis_norm)
+        print(
+            "Normalizing image channels %s." % ("jointly" if axis_norm is None or 2 in axis_norm else "independently")
+        )
+
+    model = StarDist2D(
+        None,
+        name=param.param["segmentedObjects"]["stardist_network"],
+        basedir=param.param["segmentedObjects"]["stardist_basename"],
+    )
+
+    img = normalize(im, 1, 99.8, axis=axis_norm)
     labeled, details = model.predict_instances(img)
-    
+
     if True:
-        plt.figure(figsize=(8,8))
-        plt.imshow(img, clim=(0,1), cmap='gray')
+        plt.figure(figsize=(8, 8))
+        plt.imshow(img, clim=(0, 1), cmap="gray")
         plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
-        plt.axis('off');
-        
+        plt.axis("off")
+
     # estimates masks and deblends
-    segm=SegmentationImage(labeled)
+    segm = SegmentationImage(labeled)
     # threshold = 0.5
     # segm = detect_sources(labeled, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
 
     # removes masks too close to border
     segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-    segm_deblend  = segm
-    
-    # watershed
-    # segm_deblend = deblend_sources(
-    #     im,
-    #     segm,
-    #     npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for DAPI
-    #     filter_kernel=kernel,
-    #     nlevels=32,
-    #     contrast=0.001,  # try 0.2 or 0.3
-    #     relabel=True,
-    # )
+    segm_deblend = segm
 
     # removes Masks too big or too small
     for label in segm_deblend.labels:
@@ -353,9 +354,7 @@ def segmentMaskStardist(im, param):
     # relabel so masks numbers are consecutive
     segm_deblend.relabel_consecutive()
 
-    return segm_deblend,labeled
-
-
+    return segm_deblend, labeled
 
 
 def makesSegmentations(fileName, param, log1, session1, dataFolder):
@@ -364,9 +363,10 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
     fileName_2d_aligned = dataFolder.outputFolders["alignImages"] + os.sep + rootFileName + "_2d_registered.npy"
 
+    print("searching for {}".format(fileName_2d_aligned))
     if (
-        (fileName in session1.data)
-        and param.param["segmentedObjects"]["operation"] == "overwrite"
+        # (fileName in session1.data)
+        param.param["segmentedObjects"]["operation"] == "overwrite"
         and os.path.exists(fileName_2d_aligned)
     ):  # file exists
 
@@ -425,17 +425,19 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
                 output = segmentMaskInhomogBackground(im, param)
             elif param.param["segmentedObjects"]["background_method"] == "stardist":
-                output,labeled = segmentMaskStardist(im, param)
+                output, labeled = segmentMaskStardist(im, param)
             else:
                 log1.report(
                     "segmentedObjects/background_method not specified in json file", "ERROR",
                 )
                 output = np.zeros(1)
                 return output
- 
+
             # show results
-            if 'labeled' in locals():
-                outputFileNameStarDist = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName+"_stardist"
+            if "labeled" in locals():
+                outputFileNameStarDist = (
+                    dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName + "_stardist"
+                )
                 showsImageMasks(im, log1, labeled, outputFileNameStarDist)
             showsImageMasks(im, log1, output, outputFileName)
 
@@ -448,14 +450,19 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
 
         return output
     else:
-        log1.report("2D aligned file does not exist:{}\n{}\n{}\n{}".format(fileName_2d_aligned,
-                                                                           fileName in session1.data.keys(),
-                                                                           param.param["segmentedObjects"]["operation"] == "overwrite",
-                                                                           os.path.exists(fileName_2d_aligned)), "Error")
+        log1.report(
+            "2D aligned file does not exist:{}\n{}\n{}\n{}".format(
+                fileName_2d_aligned,
+                fileName in session1.data.keys(),
+                param.param["segmentedObjects"]["operation"] == "overwrite",
+                os.path.exists(fileName_2d_aligned),
+            ),
+            "Error",
+        )
         return []
 
 
-def segmentMasks(param, log1, session1):
+def segmentMasks(param, log1, session1,fileName=None):
     sessionName = "segmentMasks"
 
     # processes folders and files
@@ -479,27 +486,29 @@ def segmentMasks(param, log1, session1):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report("About to read {} files\n".format(len(param.fileList2Process)))
 
-        for fileName in param.fileList2Process:
-            label = param.param["acquisition"]["label"]
-            if label != "fiducial":
-                output = makesSegmentations(fileName, param, log1, session1, dataFolder)
-                if label == "barcode":
-                    outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-                    barcodesCoordinates = vstack([barcodesCoordinates, output])
-                    barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
-                    log1.report("File {} written to file.".format(outputFile), "info")
-                session1.add(fileName, sessionName)
-
+        for fileName2Process in param.fileList2Process:
+            if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                label = param.param["acquisition"]["label"]
+                if label != "fiducial":
+                    output = makesSegmentations(fileName2Process, param, log1, session1, dataFolder)
+                    if label == "barcode":
+                        outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
+                        barcodesCoordinates = vstack([barcodesCoordinates, output])
+                        barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
+                        log1.report("File {} written to file.".format(outputFile), "info")
+                    session1.add(fileName2Process, sessionName)
 
 
 # =============================================================================
 # MAIN
 # =============================================================================
-
 if __name__ == "__main__":
+    begin_time = datetime.now()
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-x", "--fileName", help="fileName to analyze")
+
     args = parser.parse_args()
 
     print("\n--------------------------------------------------------------------------")
@@ -507,44 +516,104 @@ if __name__ == "__main__":
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
-        # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        rootFolder='/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0'
+        rootFolder = os.getcwd()
+    
+    if args.fileName:
+        fileName = args.fileName
+    else:
+        fileName = None
         
     print("parameters> rootFolder: {}".format(rootFolder))
-    sessionName = "segmentMasks"
+    now = datetime.now()
 
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
     # session
+    sessionName = "segmentMasks"
     session1 = session(rootFolder, sessionName)
-
     # setup logs
     log1 = log(rootFolder)
-    # labels2Process indeces: 0 fiducial, 1: 
-    labelParameterFile = labels2Process[2]["parameterFile"]
-    param = Parameters(rootFolder, labelParameterFile)
-    
-    dataFolder = folders(param.param["rootFolder"])
+    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
+    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
+    writeString2File(
+        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
+    )  # initialises MD file
 
-    for currentFolder in dataFolder.listFolders:
-        # currentFolder=dataFolder.listFolders[0]
-        filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-        dataFolder.createsFolders(currentFolder, param)
+    for ilabel in range(len(labels2Process)):
+        label = labels2Process[ilabel]["label"]
+        labelParameterFile = labels2Process[ilabel]["parameterFile"]
+        log1.addSimpleText("**Analyzing label: {}**".format(label))
 
-        # generates lists of files to process
-        param.files2Process(filesFolder)
+        # sets parameters
+        param = Parameters(rootFolder, labelParameterFile)
 
-        for fileName in param.fileList2Process:
-            session1.add(fileName, sessionName)
+        # [applies registration to DAPI and barcodes]
+        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
+            # [segments DAPI and spot masks]
+            if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
+                segmentMasks(param, log1, session1,fileName)
 
-    # for fileName in param.fileList2Process:
-    #     session1.add(fileName, sessionName)
+        print("\n")
+        del param
+    # exits
+    session1.save(log1)
+    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    segmentMasks(param, log1, session1)
+    del log1, session1
+    print("Elapsed time: {}".format(datetime.now() - begin_time))
 
+# if __name__ == "__main__":
 
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+#     args = parser.parse_args()
+
+#     print("\n--------------------------------------------------------------------------")
+
+#     if args.rootFolder:
+#         rootFolder = args.rootFolder
+#     else:
+#         # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
+#         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
+#         rootFolder='/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0'
+
+#     print("parameters> rootFolder: {}".format(rootFolder))
+#     sessionName = "segmentMasks"
+
+#     labels2Process = [
+#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+#     ]
+
+#     # session
+#     session1 = session(rootFolder, sessionName)
+
+#     # setup logs
+#     log1 = log(rootFolder)
+#     # labels2Process indeces: 0 fiducial, 1:
+#     labelParameterFile = labels2Process[2]["parameterFile"]
+#     param = Parameters(rootFolder, labelParameterFile)
+
+#     dataFolder = folders(param.param["rootFolder"])
+
+#     for currentFolder in dataFolder.listFolders:
+#         # currentFolder=dataFolder.listFolders[0]
+#         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
+#         dataFolder.createsFolders(currentFolder, param)
+
+#         # generates lists of files to process
+#         param.files2Process(filesFolder)
+
+#         for fileName in param.fileList2Process:
+#             session1.add(fileName, sessionName)
+
+#     # for fileName in param.fileList2Process:
+#     #     session1.add(fileName, sessionName)
+
+#     segmentMasks(param, log1, session1)

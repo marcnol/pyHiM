@@ -7,7 +7,10 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-        "referenceFiducial": "RT33"
+		"localAlignment": "overwrite",
+		"localShiftTolerance": 1,
+        "bezel": 20,               
+        "referenceFiducial": "RT27"
     },
     "image": {
         "claheGridH": 8,

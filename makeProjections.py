@@ -23,12 +23,15 @@ import glob, os
 
 # import matplotlib.pylab as plt
 import numpy as np
+import argparse
+from datetime import datetime
 
 # import cv2
 import matplotlib.pyplot as plt
 from imageProcessing import Image
 from fileManagement import folders
 from fileManagement import session, writeString2File
+from fileManagement import folders, session, log, Parameters
 
 
 # =============================================================================
@@ -76,7 +79,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         del Im
 
 
-def makeProjections(param, log1, session1):
+def makeProjections(param, log1, session1,fileName=None):
     sessionName = "makesProjections"
 
     # processes folders and files
@@ -96,6 +99,84 @@ def makeProjections(param, log1, session1):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report("About to read {} files\n".format(len(param.fileList2Process)))
 
-        for fileName in param.fileList2Process:
-            makes2DProjectionsFile(fileName, param, log1, session1, dataFolder)
-            session1.add(fileName, sessionName)
+        for fileName2Process in param.fileList2Process:
+            # print("Looking for {} in {}".format(fileName,fileName2Process))
+
+            if fileName==None:
+                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
+                session1.add(fileName2Process, sessionName)
+            elif fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process):
+                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
+                session1.add(fileName2Process, sessionName)
+                # print("******File {} processed!!!".format(fileName2Process))
+            else:
+                pass
+                # print("File {} not found in list".format(fileName2Process))
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+
+    begin_time = datetime.now()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-x", "--fileName", help="fileName to analyze")
+    args = parser.parse_args()
+
+    print("\n--------------------------------------------------------------------------")
+
+    if args.rootFolder:
+        rootFolder = args.rootFolder
+    else:
+        rootFolder = os.getcwd()
+
+    if args.fileName:
+        fileName = args.fileName
+    else:
+        fileName = None
+        
+        print("parameters> rootFolder: {}".format(rootFolder))
+    now = datetime.now()
+
+    labels2Process = [
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
+    ]
+
+    # session
+    sessionName = "makesProjections"
+    session1 = session(rootFolder, sessionName)
+
+    # setup logs
+    log1 = log(rootFolder)
+    log1.addSimpleText("\n-------------------------{}-------------------------\n".format(sessionName))
+    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
+    writeString2File(
+        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
+    )  # initialises MD file
+
+    for ilabel in range(len(labels2Process)):
+        label = labels2Process[ilabel]["label"]
+        labelParameterFile = labels2Process[ilabel]["parameterFile"]
+        log1.addSimpleText("**Analyzing label: {}**".format(label))
+
+        # sets parameters
+        param = Parameters(rootFolder, labelParameterFile)
+
+        # [projects 3D images in 2d]
+        makeProjections(param, log1, session1, fileName)
+
+        print("\n")
+        del param
+    # exits
+    session1.save(log1)
+    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+
+    del log1, session1
+    print("Elapsed time: {}".format(datetime.now() - begin_time))

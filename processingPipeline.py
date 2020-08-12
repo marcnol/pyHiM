@@ -25,7 +25,7 @@ import argparse
 from datetime import datetime
 from alignBarcodesMasks import processesPWDmatrices
 from projectsBarcodes import projectsBarcodes
-
+from localDriftCorrection import localDriftCorrection
 
 # =============================================================================
 # MAIN
@@ -102,6 +102,8 @@ if __name__ == "__main__":
         # [refits spots in 3D]
 
         # [local drift correction]
+        if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
+            errorCode, _, _ = localDriftCorrection(param, log1, session1)
 
         # [builds PWD matrix for all folders with images]
         if label == "DAPI":

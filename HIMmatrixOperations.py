@@ -101,9 +101,9 @@ class analysisHiMmatrix:
 
         # loads datasets: numpy matrices
         data = {}
-        print('Loading datasets from: {}'.format(outputFileName))
+        print("Loading datasets from: {}".format(outputFileName))
         for idataFile in dataFiles.keys():
-            print("Loaded: {}: <{}>".format(idataFile,os.path.basename(outputFileName+dataFiles[idataFile])))
+            print("Loaded: {}: <{}>".format(idataFile, os.path.basename(outputFileName + dataFiles[idataFile])))
             data[idataFile] = np.load(outputFileName + dataFiles[idataFile]).squeeze()
 
         # loads datasets: lists
@@ -143,13 +143,13 @@ class analysisHiMmatrix:
         nCells=0,
         nDatasets=0,
         showTitle=False,
-        figTitle=''
+        figTitle="",
     ):
 
         pos = ifigure.imshow(matrix, cmap=cm)  # colormaps RdBu seismic
 
         if showTitle:
-            titleText="{} | N = {} | n = {}".format(figTitle, nCells, nDatasets)
+            titleText = "{} | N = {} | n = {}".format(figTitle, nCells, nDatasets)
             ifigure.title.set_text(titleText)
 
         # plots figure
@@ -181,85 +181,84 @@ class analysisHiMmatrix:
         if colorbar:
             cbar = plt.colorbar(pos, ax=ifigure, fraction=0.046, pad=0.04)
             cbar.minorticks_on()
-            cbar.set_label(cmtitle,fontsize=float(fontsize)*0.85)
+            cbar.set_label(cmtitle, fontsize=float(fontsize) * 0.85)
             pos.set_clim(vmin=cMin, vmax=cMax)
 
         pos.set_clim(vmin=cMin, vmax=cMax)
-        
+
         return pos
 
     def update_clims(self, cMin, cMax, axes):
         for ax in axes:
             ax.set_clim(vmin=cMin, vmax=cMax)
 
+    def plot1Dprofile1Dataset(self, ifigure, anchor, iFigLabel, yticks, xticks):
 
-
-    def plot1Dprofile1Dataset(self,ifigure, anchor, iFigLabel, yticks, xticks):
-
-        prop_cycle = plt.rcParams['axes.prop_cycle']
-        colors = prop_cycle.by_key()['color']
-        lwbase = plt.rcParams['lines.linewidth']
+        prop_cycle = plt.rcParams["axes.prop_cycle"]
+        colors = prop_cycle.by_key()["color"]
+        lwbase = plt.rcParams["lines.linewidth"]
         thin, thick = lwbase / 2, lwbase * 3
 
-        profile = self.data["ensembleContactProbability"][:,anchor-1] 
+        profile = self.data["ensembleContactProbability"][:, anchor - 1]
         x = np.linspace(0, profile.shape[0], num=profile.shape[0], endpoint=True)
         # f = interp1d(x, profile,kind = 'linear') # linear
         tck = interpolate.splrep(x, profile, s=0)
         xnew = np.linspace(0, profile.shape[0], num=100, endpoint=True)
         ynew = interpolate.splev(xnew, tck, der=0)
         if self.runParameters["splines"]:
-            ifigure.plot(xnew, ynew, '-') # x, profile, 'o',
+            ifigure.plot(xnew, ynew, "-")  # x, profile, 'o',
         else:
-            ifigure.plot(x, profile, '-') # x, profile, 'o',
+            ifigure.plot(x, profile, "-")  # x, profile, 'o',
 
-        ifigure.set_xlim([0,profile.shape[0]])
-        ifigure.axvline(x=anchor-0.5, color=colors[4], lw=thick, alpha=0.5)
-        ifigure.set_ylim([0,self.runParameters["cAxis"]])
-        
+        ifigure.set_xlim([0, profile.shape[0]])
+        ifigure.axvline(x=anchor - 0.5, color=colors[4], lw=thick, alpha=0.5)
+        ifigure.set_ylim([0, self.runParameters["cAxis"]])
+
         if xticks:
-            ifigure.set_xlabel("barcode #", fontsize=self.runParameters['fontsize'])
+            ifigure.set_xlabel("barcode #", fontsize=self.runParameters["fontsize"])
             if not self.runParameters["axisTicks"]:
                 ifigure.set_xticklabels(())
             else:
-                ifigure.set_xticklabels(self.data['uniqueBarcodes'])
+                ifigure.set_xticklabels(self.data["uniqueBarcodes"])
         else:
             ifigure.set_xticklabels(())
 
         if yticks:
-            ifigure.set_ylabel("Probability", fontsize=self.runParameters['fontsize'])
+            ifigure.set_ylabel("Probability", fontsize=self.runParameters["fontsize"])
             if not self.runParameters["axisTicks"]:
                 ifigure.set_yticklabels(())
             else:
-                ifigure.set_yticks([0, self.runParameters["cAxis"]/2, self.runParameters["cAxis"]])
+                ifigure.set_yticks([0, self.runParameters["cAxis"] / 2, self.runParameters["cAxis"]])
         else:
             ifigure.set_yticklabels(())
 
-
-    def nCellsLoaded(self):    
-        if self.runParameters['action']=='labeled':
-            cellswithLabel=[idx for idx, x in enumerate(self.data['SClabeledCollated']) if x>0]
-            nCells=len(cellswithLabel)
-        elif self.runParameters['action']=='unlabeled':         
-            cellswithLabel=[idx for idx, x in enumerate(self.data['SClabeledCollated']) if x==0]
-            nCells=len(cellswithLabel)
+    def nCellsLoaded(self):
+        if self.runParameters["action"] == "labeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x > 0]
+            nCells = len(cellswithLabel)
+        elif self.runParameters["action"] == "unlabeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x == 0]
+            nCells = len(cellswithLabel)
         else:
             nCells = self.data["SCmatrixCollated"].shape[2]
-        print('nCells selected with label: {}'.format(nCells))
+        print("nCells selected with label: {}".format(nCells))
         return nCells
+
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
-def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2,runParameters, anchor, iFigLabel, yticks, xticks,legend=False):
 
-    prop_cycle = plt.rcParams['axes.prop_cycle']
-    colors = prop_cycle.by_key()['color']
-    lwbase = plt.rcParams['lines.linewidth']
+def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend=False):
+
+    prop_cycle = plt.rcParams["axes.prop_cycle"]
+    colors = prop_cycle.by_key()["color"]
+    lwbase = plt.rcParams["lines.linewidth"]
     thin, thick = lwbase / 2, lwbase * 3
-    
-    profile1 = HiMdata1.data["ensembleContactProbability"][:,anchor-1] 
-    profile2 = HiMdata2.data["ensembleContactProbability"][:,anchor-1] 
+
+    profile1 = HiMdata1.data["ensembleContactProbability"][:, anchor - 1]
+    profile2 = HiMdata2.data["ensembleContactProbability"][:, anchor - 1]
     x = np.linspace(0, profile1.shape[0], num=profile1.shape[0], endpoint=True)
     tck1 = interpolate.splrep(x, profile1, s=0)
     tck2 = interpolate.splrep(x, profile2, s=0)
@@ -267,34 +266,35 @@ def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2,runParameters, anchor, iF
     ynew1 = interpolate.splev(xnew, tck1, der=0)
     ynew2 = interpolate.splev(xnew, tck2, der=0)
     if runParameters["splines"]:
-        ifigure.plot(xnew, ynew1, '-',xnew, ynew2, '-') # x, profile, 'o',
+        ifigure.plot(xnew, ynew1, "-", xnew, ynew2, "-")  # x, profile, 'o',
     else:
-        ifigure.plot(x, profile1, '-',x, profile2, '-') # x, profile, 'o',
-    
-    ifigure.set_xlim([0,profile1.shape[0]])
-    ifigure.axvline(x=anchor-0.5, color=colors[4], lw=thick, alpha=0.5)
-    ifigure.set_ylim([0,runParameters["cAxis"]])
-    
+        ifigure.plot(x, profile1, "-", x, profile2, "-")  # x, profile, 'o',
+
+    ifigure.set_xlim([0, profile1.shape[0]])
+    ifigure.axvline(x=anchor - 0.5, color=colors[4], lw=thick, alpha=0.5)
+    ifigure.set_ylim([0, runParameters["cAxis"]])
+
     if xticks:
-        ifigure.set_xlabel("barcode #", fontsize=runParameters['fontsize'])
+        ifigure.set_xlabel("barcode #", fontsize=runParameters["fontsize"])
         if not runParameters["axisTicks"]:
             ifigure.set_xticklabels(())
         else:
-            ifigure.set_xticklabels(HiMdata1.data['uniqueBarcodes'])
+            ifigure.set_xticklabels(HiMdata1.data["uniqueBarcodes"])
     else:
         ifigure.set_xticklabels(())
 
     if yticks:
-        ifigure.set_ylabel("Probability", fontsize=runParameters['fontsize'])
+        ifigure.set_ylabel("Probability", fontsize=runParameters["fontsize"])
         if not runParameters["axisTicks"]:
             ifigure.set_yticklabels(())
         else:
-            ifigure.set_yticks([0, runParameters["cAxis"]/2, runParameters["cAxis"]])
+            ifigure.set_yticks([0, runParameters["cAxis"] / 2, runParameters["cAxis"]])
     else:
         ifigure.set_yticklabels(())
-    
+
     if legend:
-        ifigure.legend([HiMdata1.datasetName, HiMdata2.datasetName], loc='best')
+        ifigure.legend([HiMdata1.datasetName, HiMdata2.datasetName], loc="best")
+
 
 def loadList(fileName):
     with open(fileName, newline="") as csvfile:
@@ -315,42 +315,48 @@ def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
     sortedSNDTable = SNDtable.group_by("MaskID #")
     listKeys = list(sortedSNDTable.groups.keys["MaskID #"].data)
     indexKey = [index for i, index in zip(listKeys, range(len(listKeys))) if i == label]
-    
+
     # checks that there is at least one cell with the label
-    if len(indexKey)>0:
-    
+    if len(indexKey) > 0:
+
         SNDTablewithLabel = sortedSNDTable.groups[indexKey[0]]
         print("\n>>> Matching labels")
         print("Found {} out of {} cells with {} in dataset".format(len(SNDTablewithLabel), len(sortedSNDTable), label))
-    
+
         # sorts Results Table by ROI
         PWDTableSortedROI = ResultsTable.group_by("ROI #")
         CUIDsList = []
         CUIDs = Table()
-        CUIDs["Cuid"]=[]
-        
+        CUIDs["Cuid"] = []
+
         print("ROIs to process: {}".format(PWDTableSortedROI.groups.keys))
-        
+
         for ROI, group in zip(PWDTableSortedROI.groups.keys, PWDTableSortedROI.groups):
             # list of cellIDs in ROI
             cells2Process = group["CellID #"].data.compressed()
             cells2ProcessUID = group["Cuid"]
-    
+
             # list of ROIs detected in SNDTablewithLabel
             ROIsinSNDTablewithLabel = list(SNDTablewithLabel.group_by("ROI #").groups.keys["ROI #"].data)
-    
+
             # index of ROI within the keys of SNDTablewithLabel
-            indexROIs = [index for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel))) if i == ROI["ROI #"]]
-    
+            indexROIs = [
+                index
+                for i, index in zip(ROIsinSNDTablewithLabel, range(len(ROIsinSNDTablewithLabel)))
+                if i == ROI["ROI #"]
+            ]
+
             # subtable of cells with label and ROI that we are looking for
             SNDTablewithLabelROI = SNDTablewithLabel.group_by("ROI #").groups[indexROIs[0]]
             cellswithLabel = list(SNDTablewithLabelROI["CellID #"].data)
-    
+
             # finds which cell indeces in Table have label
-            listofSelectedCells = [index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel]
-    
-            if len(listofSelectedCells)>0:
-                print('Detected {} cells in ROI {} with label'.format(len(listofSelectedCells),ROI["ROI #"]))
+            listofSelectedCells = [
+                index for iCell, index in zip(cells2Process, range(len(cells2Process))) if iCell in cellswithLabel
+            ]
+
+            if len(listofSelectedCells) > 0:
+                print("Detected {} cells in ROI {} with label".format(len(listofSelectedCells), ROI["ROI #"]))
                 if len(CUIDs) > 0:
                     # CUIDs = vstack([CUIDs, cells2ProcessUID[listofSelectedCells]])
                     # print('adding {} more cells'.format(len(cells2ProcessUID[listofSelectedCells])))
@@ -364,25 +370,27 @@ def attributesLabels2cells(SNDtable, ResultsTable, label="doc"):
                     ROI["ROI #"], len(listofSelectedCells), len(group), label
                 )
             )
-    
+
         # from list of CUIDs from cells that show label, I construct a binary vector of the same size as SCmatrix. Labeled cells have a 1.
         SClabeled = np.zeros(len(ResultsTable))
         # print('CUID list: {}'.format(CUIDsList2))
         # CUIDsList = CUIDs["Cuid"].data.compressed()
         # CUIDsList = CUIDsList2
-        # checks that there are cells found with the label 
-        if len(CUIDsList)>0:
-            indexCellsWithLabel = [iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList]
+        # checks that there are cells found with the label
+        if len(CUIDsList) > 0:
+            indexCellsWithLabel = [
+                iRow for Row, iRow in zip(ResultsTable, range(len(ResultsTable))) if Row["Cuid"] in CUIDsList
+            ]
             SClabeled[indexCellsWithLabel] = 1
         else:
             SClabeled, CUIDsList = [], []
-            
+
         return SClabeled, CUIDsList
     else:
         # otherwise returns an empty list
         print("Warning: No cell with a mask labeled <{}> was found".format(label))
         return [], []
-        
+
 
 def loadsSCdata(ListData, datasetName, p):
     """
@@ -442,10 +450,14 @@ def loadsSCdata(ListData, datasetName, p):
                     for isplit in fileName.split("_"):
                         if "order" in isplit:
                             fileOrderStamp[ifileName] = int(isplit.split(":")[1])
-                            print("order {}= {}--> {}".format(ifileName, os.path.basename(fileName), fileOrderStamp[ifileName]))
+                            print(
+                                "order {}= {}--> {}".format(
+                                    ifileName, os.path.basename(fileName), fileOrderStamp[ifileName]
+                                )
+                            )
                     fileTimeStamp[ifileName] = os.path.getmtime(fileName)
                     choosingTimeStamp = False
-                    
+
                 else:
                     fileTimeStamp[ifileName] = os.path.getmtime(fileName)
                     choosingTimeStamp = True
@@ -454,7 +466,7 @@ def loadsSCdata(ListData, datasetName, p):
                 fileOrder = np.argsort(fileTimeStamp).astype(int)
             else:
                 fileOrder = np.argsort(fileOrderStamp).astype(int)
-                
+
             # print('FileOrder: {}'.format(fileOrder))
             # [loads buildsPWDmatrix Tables]
             for ifileName in range(len(files2Process)):
@@ -475,25 +487,25 @@ def loadsSCdata(ListData, datasetName, p):
             # [loads SNDassignedCells.ecsv files if available]
             fileNameSNDassignedCells = os.path.dirname(rootFolder) + os.sep + "segmentedObjects/SNDassignedCells.ecsv"
             if os.path.exists(fileNameSNDassignedCells):
-                print('Reading and processing: {}'.format(fileNameSNDassignedCells))
+                print("Reading and processing: {}".format(fileNameSNDassignedCells))
                 SNDassignedCells = Table.read(fileNameSNDassignedCells, format="ascii.ecsv")
 
                 # checks that table is not empty
-                if len(SNDassignedCells)>0: 
+                if len(SNDassignedCells) > 0:
                     # attributes masks to single cells
                     SClabeled, CUIDsList = attributesLabels2cells(SNDassignedCells, buildsPWDmatrix, label=p["label"])
-                    
+
                     # checks that at least one cell was found to have the label
-                    if len(SClabeled)==0:
+                    if len(SClabeled) == 0:
                         # if not available it makes a mock SClabeled matrix so that pipeline always works
                         # SClabeled = np.ones(len(buildsPWDmatrix)).astype(int)
                         SClabeled = np.zeros(len(buildsPWDmatrix)).astype(int)
-            
+
             else:
                 # if not available it makes a mock SClabeled matrix so that pipeline always works
                 # SClabeled = np.ones(len(buildsPWDmatrix)).astype(int)
                 SClabeled = np.zeros(len(buildsPWDmatrix)).astype(int)
- 
+
             SClabeledCollated.append(SClabeled)
 
             # [loads and accumulates barcodes and scHiM matrix]
@@ -527,8 +539,8 @@ def loadsSCdata(ListData, datasetName, p):
         SClabeledCollated,
     )
 
-def loadsSCdataMATLAB(ListData, datasetName, p):
 
+def loadsSCdataMATLAB(ListData, datasetName, p):
 
     print("Dataset to load: {}\n\n".format(list(ListData.keys())[0]))
 
@@ -538,7 +550,7 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
     for rootFolder in ListData[datasetName]["Folders"]:
         # [finds sample name]
         runName.append(os.path.basename(os.path.dirname(rootFolder)))
-        
+
         # [loads and accumulates barcodes and scHiM matrix]
         fileNameMatrix = rootFolder + os.sep + "HiMscMatrix.mat"
         fileNameBarcodes = rootFolder + os.sep + "buildsPWDmatrix_uniqueBarcodes.ecsv"
@@ -552,21 +564,21 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
 
         # loads SC matrix
         if os.path.exists(fileNameMatrix):
-            data=loadmat(fileNameMatrix)
-            SCmatrix1 =data['distanceMatrixCumulative']
+            data = loadmat(fileNameMatrix)
+            SCmatrix1 = data["distanceMatrixCumulative"]
             # print(">>> SC matrix 1 shape: {}".format(SCmatrix1.shape))
             # SCmatrix2=SCmatrix1[uniqueBarcodes[0]-1,uniqueBarcodes[0]-1,:]
             SCmatrixCollated.append(SCmatrix1)
-            print(">>> Loaded: {}\n SC matrix shape: {}".format(fileNameMatrix,SCmatrix1.shape))
+            print(">>> Loaded: {}\n SC matrix shape: {}".format(fileNameMatrix, SCmatrix1.shape))
         else:
             print("*** Error: could not find {}".format(fileNameMatrix))
 
-       # loads cell attributes
-        cellAttributesMatrix = data['cellAttributesMatrix']
-        ResultsTable = cellAttributesMatrix[0,:]
+        # loads cell attributes
+        cellAttributesMatrix = data["cellAttributesMatrix"]
+        ResultsTable = cellAttributesMatrix[0, :]
 
         SClabeled = np.zeros(len(ResultsTable))
-        indexCellsWithLabel = [iRow for iRow, Row in enumerate(ResultsTable) if Row > 0 ]
+        indexCellsWithLabel = [iRow for iRow, Row in enumerate(ResultsTable) if Row > 0]
         SClabeled[indexCellsWithLabel] = 1
         SClabeledCollated.append(SClabeled)
 
@@ -584,7 +596,7 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
 
 
 def listsSCtoKeep(p, mask):
-    print('{}:{}'.format(p['label'],p['action']))
+    print("{}:{}".format(p["label"], p["action"]))
     if p["action"] == "all":
         try:
             cells2Plot = range(len(mask))
@@ -619,9 +631,11 @@ def plotsEnsemble3wayContactMatrix(
 
     # combines matrices from different samples and calculates integrated contact probability matrix
     SCmatrixAllDatasets = []  # np.zeros((nBarcodes,nBarcodes))
-    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
+    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(
+        SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName
+    ):
         cells2Plot = listsSCtoKeep(p, mask)
-        if len(cells2Plot)>0:
+        if len(cells2Plot) > 0:
             if max(cells2Plot) > iSCmatrixCollated.shape[2]:
                 print(
                     "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
@@ -630,19 +644,21 @@ def plotsEnsemble3wayContactMatrix(
                 )
             else:
                 if len(SCmatrixAllDatasets) > 0:
-                    SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
+                    SCmatrixAllDatasets = np.concatenate(
+                        (SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2
+                    )
                 else:
                     SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
                 commonSetUniqueBarcodes = iuniqueBarcodes
         else:
-            print('Dataset: {} - {}  did not have any cell to plot'.format(datasetName,iTag))
-            
+            print("Dataset: {} - {}  did not have any cell to plot".format(datasetName, iTag))
+
     # print(commonSetUniqueBarcodes)
-    
-    # loops over anchors 
+
+    # loops over anchors
     for anchor in anchors:
         print("nCells processed: {}".format(SCmatrixAllDatasets.shape[2]))
-        
+
         # calculates the 3-way matrix for a given anchor
         SCmatrix = calculate3wayContactMatrix(
             SCmatrixAllDatasets,
@@ -656,7 +672,14 @@ def plotsEnsemble3wayContactMatrix(
 
         # outputFileName = p['outputFolder'] + os.sep + datasetName + "_Cells:" + p['action'] + "_ensemble3wayContacts"
         outputFileName = (
-            p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"] + "_ensemble3wayContacts"
+            p["outputFolder"]
+            + os.sep
+            + datasetName
+            + "_label:"
+            + p["label"]
+            + "_action:"
+            + p["action"]
+            + "_ensemble3wayContacts"
         )
 
         # outputs result
@@ -697,7 +720,9 @@ def plotsEnsemble3wayContactMatrix(
         np.save(rootOutputFileName + "_ensemble3wayContacts.npy", SCmatrix)
 
 
-def calculate3wayContactMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, anchor, sOut, threshold=0.25, norm="nonNANs"):
+def calculate3wayContactMatrix(
+    iSCmatrixCollated, iuniqueBarcodes, pixelSize, anchor, sOut, threshold=0.25, norm="nonNANs"
+):
 
     nX = nY = iSCmatrixCollated.shape[0]
     SCmatrix = np.zeros((nX, nY))
@@ -755,7 +780,9 @@ def plotsSinglePWDmatrices(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
 ):
     # plots distance matrix for each dataset
-    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
+    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(
+        SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]
+    ):
         outputFileName = p["outputFolder"] + os.sep + iTag + "_Cells:" + p["action"] + "_PWDmatrix"
 
         # selects cels according to label
@@ -766,7 +793,7 @@ def plotsSinglePWDmatrices(
             iuniqueBarcodes,
             p["pixelSize"],
             outputFileName=outputFileName,
-            figtitle="PWD:" + datasetName+ iTag,
+            figtitle="PWD:" + datasetName + iTag,
             cm=iListData["PWD_cm"],
             clim=iListData["PWD_clim"],
             mode=iListData["PWD_mode"],
@@ -778,7 +805,9 @@ def plotsSinglePWDmatrices(
 
 def plotsInversePWDmatrix(SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD, datasetName=""):
     # plots inverse distance matrix for each dataset
-    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
+    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(
+        SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]
+    ):
         outputFileName = p["outputFolder"] + os.sep + iTag + "_Cells:" + p["action"] + "_invPWDmatrix"
 
         # selects cels according to label
@@ -793,7 +822,7 @@ def plotsInversePWDmatrix(SCmatrixCollated, uniqueBarcodes, runName, iListData, 
             outputFileName=outputFileName,
             clim=iListData["iPWD_clim"],
             mode=iListData["iPWD_mode"],
-            figtitle="inverse PWD:" + datasetName+ iTag,
+            figtitle="inverse PWD:" + datasetName + iTag,
             cmtitle="inverse distance, 1/nm",
             inverseMatrix=True,
             nCells=iSCmatrixCollated.shape[2],
@@ -807,13 +836,15 @@ def plotsSingleContactProbabilityMatrix(
 ):
     # Plots contact probability matrices for each dataset
 
-    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]):
+    for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(
+        SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]
+    ):
         # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
 
         if not cells2Plot:
             break
-        
+
         if max(cells2Plot) > iSCmatrixCollated.shape[2]:
             print(
                 "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
@@ -828,7 +859,9 @@ def plotsSingleContactProbabilityMatrix(
                 threshold=iListData["ContactProbability_distanceThreshold"],
                 norm="nonNANs",
             )  # norm: nCells (default), nonNANs
-            outputFileName = p["outputFolder"] + os.sep + datasetName+ iTag + "_Cells:" + p["action"] + "_contactProbability"
+            outputFileName = (
+                p["outputFolder"] + os.sep + datasetName + iTag + "_Cells:" + p["action"] + "_contactProbability"
+            )
 
             print("Dataset {} cells2plot: {}".format(iTag, cells2Plot))
             cScale = SCmatrix.max() / iListData["ContactProbability_scale"]
@@ -841,7 +874,7 @@ def plotsSingleContactProbabilityMatrix(
                 outputFileName=outputFileName,
                 cMin=iListData["ContactProbability_cmin"],
                 clim=cScale,
-                figtitle="HiM:" + datasetName+ iTag,
+                figtitle="HiM:" + datasetName + iTag,
                 cmtitle="probability",
                 nCells=nCells,
                 cells2Plot=cells2Plot,
@@ -851,17 +884,19 @@ def plotsSingleContactProbabilityMatrix(
 
 def fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runName, iListData):
     # combines matrices from different embryos and calculates integrated contact probability matrix
-    
+
     SCmatrixAllDatasets = []
     cells2Plot = []
-    NcellsTotal=0
+    NcellsTotal = 0
 
-    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName):
-        NcellsTotal+=mask.shape[0]
+    for iSCmatrixCollated, iuniqueBarcodes, mask, iTag in zip(
+        SCmatrixCollated, uniqueBarcodes, p["SClabeledCollated"], runName
+    ):
+        NcellsTotal += mask.shape[0]
         # selects cels according to label
         cells2Plot = listsSCtoKeep(p, mask)
 
-        if len(cells2Plot)>0:
+        if len(cells2Plot) > 0:
             if max(cells2Plot) > iSCmatrixCollated.shape[2]:
                 print(
                     "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
@@ -870,13 +905,14 @@ def fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runNa
                 )
             else:
                 if len(SCmatrixAllDatasets) > 0:
-                    SCmatrixAllDatasets = np.concatenate((SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2)
+                    SCmatrixAllDatasets = np.concatenate(
+                        (SCmatrixAllDatasets, iSCmatrixCollated[:, :, cells2Plot]), axis=2
+                    )
                 else:
                     SCmatrixAllDatasets = iSCmatrixCollated[:, :, cells2Plot]
-    
+
                 commonSetUniqueBarcodes = iuniqueBarcodes
-                
-                
+
     if p["saveMatrix"]:
         # write out the ensemble PWD map
         Nbarcodes = SCmatrixAllDatasets.shape[0]
@@ -886,13 +922,23 @@ def fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runNa
             for bin2 in range(Nbarcodes):
                 if bin1 != bin2:
                     (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrixAllDatasets, bin1, bin2, pixelSize, optimizeKernelWidth=False)
+                        SCmatrixAllDatasets, bin1, bin2, pixelSize, optimizeKernelWidth=False
+                    )
                     meanSCmatrix[bin1, bin2] = maximumKernelDistribution
-        
-        outputFileName=p["outputFolder"] + os.sep + "CombinedMatrix_PWD_KDE" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + ".dat"
-        
+
+        outputFileName = (
+            p["outputFolder"]
+            + os.sep
+            + "CombinedMatrix_PWD_KDE"
+            + ":"
+            + list(iListData.keys())[0]
+            + "_Cells:"
+            + p["action"]
+            + ".dat"
+        )
+
         print(">>> Saving fused SCmatrix to {}".format(outputFileName))
-    
+
         np.savetxt(
             outputFileName,
             meanSCmatrix,
@@ -904,33 +950,52 @@ def fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runNa
             comments="# ",
             encoding=None,
         )
-                
+
     if p["getStructure"]:
         ## multi-dimensional scaling to get coordinates from PWDs
         # make sure meanSCmatrix is symmetric
-        meanSCmatrix = 0.5*(meanSCmatrix + np.transpose(meanSCmatrix))
+        meanSCmatrix = 0.5 * (meanSCmatrix + np.transpose(meanSCmatrix))
         # run metric mds
-        verbosity = 0 # default: 0, quite verbose: 2
-        mds = manifold.MDS(n_components=3, metric=True, n_init=20,
-            max_iter=3000, verbose=verbosity, eps=1e-9, n_jobs=1, random_state=1,
-            dissimilarity="precomputed" # euclidean | precomputed
-            )
+        verbosity = 0  # default: 0, quite verbose: 2
+        mds = manifold.MDS(
+            n_components=3,
+            metric=True,
+            n_init=20,
+            max_iter=3000,
+            verbose=verbosity,
+            eps=1e-9,
+            n_jobs=1,
+            random_state=1,
+            dissimilarity="precomputed",  # euclidean | precomputed
+        )
         XYZ = mds.fit(meanSCmatrix).embedding_
         # print(XYZ.shape)
         print(XYZ)
-        outputFileNamePDB=p["outputFolder"] + os.sep + "CombinedMatrix_PWD_KDE" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + "_python.pdb"
+        outputFileNamePDB = (
+            p["outputFolder"]
+            + os.sep
+            + "CombinedMatrix_PWD_KDE"
+            + ":"
+            + list(iListData.keys())[0]
+            + "_Cells:"
+            + p["action"]
+            + "_python.pdb"
+        )
         write_XYZ_2_pdb(outputFileNamePDB, XYZ)
 
     return SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal
-            
+
+
 def plotsEnsembleContactProbabilityMatrix(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
 ):
 
-    # combines matrices from different samples/datasers and calculates integrated contact probability matrix    
-    SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal = fusesSCmatrixCollatedFromDatasets(SCmatrixCollated, uniqueBarcodes, p, runName, iListData)
+    # combines matrices from different samples/datasers and calculates integrated contact probability matrix
+    SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal = fusesSCmatrixCollatedFromDatasets(
+        SCmatrixCollated, uniqueBarcodes, p, runName, iListData
+    )
 
-    print("nCells selected / processed: {}/{}".format(SCmatrixAllDatasets.shape[2],NcellsTotal))
+    print("nCells selected / processed: {}/{}".format(SCmatrixAllDatasets.shape[2], NcellsTotal))
 
     # calculates contact probability matrix from merged samples/datasets
     SCmatrix, nCells = calculateContactProbabilityMatrix(
@@ -940,7 +1005,7 @@ def plotsEnsembleContactProbabilityMatrix(
         threshold=iListData["ContactProbability_distanceThreshold"],
         norm="nonNANs",
     )  # norm: nCells (default), nonNANs
-    
+
     # outputs line for MD file and sets output filename
     cScale = SCmatrix.max() / iListData["ContactProbability_scale"]
     outputFileName = p["outputFolder"] + os.sep + datasetName + "_Cells:" + p["action"] + "_ensembleContactProbability"
@@ -962,7 +1027,14 @@ def plotsEnsembleContactProbabilityMatrix(
 
     # saves SC matrix in text format
     np.savetxt(
-        p["outputFolder"] + os.sep + "CombinedMatrix" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + ".dat",
+        p["outputFolder"]
+        + os.sep
+        + "CombinedMatrix"
+        + ":"
+        + list(iListData.keys())[0]
+        + "_Cells:"
+        + p["action"]
+        + ".dat",
         SCmatrix,
         fmt="%.4f",
         delimiter=" ",
@@ -975,7 +1047,14 @@ def plotsEnsembleContactProbabilityMatrix(
 
     # saves barcodes in text format
     np.savetxt(
-        p["outputFolder"] + os.sep + "UniqueBarcodes" + ":" + list(iListData.keys())[0] + "_Cells:" + p["action"] + ".dat",
+        p["outputFolder"]
+        + os.sep
+        + "UniqueBarcodes"
+        + ":"
+        + list(iListData.keys())[0]
+        + "_Cells:"
+        + p["action"]
+        + ".dat",
         commonSetUniqueBarcodes,
         fmt="%.4f",
         delimiter=" ",
@@ -989,90 +1068,106 @@ def plotsEnsembleContactProbabilityMatrix(
     return SCmatrix, commonSetUniqueBarcodes
 
 
-def shuffleMatrix(matrix,index):
+def shuffleMatrix(matrix, index):
 
-    newSize=len(index)
-    newMatrix =np.zeros((newSize,newSize))
- 
-    if newSize<=matrix.shape[0]:
+    newSize = len(index)
+    newMatrix = np.zeros((newSize, newSize))
+
+    if newSize <= matrix.shape[0]:
         for i in range(newSize):
             for j in range(newSize):
-                if index[i]<matrix.shape[0] and index[j]<matrix.shape[0]:
-                    newMatrix[i,j] = matrix[index[i],index[j]]
+                if index[i] < matrix.shape[0] and index[j] < matrix.shape[0]:
+                    newMatrix[i, j] = matrix[index[i], index[j]]
     else:
-        print("Error: shuffle size {} is larger than matrix dimensions {}".format(newSize,matrix.shape[0]))
+        print("Error: shuffle size {} is larger than matrix dimensions {}".format(newSize, matrix.shape[0]))
         print("Shuffle: {} ".format(index))
-   
+
     return newMatrix
 
-def comp_func(A, nw):    
-    n1 = A.shape[0];
-    # th= 0;  # a threshold for a minimal distance above with calculate the signal 
-    #print "Size of the matrix entetered for the Compaction signal :"
-    #print n1;
-    
-    somme_short = np.zeros((n1, 1));
-    # somme_long = np.zeros((n1, 1));    
-    signal1 = np.zeros((n1, 1));
-    n_int =   np.zeros((n1, 1));
+
+def comp_func(A, nw):
+    n1 = A.shape[0]
+    # th= 0;  # a threshold for a minimal distance above with calculate the signal
+    # print "Size of the matrix entetered for the Compaction signal :"
+    # print n1;
+
+    somme_short = np.zeros((n1, 1))
+    # somme_long = np.zeros((n1, 1));
+    signal1 = np.zeros((n1, 1))
+    n_int = np.zeros((n1, 1))
     # mat_test = np.zeros((n1, n1));
-    
-    for i in range(0,n1) :  
-        if i<=nw:
-            p1=n1 + i-nw;
-            p2=i + nw;
-            for k in range(0,n1) :
-                if k<=p2 or k>=p1:
-                    somme_short[i] = somme_short[i] + A[i,k];
-                    n_int[i] = n_int[i] +1;
 
-        elif  (n1 - nw) <= i:
-            p1=i- nw;
-            p2=i+ nw-n1;
-            for k in range(0,n1) :
-                if k<=p2 or k>=p1:
-                    somme_short[i] = somme_short[i] + A[i,k];
-                    n_int[i] = n_int[i] +1;
+    for i in range(0, n1):
+        if i <= nw:
+            p1 = n1 + i - nw
+            p2 = i + nw
+            for k in range(0, n1):
+                if k <= p2 or k >= p1:
+                    somme_short[i] = somme_short[i] + A[i, k]
+                    n_int[i] = n_int[i] + 1
 
-        else :
-            p1= i - nw;
-            p2= i + nw;
-            for k in range(0,n1) :
-                if p1<=k and k<=p2:
-                    somme_short[i] = somme_short[i] + A[i,k];
-                    n_int[i] = n_int[i] +1;
-      
-    signal1 = somme_short ;                       
-    return signal1;
+        elif (n1 - nw) <= i:
+            p1 = i - nw
+            p2 = i + nw - n1
+            for k in range(0, n1):
+                if k <= p2 or k >= p1:
+                    somme_short[i] = somme_short[i] + A[i, k]
+                    n_int[i] = n_int[i] + 1
 
-def plotScalogram(matrix2plot,outputFileName=''):
-    matrixSize=matrix2plot.shape[0]
-    
-    scales = range(0,6)
-    comp_scale1 = np.zeros(  (len(scales), matrixSize) );
+        else:
+            p1 = i - nw
+            p2 = i + nw
+            for k in range(0, n1):
+                if p1 <= k and k <= p2:
+                    somme_short[i] = somme_short[i] + A[i, k]
+                    n_int[i] = n_int[i] + 1
+
+    signal1 = somme_short
+    return signal1
+
+
+def plotScalogram(matrix2plot, outputFileName=""):
+    matrixSize = matrix2plot.shape[0]
+
+    scales = range(0, 6)
+    comp_scale1 = np.zeros((len(scales), matrixSize))
     for ii, nw in enumerate(scales):
-        c=comp_func(matrix2plot,nw);
-        comp_scale1[ii,] =  c.T;
-    
+        c = comp_func(matrix2plot, nw)
+        comp_scale1[ii,] = c.T
+
     # definitions for the axes
     left, width = 0.065, 0.65
-    bottom, height = 0.1, .8
-    bottom_h = left_h = left+width+0.02
-    
+    bottom, height = 0.1, 0.8
+    bottom_h = left_h = left + width + 0.02
+
     ax1_ = [0, 0.4, width, height]
-    ax2_= [left, bottom, width, 0.2]
-    
+    ax2_ = [left, bottom, width, 0.2]
+
     # fig = plt.figure()
     fig1 = plt.figure(constrained_layout=True)
     spec1 = gridspec.GridSpec(ncols=1, nrows=3, figure=fig1)
     f1 = fig1.add_subplot(spec1[1, 0])  # 16
     # ax2 = plt.axes(ax2_)#,sharex=ax1)
-    f1.contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
-    imColorBar=contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
-    f1.set_xlim([0,matrixSize])#list(data['uniqueBarcodes']))
-    f1.set_ylabel("Scales");
-    bounds = [0.,0.5, 1.0];
-    cb1 = colorbar(imColorBar,shrink = 1, orientation="vertical",ticks=bounds, spacing='proportional',pad=0.04);
+    f1.contourf(
+        comp_scale1,
+        vmin=0.0,
+        vmax=1.0,
+        levels=[0, 0.15, 0.30, 0.45, 0.6, 0.75, 1.0],
+        extent=[0, matrix2plot.shape[0], 0, 400],
+        cmap="rainbow",
+    )
+    imColorBar = contourf(
+        comp_scale1,
+        vmin=0.0,
+        vmax=1.0,
+        levels=[0, 0.15, 0.30, 0.45, 0.6, 0.75, 1.0],
+        extent=[0, matrix2plot.shape[0], 0, 400],
+        cmap="rainbow",
+    )
+    f1.set_xlim([0, matrixSize])  # list(data['uniqueBarcodes']))
+    f1.set_ylabel("Scales")
+    bounds = [0.0, 0.5, 1.0]
+    cb1 = colorbar(imColorBar, shrink=1, orientation="vertical", ticks=bounds, spacing="proportional", pad=0.04)
 
     # ax1 = plt.axes(ax1_)
     # pos=ax1.imshow(matrix2plot,cmap='coolwarm')
@@ -1081,7 +1176,7 @@ def plotScalogram(matrix2plot,outputFileName=''):
     # ax1.set_xlim([-0.5 , matrixSize-.5])#list(data['uniqueBarcodes']))
     # ax1.set_ylim([matrixSize-.5,-0.5])#list(data['uniqueBarcodes']))
     # cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-    
+
     # ax2 = plt.axes(ax2_)#,sharex=ax1)
     # ax2.contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
     # imColorBar=contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
@@ -1092,9 +1187,9 @@ def plotScalogram(matrix2plot,outputFileName=''):
 
     if outputFileName:
         plt.savefig(outputFileName)
-        print("Output scalogram: {}".format(outputFileName))        
-        
-        
+        print("Output scalogram: {}".format(outputFileName))
+
+
 def write_XYZ_2_pdb(fileName, XYZ):
     # writes XYZ coordinates to a PDB file wth pseudoatoms
     # fileName : string of output file path, e.g. '/foo/bar/test2.pdb'
@@ -1105,7 +1200,7 @@ def write_XYZ_2_pdb(fileName, XYZ):
         ## atom coordinates
         txt = "HETATM  {: 3d}  C{:02d} PSD P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
         for i in range(n_atoms):
-            fid.write(txt.format(i+1, i+1, XYZ[i,0], XYZ[i,1], XYZ[i,2]))
+            fid.write(txt.format(i + 1, i + 1, XYZ[i, 0], XYZ[i, 1], XYZ[i, 2]))
 
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
@@ -1114,10 +1209,8 @@ def write_XYZ_2_pdb(fileName, XYZ):
         fid.write(txt1.format(1, 2))
         # consecutive lines
         for i in range(2, n_atoms):
-            fid.write(txt2.format(i, i-1, i+1))
+            fid.write(txt2.format(i, i - 1, i + 1))
         # last line
-        fid.write(txt1.format(i+1, i))
+        fid.write(txt1.format(i + 1, i))
 
         print("Done writing {:s} with {:d} atoms.".format(fileName, n_atoms))
-
-        

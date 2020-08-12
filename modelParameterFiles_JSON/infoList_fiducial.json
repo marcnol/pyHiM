@@ -1,13 +1,21 @@
 {
     "acquisition": {
+        "DAPI_channel": "ch00",
+        "RNA_channel": "ch01",
+        "barcode_channel": "ch01",
+        "fiducialBarcode_channel": "ch00",
+        "fiducialDAPI_channel": "ch02",
         "label": "fiducial",
         "positionROIinformation": 3
     },
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
+		"localAlignment": "overwrite",
+		"localShiftTolerance": 1,
+        "bezel": 20,               
         "outputFile": "alignImages.bed",
-        "referenceFiducial": "RT33"
+        "referenceFiducial": "RT27"
     },
     "image": {
         "claheGridH": 8,

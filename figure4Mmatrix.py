@@ -17,17 +17,18 @@ Can work with up to two datasets
 import os
 import numpy as np
 import argparse
+
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+
 # import scaleogram as scg
 
 from HIMmatrixOperations import analysisHiMmatrix, plot1Dprofile2Datasets
 
 #%% define and loads datasets
-
 
 
 def parseArguments():
@@ -64,15 +65,15 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters['run2Datasets']=True
+        runParameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters['run2Datasets']=False
+        runParameters["run2Datasets"] = False
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
+        outputFolder = "none"
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -125,9 +126,9 @@ def parseArguments():
         runParameters["cAxis"] = 0.8
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = '.svg'
+        runParameters["plottingFileExtension"] = ".svg"
 
     if args.legend:
         runParameters["legend"] = args.legend
@@ -145,19 +146,19 @@ def parseArguments():
 # =============================================================================
 
 if __name__ == "__main__":
-    run2Datasets=False
+    run2Datasets = False
 
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
-    print('RootFolders: \n{}\n{}'.format(rootFolder1, rootFolder2))
+    print("RootFolders: \n{}\n{}".format(rootFolder1, rootFolder2))
     HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
     nCells = HiMdata1.nCellsLoaded()
 
-    if outputFolder=='none':
+    if outputFolder == "none":
         outputFolder = HiMdata1.dataFolder
-        
+
     outputFileName = (
         outputFolder
         + os.sep
@@ -170,14 +171,14 @@ if __name__ == "__main__":
         + runParameters["action1"]
     )
 
-    if runParameters['run2Datasets']:
+    if runParameters["run2Datasets"]:
         HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
         HiMdata2.loadData()
         nCells2 = HiMdata2.nCellsLoaded()
 
-        run2Datasets=True
+        run2Datasets = True
         outputFileName = (
             outputFileName
             + "_dataset2:"
@@ -186,42 +187,44 @@ if __name__ == "__main__":
             + runParameters["label2"]
             + "_action2:"
             + runParameters["action2"]
-        )        
+        )
     outputFileName += runParameters["plottingFileExtension"]
 
-    anchors=HiMdata1.ListData[HiMdata1.datasetName]['3wayContacts_anchors']
-    print('Anchors: {}'.format(anchors))
+    anchors = HiMdata1.ListData[HiMdata1.datasetName]["3wayContacts_anchors"]
+    print("Anchors: {}".format(anchors))
 
     fig2 = plt.figure(constrained_layout=True)
-    nCols=np.ceil(len(anchors)/2).astype(int)
-    nRows=2
+    nCols = np.ceil(len(anchors) / 2).astype(int)
+    nRows = 2
     spec2 = gridspec.GridSpec(ncols=nCols, nrows=nRows, figure=fig2)
-  
-    FigList,Yticks, Xticks =[], [], []
+
+    FigList, Yticks, Xticks = [], [], []
     for iRow in range(nRows):
         for iCol in range(nCols):
             FigList.append(fig2.add_subplot(spec2[iRow, iCol]))
-            if iRow==nRows-1:
-               Xticks.append(False)
+            if iRow == nRows - 1:
+                Xticks.append(False)
             else:
-               Xticks.append(False)
-            if iCol==0:
-               Yticks.append(True)
+                Xticks.append(False)
+            if iCol == 0:
+                Yticks.append(True)
             else:
-               Yticks.append(False)
-               
+                Yticks.append(False)
+
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
-    legendList=[False]*len(anchors)
+    legendList = [False] * len(anchors)
     if runParameters["legend"]:
-        legendList[0]=True 
-    
-    for anchor, ifigure, iFigLabel, yticks, xticks,legend in zip(anchors,FigList, FigLabels, Yticks, Xticks,legendList):
+        legendList[0] = True
+
+    for anchor, ifigure, iFigLabel, yticks, xticks, legend in zip(
+        anchors, FigList, FigLabels, Yticks, Xticks, legendList
+    ):
         if not run2Datasets:
             HiMdata1.plot1Dprofile1Dataset(ifigure, anchor, iFigLabel, yticks, xticks)
         else:
-            plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2,runParameters, anchor, iFigLabel, yticks, xticks,legend)
-                   
+            plot1Dprofile2Datasets(
+                ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend
+            )
+
     plt.savefig(outputFileName)
     print("Output figure: {}".format(outputFileName))
-
-    

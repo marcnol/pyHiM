@@ -164,7 +164,8 @@ def processesUserMasks(param, log1, session1, processingList):
                             )
                         else:
                             log1.report(
-                                "Could not find registered image for SND channel:{}".format(registeredFileName), "error",
+                                "Could not find registered image for SND channel:{}".format(registeredFileName),
+                                "error",
                             )
 
         tableOutputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + "SNDassignedCells.ecsv"
@@ -188,7 +189,10 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
 
         # [checks if DAPI mask exists for the file to process]
         fileNameDAPImask = (
-            os.path.dirname(fileName) + os.sep + "_".join(os.path.basename(fileName).split("_")[0:7]) + "_ch00_Masks.npy"
+            os.path.dirname(fileName)
+            + os.sep
+            + "_".join(os.path.basename(fileName).split("_")[0:7])
+            + "_ch00_Masks.npy"
         )
         if os.path.exists(fileNameDAPImask):
 
@@ -209,7 +213,9 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
             if len(cellsWithinMask) > 0:
 
                 newTable = Table()
-                colMask = Column([fileName.split("_")[-1].split(".")[0]] * len(cellsWithinMask), name="MaskID #", dtype=str,)
+                colMask = Column(
+                    [fileName.split("_")[-1].split(".")[0]] * len(cellsWithinMask), name="MaskID #", dtype=str,
+                )
                 colROI = Column(int(ROI) * np.ones(len(cellsWithinMask)), name="ROI #", dtype=int)
                 colCellID = Column(cellsWithinMask, name="CellID #", dtype=int)
                 newTable.add_column(colROI, index=0)

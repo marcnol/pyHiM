@@ -17,9 +17,15 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+
 # import scaleogram as scg
 
-from HIMmatrixOperations import plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact, analysisHiMmatrix
+from HIMmatrixOperations import (
+    plotsEnsemble3wayContactMatrix,
+    calculate3wayContactMatrix,
+    getMultiContact,
+    analysisHiMmatrix,
+)
 
 #%% define and loads datasets
 def parseArguments():
@@ -54,16 +60,16 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters['run2Datasets']=True
+        runParameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters['run2Datasets']=False
+        runParameters["run2Datasets"] = False
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
-        
+        outputFolder = "none"
+
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
     else:
@@ -105,16 +111,17 @@ def parseArguments():
         runParameters["colorbar"] = False
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = '.svg'
+        runParameters["plottingFileExtension"] = ".svg"
 
     if args.normalize:
         runParameters["normalize"] = args.normalize
     else:
         runParameters["normalize"] = False
-        
+
     return rootFolder1, rootFolder2, outputFolder, runParameters
+
 
 # =============================================================================
 # MAIN
@@ -122,20 +129,20 @@ def parseArguments():
 
 if __name__ == "__main__":
     print(">>> Producing HiM 3-way matrices")
-    
+
     # [parsing arguments
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
 
-    print('>>> Loading first dataset from {}'.format(rootFolder1))
+    print(">>> Loading first dataset from {}".format(rootFolder1))
     HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
     HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
     HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
     HiMdata1.loadData()
     nCells1 = HiMdata1.nCellsLoaded()
 
-    if outputFolder=='none':
+    if outputFolder == "none":
         outputFolder = HiMdata1.dataFolder
-        
+
     outputFileName = (
         outputFolder
         + os.sep
@@ -147,9 +154,9 @@ if __name__ == "__main__":
         + "_action1:"
         + runParameters["action1"]
     )
-    
-    if runParameters['run2Datasets']:
-        print('>>> Loading second dataset from {}'.format(rootFolder2))
+
+    if runParameters["run2Datasets"]:
+        print(">>> Loading second dataset from {}".format(rootFolder2))
         HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
@@ -164,53 +171,53 @@ if __name__ == "__main__":
             + runParameters["label2"]
             + "_action2:"
             + runParameters["action2"]
-        )        
+        )
     outputFileName += runParameters["plottingFileExtension"]
 
     # 3-way interaction matrices
     pixelSize = 0.1
-    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]      
-    
-    anchors= [int(i.split(':')[1]) for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
+    cMax = HiMdata1.data["ensembleContactProbability"].max() / runParameters["scalingParameter"]
+
+    anchors = [int(i.split(":")[1]) for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
     fig2 = plt.figure(constrained_layout=True)
-    nCols=np.ceil(len(anchors)/2).astype(int)
-    nRows=2
+    nCols = np.ceil(len(anchors) / 2).astype(int)
+    nRows = 2
     spec2 = gridspec.GridSpec(ncols=nCols, nrows=nRows, figure=fig2)
-  
-    FigList,Yticks, Xticks =[], [], []
+
+    FigList, Yticks, Xticks = [], [], []
     for iRow in range(nRows):
         for iCol in range(nCols):
             FigList.append(fig2.add_subplot(spec2[iRow, iCol]))
-            if iRow==nRows-1:
-               Xticks.append(False)
+            if iRow == nRows - 1:
+                Xticks.append(False)
             else:
-               Xticks.append(False)
-            if iCol==0:
-               Yticks.append(False)
+                Xticks.append(False)
+            if iCol == 0:
+                Yticks.append(False)
             else:
-               Yticks.append(False)
-               
+                Yticks.append(False)
+
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
-    legendList=[False]*len(anchors)
-    legendList[0]=True 
+    legendList = [False] * len(anchors)
+    legendList[0] = True
 
     for ifigure, iFigLabel, iyticks, ixticks in zip(FigList, FigLabels, Xticks, Yticks):
-        if runParameters['run2Datasets']:
+        if runParameters["run2Datasets"]:
             # mixed matrices from 2 datasets
-            if runParameters['normalize']:
-                matrix=HiMdata1.data[iFigLabel]/HiMdata1.data[iFigLabel].max()
+            if runParameters["normalize"]:
+                matrix = HiMdata1.data[iFigLabel] / HiMdata1.data[iFigLabel].max()
             else:
-                matrix=HiMdata1.data[iFigLabel]
-                
+                matrix = HiMdata1.data[iFigLabel]
+
             for i in range(matrix.shape[0]):
-                for j in range(0,i):
-                    if runParameters['normalize']:
-                        matrix[i,j] = HiMdata2.data[iFigLabel][i,j]/HiMdata2.data[iFigLabel].max()            
+                for j in range(0, i):
+                    if runParameters["normalize"]:
+                        matrix[i, j] = HiMdata2.data[iFigLabel][i, j] / HiMdata2.data[iFigLabel].max()
                     else:
-                        matrix[i,j] = HiMdata2.data[iFigLabel][i,j]
-        else:               
+                        matrix[i, j] = HiMdata2.data[iFigLabel][i, j]
+        else:
             # only one matrix
-            matrix=HiMdata1.data[iFigLabel]
+            matrix = HiMdata1.data[iFigLabel]
 
         f2_ax1_im = HiMdata1.plot2DMatrixSimple(
             ifigure,
@@ -228,10 +235,10 @@ if __name__ == "__main__":
         cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
         ticklabs = cbar.ax.get_yticklabels()
         cbar.ax.set_yticklabels(ticklabs, fontsize=12)
-        
+
     # for ifigure in FigList:
     #     HiMdata1.update_clims(0, cMax, ifigure)
-    
+
     # update_clims(0, cMax, FigList)
 
     plt.savefig(outputFileName)

@@ -18,9 +18,10 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+
 # import scaleogram as scg
 
-from HIMmatrixOperations import analysisHiMmatrix,normalizeMatrix,shuffleMatrix,plotScalogram
+from HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
 
 #%% define and loads datasets
 
@@ -42,7 +43,10 @@ def parseArguments():
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
-    parser.add_argument("--shuffle", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
+    parser.add_argument(
+        "--shuffle",
+        help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
+    )
     parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
 
     args = parser.parse_args()
@@ -59,8 +63,8 @@ def parseArguments():
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
-        
+        outputFolder = "none"
+
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
     else:
@@ -102,9 +106,9 @@ def parseArguments():
         runParameters["scalingParameter"] = 1.0
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = '.svg'
+        runParameters["plottingFileExtension"] = ".svg"
 
     if args.shuffle:
         runParameters["shuffle"] = args.shuffle
@@ -112,11 +116,11 @@ def parseArguments():
         runParameters["shuffle"] = 0
 
     if args.scalogram:
-        runParameters['scalogram']= args.scalogram
+        runParameters["scalogram"] = args.scalogram
     else:
-        runParameters['scalogram'] = False
+        runParameters["scalogram"] = False
 
-    return rootFolder, outputFolder,runParameters
+    return rootFolder, outputFolder, runParameters
 
 
 # =============================================================================
@@ -134,19 +138,19 @@ if __name__ == "__main__":
 
     # panel C: contact probability matrix
 
-    matrix=HiMdata.data["ensembleContactProbability"]
+    matrix = HiMdata.data["ensembleContactProbability"]
     # matrix=normalizeMatrix(matrix)
 
     cScale = matrix.max() / runParameters["scalingParameter"]
-    print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"],cScale))
-    
+    print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"], cScale))
+
     nCells = HiMdata.nCellsLoaded()
-     
+
     nDatasets = len(HiMdata.data["runName"])
 
-    if outputFolder=='none':
+    if outputFolder == "none":
         outputFolder = HiMdata.dataFolder
-    
+
     outputFileName = (
         outputFolder
         + os.sep
@@ -161,42 +165,57 @@ if __name__ == "__main__":
     )
 
     if runParameters["barcodes"]:
-        fig1 = plt.figure(figsize=(10,10), constrained_layout=False)
-        gs1 = fig1.add_gridspec(nrows=19, ncols=22, left=0.05, right=0.95,
-                                wspace=.05, hspace=.05)
-        f1 = fig1.add_subplot(gs1[0:-1,5:-1])
-        f2 = fig1.add_subplot(gs1[:-1, 3],sharey=f1)
-        f3 = fig1.add_subplot(gs1[-1, 5:-1],sharex=f1)
-        ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]['BarcodeColormap'])/10
+        fig1 = plt.figure(figsize=(10, 10), constrained_layout=False)
+        gs1 = fig1.add_gridspec(nrows=19, ncols=22, left=0.05, right=0.95, wspace=0.05, hspace=0.05)
+        f1 = fig1.add_subplot(gs1[0:-1, 5:-1])
+        f2 = fig1.add_subplot(gs1[:-1, 3], sharey=f1)
+        f3 = fig1.add_subplot(gs1[-1, 5:-1], sharex=f1)
+        ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]["BarcodeColormap"]) / 10
         ATACseqMatrixV = np.copy(ATACseqMatrix).reshape((-1, 1))
-        pos1=f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap='tab10')  # colormaps RdBu seismic
+        pos1 = f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap="tab10")  # colormaps RdBu seismic
         f2.set_xticklabels(())
         f2.set_yticklabels(())
         pos1.set_clim(vmin=-1, vmax=1)
-    
-        pos2=f3.imshow(np.atleast_2d(ATACseqMatrix), cmap='tab10')  # colormaps RdBu seismic
+
+        pos2 = f3.imshow(np.atleast_2d(ATACseqMatrix), cmap="tab10")  # colormaps RdBu seismic
         f3.set_xticklabels(())
         f3.set_yticklabels(())
         pos2.set_clim(vmin=-1, vmax=1)
-        
-        barcodeLabels=np.arange(1,ATACseqMatrix.shape[0]+1)
+
+        barcodeLabels = np.arange(1, ATACseqMatrix.shape[0] + 1)
         for j in range(len(ATACseqMatrix)):
-            text = f3.text(j, 0, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
-            text = f2.text(0, j, barcodeLabels[j], ha="center", va="center", color="w", fontsize=int((14./22.)*float(runParameters["fontsize"])))    
-        
-        colorbar=False
-    else:               
+            text = f3.text(
+                j,
+                0,
+                barcodeLabels[j],
+                ha="center",
+                va="center",
+                color="w",
+                fontsize=int((14.0 / 22.0) * float(runParameters["fontsize"])),
+            )
+            text = f2.text(
+                0,
+                j,
+                barcodeLabels[j],
+                ha="center",
+                va="center",
+                color="w",
+                fontsize=int((14.0 / 22.0) * float(runParameters["fontsize"])),
+            )
+
+        colorbar = False
+    else:
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f1 = fig1.add_subplot(spec1[0, 0])  # 16
-        colorbar=True
-        
-    if runParameters["shuffle"]==0:
-        index=range(matrix.shape[0])
+        colorbar = True
+
+    if runParameters["shuffle"] == 0:
+        index = range(matrix.shape[0])
     else:
-        index=[int(i) for i in runParameters["shuffle"].split(',')]
-        matrix=shuffleMatrix(matrix,index)
-        
+        index = [int(i) for i in runParameters["shuffle"].split(",")]
+        matrix = shuffleMatrix(matrix, index)
+
     f1_ax1_im = HiMdata.plot2DMatrixSimple(
         f1,
         matrix,
@@ -211,32 +230,30 @@ if __name__ == "__main__":
         axisTicks=runParameters["axisTicks"],
         nCells=nCells,
         nDatasets=nDatasets,
-        showTitle=True
+        showTitle=True,
     )
-    
 
     # HiMdata.update_clims(0, cScale, f1)
-    print('Output written to {}'.format(outputFileName))
+    print("Output written to {}".format(outputFileName))
     plt.savefig(outputFileName)
-    titleText="N = {} | n = {}".format(nCells,nDatasets)
-    print('Title: {}'.format(titleText))
+    titleText = "N = {} | n = {}".format(nCells, nDatasets)
+    print("Title: {}".format(titleText))
     print("Output figure: {}".format(outputFileName))
 
-    if runParameters['scalogram']:
+    if runParameters["scalogram"]:
         outputFileNameScalogram = (
-                outputFolder
-                + os.sep
-                + "Fig_HiMmatrix_scalogram"
-                + "_dataset1:"
-                + HiMdata.datasetName
-                + "_label:"
-                + runParameters["label"]
-                + "_action:"
-                + runParameters["action"]
-                + runParameters["plottingFileExtension"]
-            )
+            outputFolder
+            + os.sep
+            + "Fig_HiMmatrix_scalogram"
+            + "_dataset1:"
+            + HiMdata.datasetName
+            + "_label:"
+            + runParameters["label"]
+            + "_action:"
+            + runParameters["action"]
+            + runParameters["plottingFileExtension"]
+        )
 
-
-        plotScalogram(matrix,outputFileNameScalogram)
+        plotScalogram(matrix, outputFileNameScalogram)
 
     print("\nDone\n\n")
