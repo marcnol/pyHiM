@@ -14,7 +14,7 @@ Created on Wed Aug 12 17:48:55 2020
 import glob, os
 import argparse
 
-from fileManagement import folders, session, log, Parameters
+from fileProcessing.fileManagement import folders, session, log, Parameters
 
 from imageProcessing.localDriftCorrection import localDriftCorrection
 
@@ -39,8 +39,7 @@ if __name__ == "__main__":
         # rootFolder='/home/marcnol/data/Embryo_debug_dataset/rawImages'
 
     print("parameters> rootFolder: {}".format(rootFolder))
-    sessionName = "localDriimport matplotlib.pylab as plt
-ftCorrection"
+    sessionName = "localDriftCorrection"
 
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},

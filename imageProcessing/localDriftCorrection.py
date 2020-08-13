@@ -73,10 +73,12 @@ def loadsFiducial(param, fileName, log1,dataFolder):
 
     """
     # finds name of reference fiducial file
-    positionROIinformation = param.param["acquisition"]["positionROIinformation"]
-    ROI = os.path.basename(fileName).split("_")[positionROIinformation]
+    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
+    # ROI = os.path.basename(fileName).split("_")[positionROIinformation]
+    ROI = param.decodesFileParts(os.path.basename(fileName))['roi']
+
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
-    fiducialFilename = ROI2FiducialFileName(param, fileName, referenceBarcode, positionROIinformation)
+    fiducialFilename = ROI2FiducialFileName(param, fileName, referenceBarcode)
 
     # loads reference fiducial file
     if len(fiducialFilename) < 1:
@@ -124,16 +126,19 @@ def retrieveBarcodeList(param, fileName):
         list of fiducialFileNames retrieved in rootFolder.
     """
     rootFolder = os.path.dirname(fileName)
-    positionROIinformation = param.param["acquisition"]["positionROIinformation"]
-    ROI = os.path.basename(fileName).split("_")[positionROIinformation]
+    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
+    # ROI = os.path.basename(fileName).split("_")[positionROIinformation]
+    ROI = param.decodesFileParts(os.path.basename(fileName))['roi']
+    
     channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
 
     listFiles = glob.glob(rootFolder + os.sep + "*.tif")
 
+    # if (ROI in os.path.basename(x).split("_")[positionROIinformation])
     fiducialFileNames = [
         x
         for x in listFiles
-        if (ROI in os.path.basename(x).split("_")[positionROIinformation])
+        if (ROI in param.decodesFileParts(os.path.basename(x))['roi'])
         and ("RT" in os.path.basename(x))
         and (channelFiducial in os.path.basename(x))
     ]
@@ -380,6 +385,7 @@ def localDriftCorrection(param, log1, session1):
 
             else:
                 print("Error> No Mask found! File expected: {}".format(fullFileNameROImasks))
+                raise FileNotFoundError ("I cannot find DAPI mask: {}".format(fullFileNameROImasks))
 
             # - loads reference fiducial file
             ROI, imReference = loadsFiducial(param, fileNameDAPI,log1,dataFolder)

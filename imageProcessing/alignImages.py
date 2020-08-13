@@ -232,11 +232,11 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     )
     
     # Finds and loads Reference fiducial information
-    positionROIinformation = param.param["acquisition"]["positionROIinformation"]
+    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
     
     # retrieves the list of fiducial image files to be aligned
-    fileNameReferenceList, ROIList = RT2fileName(param, referenceBarcode, positionROIinformation)
+    fileNameReferenceList, ROIList = RT2fileName(param, referenceBarcode)
     
     if len(fileNameReferenceList) > 0:
     
@@ -353,10 +353,12 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
     # session
     sessionName = "registersImages"
 
-    positionROIinformation = param.param["acquisition"]["positionROIinformation"]
+    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     
     # gets shift from dictionary
-    ROI = os.path.basename(fileName2Process).split("_")[positionROIinformation]
+    # ROI = os.path.basename(fileName2Process).split("_")[positionROIinformation]
+    ROI = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
+
     label = os.path.basename(fileName2Process).split("_")[2]
     try:
         shiftArray = dictShifts["ROI:" + ROI][label]

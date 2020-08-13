@@ -5,7 +5,7 @@
         "barcode_channel": "ch01",
         "fiducialBarcode_channel": "ch00",
         "fiducialDAPI_channel": "ch01",
-        "fileNameRegExp": "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
         "label": "DAPI",
         "pixelSizeXY": 0.1,
         "pixelSizeZ": 0.25,

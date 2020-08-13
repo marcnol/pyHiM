@@ -1,6 +1,9 @@
 {
     "acquisition": {
         "label": "RNA",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+        "pixelSizeXY": 0.1,
+        "pixelSizeZ": 0.25,        
         "positionROIinformation": 3
     },
     "alignImages": {
@@ -11,11 +14,6 @@
 		"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"
-    },
-    "image": {
-        "claheGridH": 8,
-        "claheGridW": 8,
-        "currentPlane": 1
     },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
