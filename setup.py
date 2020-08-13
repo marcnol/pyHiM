@@ -8,6 +8,9 @@ Created on Wed Aug 12 16:18:17 2020
 
 from setuptools import setup, find_packages
 
+with open("README.md", "r") as fh:
+    long_description = fh.read()
+    
 setup(
     name='pyHiM',
     version='0.1.0',
@@ -16,9 +19,38 @@ setup(
     packages=find_packages(),
     author='Marcelo Nollmann',
     author_email='marcelo.nollmann@cbs.cnrs.fr',
-    keywords=['example'],
+    keywords=['roipoly',
+              'scaleogram',
+              'opencv-python',
+              'progress',
+              'astropy',
+              'photutils',
+              'tqdm',
+              'numpy',
+              'matplotlib',
+              'scikit',
+              'stardist',
+              'csbdeep',
+              'tensorflow'
+              ],
     python_requires='>=3.6.0',
+    install_requires=[''],
     url='https://github.com/marcnol/pyHiM'
 )
 
-#python setup.py sdist
+
+# to package
+# python3 setup.py sdist bdist_wheel
+
+# to install
+# pip install pyHiM-0.1.0.tar.gz
+
+
+# list of packages needed
+
+# conda install pandas scikit-image numpy matplotlib astropy
+# conda install photutils -c astropy
+
+# pip install roipoly opencv-python tqdm stardist csbdeep
+# pip install --upgrade tensorflow
+

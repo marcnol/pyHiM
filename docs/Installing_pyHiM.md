@@ -53,9 +53,11 @@ make sure you use a different directory name if this is not where you put pyHiM 
 Now, install the necessary packages using conda, by running:
 
 ```sh
-conda install pandas scikit-image numpy matplotlib tqdm astropy
+conda install scikit-image numpy matplotlib astropy
+
 conda install photutils -c astropy
 
+pip install tqdm roipoly opencv-python stardist
 ```
 
 You should be set!
