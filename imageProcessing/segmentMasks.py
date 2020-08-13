@@ -25,8 +25,6 @@ import glob, os
 import matplotlib.pylab as plt
 import numpy as np
 import uuid
-import argparse
-from datetime import datetime
 
 from astropy.stats import sigma_clipped_stats, SigmaClip, gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
@@ -40,7 +38,7 @@ from photutils.segmentation.core import SegmentationImage
 
 from imageProcessing.imageProcessing import Image, saveImage2Dcmd
 from fileProcessing.fileManagement import (
-    folders, session, log, Parameters, writeString2File)
+    folders, writeString2File)
 
 # ---- stardist
 import matplotlib
@@ -72,7 +70,7 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     )  # for some reason sources are always displays 1/2 px from center of spot
 
     apertures = CircularAperture(positions, r=4.0)
-    norm = simple_norm(im, "sqrt", percent=99.99)
+    norm = simple_norm(im, "sqrt", percent=99.9999)
     # norm = ImageNormalize(stretch=SqrtStretch())
     # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
     plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)

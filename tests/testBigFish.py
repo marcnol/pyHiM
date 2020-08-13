@@ -4,6 +4,7 @@
 Created on Wed Aug 12 15:35:52 2020
 
 @author: marcnol
+
 """
 
 
@@ -16,13 +17,25 @@ from data import check_input_data
 import numpy as np
 print("Big-FISH version: {0}".format(bigfish.__version__))
 
+#%% do not run
+
+path_input = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/bigfish/input"
+path_output = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/output"
+
+# check input images are loaded
+check_input_data(path_input)
+
+
+
 #%%
+
+
 
 path_input = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/input"
 path_output = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/output"
 
 # check input images are loaded
-check_input_data(path_input)
+# check_input_data(path_input)
 
 
 #%% 
@@ -45,10 +58,10 @@ print("\r dtype: {0}".format(rna.dtype))
 
 #%%
 # parameters
-voxel_size_z = 300
-voxel_size_yx = 103
+voxel_size_z = 250
+voxel_size_yx = 105
 psf_z = 350
-psf_yx = 150
+psf_yx = 100
 
 # sigma
 sigma_z, sigma_yx, sigma_yx = detection.get_sigma(voxel_size_z, voxel_size_yx, psf_z, psf_yx)
@@ -57,7 +70,7 @@ print("standard deviation of the PSF (yx axis): {:0.3f} pixels".format(sigma_yx)
 
 #%%
 
-threshold = 500
+threshold = 150
 spots = detection.detect_spots(rna, threshold, voxel_size_z, voxel_size_yx, psf_z, psf_yx)
 print("detected spots")
 print("\r shape: {0}".format(spots.shape))

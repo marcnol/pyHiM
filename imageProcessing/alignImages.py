@@ -236,7 +236,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
     
     # retrieves the list of fiducial image files to be aligned
-    fileNameReferenceList, ROIList = RT2fileName(param.fileList2Process, referenceBarcode, positionROIinformation)
+    fileNameReferenceList, ROIList = RT2fileName(param, referenceBarcode, positionROIinformation)
     
     if len(fileNameReferenceList) > 0:
     
@@ -261,7 +261,10 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     
                 # excludes the reference fiducial and processes files in the same ROI
                 label = os.path.basename(fileName2Process).split("_")[2]
-                if (fileName2Process not in fileNameReference) and os.path.basename(fileName2Process).split("_")[positionROIinformation] == ROI:
+                roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
+                
+                # if (fileName2Process not in fileNameReference) and os.path.basename(fileName2Process).split("_")[positionROIinformation] == ROI:
+                if (fileName2Process not in fileNameReference) and roi == ROI:
                     
                     if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
 

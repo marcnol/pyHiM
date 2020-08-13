@@ -559,10 +559,13 @@ def processesPWDmatrices(param, log1, session1):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
 
         fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
-        # segmentedMasksFolder=dataFolder.outputFolders['segmentedObjects']
         outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-        pixelSize = 0.1
 
+        if "pixelSizeXY" in param.param['acquisition'].keys():
+            pixelSize = param.param['acquisition']['pixelSizeXY']
+        else:
+            pixelSize = 0.1
+            
         buildsPWDmatrix(
             currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
         )

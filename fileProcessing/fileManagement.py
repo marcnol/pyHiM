@@ -17,7 +17,7 @@ import glob
 import os
 from os import path
 import json
-
+import re
 
 # =============================================================================
 # CLASSES
@@ -186,7 +186,6 @@ class FileHandling:
     def getROI(self):
         return os.path.basename(self.fileName).split("_")[self.positionROIinformation]
 
-
 class Parameters:
     def __init__(self, rootFolder="./", label=""):
         self.label = label
@@ -195,12 +194,15 @@ class Parameters:
             "acquisition": {
                 "label": "DAPI",
                 "positionROIinformation": 3,
+                "fileNameRegExp": "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
                 "DAPI_channel": "ch00",
                 "fiducialDAPI_channel": "ch01",
                 "RNA_channel": "ch02",
                 "fiducialBarcode_channel": "ch00",
                 "barcode_channel": "ch01",
-            },  # barcode, fiducial
+                "pixelSizeXY": 0.1,
+                "pixelSizeZ": 0.25,
+                },  # barcode, fiducial
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
@@ -248,7 +250,8 @@ class Parameters:
         self.paramFile = rootFolder + os.sep + label
         self.loadParametersFile(self.paramFile)
         self.param["rootFolder"] = rootFolder
-
+        self.fileParts={}
+        
     def get_param(self, param=False):
         if not param:
             return self.param
@@ -337,11 +340,42 @@ class Parameters:
         # print("\n :::: {},{},{}".format(channelDAPI,channelbarcode,channelfiducial))
 
 
+    def decodesFileParts(self, fileName):
+        '''
+        decodes variables from an input file. typically, RE takes the form:
+            
+        "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
+        
+        thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present 
+        in your infoList...json file or a dict as follows if it all worked out fine:
+            
+        fileParts['runNumber']: runNumber number
+        fileParts['cycle']: cycle string
+        fileParts['roi']: roi number
+        fileParts['channel']: channel string
+        
+        Parameters
+        ----------
+        param : Parameters class
+        fileName : string
+            filename to decode
+    
+        Returns
+        -------
+        Dict with fileParts.
+    
+        '''
+        # decodes regular expressions
+        if 'fileNameRegExp' in self.param['acquisition'].keys():
+            fileParts=re.search(self.param['acquisition']['fileNameRegExp'],fileName)
+            return fileParts
+        else:
+            return {}
+    
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
-
-
 def writeString2File(fileName, list2output, attribute="a"):
     with open(fileName, attribute) as fileHandle:
         fileHandle.write("{}\n".format(list2output))
@@ -385,7 +419,7 @@ def isnotebook():
         return False  # Probably standard Python interpreter
 
 
-def RT2fileName(fileList2Process, referenceBarcode, positionROIinformation=3):
+def RT2fileName(param, referenceBarcode, positionROIinformation=3):
     """
     Finds the files in a list that contain the ReferenceBarcode in their name
     Also returs the ROI of each file in this list
@@ -410,11 +444,12 @@ def RT2fileName(fileList2Process, referenceBarcode, positionROIinformation=3):
     fileNameReferenceList = []
     ROIList = {}
 
-    for file in fileList2Process:
+    for file in param.fileList2Process:
         if referenceBarcode in file.split("_"):
             fileNameReferenceList.append(file)
-            ROIList[file] = os.path.basename(file).split("_")[positionROIinformation]
-
+            # ROIList[file] = os.path.basename(file).split("_")[positionROIinformation]
+            ROIList[file]=param.decodesFileParts(os.path.basename(file))['roi']
+    
     return fileNameReferenceList, ROIList
 
 
