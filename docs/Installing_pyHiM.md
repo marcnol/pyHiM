@@ -45,19 +45,34 @@ nano ~/.bashrc
 and add the following line to the end
 
 ```sh
-export PATH="$PATH:/home/rata/Repositories/pyHiM/"
+export PATH="$PATH:/home/rata/Repositories/pyHiM/:home/rata/Repositories/pyHiM/fileProcessing"
+export PYTHONPATH="/home/rata/Repositories/pyHiM"
 ```
 
 make sure you use a different directory name if this is not where you put pyHiM !
 
 Now, install the necessary packages using conda, by running:
 
+```bash
+pip install --upgrade tensorflow
+pip install -r requirements.txt
+```
+
+in the pyHiM directory, i.e. ```/home/rata/Repositories/pyHiM/```
+
+
+
+If this does not work, then run these commands one at a time:
+
 ```sh
 conda install scikit-image numpy matplotlib astropy
 
 conda install photutils -c astropy
 
-pip install tqdm roipoly opencv-python stardist
+pip install tqdm roipoly opencv-python stardist csbdeep
+
+pip install --upgrade tensorflow
+
 ```
 
 You should be set!

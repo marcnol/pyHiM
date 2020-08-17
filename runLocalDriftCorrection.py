@@ -35,7 +35,7 @@ if __name__ == "__main__":
     else:
         # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
+        rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
         # rootFolder='/home/marcnol/data/Embryo_debug_dataset/rawImages'
 
     print("parameters> rootFolder: {}".format(rootFolder))

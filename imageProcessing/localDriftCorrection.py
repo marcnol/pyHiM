@@ -90,8 +90,8 @@ def loadsFiducial(param, fileName, log1,dataFolder):
         return -1
     elif len(fiducialFilename) > 1:
         print(
-            "Error, too many reference candidates found for ROI:{} | filename:{}\n".format(
-                ROI, os.path.basename(fileName)
+            "Error, too many reference candidates found for ROI:{} | filename:{}\nCandidates detected:{}".format(
+                ROI, os.path.basename(fileName),fiducialFilename
             )
         )
         return -1
@@ -260,7 +260,9 @@ def localDriftCorrection_plotsLocalAlignments(imageListCorrected,imageListunCorr
     plt.close()
     writeString2File(
                 log1.fileNameMD,
-                "Corrected local drift for ROI: {} barcode:{} \n ![]({})\n".format(ROI, barcode,outputFileName + "_unCorrected.png"),
+                "Corrected **global** drift for ROI: {} barcode:{} \n ![]({})\n".format(ROI,
+                                                                                        barcode,
+                                                                                        outputFileName + "_unCorrected.png"),
                 "a",
             )
 
@@ -273,7 +275,9 @@ def localDriftCorrection_plotsLocalAlignments(imageListCorrected,imageListunCorr
     plt.close()
     writeString2File(
                 log1.fileNameMD,
-                "Corrected local drift for ROI: {} barcode:{} \n ![]({})\n".format(ROI, barcode,outputFileName + "_Corrected.png"),
+                "Corrected **global+local** drift for ROI: {} barcode:{}\n ![]({})\n".format(ROI, 
+                                                                                                                  barcode,
+                                                                                                                  outputFileName + "_Corrected.png"),
                 "a",
             )
    

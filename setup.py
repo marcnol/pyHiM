@@ -28,7 +28,7 @@ setup(
               'tqdm',
               'numpy',
               'matplotlib',
-              'scikit',
+              'scikit-image',
               'stardist',
               'csbdeep',
               'tensorflow'
