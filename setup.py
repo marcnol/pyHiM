@@ -51,6 +51,6 @@ setup(
 # conda install pandas scikit-image numpy matplotlib astropy
 # conda install photutils -c astropy
 
-# pip install roipoly opencv-python tqdm stardist csbdeep
+# pip install roipoly opencv-python tqdm stardist csbdeep snakemake
 # pip install --upgrade tensorflow
 

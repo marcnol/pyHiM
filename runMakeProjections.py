@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", help="fileName to analyze")
+    parser.add_argument("-x", "--fileName", nargs='+', help="fileName to analyze")
     args = parser.parse_args()
 
     print("\n--------------------------------------------------------------------------")

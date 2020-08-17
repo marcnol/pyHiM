@@ -105,7 +105,7 @@ def makeProjections(param, log1, session1,fileName=None):
             if fileName==None:
                 makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
                 session1.add(fileName2Process, sessionName)
-            elif fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process):
+            elif fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName]):
                 makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
                 session1.add(fileName2Process, sessionName)
                 # print("******File {} processed!!!".format(fileName2Process))
