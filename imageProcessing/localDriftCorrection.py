@@ -39,11 +39,13 @@ from tqdm import trange
 from skimage.util import montage
 import cv2
 
+from dask.distributed import Client, wait, LocalCluster
+from multiprocessing.pool import ThreadPool
+import threading
+
+
 from imageProcessing.imageProcessing import Image
-from fileProcessing.fileManagement import (
-    folders, 
-    writeString2File,
-    ROI2FiducialFileName)
+from fileProcessing.fileManagement import folders, writeString2File, ROI2FiducialFileName
 
 from imageProcessing.alignImages import align2ImagesCrossCorrelation
 
@@ -52,8 +54,8 @@ from stardist import random_label_cmap
 np.random.seed(6)
 lbl_cmap = random_label_cmap()
 
-    
-def loadsFiducial(param, fileName, log1,dataFolder):
+
+def loadsFiducial(param, fileName, log1, dataFolder):
     """
     Finds the filename of the reference fiducial to use given a DAPI image file
 
@@ -75,7 +77,7 @@ def loadsFiducial(param, fileName, log1,dataFolder):
     # finds name of reference fiducial file
     # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     # ROI = os.path.basename(fileName).split("_")[positionROIinformation]
-    ROI = param.decodesFileParts(os.path.basename(fileName))['roi']
+    ROI = param.decodesFileParts(os.path.basename(fileName))["roi"]
 
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
     fiducialFilename = ROI2FiducialFileName(param, fileName, referenceBarcode)
@@ -91,7 +93,7 @@ def loadsFiducial(param, fileName, log1,dataFolder):
     elif len(fiducialFilename) > 1:
         print(
             "Error, too many reference candidates found for ROI:{} | filename:{}\nCandidates detected:{}".format(
-                ROI, os.path.basename(fileName),fiducialFilename
+                ROI, os.path.basename(fileName), fiducialFilename
             )
         )
         return -1
@@ -128,8 +130,8 @@ def retrieveBarcodeList(param, fileName):
     rootFolder = os.path.dirname(fileName)
     # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     # ROI = os.path.basename(fileName).split("_")[positionROIinformation]
-    ROI = param.decodesFileParts(os.path.basename(fileName))['roi']
-    
+    ROI = param.decodesFileParts(os.path.basename(fileName))["roi"]
+
     channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
 
     listFiles = glob.glob(rootFolder + os.sep + "*.tif")
@@ -138,7 +140,7 @@ def retrieveBarcodeList(param, fileName):
     fiducialFileNames = [
         x
         for x in listFiles
-        if (ROI in param.decodesFileParts(os.path.basename(x))['roi'])
+        if (ROI in param.decodesFileParts(os.path.basename(x))["roi"])
         and ("RT" in os.path.basename(x))
         and (channelFiducial in os.path.basename(x))
     ]
@@ -150,29 +152,27 @@ def retrieveBarcodeList(param, fileName):
     return barcodeList, fiducialFileNames
 
 
-def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):  
+def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
     maskSize = Masks.shape
-    
+
     # defines sub-volume around Mask
 
     minx, miny = np.nonzero(Masks == iMask)[0].min(), np.nonzero(Masks == iMask)[1].min()
     maxx, maxy = np.nonzero(Masks == iMask)[0].max(), np.nonzero(Masks == iMask)[1].max()
-    
+
     minx, miny = np.max([minx - bezel, 0]), np.max([miny - bezel, 0])
     maxx, maxy = np.min([maxx + bezel, maskSize[0]]), np.min([maxy + bezel, maskSize[1]])
     boundingBox = np.array([minx, maxx, miny, maxy])
     del minx, maxx, miny, maxy
-    
+
     # obtain subvolume from reference and cycle <i> fiducial images for mask <iMask>
-    subVolumeReference = imageReference[
-        boundingBox[0] : boundingBox[1], boundingBox[2] : boundingBox[3]
-    ]
+    subVolumeReference = imageReference[boundingBox[0] : boundingBox[1], boundingBox[2] : boundingBox[3]]
     subVolume = imageBarcode[boundingBox[0] : boundingBox[1], boundingBox[2] : boundingBox[3]]
-    
+
     # adjusts levels
     subVolume = subVolume / subVolume.max()
     subVolumeReference = subVolumeReference / subVolumeReference.max()
-    
+
     # calculates shift using cross-correlation
     (
         shift,
@@ -183,16 +183,15 @@ def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
         image2_corrected,
         image1_adjusted,
         image2_adjusted,
-    ) = align2ImagesCrossCorrelation(subVolumeReference, 
-                                     subVolume,
-                                     lower_threshold=0.1, 
-                                     higher_threshold=0.9999999,
-                                     upsample_factor=10)
-    
+    ) = align2ImagesCrossCorrelation(
+        subVolumeReference, subVolume, lower_threshold=0.1, higher_threshold=0.9999999, upsample_factor=10
+    )
+
     # print("Shift = {}".format(shift))
     # subVolumeCorrected = shiftImage(image2_adjusted, shift)
-    
+
     return shift, error, diffphase, image1_adjusted, image2_adjusted, image2_corrected
+
 
 def pad_images_to_same_size(images):
     """
@@ -210,10 +209,10 @@ def pad_images_to_same_size(images):
     for img in images:
         h, w = img.shape[:2]
         diff_vert = height_max - h
-        pad_top = diff_vert//2
+        pad_top = diff_vert // 2
         pad_bottom = diff_vert - pad_top
         diff_hori = width_max - w
-        pad_left = diff_hori//2
+        pad_left = diff_hori // 2
         pad_right = diff_hori - pad_left
         img_padded = cv2.copyMakeBorder(img, pad_top, pad_bottom, pad_left, pad_right, cv2.BORDER_CONSTANT, value=0)
         assert img_padded.shape[:2] == (height_max, width_max)
@@ -221,8 +220,11 @@ def pad_images_to_same_size(images):
 
     return images_padded
 
-def localDriftCorrection_plotsLocalAlignments(imageListCorrected,imageListunCorrected,imageListReference,log1,dataFolder,ROI,barcode):
-    '''
+
+def localDriftCorrection_plotsLocalAlignments(
+    imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+):
+    """
     converts list of images into mosaic and saves results
 
     Parameters
@@ -240,93 +242,161 @@ def localDriftCorrection_plotsLocalAlignments(imageListCorrected,imageListunCorr
     -------
     None.
 
-    '''
-    outputFileName = dataFolder.outputFolders["alignImages"] + os.sep + "localDriftCorrection_" + "ROI:"+ROI +"barcode:"+barcode
+    """
+    outputFileName = (
+        dataFolder.outputFolders["alignImages"] + os.sep + "localDriftCorrection_" + "ROI:" + ROI + "barcode:" + barcode
+    )
 
-    imageListCorrectedPadded=pad_images_to_same_size(imageListCorrected)
-    imageListunCorrectedPadded=pad_images_to_same_size(imageListunCorrected)
-    imageListReferencePadded=pad_images_to_same_size(imageListReference)            
+    imageListCorrectedPadded = pad_images_to_same_size(imageListCorrected)
+    imageListunCorrectedPadded = pad_images_to_same_size(imageListunCorrected)
+    imageListReferencePadded = pad_images_to_same_size(imageListReference)
 
-    montage2DReference=montage(imageListReferencePadded)
-    montage2DCorrected=montage(imageListCorrectedPadded)
-    montage2DunCorrected=montage(imageListunCorrectedPadded)
-    
-    fig=plt.figure()
+    montage2DReference = montage(imageListReferencePadded)
+    montage2DCorrected = montage(imageListCorrectedPadded)
+    montage2DunCorrected = montage(imageListunCorrectedPadded)
+
+    fig = plt.figure()
     fig.set_size_inches((30, 30))
-    plt.imshow(montage2DReference,cmap = 'Blues', alpha = 0.5)
-    plt.imshow(montage2DunCorrected,cmap = 'Reds', alpha = 0.5)
+    plt.imshow(montage2DReference, cmap="Blues", alpha=0.5)
+    plt.imshow(montage2DunCorrected, cmap="Reds", alpha=0.5)
     plt.axis("off")
     plt.savefig(outputFileName + "_unCorrected.png")
     plt.close()
     writeString2File(
-                log1.fileNameMD,
-                "Corrected **global** drift for ROI: {} barcode:{} \n ![]({})\n".format(ROI,
-                                                                                        barcode,
-                                                                                        outputFileName + "_unCorrected.png"),
-                "a",
-            )
+        log1.fileNameMD,
+        "Corrected **global** drift for ROI: {} barcode:{} \n ![]({})\n".format(
+            ROI, barcode, outputFileName + "_unCorrected.png"
+        ),
+        "a",
+    )
 
-    fig=plt.figure()
+    fig = plt.figure()
     fig.set_size_inches((30, 30))
-    plt.imshow(montage2DReference,cmap = 'Blues', alpha = 0.5)
-    plt.imshow(montage2DCorrected,cmap = 'Reds', alpha = 0.5)
+    plt.imshow(montage2DReference, cmap="Blues", alpha=0.5)
+    plt.imshow(montage2DCorrected, cmap="Reds", alpha=0.5)
     plt.axis("off")
     plt.savefig(outputFileName + "_Corrected.png")
     plt.close()
     writeString2File(
-                log1.fileNameMD,
-                "Corrected **global+local** drift for ROI: {} barcode:{}\n ![]({})\n".format(ROI, 
-                                                                                                                  barcode,
-                                                                                                                  outputFileName + "_Corrected.png"),
-                "a",
-            )
-   
-    del montage2DReference,montage2DCorrected,imageListReferencePadded,imageListCorrectedPadded
-    del imageListReference,imageListCorrected
+        log1.fileNameMD,
+        "Corrected **global+local** drift for ROI: {} barcode:{}\n ![]({})\n".format(
+            ROI, barcode, outputFileName + "_Corrected.png"
+        ),
+        "a",
+    )
+
+    del montage2DReference, montage2DCorrected, imageListReferencePadded, imageListCorrectedPadded
+    del imageListReference, imageListCorrected
 
 
-def localDriftCorrection_savesResults(dictShift,alignmentResultsTable,dataFolder,log1):
+def localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1):
 
-
-    # plots shift violins 
+    # plots shift violins
     for ROI in dictShift.keys():
         fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(9, 5))
-        shifts,labels=[],[]
-        
+        shifts, labels = [], []
+
         for barcode in dictShift[ROI].keys():
-            shiftsBarcode=np.array([0,0])
+            shiftsBarcode = np.array([0, 0])
             labels.append(barcode)
             for iMask in dictShift[ROI][barcode].keys():
-                shiftsBarcode=np.concatenate((shiftsBarcode,dictShift[ROI][barcode][iMask]))
+                shiftsBarcode = np.concatenate((shiftsBarcode, dictShift[ROI][barcode][iMask]))
             shifts.append(shiftsBarcode)
-        
+
         plt.violinplot(shifts)
 
-        ax1.get_xaxis().set_tick_params(direction='out')
-        ax1.xaxis.set_ticks_position('bottom')
+        ax1.get_xaxis().set_tick_params(direction="out")
+        ax1.xaxis.set_ticks_position("bottom")
         ax1.set_xticks(np.arange(1, len(labels) + 1))
         ax1.set_xticklabels(labels)
         ax1.set_xlim(0.25, len(labels) + 0.75)
         ax1.set_xlabel("ROI #{}".format(ROI))
-        ax1.set_ylabel('local drift shift, px')
-        outputFileName = dataFolder.outputFolders["alignImages"] + os.sep + "LocalShiftsViolinPlot_" + "ROI:"+ROI 
+        ax1.set_ylabel("local drift shift, px")
+        outputFileName = dataFolder.outputFolders["alignImages"] + os.sep + "LocalShiftsViolinPlot_" + "ROI:" + ROI
         plt.savefig(outputFileName + ".png")
-        plt.close()                
+        plt.close()
         writeString2File(
-                        log1.fileNameMD,
-                        "Local drift for ROI: {}\n ![]({})\n".format(ROI, outputFileName + ".png"),
-                        "a",
-                    )
-                        
+            log1.fileNameMD, "Local drift for ROI: {}\n ![]({})\n".format(ROI, outputFileName + ".png"), "a",
+        )
+
     # saves Table with all shifts
-    alignmentResultsTable .write(
-        dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat", format="ascii.ecsv", overwrite=True,
+    alignmentResultsTable.write(
+        dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat",
+        format="ascii.ecsv",
+        overwrite=True,
     )
-            
+
+
+def localDriftforRT(
+    barcode,
+    fileNameFiducial,
+    imReference,
+    imageReference,
+    imageBarcode,
+    Masks,
+    bezel,
+    shiftTolerance,
+    ROI,
+    alignmentResultsTable,
+):
+    # - iterate over masks <iMask>
+    # dictShift[ROI][barcode] = {}
+    imageListCorrected, imageListunCorrected, imageListReference,errormessage = [], [], [], []
+    
+    dictShiftBarcode = {}
+
+    print("\nprocessing> Looping over {} masks for barcode: {}\n".format(Masks.max(), barcode))
+    for iMask in trange(1, Masks.max()):
+        # calculates shift
+
+        shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = alignsSubVolumes(
+            imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask
+        )
+        # stores images in list
+        imageListReference.append(subVolumeReference)
+        imageListunCorrected.append(subVolume)
+
+        # evaluates shift to determine if we keep or not
+        if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
+            errormessage.append(
+                "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {}".format(
+                    ROI, barcode, iMask, shift, shiftTolerance
+                )
+            )
+
+            shift = np.array([0, 0])
+            imageListCorrected.append(subVolume)
+        else:
+            imageListCorrected.append(subVolumeCorrected)
+
+        # stores result in database
+        # dictShift[ROI][barcode][str(iMask)] = shift
+        dictShiftBarcode[str(iMask)] = shift
+
+        # creates Table entry to return
+        tableEntry = [
+            os.path.basename(fileNameFiducial),
+            os.path.basename(imReference.fileName),
+            int(ROI),
+            int(barcode.split("RT")[1]),
+            iMask,
+            shift[0],
+            shift[1],
+            error,
+            diffphase,
+        ]
+
+        alignmentResultsTable.add_row(tableEntry)
+    
+    result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
+    
+    return result
+
+
 def localDriftCorrection(param, log1, session1):
     sessionName = "localDriftCorrection"
     # tqdm._instances.clear()
-    
+
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
     log1.addSimpleText(
@@ -337,26 +407,35 @@ def localDriftCorrection(param, log1, session1):
         log1.fileNameMD, "## {}: {}\n".format(session1.name, param.param["acquisition"]["label"]), "a",
     )
 
-
-    if 'localShiftTolerance' in param.param['alignImages'].keys():
-        shiftTolerance = param.param['alignImages']['localShiftTolerance']
+    if "localShiftTolerance" in param.param["alignImages"].keys():
+        shiftTolerance = param.param["alignImages"]["localShiftTolerance"]
     else:
-        shiftTolerance=1
+        shiftTolerance = 1
 
-    if 'bezel' in param.param['alignImages'].keys():
-        bezel = param.param['alignImages']['bezel']
+    if "bezel" in param.param["alignImages"].keys():
+        bezel = param.param["alignImages"]["bezel"]
     else:
         bezel = 20
-        
-    print("Parameters> shiftTolerance = {} | bezel = {}".format(shiftTolerance,bezel))
-    errormessage=[]
-    
+
+    print("Parameters> shiftTolerance = {} | bezel = {}".format(shiftTolerance, bezel))
+    errormessage = []
+
     alignmentResultsTable = Table(
-            names=("aligned file", "reference file", "ROI #", "Barcode #", "CellID #","shift_x", "shift_y", "error", "diffphase",),
-            dtype=("S2", "S2", 'int', 'int', 'int',"f4", "f4", "f4", "f4"),
-        )
-    dictShift={}
-    
+        names=(
+            "aligned file",
+            "reference file",
+            "ROI #",
+            "Barcode #",
+            "CellID #",
+            "shift_x",
+            "shift_y",
+            "error",
+            "diffphase",
+        ),
+        dtype=("S2", "S2", "int", "int", "int", "f4", "f4", "f4", "f4"),
+    )
+    dictShift = {}
+
     for currentFolder in dataFolder.listFolders:
         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
         dataFolder.createsFolders(currentFolder, param)
@@ -366,7 +445,8 @@ def localDriftCorrection(param, log1, session1):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report("About to read {} files\n".format(len(param.fileList2Process)))
 
-        dictShift={}
+        dictShift = {}
+
         # iterates over ROIs
         for fileNameDAPI in param.fileList2Process:
 
@@ -389,10 +469,10 @@ def localDriftCorrection(param, log1, session1):
 
             else:
                 print("Error> No Mask found! File expected: {}".format(fullFileNameROImasks))
-                raise FileNotFoundError ("I cannot find DAPI mask: {}".format(fullFileNameROImasks))
+                raise FileNotFoundError("I cannot find DAPI mask: {}".format(fullFileNameROImasks))
 
             # - loads reference fiducial file
-            ROI, imReference = loadsFiducial(param, fileNameDAPI,log1,dataFolder)
+            ROI, imReference = loadsFiducial(param, fileNameDAPI, log1, dataFolder)
             imageReference = imReference.removesBackground2D(normalize=True)
             sumImage = np.copy(imageReference)
 
@@ -403,76 +483,107 @@ def localDriftCorrection(param, log1, session1):
             if imReference.fileName in fiducialFileNames:
                 fiducialFileNames.remove(imReference.fileName)
 
-            dictShift[ROI]={}
-            
-            # - load fiducial for cycle <i>
-            for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+            dictShift[ROI] = {}
 
-                # loads 2D image and applies registration
-                Im = Image()
-                Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
-                imageBarcode = Im.removesBackground2D(normalize=True)
-                sumImage += imageBarcode
 
-                # - iterate over masks <iMask>
-                dictShift[ROI][barcode]={}
-                imageListCorrected,imageListunCorrected,imageListReference=[],[],[]
-                # for iMask in tqdm(range(1, Masks.max()),mininterval=2,desc="Looping over {} masks for barcode: {}\n".format(Masks.max(),barcode)):
-                print("\nprocessing> Looping over {} masks for barcode: {}\n".format(Masks.max(),barcode))
-                sleep(0.2)
-                for iMask in trange(1, Masks.max()):
-                    # calculates shift                    
+            if param.param['parallel']:
 
-                    shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected =  alignsSubVolumes(imageReference, 
-                                                                                                  imageBarcode, 
-                                                                                                  Masks, 
-                                                                                                  bezel=bezel, 
-                                                                                                  iMask=iMask)
-                    # stores images in list
-                    imageListReference.append(subVolumeReference)
-                    imageListunCorrected.append(subVolume)
-                    
-                    # evaluates shift to determine if we keep or not
-                    if  np.nonzero(np.absolute(shift)>shiftTolerance)[0].shape[0]>0:
-                        errormessage.append("ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {}".format(
+                futures=list()
+                nThreads=len(barcodeList)
+                print("Cluster with {} workers started".format(nThreads))
+
+                # dask
+                client = Client(processes=False,n_workers=nThreads)
+
+                # - load fiducial for cycle <i>
+                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+    
+                    # loads 2D image and applies registration
+                    Im = Image()
+                    Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
+                    imageBarcode = Im.removesBackground2D(normalize=True)
+                    sumImage += imageBarcode
+
+                    result=client.submit(localDriftforRT,barcode,
+                            fileNameFiducial,
+                            imReference,
+                            imageReference,
+                            imageBarcode,
+                            Masks,
+                            bezel,
+                            shiftTolerance,
                             ROI,
-                            barcode,
-                            iMask,
-                            shift,
-                            shiftTolerance))
-                        
-                        shift=np.array([0,0])
-                        imageListCorrected.append(subVolume)
-                    else:
-                        imageListCorrected.append(subVolumeCorrected)
+                            alignmentResultsTable)
+                    futures.append(result)
                     
-                    # stores result in database
-                    dictShift[ROI][barcode][str(iMask)]=shift
+                results = client.gather(futures)
+                
+                for result, barcode in zip(results,barcodeList):
+                    
+                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
+                    
+                    errormessage+=errormessage1
+                    
+                    # output mosaics with global and local alignments
+                    localDriftCorrection_plotsLocalAlignments(
+                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+                    )
+                                
+                del sumImage
+                # produces shift violin plots and saves results Table
+                localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
+                log1.report("\n".join(errormessage))
+                
+            else:
 
-                    # creates Table entry to return
-                    tableEntry = [
-                        os.path.basename(fileNameFiducial),
-                        os.path.basename(imReference.fileName),
-                        int(ROI),
-                        int(barcode.split('RT')[1]),
-                        iMask,
-                        shift[0],
-                        shift[1],
-                        error,
-                        diffphase,
-                    ]
-                    alignmentResultsTable.add_row(tableEntry)
+                # - load fiducial for cycle <i>
+                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+    
+                    # loads 2D image and applies registration
+                    Im = Image()
+                    Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
+                    imageBarcode = Im.removesBackground2D(normalize=True)
+                    sumImage += imageBarcode
+    
+                    # calculates local drift for barcode by looping over Masks
+                    # dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = localDriftforRT(
+                    #         barcode,
+                    #         fileNameFiducial,
+                    #         imReference,
+                    #         imageReference,
+                    #         imageBarcode,
+                    #         Masks,
+                    #         bezel,
+                    #         shiftTolerance,
+                    #         ROI,
+                    #         alignmentResultsTable)
+                    result = localDriftforRT(
+                            barcode,
+                            fileNameFiducial,
+                            imReference,
+                            imageReference,
+                            imageBarcode,
+                            Masks,
+                            bezel,
+                            shiftTolerance,
+                            ROI,
+                            alignmentResultsTable)
+                
+                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
+                    
+                    errormessage+=errormessage1
+                    
+                    # output mosaics with global and local alignments
+                    localDriftCorrection_plotsLocalAlignments(
+                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+                    )
+    
+                del sumImage
+    
+                # produces shift violin plots and saves results Table
+                localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
+                log1.report("\n".join(errormessage))
 
-                # output mosaics with global and local alignments
-                localDriftCorrection_plotsLocalAlignments(imageListCorrected,imageListunCorrected,imageListReference,log1,dataFolder,ROI,barcode)
-
-            del sumImage
-
-            # produces shift violin plots and saves results Table 
-            localDriftCorrection_savesResults(dictShift,alignmentResultsTable,dataFolder,log1)
-            log1.report("\n".join(errormessage))
-
-            
     return 0, dictShift, alignmentResultsTable
 
 

@@ -25,6 +25,9 @@ import glob, os
 import numpy as np
 import argparse
 from datetime import datetime
+from dask.distributed import Client, wait, LocalCluster
+from multiprocessing.pool import ThreadPool
+import threading
 
 # import cv2
 import matplotlib.pyplot as plt
@@ -90,6 +93,7 @@ def makeProjections(param, log1, session1,fileName=None):
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
 
+        
     for currentFolder in dataFolder.listFolders:
         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
         dataFolder.createsFolders(currentFolder, param)
@@ -99,84 +103,46 @@ def makeProjections(param, log1, session1,fileName=None):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.report("About to read {} files\n".format(len(param.fileList2Process)))
 
-        for fileName2Process in param.fileList2Process:
-            # print("Looking for {} in {}".format(fileName,fileName2Process))
+        if param.param['parallel']:
+            threads=list()
+            files2ProcessFiltered = [x for x in param.fileList2Process if \
+                                     (fileName==None) \
+                                     or (fileName!=None \
+                                     and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))]
+            # cluster=LocalCluster(dashboard_address=None)
+            # cluster.scale(len(files2ProcessFiltered))
+            # client=Client(cluster)
+            if len(files2ProcessFiltered)>0:
+                print("Cluster with {} workers started".format(len(files2ProcessFiltered)))
 
-            if fileName==None:
-                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
+                # dask
+                client = Client(processes=False)#,n_workers=len(files2ProcessFiltered))
+                threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
+                
+                for index, thread in enumerate(threads):
+                    print("Waiting for thread: {}".format(index+1))
+                    wait(threads)        
+                
+                # ThreadPool
+                # pool = ThreadPool(processes=len(param.fileList2Process))
+                # threads=[pool.apply_async(makes2DProjectionsFile,args=(x, param, log1, session1, dataFolder)) for x in files2ProcessFiltered]            
+                # pool.close()
+                # pool.join()
+
+                # simple threads
+                # for x in files2ProcessFiltered:
+                #     x1=threading.Thread(target=makes2DProjectionsFile,args=(x, param, log1, session1, dataFolder))
+                #     threads.append(x1)
+                #     x1.start() 
+                # for index, thread in enumerate(threads):
+                #     print("Waiting for thread: {}".format(index+1))
+                #     thread.join()
+                
+        for index, fileName2Process in enumerate(param.fileList2Process):
+
+            if (fileName==None) or (fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])):
+                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
                 session1.add(fileName2Process, sessionName)
-            elif fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName]):
-                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
-                session1.add(fileName2Process, sessionName)
-                # print("******File {} processed!!!".format(fileName2Process))
             else:
                 pass
-                # print("File {} not found in list".format(fileName2Process))
 
-
-# =============================================================================
-# MAIN
-# =============================================================================
-
-# if __name__ == "__main__":
-
-#     begin_time = datetime.now()
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-#     parser.add_argument("-x", "--fileName", help="fileName to analyze")
-#     args = parser.parse_args()
-
-#     print("\n--------------------------------------------------------------------------")
-
-#     if args.rootFolder:
-#         rootFolder = args.rootFolder
-#     else:
-#         rootFolder = os.getcwd()
-
-#     if args.fileName:
-#         fileName = args.fileName
-#     else:
-#         fileName = None
-        
-#         print("parameters> rootFolder: {}".format(rootFolder))
-#     now = datetime.now()
-
-#     labels2Process = [
-#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-#         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-#     ]
-
-#     # session
-#     sessionName = "makesProjections"
-#     session1 = session(rootFolder, sessionName)
-
-#     # setup logs
-#     log1 = log(rootFolder)
-#     log1.addSimpleText("\n-------------------------{}-------------------------\n".format(sessionName))
-#     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-#     writeString2File(
-#         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-#     )  # initialises MD file
-
-#     for ilabel in range(len(labels2Process)):
-#         label = labels2Process[ilabel]["label"]
-#         labelParameterFile = labels2Process[ilabel]["parameterFile"]
-#         log1.addSimpleText("**Analyzing label: {}**".format(label))
-
-#         # sets parameters
-#         param = Parameters(rootFolder, labelParameterFile)
-
-#         # [projects 3D images in 2d]
-#         makeProjections(param, log1, session1, fileName)
-
-#         print("\n")
-#         del param
-#     # exits
-#     session1.save(log1)
-#     log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
-
-#     del log1, session1
-#     print("Elapsed time: {}".format(datetime.now() - begin_time))

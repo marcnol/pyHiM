@@ -21,30 +21,49 @@ from fileProcessing.fileManagement import (
 from imageProcessing.alignImages import alignImages, appliesRegistrations
 
 # =============================================================================
+# Local functions
+# =============================================================================
+
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-x", "--fileName", nargs='+', help="fileName to analyze")
+    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
+
+    args = parser.parse_args()
+
+    print("\n--------------------------------------------------------------------------")
+    runParameters={}
+    if args.rootFolder:
+        runParameters["rootFolder"] = args.rootFolder
+    else:
+        runParameters["rootFolder"] = os.getcwd()
+
+    if args.fileName:
+        runParameters["fileName"] = args.fileName
+    else:
+        runParameters["fileName"] = None
+        
+    if args.parallel:
+        runParameters["parallel"] = args.parallel
+    else:
+        runParameters["parallel"] = False
+
+    return runParameters
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", help="fileName to analyze")
-    args = parser.parse_args()
+    runParameters=parseArguments()    
 
     print("\n--------------------------------------------------------------------------")
-
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = os.getcwd()
-
-    if args.fileName:
-        fileName = args.fileName
-    else:
-        fileName = None
-        
-    print("parameters> rootFolder: {}".format(rootFolder))
+     
+    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
     now = datetime.now()
 
     labels2Process = [
@@ -56,10 +75,10 @@ if __name__ == "__main__":
 
     # session
     sessionName = "registersImages"
-    session1 = session(rootFolder, sessionName)
+    session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(rootFolder)
+    log1 = log(runParameters["rootFolder"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
@@ -72,21 +91,25 @@ if __name__ == "__main__":
         log1.addSimpleText("**Analyzing label: {}**".format(label))
 
         # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
-
+        param = Parameters(runParameters["rootFolder"], labelParameterFile)
+        if runParameters["parallel"]:
+            param.param['parallel']=True
+        else:
+            param.param['parallel']=False
+            
         # [registers fiducials using a barcode as reference]
         if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
             log1.report(
                 "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
             )
-            alignImages(param, log1, session1,fileName)
+            alignImages(param, log1, session1,runParameters["fileName"])
 
         # [applies registration to DAPI and barcodes]
         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
             log1.report(
                 "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
             )
-            appliesRegistrations(param, log1, session1,fileName)
+            appliesRegistrations(param, log1, session1,runParameters["fileName"])
 
         print("\n")
         del param

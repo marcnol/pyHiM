@@ -29,6 +29,27 @@ from imageProcessing.localDriftCorrection import localDriftCorrection
 from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
+
+    args = parser.parse_args()
+
+    print("\n--------------------------------------------------------------------------")
+    runParameters={}
+    if args.rootFolder:
+        runParameters["rootFolder"] = args.rootFolder
+    else:
+        runParameters["rootFolder"] = os.getcwd()
+       
+    if args.parallel:
+        runParameters["parallel"] = args.parallel
+    else:
+        runParameters["parallel"] = False
+
+    return runParameters
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -36,18 +57,11 @@ from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()
+    runParameters=parseArguments()    
 
     print("\n--------------------------------------------------------------------------")
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = os.getcwd()
-
-    print("parameters> rootFolder: {}".format(rootFolder))
+    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
     now = datetime.now()
 
     labels2Process = [
@@ -58,10 +72,10 @@ if __name__ == "__main__":
     ]
 
     # session
-    session1 = session(rootFolder, "processingPipeline")
+    session1 = session(runParameters["rootFolder"], "processingPipeline")
 
     # setup logs
-    log1 = log(rootFolder)
+    log1 = log(runParameters["rootFolder"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
     if log1.fileNameMD=='.md':
         log1.fileNameMD='HiM_report.md'
@@ -77,7 +91,13 @@ if __name__ == "__main__":
         log1.addSimpleText("**Analyzing label: {}**".format(label))
 
         # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
+        param = Parameters(runParameters["rootFolder"], labelParameterFile)
+
+        if runParameters["parallel"]:
+            param.param['parallel']=True
+        else:
+            param.param['parallel']=False
+
 
         # [projects 3D images in 2d]
         makeProjections(param, log1, session1)

@@ -18,6 +18,7 @@ import os
 from os import path
 import json
 import re
+from warnings import warn
 
 # =============================================================================
 # CLASSES
@@ -300,6 +301,9 @@ class Parameters:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch01")
             channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch04")
 
+        if channelDAPI_fiducial and len(fileList2Process)==0:
+            warn("\n\n****You are using ch02 for channelDAPI_fiducial but there are only 2 channels for DAPI!\n\n")
+        
         # selects DAPI files
         if self.param["acquisition"]["label"] == "DAPI":
             self.fileList2Process = [

@@ -47,6 +47,9 @@ and add the following line to the end
 ```sh
 export PATH="$PATH:/home/rata/Repositories/pyHiM/:home/rata/Repositories/pyHiM/fileProcessing"
 export PYTHONPATH="/home/rata/Repositories/pyHiM"
+
+export MPLBACKEND=agg
+
 ```
 
 make sure you use a different directory name if this is not where you put pyHiM !

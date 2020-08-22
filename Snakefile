@@ -1,13 +1,22 @@
 import glob,os
-rootFolder='.'
-tag='_ch01.tif'
-SAMPLES=[x.split(tag)[0] for x in glob.glob(rootFolder+os.sep+"*.tif") if tag in x]
+rootFolder='rawImages'
+tag='.tif'
+TIFS=[x.split(tag)[0] for x in glob.glob(rootFolder+os.sep+"*.tif") if tag in x]
 
+rule all:
+	input: ["rawImages/zProject/{}_2d.npy".format(os.path.basename(x).split(".")[0]) for x in TIFS]
+	    	
 rule zProject:
     input:
-    	["{}_ch01.tif".format(x.split(",")[0]) for x in SAMPLES] 
+    	tifs=["{}.tif".format(x.split(".")[0]) for x in TIFS]
     output:
-        ["zProject/{}_ch01_2d.npy".format(x.split(",")[0]) for x in SAMPLES]
+        ["rawImages/zProject/{}_2d.npy".format(os.path.basename(x).split(".")[0]) for x in TIFS]
     shell:
-        "runMakeProjections.py -F . -x {input}"
+        "runMakeProjections.py -F rawImages --parallel -x {input.tifs}"
+
+rule clean:
+    input:
+    	rootFolder="{}".format(rootFolder)
+    shell:
+        "cleanHiM_run.py -F {input.rootFolder}"
 

@@ -48,9 +48,9 @@ setup(
 
 # list of packages needed
 
-# conda install pandas scikit-image numpy matplotlib astropy
+# conda install pandas scikit-image numpy matplotlib astropy graphviz
 # conda install photutils -c astropy
 
-# pip install roipoly opencv-python tqdm stardist csbdeep snakemake
+# pip install roipoly opencv-python tqdm stardist csbdeep snakemake 
 # pip install --upgrade tensorflow
 
