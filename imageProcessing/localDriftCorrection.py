@@ -39,7 +39,7 @@ from tqdm import trange
 from skimage.util import montage
 import cv2
 
-from dask.distributed import Client, wait, LocalCluster
+from dask.distributed import Client, wait, LocalCluster,progress
 from multiprocessing.pool import ThreadPool
 import threading
 
@@ -332,21 +332,36 @@ def localDriftforRT(
     fileNameFiducial,
     imReference,
     imageReference,
-    imageBarcode,
     Masks,
     bezel,
     shiftTolerance,
     ROI,
     alignmentResultsTable,
+    log1,
+    dataFolder,
+    parallel=False
 ):
-    # - iterate over masks <iMask>
-    # dictShift[ROI][barcode] = {}
+
+    
+    # loads 2D image and applies registration
+    Im = Image()
+    Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
+    imageBarcode = Im.removesBackground2D(normalize=True)
+    # sumImage += imageBarcode
+                    
     imageListCorrected, imageListunCorrected, imageListReference,errormessage = [], [], [], []
     
     dictShiftBarcode = {}
 
+    # - iterate over masks <iMask>
     print("\nprocessing> Looping over {} masks for barcode: {}\n".format(Masks.max(), barcode))
-    for iMask in trange(1, Masks.max()):
+    if parallel:
+        Maskrange=range(1, Masks.max())
+        log1.report("See progress in http://localhost:8787 ")
+    else:
+        Maskrange=trange(1, Masks.max())
+        
+    for iMask in Maskrange:
         # calculates shift
 
         shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = alignsSubVolumes(
@@ -493,61 +508,25 @@ def localDriftCorrection(param, log1, session1):
                 print("Cluster with {} workers started".format(nThreads))
 
                 # dask
-                client = Client(processes=False,n_workers=nThreads)
+                client = Client(n_workers=nThreads) #processes=False
+                # cluster=LocalCluster(dashboard_address=None)
+                # cluster.scale(n_workers=nThreads)
+                # client=Client(cluster)
 
                 # - load fiducial for cycle <i>
                 for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
     
-                    # loads 2D image and applies registration
-                    Im = Image()
-                    Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
-                    imageBarcode = Im.removesBackground2D(normalize=True)
-                    sumImage += imageBarcode
+                    # Consider scattering large objects ahead of time
+                    # with client.scatter to reduce scheduler burden and 
+                    # keep data on workers
+                    
+                    #     future = client.submit(func, big_data)    # bad
+                    
+                    #     big_future = client.scatter(big_data)     # good
+                    #     future = client.submit(func, big_future)  # good
+                    #   % (format_bytes(len(b)), s)
 
-                    result=client.submit(localDriftforRT,barcode,
-                            fileNameFiducial,
-                            imReference,
-                            imageReference,
-                            imageBarcode,
-                            Masks,
-                            bezel,
-                            shiftTolerance,
-                            ROI,
-                            alignmentResultsTable)
-                    futures.append(result)
-                    
-                results = client.gather(futures)
-                
-                for result, barcode in zip(results,barcodeList):
-                    
-                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
-                    
-                    errormessage+=errormessage1
-                    
-                    # output mosaics with global and local alignments
-                    localDriftCorrection_plotsLocalAlignments(
-                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
-                    )
-                                
-                del sumImage
-                # produces shift violin plots and saves results Table
-                localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
-                log1.report("\n".join(errormessage))
-                
-            else:
-
-                # - load fiducial for cycle <i>
-                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
-    
-                    # loads 2D image and applies registration
-                    Im = Image()
-                    Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
-                    imageBarcode = Im.removesBackground2D(normalize=True)
-                    sumImage += imageBarcode
-    
-                    # calculates local drift for barcode by looping over Masks
-                    # dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = localDriftforRT(
-                    #         barcode,
+                    # bigFuture=client.scatter(barcode,
                     #         fileNameFiducial,
                     #         imReference,
                     #         imageReference,
@@ -557,20 +536,62 @@ def localDriftCorrection(param, log1, session1):
                     #         shiftTolerance,
                     #         ROI,
                     #         alignmentResultsTable)
+
+                    # result = client.submit(localDriftforRT,bigFuture)
+
+                    result=client.submit(localDriftforRT,barcode,
+                            fileNameFiducial,
+                            imReference,
+                            imageReference,
+                            Masks,
+                            bezel,
+                            shiftTolerance,
+                            ROI,
+                            alignmentResultsTable,
+                            log1,
+                            dataFolder,
+                            parallel=True)
+                   
+                    futures.append(result)
+                    # progress(result)
+                    
+                results = client.gather(futures)
+
+                for result, barcode in zip(results,barcodeList):
+                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
+                    errormessage+=errormessage1
+                    # output mosaics with global and local alignments
+                    localDriftCorrection_plotsLocalAlignments(
+                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+                    )
+
+                # results.wait()
+                # client.close()
+                
+            else:
+
+                
+                # need to make it load image in function. Validate in sequential mode, then port to parallel
+                # then solve the issue with qpdm when running parallel computations.
+               
+                # - load fiducial for cycle <i>
+                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+      
+                    # calculates local drift for barcode by looping over Masks
                     result = localDriftforRT(
                             barcode,
                             fileNameFiducial,
                             imReference,
                             imageReference,
-                            imageBarcode,
                             Masks,
                             bezel,
                             shiftTolerance,
                             ROI,
-                            alignmentResultsTable)
+                            alignmentResultsTable,
+                            log1,
+                            dataFolder)
                 
                     dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
-                    
                     errormessage+=errormessage1
                     
                     # output mosaics with global and local alignments
@@ -578,11 +599,11 @@ def localDriftCorrection(param, log1, session1):
                         imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
                     )
     
-                del sumImage
-    
-                # produces shift violin plots and saves results Table
-                localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
-                log1.report("\n".join(errormessage))
+            del sumImage
+
+            # produces shift violin plots and saves results Table
+            localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
+            log1.report("\n".join(errormessage))
 
     return 0, dictShift, alignmentResultsTable
 
