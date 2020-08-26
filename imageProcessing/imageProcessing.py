@@ -73,7 +73,7 @@ class Image:
 
         self.data_2D = np.load(fileName)
         log.report(
-            "Loading 2d projection from disk:{}".format(os.path.basename(fileName)), "info",
+            "\nLoading 2d projection from disk:{}".format(os.path.basename(fileName)), "info",
         )
         # print("Loading 2d projection from disk:{}".format(fileName))
 

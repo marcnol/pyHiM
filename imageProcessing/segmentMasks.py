@@ -86,13 +86,9 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
         "a",
     )
     
-    # np.save('/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug/segmentedObjects/im1_bkg_substracted.npy',im1_bkg_substracted)
-
-
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
 
     norm = ImageNormalize(stretch=SqrtStretch())
-    # cmap = segm_deblend.make_cmap(random_state=12345)
     cmap = lbl_cmap
 
     fig = plt.figure()
@@ -305,7 +301,6 @@ def segmentMaskStardist(im, param):
     sigma = param.param["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
     kernel.normalize()
-    # outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
 
     n_channel = 1 if im.ndim == 2 else im.shape[-1]
     axis_norm = (0, 1)  # normalize channels independently
@@ -343,10 +338,8 @@ def segmentMaskStardist(im, param):
     for label in segm_deblend.labels:
         # take regions with large enough areas
         area = segm_deblend.get_area(label)
-        # print('label {}, with area {}'.format(label,area))
         if area < param.param["segmentedObjects"]["area_min"] or area > param.param["segmentedObjects"]["area_max"]:
             segm_deblend.remove_label(label=label)
-            # print('label {} removed'.format(label))
 
     # relabel so masks numbers are consecutive
     segm_deblend.relabel_consecutive()
@@ -494,74 +487,3 @@ def segmentMasks(param, log1, session1,fileName=None):
                         barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
                         log1.report("File {} written to file.".format(outputFile), "info")
                     session1.add(fileName2Process, sessionName)
-
-
-# # =============================================================================
-# # MAIN
-# # =============================================================================
-# if __name__ == "__main__":
-#     begin_time = datetime.now()
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-#     parser.add_argument("-x", "--fileName", help="fileName to analyze")
-
-#     args = parser.parse_args()
-
-#     print("\n--------------------------------------------------------------------------")
-
-#     if args.rootFolder:
-#         rootFolder = args.rootFolder
-#     else:
-#         rootFolder = os.getcwd()
-    
-#     if args.fileName:
-#         fileName = args.fileName
-#     else:
-#         fileName = None
-        
-#     print("parameters> rootFolder: {}".format(rootFolder))
-#     now = datetime.now()
-
-#     labels2Process = [
-#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-#         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-#     ]
-
-#     # session
-#     sessionName = "segmentMasks"
-#     session1 = session(rootFolder, sessionName)
-#     # setup logs
-#     log1 = log(rootFolder)
-#     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
-#     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-#     writeString2File(
-#         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-#     )  # initialises MD file
-
-#     for ilabel in range(len(labels2Process)):
-#         label = labels2Process[ilabel]["label"]
-#         labelParameterFile = labels2Process[ilabel]["parameterFile"]
-#         log1.addSimpleText("**Analyzing label: {}**".format(label))
-
-#         # sets parameters
-#         param = Parameters(rootFolder, labelParameterFile)
-
-#         # [applies registration to DAPI and barcodes]
-#         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-#             # [segments DAPI and spot masks]
-#             if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
-#                 segmentMasks(param, log1, session1,fileName)
-
-#         print("\n")
-#         del param
-#     # exits
-#     session1.save(log1)
-#     log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
-
-#     del log1, session1
-#     print("Elapsed time: {}".format(datetime.now() - begin_time))
-
-# # 

@@ -205,15 +205,7 @@ where the first column contains the ROI number, the second the number of the cel
 
 This file can then be loaded within ```replotHiMmatrix.py``` to identify which cells of the matrix have which tag. More on this will be added to the section below LATER. 
 
-### zipping and erasing run
 
-#### zip and retrieve results
-
-Other utilities have been written to retrieve data from a run to a remote server. For this, go to the directory with the data an run ```zipHiM_run.py```. This will archive all the png, ecsv, and dat files with the results in addition to the MD file with the output of the run. The name of the archive will be HiMrun.tar.gz.
-
-#### clean run
-
-If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data. 
 
 ### Analysis of several samples at once
 
@@ -248,11 +240,45 @@ else:
 
 To run just do:
 
-​```bash
+```bash
 pyHiM.py -F rootFolder 0 1 33 
 ```
 
 to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
+
+
+
+***I will change this in the future to replace it by either Dask or snakeMake...***
+
+
+
+### Parallel Computations
+
+Several routines are now fitted with the possibility of performing parallel computations. At the moment, they use different ways of implementing this. Either using the Threadpool fro python, or using the Dask package.
+
+The use of parallel computations can be invoked using the ```--parallel``` flag in the command line for individual functions (e.g. ```runMakeProjections```) or for ```pyHiM.py```.
+
+#### MakeProjections
+
+This uses the Threadpool. The gain for a small number of files is zero. It seems, at the moment, to be marginal for a large number of files. I imaging the reason is that the rate-limiting factor is loading 3D stacks from disk and this process is serialized by the OS. So if you do all computations in the same cluster, all the threads need to go to though the same bottleneck. I will continue searching if this the case and whether there is a way round it.
+
+#### LocalDriftCorrection
+
+As this is the most processor-intensive function, I focuses on implementing a parallel version for this. After also testing Threadpool, I turned to Dask as it has the added advantage of providing a server to monitor progress and also can be trivially setup to use several servers by SSH.
+
+The gain is roughly two fold currently.
+
+SSH into the cluster using
+
+``` ssh -L 8000:localhost:8787 marcnol@lopevi```
+
+Invoke using the ```--parallel``` flag in ```runLocalDrifrCorrection.py```.
+
+Go to your browser and open
+
+```http://localhost:8000```
+
+to see the progress.
 
 
 
@@ -282,7 +308,7 @@ scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_D
 
 Now, you can run ```processHiMmatrix.py``` locally. You should setup your files in a directory. For instance the directory ```/mnt/disk2/marcnol/data/Experiment_19``` contains three folders:
 
-```bash
+​```bash
 006_Embryo  009_Embryo  026_Embryo
 ```
 
@@ -444,7 +470,7 @@ to run with default options. The important thing is to add the ```--matlab``` fl
 
 You should be now set.
 
-### Plotting publication-quality figures
+## 3- Plotting publication-quality figures
 
 The processing with ```processHiMmatrix.py``` produces plots but this routing is primarily concerned with the collection of different datasets, thus it does not have options for customization.
 
