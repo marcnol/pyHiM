@@ -431,7 +431,7 @@ def buildsPWDmatrix(
     currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md",
 ):
 
-    # Loads localAlignment and coordinate Tables
+    # Loads localAlignment if it exists
     localAlignmentFileName=dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat"
     if os.path.exists(localAlignmentFileName):
         alignmentResultsTable= Table.read(localAlignmentFileName, format="ascii.ecsv")
@@ -439,7 +439,8 @@ def buildsPWDmatrix(
     else:
         print("\n\n *** Warning: could not found localAlignment: {}\n Proceeding with only global alignments...".format(localAlignmentFileName))
         alignmentResultsTableRead=False
-        
+
+    # Loads coordinate Tables        
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
     else:

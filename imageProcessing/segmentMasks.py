@@ -327,8 +327,6 @@ def segmentMaskStardist(im, param):
 
     # estimates masks and deblends
     segm = SegmentationImage(labeled)
-    # threshold = 0.5
-    # segm = detect_sources(labeled, threshold, npixels=param.param["segmentedObjects"]["area_min"], filter_kernel=kernel,)
 
     # removes masks too close to border
     segm.remove_border_labels(border_width=10)  # parameter to add to infoList
