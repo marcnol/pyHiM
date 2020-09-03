@@ -326,7 +326,6 @@ def localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFold
         overwrite=True,
     )
 
-
 def localDriftforRT(
     barcode,
     fileNameFiducial,
