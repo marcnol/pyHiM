@@ -31,8 +31,9 @@ import argparse
 from datetime import datetime
 from scipy.ndimage import shift as shiftImage
 from scipy.optimize import curve_fit
-from tqdm import trange
+import multiprocessing
 
+from tqdm import trange
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
@@ -48,12 +49,12 @@ from fileProcessing.fileManagement import session, log, Parameters
 
 
 class refitBarcodesClass:
-    def __init__(self, param, dataFolder, log1):
+    def __init__(self, param, log1, session1):
         self.param = param
-        self.dataFolder = dataFolder
+        self.session1=session1
+        # self.dataFolder = []
         self.log1 = log1
         self.window = 3
-        self.outputFileName = dataFolder.outputFiles["segmentedObjects"]
 
     def loadsBarcodeMap(self):
         fileNameBarcodeCoordinates = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
@@ -91,7 +92,6 @@ class refitBarcodesClass:
         return imageFile
 
     def loadsShifts3Dimage(self, barcodeMapSinglebarcode):
-        # nBarcode = barcodeMapROI_barcodeID.groups.keys[iBarcode][0]  # need to iterate over the first index
         nBarcode = np.unique(barcodeMapSinglebarcode["Barcode #"].data)[0]
         nROI = np.unique(barcodeMapSinglebarcode["ROI #"].data)[0]
 
@@ -99,8 +99,6 @@ class refitBarcodesClass:
 
         if len(imageFile) > 0:
             print("Loading 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
-
-            # imageFile = dataFolder.masterFolder+os.sep+'scan_001_RT41_001_ROI_converted_decon_ch01.tif'
 
             Im3D = Image()
             Im3D.loadImage(imageFile[0])
@@ -118,10 +116,7 @@ class refitBarcodesClass:
                 except KeyError:
                     shiftArray = None
                     self.log1.report(
-                        "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                            ROI, label
-                        ),
-                        "ERROR",
+                        "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(ROI, label), "ERROR",
                     )
 
                 Im3DShifted = Image()
@@ -130,7 +125,13 @@ class refitBarcodesClass:
                 numberZplanes = imageShape[0]
                 Im3DShifted.data = np.zeros(imageShape)  # creates array that will hold new shifted 3D data
                 print("Shifting 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
-                for z in range(numberZplanes):
+                
+                if self.param.param['parallel']:
+                    R = range(numberZplanes)
+                else:
+                    R = trange(numberZplanes)
+                    
+                for z in R:
                     Im3DShifted.data[z, :, :] = shiftImage(Im3D.data[z, :, :], shift)
 
             else:
@@ -150,25 +151,15 @@ class refitBarcodesClass:
         fig = plt.figure()
         fig.set_size_inches((30, 30))
 
-        # positions = np.transpose((xcentroids2D + 0.5, ycentroids2D+ 0.5))
         positions = np.transpose((xcentroids2D, ycentroids2D))
 
         apertures = CircularAperture(positions, r=4.0)
         norm = simple_norm(im, "sqrt", percent=99.9)
-        # norm = ImageNormalize(stretch=SqrtStretch())
-        # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
         plt.imshow(im, cmap="Greys", origin="lower", norm=norm)
         apertures.plot(color="blue", lw=1.5, alpha=0.35)
         plt.xlim(0, im.shape[1] - 1)
         plt.ylim(0, im.shape[0] - 1)
-        # plt.savefig(outputFileName + "_segmentedSources.png")
         plt.axis("off")
-        # plt.close()
-        # writeString2File(
-        #     log1.fileNameMD,
-        #     "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"),
-        #     "a",
-        # )
 
     def getFOV(self, x, y, imageShape):
 
@@ -312,7 +303,13 @@ class refitBarcodesClass:
             [],
         )
         print("Looping over {} spots...".format(numberSpots))
-        for iSpot in trange(numberSpots):
+        
+        if self.param.param['parallel']:
+            R = range(numberSpots)
+        else:
+            R = trange(numberSpots)
+            
+        for iSpot in R:
             results = self.getzPosition(Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape)
             zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = results
             listZpositionsMoment.append(zPositionMoment)
@@ -333,44 +330,62 @@ class refitBarcodesClass:
     def shows3DfittingResults(self, barcodeMapSinglebarcode, numberZplanes=60):
         nBarcode = np.unique(barcodeMapSinglebarcode["Barcode #"].data)[0]
         ROI = np.unique(barcodeMapSinglebarcode["ROI #"].data)[0]
-
-        plt.subplot(211)
-        plt.title("ROI: {} | barcode: {}".format(ROI, nBarcode))
-        cs1 = plt.scatter(
+        outputFileName = self.outputFileName + "_3Drefit_ROI:" + str(ROI) + "_barcode:" + str(nBarcode) + ".png"        
+        
+        fig, (ax2, ax1) = plt.subplots(2, 1)
+        cs1 = ax2.scatter(
             barcodeMapSinglebarcode["residualGaussFit"],
             barcodeMapSinglebarcode["sigmaGaussFit"],
             c=barcodeMapSinglebarcode["zcentroidGauss"],
             alpha=0.3,
         )
-        plt.xlabel("sigma")
-        plt.ylabel("residuals/amplitude")
-        cbar1 = plt.colorbar(cs1)
+        ax2.set_xlabel("sigma")
+        ax2.set_ylabel("residuals/amplitude")
+        # cbar1 = ax1.colorbar(cs1)
+        cbar1 = fig.colorbar(cs1, ax=ax2)
         cbar1.set_label("zPosition")
 
-        plt.subplot(212)
-        cs2 = plt.scatter(
+
+        cs2 = ax1.scatter(
             barcodeMapSinglebarcode["zcentroidGauss"],
             barcodeMapSinglebarcode["zcentroidMoment"],
             s=(barcodeMapSinglebarcode["sigmaGaussFit"]),
             c=barcodeMapSinglebarcode["residualGaussFit"],
             alpha=0.5,
         )
-        plt.xlabel("zPosition, Gaussian")
-        plt.ylabel("zPosition, Moment")
-        plt.xlim(0, numberZplanes)
-        plt.ylim(0, numberZplanes)
-        cbar2 = plt.colorbar(cs2)
+        ax1.set_xlabel("zPosition, Gaussian")
+        ax1.set_ylabel("zPosition, Moment")
+        ax1.set_xlim(0, numberZplanes)
+        ax1.set_ylim(0, numberZplanes)
+        cbar2 = fig.colorbar(cs2,ax=ax1)        
         cbar2.set_label("residuals/amplitude")
-        plt.clim(0, 10)
-        outputFileName = self.outputFileName + "_3Drefit_ROI:" + str(ROI) + "_barcode:" + str(nBarcode) + ".png"
+        cs2.set_clim(0, 10)
+
+        fig.suptitle("ROI: {} | barcode: {}".format(ROI, nBarcode), fontsize=12)
+
         plt.savefig(outputFileName)
         plt.close()
+
         writeString2File(
             self.log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName), "a",
         )
 
     def refitsBarcode(self, barcodeMapSinglebarcode):
-        # load 3D image: NEED TO MAKE IT RETRIEVE IMAGE NAME FROM BARCODE AND ROI !
+        '''
+        Refits a barcode encoded in barcodeMapSinglebarcode
+        
+        Parameters
+        ----------
+        barcodeMapSinglebarcode : ASTROPY table
+            List of coordinates detected in an ROI for a specific barcode.
+
+        Returns
+        -------
+        barcodeMapSinglebarcode : ASTROPY table
+            ASTROPY table with the fitted z centroids.
+
+        '''
+        # load 3D image
         Im3DShifted = self.loadsShifts3Dimage(barcodeMapSinglebarcode)
         numberZplanes = Im3DShifted.data.shape[0]
 
@@ -385,81 +400,108 @@ class refitBarcodesClass:
 
         return barcodeMapSinglebarcode
 
-    def makes3Dfits(self):
-        
+    def refitFilesinFolder(self):
+        '''
+        Refits all the barcode files found in rootFolder
+
+        Returns
+        -------
+        None.
+
+        '''
         # Loads coordinate Tables for all barcodes and ROIs
         barcodeMap, errorCode = self.loadsBarcodeMap()
-    
+
         # retrieves parameters
         if "3DGaussianfitWindow" in self.param.param["segmentedObjects"].keys():
             self.window = self.param.param["segmentedObjects"]["3DGaussianfitWindow"]
         else:
             self.window = 3
-    
+
         # loops over ROIs
         barcodeMapROI = barcodeMap.group_by("ROI #")
-        SCmatrixCollated, uniqueBarcodes = [], []
         numberROIs = len(barcodeMapROI.groups.keys)
         print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
         begin_time = datetime.now()
-    
-        parallel=False
+
+        # self.param.param['parallel']=False
+        availableBarcodes = np.unique(barcodeMap["Barcode #"].data)
+        maxnumberBarcodes = availableBarcodes.shape[0]
+        print("Max number of barcodes detected: {}".format(maxnumberBarcodes))
         
+        if self.param.param["parallel"]:
+            futures = list()
+            numberCoresAvailable = multiprocessing.cpu_count()
+            # we want at least 1.5GB per worker
+            _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
+            memoryPerWorker = 1500  # in Mb
+            maxNumberThreads = int(np.min([numberCoresAvailable/2, free_m / memoryPerWorker]))
+            nThreads = int(np.min([maxNumberThreads, maxnumberBarcodes]))
+            print("Cluster with {} workers started".format(nThreads))
+            client = Client(n_workers=nThreads)  # ,processes=False)
+        else:
+            results = []
+
         for iROI in range(numberROIs):
-    
+
             nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
             print("Working on ROI# {}".format(nROI))
-    
+
             # loops over barcodes in that ROI
             barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
             barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
             numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
             print("\nNumber of barcodes detected: {}".format(numberBarcodes))
-    
-          
-            futures = list()
-            if parallel:
-                nThreads = int(np.min([3, numberBarcodes]))
-                print("Cluster with {} workers started".format(nThreads))
-                client = Client(n_workers=nThreads)  # ,processes=False)
-    
+
+
             for iBarcode in range(numberBarcodes):
-    
+
                 # find coordinates for this ROI and barcode
                 barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
-    
-                if parallel:
+
+                if self.param.param["parallel"]:
                     result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
+                    futures.append(result)
                 else:
                     result = self.refitsBarcode(barcodeMapSinglebarcode)
-    
-                futures.append(result)
-    
-                # record results by appending the ASTROPY table *** use index first then match BUIDs in barcodeMapSinglebarcode to
-                # those in barcodeMapROI and replace values of the row in barcodeMapROI by those in barcodeMapSinglebarcode
-    
+                    results.append(result)
+
+        if self.param.param["parallel"]:
+            results = client.gather(futures)
+
+            # record results by appending the ASTROPY table *** use index first then match BUIDs in barcodeMapSinglebarcode to
+            # those in barcodeMapROI and replace values of the row in barcodeMapROI by those in barcodeMapSinglebarcode
+
         print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+
+    def refitFolders(self):
+        '''
+        runs refitting routine in rootFolder
+
+        Returns
+        -------
+        None.
+
+        '''
+        sessionName = "refitBarcodes3D"
     
+        # processes folders and files
+        self.dataFolder = folders(self.param.param["rootFolder"])
+        self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+        self.log1.report("folders read: {}".format(len(self.dataFolder.listFolders)))
+        writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
 
-def refitBarcodes3D(param, log1, session1):
-    sessionName = "refitBarcodes3D"
 
-    # processes folders and files
-    dataFolder = folders(param.param["rootFolder"])
-    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
-    writeString2File(log1.fileNameMD, "## {}\n".format(sessionName), "a")
+        # creates output folders and filenames
+        currentFolder = self.dataFolder.listFolders[0]
+        self.dataFolder.createsFolders(currentFolder, self.param)
+        self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"]
 
-    for currentFolder in dataFolder.listFolders:
-        # filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
-        dataFolder.createsFolders(currentFolder, param)
-        log1.report("-------> Processing Folder: {}".format(currentFolder))
-        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
+        self.log1.report("-------> Processing Folder: {}".format(currentFolder))
 
-        fittingSession = refitBarcodesClass(param, dataFolder, log1)
+        self.refitFilesinFolder()
 
-        fittingSession.makes3Dfits()
-        session1.add(currentFolder, sessionName)
+        self.session1.add(currentFolder, sessionName)
 
-        log1.report("HiM matrix in {} processed".format(currentFolder), "info")
-
+        self.log1.report("HiM matrix in {} processed".format(currentFolder), "info")
