@@ -432,10 +432,9 @@ class daskCluster:
         _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
         memoryPerWorker = 1500  # in Mb
         maxNumberThreads = int(np.min([numberCoresAvailable/2, free_m / memoryPerWorker]))
-        nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
+        self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
 
-        print("Cluster with {} workers started".format(nThreads))
-        self.client = Client(n_workers=nThreads)  # ,processes=False)    
+        print("Cluster with {} workers started".format(self.nThreads))
 
 
 # =============================================================================

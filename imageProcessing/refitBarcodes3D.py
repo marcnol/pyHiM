@@ -27,22 +27,20 @@ steps:
 import glob, os
 import matplotlib.pylab as plt
 import numpy as np
-import argparse
 from datetime import datetime
 from scipy.ndimage import shift as shiftImage
 from scipy.optimize import curve_fit
-import multiprocessing
-from multiprocessing.pool import ThreadPool
+from shutil import copyfile
 
 from tqdm import trange, tqdm
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
-from dask.distributed import Client, wait, LocalCluster, progress
+from dask.distributed import Client, LocalCluster
 
 from imageProcessing.imageProcessing import Image
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
-from fileProcessing.fileManagement import session, log, Parameters
+from fileProcessing.fileManagement import daskCluster
 
 # =============================================================================
 # FUNCTIONS
@@ -68,17 +66,21 @@ class refitBarcodesClass:
 
         # Adds columns to Table to hold the results
         BarcodeMapLength = len(barcodeMap)
-        colzPositionGaussian = Column(np.zeros((BarcodeMapLength, 1)), name="zcentroidGauss", dtype=float)
-        colzPositionMoment = Column(np.zeros((BarcodeMapLength, 1)), name="zcentroidMoment", dtype=float)
-        colSigmaGaussianFit = Column(np.zeros((BarcodeMapLength, 1)), name="sigmaGaussFit", dtype=float)
-        colResidualsGaussianFit = Column(np.zeros((BarcodeMapLength, 1)), name="residualGaussFit", dtype=float)
-        colFitKeep = Column(np.zeros((BarcodeMapLength, 1)), name="3DfitKeep", dtype=int)
-
-        barcodeMap.add_column(colzPositionGaussian, index=7)
-        barcodeMap.add_column(colzPositionMoment, index=8)
-        barcodeMap.add_column(colSigmaGaussianFit, index=17)
-        barcodeMap.add_column(colResidualsGaussianFit, index=18)
-        barcodeMap.add_column(colFitKeep, index=19)
+        if "zcentroidGauss" not in barcodeMap.keys():
+            colzPositionGaussian = Column(np.zeros((BarcodeMapLength)), name="zcentroidGauss", dtype=float)
+            barcodeMap.add_column(colzPositionGaussian, index=7)
+        if "zcentroidMoment" not in barcodeMap.keys():
+            colzPositionMoment = Column(np.zeros((BarcodeMapLength)), name="zcentroidMoment", dtype=float)
+            barcodeMap.add_column(colzPositionMoment, index=8)
+        if "sigmaGaussFit" not in barcodeMap.keys():
+            colSigmaGaussianFit = Column(np.zeros((BarcodeMapLength)), name="sigmaGaussFit", dtype=float)
+            barcodeMap.add_column(colSigmaGaussianFit, index=17)
+        if "residualGaussFit" not in barcodeMap.keys():
+            colResidualsGaussianFit = Column(np.zeros((BarcodeMapLength)), name="residualGaussFit", dtype=float)
+            barcodeMap.add_column(colResidualsGaussianFit, index=18)
+        if "3DfitKeep" not in barcodeMap.keys():
+            colFitKeep = Column(np.zeros((BarcodeMapLength)), name="3DfitKeep", dtype=int)
+            barcodeMap.add_column(colFitKeep, index=19)
 
         return barcodeMap, 0
 
@@ -404,6 +406,14 @@ class refitBarcodesClass:
     def applyResults(self,barcodeMap, result):
         for iSpot in range(len(result)):
             barcodeMap.loc[result['Buid'][iSpot]]=result[iSpot]
+
+    def rewritesBarcodeMap(self,barcodeMap):            
+        fileNameBarcodeCoordinates = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
+        fileNameBarcodeCoordinatesOld = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode2D.dat"
+
+        copyfile(fileNameBarcodeCoordinates, fileNameBarcodeCoordinatesOld)
+                
+        barcodeMap.write(fileNameBarcodeCoordinates, format="ascii.ecsv", overwrite=True)
     
     def refitFilesinFolder(self):
         '''
@@ -414,6 +424,8 @@ class refitBarcodesClass:
         None.
 
         '''
+        now = datetime.now()
+
         # Loads coordinate Tables for all barcodes and ROIs
         barcodeMap, errorCode = self.loadsBarcodeMap()
 
@@ -427,7 +439,6 @@ class refitBarcodesClass:
         barcodeMapROI = barcodeMap.group_by("ROI #")
         numberROIs = len(barcodeMapROI.groups.keys)
         print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
-        begin_time = datetime.now()
 
         # self.param.param['parallel']=False
         availableBarcodes = np.unique(barcodeMap["Barcode #"].data)
@@ -436,69 +447,64 @@ class refitBarcodesClass:
         
         if self.param.param["parallel"]:
             futures = list()
-            # client = self.param.client
-            numberCoresAvailable = multiprocessing.cpu_count()
-            # we want at least 1.5GB per worker
-            _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
-            memoryPerWorker = 1500  # in Mb
-            maxNumberThreads = int(np.min([numberCoresAvailable/2, free_m / memoryPerWorker]))
-            nThreads = int(np.min([maxNumberThreads, maxnumberBarcodes]))
-            print("Cluster with {} workers started".format(nThreads))
-            client = Client(n_workers=nThreads)  # ,processes=False)
-            
+            daskClusterInstance = daskCluster(maxnumberBarcodes)
+
+            with LocalCluster(n_workers=daskClusterInstance.nThreads,
+                                # processes=True,
+                                # threads_per_worker=1,
+                                # memory_limit='2GB',
+                                # ip='tcp://localhost:8787',
+                                ) as cluster, Client(cluster) as client:
+
+                for iROI in range(numberROIs):
+                    nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
+                    print("Working on ROI# {}".format(nROI))
+        
+                    # loops over barcodes in that ROI
+                    barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
+                    barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
+                    numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
+                    print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+        
+                    for iBarcode in range(numberBarcodes):
+                        # find coordinates for this ROI and barcode
+                        barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
+                        result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
+                        futures.append(result)    
+
+                results = client.gather(futures)                        
         else:
+
             results = []
-
-        for iROI in range(numberROIs):
-            nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
-            print("Working on ROI# {}".format(nROI))
-
-            # loops over barcodes in that ROI
-            barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
-            barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
-            numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-            print("\nNumber of barcodes detected: {}".format(numberBarcodes))
-
-
-            for iBarcode in range(numberBarcodes):
-
-                # find coordinates for this ROI and barcode
-                barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
-
-                if self.param.param["parallel"]:
-                    result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
-                    futures.append(result)
-                else:
+            for iROI in range(numberROIs):
+                nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
+                print("Working on ROI# {}".format(nROI))
+    
+                # loops over barcodes in that ROI
+                barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
+                barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
+                numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
+                print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+    
+                for iBarcode in range(numberBarcodes):
+                    # find coordinates for this ROI and barcode
+                    barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
                     result = self.refitsBarcode(barcodeMapSinglebarcode)
                     results.append(result)
-
-        if self.param.param["parallel"]:
-            results = client.gather(futures)
-
 
         # record results by appending the ASTROPY table *** use index first then match BUIDs in barcodeMapSinglebarcode to
         # those in barcodeMapROI and replace values of the row in barcodeMapROI by those in barcodeMapSinglebarcode
         self.log1.report("Recording results...")
         barcodeMap.add_index('Buid')
 
-        now = datetime.now()
         for result in tqdm(results):
             for iSpot in range(len(result)):
                 barcodeMap.loc[result[iSpot]['Buid']]=result[iSpot]
-        print("Elapsed time: {}".format(datetime.now() - now))
+                
+        print("RefitFilesinFolder time: {}".format(datetime.now() - now))
 
-      
-        # now = datetime.now()
+        self.rewritesBarcodeMap(barcodeMap)
         
-        # #dask
-        # futures=list()
-        # for result in results:
-        #     futures.append(client.submit(self.applyResults,barcodeMap, result))
-        # results = client.gather(futures)
-            
-        # print("Elapsed time: {}".format(datetime.now() - begin_time))
-
-#%%
     def refitFolders(self):
         '''
         runs refitting routine in rootFolder
