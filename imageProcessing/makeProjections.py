@@ -109,19 +109,20 @@ def makeProjections(param, log1, session1,fileName=None):
                                      (fileName==None) \
                                      or (fileName!=None \
                                      and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))]
-            # cluster=LocalCluster(dashboard_address=None)
-            # cluster.scale(len(files2ProcessFiltered))
-            # client=Client(cluster)
+
             if len(files2ProcessFiltered)>0:
                 print("Cluster with {} workers started".format(len(files2ProcessFiltered)))
 
                 # dask
-                client = Client(processes=False)#,n_workers=len(files2ProcessFiltered))
-                threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
-                
-                for index, thread in enumerate(threads):
-                    print("Waiting for thread: {}".format(index+1))
-                    wait(threads)        
+                with LocalCluster(n_workers=len(files2ProcessFiltered)
+                                ) as cluster, Client(cluster) as client:
+
+                    # client = Client(processes=False)#,n_workers=len(files2ProcessFiltered))
+                    threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
+                    
+                    for index, thread in enumerate(threads):
+                        print("Waiting for thread: {}".format(index+1))
+                        wait(threads)        
                 
                 # ThreadPool
                 # pool = ThreadPool(processes=len(param.fileList2Process))
@@ -137,12 +138,13 @@ def makeProjections(param, log1, session1,fileName=None):
                 # for index, thread in enumerate(threads):
                 #     print("Waiting for thread: {}".format(index+1))
                 #     thread.join()
-                
-        for index, fileName2Process in enumerate(param.fileList2Process):
-
-            if (fileName==None) or (fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])):
-                makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
-                session1.add(fileName2Process, sessionName)
-            else:
-                pass
+        else:
+            
+            for index, fileName2Process in enumerate(param.fileList2Process):
+    
+                if (fileName==None) or (fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])):
+                    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
+                    session1.add(fileName2Process, sessionName)
+                else:
+                    pass
 
