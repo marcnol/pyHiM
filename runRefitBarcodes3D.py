@@ -79,9 +79,6 @@ if __name__ == "__main__":
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
     if runParameters["parallel"]:
         param.param['parallel']=True
-        numberThreads = 17 # need to automatically detect this from the available datasets
-        # daskClusterInstance = daskCluster(numberThreads)
-        # param.client = daskClusterInstance.client    
     else:
         param.param['parallel']=False
         
