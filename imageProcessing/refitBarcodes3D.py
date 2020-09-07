@@ -32,8 +32,9 @@ from datetime import datetime
 from scipy.ndimage import shift as shiftImage
 from scipy.optimize import curve_fit
 import multiprocessing
+from multiprocessing.pool import ThreadPool
 
-from tqdm import trange
+from tqdm import trange, tqdm
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
@@ -399,7 +400,11 @@ class refitBarcodesClass:
         self.shows3DfittingResults(barcodeMapSinglebarcode, numberZplanes=numberZplanes)
 
         return barcodeMapSinglebarcode
-
+    
+    def applyResults(self,barcodeMap, result):
+        for iSpot in range(len(result)):
+            barcodeMap.loc[result['Buid'][iSpot]]=result[iSpot]
+    
     def refitFilesinFolder(self):
         '''
         Refits all the barcode files found in rootFolder
@@ -431,6 +436,7 @@ class refitBarcodesClass:
         
         if self.param.param["parallel"]:
             futures = list()
+            # client = self.param.client
             numberCoresAvailable = multiprocessing.cpu_count()
             # we want at least 1.5GB per worker
             _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
@@ -439,11 +445,11 @@ class refitBarcodesClass:
             nThreads = int(np.min([maxNumberThreads, maxnumberBarcodes]))
             print("Cluster with {} workers started".format(nThreads))
             client = Client(n_workers=nThreads)  # ,processes=False)
+            
         else:
             results = []
 
         for iROI in range(numberROIs):
-
             nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
             print("Working on ROI# {}".format(nROI))
 
@@ -469,12 +475,30 @@ class refitBarcodesClass:
         if self.param.param["parallel"]:
             results = client.gather(futures)
 
-            # record results by appending the ASTROPY table *** use index first then match BUIDs in barcodeMapSinglebarcode to
-            # those in barcodeMapROI and replace values of the row in barcodeMapROI by those in barcodeMapSinglebarcode
 
-        print("Elapsed time: {}".format(datetime.now() - begin_time))
+        # record results by appending the ASTROPY table *** use index first then match BUIDs in barcodeMapSinglebarcode to
+        # those in barcodeMapROI and replace values of the row in barcodeMapROI by those in barcodeMapSinglebarcode
+        self.log1.report("Recording results...")
+        barcodeMap.add_index('Buid')
 
+        now = datetime.now()
+        for result in tqdm(results):
+            for iSpot in range(len(result)):
+                barcodeMap.loc[result[iSpot]['Buid']]=result[iSpot]
+        print("Elapsed time: {}".format(datetime.now() - now))
 
+      
+        # now = datetime.now()
+        
+        # #dask
+        # futures=list()
+        # for result in results:
+        #     futures.append(client.submit(self.applyResults,barcodeMap, result))
+        # results = client.gather(futures)
+            
+        # print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+#%%
     def refitFolders(self):
         '''
         runs refitting routine in rootFolder
@@ -505,3 +529,4 @@ class refitBarcodesClass:
         self.session1.add(currentFolder, sessionName)
 
         self.log1.report("HiM matrix in {} processed".format(currentFolder), "info")
+

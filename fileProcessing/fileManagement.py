@@ -19,6 +19,9 @@ from os import path
 import json
 import re
 from warnings import warn
+import multiprocessing
+import numpy as np
+from dask.distributed import Client
 
 # =============================================================================
 # CLASSES
@@ -415,6 +418,25 @@ class Parameters:
         else:
             return {}
     
+class daskCluster:
+    def __init__(self, requestedNumberNodes):
+        self.requestedNumberNodes = requestedNumberNodes
+        self.initializeCluster()
+        # self.client will be created after exetution of initializeCluster()
+        
+    def initializeCluster(self):
+        
+        numberCoresAvailable = multiprocessing.cpu_count()
+
+        # we want at least 1.5GB per worker
+        _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
+        memoryPerWorker = 1500  # in Mb
+        maxNumberThreads = int(np.min([numberCoresAvailable/2, free_m / memoryPerWorker]))
+        nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
+
+        print("Cluster with {} workers started".format(nThreads))
+        self.client = Client(n_workers=nThreads)  # ,processes=False)    
+
 
 # =============================================================================
 # FUNCTIONS

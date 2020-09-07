@@ -10,7 +10,7 @@ import argparse
 from datetime import datetime
 
 from fileProcessing.fileManagement import (
-    session, writeString2File, log, Parameters)
+    session, writeString2File, log, Parameters, daskCluster)
 
 
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
@@ -79,9 +79,13 @@ if __name__ == "__main__":
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
     if runParameters["parallel"]:
         param.param['parallel']=True
+        numberThreads = 17 # need to automatically detect this from the available datasets
+        # daskClusterInstance = daskCluster(numberThreads)
+        # param.client = daskClusterInstance.client    
     else:
         param.param['parallel']=False
         
     # [builds PWD matrix for all folders with images]
     fittingSession = refitBarcodesClass(param, log1, session1)
     fittingSession.refitFolders()
+    print("Elapsed time: {}".format(datetime.now() - now))
