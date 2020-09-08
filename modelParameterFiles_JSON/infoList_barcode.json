@@ -38,6 +38,7 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "3DGaussianfitWindow": 3,
+        "Segment3D": True, 
         "threshold_over_std": 1.0
     },
     "zProject": {
