@@ -326,7 +326,6 @@ def localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFold
         overwrite=True,
     )
 
-
 def localDriftforRT(
     barcode,
     fileNameFiducial,
@@ -569,8 +568,7 @@ def localDriftCorrection(param, log1, session1):
                 # client.close()
                 
             else:
-
-                
+              
                 # need to make it load image in function. Validate in sequential mode, then port to parallel
                 # then solve the issue with qpdm when running parallel computations.
                

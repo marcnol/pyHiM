@@ -28,6 +28,7 @@ from imageProcessing.segmentMasks import segmentMasks
 from imageProcessing.localDriftCorrection import localDriftCorrection
 from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
+from imageProcessing.refitBarcodes3D import refitBarcodesClass
 
 def parseArguments():
     parser = argparse.ArgumentParser()
@@ -98,7 +99,6 @@ if __name__ == "__main__":
         else:
             param.param['parallel']=False
 
-
         # [projects 3D images in 2d]
         makeProjections(param, log1, session1)
 
@@ -123,9 +123,11 @@ if __name__ == "__main__":
         # [2D projects all barcodes in an ROI]
         if label == "barcode":
             projectsBarcodes(param, log1, session1)
-
-        # [refits spots in 3D]
-
+            
+            # [refits spots in 3D]
+            fittingSession = refitBarcodesClass(param, log1, session1)
+            fittingSession.refitFolders()
+            
         # [local drift correction]
         if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
             errorCode, _, _ = localDriftCorrection(param, log1, session1)

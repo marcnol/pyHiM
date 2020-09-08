@@ -26,6 +26,7 @@
         "outputFile": "projectsBarcodes"
     },
     "segmentedObjects": {
+        "3DGaussianfitWindow": 3,
         "area_max": 500,
         "area_min": 50,
         "background_method": "inhomogeneous",
