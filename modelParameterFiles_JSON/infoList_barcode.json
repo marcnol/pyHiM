@@ -15,8 +15,8 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-		"localAlignment": "overwrite",
-		"localShiftTolerance": 1,
+	"localAlignment": "overwrite",
+	"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -38,7 +38,7 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "3DGaussianfitWindow": 3,
-        "Segment3D": True, 
+        "Segment3D": "overwrite", 
         "threshold_over_std": 1.0
     },
     "zProject": {

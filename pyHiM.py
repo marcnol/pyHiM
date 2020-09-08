@@ -125,7 +125,7 @@ if __name__ == "__main__":
             projectsBarcodes(param, log1, session1)
             
         # [refits spots in 3D]
-        if label == "barcode" and param.param['segmentedObjects']['Segment3D']:
+        if label == "barcode" and param.param['segmentedObjects']['Segment3D']=='overwrite':
             fittingSession = refitBarcodesClass(param, log1, session1)
             fittingSession.refitFolders()
             

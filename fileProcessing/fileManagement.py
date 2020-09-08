@@ -248,7 +248,7 @@ class Parameters:
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
-                "Segment3D": True, 
+                "Segment3D": "overwrite", 
                 "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
             },
         }
