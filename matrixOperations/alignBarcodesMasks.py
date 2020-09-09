@@ -45,6 +45,10 @@ from fileProcessing.fileManagement import (
     Parameters, 
     log)
 
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
+
 # =============================================================================
 # CLASSES
 # =============================================================================
@@ -108,8 +112,20 @@ class cellID:
 
     def buildsdistanceMatrix(self, mode="mean"):
         """
-        
+        Builds pairwise distance matrix from a coordinates table
 
+        Parameters
+        ----------
+        mode : string, optional
+            The default is "mean": calculates the mean distance if there are several combinations possible.
+            "min": calculates the minimum distance if there are several combinations possible.
+            "last": keeps the last distance calculated
+            
+        Returns
+        -------
+        self.SCmatrix the single-cell PWD matrix
+        self.meanSCmatrix the ensamble PWD matrix (mean of SCmatrix without nans)
+        self.uniqueBarcodes list of unique barcodes
         
         """
         print("building distance matrix")
@@ -135,7 +151,6 @@ class cellID:
                         if row["ROI #"]==group["ROI #"].data[0] and row["CellID #"]==key["CellID #"]:
                             _foundMatch=True
                             x_corrected, y_corrected = x_uncorrected + row["shift_x"], y_uncorrected + row["shift_y"]
-                            # print(row)
                             
                     # keeps uncorrected values if no match is found                            
                     if not _foundMatch:
@@ -145,10 +160,22 @@ class cellID:
                     else:
                         foundMatch.append(True)
                         
-                    R = np.column_stack((x_corrected,y_corrected,)) 
+                    if self.ndims==3 and "zcentroidGauss" in group.keys():
+                        z_corrected = np.array(group["zcentroidGauss"].data)
+                        R = np.column_stack((x_corrected,y_corrected,z_corrected,)) 
+                    else:
+                        R = np.column_stack((x_corrected,y_corrected,)) 
+                            
                 else:
                     # does not apply local drift correction
-                    R = np.column_stack((np.array(group["xcentroid"].data), np.array(group["ycentroid"].data),))
+                    if self.ndims==3 and "zcentroidGauss" in group.keys():
+                        R = np.column_stack((np.array(group["xcentroid"].data), 
+                                             np.array(group["ycentroid"].data),
+                                             np.array(group["zcentroidGauss"].data),))
+                        
+                    else:
+                        R = np.column_stack((np.array(group["xcentroid"].data), 
+                                             np.array(group["ycentroid"].data),))
 
                 ROIs.append(group["ROI #"].data[0])
                 cellID.append(key["CellID #"])
@@ -160,6 +187,11 @@ class cellID:
                 # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
                 
         print("Local correction applied to {}/{} barcodes in ROI {}".format(np.nonzero(foundMatch)[0].shape[0],len(foundMatch),group["ROI #"].data[0]))
+        if self.ndims==3 and "zcentroidGauss" in group.keys():
+            print("Coordinates dimensions: 3")
+        else:
+            print("Coordinates dimensions: 2")
+            
         SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
         SCdistanceTable["Cuid"] = cuid
         SCdistanceTable["ROI #"] = ROIs
@@ -428,7 +460,7 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
 
 
 def buildsPWDmatrix(
-    currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md",
+    currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md", ndims=2
 ):
 
     # Loads localAlignment if it exists
@@ -443,6 +475,10 @@ def buildsPWDmatrix(
     # Loads coordinate Tables        
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+        if ndims==3 and "zcentroidGauss" in barcodeMap.keys():
+            localizationDimension = 3
+        else:
+            localizationDimension = 2
     else:
         print("\n\n *** ERROR: could not found coordinates file: {}".format(fileNameBarcodeCoordinates))
         return -1
@@ -481,6 +517,7 @@ def buildsPWDmatrix(
 
                 # Assigns barcodes to Masks for a given ROI
                 cellROI = cellID(barcodeMapSingleROI, Masks, ROI)
+                cellROI.ndims=ndims
                 
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
@@ -538,8 +575,15 @@ def buildsPWDmatrix(
     np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
 
     # plots outputs
+    
+    # adapts clim depending on whether 2 or 3 dimensions are use for the barcode localizations
+    if localizationDimension==2:
+        clim=1.5
+    else:
+        clim=3
+        
     plotMatrix(
-        SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median",
+        SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median", clim=clim, cm='terrain'
     )  # need to validate use of KDE. For the moment it does not handle well null distributions
 
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName, logNameMD)
@@ -559,9 +603,12 @@ def processesPWDmatrices(param, log1, session1):
         dataFolder.createsFolders(currentFolder, param)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
 
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
-        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
 
+        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
+        # 2D
+        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
+        log1.report("-------> 2D processing: {}".format(outputFileName ))        
+        
         if "pixelSizeXY" in param.param['acquisition'].keys():
             pixelSize = param.param['acquisition']['pixelSizeXY']
         else:
@@ -570,86 +617,28 @@ def processesPWDmatrices(param, log1, session1):
         buildsPWDmatrix(
             currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
         )
+
+        # 3D
+        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]+"_3D"
+        log1.report("-------> 3D processing: {}".format(outputFileName ))        
+
+        if ("pixelSizeZ" in param.param['acquisition'].keys()) and ("pixelSizeXY" in param.param['acquisition'].keys()):
+            pixelSizeXY = param.param['acquisition']['pixelSizeXY']
+            pixelSizeZ = param.param['acquisition']['pixelSizeZ']
+            
+            # need to solve the issue of voxelsize...
+            # pixelSize = [pixelSizeXY,pixelSizeXY,pixelSizeZ]
+            pixelSize = pixelSizeXY
+        else:
+            pixelSize = 0.1            
+            
+        buildsPWDmatrix(
+            currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD, ndims=3
+        )
+
+        # loose ends
         session1.add(currentFolder, sessionName)
 
         log1.report("HiM matrix in {} processed".format(currentFolder), "info")
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
-
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = os.getcwd()
-        rootFolder = "."
-        rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
-
-    print("parameters> rootFolder: {}".format(rootFolder))
-    now = datetime.now()
-
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
-
-    # session
-    session1 = session(rootFolder, "processingPipeline")
-
-    # setup logs
-    log1 = log(rootFolder)
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
-
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
-
-        # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
-
-        # [builds PWD matrix for all folders with images]
-        if label == "DAPI":
-            processesPWDmatrices(param, log1, session1)
-            
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    # args = parser.parse_args()
-
-    # print("\n--------------------------------------------------------------------------")
-
-    # if args.rootFolder:
-    #     rootFolder = args.rootFolder
-    # else:
-    #     rootFolder = "."
-    #     # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-    #     # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
-    # print("parameters> rootFolder: {}".format(rootFolder))
-
-    # # sets name for coordinate file and for masks
-    # segmentedMasksFolder = rootFolder + "/rawData/segmentedObjects/"
-    # fileNameBarcodeCoordinates = segmentedMasksFolder + "segmentedObjects_barcode.dat"
-    # # currentFolder=glob.glob(rootFolder+'/rawData/'+'*.tif')
-    # currentFolder = rootFolder + "/rawData"
-
-    # outputFileName = rootFolder.split("/")[-1]
-    # pixelSize = 0.1
-    # dataFolder = folders(param.param["rootFolder"])
-    
-    # buildsPWDmatrix(currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize)
