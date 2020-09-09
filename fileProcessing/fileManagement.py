@@ -248,6 +248,7 @@ class Parameters:
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
+                "Segment3D": "overwrite", 
                 "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
             },
         }
@@ -422,16 +423,18 @@ class daskCluster:
     def __init__(self, requestedNumberNodes):
         self.requestedNumberNodes = requestedNumberNodes
         self.initializeCluster()
-        # self.client will be created after exetution of initializeCluster()
+        # self.nThreads will be created after exetution of initializeCluster()
         
     def initializeCluster(self):
         
         numberCoresAvailable = multiprocessing.cpu_count()
 
-        # we want at least 1.5GB per worker
+        # we want at least 2 GB per worker
         _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
-        memoryPerWorker = 1500  # in Mb
-        maxNumberThreads = int(np.min([numberCoresAvailable/2, free_m / memoryPerWorker]))
+        memoryPerWorker = 2000  # in Mb
+        maximumLoad = 0.6 # max number of workers that I can take
+        
+        maxNumberThreads = int(np.min([numberCoresAvailable*maximumLoad, free_m / memoryPerWorker]))
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
 
         print("Cluster with {} workers started".format(self.nThreads))
@@ -558,7 +561,7 @@ def ROI2FiducialFileName(param, file, barcodeName):
     candidates = [
         x
         for x in listFiles
-        if (barcodeName in x)
+        if (barcodeName+"_" in x)
         and (ROI == param.decodesFileParts(os.path.basename(x))['roi'])
         and (channelFiducial in os.path.basename(x))
     ]

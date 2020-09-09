@@ -46,6 +46,7 @@ import threading
 
 from imageProcessing.imageProcessing import Image
 from fileProcessing.fileManagement import folders, writeString2File, ROI2FiducialFileName
+from fileProcessing.fileManagement import daskCluster
 
 from imageProcessing.alignImages import align2ImagesCrossCorrelation
 
@@ -373,7 +374,7 @@ def localDriftforRT(
         # evaluates shift to determine if we keep or not
         if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
             errormessage.append(
-                "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {}".format(
+                "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
                     ROI, barcode, iMask, shift, shiftTolerance
                 )
             )
@@ -406,6 +407,96 @@ def localDriftforRT(
     
     return result
 
+def localDriftallBarcodes(param,
+                          log1,
+                          dataFolder,
+                          fileNameDAPI,
+                          localDriftforRT,
+                          imReference,
+                          imageReference,
+                          Masks,
+                          bezel,
+                          shiftTolerance,
+                          ROI,
+                          alignmentResultsTable):
+
+    # - retrieves list of barcodes for which a fiducial is available in this ROI
+    barcodeList, fiducialFileNames = retrieveBarcodeList(param, fileNameDAPI)
+    if imReference.fileName in fiducialFileNames:
+        fiducialFileNames.remove(imReference.fileName)
+
+    print(">>>Image <i> {} | sumImage: {}".format(imReference.data_2D.max(), imageReference.max()))
+
+    dictShift, errormessage = {}, []
+
+    if param.param['parallel']:
+
+        futures=list()
+        daskClusterInstance = daskCluster(len(barcodeList))
+
+        # dask    
+        with LocalCluster(n_workers=daskClusterInstance.nThreads,
+                            # processes=True,
+                            # threads_per_worker=1,
+                            # memory_limit='2GB',
+                            # ip='tcp://localhost:8787',
+                            ) as cluster, Client(cluster) as client:
+
+            # - load fiducial for cycle <i>
+            for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+
+                result=client.submit(localDriftforRT,barcode,
+                        fileNameFiducial,
+                        imReference,
+                        imageReference,
+                        Masks,
+                        bezel,
+                        shiftTolerance,
+                        ROI,
+                        alignmentResultsTable,
+                        log1,
+                        dataFolder,
+                        parallel=True)
+               
+                futures.append(result)
+            
+            results = client.gather(futures)
+
+        for result, barcode in zip(results,barcodeList):
+            dictShift[barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
+            errormessage+=errormessage1
+            # output mosaics with global and local alignments
+            localDriftCorrection_plotsLocalAlignments(
+                imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+            )
+        
+    else:
+        # - load fiducial for cycle <i>
+        for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
+  
+            # calculates local drift for barcode by looping over Masks
+            result = localDriftforRT(
+                    barcode,
+                    fileNameFiducial,
+                    imReference,
+                    imageReference,
+                    Masks,
+                    bezel,
+                    shiftTolerance,
+                    ROI,
+                    alignmentResultsTable,
+                    log1,
+                    dataFolder)
+        
+            dictShift[barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
+            errormessage+=errormessage1
+            
+            # output mosaics with global and local alignments
+            localDriftCorrection_plotsLocalAlignments(
+                imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
+            )
+
+    return dictShift, alignmentResultsTable, errormessage 
 
 def localDriftCorrection(param, log1, session1):
     sessionName = "localDriftCorrection"
@@ -464,7 +555,7 @@ def localDriftCorrection(param, log1, session1):
         # iterates over ROIs
         for fileNameDAPI in param.fileList2Process:
 
-            label = param.param["acquisition"]["label"]
+            # label = param.param["acquisition"]["label"]
 
             # appends filename to session and defines ROI
             session1.add(fileNameDAPI, sessionName)
@@ -488,180 +579,23 @@ def localDriftCorrection(param, log1, session1):
             # - loads reference fiducial file
             ROI, imReference = loadsFiducial(param, fileNameDAPI, log1, dataFolder)
             imageReference = imReference.removesBackground2D(normalize=True)
-            sumImage = np.copy(imageReference)
 
-            print(">>>Image <i> {} | sumImage: {}".format(imReference.data_2D.max(), imageReference.max()))
+            dictShift[ROI], alignmentResultsTable, errormessage1 = localDriftallBarcodes(param,
+                                                                                          log1,
+                                                                                          dataFolder,
+                                                                                          fileNameDAPI,
+                                                                                          localDriftforRT,
+                                                                                          imReference,
+                                                                                          imageReference,
+                                                                                          Masks,
+                                                                                          bezel,
+                                                                                          shiftTolerance,
+                                                                                          ROI,
+                                                                                          alignmentResultsTable)
 
-            # - retrieves list of barcodes for which a fiducial is available in this ROI
-            barcodeList, fiducialFileNames = retrieveBarcodeList(param, fileNameDAPI)
-            if imReference.fileName in fiducialFileNames:
-                fiducialFileNames.remove(imReference.fileName)
-
-            dictShift[ROI] = {}
-
-
-            if param.param['parallel']:
-
-                futures=list()
-                nThreads=len(barcodeList)
-                print("Cluster with {} workers started".format(nThreads))
-
-                # dask
-                client = Client(n_workers=nThreads) #processes=False
-                # cluster=LocalCluster(dashboard_address=None)
-                # cluster.scale(n_workers=nThreads)
-                # client=Client(cluster)
-
-                # - load fiducial for cycle <i>
-                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
-    
-                    # Consider scattering large objects ahead of time
-                    # with client.scatter to reduce scheduler burden and 
-                    # keep data on workers
-                    
-                    #     future = client.submit(func, big_data)    # bad
-                    
-                    #     big_future = client.scatter(big_data)     # good
-                    #     future = client.submit(func, big_future)  # good
-                    #   % (format_bytes(len(b)), s)
-
-                    # bigFuture=client.scatter(barcode,
-                    #         fileNameFiducial,
-                    #         imReference,
-                    #         imageReference,
-                    #         imageBarcode,
-                    #         Masks,
-                    #         bezel,
-                    #         shiftTolerance,
-                    #         ROI,
-                    #         alignmentResultsTable)
-
-                    # result = client.submit(localDriftforRT,bigFuture)
-
-                    result=client.submit(localDriftforRT,barcode,
-                            fileNameFiducial,
-                            imReference,
-                            imageReference,
-                            Masks,
-                            bezel,
-                            shiftTolerance,
-                            ROI,
-                            alignmentResultsTable,
-                            log1,
-                            dataFolder,
-                            parallel=True)
-                   
-                    futures.append(result)
-                    # progress(result)
-                    
-                results = client.gather(futures)
-
-                for result, barcode in zip(results,barcodeList):
-                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
-                    errormessage+=errormessage1
-                    # output mosaics with global and local alignments
-                    localDriftCorrection_plotsLocalAlignments(
-                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
-                    )
-
-                # results.wait()
-                # client.close()
-                
-            else:
-              
-                # need to make it load image in function. Validate in sequential mode, then port to parallel
-                # then solve the issue with qpdm when running parallel computations.
-               
-                # - load fiducial for cycle <i>
-                for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
-      
-                    # calculates local drift for barcode by looping over Masks
-                    result = localDriftforRT(
-                            barcode,
-                            fileNameFiducial,
-                            imReference,
-                            imageReference,
-                            Masks,
-                            bezel,
-                            shiftTolerance,
-                            ROI,
-                            alignmentResultsTable,
-                            log1,
-                            dataFolder)
-                
-                    dictShift[ROI][barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
-                    errormessage+=errormessage1
-                    
-                    # output mosaics with global and local alignments
-                    localDriftCorrection_plotsLocalAlignments(
-                        imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
-                    )
-    
-            del sumImage
-
+            errormessage=errormessage+errormessage1
             # produces shift violin plots and saves results Table
             localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFolder, log1)
             log1.report("\n".join(errormessage))
 
     return 0, dictShift, alignmentResultsTable
-
-
-# # =============================================================================
-# # MAIN
-# # =============================================================================
-
-# if __name__ == "__main__":
-
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-#     args = parser.parse_args()
-
-#     print("\n--------------------------------------------------------------------------")
-
-#     if args.rootFolder:
-#         rootFolder = args.rootFolder
-#     else:
-#         # rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-#         # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-#         rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
-#         # rootFolder='/home/marcnol/data/Embryo_debug_dataset/rawImages'
-
-#     print("parameters> rootFolder: {}".format(rootFolder))
-#     sessionName = "localDriftCorrection"
-
-#     labels2Process = [
-#         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-#         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-#         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-#     ]
-
-#     # session
-#     session1 = session(rootFolder, sessionName)
-
-#     # setup logs
-#     log1 = log(rootFolder)
-#     # labels2Process indeces: 0 fiducial, 1:
-#     labelParameterFile = labels2Process[2]["parameterFile"]
-#     param = Parameters(rootFolder, labelParameterFile)
-
-#     dataFolder = folders(param.param["rootFolder"])
-
-#     for currentFolder in dataFolder.listFolders:
-#         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-#         dataFolder.createsFolders(currentFolder, param)
-
-#         # generates lists of files to process
-#         param.files2Process(filesFolder)
-
-#         for fileName in param.fileList2Process:
-#             session1.add(fileName, sessionName)
-
-#     errorCode, dictShift, alignmentResultsTable = localDriftCorrection(param, log1, session1)
-
-#     if errorCode != 0:
-#         print("Error code reported: {}".format(errorCode))
-#     else:
-#         print("normal termination")
-
-#     # for fileName in param.fileList2Process:
-#     #     session1.add(fileName, sessionName)
