@@ -156,7 +156,7 @@ class Image:
         I_collapsed = np.zeros((self.imageSize[1], self.imageSize[2]))
         if parameters.param["zProject"]["zProjectOption"] == "MIP":
             # Max projection of selected planes
-            I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][1]], axis=0)
+            I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][-1]], axis=0)
         else:
             # Sums selected planes
             for i in zRange[1]:
