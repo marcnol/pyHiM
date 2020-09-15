@@ -27,6 +27,7 @@ import uuid
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.contrib import tzip
+from numba import jit
 
 from sklearn.metrics import pairwise_distances
 from sklearn.model_selection import GridSearchCV
@@ -264,17 +265,18 @@ class cellID:
         self.meanSCmatrix = np.nanmean(SCmatrix, axis=2)
         self.uniqueBarcodes = uniqueBarcodes
 
-
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
+
+# @jit(nopython=True)
 def findsOptimalKernelWidth(distanceDistribution):
     bandwidths = 10 ** np.linspace(-1, 1, 100)
     grid = GridSearchCV(KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut())
     grid.fit(distanceDistribution[:, None])
     return grid.best_params_
 
-
+# @jit(nopython=True)
 def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
 
     nan_array = np.isnan(distanceDistribution0)
@@ -301,6 +303,7 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
     return logprob, distanceDistribution
 
 
+# @jit(nopython=True)
 def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
     distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
     x_d = np.linspace(0, 5, 2000)
