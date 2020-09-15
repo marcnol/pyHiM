@@ -30,6 +30,10 @@ from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
+
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
@@ -76,7 +80,7 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], "processingPipeline")
 
     # setup logs
-    log1 = log(runParameters["rootFolder"])
+    log1 = log(runParameters["rootFolder"],parallel=runParameters["parallel"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
     if log1.fileNameMD=='.md':
         log1.fileNameMD='HiM_report.md'
@@ -85,7 +89,7 @@ if __name__ == "__main__":
     writeString2File(
         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
     )  # initialises MD file
-
+    
     for ilabel in range(len(labels2Process)):
         label = labels2Process[ilabel]["label"]
         labelParameterFile = labels2Process[ilabel]["parameterFile"]

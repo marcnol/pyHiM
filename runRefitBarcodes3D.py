@@ -63,7 +63,7 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(runParameters["rootFolder"])
+    log1 = log(runParameters["rootFolder"],parallel=runParameters["parallel"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
@@ -78,6 +78,8 @@ if __name__ == "__main__":
     # sets parameters
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
     if runParameters["parallel"]:
+        daskClusterInstance = daskCluster(15)
+        daskClusterInstance.createDistributedClient()
         param.param['parallel']=True
     else:
         param.param['parallel']=False
@@ -86,3 +88,8 @@ if __name__ == "__main__":
     fittingSession = refitBarcodesClass(param, log1, session1)
     fittingSession.refitFolders()
     print("Elapsed time: {}".format(datetime.now() - now))
+    
+    if runParameters["parallel"]:
+        daskClusterInstance.cluster.close()
+        daskClusterInstance.client.close()
+        

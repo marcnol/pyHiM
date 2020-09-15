@@ -19,6 +19,10 @@ from fileProcessing.fileManagement import (
 
 from imageProcessing.makeProjections import makeProjections
 
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
+
 
 # =============================================================================
 # Local functions
@@ -77,13 +81,13 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(runParameters["rootFolder"])
+    log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
     log1.addSimpleText("\n-------------------------{}-------------------------\n".format(sessionName))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
     )  # initialises MD file
-
+    
     for ilabel in range(len(labels2Process)):
         label = labels2Process[ilabel]["label"]
         labelParameterFile = labels2Process[ilabel]["parameterFile"]

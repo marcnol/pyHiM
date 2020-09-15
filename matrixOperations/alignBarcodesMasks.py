@@ -22,11 +22,11 @@ TO SOLVE:
 
 import glob, os
 import argparse
-
 from datetime import datetime
 import uuid
 import numpy as np
 import matplotlib.pyplot as plt
+from tqdm.contrib import tzip
 
 from sklearn.metrics import pairwise_distances
 from sklearn.model_selection import GridSearchCV
@@ -55,7 +55,8 @@ warnings.filterwarnings("ignore")
 
 
 class cellID:
-    def __init__(self, barcodeMapROI, Masks, ROI):
+    def __init__(self, param, barcodeMapROI, Masks, ROI):
+        self.param=param
         self.barcodeMapROI = barcodeMapROI
         self.Masks = Masks
         self.NcellsAssigned = 0
@@ -69,6 +70,9 @@ class cellID:
         self.barcodesinMask = dict()
         for mask in range(self.numberMasks + 1):
             self.barcodesinMask["maskID_" + str(mask)] = []
+
+    def initializeLists(self):
+        self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.p, self.cuid, self.buid = [], [], [], [], [], [], []
 
     def visualize(self):
         pass
@@ -92,7 +96,7 @@ class cellID:
     def alignByMasking(self):
         # [ Assigns barcodes to masks and creates <NbarcodesinMask> ]
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
-        print("ROI:{}".format(self.ROI))
+        # print("ROI:{}".format(self.ROI))
         for i in range(len(self.barcodeMapROI.groups[0])):
             y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
             x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
@@ -109,6 +113,99 @@ class cellID:
 
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
+        
+    def  searchLocalShift(self,row,group,key,x_uncorrected,y_uncorrected):
+        _foundMatch=False
+        x_corrected, y_corrected = [], []
+        for row in self.alignmentResultsTable:
+            if row["ROI #"]==group["ROI #"].data[0] and row["CellID #"]==key["CellID #"]:
+                _foundMatch=True
+                x_corrected, y_corrected = x_uncorrected + row["shift_x"], y_uncorrected + row["shift_y"]
+                
+        # keeps uncorrected values if no match is found                            
+        if not _foundMatch:
+            print("Did not find match for CellID #{} in ROI #{}".format(key["CellID #"],group["ROI #"].data[0]))
+            x_corrected,y_corrected = x_uncorrected,y_uncorrected
+            self.foundMatch.append(False)                    
+        else:
+            self.foundMatch.append(True)
+            
+        return x_corrected, y_corrected
+
+    def appliesLocalShift(self,group,x,y,z):
+        if self.ndims==3 and "zcentroidGauss" in group.keys():
+            R = np.column_stack((x,y,z,)) 
+        else:
+            R = np.column_stack((x,y,)) 
+
+        return R
+    def calculatesPWDsingleMask(self,group,key):
+        x_uncorrected, y_uncorrected= np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
+
+        if self.ndims==3 and "zcentroidGauss" in group.keys():
+            z_uncorrected = np.array(group["zcentroidGauss"].data)
+        else:
+            z_uncorrected = []
+
+        if len(self.alignmentResultsTable)>0:                  
+ 
+            # searches for local alignment shift for this mask in this ROI
+            x_corrected, y_corrected = self.searchLocalShift(group,key,x_uncorrected,y_uncorrected)
+              
+            # applies local drift correction
+            R = self.appliesLocalShift(group,x_corrected, y_corrected,z_uncorrected )
+                    
+        else:
+            # does not apply local drift correction
+            R = self.appliesLocalShift(group,x_uncorrected, y_uncorrected,z_uncorrected )
+
+            # if self.ndims==3 and "zcentroidGauss" in group.keys():
+            #     R = np.column_stack((np.array(group["xcentroid"].data), 
+            #                          np.array(group["ycentroid"].data),
+            #                          np.array(group["zcentroidGauss"].data),))
+                
+            # else:
+            #     R = np.column_stack((np.array(group["xcentroid"].data), 
+            #                          np.array(group["ycentroid"].data),))
+
+        self.ROIs.append(group["ROI #"].data[0])
+        self.cellID.append(key["CellID #"])
+        self.nBarcodes.append(len(group))
+        self.barcodeIDs.append(group["Barcode #"].data)
+        self.buid.append(group["Buid"].data)
+        self.p.append(pairwise_distances(R))
+        self.cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
+        # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
+
+    def buildsSCdistanceTable(self):
+        # sorts Table by cellID
+        barcodeMapROI = self.barcodeMapROI
+        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
+        
+        self.initializeLists()
+        
+        # iterates over all cell masks in an ROI
+        self.foundMatch=[]
+        for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
+            if key["CellID #"] > 1:  # excludes cellID 0 as this is background
+                self.calculatesPWDsingleMask(group,key)
+
+        print("Local correction applied to {}/{} barcodes in ROI {}".format(np.nonzero(self.foundMatch)[0].shape[0],len(self.foundMatch),group["ROI #"].data[0]))
+        if self.ndims==3 and "zcentroidGauss" in group.keys():
+            print("Coordinates dimensions: 3")
+        else:
+            print("Coordinates dimensions: 2")
+            
+        SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
+        SCdistanceTable["Cuid"] = self.cuid
+        SCdistanceTable["ROI #"] = self.ROIs
+        SCdistanceTable["CellID #"] = self.cellID
+        SCdistanceTable["nBarcodes"] = self.nBarcodes
+        SCdistanceTable["Barcode #"] = self.barcodeIDs
+        SCdistanceTable["Buid"] = self.buid
+        SCdistanceTable["PWDmatrix"] = self.p
+
+        self.SCdistanceTable=SCdistanceTable
 
     def buildsdistanceMatrix(self, mode="mean"):
         """
@@ -128,94 +225,22 @@ class cellID:
         self.uniqueBarcodes list of unique barcodes
         
         """
-        print("building distance matrix")
-        barcodeMapROI = self.barcodeMapROI
+        # print("building distance matrix")
 
         # [ builds SCdistanceTable ]
-
-        # sorts Table by cellID
-        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
-        ROIs, cellID, nBarcodes, barcodeIDs, p, cuid, buid = [], [], [], [], [], [], []
-
-        # iterates over all cell masks in an ROI
-        foundMatch=[]
-        for key, group in zip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
-            if key["CellID #"] > 1:  # excludes cellID 0 as this is background
-                if len(self.alignmentResultsTable)>0:
-                     # applies local drift correction
-                    x_uncorrected,y_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
-                    
-                    # searches for local alignment shift for this mask in this ROI
-                    _foundMatch=False
-                    for row in self.alignmentResultsTable:
-                        if row["ROI #"]==group["ROI #"].data[0] and row["CellID #"]==key["CellID #"]:
-                            _foundMatch=True
-                            x_corrected, y_corrected = x_uncorrected + row["shift_x"], y_uncorrected + row["shift_y"]
-                            
-                    # keeps uncorrected values if no match is found                            
-                    if not _foundMatch:
-                        print("Did not find match for CellID #{} in ROI #{}".format(key["CellID #"],group["ROI #"].data[0]))
-                        x_corrected,y_corrected = x_uncorrected,y_uncorrected
-                        foundMatch.append(False)                    
-                    else:
-                        foundMatch.append(True)
-                        
-                    if self.ndims==3 and "zcentroidGauss" in group.keys():
-                        z_corrected = np.array(group["zcentroidGauss"].data)
-                        R = np.column_stack((x_corrected,y_corrected,z_corrected,)) 
-                    else:
-                        R = np.column_stack((x_corrected,y_corrected,)) 
-                            
-                else:
-                    # does not apply local drift correction
-                    if self.ndims==3 and "zcentroidGauss" in group.keys():
-                        R = np.column_stack((np.array(group["xcentroid"].data), 
-                                             np.array(group["ycentroid"].data),
-                                             np.array(group["zcentroidGauss"].data),))
-                        
-                    else:
-                        R = np.column_stack((np.array(group["xcentroid"].data), 
-                                             np.array(group["ycentroid"].data),))
-
-                ROIs.append(group["ROI #"].data[0])
-                cellID.append(key["CellID #"])
-                nBarcodes.append(len(group))
-                barcodeIDs.append(group["Barcode #"].data)
-                buid.append(group["Buid"].data)
-                p.append(pairwise_distances(R))
-                cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
-                # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
-                
-        print("Local correction applied to {}/{} barcodes in ROI {}".format(np.nonzero(foundMatch)[0].shape[0],len(foundMatch),group["ROI #"].data[0]))
-        if self.ndims==3 and "zcentroidGauss" in group.keys():
-            print("Coordinates dimensions: 3")
-        else:
-            print("Coordinates dimensions: 2")
-            
-        SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
-        SCdistanceTable["Cuid"] = cuid
-        SCdistanceTable["ROI #"] = ROIs
-        SCdistanceTable["CellID #"] = cellID
-        SCdistanceTable["nBarcodes"] = nBarcodes
-        SCdistanceTable["Barcode #"] = barcodeIDs
-        SCdistanceTable["Buid"] = buid
-        SCdistanceTable["PWDmatrix"] = p
-
-        # NEEED TO ADD THE IDENTITIES OF THE BARCODES
-
-        self.SCdistanceTable = SCdistanceTable
-
-        print("Cells with barcodes found: {}".format(len(SCdistanceTable)))
+        self.buildsSCdistanceTable()
+        print("Cells with barcodes found: {}".format(len(self.SCdistanceTable)))
 
         # [ builds SCmatrix ]
-        numberMatrices = len(SCdistanceTable)  # z dimensions of SCmatrix
-        uniqueBarcodes = np.unique(barcodeMapROI["Barcode #"].data)
+
+        numberMatrices = len(self.SCdistanceTable)  # z dimensions of SCmatrix
+        uniqueBarcodes = np.unique(self.barcodeMapROI["Barcode #"].data)
         # number of unique Barcodes for xy dimensions of SCmatrix
         numberUniqueBarcodes = uniqueBarcodes.shape[0]
         SCmatrix = np.zeros((numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices))
         SCmatrix[:] = np.NaN
 
-        for iCell, scPWDitem in zip(range(numberMatrices), SCdistanceTable):
+        for iCell, scPWDitem in zip(range(numberMatrices), self.SCdistanceTable):
             barcodes2Process = scPWDitem["Barcode #"]
             for barcode1, ibarcode1 in zip(barcodes2Process, range(len(barcodes2Process))):
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
@@ -264,8 +289,11 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
         kernelWidth = 0.3
 
     kde = KernelDensity(bandwidth=kernelWidth, kernel="gaussian")
-    kde.fit(distanceDistribution[:, None])
-
+    if distanceDistribution.shape[0]>0:
+        kde.fit(distanceDistribution[:, None])
+    else:
+        return np.array([0]), np.array([0])
+    
     # score_samples returns the log of the probability density
     logprob = kde.score_samples(x_d[:, None])
 
@@ -279,9 +307,12 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
         logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
-        kernelDistribution = 10 * np.exp(logprob)
-        maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
-        return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
+        if logprob.shape[0]>1:
+            kernelDistribution = 10 * np.exp(logprob)
+            maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
+            return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
+        else:
+            return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
     else:
         return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
 
@@ -323,7 +354,7 @@ def plotMatrix(
             else:
                 meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:, :, cells2Plot], axis=2)
                 nCells = SCmatrixCollated[:, :, cells2Plot].shape[2]
-                print("Dataset {} cells2plot: {}".format(figtitle, nCells))
+                # print("Dataset {} cells2plot: {}".format(figtitle, nCells))
                 # print('nCells={}'.format(nCells))
                 keepPlotting = True
         elif mode == "KDE":
@@ -459,7 +490,7 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
     return SCmatrix, nCells
 
 
-def buildsPWDmatrix(
+def buildsPWDmatrix(param,
     currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md", ndims=2
 ):
 
@@ -495,7 +526,7 @@ def buildsPWDmatrix(
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
-        print("Working on ROI# {}".format(nROI))
+        print("Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
@@ -516,7 +547,7 @@ def buildsPWDmatrix(
                 Masks = np.load(fullFileNameROImasks)
 
                 # Assigns barcodes to Masks for a given ROI
-                cellROI = cellID(barcodeMapSingleROI, Masks, ROI)
+                cellROI = cellID(param,barcodeMapSingleROI, Masks, ROI)
                 cellROI.ndims=ndims
                 
                 if alignmentResultsTableRead:
@@ -527,7 +558,7 @@ def buildsPWDmatrix(
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
                 print(
-                    "ROI: {}, N cells assigned: {} out of {}".format(ROI, cellROI.NcellsAssigned, cellROI.numberMasks)
+                    "ROI: {}, N cells assigned: {} out of {}\n".format(ROI, cellROI.NcellsAssigned-1, cellROI.numberMasks)
                 )
 
                 uniqueBarcodes = cellROI.uniqueBarcodes
@@ -615,7 +646,7 @@ def processesPWDmatrices(param, log1, session1):
             pixelSize = 0.1
             
         buildsPWDmatrix(
-            currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
+            param,currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
         )
 
         # 3D
@@ -632,7 +663,7 @@ def processesPWDmatrices(param, log1, session1):
         else:
             pixelSize = 0.1            
             
-        buildsPWDmatrix(
+        buildsPWDmatrix(param,
             currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD, ndims=3
         )
 

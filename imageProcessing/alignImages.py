@@ -135,7 +135,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     outputFileName = dataFolder.outputFolders["alignImages"] + os.sep + os.path.basename(fileName2).split(".")[0]
 
     # loads image
-    Im2 = Image()
+    Im2 = Image(param,log1)
     Im2.loadImage2D(fileName2, log1, dataFolder.outputFolders["zProject"])
     
     # Normalises images
@@ -248,7 +248,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     
             # loads reference fiducial image for this ROI
             ROI = ROIList[fileNameReference]
-            imReference = Image()
+            imReference = Image(param,log1)
             imReference.loadImage2D(fileNameReference, log1, dataFolder.outputFolders["zProject"])
     
             # saves reference 2D image of fiducial
@@ -397,7 +397,7 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
 
         shift = np.asarray(shiftArray)
         # loads 2D image and applies registration
-        Im = Image()
+        Im = Image(param,log1)
         Im.loadImage2D(fileName2Process, log1, dataFolder.outputFolders["zProject"])
         Im.data_2D = shiftImage(Im.data_2D, shift)
         log1.report(
@@ -412,7 +412,7 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
         # logs output
         session1.add(fileName2Process, sessionName)
     elif shiftArray == None and label == param.param["alignImages"]["referenceFiducial"]:
-        Im = Image()
+        Im = Image(param,log1)
         Im.loadImage2D(fileName2Process, log1, dataFolder.outputFolders["zProject"])
         Im.saveImage2D(
             log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",

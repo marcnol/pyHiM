@@ -29,9 +29,10 @@ from sklearn import manifold
 
 from astropy.table import Table, vstack
 
-from fileManagement import writeString2File
-from alignBarcodesMasks import plotMatrix, plotDistanceHistograms, plotMatrix, calculateContactProbabilityMatrix
-from alignBarcodesMasks import distributionMaximumKernelDensityEstimation
+from fileProcessing.fileManagement import writeString2File
+
+from matrixOperations.alignBarcodesMasks import plotMatrix, plotDistanceHistograms, plotMatrix, calculateContactProbabilityMatrix
+from matrixOperations.alignBarcodesMasks import distributionMaximumKernelDensityEstimation
 
 # =============================================================================
 # CLASSES

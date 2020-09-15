@@ -36,7 +36,7 @@ from tqdm import trange, tqdm
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
-from dask.distributed import Client, LocalCluster
+from dask.distributed import Client, LocalCluster, progress
 
 from imageProcessing.imageProcessing import Image
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
@@ -101,9 +101,9 @@ class refitBarcodesClass:
         imageFile = self.findsFile2Process(nBarcode, nROI)
 
         if len(imageFile) > 0:
-            print("Loading 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
+            self.log1.report("Loading 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
 
-            Im3D = Image()
+            Im3D = Image(self.param,self.log1)
             Im3D.loadImage(imageFile[0])
 
             # corrects drift for all barcodes, except the fiducial
@@ -122,12 +122,12 @@ class refitBarcodesClass:
                         "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(ROI, label), "ERROR",
                     )
 
-                Im3DShifted = Image()
+                Im3DShifted = Image(self.param,self.log1)
                 shift = np.asarray(shiftArray)
                 imageShape = Im3D.data.shape
                 numberZplanes = imageShape[0]
                 Im3DShifted.data = np.zeros(imageShape)  # creates array that will hold new shifted 3D data
-                print("Shifting 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
+                self.log1.report("Shifting 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
                 
                 if self.param.param['parallel']:
                     R = range(numberZplanes)
@@ -147,7 +147,7 @@ class refitBarcodesClass:
 
             return Im3DShifted
         else:
-            return Image()
+            return Image(self.param,self.log1)
 
     def showsImageNsources(self, im, xcentroids2D, ycentroids2D):
         # show results
@@ -268,10 +268,10 @@ class refitBarcodesClass:
             )
             fitSuccess = True
         except ValueError:
-            print("Gaussian fitting: out of bounds")
+            self.log1.report("Gaussian fitting: out of bounds")
             fitSuccess = False
         except RuntimeError:
-            print("Gaussian fitting: did not converge")
+            self.log1.report("Gaussian fitting: did not converge")
             fitSuccess = False
 
         if fitSuccess:
@@ -305,7 +305,8 @@ class refitBarcodesClass:
             [],
             [],
         )
-        print("Looping over {} spots...".format(numberSpots))
+        
+        self.log1.report("Looping over {} spots...".format(numberSpots))
         
         if self.param.param['parallel']:
             R = range(numberSpots)
@@ -322,7 +323,7 @@ class refitBarcodesClass:
             listFitKeep.append(fitKeep)
             listfitSuccess.append(fitSuccess)
 
-        print("Unfailed fittings: {} out of {} ".format(sum(listfitSuccess), numberSpots))
+        self.log1.report("Unfailed fittings: {} out of {} ".format(sum(listfitSuccess), numberSpots))
         barcodeMapSinglebarcode["zcentroidGauss"] = listZpositionsGaussian
         barcodeMapSinglebarcode["zcentroidMoment"] = listZpositionsMoment
         barcodeMapSinglebarcode["sigmaGaussFit"] = listSigma
@@ -448,7 +449,8 @@ class refitBarcodesClass:
         if self.param.param["parallel"]:
             futures = list()
             daskClusterInstance = daskCluster(maxnumberBarcodes)
-
+            print("Go to http://localhost:8787/status for information on progress...")
+            
             with LocalCluster(n_workers=daskClusterInstance.nThreads,
                                 # processes=True,
                                 # threads_per_worker=1,
@@ -471,6 +473,8 @@ class refitBarcodesClass:
                         barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
                         result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
                         futures.append(result)    
+
+                # progress(futures)
 
                 results = client.gather(futures)                        
         else:
@@ -522,14 +526,15 @@ class refitBarcodesClass:
         self.log1.report("folders read: {}".format(len(self.dataFolder.listFolders)))
         writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
 
-
         # creates output folders and filenames
         currentFolder = self.dataFolder.listFolders[0]
+        
         self.dataFolder.createsFolders(currentFolder, self.param)
         self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"]
 
         self.log1.report("-------> Processing Folder: {}".format(currentFolder))
-
+        self.log1.parallel = self.param.param["parallel"]
+        
         self.refitFilesinFolder()
 
         self.session1.add(currentFolder, sessionName)

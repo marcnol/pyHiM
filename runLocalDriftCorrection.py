@@ -75,7 +75,7 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(runParameters["rootFolder"])
+    log1 = log(runParameters["rootFolder"],runParameters["parallel"])
     # labels2Process indeces: 0 fiducial, 1:
     labelParameterFile = labels2Process[2]["parameterFile"]
     param = Parameters(runParameters["rootFolder"], labelParameterFile)

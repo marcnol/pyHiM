@@ -19,6 +19,8 @@ from skimage import io
 import scipy.optimize as spo
 import matplotlib.pyplot as plt
 
+from numba import jit
+
 # from matplotlib import cm
 # from PIL import Image as pil
 from skimage import exposure
@@ -38,7 +40,9 @@ from fileProcessing.fileManagement import writeString2File
 
 
 class Image:
-    def __init__(self):
+    def __init__(self,param,log1):
+        self.param=param
+        self.log=log1
         self.data = []
         self.fileName = ""
         self.data_2D = np.zeros((1, 1))
@@ -124,37 +128,38 @@ class Image:
     # Outputs image properties to command line
     def printImageProperties(self):
         # print("Image Name={}".format(self.fileName))
-        print("Image Size={}".format(self.imageSize))
-        print("Stage position={}".format(self.stageCoordinates))
-        print("Focal plane={}".format(self.focusPlane))
+        self.log.report("Image Size={}".format(self.imageSize))
+        self.log.report("Stage position={}".format(self.stageCoordinates))
+        self.log.report("Focal plane={}".format(self.focusPlane))
 
     # processes sum image in axial direction given range
-    def zProjectionRange(self, parameters, log):
+    # @jit(nopython=True) 
+    def zProjectionRange(self):
 
         # find the correct range for the projection
-        if parameters.param["zProject"]["zmax"] > self.imageSize[0]:
-            log.report("Setting z max to the last plane")
-            parameters.param["zProject"]["zmax"] = self.imageSize[0]
+        if self.param.param["zProject"]["zmax"] > self.imageSize[0]:
+            self.log.report("Setting z max to the last plane")
+            self.param.param["zProject"]["zmax"] = self.imageSize[0]
 
-        if parameters.param["zProject"]["mode"] == "automatic":
+        if self.param.param["zProject"]["mode"] == "automatic":
             print("Calculating planes...")
-            zRange = calculate_zrange(self.data, parameters)
-        elif parameters.param["zProject"]["mode"] == "full":
+            zRange = calculate_zrange(self.data, self.param)
+        elif self.param.param["zProject"]["mode"] == "full":
             (zmin, zmax) = (0, self.imageSize[0])
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
         else:
             # Manual: reads from parameters file
             (zmin, zmax) = (
-                parameters.param["zProject"]["zmin"],
-                parameters.param["zProject"]["zmax"],
+                self.param.param["zProject"]["zmin"],
+                self.param.param["zProject"]["zmax"],
             )
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        log.report("Processing zRange:{}".format(zRange))
+        self.log.report("Processing zRange:{}".format(zRange))
 
         # sums images
         I_collapsed = np.zeros((self.imageSize[1], self.imageSize[2]))
-        if parameters.param["zProject"]["zProjectOption"] == "MIP":
+        if self.param.param["zProject"]["zProjectOption"] == "MIP":
             # Max projection of selected planes
             I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][-1]], axis=0)
         else:
@@ -222,11 +227,14 @@ class Image:
 
 
 # Gaussian function
+@jit(nopython=True) 
 def gaussian(x, a=1, mean=0, std=0.5):
     return a * (1 / (std * (np.sqrt(2 * np.pi)))) * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
+
+@jit(nopython=True) 
 def calculate_zrange(idata, parameters):
     """
     Calculates the focal planes based max standard deviation

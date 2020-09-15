@@ -46,7 +46,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
     if fileName in session1.data and param.param["zProject"]["operation"] != "overwrite":
         # creates image object
-        Im = Image()
+        Im = Image(param,log1)
         Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])
         if param.param["zProject"]["display"]:
             Im.imageShow()
@@ -56,13 +56,13 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         log1.report("Analysing file: {}".format(os.path.basename(fileName)))
 
         # creates image object
-        Im = Image()
+        Im = Image(param,log1)
 
         # loads image
         Im.loadImage(fileName)
 
         # makes actual 2d projection
-        Im.zProjectionRange(param, log1)
+        Im.zProjectionRange()
 
         # outputs information from file
         if Im.fileName:
@@ -111,7 +111,7 @@ def makeProjections(param, log1, session1,fileName=None):
                                      and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))]
 
             if len(files2ProcessFiltered)>0:
-                print("Cluster with {} workers started".format(len(files2ProcessFiltered)))
+                print("Cluster with {} workers started, See http://localhost:8787/status for progress".format(len(files2ProcessFiltered)))
 
                 # dask
                 with LocalCluster(n_workers=len(files2ProcessFiltered)
@@ -121,7 +121,7 @@ def makeProjections(param, log1, session1,fileName=None):
                     threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
                     
                     for index, thread in enumerate(threads):
-                        print("Waiting for thread: {}".format(index+1))
+                        # print("Waiting for thread: {}".format(index+1))
                         wait(threads)        
                 
                 # ThreadPool

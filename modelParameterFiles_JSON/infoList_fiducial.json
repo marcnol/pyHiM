@@ -46,7 +46,7 @@
         "operation": "skip",
         "saveImage": true,
         "windowSecurity": 2,
-        "zProjectOption": "sum",
+        "zProjectOption": "MIP",
         "zmax": 59,
         "zmin": 1,
         "zwindows": 10

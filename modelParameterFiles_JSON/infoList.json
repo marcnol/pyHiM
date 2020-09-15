@@ -5,11 +5,17 @@
         "barcode_channel": "ch01",
         "fiducialBarcode_channel": "ch00",
         "fiducialDAPI_channel": "ch01",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
         "label": "DAPI",
+        "pixelSizeXY": 0.1,
+        "pixelSizeZ": 0.25,
         "positionROIinformation": 3
     },
     "alignImages": {
+        "bezel": 20,
         "folder": "alignImages",
+        "localAlignment": "overwrite",
+        "localShiftTolerance": 1,
         "operation": "overwrite",
         "outputFile": "alignImages",
         "referenceFiducial": "RT18"
@@ -20,6 +26,8 @@
         "outputFile": "projectsBarcodes"
     },
     "segmentedObjects": {
+        "3DGaussianfitWindow": 3,
+        "Segment3D": "overwrite",
         "area_max": 500,
         "area_min": 50,
         "background_method": "inhomogeneous",

@@ -362,7 +362,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         label = param.param["acquisition"]["label"]
 
         # loading registered 2D projection
-        Im = Image()
+        Im = Image(param,log1)
         Im.loadImage2D(
             fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )

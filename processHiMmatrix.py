@@ -19,7 +19,7 @@ $ processHiMmatrix.py -F rootFolder
 # =============================================================================q
 
 import numpy as np
-import os
+import os, sys
 import json
 from datetime import datetime
 import argparse
@@ -40,7 +40,7 @@ from matrixOperations.HIMmatrixOperations import (
 # to remove in a future version
 import warnings
 
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 # =============================================================================
 # FUNCTIONS
@@ -56,15 +56,7 @@ def joinsListArrays(ListArrays, axis=0):
             joinedArray = np.concatenate((joinedArray, iArray), axis=axis)
     return joinedArray
 
-
-# =============================================================================
-# MAIN
-# =============================================================================
-
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    # [parsing arguments]
+def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
@@ -75,15 +67,15 @@ if __name__ == "__main__":
     parser.add_argument("--matlab", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
+    parser.add_argument("--pixelSize", help="pixelSize in um")
 
+    p={}
+    
     args = parser.parse_args()
     if args.rootFolder:
-        rootFolder = args.rootFolder
+        p["rootFolder"] = args.rootFolder
     else:
-        rootFolder = "."
-
-    p = {}
-    p["pixelSize"] = 0.1
+        p["rootFolder"] = "."
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -115,21 +107,40 @@ if __name__ == "__main__":
     else:
         p["getStructure"] = False
 
+    if args.pixelSize:
+        p["pixelSize"] = float(args.pixelSize)
+    else:
+        p["pixelSize"] = 0.1
+
+    return p
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+    begin_time = datetime.now()
+
+    # [parsing arguments]
+    p=parseArguments()    
+
     # [ initialises MD file]
     now = datetime.now()
     dateTime = now.strftime("%d%m%Y_%H%M%S")
     fileNameRoot = "processHiMmatrixAnalysis_"
 
     # [ Lists and loads datasets from different embryos]
-    fileNameListDataJSON = rootFolder + os.sep + p["parametersFileName"]
+    fileNameListDataJSON = p["rootFolder"] + os.sep + p["parametersFileName"]
     print("\n--------------------------------------------------------------------------")
     if os.path.exists(fileNameListDataJSON):
         with open(fileNameListDataJSON) as json_file:
             ListData = json.load(json_file)
         print("Loaded JSON file with {} datasets from {}\n".format(len(ListData), fileNameListDataJSON))
+    else:
+        print("File not found: {}".format(fileNameListDataJSON))
+        sys.exit()    
 
     # [ creates output folder]
-    p["outputFolder"] = rootFolder + os.sep + "scHiMmatrices"
+    p["outputFolder"] = p["rootFolder"] + os.sep + "scHiMmatrices"
     if not os.path.exists(p["outputFolder"]):
         os.mkdir(p["outputFolder"])
         print("Folder created: {}".format(p["outputFolder"]))
@@ -148,7 +159,7 @@ if __name__ == "__main__":
             SCmatrixCollated, uniqueBarcodes, runName, SClabeledCollated = loadsSCdataMATLAB(ListData, datasetName, p)
 
         fileNameMD = (
-            rootFolder + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
+            p["rootFolder"] + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
         )
         writeString2File(fileNameMD, "# Post-processing of Hi-M matrices", "w")
         writeString2File(fileNameMD, "**dataset: {}** - **Cells: {}**".format(datasetName, p["action"]), "a")
@@ -240,14 +251,17 @@ if __name__ == "__main__":
         outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"]
 
         # saves npy arrays
-        np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
+        if 'SCmatrixCollatedEnsemble' in locals():
+            np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
+
         np.save(outputFileName + "_SCmatrixCollated.npy", joinsListArrays(SCmatrixCollated, axis=2))
         np.save(outputFileName + "_SClabeledCollated.npy", joinsListArrays(SClabeledCollated, axis=0))
 
         # saves lists
-        with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow(commonSetUniqueBarcodes)
+        if 'SCmatrixCollatedEnsemble' in locals():
+            with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
+                spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+                spamwriter.writerow(commonSetUniqueBarcodes)
 
         p["SClabeledCollated"] = []
         with open(outputFileName + "_parameters.json", "w") as f:

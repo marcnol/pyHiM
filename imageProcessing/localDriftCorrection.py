@@ -103,7 +103,7 @@ def loadsFiducial(param, fileName, log1, dataFolder):
         # fullFiducialFilename = currentFolder+os.sep+fiducialFilename[0]
         fullFiducialFilename = fiducialFilename[0]
 
-    imReference = Image()
+    imReference = Image(param,log1)
     imReference.loadImage2D(fullFiducialFilename, log1, dataFolder.outputFolders["zProject"])
     # imReference.imageShow(show=True)
 
@@ -344,7 +344,8 @@ def localDriftforRT(
 
     
     # loads 2D image and applies registration
-    Im = Image()
+    param={}
+    Im = Image(param,log1)
     Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
     imageBarcode = Im.removesBackground2D(normalize=True)
     # sumImage += imageBarcode

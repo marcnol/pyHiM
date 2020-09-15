@@ -22,6 +22,7 @@ from warnings import warn
 import multiprocessing
 import numpy as np
 from dask.distributed import Client
+from dask.distributed import LocalCluster
 
 # =============================================================================
 # CLASSES
@@ -29,15 +30,15 @@ from dask.distributed import Client
 
 
 class log:
-    def __init__(self, rootFolder="./", fileNameRoot="HiM_analysis"):
+    def __init__(self, rootFolder="./", fileNameRoot="HiM_analysis", parallel=False):
         now = datetime.now()
         dateTime = now.strftime("%Y%m%d_%H%M%S")
         self.fileName = rootFolder + os.sep + fileNameRoot + dateTime + ".log"
         self.fileNameMD = self.fileName.split(".")[0] + ".md"
-
+        self.parallel=parallel
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
-
+        
     def eraseFile(self):
         # with open(self.fileName, 'w') as file:
         #    file.write("")
@@ -55,9 +56,12 @@ class log:
 
     # thisfunction will output to cmd line and save in logfile
     def report(self, text, status="info"):
-        print(self.getFullString(text, status))
-        self.save("\n" + text, status)
-
+        if not self.parallel:
+            print(self.getFullString(text, status))
+            self.save("\n" + text, status)
+        else:
+            self.save("\n" + text, status)
+       
     # returns formatted line to be outputed
     def getFullString(self, text="", status="info"):
         now = datetime.now()
@@ -439,6 +443,15 @@ class daskCluster:
 
         print("Cluster with {} workers started".format(self.nThreads))
 
+    def createDistributedClient(self):
+        self.cluster = LocalCluster(n_workers=self.nThreads,
+                                # processes=True,
+                                # threads_per_worker=1,
+                                # memory_limit='2GB',
+                                # ip='tcp://localhost:8787',
+                                ) 
+        self.client = Client(self.cluster)
+        
 
 # =============================================================================
 # FUNCTIONS

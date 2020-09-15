@@ -16,6 +16,7 @@ from fileProcessing.fileManagement import (
     session,
     writeString2File,
     Parameters, 
+    daskCluster,
     log)
 
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
@@ -23,24 +24,37 @@ from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 # =============================================================================
 # MAIN
 # =============================================================================
-
-if __name__ == "__main__":
-    begin_time = datetime.now()
+def parseArguments():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
+
     args = parser.parse_args()
 
     print("\n--------------------------------------------------------------------------")
+    runParameters={}
 
     if args.rootFolder:
-        rootFolder = args.rootFolder
+        runParameters["rootFolder"] = args.rootFolder
     else:
-        rootFolder = os.getcwd()
-        # rootFolder = "."
-        # rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/debug"
+        runParameters["rootFolder"] = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
 
-    print("parameters> rootFolder: {}".format(rootFolder))
+    if args.parallel:
+        runParameters["parallel"] = args.parallel
+    else:
+        runParameters["parallel"] = False
+        
+    return runParameters
+
+
+if __name__ == "__main__":
+    
+    
+    begin_time = datetime.now()
+
+    runParameters=parseArguments()    
+
     now = datetime.now()
 
     labels2Process = [
@@ -52,25 +66,36 @@ if __name__ == "__main__":
 
     # session
     sessionName="alignBarcodesMasks"
-    session1 = session(rootFolder, sessionName)
+    session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(rootFolder)
+    log1 = log(runParameters["rootFolder"],parallel=runParameters["parallel"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
         log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
     )  # initialises MD file
 
+    if runParameters["parallel"]:
+        daskClusterInstance = daskCluster(15)
+        daskClusterInstance.createDistributedClient()
+        
     for ilabel in range(len(labels2Process)):
         label = labels2Process[ilabel]["label"]
         labelParameterFile = labels2Process[ilabel]["parameterFile"]
 
         # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
-
+        param = Parameters(runParameters["rootFolder"], labelParameterFile)
+        if runParameters["parallel"]:
+            param.param['parallel']=True
+        else:
+            param.param['parallel']=False
+        
         # [builds PWD matrix for all folders with images]
         if label == "DAPI":
             log1.addSimpleText("**Analyzing label: {}**".format(label))
             processesPWDmatrices(param, log1, session1)
             
+    if runParameters["parallel"]:
+        daskClusterInstance.cluster.close()
+        daskClusterInstance.client.close()
