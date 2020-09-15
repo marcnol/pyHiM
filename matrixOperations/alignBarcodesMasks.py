@@ -32,6 +32,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import LeaveOneOut
 from sklearn.neighbors import KernelDensity
+from numba import jit
 
 from astropy.table import Table
 
@@ -206,7 +207,7 @@ class cellID:
         SCdistanceTable["PWDmatrix"] = self.p
 
         self.SCdistanceTable=SCdistanceTable
-
+    
     def buildsdistanceMatrix(self, mode="mean"):
         """
         Builds pairwise distance matrix from a coordinates table
