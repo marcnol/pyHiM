@@ -1,0 +1,38 @@
+{
+    "test_alignImages": {
+        "label": 0,
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    },
+    "test_appliesRegistrations": {
+        "expectedOutput": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/alignImages/scan_001_RT29_001_ROI_converted_decon_ch00_2d_registered.npy",
+        "fileName2Process": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_001_RT29_001_ROI_converted_decon_ch00.tif",
+        "label": 1,
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    },
+    "test_makeProjections": {
+        "fileName2Process": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_006_DAPI_001_ROI_converted_decon_ch00.tif",
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    },
+    "test_processesPWDmatrices": {
+        "expectedOutputs": [
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/buildsPWDmatrix_HiMscMatrix.npy"
+        ],
+        "labels": 2,
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    },
+    "test_segmentsMasks": {
+        "expectedOutputs": [
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_barcode.dat",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/scan_006_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
+        ],
+        "fileName2Process": [
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_001_RT29_001_ROI_converted_decon_ch01.tif",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_006_DAPI_001_ROI_converted_decon_ch00.tif"
+        ],
+        "labels": [
+            1,
+            2
+        ],
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    }
+}
