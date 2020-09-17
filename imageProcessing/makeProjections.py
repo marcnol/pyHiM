@@ -117,27 +117,11 @@ def makeProjections(param, log1, session1,fileName=None):
                 with LocalCluster(n_workers=len(files2ProcessFiltered)
                                 ) as cluster, Client(cluster) as client:
 
-                    # client = Client(processes=False)#,n_workers=len(files2ProcessFiltered))
                     threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
                     
                     for index, thread in enumerate(threads):
-                        # print("Waiting for thread: {}".format(index+1))
                         wait(threads)        
-                
-                # ThreadPool
-                # pool = ThreadPool(processes=len(param.fileList2Process))
-                # threads=[pool.apply_async(makes2DProjectionsFile,args=(x, param, log1, session1, dataFolder)) for x in files2ProcessFiltered]            
-                # pool.close()
-                # pool.join()
-
-                # simple threads
-                # for x in files2ProcessFiltered:
-                #     x1=threading.Thread(target=makes2DProjectionsFile,args=(x, param, log1, session1, dataFolder))
-                #     threads.append(x1)
-                #     x1.start() 
-                # for index, thread in enumerate(threads):
-                #     print("Waiting for thread: {}".format(index+1))
-                #     thread.join()
+                        
         else:
             
             for index, fileName2Process in enumerate(param.fileList2Process):
