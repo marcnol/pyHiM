@@ -32,16 +32,16 @@ steps for each ROI:
 import glob, os
 import matplotlib.pylab as plt
 import numpy as np
-from time import sleep
 
 from astropy.table import Table
 from tqdm import trange
 from skimage.util import montage
 import cv2
+from numba import jit
 
-from dask.distributed import Client, wait, LocalCluster,progress
-from multiprocessing.pool import ThreadPool
-import threading
+# @jit(nopython=True)
+
+from dask.distributed import Client, LocalCluster, get_client
 
 
 from imageProcessing.imageProcessing import Image
@@ -152,7 +152,7 @@ def retrieveBarcodeList(param, fileName):
 
     return barcodeList, fiducialFileNames
 
-
+# @jit(nopython=True)
 def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
     maskSize = Masks.shape
 
@@ -191,9 +191,11 @@ def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
     # print("Shift = {}".format(shift))
     # subVolumeCorrected = shiftImage(image2_adjusted, shift)
 
-    return shift, error, diffphase, image1_adjusted, image2_adjusted, image2_corrected
+    result = shift, error, diffphase, image1_adjusted, image2_adjusted, image2_corrected
+    
+    return result
 
-
+# @jit(nopython=True)
 def pad_images_to_same_size(images):
     """
     :param images: sequence of images
@@ -220,7 +222,6 @@ def pad_images_to_same_size(images):
         images_padded.append(img_padded)
 
     return images_padded
-
 
 def localDriftCorrection_plotsLocalAlignments(
     imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
@@ -327,6 +328,7 @@ def localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFold
         overwrite=True,
     )
 
+# @jit(nopython=True)
 def localDriftforRT(
     barcode,
     fileNameFiducial,
@@ -340,15 +342,13 @@ def localDriftforRT(
     log1,
     dataFolder,
     parallel=False
-):
+    ):
 
-    
     # loads 2D image and applies registration
     param={}
     Im = Image(param,log1)
     Im.loadImage2D(fileNameFiducial, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered")
     imageBarcode = Im.removesBackground2D(normalize=True)
-    # sumImage += imageBarcode
                     
     imageListCorrected, imageListunCorrected, imageListReference,errormessage = [], [], [], []
     
@@ -361,50 +361,110 @@ def localDriftforRT(
         log1.report("See progress in http://localhost:8787 ")
     else:
         Maskrange=trange(1, Masks.max())
-        
-    for iMask in Maskrange:
-        # calculates shift
 
-        shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = alignsSubVolumes(
-            imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask
-        )
-        # stores images in list
-        imageListReference.append(subVolumeReference)
-        imageListunCorrected.append(subVolume)
-
-        # evaluates shift to determine if we keep or not
-        if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
-            errormessage.append(
-                "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
-                    ROI, barcode, iMask, shift, shiftTolerance
-                )
-            )
-
-            shift = np.array([0, 0])
-            imageListCorrected.append(subVolume)
-        else:
-            imageListCorrected.append(subVolumeCorrected)
-
-        # stores result in database
-        # dictShift[ROI][barcode][str(iMask)] = shift
-        dictShiftBarcode[str(iMask)] = shift
-
-        # creates Table entry to return
-        tableEntry = [
-            os.path.basename(fileNameFiducial),
-            os.path.basename(imReference.fileName),
-            int(ROI),
-            int(barcode.split("RT")[1]),
-            iMask,
-            shift[0],
-            shift[1],
-            error,
-            diffphase,
-        ]
-
-        alignmentResultsTable.add_row(tableEntry)
+    parallel=False
     
-    result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
+    if parallel:
+
+        # need to fix the memory leakage!!
+        
+        print("processing> Launching {} threads using dask".format(len(Maskrange)))
+        futures = []
+        client=get_client()
+        
+        for iMask in Maskrange:
+            # calculates shift
+            futures.append(client.submit(alignsSubVolumes,imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask))
+
+        resultsfromCluster = client.gather(futures)
+
+        for iresult in resultsfromCluster:
+            shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = iresult
+
+            # stores images in list
+            imageListReference.append(subVolumeReference)
+            imageListunCorrected.append(subVolume)
+    
+            # evaluates shift to determine if we keep or not
+            if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
+                errormessage.append(
+                    "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
+                        ROI, barcode, iMask, shift, shiftTolerance
+                    )
+                )
+    
+                shift = np.array([0, 0])
+                imageListCorrected.append(subVolume)
+            else:
+                imageListCorrected.append(subVolumeCorrected)
+    
+            # stores result in database
+            dictShiftBarcode[str(iMask)] = shift
+    
+            # creates Table entry to return
+            tableEntry = [
+                os.path.basename(fileNameFiducial),
+                os.path.basename(imReference.fileName),
+                int(ROI),
+                int(barcode.split("RT")[1]),
+                iMask,
+                shift[0],
+                shift[1],
+                error,
+                diffphase,
+            ]
+    
+            alignmentResultsTable.add_row(tableEntry)
+           
+        del futures, resultsfromCluster
+        
+        result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
+
+    else:
+            
+        for iMask in Maskrange:
+            # calculates shift
+    
+            result = alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask)
+            shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = result
+
+            # stores images in list
+            imageListReference.append(subVolumeReference)
+            imageListunCorrected.append(subVolume)
+    
+            # evaluates shift to determine if we keep or not
+            if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
+                errormessage.append(
+                    "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
+                        ROI, barcode, iMask, shift, shiftTolerance
+                    )
+                )
+    
+                shift = np.array([0, 0])
+                imageListCorrected.append(subVolume)
+            else:
+                imageListCorrected.append(subVolumeCorrected)
+    
+            # stores result in database
+            # dictShift[ROI][barcode][str(iMask)] = shift
+            dictShiftBarcode[str(iMask)] = shift
+    
+            # creates Table entry to return
+            tableEntry = [
+                os.path.basename(fileNameFiducial),
+                os.path.basename(imReference.fileName),
+                int(ROI),
+                int(barcode.split("RT")[1]),
+                iMask,
+                shift[0],
+                shift[1],
+                error,
+                diffphase,
+            ]
+    
+            alignmentResultsTable.add_row(tableEntry)
+    
+        result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
     
     return result
 
@@ -426,15 +486,16 @@ def localDriftallBarcodes(param,
     if imReference.fileName in fiducialFileNames:
         fiducialFileNames.remove(imReference.fileName)
 
-    print(">>>Image <i> {} | sumImage: {}".format(imReference.data_2D.max(), imageReference.max()))
+    # print(">>>Image <i> {} | sumImage: {}".format(imReference.data_2D.max(), imageReference.max()))
 
     dictShift, errormessage = {}, []
 
     if param.param['parallel']:
 
         futures=list()
-        daskClusterInstance = daskCluster(len(barcodeList))
-
+        numberWorkersRequested = 50 #len(barcodeList)
+        daskClusterInstance = daskCluster(numberWorkersRequested,maximumLoad=0.6)
+        
         # dask    
         with LocalCluster(n_workers=daskClusterInstance.nThreads,
                             # processes=True,
@@ -444,11 +505,13 @@ def localDriftallBarcodes(param,
                             ) as cluster, Client(cluster) as client:
 
             # - load fiducial for cycle <i>
+            remote_imReference = client.scatter(imReference)
+            
             for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
 
                 result=client.submit(localDriftforRT,barcode,
                         fileNameFiducial,
-                        imReference,
+                        remote_imReference,
                         imageReference,
                         Masks,
                         bezel,

@@ -36,7 +36,8 @@ def parseArguments():
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        runParameters["rootFolder"] = os.getcwd()
+        # runParameters["rootFolder"] = os.getcwd()
+        runParameters["rootFolder"] = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
 
     if args.fileName:
         runParameters["fileName"] = args.fileName
@@ -46,7 +47,7 @@ def parseArguments():
     if args.parallel:
         runParameters["parallel"] = args.parallel
     else:
-        runParameters["parallel"] = False
+        runParameters["parallel"] = True
 
     return runParameters
 
@@ -59,8 +60,6 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     runParameters=parseArguments()    
-
-    # rootFolder = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
 
     print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
     sessionName = "localDriftCorrection"
@@ -75,7 +74,7 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(runParameters["rootFolder"],runParameters["parallel"])
+    log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
     # labels2Process indeces: 0 fiducial, 1:
     labelParameterFile = labels2Process[2]["parameterFile"]
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
@@ -103,6 +102,4 @@ if __name__ == "__main__":
     else:
         print("normal termination")
 
-    # for fileName in param.fileList2Process:
-    #     session1.add(fileName, sessionName)
     print("Elapsed time: {}".format(datetime.now() - begin_time))
