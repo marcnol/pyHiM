@@ -76,27 +76,30 @@ class cellID:
     def initializeLists(self):
         self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.p, self.cuid, self.buid = [], [], [], [], [], [], []
 
-    def visualize(self):
-        pass
-        # imageBarcodes = np.zeros([2048, 2048])
-        # MasksBarcodes = Masks
-        # R = []
+    # def visualize(self):
+    #     pass
+    #     # imageBarcodes = np.zeros([2048, 2048])
+    #     # MasksBarcodes = Masks
+    #     # R = []
 
-        # for i in range(len(self.barcodeMapROI.groups[0])):
-        #     y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-        #     x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-        #     barcodeID = self.barcodeMapROI.groups[0]["Barcode #"][i]
-        #     imageBarcodes[x_int][y_int] = barcodeID
-        #     MasksBarcodes[x_int][y_int] += 20 * barcodeID
-        #     R.append([y_int, x_int, barcodeID])
+    #     # for i in range(len(self.barcodeMapROI.groups[0])):
+    #     #     y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+    #     #     x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+    #     #     barcodeID = self.barcodeMapROI.groups[0]["Barcode #"][i]
+    #     #     imageBarcodes[x_int][y_int] = barcodeID
+    #     #     MasksBarcodes[x_int][y_int] += 20 * barcodeID
+    #     #     R.append([y_int, x_int, barcodeID])
 
-        # # Shows results
-        # Ra = np.array(R)
-        # # plt.imshow(Masks, origin="lower", cmap="jet")
-        # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
+    #     # # Shows results
+    #     # Ra = np.array(R)
+    #     # # plt.imshow(Masks, origin="lower", cmap="jet")
+    #     # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
 
     def alignByMasking(self):
-        # [ Assigns barcodes to masks and creates <NbarcodesinMask> ]
+        '''
+        Assigns barcodes to masks and creates <NbarcodesinMask>
+        '''
+
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
         # print("ROI:{}".format(self.ROI))
         for i in range(len(self.barcodeMapROI.groups[0])):
@@ -116,7 +119,29 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
         
-    def  searchLocalShift(self,row,group,key,x_uncorrected,y_uncorrected):
+    def  searchLocalShift(self,group,key,x_uncorrected,y_uncorrected):
+        '''
+        Searches for local drift 
+
+        Parameters
+        ----------
+        group : astropy table
+            contains barcode information within a given mask.
+        key : string
+            mask id.
+        x_uncorrected : float
+            x coordinate.
+        y_uncorrected : float
+            y coordinate.
+
+        Returns
+        -------
+        x_corrected : float
+            corrected x coordinate.
+        y_corrected : float
+            corrected y coordinate.
+
+        '''
         _foundMatch=False
         x_corrected, y_corrected = [], []
         for row in self.alignmentResultsTable:
@@ -134,14 +159,50 @@ class cellID:
             
         return x_corrected, y_corrected
 
-    def appliesLocalShift(self,group,x,y,z):
+    def buildsVector(self,group,x,y,z):
+        '''
+        Builds vector from coordinates
+        
+        Parameters
+        ----------
+        group : astropy table
+            used to detect whether 3D data exists.
+        x : float
+            c.
+        y : float
+            y coordinates.
+        z : float
+            z coordinates.
+
+        Returns
+        -------
+        R : np array
+            vector with coordinates.
+
+        '''
         if self.ndims==3 and "zcentroidGauss" in group.keys():
             R = np.column_stack((x,y,z,)) 
         else:
             R = np.column_stack((x,y,)) 
 
         return R
+    
     def calculatesPWDsingleMask(self,group,key):
+        '''
+        Calculates PWD between loci detected in a mask
+
+        Parameters
+        ----------
+        group : ASTROPY table
+            list of coordinates of loci within this mask
+        key : dict key
+            cellID.
+
+        Returns
+        -------
+        Appends results into Lists within the class.
+
+        '''
         x_uncorrected, y_uncorrected= np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
 
         if self.ndims==3 and "zcentroidGauss" in group.keys():
@@ -155,20 +216,11 @@ class cellID:
             x_corrected, y_corrected = self.searchLocalShift(group,key,x_uncorrected,y_uncorrected)
               
             # applies local drift correction
-            R = self.appliesLocalShift(group,x_corrected, y_corrected,z_uncorrected )
+            R = self.buildsVector(group,x_corrected, y_corrected,z_uncorrected )
                     
         else:
             # does not apply local drift correction
-            R = self.appliesLocalShift(group,x_uncorrected, y_uncorrected,z_uncorrected )
-
-            # if self.ndims==3 and "zcentroidGauss" in group.keys():
-            #     R = np.column_stack((np.array(group["xcentroid"].data), 
-            #                          np.array(group["ycentroid"].data),
-            #                          np.array(group["zcentroidGauss"].data),))
-                
-            # else:
-            #     R = np.column_stack((np.array(group["xcentroid"].data), 
-            #                          np.array(group["ycentroid"].data),))
+            R = self.buildsVector(group,x_uncorrected, y_uncorrected,z_uncorrected )
 
         self.ROIs.append(group["ROI #"].data[0])
         self.cellID.append(key["CellID #"])
@@ -180,6 +232,14 @@ class cellID:
         # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
 
     def buildsSCdistanceTable(self):
+        '''
+        iterates over all masks, calculates PWD for each mask, assigns them to SCdistanceTable
+
+        Returns
+        -------
+        SCdistanceTable
+
+        '''
         # sorts Table by cellID
         barcodeMapROI = self.barcodeMapROI
         barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
@@ -278,6 +338,26 @@ def findsOptimalKernelWidth(distanceDistribution):
 
 # @jit(nopython=True)
 def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
+    '''
+    Gets the kernel density function and maximum from a distribution of PWD distances
+
+    Parameters
+    ----------
+    distanceDistribution0 : nd array
+        List of PWD distances.
+    x_d : nd array
+        x grid.
+    optimizeKernelWidth : Boolean, optional
+        whether to optimize bandwidth. The default is False.
+
+    Returns
+    -------
+    np array
+        KDE distribution.
+    np array
+        Original distribution without NaNs
+
+    '''
 
     nan_array = np.isnan(distanceDistribution0)
 
@@ -292,6 +372,8 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
         kernelWidth = 0.3
 
     kde = KernelDensity(bandwidth=kernelWidth, kernel="gaussian")
+    
+    # makes sure the list is not full of NaNs.
     if distanceDistribution.shape[0]>0:
         kde.fit(distanceDistribution[:, None])
     else:
@@ -305,6 +387,34 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
 
 # @jit(nopython=True)
 def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
+    '''
+    calculates the kernel distribution and its maximum from a set of PWD distances
+
+    Parameters
+    ----------
+    SCmatrixCollated : np array 3 dims
+        SC PWD matrix.
+    bin1 : int
+        first bin.
+    bin2 : int
+        first bin.
+    pixelSize : float
+        pixel size in um
+    optimizeKernelWidth : Boolean, optional
+        does kernel need optimization?. The default is False.
+
+    Returns
+    -------
+    float
+        maximum of kernel.
+    np array
+        list of PWD distances used.
+    np array
+        kernel distribution.
+    x_d : np array
+        x grid.
+
+    '''
     distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
     x_d = np.linspace(0, 5, 2000)
 

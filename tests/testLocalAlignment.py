@@ -50,10 +50,7 @@ print("Shift = {}".format(shift))
 # fig.set_size_inches((5, 5))
 # plt.imshow(image1_adjusted,cmap = 'Blues', alpha = 1)
 
-                                 
-
-
-fig=plt.figure()
+                                 fig=plt.figure()
 fig.set_size_inches((5, 5))
 plt.imshow(subVolumeReference,cmap = 'Blues', alpha = 0.5)
 plt.imshow(subVolume,cmap = 'Reds', alpha = 0.5)

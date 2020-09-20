@@ -60,7 +60,6 @@ class Image:
 
     # save 2D projection as numpy array
     def saveImage2D(self, log, rootFolder, tag="_2d"):
-        # fileName = rootFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag
         fileName=self.getImageFileName(rootFolder,tag)
         saveImage2Dcmd(self.data_2D, fileName, log)
         
@@ -71,15 +70,12 @@ class Image:
     # read an image as a numpy array
     def loadImage2D(self, fileName, log, masterFolder, tag="_2d"):
         self.fileName = fileName
-        # fileName=self.fileName.split('.'+self.extension)[0]+'_2d.npy'
-        # fileName = masterFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag + ".npy"
         fileName=self.getImageFileName(masterFolder,tag)+ ".npy"
 
         self.data_2D = np.load(fileName)
         log.report(
             "\nLoading 2d projection from disk:{}".format(os.path.basename(fileName)), "info",
         )
-        # print("Loading 2d projection from disk:{}".format(fileName))
 
     # max intensity projection using all z planes
     def maxIntensityProjection(self):

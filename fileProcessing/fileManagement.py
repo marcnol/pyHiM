@@ -69,8 +69,6 @@ class log:
 
     def addSimpleText(self, title):
         print("{}".format(title))
-        # with open(self.fileName, 'a') as file:
-        #    file.write(title)
         writeString2File(self.fileName, title, "a")
 
 
@@ -78,6 +76,7 @@ class folders:
     def __init__(self, masterFolder=r"/home/marcnol/Documents/Images"):
         self.masterFolder = masterFolder
         self.listFolders = []
+        
         # list of sub-folders in rootFilder with images
         self.zProjectFolder = ""
         self.outputFolders = {}
@@ -123,9 +122,6 @@ class folders:
         None.
 
         """
-        # self.zProjectFolder=filesFolder+os.sep+param.param['zProject']['folder']
-        # self.createSingleFolder(self.zProjectFolder)
-
         self.outputFolders["zProject"] = filesFolder + os.sep + param.param["zProject"]["folder"]
         self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
         self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
@@ -350,46 +346,6 @@ class Parameters:
                 or ("DAPI" in file.split("_") and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial)
             ]
 
-        # print("\n :::: {},{},{}".format(channelDAPI,channelbarcode,channelfiducial))
-
-        # finds if there is 2 or 3 channels for DAPI acquisition
-        # fileList2Process = [
-        #     file for file in filesFolder if file.split("_")[-1].split(".")[0] == "ch02" and "DAPI" in file.split("_")
-        # ]
-            
-        # # selects DAPI files
-        # if self.param["acquisition"]["label"] == "DAPI":
-        #     self.fileList2Process = [
-        #         file
-        #         for file in filesFolder
-        #         if file.split("_")[-1].split(".")[0] == channelDAPI and "DAPI" in file.split("_")
-        #     ]
-        # # selects DAPIch2 files
-        # if self.param["acquisition"]["label"] == "RNA":
-        #     self.fileList2Process = [
-        #         file
-        #         for file in filesFolder
-        #         if file.split("_")[-1].split(".")[0] == channelDAPI_RNA and "DAPI" in file.split("_")
-        #     ]
-        # # selects barcode files
-        # elif self.param["acquisition"]["label"] == "barcode":
-        #     self.fileList2Process = [
-        #         file
-        #         for file in filesFolder
-        #         if len([i for i in file.split("_") if "RT" in i]) > 0
-        #         and file.split("_")[-1].split(".")[0] == channelbarcode
-        #     ]      
-        # # selects fiducial files
-        # elif self.param["acquisition"]["label"] == "fiducial":
-        #     self.fileList2Process = [
-        #         file
-        #         for file in filesFolder
-        #         if (
-        #             len([i for i in file.split("_") if "RT" in i]) > 0
-        #             and file.split("_")[-1].split(".")[0] == channelfiducial
-        #         )
-        #         or ("DAPI" in file.split("_") and file.split("_")[-1].split(".")[0] == channelDAPI_fiducial)
-        #     ]
 
     def decodesFileParts(self, fileName):
         '''
@@ -504,21 +460,20 @@ def RT2fileName(param, referenceBarcode):
     Finds the files in a list that contain the ReferenceBarcode in their name
     Also returs the ROI of each file in this list
 
+
     Parameters
     ----------
-    fileList2Process : TYPE
-        DESCRIPTION.
-    referenceBarcode : TYPE
-        DESCRIPTION.
-    positionROIinformation : TYPE, optional
-        DESCRIPTION. The default is 3.
+    param : class
+        parameters class.
+    referenceBarcode : string
+        reference barcode name
 
     Returns
     -------
-    fileNameReferenceList : TYPE
-        List of filenames with referenceBarcode in their RT field
-    ROIList : TYPE
-        Dictionary of ROIs for each file in list
+    fileNameReferenceList : list
+        list of files with reference barcode in their name
+    ROIList : list
+        list of ROIs.
 
     """
     fileNameReferenceList = []
@@ -536,27 +491,25 @@ def RT2fileName(param, referenceBarcode):
 def ROI2FiducialFileName(param, file, barcodeName):
     """
     Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
-    
+
+
     Parameters
     ----------
-    fileList2Process : TYPE
-        DESCRIPTION.
-    referenceBarcode : TYPE
-        DESCRIPTION.
-    positionROIinformation : TYPE, optional
-        DESCRIPTION. The default is 3.
+    param : class
+        parameters class.
+    file : string
+        filename.
+    barcodeName : string
+        barcode name to assign a fiducial to.
 
     Returns
     -------
-    fileNameReferenceList : TYPE
-        List of filenames with referenceBarcode in their RT field
-    ROIList : TYPE
-        Dictionary of ROIs for each file in list
+    candidates : TYPE
+        DESCRIPTION.
 
     """
     # gets rootFolder
     rootFolder = os.path.dirname(file)
-    # ROI = os.path.basename(file).split("_")[positionROIinformation]
     ROI = param.decodesFileParts(os.path.basename(file))['roi']
     
     channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
@@ -564,13 +517,6 @@ def ROI2FiducialFileName(param, file, barcodeName):
     # looks for referenceFiducial file in folder
     listFiles = glob.glob(rootFolder + os.sep + "*.tif")
 
-    # candidates = [
-    #     x
-    #     for x in listFiles
-    #     if (barcodeName in x)
-    #     and (ROI in os.path.basename(x).split("_")[positionROIinformation])
-    #     and (channelFiducial in os.path.basename(x))
-    # ]
     candidates = [
         x
         for x in listFiles
