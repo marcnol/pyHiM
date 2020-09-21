@@ -36,7 +36,7 @@ from tqdm import trange, tqdm
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
-from dask.distributed import Client, LocalCluster, get_client, as_completed, wait
+from dask.distributed import Client, LocalCluster, get_client, as_completed
 
 from numba import jit
 
@@ -332,26 +332,7 @@ class refitBarcodesClass:
         self.log1.report("Looping over {} spots...".format(numberSpots))
  
         if self.parallel:
-            R = range(numberSpots)
-            
-            # futures = []
-            # client=get_client()
-
-            # for iSpot in R:
-            #     futures.append(client.submit(self.getzPosition,Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape))
-            
-            # results=client.gather(futures)
-            # for result in results:            
-            #     zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = result
-            #     listZpositionsMoment.append(zPositionMoment)
-            #     listZpositionsGaussian.append(zPositionGaussian)
-            #     listSigma.append(sigma)
-            #     listResiduals.append(res)
-            #     listFitKeep.append(fitKeep)
-            #     listfitSuccess.append(fitSuccess)
-
-            # del futures, results
-            
+            R = range(numberSpots)      
         else:
             R = trange(numberSpots)
 
@@ -364,22 +345,6 @@ class refitBarcodesClass:
             listResiduals.append(res)
             listFitKeep.append(fitKeep)
             listfitSuccess.append(fitSuccess)
-        
-        # if self.parallel:
-        #     R = range(numberSpots)
-        # else:
-        #     R = trange(numberSpots)
-            
-            
-        # for iSpot in R:
-        #     results = self.getzPosition(Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape)
-        #     zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = results
-        #     listZpositionsMoment.append(zPositionMoment)
-        #     listZpositionsGaussian.append(zPositionGaussian)
-        #     listSigma.append(sigma)
-        #     listResiduals.append(res)
-        #     listFitKeep.append(fitKeep)
-        #     listfitSuccess.append(fitSuccess)
 
         self.log1.report("Unfailed fittings: {} out of {} ".format(sum(listfitSuccess), numberSpots))
         barcodeMapSinglebarcode["zcentroidGauss"] = listZpositionsGaussian
@@ -412,7 +377,7 @@ class refitBarcodesClass:
                 filteredResidual.append(item["residualGaussFit"])    
                 filteredSigma.append(item["sigmaGaussFit"])    
             
-            
+        # plots first subpanel with centroid vs residuals
         fig, (ax2, ax1) = plt.subplots(2, 1)
         cs1a = ax2.scatter(
             barcodeMapSinglebarcode["zcentroidGauss"],
@@ -435,7 +400,7 @@ class refitBarcodesClass:
         cbar1.set_label("sigmaGaussFit")
         cs1a.set_clim(0, 10)
 
-
+        # plots second subpanel with zCentroid from moment and from Gaussian fits
         cs2 = ax1.scatter(
             barcodeMapSinglebarcode["zcentroidGauss"],
             barcodeMapSinglebarcode["zcentroidMoment"],
@@ -459,11 +424,14 @@ class refitBarcodesClass:
 
         fig.suptitle("ROI: {} | barcode: {}".format(ROI, nBarcode), fontsize=12)
 
+        # saves output
         plt.savefig(outputFileName)
         
+        # closes plot
         if not show:
             plt.close()
 
+        # write line in MD file pointing to plot
         writeString2File(
             self.log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName), "a",
         )
@@ -489,18 +457,8 @@ class refitBarcodesClass:
 
         # shows 2D images and detected sources
         # self.showsImageNsources(Im3DShifted.data_2D, xcentroids2D, ycentroids2D)
-
-        # if self.parallel:
-        #     futures = []
-        #     client=get_client()
-
-        #     # loop over spots
-        #     futures=client.submit(self.fitsZpositions,Im3DShifted, barcodeMapSinglebarcode)
-        #     barcodeMapSinglebarcode = client.gather(futures)
-            
-        # else:
-            
-            # loop over spots
+          
+        # loop over spots
         barcodeMapSinglebarcode = self.fitsZpositions(Im3DShifted, barcodeMapSinglebarcode)
 
         # displays results
@@ -553,36 +511,58 @@ class refitBarcodesClass:
         if self.parallel:
             futures = list()
             
-            daskClusterInstance = daskCluster(maxnumberBarcodes)
-            # daskClusterInstance = daskCluster(15)
-            print("Go to http://localhost:8787/status for information on progress...")
+            # daskClusterInstance = daskCluster(maxnumberBarcodes)
+            # # daskClusterInstance = daskCluster(15)
+            # print("Go to http://localhost:8787/status for information on progress...")
+
+            client=get_client()
+
+            for iROI in range(numberROIs):
+                nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
+                print("Working on ROI# {}".format(nROI))
+    
+                # loops over barcodes in that ROI
+                barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
+                barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
+                numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
+                print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+    
+                for iBarcode in range(numberBarcodes):
+                    # find coordinates for this ROI and barcode
+                    barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
+                    result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
+                    futures.append(result)    
+
+            # progress(futures)
+
+            results = client.gather(futures)   
             
-            with LocalCluster(n_workers=daskClusterInstance.nThreads,
-                                # processes=True,
-                                # threads_per_worker=1,
-                                # memory_limit='2GB',
-                                # ip='tcp://localhost:8787',
-                                ) as cluster, Client(cluster) as client:
+            # with LocalCluster(n_workers=daskClusterInstance.nThreads,
+            #                     # processes=True,
+            #                     # threads_per_worker=1,
+            #                     # memory_limit='2GB',
+            #                     # ip='tcp://localhost:8787',
+            #                     ) as cluster, Client(cluster) as client:
 
-                for iROI in range(numberROIs):
-                    nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
-                    print("Working on ROI# {}".format(nROI))
+            #     for iROI in range(numberROIs):
+            #         nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
+            #         print("Working on ROI# {}".format(nROI))
         
-                    # loops over barcodes in that ROI
-                    barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
-                    barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
-                    numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-                    print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+            #         # loops over barcodes in that ROI
+            #         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
+            #         barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
+            #         numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
+            #         print("\nNumber of barcodes detected: {}".format(numberBarcodes))
         
-                    for iBarcode in range(numberBarcodes):
-                        # find coordinates for this ROI and barcode
-                        barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
-                        result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
-                        futures.append(result)    
+            #         for iBarcode in range(numberBarcodes):
+            #             # find coordinates for this ROI and barcode
+            #             barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
+            #             result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
+            #             futures.append(result)    
 
-                # progress(futures)
+            #     # progress(futures)
 
-                results = client.gather(futures)                        
+            #     results = client.gather(futures)                        
         else:
             results = []
             for iROI in range(numberROIs):
@@ -646,3 +626,4 @@ class refitBarcodesClass:
 
         self.log1.report("HiM matrix in {} processed".format(currentFolder), "info")
 
+        return 0

@@ -12,6 +12,7 @@ from datetime import datetime
 from fileProcessing.fileManagement import (
     session, writeString2File, log, Parameters, daskCluster)
 
+from dask.distributed import Client, LocalCluster, get_client, as_completed, fire_and_forget
 
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 
@@ -69,6 +70,7 @@ if __name__ == "__main__":
         log1.fileNameMD, "# Hi-M {}: {}".format(sessionName, now.strftime("%Y/%m/%d %H:%M:%S")), "w",
     )  # initialises MD file
 
+      
     ilabel=1
     label = labels2Process[1]["label"]
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
@@ -76,10 +78,33 @@ if __name__ == "__main__":
 
     # sets parameters
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
+ 
+    if not runParameters['parallel']:
+        # [builds PWD matrix for all folders with images]
+        fittingSession = refitBarcodesClass(param, log1, session1,parallel=runParameters['parallel'])
+        fittingSession.refitFolders()
+    else:
+
+        daskClusterInstance = daskCluster(20)
+        print("Go to http://localhost:8787/status for information on progress...")
+        fittingSession = refitBarcodesClass(param, log1, session1,parallel=runParameters['parallel'])
+        with LocalCluster(n_workers=daskClusterInstance.nThreads,
+                            # processes=True,
+                            # threads_per_worker=1,
+                            # memory_limit='2GB',
+                            # ip='tcp://localhost:8787',
+                            ) as cluster, Client(cluster) as client:
+    
+            result = client.submit(fittingSession.refitFolders)
         
-    # [builds PWD matrix for all folders with images]
-    fittingSession = refitBarcodesClass(param, log1, session1,parallel=runParameters['parallel'])
-    fittingSession.refitFolders()
+            a = client.gather(result)
+    
+
+
+    # # [builds PWD matrix for all folders with images]
+    # fittingSession = refitBarcodesClass(param, log1, session1,parallel=runParameters['parallel'])
+    # fittingSession.refitFolders()
+
     print("Elapsed time: {}".format(datetime.now() - now))
     
         
