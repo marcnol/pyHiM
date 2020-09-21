@@ -38,8 +38,6 @@ from tqdm import trange
 from skimage.util import montage
 import cv2
 
-# @jit(nopython=True)
-
 from dask.distributed import Client, LocalCluster, get_client, as_completed, wait
 
 
@@ -493,7 +491,7 @@ def localDriftallBarcodes(param,
 
     if param.param['parallel']:
 
-        futures,results=list(),list()
+        futures = list()
         numberWorkersRequested = len(barcodeList)
         daskClusterInstance = daskCluster(numberWorkersRequested,maximumLoad=0.6)
         

@@ -46,7 +46,6 @@ def parseArguments():
 if __name__ == "__main__":
 
     runParameters=parseArguments()    
-
         
     print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
 

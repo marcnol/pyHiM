@@ -311,14 +311,24 @@ class cellID:
         SCmatrix = np.zeros((numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices))
         SCmatrix[:] = np.NaN
 
+        # loops over cell masks
         for iCell, scPWDitem in zip(range(numberMatrices), self.SCdistanceTable):
             barcodes2Process = scPWDitem["Barcode #"]
+            
+            # loops over barcodes detected in cell mask: barcode1
             for barcode1, ibarcode1 in zip(barcodes2Process, range(len(barcodes2Process))):
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
+                
+                # loops over barcodes detected in cell mask: barcode2
                 for barcode2, ibarcode2 in zip(barcodes2Process, range(len(barcodes2Process))):
                     indexBarcode2 = np.nonzero(uniqueBarcodes == barcode2)[0][0]
+                    
                     if barcode1 != barcode2:
+                    
+                        # attributes distance from the PWDmatrix field in the scPWDitem table
                         newdistance = scPWDitem["PWDmatrix"][ibarcode1][ibarcode2]
+                        
+                        # inserts value into SCmatrix
                         if mode == "last":
                             SCmatrix[indexBarcode1][indexBarcode2][iCell] = newdistance
                         elif mode == "mean":
