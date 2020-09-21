@@ -558,7 +558,7 @@ def ROI2FiducialFileName(param, file, barcodeName):
     candidates = [
         x
         for x in listFiles
-        if (barcodeName in x)
+        if (barcodeName+"_" in x)
         and (ROI == param.decodesFileParts(os.path.basename(x))['roi'])
         and (channelFiducial in os.path.basename(x))
     ]
