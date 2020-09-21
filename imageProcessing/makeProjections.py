@@ -41,7 +41,6 @@ from fileProcessing.fileManagement import (
 # FUNCTIONS
 # =============================================================================
 
-
 def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
     if fileName in session1.data and param.param["zProject"]["operation"] != "overwrite":

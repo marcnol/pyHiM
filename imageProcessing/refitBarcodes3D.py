@@ -37,6 +37,7 @@ from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
 from dask.distributed import Client, LocalCluster, progress
+from numba import jit
 
 from imageProcessing.imageProcessing import Image
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
@@ -211,6 +212,7 @@ class refitBarcodesClass:
     def gaussian(self, x, a, b, c):
         return a * np.exp(-np.power(x - b, 2) / (2 * np.power(c, 2)))
 
+    # @jit(nopython=True)
     def getzPosition(self, Im3DShifted, x, y, imageShape):
         """
         Finds z position of PSF using moment and gaussian fitting    
@@ -274,11 +276,30 @@ class refitBarcodesClass:
             self.log1.report("Gaussian fitting: did not converge")
             fitSuccess = False
 
+        if "residual_max" in self.param.param.keys():
+            residualThreshold = self.param.param["residual_max"]
+        else:
+            residualThreshold = 2.5
+        if "sigma_max" in self.param.param.keys():        
+            sigmaThreshold = self.param.param["sigma_max"]
+        else:
+            sigmaThreshold = 5 
+        if "centroidDifference_max" in self.param.param.keys():        
+            centroidMaxDifference = self.param.param["centroidDifference_max"] 
+        else:
+            centroidMaxDifference = 5
+        
         if fitSuccess:
             zPositionGaussian = pars[1]
             sigma = pars[2]
             residual = np.linalg.norm(zTrace - self.gaussian(xdata, pars[0], pars[1], pars[2])) / pars[0]
-            fitKeep = True
+            
+            if residual < residualThreshold\
+                and sigma < sigmaThreshold and\
+                    (zPositionGaussian - zPositionMoment) < centroidMaxDifference : 
+                fitKeep = True
+            else:
+                fitKeep = False                
         else:
             zPositionGaussian, sigma, residual = zPositionMoment, np.nan, np.nan
             fitKeep = False
@@ -328,26 +349,54 @@ class refitBarcodesClass:
         barcodeMapSinglebarcode["zcentroidMoment"] = listZpositionsMoment
         barcodeMapSinglebarcode["sigmaGaussFit"] = listSigma
         barcodeMapSinglebarcode["residualGaussFit"] = listResiduals
+        barcodeMapSinglebarcode["3DfitKeep"] = listFitKeep
 
         return barcodeMapSinglebarcode
 
-    def shows3DfittingResults(self, barcodeMapSinglebarcode, numberZplanes=60):
+    def shows3DfittingResults(self, barcodeMapSinglebarcode, numberZplanes=60, show=False):
         nBarcode = np.unique(barcodeMapSinglebarcode["Barcode #"].data)[0]
         ROI = np.unique(barcodeMapSinglebarcode["ROI #"].data)[0]
         outputFileName = self.outputFileName + "_3Drefit_ROI:" + str(ROI) + "_barcode:" + str(nBarcode) + ".png"        
-        
+
+        # filters list and keeps only those with 3DfitKeep == True
+        filteredCentroidMoment = []
+        filteredCentroidGauss = []
+        filteredResidual = []
+        filteredSigma = []
+        if "centroidDifference_max" in self.param.param.keys():        
+            fluxThreshold = self.param.param["fluxThreshold"]
+        else:
+            fluxThreshold = 200
+            
+        for item in barcodeMapSinglebarcode:
+            if item["3DfitKeep"] and item["flux"] > fluxThreshold :
+                filteredCentroidMoment.append(item["zcentroidMoment"])    
+                filteredCentroidGauss.append(item["zcentroidGauss"])    
+                filteredResidual.append(item["residualGaussFit"])    
+                filteredSigma.append(item["sigmaGaussFit"])    
+            
+            
         fig, (ax2, ax1) = plt.subplots(2, 1)
-        cs1 = ax2.scatter(
+        cs1a = ax2.scatter(
+            barcodeMapSinglebarcode["zcentroidGauss"],
             barcodeMapSinglebarcode["residualGaussFit"],
-            barcodeMapSinglebarcode["sigmaGaussFit"],
-            c=barcodeMapSinglebarcode["zcentroidGauss"],
+            s=barcodeMapSinglebarcode["sigmaGaussFit"],
+            c=barcodeMapSinglebarcode["sigmaGaussFit"],
             alpha=0.3,
         )
-        ax2.set_xlabel("sigma")
+        cs1b = ax2.scatter(
+            filteredCentroidGauss,
+            filteredResidual,
+            marker=".",c='k',
+            alpha=0.5,
+        )
+
+        ax1.set_xlabel("zPosition, Gaussian")
         ax2.set_ylabel("residuals/amplitude")
         # cbar1 = ax1.colorbar(cs1)
-        cbar1 = fig.colorbar(cs1, ax=ax2)
-        cbar1.set_label("zPosition")
+        cbar1 = fig.colorbar(cs1a, ax=ax2)
+        cbar1.set_label("sigmaGaussFit")
+        cs1a.set_clim(0, 10)
 
 
         cs2 = ax1.scatter(
@@ -355,6 +404,12 @@ class refitBarcodesClass:
             barcodeMapSinglebarcode["zcentroidMoment"],
             s=(barcodeMapSinglebarcode["sigmaGaussFit"]),
             c=barcodeMapSinglebarcode["residualGaussFit"],
+            alpha=0.5,
+        )
+        cs1b = ax1.scatter(
+            filteredCentroidGauss,
+            filteredCentroidMoment,
+            marker=".",c='k',
             alpha=0.5,
         )
         ax1.set_xlabel("zPosition, Gaussian")
@@ -368,7 +423,9 @@ class refitBarcodesClass:
         fig.suptitle("ROI: {} | barcode: {}".format(ROI, nBarcode), fontsize=12)
 
         plt.savefig(outputFileName)
-        plt.close()
+        
+        if not show:
+            plt.close()
 
         writeString2File(
             self.log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName), "a",
@@ -394,7 +451,7 @@ class refitBarcodesClass:
         numberZplanes = Im3DShifted.data.shape[0]
 
         # shows 2D images and detected sources
-        # showsImageNsources(Im3DShifted.data_2D, xcentroids2D, ycentroids2D)
+        # self.showsImageNsources(Im3DShifted.data_2D, xcentroids2D, ycentroids2D)
 
         # loop over spots
         barcodeMapSinglebarcode = self.fitsZpositions(Im3DShifted, barcodeMapSinglebarcode)

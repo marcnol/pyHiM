@@ -38,7 +38,8 @@ def parseArguments():
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        runParameters["rootFolder"] = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
+        # runParameters["rootFolder"] = "/mnt/grey/DATA/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
+        runParameters["rootFolder"] = '/home/marcnol/data/Embryo_debug_dataset/Experiment_18'
 
     if args.parallel:
         runParameters["parallel"] = args.parallel
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     session1 = session(runParameters["rootFolder"], sessionName)
 
     # setup logs
-    log1 = log(runParameters["rootFolder"],parallel=runParameters["parallel"])
+    log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
     log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
     log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
     writeString2File(
@@ -99,3 +100,5 @@ if __name__ == "__main__":
     if runParameters["parallel"]:
         daskClusterInstance.cluster.close()
         daskClusterInstance.client.close()
+        
+    print("Elapsed time: {}".format(datetime.now() - begin_time))
