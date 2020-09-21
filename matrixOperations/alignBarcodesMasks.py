@@ -54,14 +54,15 @@ warnings.filterwarnings("ignore")
 
 
 class cellID:
-    def __init__(self, param, barcodeMapROI, Masks, ROI):
+    def __init__(self, param, barcodeMapROI, Masks, ROI,ndims=2):
         self.param=param
         self.barcodeMapROI = barcodeMapROI
         self.Masks = Masks
         self.NcellsAssigned = 0
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
-
+        self.ndims=ndims
+        
         self.SegmentationMask = SegmentationImage(self.Masks)
         self.numberMasks = self.SegmentationMask.nlabels
         self.ROI = ROI
@@ -98,16 +99,37 @@ class cellID:
         '''
 
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
-        # print("ROI:{}".format(self.ROI))
+        if "flux_min" in self.param.param["segmentedObjects"]:
+            flux_min = self.param.param["segmentedObjects"]["flux_min"]
+        else:
+            flux_min = 0
+        # print("Flux min = {}".format(flux_min))
+        
+        # loops over barcode Table rows in a given ROI
         for i in range(len(self.barcodeMapROI.groups[0])):
-            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-            # barcodeID = self.barcodeMapROI.groups[ROI]['Barcode #'][i]
-            maskID = self.Masks[x_int][y_int]
-            self.barcodeMapROI["CellID #"][i] = maskID
-            if maskID > 0:
-                NbarcodesinMask[maskID] += 1
-                self.barcodesinMask["maskID_" + str(maskID)].append(i)
+            
+            if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
+                keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
+            else:
+                keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
+            
+            if keep:
+                y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+                x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+    
+                #finds what mask label this barcode is sitting on
+                maskID = self.Masks[x_int][y_int]
+    
+                # attributes CellID to a barcode            
+                self.barcodeMapROI["CellID #"][i] = maskID
+                
+                # if it is not background,
+                if maskID > 0:
+                    # increments counter of number of barcodes in the cell mask attributed
+                    NbarcodesinMask[maskID] += 1
+                    
+                    # stores the identify of the barcode to the mask
+                    self.barcodesinMask["maskID_" + str(maskID)].append(i)
 
         # Total number of masks assigned and not assigned
         self.NcellsAssigned = np.count_nonzero(NbarcodesinMask > 0)
@@ -656,6 +678,8 @@ def buildsPWDmatrix(param,
 
     print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
     processingOrder = 0
+    
+    # loops over ROIs
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
@@ -663,7 +687,7 @@ def buildsPWDmatrix(param,
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
-        # finds file for masks
+        # finds file with cell masks
         fileList2Process = [
             file
             for file in filesinFolder
@@ -673,21 +697,24 @@ def buildsPWDmatrix(param,
         ]
 
         if len(fileList2Process) > 0:
-            # loads Masks
+            
+            # loads file with cell masks
             fileNameROImasks = os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
             fullFileNameROImasks = os.path.dirname(fileNameBarcodeCoordinates) + os.sep + fileNameROImasks
             if os.path.exists(fullFileNameROImasks):
                 Masks = np.load(fullFileNameROImasks)
 
                 # Assigns barcodes to Masks for a given ROI
-                cellROI = cellID(param,barcodeMapSingleROI, Masks, ROI)
+                cellROI = cellID(param,barcodeMapSingleROI, Masks, ROI,ndims=localizationDimension)
                 cellROI.ndims=ndims
                 
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
                     
+                # finds what barcodes are in each cell mask    
                 cellROI.alignByMasking()
 
+                # builds the single cell distance Matrix
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
                 print(
@@ -742,9 +769,9 @@ def buildsPWDmatrix(param,
     
     # adapts clim depending on whether 2 or 3 dimensions are use for the barcode localizations
     if localizationDimension==2:
-        clim=1.5
+        clim=1.6
     else:
-        clim=3
+        clim=1.6
         
     plotMatrix(
         SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median", clim=clim, cm='terrain'
@@ -769,6 +796,7 @@ def processesPWDmatrices(param, log1, session1):
 
 
         fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
+        
         # 2D
         outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
         log1.report("-------> 2D processing: {}".format(outputFileName ))        
@@ -796,8 +824,8 @@ def processesPWDmatrices(param, log1, session1):
         else:
             pixelSize = 0.1            
             
-        buildsPWDmatrix(param,
-            currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD, ndims=3
+        buildsPWDmatrix(
+            param,currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD, ndims=3
         )
 
         # loose ends
