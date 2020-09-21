@@ -130,7 +130,7 @@ if __name__ == "__main__":
             
         # [refits spots in 3D]
         if label == "barcode" and param.param['segmentedObjects']['Segment3D']=='overwrite':
-            fittingSession = refitBarcodesClass(param, log1, session1)
+            fittingSession = refitBarcodesClass(param, log1, session1,parallel=param.param['parallel'])
             fittingSession.refitFolders()
             
         # [local drift correction]

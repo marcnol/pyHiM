@@ -103,7 +103,7 @@ class cellID:
             flux_min = self.param.param["segmentedObjects"]["flux_min"]
         else:
             flux_min = 0
-        # print("Flux min = {}".format(flux_min))
+        print("Flux min = {}".format(flux_min))
         
         # loops over barcode Table rows in a given ROI
         for i in range(len(self.barcodeMapROI.groups[0])):
@@ -771,7 +771,7 @@ def buildsPWDmatrix(param,
     if localizationDimension==2:
         clim=1.6
     else:
-        clim=1.6
+        clim=2.2
         
     plotMatrix(
         SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median", clim=clim, cm='terrain'

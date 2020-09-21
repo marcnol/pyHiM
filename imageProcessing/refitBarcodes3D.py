@@ -36,7 +36,8 @@ from tqdm import trange, tqdm
 from astropy.visualization import simple_norm
 from astropy.table import Table, Column
 from photutils import CircularAperture
-from dask.distributed import Client, LocalCluster, progress
+from dask.distributed import Client, LocalCluster, get_client, as_completed, wait
+
 from numba import jit
 
 from imageProcessing.imageProcessing import Image
@@ -49,12 +50,13 @@ from fileProcessing.fileManagement import daskCluster
 
 
 class refitBarcodesClass:
-    def __init__(self, param, log1, session1):
+    def __init__(self, param, log1, session1, parallel=False):
         self.param = param
         self.session1=session1
         # self.dataFolder = []
         self.log1 = log1
         self.window = 3
+        self.parallel=parallel
 
     def loadsBarcodeMap(self):
         fileNameBarcodeCoordinates = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
@@ -130,7 +132,7 @@ class refitBarcodesClass:
                 Im3DShifted.data = np.zeros(imageShape)  # creates array that will hold new shifted 3D data
                 self.log1.report("Shifting 3D image for ROI # {}, barcode # {}".format(nROI, nBarcode))
                 
-                if self.param.param['parallel']:
+                if self.parallel:
                     R = range(numberZplanes)
                 else:
                     R = trange(numberZplanes)
@@ -328,12 +330,31 @@ class refitBarcodesClass:
         )
         
         self.log1.report("Looping over {} spots...".format(numberSpots))
-        
-        if self.param.param['parallel']:
+ 
+        if self.parallel:
             R = range(numberSpots)
+            
+            # futures = []
+            # client=get_client()
+
+            # for iSpot in R:
+            #     futures.append(client.submit(self.getzPosition,Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape))
+            
+            # results=client.gather(futures)
+            # for result in results:            
+            #     zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = result
+            #     listZpositionsMoment.append(zPositionMoment)
+            #     listZpositionsGaussian.append(zPositionGaussian)
+            #     listSigma.append(sigma)
+            #     listResiduals.append(res)
+            #     listFitKeep.append(fitKeep)
+            #     listfitSuccess.append(fitSuccess)
+
+            # del futures, results
+            
         else:
             R = trange(numberSpots)
-            
+
         for iSpot in R:
             results = self.getzPosition(Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape)
             zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = results
@@ -343,6 +364,22 @@ class refitBarcodesClass:
             listResiduals.append(res)
             listFitKeep.append(fitKeep)
             listfitSuccess.append(fitSuccess)
+        
+        # if self.parallel:
+        #     R = range(numberSpots)
+        # else:
+        #     R = trange(numberSpots)
+            
+            
+        # for iSpot in R:
+        #     results = self.getzPosition(Im3DShifted, xcentroids2D[iSpot], ycentroids2D[iSpot], imageShape)
+        #     zPositionMoment, zPositionGaussian, sigma, res, fitKeep, fitSuccess = results
+        #     listZpositionsMoment.append(zPositionMoment)
+        #     listZpositionsGaussian.append(zPositionGaussian)
+        #     listSigma.append(sigma)
+        #     listResiduals.append(res)
+        #     listFitKeep.append(fitKeep)
+        #     listfitSuccess.append(fitSuccess)
 
         self.log1.report("Unfailed fittings: {} out of {} ".format(sum(listfitSuccess), numberSpots))
         barcodeMapSinglebarcode["zcentroidGauss"] = listZpositionsGaussian
@@ -453,7 +490,17 @@ class refitBarcodesClass:
         # shows 2D images and detected sources
         # self.showsImageNsources(Im3DShifted.data_2D, xcentroids2D, ycentroids2D)
 
-        # loop over spots
+        # if self.parallel:
+        #     futures = []
+        #     client=get_client()
+
+        #     # loop over spots
+        #     futures=client.submit(self.fitsZpositions,Im3DShifted, barcodeMapSinglebarcode)
+        #     barcodeMapSinglebarcode = client.gather(futures)
+            
+        # else:
+            
+            # loop over spots
         barcodeMapSinglebarcode = self.fitsZpositions(Im3DShifted, barcodeMapSinglebarcode)
 
         # displays results
@@ -503,9 +550,11 @@ class refitBarcodesClass:
         maxnumberBarcodes = availableBarcodes.shape[0]
         print("Max number of barcodes detected: {}".format(maxnumberBarcodes))
         
-        if self.param.param["parallel"]:
+        if self.parallel:
             futures = list()
+            
             daskClusterInstance = daskCluster(maxnumberBarcodes)
+            # daskClusterInstance = daskCluster(15)
             print("Go to http://localhost:8787/status for information on progress...")
             
             with LocalCluster(n_workers=daskClusterInstance.nThreads,
@@ -535,7 +584,6 @@ class refitBarcodesClass:
 
                 results = client.gather(futures)                        
         else:
-
             results = []
             for iROI in range(numberROIs):
                 nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
@@ -590,7 +638,7 @@ class refitBarcodesClass:
         self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"]
 
         self.log1.report("-------> Processing Folder: {}".format(currentFolder))
-        self.log1.parallel = self.param.param["parallel"]
+        self.log1.parallel = self.parallel
         
         self.refitFilesinFolder()
 

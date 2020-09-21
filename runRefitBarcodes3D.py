@@ -76,19 +76,10 @@ if __name__ == "__main__":
 
     # sets parameters
     param = Parameters(runParameters["rootFolder"], labelParameterFile)
-    if runParameters["parallel"]:
-        daskClusterInstance = daskCluster(15)
-        daskClusterInstance.createDistributedClient()
-        param.param['parallel']=True
-    else:
-        param.param['parallel']=False
         
     # [builds PWD matrix for all folders with images]
-    fittingSession = refitBarcodesClass(param, log1, session1)
+    fittingSession = refitBarcodesClass(param, log1, session1,parallel=runParameters['parallel'])
     fittingSession.refitFolders()
     print("Elapsed time: {}".format(datetime.now() - now))
     
-    if runParameters["parallel"]:
-        daskClusterInstance.cluster.close()
-        daskClusterInstance.client.close()
         
