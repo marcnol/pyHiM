@@ -37,11 +37,10 @@ from astropy.table import Table
 from tqdm import trange
 from skimage.util import montage
 import cv2
-from numba import jit
 
 # @jit(nopython=True)
 
-from dask.distributed import Client, LocalCluster, get_client, as_completed
+from dask.distributed import Client, LocalCluster, get_client, as_completed, wait
 
 
 from imageProcessing.imageProcessing import Image
@@ -152,7 +151,6 @@ def retrieveBarcodeList(param, fileName):
 
     return barcodeList, fiducialFileNames
 
-# @jit(nopython=True)
 def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
     maskSize = Masks.shape
 
@@ -195,7 +193,6 @@ def alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=20, iMask=1):
     
     return result
 
-# @jit(nopython=True)
 def pad_images_to_same_size(images):
     """
     :param images: sequence of images
@@ -328,12 +325,11 @@ def localDriftCorrection_savesResults(dictShift, alignmentResultsTable, dataFold
         overwrite=True,
     )
 
-# @jit(nopython=True)
 def localDriftforRT(
     barcode,
     fileNameFiducial,
-    imReference,
-    imageReference,
+    imReferenceFileName,
+    imageReferenceBackgroundSubstracted,
     Masks,
     bezel,
     shiftTolerance,
@@ -367,6 +363,10 @@ def localDriftforRT(
     if parallel:
 
         # need to fix the memory leakage!!
+        # thre problem is that each mask submits a worker (500 masks) and they all return
+        # 3 subVolumes that need to be all accumulated by a single worker (that is handling the barcode).
+        # To solve the issue I need to recode so that images are not returned by the workers.
+        # The issue now is that CURRENTLY these images need to be collected in order to make the mosaic...
         
         print("processing> Launching {} threads using dask".format(len(Maskrange)))
         futures = []
@@ -374,16 +374,14 @@ def localDriftforRT(
         
         for iMask in Maskrange:
             # calculates shift
-            futures.append(client.submit(alignsSubVolumes,imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask))
+            futures.append(client.submit(alignsSubVolumes,imageReferenceBackgroundSubstracted, imageBarcode, Masks, bezel=bezel, iMask=iMask))
 
-        # resultsfromCluster = client.gather(futures)
-        # for iresult in resultsfromCluster:
-            
         for batch in as_completed(futures, with_results=True).batches():
             for future, iResult in batch:
             
                 shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = iResult
-    
+                del iResult
+                
                 # stores images in list
                 imageListReference.append(subVolumeReference)
                 imageListunCorrected.append(subVolume)
@@ -400,14 +398,15 @@ def localDriftforRT(
                     imageListCorrected.append(subVolume)
                 else:
                     imageListCorrected.append(subVolumeCorrected)
-        
+                    
+                del subVolume, subVolumeCorrected, subVolumeReference
                 # stores result in database
                 dictShiftBarcode[str(iMask)] = shift
         
                 # creates Table entry to return
                 tableEntry = [
                     os.path.basename(fileNameFiducial),
-                    os.path.basename(imReference.fileName),
+                    os.path.basename(imReferenceFileName),
                     int(ROI),
                     int(barcode.split("RT")[1]),
                     iMask,
@@ -421,14 +420,14 @@ def localDriftforRT(
            
         del futures
         
-        result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
+        resultAll = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
 
     else:
             
         for iMask in Maskrange:
             # calculates shift
     
-            result = alignsSubVolumes(imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask)
+            result = alignsSubVolumes(imageReferenceBackgroundSubstracted, imageBarcode, Masks, bezel=bezel, iMask=iMask)
             shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = result
 
             # stores images in list
@@ -449,13 +448,12 @@ def localDriftforRT(
                 imageListCorrected.append(subVolumeCorrected)
     
             # stores result in database
-            # dictShift[ROI][barcode][str(iMask)] = shift
             dictShiftBarcode[str(iMask)] = shift
     
             # creates Table entry to return
             tableEntry = [
                 os.path.basename(fileNameFiducial),
-                os.path.basename(imReference.fileName),
+                os.path.basename(imReferenceFileName),
                 int(ROI),
                 int(barcode.split("RT")[1]),
                 iMask,
@@ -467,17 +465,17 @@ def localDriftforRT(
     
             alignmentResultsTable.add_row(tableEntry)
     
-        result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
+        resultAll = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
     
-    return result
+    return resultAll
 
 def localDriftallBarcodes(param,
                           log1,
                           dataFolder,
                           fileNameDAPI,
                           localDriftforRT,
-                          imReference,
-                          imageReference,
+                          imReferenceFileName,
+                          imageReferenceBackgroundSubstracted,
                           Masks,
                           bezel,
                           shiftTolerance,
@@ -486,8 +484,8 @@ def localDriftallBarcodes(param,
 
     # - retrieves list of barcodes for which a fiducial is available in this ROI
     barcodeList, fiducialFileNames = retrieveBarcodeList(param, fileNameDAPI)
-    if imReference.fileName in fiducialFileNames:
-        fiducialFileNames.remove(imReference.fileName)
+    if imReferenceFileName in fiducialFileNames:
+        fiducialFileNames.remove(imReferenceFileName)
 
     # print(">>>Image <i> {} | sumImage: {}".format(imReference.data_2D.max(), imageReference.max()))
 
@@ -495,40 +493,42 @@ def localDriftallBarcodes(param,
 
     if param.param['parallel']:
 
-        futures=list()
-        numberWorkersRequested = 50 #len(barcodeList)
+        futures,results=list(),list()
+        numberWorkersRequested = len(barcodeList)
         daskClusterInstance = daskCluster(numberWorkersRequested,maximumLoad=0.6)
         
         # dask    
         with LocalCluster(n_workers=daskClusterInstance.nThreads,
                             # processes=True,
                             # threads_per_worker=1,
-                            # memory_limit='2GB',
+                            # memory_limit='50GB',
                             # ip='tcp://localhost:8787',
                             ) as cluster, Client(cluster) as client:
 
             # - load fiducial for cycle <i>
-            remote_imReference = client.scatter(imReference)
+            remote_imReference = client.scatter(imageReferenceBackgroundSubstracted,broadcast=True)
+            remote_Masks = client.scatter(Masks,broadcast=True)
             
             for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
 
-                result=client.submit(localDriftforRT,barcode,
-                        fileNameFiducial,
-                        remote_imReference,
-                        imageReference,
-                        Masks,
-                        bezel,
-                        shiftTolerance,
-                        ROI,
-                        alignmentResultsTable,
-                        log1,
-                        dataFolder,
-                        parallel=True)
-               
-                futures.append(result)
+                futures.append(client.submit(localDriftforRT,barcode,
+                                            fileNameFiducial,
+                                            imReferenceFileName,
+                                            remote_imReference,
+                                            remote_Masks,
+                                            bezel,
+                                            shiftTolerance,
+                                            ROI,
+                                            alignmentResultsTable,
+                                            log1,
+                                            dataFolder,
+                                            parallel=True))
+                           
+            wait(futures)
             
             results = client.gather(futures)
-            del remote_imReference
+            
+            del remote_imReference,remote_Masks 
             
         for result, barcode in zip(results,barcodeList):
             dictShift[barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
@@ -537,7 +537,7 @@ def localDriftallBarcodes(param,
             localDriftCorrection_plotsLocalAlignments(
                 imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
             )
-        
+
     else:
         # - load fiducial for cycle <i>
         for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
@@ -546,8 +546,8 @@ def localDriftallBarcodes(param,
             result = localDriftforRT(
                     barcode,
                     fileNameFiducial,
-                    imReference,
-                    imageReference,
+                    imReferenceFileName,
+                    imageReferenceBackgroundSubstracted,
                     Masks,
                     bezel,
                     shiftTolerance,
@@ -646,15 +646,15 @@ def localDriftCorrection(param, log1, session1):
 
             # - loads reference fiducial file
             ROI, imReference = loadsFiducial(param, fileNameDAPI, log1, dataFolder)
-            imageReference = imReference.removesBackground2D(normalize=True)
+            imageReferenceBackgroundSubstracted = imReference.removesBackground2D(normalize=True)
 
             dictShift[ROI], alignmentResultsTable, errormessage1 = localDriftallBarcodes(param,
                                                                                           log1,
                                                                                           dataFolder,
                                                                                           fileNameDAPI,
                                                                                           localDriftforRT,
-                                                                                          imReference,
-                                                                                          imageReference,
+                                                                                          imReference.fileName,
+                                                                                          imageReferenceBackgroundSubstracted,
                                                                                           Masks,
                                                                                           bezel,
                                                                                           shiftTolerance,
