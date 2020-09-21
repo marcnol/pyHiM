@@ -41,7 +41,7 @@ from numba import jit
 
 # @jit(nopython=True)
 
-from dask.distributed import Client, LocalCluster, get_client
+from dask.distributed import Client, LocalCluster, get_client, as_completed
 
 
 from imageProcessing.imageProcessing import Image
@@ -376,47 +376,50 @@ def localDriftforRT(
             # calculates shift
             futures.append(client.submit(alignsSubVolumes,imageReference, imageBarcode, Masks, bezel=bezel, iMask=iMask))
 
-        resultsfromCluster = client.gather(futures)
-
-        for iresult in resultsfromCluster:
-            shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = iresult
-
-            # stores images in list
-            imageListReference.append(subVolumeReference)
-            imageListunCorrected.append(subVolume)
+        # resultsfromCluster = client.gather(futures)
+        # for iresult in resultsfromCluster:
+            
+        for batch in as_completed(futures, with_results=True).batches():
+            for future, iResult in batch:
+            
+                shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = iResult
     
-            # evaluates shift to determine if we keep or not
-            if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
-                errormessage.append(
-                    "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
-                        ROI, barcode, iMask, shift, shiftTolerance
+                # stores images in list
+                imageListReference.append(subVolumeReference)
+                imageListunCorrected.append(subVolume)
+        
+                # evaluates shift to determine if we keep or not
+                if np.nonzero(np.absolute(shift) > shiftTolerance)[0].shape[0] > 0:
+                    errormessage.append(
+                        "ROI:{} | barcode:{}| Mask:{}> local shift = {} not kept as it is over the tolerance of {} px".format(
+                            ROI, barcode, iMask, shift, shiftTolerance
+                        )
                     )
-                )
-    
-                shift = np.array([0, 0])
-                imageListCorrected.append(subVolume)
-            else:
-                imageListCorrected.append(subVolumeCorrected)
-    
-            # stores result in database
-            dictShiftBarcode[str(iMask)] = shift
-    
-            # creates Table entry to return
-            tableEntry = [
-                os.path.basename(fileNameFiducial),
-                os.path.basename(imReference.fileName),
-                int(ROI),
-                int(barcode.split("RT")[1]),
-                iMask,
-                shift[0],
-                shift[1],
-                error,
-                diffphase,
-            ]
-    
-            alignmentResultsTable.add_row(tableEntry)
+        
+                    shift = np.array([0, 0])
+                    imageListCorrected.append(subVolume)
+                else:
+                    imageListCorrected.append(subVolumeCorrected)
+        
+                # stores result in database
+                dictShiftBarcode[str(iMask)] = shift
+        
+                # creates Table entry to return
+                tableEntry = [
+                    os.path.basename(fileNameFiducial),
+                    os.path.basename(imReference.fileName),
+                    int(ROI),
+                    int(barcode.split("RT")[1]),
+                    iMask,
+                    shift[0],
+                    shift[1],
+                    error,
+                    diffphase,
+                ]
+        
+                alignmentResultsTable.add_row(tableEntry)
            
-        del futures, resultsfromCluster
+        del futures
         
         result = [dictShiftBarcode, imageListCorrected, imageListunCorrected, imageListReference,errormessage] 
 
@@ -525,7 +528,8 @@ def localDriftallBarcodes(param,
                 futures.append(result)
             
             results = client.gather(futures)
-
+            del remote_imReference
+            
         for result, barcode in zip(results,barcodeList):
             dictShift[barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
             errormessage+=errormessage1
