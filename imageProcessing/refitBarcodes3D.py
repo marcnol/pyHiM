@@ -587,7 +587,9 @@ class refitBarcodesClass:
         barcodeMap.add_index('Buid')
 
         for result in tqdm(results):
+            # iterates over bbuid's
             for iSpot in range(len(result)):
+                # matches bbuid's
                 barcodeMap.loc[result[iSpot]['Buid']]=result[iSpot]
                 
         print("RefitFilesinFolder time: {}".format(datetime.now() - now))
