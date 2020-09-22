@@ -511,12 +511,12 @@ class refitBarcodesClass:
         if self.parallel:
             futures = list()
             
-            # daskClusterInstance = daskCluster(maxnumberBarcodes)
-            # # daskClusterInstance = daskCluster(15)
-            # print("Go to http://localhost:8787/status for information on progress...")
-
+            daskClusterInstance = daskCluster(2*maxnumberBarcodes)
+            # daskClusterInstance = daskCluster(15)
             client=get_client()
-
+            
+            print("Go to http://localhost:8787/status for information on progress...")
+            
             for iROI in range(numberROIs):
                 nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
                 print("Working on ROI# {}".format(nROI))
@@ -532,37 +532,6 @@ class refitBarcodesClass:
                     barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
                     result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
                     futures.append(result)    
-
-            # results = client.gather(futures)   
-            # daskClusterInstance = daskCluster(2*maxnumberBarcodes)
-            # print("Go to http://localhost:8787/status for information on progress...")
-            
-            # with LocalCluster(n_workers=daskClusterInstance.nThreads,
-            #                     # processes=True,
-            #                     # threads_per_worker=1,
-            #                     # memory_limit='2GB',
-            #                     # ip='tcp://localhost:8787',
-            #                     ) as cluster, Client(cluster) as client:
-
-            #     for iROI in range(numberROIs):
-            #         nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
-            #         print("Working on ROI# {}".format(nROI))
-        
-            #         # loops over barcodes in that ROI
-            #         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
-            #         barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
-            #         numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-            #         print("\nNumber of barcodes detected: {}".format(numberBarcodes))
-        
-            #         for iBarcode in range(numberBarcodes):
-            #             # find coordinates for this ROI and barcode
-            #             barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
-            #             result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
-            #             futures.append(result)    
-
-            #     # progress(futures)
-
-            #     results = client.gather(futures)                        
             results = client.gather(futures)       
 
             del futures

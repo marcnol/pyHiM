@@ -9,48 +9,11 @@ Created on Wed Aug 12 17:35:41 2020
 # =============================================================================
 # IMPORTS
 # =============================================================================
-import os
-import argparse
 from datetime import datetime
 
-from fileProcessing.fileManagement import (
-    writeString2File,
-    session, log, Parameters
-    )
+from fileProcessing.fileManagement import Parameters
 
-from imageProcessing.alignImages import alignImages, appliesRegistrations
-
-# =============================================================================
-# Local functions
-# =============================================================================
-
-def parseArguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", nargs='+', help="fileName to analyze")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
-
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-    runParameters={}
-    if args.rootFolder:
-        runParameters["rootFolder"] = args.rootFolder
-    else:
-        runParameters["rootFolder"] = os.getcwd()
-
-    if args.fileName:
-        runParameters["fileName"] = args.fileName
-    else:
-        runParameters["fileName"] = None
-        
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
-    else:
-        runParameters["parallel"] = False
-
-    return runParameters
-
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 # =============================================================================
 # MAIN
@@ -59,65 +22,34 @@ def parseArguments():
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=parseArguments()    
+    runParameters=HiM_parseArguments()    
 
-    print("\n--------------------------------------------------------------------------")
-     
-    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
-    now = datetime.now()
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()
+    session1, log1=HiM.session1, HiM.log1
+    
+    HiM.lauchDaskScheduler()
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
-
-    # session
-    sessionName = "registersImages"
-    session1 = session(runParameters["rootFolder"], sessionName)
-
-    # setup logs
-    log1 = log(runParameters["rootFolder"])
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(sessionName))
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
-
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
+    for ilabel in range(len(HiM.labels2Process)):
+        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
 
         # sets parameters
-        param = Parameters(runParameters["rootFolder"], labelParameterFile)
-        if runParameters["parallel"]:
-            param.param['parallel']=True
-        else:
-            param.param['parallel']=False
-            
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
+
         # [registers fiducials using a barcode as reference]
-        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            alignImages(param, log1, session1,runParameters["fileName"])
-
-        # [applies registration to DAPI and barcodes]
-        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            appliesRegistrations(param, log1, session1,runParameters["fileName"])
-
-        print("\n")
-        del param
+        HiM.alignImages(param, ilabel)
+        
     # exits
-    session1.save(log1)
-    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+    HiM.session1.save(HiM.log1)
+    HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    del log1, session1
+    if runParameters["parallel"]:
+        HiM.client.close()
+        HiM.cluster.close()   
+
+    del HiM
+    
     print("Elapsed time: {}".format(datetime.now() - begin_time))
-
+        
 

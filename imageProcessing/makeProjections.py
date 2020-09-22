@@ -18,24 +18,14 @@ Operation will be defined in the parameters file. Options are:
 # IMPORTS
 # =============================================================================
 
-
 import glob, os
 
-# import matplotlib.pylab as plt
-import numpy as np
-import argparse
-from datetime import datetime
-from dask.distributed import Client, wait, LocalCluster
-from multiprocessing.pool import ThreadPool
-import threading
+from dask.distributed import get_client, wait
 
-# import cv2
-import matplotlib.pyplot as plt
 from imageProcessing.imageProcessing import Image
 
 from fileProcessing.fileManagement import (
-    folders,session, writeString2File, folders, session, log, Parameters)
-
+    folders,writeString2File)
 
 # =============================================================================
 # FUNCTIONS
@@ -113,13 +103,11 @@ def makeProjections(param, log1, session1,fileName=None):
                 print("Cluster with {} workers started, See http://localhost:8787/status for progress".format(len(files2ProcessFiltered)))
 
                 # dask
-                with LocalCluster(n_workers=len(files2ProcessFiltered)
-                                ) as cluster, Client(cluster) as client:
-
-                    threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
+                client=get_client()
+                threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
                     
-                    for index, thread in enumerate(threads):
-                        wait(threads)        
+                for index, thread in enumerate(threads):
+                    wait(threads)        
                         
         else:
             

@@ -9,45 +9,48 @@ Created on Wed Aug 12 17:24:59 2020
 # =============================================================================
 # IMPORTS
 # =============================================================================
-import argparse
+from datetime import datetime
 
-from imageProcessing.projectsBarcodes import projectsBarcodes
-from fileProcessing.fileManagement import (session, log, Parameters)
+from fileProcessing.fileManagement import Parameters
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
 if __name__ == "__main__":
+    begin_time = datetime.now()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()
+    runParameters=HiM_parseArguments()    
 
-    print("\n--------------------------------------------------------------------------")
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()
+    session1, log1=HiM.session1, HiM.log1
+    
+    HiM.lauchDaskScheduler()
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
-    else:
-        rootFolder = "/home/marcnol/data/Experiment_20/Embryo_1"
-        # rootFolder='/home/marcnol/data/Experiment_15/Embryo_006_ROI18'
-        # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+    for ilabel in range(len(HiM.labels2Process)):
+        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
 
-    print("parameters> rootFolder: {}".format(rootFolder))
+        # sets parameters
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-    ]
+        # [2D projects all barcodes in an ROI]
+        HiM.projectsBarcodes(param, ilabel)
+            
+        print("\n")
+        del param
 
-    # session
-    session1 = session(rootFolder, "processingPipeline")
+    # exits
+    HiM.session1.save(HiM.log1)
+    HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    # setup logs
-    log1 = log(rootFolder)
+    if runParameters["parallel"]:
+        HiM.client.close()
+        HiM.cluster.close()   
 
-    labelParameterFile = labels2Process[1]["parameterFile"]
-    param = Parameters(rootFolder, labelParameterFile)
-
-    projectsBarcodes(param, log1, session1)
+    del HiM
+    
+    print("Elapsed time: {}".format(datetime.now() - begin_time))
+    

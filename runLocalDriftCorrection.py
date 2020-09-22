@@ -11,46 +11,12 @@ Created on Wed Aug 12 17:48:55 2020
 # IMPORTS
 # =============================================================================
 
-import glob, os
-import argparse
 from datetime import datetime
 
-from fileProcessing.fileManagement import folders, session, log, Parameters
+from fileProcessing.fileManagement import Parameters
 
-from imageProcessing.localDriftCorrection import localDriftCorrection
-
-# =============================================================================
-# Local functions
-# =============================================================================
-
-def parseArguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", nargs='+', help="fileName to analyze")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
-
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-    runParameters={}
-    if args.rootFolder:
-        runParameters["rootFolder"] = args.rootFolder
-    else:
-        # runParameters["rootFolder"] = os.getcwd()
-        runParameters["rootFolder"] = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
-
-    if args.fileName:
-        runParameters["fileName"] = args.fileName
-    else:
-        runParameters["fileName"] = None
-        
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
-    else:
-        runParameters["parallel"] = True
-
-    return runParameters
-
+# from imageProcessing.localDriftCorrection import localDriftCorrection
+from fileProcessing.functionCaller import HiMfunctionCaller,HiM_parseArguments
 
 # =============================================================================
 # MAIN
@@ -59,47 +25,98 @@ def parseArguments():
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=parseArguments()    
+    runParameters=HiM_parseArguments()    
+    runParameters["localAlignment"] =True
+    
+    HiM = HiMfunctionCaller(runParameters, sessionName="localDriftCorrection")
+    HiM.initialize()
+    session1, log1=HiM.session1, HiM.log1
+    
+    HiM.lauchDaskScheduler()
 
-    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
-    sessionName = "localDriftCorrection"
+    for ilabel in range(len(HiM.labels2Process)):
+        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-    ]
+        # sets parameters
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
 
-    # session
-    session1 = session(runParameters["rootFolder"], sessionName)
+        # [local drift correction]
+        HiM.localDriftCorrection(param, ilabel)
 
-    # setup logs
-    log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
-    # labels2Process indeces: 0 fiducial, 1:
-    labelParameterFile = labels2Process[2]["parameterFile"]
-    param = Parameters(runParameters["rootFolder"], labelParameterFile)
+        print("\n")
+        del param
 
-    dataFolder = folders(param.param["rootFolder"])
+    # exits
+    HiM.session1.save(HiM.log1)
+    HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    for currentFolder in dataFolder.listFolders:
-        filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-        dataFolder.createsFolders(currentFolder, param)
+    if runParameters["parallel"]:
+        HiM.client.close()
+        HiM.cluster.close()   
 
-        # generates lists of files to process
-        param.files2Process(filesFolder)
-        if runParameters["parallel"]:
-            param.param['parallel']=True
-        else:
-            param.param['parallel']=False
-            
-        for fileName in param.fileList2Process:
-            session1.add(fileName, sessionName)
-
-        errorCode, dictShift, alignmentResultsTable = localDriftCorrection(param, log1, session1)
-
-    if errorCode != 0:
-        print("Error code reported: {}".format(errorCode))
-    else:
-        print("normal termination")
-
+    del HiM
+    
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+    # runParameters=parseArguments()    
+
+    # print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
+    # sessionName = "localDriftCorrection"
+
+    # labels2Process = [
+    #     {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+    #     {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+    #     {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+    # ]
+
+    # # session
+    # session1 = session(runParameters["rootFolder"], sessionName)
+
+    # # setup logs
+    # log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
+    # # labels2Process indeces: 0 fiducial, 1:
+    # labelParameterFile = labels2Process[2]["parameterFile"]
+    # param = Parameters(runParameters["rootFolder"], labelParameterFile)
+
+    # dataFolder = folders(param.param["rootFolder"])
+
+    # if runParameters["parallel"]:
+    #     daskClusterInstance = daskCluster(20)
+    #     print("Go to http://localhost:8787/status for information on progress...")
+        
+    #     cluster = LocalCluster(n_workers=daskClusterInstance.nThreads,
+    #                         # processes=True,
+    #                         # threads_per_worker=1,
+    #                         # memory_limit='2GB',
+    #                         # ip='tcp://localhost:8787',
+    #                         ) 
+    #     client = Client(cluster)
+    
+    # for currentFolder in dataFolder.listFolders:
+    #     filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
+    #     dataFolder.createsFolders(currentFolder, param)
+
+    #     # generates lists of files to process
+    #     param.files2Process(filesFolder)
+    #     if runParameters["parallel"]:
+    #         param.param['parallel']=True
+    #     else:
+    #         param.param['parallel']=False
+            
+    #     for fileName in param.fileList2Process:
+    #         session1.add(fileName, sessionName)
+
+    #     result = client.submit(localDriftCorrection,param, log1, session1)
+    #     errorCode, dictShift, alignmentResultsTable  = client.gather(result)
+
+    # if errorCode != 0:
+    #     print("Error code reported: {}".format(errorCode))
+    # else:
+    #     print("normal termination")
+
+    # if runParameters["parallel"]:
+    #     client.close()
+    #     cluster.close()   
+        
+    # print("Elapsed time: {}".format(datetime.now() - begin_time))

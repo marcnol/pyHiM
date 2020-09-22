@@ -20,8 +20,7 @@ image cross correlation
 import numpy as np
 import matplotlib.pyplot as plt
 import os, glob
-from multiprocessing.pool import ThreadPool
-from dask.distributed import Client, wait
+from dask.distributed import Client, get_client
 
 from skimage.feature.register_translation import _upsampled_dft
 
@@ -34,7 +33,6 @@ from imageProcessing.imageProcessing import (
 
 from fileProcessing.fileManagement import (
     folders, writeString2File, saveJSON, loadJSON, RT2fileName,
-    session, log, Parameters
     )
 
 from astropy.table import Table

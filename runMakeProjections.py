@@ -10,51 +10,15 @@ Created on Wed Aug 12 17:19:10 2020
 # IMPORTS
 # =============================================================================
 
-import os
-import argparse
 from datetime import datetime
 
-from fileProcessing.fileManagement import (
-    session, writeString2File, log, Parameters)
+from fileProcessing.fileManagement import (Parameters)
 
-from imageProcessing.makeProjections import makeProjections
+from fileProcessing.functionCaller import HiMfunctionCaller,HiM_parseArguments
 
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
-
-
-# =============================================================================
-# Local functions
-# =============================================================================
-
-def parseArguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-x", "--fileName", nargs='+', help="fileName to analyze")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
-
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-    runParameters={}
-    if args.rootFolder:
-        runParameters["rootFolder"] = args.rootFolder
-    else:
-        runParameters["rootFolder"] = os.getcwd()
-
-    if args.fileName:
-        runParameters["fileName"] = args.fileName
-    else:
-        runParameters["fileName"] = None
-        
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
-    else:
-        runParameters["parallel"] = False
-
-    return runParameters
-
 
 # =============================================================================
 # MAIN
@@ -64,51 +28,30 @@ if __name__ == "__main__":
 
     begin_time = datetime.now()
 
-    runParameters=parseArguments()    
+    runParameters=HiM_parseArguments()    
     
-    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
-    now = datetime.now()
-
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
-
-    # session
-    sessionName = "makesProjections"
-    session1 = session(runParameters["rootFolder"], sessionName)
-
-    # setup logs
-    log1 = log(rootFolder=runParameters["rootFolder"],parallel=runParameters["parallel"])
-    log1.addSimpleText("\n-------------------------{}-------------------------\n".format(sessionName))
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
+    HiM = HiMfunctionCaller(runParameters, sessionName="makesProjections")
+    HiM.initialize()
+    session1, log1=HiM.session1, HiM.log1
     
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
-        
+    HiM.lauchDaskScheduler()
+
+    for ilabel in range(len(HiM.labels2Process)):
+        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
+
         # sets parameters
-        param = Parameters(runParameters["rootFolder"], labelParameterFile)
-        if runParameters["parallel"]:
-            param.param['parallel']=True
-        else:
-            param.param['parallel']=False
-            
-        # [projects 3D images in 2d]
-        makeProjections(param, log1, session1, runParameters["fileName"] )
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
 
-        print("\n")
+        # [projects 3D images in 2d]
+        HiM.makeProjections(param)
+
         del param
         
-    # exits
-    session1.save(log1)
-    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+    if runParameters["parallel"]:
+        HiM.client.close()
+        HiM.cluster.close()   
 
-    del log1, session1
-    print("Elapsed time: {}".format(datetime.now() - begin_time))
+    del HiM
+    
+    print("Elapsed time: {}".format(datetime.now() - begin_time))    

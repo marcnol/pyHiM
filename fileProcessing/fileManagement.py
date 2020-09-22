@@ -21,8 +21,9 @@ import re
 from warnings import warn
 import multiprocessing
 import numpy as np
-from dask.distributed import Client
-from dask.distributed import LocalCluster
+
+from dask.distributed import Client, LocalCluster
+
 
 # =============================================================================
 # CLASSES
@@ -222,7 +223,6 @@ class Parameters:
             "alignImages": {
                 "folder": "alignImages",  # output folder
                 "operation": "overwrite",  # overwrite, skip
-                "localAlignment": "overwrite",
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
                 "localShiftTolerance": 1,
@@ -252,7 +252,6 @@ class Parameters:
                 "residual_max": 2.5,  # max residuals to keeep object                
                 "sigma_max": 5,  # max sigma 3D fitting to keeep object                
                 "centroidDifference_max": 5,  # max diff between Moment and Gaussian z fits to keeep object                
-                "Segment3D": "overwrite", 
                 "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
             },
         }
@@ -531,3 +530,48 @@ def ROI2FiducialFileName(param, file, barcodeName):
     ]
 
     return candidates
+
+def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif'):
+    """
+    given a directory and a Parameter object, it returns the number of unique cycles/barcodes detected
+
+    Parameters
+    ----------
+    rootFolder : string
+    param : string
+        parameterFile 
+    ext : string, optional
+        File extension. The default is 'tif'.
+
+    Returns
+    -------
+    int
+        number of unique cycles.
+
+    """
+    def unique(list1): 
+        ''' function to get unique values'''
+        # intilize a null list 
+        unique_list = [] 
+          
+        # traverse for all elements 
+        for x in list1: 
+            # check if exists in unique_list or not 
+            if x not in unique_list: 
+                unique_list.append(x) 
+    
+        return unique_list      
+            
+    allFilesinRootFolder=glob.glob(rootFolder+os.sep+"*"+ext)
+    
+    param = Parameters(rootFolder, rootFolder+parameterFile)
+       
+    ROIs, RTs = [], []
+    for x in allFilesinRootFolder:
+        fileParts = param.decodesFileParts(x)
+        ROIs.append(fileParts["roi"])
+        RTs.append(fileParts["cycle"])
+    
+    numberUniqueCycles=len(unique(RTs))
+        
+    return numberUniqueCycles

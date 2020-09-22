@@ -15,7 +15,6 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-		"localAlignment": "overwrite",
 		"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"
@@ -37,8 +36,7 @@
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
-        "Segment3D": "overwrite",
-        "flux_min": 100,
+        "flux_min": 1000,
         "residual_max": 2.5,
         "sigma_max": 5,
         "centroidDifference_max": 5,        

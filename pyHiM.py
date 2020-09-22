@@ -16,45 +16,15 @@ The main() will search for parameter files within the folder provided. All ope-e
 # IMPORTS
 # =============================================================================q
 
-import os
-import argparse
 from datetime import datetime
 
-from fileProcessing.fileManagement import Parameters, log, writeString2File, session
-
-from imageProcessing.alignImages import alignImages, appliesRegistrations
-from imageProcessing.makeProjections import makeProjections
-from imageProcessing.segmentMasks import segmentMasks
-from imageProcessing.localDriftCorrection import localDriftCorrection
-from imageProcessing.projectsBarcodes import projectsBarcodes
-from matrixOperations.alignBarcodesMasks import processesPWDmatrices
-from imageProcessing.refitBarcodes3D import refitBarcodesClass
+from fileProcessing.fileManagement import Parameters
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
-
-def parseArguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
-
-    args = parser.parse_args()
-
-    print("\n--------------------------------------------------------------------------")
-    runParameters={}
-    if args.rootFolder:
-        runParameters["rootFolder"] = args.rootFolder
-    else:
-        runParameters["rootFolder"] = os.getcwd()
-       
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
-    else:
-        runParameters["parallel"] = False
-
-    return runParameters
-
+               
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -62,91 +32,56 @@ def parseArguments():
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=parseArguments()    
+    runParameters=HiM_parseArguments()    
 
-    print("\n--------------------------------------------------------------------------")
-
-    print("parameters> rootFolder: {}".format(runParameters["rootFolder"]))
-    now = datetime.now()
-
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
-
-    # session
-    session1 = session(runParameters["rootFolder"], "processingPipeline")
-
-    # setup logs
-    log1 = log(runParameters["rootFolder"],parallel=runParameters["parallel"])
-    log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format("processingPipeline"))
-    if log1.fileNameMD=='.md':
-        log1.fileNameMD='HiM_report.md'
-        
-    log1.report("Hi-M analysis MD: {}".format(log1.fileNameMD))
-    writeString2File(
-        log1.fileNameMD, "# Hi-M analysis {}".format(now.strftime("%Y/%m/%d %H:%M:%S")), "w",
-    )  # initialises MD file
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()
+    session1, log1=HiM.session1, HiM.log1
     
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
+    HiM.lauchDaskScheduler()
+
+    for ilabel in range(len(HiM.labels2Process)):
+        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
 
         # sets parameters
-        param = Parameters(runParameters["rootFolder"], labelParameterFile)
-
-        if runParameters["parallel"]:
-            param.param['parallel']=True
-        else:
-            param.param['parallel']=False
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
 
         # [projects 3D images in 2d]
-        makeProjections(param, log1, session1)
+        HiM.makeProjections(param)
 
         # [registers fiducials using a barcode as reference]
-        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            alignImages(param, log1, session1)
-
+        HiM.alignImages(param, ilabel)
+        
         # [applies registration to DAPI and barcodes]
-        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, label), "info",
-            )
-            appliesRegistrations(param, log1, session1)
-
-            # [segments DAPI and spot masks]
-            if label != "RNA" and param.param["acquisition"]["label"] != "RNA":
-                segmentMasks(param, log1, session1)
+        HiM.appliesRegistrations(param, ilabel)
+        
+        # [segments DAPI and spot masks]
+        HiM.segmentMasks(param, ilabel)
 
         # [2D projects all barcodes in an ROI]
-        if label == "barcode":
-            projectsBarcodes(param, log1, session1)
+        HiM.projectsBarcodes(param, ilabel)
             
         # [refits spots in 3D]
-        if label == "barcode" and param.param['segmentedObjects']['Segment3D']=='overwrite':
-            fittingSession = refitBarcodesClass(param, log1, session1,parallel=param.param['parallel'])
-            fittingSession.refitFolders()
-            
+        HiM.refitBarcodes(param, ilabel)
+           
         # [local drift correction]
-        if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
-            errorCode, _, _ = localDriftCorrection(param, log1, session1)
+        HiM.localDriftCorrection(param, ilabel)
 
         # [builds PWD matrix for all folders with images]
-        if label == "DAPI":
-            processesPWDmatrices(param, log1, session1)
+        HiM.processesPWDmatrices(param, ilabel)
 
         print("\n")
         del param
 
     # exits
-    session1.save(log1)
-    log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+    HiM.session1.save(HiM.log1)
+    HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
-    del log1, session1
+    if runParameters["parallel"]:
+        HiM.client.close()
+        HiM.cluster.close()   
+
+    del HiM
+    
     print("Elapsed time: {}".format(datetime.now() - begin_time))
