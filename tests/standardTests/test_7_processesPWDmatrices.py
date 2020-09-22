@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 17 17:08:57 2020
+Created on Thu Sep 17 17:42:25 2020
 
 @author: marcnol
 """
@@ -12,10 +12,10 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.alignImages import appliesRegistrations2currentFolder
+from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 
 
-def test_appliesProjections():
+def test_processesPWDmatrices():
 
     testDataFileName=os.getcwd()+os.sep+"tests"+os.sep+"standardTests"+os.sep+"testData.json"
     if os.path.exists(testDataFileName):
@@ -23,11 +23,15 @@ def test_appliesProjections():
     else:
         raise FileNotFoundError()
         
-    rootFolder = testData["test_appliesRegistrations"]["rootFolder"]
-    fileName2Process = testData["test_appliesRegistrations"]["fileName2Process"]
-    expectedOutputFileName = testData["test_appliesRegistrations"]["expectedOutput"]
-    ilabel=testData["test_appliesRegistrations"]["label"]
+    rootFolder = testData["test_processesPWDmatrices"]["rootFolder"]
+    ilabel=testData["test_processesPWDmatrices"]["labels"]
+    expectedOutputs = testData["test_processesPWDmatrices"]["expectedOutputs"]
 
+    expectedOutputsTimeStamped={}
+    for x in expectedOutputs:
+        if os.path.exists(x):
+            expectedOutputsTimeStamped[x]=os.path.getmtime(x)
+                
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
@@ -42,6 +46,7 @@ def test_appliesProjections():
     # setup logs
     log1 = log(rootFolder=rootFolder,parallel=False)
      
+        
     # for ilabel in range(len(labels2Process)):
     label = labels2Process[ilabel]["label"]
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
@@ -54,9 +59,15 @@ def test_appliesProjections():
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.createsFolders(rootFolder, param)
 
-    appliesRegistrations2currentFolder(rootFolder,param,dataFolder,log1,session1,fileName=fileName2Process)
-
-    if os.path.exists(expectedOutputFileName):
-        assert True
-    else:
-        assert False
+    processesPWDmatrices(param, log1, session1)
+    
+    assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
+    
+    test=[]
+    for key in expectedOutputsTimeStamped.keys():
+        if os.path.getmtime(x)>expectedOutputsTimeStamped[x]:
+            test.append(True)
+            
+    assert len(test)==len(expectedOutputs)
+            
+# test_processesPWDmatrices()

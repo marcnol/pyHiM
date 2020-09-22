@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 17 17:42:25 2020
+Created on Thu Sep 17 20:55:18 2020
 
 @author: marcnol
 """
-
-
-
-
 
 import os
 import pytest
@@ -16,10 +12,9 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from matrixOperations.alignBarcodesMasks import processesPWDmatrices
+from imageProcessing.localDriftCorrection import localDriftCorrection
 
-
-def test_processesPWDmatrices():
+def test_localDriftCorrection():
 
     testDataFileName=os.getcwd()+os.sep+"tests"+os.sep+"standardTests"+os.sep+"testData.json"
     if os.path.exists(testDataFileName):
@@ -27,10 +22,15 @@ def test_processesPWDmatrices():
     else:
         raise FileNotFoundError()
         
-    rootFolder = testData["test_processesPWDmatrices"]["rootFolder"]
-    ilabel=testData["test_processesPWDmatrices"]["labels"]
-    expectedOutputs = testData["test_segmentsMasks"]["expectedOutputs"]
+    rootFolder = testData["test_localDriftCorrection"]["rootFolder"]
+    expectedOutputs = testData["test_localDriftCorrection"]["expectedOutputs"]
+    ilabel=testData["test_localDriftCorrection"]["labels"]
 
+    expectedOutputsTimeStamped={}
+    for x in expectedOutputs:
+        if os.path.exists(x):
+            expectedOutputsTimeStamped[x]=os.path.getmtime(x)
+        
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
@@ -39,17 +39,15 @@ def test_processesPWDmatrices():
     ]
 
     # session
-    sessionName = "makesProjections"
+    sessionName = "test_localDriftCorrection"
     session1 = session(rootFolder, sessionName)
 
     # setup logs
     log1 = log(rootFolder=rootFolder,parallel=False)
-     
-        
+  
     # for ilabel in range(len(labels2Process)):
     label = labels2Process[ilabel]["label"]
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
     
     # sets parameters
     param = Parameters(rootFolder, labelParameterFile)
@@ -58,10 +56,15 @@ def test_processesPWDmatrices():
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.createsFolders(rootFolder, param)
 
-    processesPWDmatrices(param, log1, session1)
-    
+    # [local drift correction]
+    if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
+        errorCode, _, _ = localDriftCorrection(param, log1, session1)
 
-    if sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs):
-        assert True
-    else:
-        assert False
+    assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
+    
+    test=[]
+    for key in expectedOutputsTimeStamped.keys():
+        if os.path.getmtime(x)>expectedOutputsTimeStamped[x]:
+            test.append(True)
+            
+    assert len(test)==len(expectedOutputs)

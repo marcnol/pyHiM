@@ -29,6 +29,12 @@ def test_segmentsMasks():
     expectedOutputs = testData["test_segmentsMasks"]["expectedOutputs"]
     labels=testData["test_segmentsMasks"]["labels"]
 
+
+    expectedOutputsTimeStamped={}
+    for x in expectedOutputs:
+        if os.path.exists(x):
+            expectedOutputsTimeStamped[x]=os.path.getmtime(x)
+        
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
@@ -60,7 +66,11 @@ def test_segmentsMasks():
         segmentMasks(param, log1, session1,fileName=fileName)
         
 
-    if sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs):
-        assert True
-    else:
-        assert False
+    assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
+    
+    test=[]
+    for key in expectedOutputsTimeStamped.keys():
+        if os.path.getmtime(x)>expectedOutputsTimeStamped[x]:
+            test.append(True)
+            
+    assert len(test)==len(expectedOutputs)        

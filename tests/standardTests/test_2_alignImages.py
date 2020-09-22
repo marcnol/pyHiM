@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 17 10:08:51 2020
+Created on Thu Sep 17 13:33:49 2020
 
 @author: marcnol
 """
+
 
 import os
 import pytest
 
 from fileProcessing.fileManagement import (
-    session, log, Parameters,folders,loadJSON)
+    session, log, loadJSON,Parameters,folders)
 
-from imageProcessing.makeProjections import makeProjections, makes2DProjectionsFile
+from imageProcessing.alignImages import alignImages
 
-
-def test_makeProjections():
-
+def test_alignImages():
+    
     testDataFileName=os.getcwd()+os.sep+"tests"+os.sep+"standardTests"+os.sep+"testData.json"
+
     if os.path.exists(testDataFileName):
         testData= loadJSON(testDataFileName)
     else:
         raise FileNotFoundError()
         
-    rootFolder = testData["test_makeProjections"]["rootFolder"]
-    fileName2Process = testData["test_makeProjections"]["fileName2Process"]
-
+    rootFolder = testData["test_alignImages"]["rootFolder"]
+    ilabel=testData["test_alignImages"]["label"]
+   
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
@@ -40,8 +41,7 @@ def test_makeProjections():
     # setup logs
     log1 = log(rootFolder=rootFolder,parallel=False)
      
-    ilabel=2
-    
+   
     # for ilabel in range(len(labels2Process)):
     label = labels2Process[ilabel]["label"]
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
@@ -51,16 +51,14 @@ def test_makeProjections():
     param = Parameters(rootFolder, labelParameterFile)
     param.param['parallel']=False
         
-    # [projects 3D images in 2d]
-    # makeProjections(param, log1, session1, None) 
+    if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
+        alignImages(param, log1, session1)
+
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.createsFolders(rootFolder, param)
+    dictShifts = loadJSON(dataFolder.outputFiles["dictShifts"] + ".json")
 
-    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
-
-    expectedOutputFileName =  dataFolder.outputFolders["zProject"] + os.sep + os.path.basename(fileName2Process).split(".")[0] + "_2d.npy"
-
-    if os.path.exists(expectedOutputFileName):
-        assert True
-    else:
-        assert False
+    assert (dictShifts['ROI:001']['DAPI']==[-13.53, 46.0] and 
+        dictShifts['ROI:001']['RT29']==[0.38, -2.98] and 
+        dictShifts['ROI:001']['RT37']==[1.7, 11.37])
+    
