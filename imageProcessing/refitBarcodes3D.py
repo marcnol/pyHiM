@@ -511,7 +511,6 @@ class refitBarcodesClass:
         if self.parallel:
             futures = list()
             
-<<<<<<< Updated upstream
             # daskClusterInstance = daskCluster(maxnumberBarcodes)
             # # daskClusterInstance = daskCluster(15)
             # print("Go to http://localhost:8787/status for information on progress...")
@@ -534,14 +533,9 @@ class refitBarcodesClass:
                     result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
                     futures.append(result)    
 
-            # progress(futures)
-
-            results = client.gather(futures)   
-=======
-            daskClusterInstance = daskCluster(2*maxnumberBarcodes)
-            # daskClusterInstance = daskCluster(15)
-            print("Go to http://localhost:8787/status for information on progress...")
->>>>>>> Stashed changes
+            # results = client.gather(futures)   
+            # daskClusterInstance = daskCluster(2*maxnumberBarcodes)
+            # print("Go to http://localhost:8787/status for information on progress...")
             
             # with LocalCluster(n_workers=daskClusterInstance.nThreads,
             #                     # processes=True,
@@ -566,16 +560,13 @@ class refitBarcodesClass:
             #             result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
             #             futures.append(result)    
 
-<<<<<<< Updated upstream
             #     # progress(futures)
 
             #     results = client.gather(futures)                        
-=======
-                results = client.gather(futures)       
+            results = client.gather(futures)       
 
             del futures
                  
->>>>>>> Stashed changes
         else:
             results = []
             for iROI in range(numberROIs):
