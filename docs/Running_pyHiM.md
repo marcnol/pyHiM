@@ -4,8 +4,6 @@
 
 ## 1- Basic run
 
-
-
 ### Run pyHiM
 
 Ensure you followed the steps described previously during installation when you did the test run:
@@ -67,11 +65,16 @@ a typical file (DAPI example) looks like:
         "background_sigma": 3.0,
         "folder": "segmentedObjects",
         "fwhm": 3.0,
-        "brightest": 1100, 
+        "brightest": 1100,
         "intensity_max": 59,
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
+        "flux_min": 1000,
+        "residual_max": 2.5,
+        "sigma_max": 5,
+        "centroidDifference_max": 5,        
+        "3DGaussianfitWindow": 3,
         "threshold_over_std": 1.0
     },
     "zProject": {
@@ -128,7 +131,6 @@ Here are some options for the different parameters and a brief description
 "operation": "overwrite",  *Options:* overwrite | skip
 "outputFile": "alignImages",
 "referenceFiducial": "RT18"
-"localAlignment": "overwrite",
 "localShiftTolerance": 1,
 "bezel": 20,
 ```
@@ -145,7 +147,7 @@ Here are some options for the different parameters and a brief description
 "folder": "segmentedObjects",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
 "outputFile": "segmentedObjects",
-"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI) 
+"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
 "stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
 "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
 "background_sigma": 3.0,  *Description:* used to remove inhomogenous background
@@ -156,6 +158,11 @@ Here are some options for the different parameters and a brief description
 "intensity_max": 59,  *Description:* max intensity to keep object
 "area_min": 50,  *Description:* min area to keep object
 "area_max": 500,  *Description:* max area to keep object
+"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
+"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+"sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
+"centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
+"3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
 ```
 
 ### Process second channel (i.e RNA, segments, etc)
@@ -178,7 +185,7 @@ If you want to start all over again and erase all manual segmentations, run with
 
 #### output
 
-The output of ```processSNDchannel.py``` will be stored in ```./segmentedObjects/SNDassignedCells.ecsv``` Astrpy Table. Example: 
+The output of ```processSNDchannel.py``` will be stored in ```./segmentedObjects/SNDassignedCells.ecsv``` Astrpy Table. Example:
 
 ```bash
 # %ECSV 0.9
@@ -203,7 +210,7 @@ The output of ```processSNDchannel.py``` will be stored in ```./segmentedObjects
 
 where the first column contains the ROI number, the second the number of the cell mask, the third the tag assigned.
 
-This file can then be loaded within ```replotHiMmatrix.py``` to identify which cells of the matrix have which tag. More on this will be added to the section below LATER. 
+This file can then be loaded within ```replotHiMmatrix.py``` to identify which cells of the matrix have which tag. More on this will be added to the section below LATER.
 
 
 
@@ -221,11 +228,11 @@ import argparse
 nArgs=len(sys.argv)
 print("Total arguments passed: {}".format(nArgs))
 EmbryoTag='Embryo_'
-if nArgs > 2: 
+if nArgs > 2:
     rootDir=sys.argv[1]
     print("parameters> rootFolder: {}".format(rootDir))
-    
-    for i in range(2,nArgs): 
+
+    for i in range(2,nArgs):
         print("Processing Embryo #{}".format(sys.argv[i]))
         command2Run1='nice -19 pyHiM.py -F '+rootDir+EmbryoTag+sys.argv[i]
         os.system(command2Run1)
@@ -241,7 +248,7 @@ else:
 To run just do:
 
 ```bash
-pyHiM.py -F rootFolder 0 1 33 
+pyHiM.py -F rootFolder 0 1 33
 ```
 
 to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
@@ -254,9 +261,21 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 ### Parallel Computations
 
-Several routines are now fitted with the possibility of performing parallel computations. At the moment, they use different ways of implementing this. Either using the Threadpool fro python, or using the Dask package.
+Several routines are now fitted with the possibility of performing parallel computations using the Dask package.
 
-The use of parallel computations can be invoked using the ```--parallel``` flag in the command line for individual functions (e.g. ```runMakeProjections```) or for ```pyHiM.py```.
+The use of parallel computations can be invoked using the ```--parallel``` flag in the command line or for any individual functions (e.g. ```runMakeProjections```) or for ```pyHiM.py```.
+
+The gain is roughly two fold currently, but it can be up to 10 fold for some functions.
+
+To monitor parralel computations, SSH into the cluster using
+
+```sh
+ssh -L 8787:localhost:8787 marcnol@lopevi
+```
+
+Invoke using the ```--parallel``` flag in ```pyHiM.py```.
+
+Go to your browser and open ```http://localhost:8787``` to see the progress.
 
 #### MakeProjections
 
@@ -264,23 +283,23 @@ This uses the Threadpool. The gain for a small number of files is zero. It seems
 
 #### LocalDriftCorrection
 
-As this is the most processor-intensive function, I focuses on implementing a parallel version for this. After also testing Threadpool, I turned to Dask as it has the added advantage of providing a server to monitor progress and also can be trivially setup to use several servers by SSH.
+To invoke local drift correction, use the ```--localAlignment``` flag
 
-The gain is roughly two fold currently.
+#### 3D fits of barcode positions
 
-SSH into the cluster using
+Barcode 3D positions are now calculated as follows.
 
-``` ssh -L 8000:localhost:8787 marcnol@lopevi```
+First ASTROPY calculates the 2D positions using 2D projected images.
 
-Invoke using the ```--parallel``` flag in ```runLocalDrifrCorrection.py```.
+Then the ```fittingSession.refitFolders``` class function draws a subVolume around each localized barcode (default: 7x7 window), estimates the axial intensity profile, substracts background, calculates the z position by calculating the weighted moment, then uses it as a seed to Gaussian fit the axial intensity distribution and find a better estimate of the z-position based on Gaussian fitting.
+Finally, the localizations are filtered by following various criteria
+- the residual of the fit has to be small (see parameter in infoList)
+- the difference between Moment and Gaussian positions has to me small (see parameter in infoList)
+- the sigma of the Gaussian fit has to be smaller than a threshold (see parameter in infoList)
 
-Go to your browser and open
+The results for any given ROI and barcode appear as a figure with two subplots where these values are shown. The dots in black represent the spots that will be kept for further analysis.
 
-```http://localhost:8000```
-
-to see the progress.
-
-
+![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
 ### zipping and erasing run
 
@@ -290,7 +309,7 @@ Other utilities have been written to retrieve data from a run to a remote server
 
 #### clean run
 
-If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data. 
+If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data.
 
 
 
@@ -308,13 +327,13 @@ scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_D
 
 Now, you can run ```processHiMmatrix.py``` locally. You should setup your files in a directory. For instance the directory ```/mnt/disk2/marcnol/data/Experiment_19``` contains three folders:
 
-​```bash
+```bash
 006_Embryo  009_Embryo  026_Embryo
 ```
 
 containing each of the analysis from different embryos of the same experiment. Now, in this directory, you should create a file called ```folders2Load.json``` with the following:
 
-```python
+​```python
 {
     "wt_docTAD": {
         "Folders": [
@@ -340,10 +359,10 @@ containing each of the analysis from different embryos of the same experiment. N
 
 This file contains the directories with the data to be analyzed and some parameters for the analysis (more on this later).
 
-Go to the root folder (```/mnt/disk2/marcnol/data/Experiment_19```) and run 
+Go to the root folder (```/mnt/disk2/marcnol/data/Experiment_19```) and run
 
 ```bash
- processHiMmatrix.py 
+ processHiMmatrix.py
 ```
 
 If you use a parameter file with another name (e.g. ```myparameters.json```) then run:
@@ -512,7 +531,7 @@ optional arguments:
                         smaller than the original matrix. No spaces! comma-
                         separated!    
   --scalogram           Use if you want scalogram image to be displayed
-                        
+
 ```
 
 
@@ -745,6 +764,3 @@ figure4Mmatrix.py --rootFolder1 "$DATA2" --rootFolder2 "$DATA2" --label1 doc --l
 produces
 
 ![Fig_4Mcontacts_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:M_action2:labeled](Running_pyHiM.assets/Fig_4Mcontacts_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2M_action2labeled.png)
-
-
-
