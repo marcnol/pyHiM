@@ -106,6 +106,7 @@ def makeProjections(param, log1, session1,fileName=None):
                 client=get_client()
                 threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
                     
+                print("Waiting for {} threads to complete ".format(len(threads)))
                 for index, thread in enumerate(threads):
                     wait(threads)        
                         

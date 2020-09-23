@@ -532,6 +532,8 @@ class refitBarcodesClass:
                     futures.append(result)    
             results = client.gather(futures)       
 
+            print("{} results retrieved from cluster".format(len(results)))
+
             del futures
                  
         else:

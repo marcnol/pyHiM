@@ -274,6 +274,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
                 results=client.gather(futures)
 
                 for result in results:
+                    print("Retrieving {} results from cluster".format(len(results)))
                     shift, tableEntry = result
                     dictShiftROI[label] = shift.tolist()
                     alignmentResultsTable.add_row(tableEntry)

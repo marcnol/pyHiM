@@ -517,43 +517,8 @@ def localDriftallBarcodes(param,
         results = client.gather(futures)
         
         del remote_imReference,remote_Masks, futures
-
-        # numberWorkersRequested = len(barcodeList)
-        # daskClusterInstance = daskCluster(numberWorkersRequested,maximumLoad=0.6)
-        
-        # dask    
-        # with LocalCluster(n_workers=daskClusterInstance.nThreads,
-        #                     # processes=True,
-        #                     # threads_per_worker=1,
-        #                     # memory_limit='50GB',
-        #                     # ip='tcp://localhost:8787',
-        #                     ) as cluster, Client(cluster) as client:
-
-        #     # - load fiducial for cycle <i>
-        #     remote_imReference = client.scatter(imageReferenceBackgroundSubstracted,broadcast=True)
-        #     remote_Masks = client.scatter(Masks,broadcast=True)
             
-        #     for barcode, fileNameFiducial in zip(barcodeList, fiducialFileNames):
-
-        #         futures.append(client.submit(localDriftforRT,barcode,
-        #                                     fileNameFiducial,
-        #                                     imReferenceFileName,
-        #                                     remote_imReference,
-        #                                     remote_Masks,
-        #                                     bezel,
-        #                                     shiftTolerance,
-        #                                     ROI,
-        #                                     alignmentResultsTable,
-        #                                     log1,
-        #                                     dataFolder,
-        #                                     parallel=True))
-                           
-        #     wait(futures)
-            
-        #     results = client.gather(futures)
-            
-            # del remote_imReference,remote_Masks 
-            
+        print("Retrieving {} results from cluster".format(len(results)))
         for result, barcode in zip(results,barcodeList):
             dictShift[barcode], imageListCorrected, imageListunCorrected, imageListReference, errormessage1 = result
             errormessage+=errormessage1
