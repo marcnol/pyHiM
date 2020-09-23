@@ -260,16 +260,14 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
                 # running in parallel mode
                 client=get_client()
                 futures=list()
+                labels=[]
+                fileName2ProcessList = [x for x in param.fileList2Process if (x not in fileNameReference) and param.decodesFileParts(os.path.basename(x))['roi']==ROI]
+                print("Found {} files in ROI: {}".format(len(fileName2ProcessList),ROI))
                 
-                for fileName2Process in param.fileList2Process:
+                for fileName2Process in fileName2ProcessList:
                     # excludes the reference fiducial and processes files in the same ROI
-                    label = os.path.basename(fileName2Process).split("_")[2]
-                    roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
-                    
-                    if (fileName2Process not in fileNameReference) and roi == ROI:
-                        if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
-                            # aligns files and saves results to database in dict format and to a Table
-                            futures.append(client.submit(align2Files,fileName2Process, imReference, param, log1, session1, dataFolder, verbose))
+                    labels.append(os.path.basename(fileName2Process).split("_")[2])
+                    futures.append(client.submit(align2Files,fileName2Process, imReference, param, log1, session1, dataFolder, verbose))
 
                 log1.info("Waiting for {} results to arrive".format(len(futures)))
 
@@ -277,11 +275,12 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
 
                 log1.info("Retrieving {} results from cluster".format(len(results)))
 
-                for result in results:
+                for result, label in zip(results,labels):
                     shift, tableEntry = result
                     dictShiftROI[label] = shift.tolist()
                     alignmentResultsTable.add_row(tableEntry)
                     session1.add(fileName2Process, sessionName)
+                    # print("Processed: {}".format(label))
             else:
                 # running in sequential mode
                 
