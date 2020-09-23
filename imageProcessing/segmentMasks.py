@@ -25,6 +25,7 @@ import glob, os
 import matplotlib.pylab as plt
 import numpy as np
 import uuid
+from dask.distributed import Client, get_client
 
 from astropy.stats import sigma_clipped_stats, SigmaClip, gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
@@ -351,7 +352,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
     fileName_2d_aligned = dataFolder.outputFolders["alignImages"] + os.sep + rootFileName + "_2d_registered.npy"
 
-    print("searching for {}".format(fileName_2d_aligned))
+    log1.report("searching for {}".format(fileName_2d_aligned))
     if (
         # (fileName in session1.data)
         param.param["segmentedObjects"]["operation"] == "overwrite"
@@ -472,16 +473,47 @@ def segmentMasks(param, log1, session1,fileName=None):
         # generates lists of files to process
         param.files2Process(filesFolder)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
-        log1.report("About to read {} files\n".format(len(param.fileList2Process)))
+        log1.report("Files to Segment: {} \n".format(len(param.fileList2Process)))
 
-        for fileName2Process in param.fileList2Process:
-            if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
-                label = param.param["acquisition"]["label"]
-                if label != "fiducial":
-                    output = makesSegmentations(fileName2Process, param, log1, session1, dataFolder)
-                    if label == "barcode":
-                        outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-                        barcodesCoordinates = vstack([barcodesCoordinates, output])
-                        barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
-                        log1.report("File {} written to file.".format(outputFile), "info")
-                    session1.add(fileName2Process, sessionName)
+        fileName2ProcessList = [x for x in param.fileList2Process if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(x))]
+        label = param.param["acquisition"]["label"]
+        outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
+        
+        
+        if param.param['parallel']:
+            # running in parallel mode
+            client=get_client()
+            futures=list()
+            
+            for x in fileName2ProcessList:
+                futures.append(client.submit(makesSegmentations,x, param, log1, session1, dataFolder))
+                session1.add(x, sessionName)
+            
+            results=client.gather(futures)
+
+            if label == "barcode":
+                # gathers results from different barcodes and ROIs
+                for result in results:
+                    barcodesCoordinates = vstack([barcodesCoordinates, result])
+
+                # saves results together into a single Table
+                barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
+                log1.report("File {} written to file.".format(outputFile), "info")
+
+        else:
+
+
+            for fileName2Process in param.fileList2Process:
+                if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                    if label != "fiducial":
+                        
+                        # running in sequential mode
+                        output = makesSegmentations(fileName2Process, param, log1, session1, dataFolder)
+
+                        # gathers results from different barcodes and ROIs
+                        if label == "barcode":
+                            barcodesCoordinates = vstack([barcodesCoordinates, output])
+                            barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
+                            log1.report("File {} written to file.".format(outputFile), "info")
+                            
+                        session1.add(fileName2Process, sessionName)

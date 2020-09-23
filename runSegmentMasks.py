@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     runParameters=HiM_parseArguments()    
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM = HiMfunctionCaller(runParameters, sessionName="SegmentsMasks")
     HiM.initialize()
     session1, log1=HiM.session1, HiM.log1
     

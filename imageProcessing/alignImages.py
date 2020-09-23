@@ -240,7 +240,6 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     
     if len(fileNameReferenceList) > 0:
 
-        threads=list()
         # loops over fiducials images one ROI at a time
         for fileNameReference in fileNameReferenceList:
     
@@ -257,46 +256,44 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
 
             dictShiftROI = {}
 
-            # loops over fiducial image files for this ROI in the currentFolder
-            # if param.param['parallel']:
-
-            #     # running in parallel mode
-            #     # threadPool
-            #     pool = ThreadPool(processes=len(param.fileList2Process))
-            #     results = []
-    
-            #     for fileName2Process in param.fileList2Process:
-            #         # excludes the reference fiducial and processes files in the same ROI
-            #         label = os.path.basename(fileName2Process).split("_")[2]
-            #         roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
-            #         if (fileName2Process not in fileNameReference) and roi == ROI:
-            #             if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
-            #                 results.append(pool.apply_async(align2Files, args=(fileName2Process, imReference, param, log1, session1, dataFolder, verbose)))    
-            #     pool.close()
-            #     pool.join()
-                        
-            #     for r in results:
-            #         resultDecoded=r.get()
-            #         dictShiftROI[label] = resultDecoded[0].tolist()
-            #         alignmentResultsTable.add_row(resultDecoded[1])     
+            if param.param['parallel']:
+                # running in parallel mode
+                client=get_client()
+                futures=list()
+                
+                for fileName2Process in param.fileList2Process:
+                    # excludes the reference fiducial and processes files in the same ROI
+                    label = os.path.basename(fileName2Process).split("_")[2]
+                    roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
                     
-            
-            # else:
-            
-            # running in sequential mode
-            for fileName2Process in param.fileList2Process:
-                # excludes the reference fiducial and processes files in the same ROI
-                label = os.path.basename(fileName2Process).split("_")[2]
-                roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
+                    if (fileName2Process not in fileNameReference) and roi == ROI:
+                        if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                            # aligns files and saves results to database in dict format and to a Table
+                            futures.append(client.submit(align2Files,fileName2Process, imReference, param, log1, session1, dataFolder, verbose))
+
+                results=client.gather(futures)
+
+                for result in results:
+                    shift, tableEntry = result
+                    dictShiftROI[label] = shift.tolist()
+                    alignmentResultsTable.add_row(tableEntry)
+                    session1.add(fileName2Process, sessionName)
+            else:
+                # running in sequential mode
                 
-                if (fileName2Process not in fileNameReference) and roi == ROI:
-                    if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
-                        # aligns files and saves results to database in dict format and to a Table
-                        shift, tableEntry = align2Files(fileName2Process, imReference, param, log1, session1, dataFolder, verbose,)
-                        dictShiftROI[label] = shift.tolist()
-                        alignmentResultsTable.add_row(tableEntry)
-                        session1.add(fileName2Process, sessionName)
-                
+                for fileName2Process in param.fileList2Process:
+                    # excludes the reference fiducial and processes files in the same ROI
+                    label = os.path.basename(fileName2Process).split("_")[2]
+                    roi = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
+                    
+                    if (fileName2Process not in fileNameReference) and roi == ROI:
+                        if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                            # aligns files and saves results to database in dict format and to a Table
+                            shift, tableEntry = align2Files(fileName2Process, imReference, param, log1, session1, dataFolder, verbose,)
+                            dictShiftROI[label] = shift.tolist()
+                            alignmentResultsTable.add_row(tableEntry)
+                            session1.add(fileName2Process, sessionName)
+                    
             # accumulates shifst for this ROI into global dictionary
             dictShifts["ROI:" + ROI] = dictShiftROI
             del imReference

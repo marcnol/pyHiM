@@ -110,7 +110,7 @@ class HiMfunctionCaller:
             self.getLabel(ilabel)!= "RNA" and \
             param.param["acquisition"]["label"] != "RNA"):
             if not self.parallel:
-                appliesRegistrations(param, self.log1, self.session1)
+                segmentMasks(param, self.log1, self.session1)
             else:
                 result = self.client.submit(segmentMasks,param, self.log1, self.session1)
                 _ = self.client.gather(result)
@@ -134,7 +134,7 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
                 
     def localDriftCorrection(self, param, ilabel):
-        if self.getLabel(ilabel) == "DAPI" and self.runParameters["localDrift"]:
+        if self.getLabel(ilabel) == "DAPI" and self.runParameters["localAlignment"]:
 
             if not self.parallel:
                 errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)                
