@@ -57,7 +57,7 @@ class log:
 
     # thisfunction will output to cmd line and save in logfile
     def report(self, text, status="info"):
-        if not self.parallel:
+        if not self.parallel or status.lower()=="error":
             print(self.getFullString(text, status))
             self.save("\n" + text, status)
         else:

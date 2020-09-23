@@ -562,10 +562,10 @@ def localDriftCorrection(param, log1, session1):
     # tqdm._instances.clear()
 
     # processes folders and files
-    dataFolder = folders(param.param["rootFolder"])
     log1.addSimpleText(
         "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
     )
+    dataFolder = folders(param.param["rootFolder"])
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(session1.name, param.param["acquisition"]["label"]), "a",

@@ -584,8 +584,8 @@ class refitBarcodesClass:
         sessionName = "refitBarcodes3D"
     
         # processes folders and files
-        self.dataFolder = folders(self.param.param["rootFolder"])
         self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+        self.dataFolder = folders(self.param.param["rootFolder"])
         self.log1.report("folders read: {}".format(len(self.dataFolder.listFolders)))
         writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
 

@@ -75,8 +75,8 @@ def makeProjections(param, log1, session1,fileName=None):
     sessionName = "makesProjections"
 
     # processes folders and files
-    dataFolder = folders(param.param["rootFolder"])
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+    dataFolder = folders(param.param["rootFolder"])
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",

@@ -62,25 +62,51 @@ warnings.filterwarnings("ignore")
 
 
 def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
-    # show results
-    fig = plt.figure()
+    fig, ax = plt.subplots()
     fig.set_size_inches((30, 30))
-
+    
     positions = np.transpose(
         (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
     )  # for some reason sources are always displays 1/2 px from center of spot
 
     apertures = CircularAperture(positions, r=4.0)
     norm = simple_norm(im, "sqrt", percent=99.99)
-    # norm = ImageNormalize(stretch=SqrtStretch())
-    # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
-    plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
+    ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
     apertures.plot(color="blue", lw=1.5, alpha=0.35)
-    plt.xlim(0, im.shape[1] - 1)
-    plt.ylim(0, im.shape[0] - 1)
+    
+    ax.set_xlim(0, im.shape[1] - 1)
+    ax.set_ylim(0, im.shape[1] - 1)
+
     plt.savefig(outputFileName + "_segmentedSources.png")
-    plt.axis("off")
     plt.close()
+    
+    # show results
+    # fig = plt.figure()
+    # fig.set_size_inches((30, 30))
+    # ax = fig.add_subplot(111)
+    
+    # positions = np.transpose(
+    #     (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
+    # )  # for some reason sources are always displays 1/2 px from center of spot
+
+    # apertures = CircularAperture(positions, r=4.0)
+    # norm = simple_norm(im, "sqrt", percent=99.99)
+    # # norm = ImageNormalize(stretch=SqrtStretch())
+    # # plt.imshow(im1_bkg_substracted, clim=(0, 1), cmap="Greys", origin="lower", norm=norm)
+
+    # # plt.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
+    # ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
+    # apertures.plot(color="blue", lw=1.5, alpha=0.35)
+    
+    # # plt.xlim(0, im.shape[1] - 1)
+    # # plt.ylim(0, im.shape[0] - 1)
+    # ax.set_xlim(0, im.shape[1] - 1)
+    # ax.set_ylim(0, im.shape[1] - 1)
+
+    # plt.savefig(outputFileName + "_segmentedSources.png")
+    # plt.axis("off")
+    # plt.close()
+    
     writeString2File(
         log1.fileNameMD,
         "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"),
@@ -455,10 +481,10 @@ def segmentMasks(param, log1, session1,fileName=None):
     sessionName = "segmentMasks"
 
     # processes folders and files
-    dataFolder = folders(param.param["rootFolder"])
     log1.addSimpleText(
         "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
     )
+    dataFolder = folders(param.param["rootFolder"])
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
@@ -483,13 +509,12 @@ def segmentMasks(param, log1, session1,fileName=None):
         if param.param['parallel']:
             # running in parallel mode
             client=get_client()
-            futures=list()
-            
-            # print("Files to process: {}".format(fileName2ProcessList))            
-            
+            futures=list()           
+          
             for fileName2Process in param.fileList2Process:
                 if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
                     if label != "fiducial":
+                        # print("x={}".format(fileName2Process))
                         futures.append(client.submit(makesSegmentations,fileName2Process, param, log1, session1, dataFolder))
                         session1.add(fileName2Process, sessionName)
             
@@ -500,13 +525,15 @@ def segmentMasks(param, log1, session1,fileName=None):
             if label == "barcode":
                 # gathers results from different barcodes and ROIs
                 log1.info("Retrieving {} results from cluster".format(len(results)))
-                
+                detectedSpots = []
                 for result in results:
+                    detectedSpots.append(len(result)) 
                     barcodesCoordinates = vstack([barcodesCoordinates, result])
 
-                # saves results together into a single Table
-                barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
-                log1.report("File {} written to file.".format(outputFile), "info")
+                    # saves results together into a single Table
+                    barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
+                print("File {} written to file.".format(outputFile))
+                print("Detected spots: {}".format(",".join([str(x) for x in detectedSpots])))
 
         else:
 
@@ -525,3 +552,5 @@ def segmentMasks(param, log1, session1,fileName=None):
                             log1.report("File {} written to file.".format(outputFile), "info")
                             
                         session1.add(fileName2Process, sessionName)
+                        
+    return 0
