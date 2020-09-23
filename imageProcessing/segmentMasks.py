@@ -473,26 +473,34 @@ def segmentMasks(param, log1, session1,fileName=None):
         # generates lists of files to process
         param.files2Process(filesFolder)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
-        log1.report("Files to Segment: {} \n".format(len(param.fileList2Process)))
+        log1.info("Files to Segment: {} \n".format(len(param.fileList2Process)))
 
-        fileName2ProcessList = [x for x in param.fileList2Process if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(x))]
+        # fileName2ProcessList = [x for x in param.fileList2Process if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(x))]
         label = param.param["acquisition"]["label"]
         outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
         
-        
+
         if param.param['parallel']:
             # running in parallel mode
             client=get_client()
             futures=list()
             
-            for x in fileName2ProcessList:
-                futures.append(client.submit(makesSegmentations,x, param, log1, session1, dataFolder))
-                session1.add(x, sessionName)
+            # print("Files to process: {}".format(fileName2ProcessList))            
+            
+            for fileName2Process in param.fileList2Process:
+                if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                    if label != "fiducial":
+                        futures.append(client.submit(makesSegmentations,fileName2Process, param, log1, session1, dataFolder))
+                        session1.add(fileName2Process, sessionName)
+            
+            log1.info("Waiting for {} results to arrive".format(len(futures)))
             
             results=client.gather(futures)
 
             if label == "barcode":
                 # gathers results from different barcodes and ROIs
+                log1.info("Retrieving {} results from cluster".format(len(results)))
+                
                 for result in results:
                     barcodesCoordinates = vstack([barcodesCoordinates, result])
 
