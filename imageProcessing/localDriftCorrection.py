@@ -349,7 +349,7 @@ def localDriftforRT(
     dictShiftBarcode = {}
 
     # - iterate over masks <iMask>
-    print("\nprocessing> Looping over {} masks for barcode: {}\n".format(Masks.max(), barcode))
+    log1.info("Looping over {} masks for barcode: {}\n".format(Masks.max(), barcode))
     if parallel:
         Maskrange=range(1, Masks.max())
         log1.report("See progress in http://localhost:8787 ")
@@ -366,7 +366,7 @@ def localDriftforRT(
         # To solve the issue I need to recode so that images are not returned by the workers.
         # The issue now is that CURRENTLY these images need to be collected in order to make the mosaic...
         
-        print("processing> Launching {} threads using dask".format(len(Maskrange)))
+        log1.info("Launching {} threads using dask".format(len(Maskrange)))
         futures = []
         client=get_client()
         
@@ -374,9 +374,12 @@ def localDriftforRT(
             # calculates shift
             futures.append(client.submit(alignsSubVolumes,imageReferenceBackgroundSubstracted, imageBarcode, Masks, bezel=bezel, iMask=iMask))
 
+        log1.info("Waiting for {} results to arrive".format(len(futures)))
+
         for batch in as_completed(futures, with_results=True).batches():
+            log1.info("Reading batch from {} workers".format(len(batch)))
             for future, iResult in batch:
-            
+                
                 shift, error, diffphase, subVolumeReference, subVolume, subVolumeCorrected = iResult
                 del iResult
                 

@@ -79,8 +79,8 @@ if __name__ == "__main__":
     HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
     if runParameters["parallel"]:
-        HiM.client.close()
         HiM.cluster.close()   
+        HiM.client.close()
 
     del HiM
     

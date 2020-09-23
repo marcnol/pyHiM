@@ -226,7 +226,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     # generates lists of files to process for currentFolder
     param.files2Process(filesFolder)
     log1.report("-------> Processing Folder: {}".format(currentFolder))
-    log1.report("About to process {} files\n".format(len(param.fileList2Process)))
+    log1.info("About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
         dataFolder.outputFiles["alignImages"] + ".bed", "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase", "w",
     )
@@ -271,10 +271,13 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
                             # aligns files and saves results to database in dict format and to a Table
                             futures.append(client.submit(align2Files,fileName2Process, imReference, param, log1, session1, dataFolder, verbose))
 
+                log1.info("Waiting for {} results to arrive".format(len(futures)))
+
                 results=client.gather(futures)
 
+                log1.info("Retrieving {} results from cluster".format(len(results)))
+
                 for result in results:
-                    print("Retrieving {} results from cluster".format(len(results)))
                     shift, tableEntry = result
                     dictShiftROI[label] = shift.tolist()
                     alignmentResultsTable.add_row(tableEntry)

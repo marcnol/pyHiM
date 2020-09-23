@@ -90,7 +90,7 @@ def makeProjections(param, log1, session1,fileName=None):
         # generates lists of files to process
         param.files2Process(filesFolder)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
-        log1.report("About to read {} files\n".format(len(param.fileList2Process)))
+        log1.info("About to read {} files\n".format(len(param.fileList2Process)))
 
         if param.param['parallel']:
             threads=list()
@@ -100,8 +100,6 @@ def makeProjections(param, log1, session1,fileName=None):
                                      and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))]
 
             if len(files2ProcessFiltered)>0:
-                print("Cluster with {} workers started, See http://localhost:8787/status for progress".format(len(files2ProcessFiltered)))
-
                 # dask
                 client=get_client()
                 threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            

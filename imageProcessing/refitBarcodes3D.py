@@ -501,38 +501,41 @@ class refitBarcodesClass:
         # loops over ROIs
         barcodeMapROI = barcodeMap.group_by("ROI #")
         numberROIs = len(barcodeMapROI.groups.keys)
-        print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
+        self.log1.info("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
 
         # self.param.param['parallel']=False
         availableBarcodes = np.unique(barcodeMap["Barcode #"].data)
         maxnumberBarcodes = availableBarcodes.shape[0]
-        print("Max number of barcodes detected: {}".format(maxnumberBarcodes))
+        self.log1.info("Max number of barcodes detected: {}".format(maxnumberBarcodes))
         
         if self.parallel:
             futures = list()
             
             client=get_client()
             
-            print("Go to http://localhost:8787/status for information on progress...")
+            self.log1.info("Go to http://localhost:8787/status for information on progress...")
             
             for iROI in range(numberROIs):
                 nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
-                print("Working on ROI# {}".format(nROI))
+                self.log1.info("Working on ROI# {}".format(nROI))
     
                 # loops over barcodes in that ROI
                 barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
                 barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
                 numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-                print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+                self.log1.info("\nNumber of barcodes detected: {}".format(numberBarcodes))
     
                 for iBarcode in range(numberBarcodes):
                     # find coordinates for this ROI and barcode
                     barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
                     result = client.submit(self.refitsBarcode, barcodeMapSinglebarcode)
                     futures.append(result)    
+            
+            self.log1.info("Waiting for {} results to arrive".format(len(futures)))
+
             results = client.gather(futures)       
 
-            print("{} results retrieved from cluster".format(len(results)))
+            self.log1.info("{} results retrieved from cluster".format(len(results)))
 
             del futures
                  
@@ -540,13 +543,13 @@ class refitBarcodesClass:
             results = []
             for iROI in range(numberROIs):
                 nROI = barcodeMapROI.groups.keys[iROI][0]  # need to iterate over the first index
-                print("Working on ROI# {}".format(nROI))
+                self.log1.report("Working on ROI# {}".format(nROI))
     
                 # loops over barcodes in that ROI
                 barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
                 barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
                 numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-                print("\nNumber of barcodes detected: {}".format(numberBarcodes))
+                self.log1.report("\nNumber of barcodes detected: {}".format(numberBarcodes))
     
                 for iBarcode in range(numberBarcodes):
                     # find coordinates for this ROI and barcode
