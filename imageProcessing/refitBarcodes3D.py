@@ -511,8 +511,6 @@ class refitBarcodesClass:
         if self.parallel:
             futures = list()
             
-            daskClusterInstance = daskCluster(2*maxnumberBarcodes)
-            # daskClusterInstance = daskCluster(15)
             client=get_client()
             
             print("Go to http://localhost:8787/status for information on progress...")
