@@ -559,16 +559,20 @@ def plotMatrix(
 
         if len(outputFileName.split(".")) > 1:
             if outputFileName.split(".")[1] != "png":
+                o=outputFileName
                 plt.savefig(outputFileName)
             else:
-                plt.savefig(outputFileName.split(".")[0] + "_HiMmatrix.png")
+                o=outputFileName.split(".")[0] + "_HiMmatrix.png"
+                plt.savefig(o)
         else:
-            plt.savefig(outputFileName + "_HiMmatrix.png")
+            o=outputFileName + "_HiMmatrix.png"
+            plt.savefig(o)
 
         if not isnotebook():
             plt.close()
-
-        writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_HiMmatrix.png"), "a")
+        if 'png' not in o:
+            o+=".png"
+        writeString2File(logNameMD, "![]({})\n".format(o), "a")
     else:
         print("Error plotting figure. Not executing script to avoid crash.")
 

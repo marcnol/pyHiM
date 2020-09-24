@@ -167,7 +167,7 @@ def HiM_parseArguments():
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        runParameters["rootFolder"] = os.getcwd()
+        runParameters["rootFolder"] = '.' # os.getcwd()
        
     if args.parallel:
         runParameters["parallel"] = args.parallel

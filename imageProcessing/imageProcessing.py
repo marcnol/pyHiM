@@ -314,17 +314,23 @@ def save2imagesRGB(I1, I2, outputFileName):
     """
     Overlays two images as R and B and saves them to output file
     """
+    fig, ax = plt.subplots()
     I1, I2 = I1 / I1.max(), I2 / I2.max()
-    
-    plt.figure(figsize=(30, 30))
-    # RGB_falsecolor_image = np.dstack([I1, np.zeros([2048, 2048]), I2])
-    # plt.imsave(outputFileName, RGB_falsecolor_image)
-    
-    plt.imshow(I1,cmap = 'Blues', alpha = 0.75)
-    plt.imshow(I2,cmap = 'Reds', alpha = 0.75)
+    ax.imshow(I1,cmap = 'Blues', alpha = 0.75)
+    ax.imshow(I2,cmap = 'Reds', alpha = 0.75)
     plt.savefig(outputFileName)
-
     plt.close()
+
+    
+    # I1, I2 = I1 / I1.max(), I2 / I2.max()
+    
+    # plt.figure(figsize=(30, 30))
+    # # RGB_falsecolor_image = np.dstack([I1, np.zeros([2048, 2048]), I2])
+    # # plt.imsave(outputFileName, RGB_falsecolor_image)
+    # plt.imshow(I1,cmap = 'Blues', alpha = 0.75)
+    # plt.imshow(I2,cmap = 'Reds', alpha = 0.75)
+    # plt.savefig(outputFileName)
+    # plt.close()
 
 def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):

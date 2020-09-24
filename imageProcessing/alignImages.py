@@ -45,11 +45,12 @@ from scipy.ndimage import shift as shiftImage
 
 def displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose=False):
     # hist1_before, hist1_after,hist2_before, hist2_after, , vebose=False, fileName='test'):
-    fig = plt.figure(figsize=(6, 3))
-    ax1 = plt.subplot(2, 2, 1)
-    ax2 = plt.subplot(2, 2, 2)
-    ax3 = plt.subplot(2, 2, 3)
-    ax4 = plt.subplot(2, 2, 4)
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+    # fig= plt.figure(figsize=(6, 3))
+    # ax1 = plt.subplot(2, 2, 1)
+    # ax2 = plt.subplot(2, 2, 2)
+    # ax3 = plt.subplot(2, 2, 3)
+    # ax4 = plt.subplot(2, 2, 4)
 
     ax1.plot(I_histogram["Im1"][0][1], I_histogram["Im1"][0][0])
     ax2.plot(I_histogram["Im2"][0][1], I_histogram["Im2"][0][0])
@@ -256,13 +257,16 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
 
             dictShiftROI = {}
 
+            fileName2ProcessList = [x for x in param.fileList2Process if (x not in fileNameReference) and param.decodesFileParts(os.path.basename(x))['roi']==ROI]
+            print("Found {} files in ROI: {}".format(len(fileName2ProcessList),ROI))
+            print("[roi:cycle] {}".format("|".join([str(param.decodesFileParts(os.path.basename(x))['roi'])+":"+str(param.decodesFileParts(os.path.basename(x))['cycle'])\
+                                               for x in fileName2ProcessList])))
+                
             if param.param['parallel']:
                 # running in parallel mode
                 client=get_client()
                 futures=list()
                 labels=[]
-                fileName2ProcessList = [x for x in param.fileList2Process if (x not in fileNameReference) and param.decodesFileParts(os.path.basename(x))['roi']==ROI]
-                print("Found {} files in ROI: {}".format(len(fileName2ProcessList),ROI))
                 
                 for fileName2Process in fileName2ProcessList:
                     # excludes the reference fiducial and processes files in the same ROI
