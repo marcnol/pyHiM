@@ -13,7 +13,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.segmentMasks import segmentMasks
+from fileProcessing.functionCaller import HiMfunctionCaller
 
 
 def test_segmentsMasks():
@@ -29,7 +29,13 @@ def test_segmentsMasks():
     expectedOutputs = testData["test_segmentsMasks"]["expectedOutputs"]
     labels=testData["test_segmentsMasks"]["labels"]
 
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
 
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
+    
     expectedOutputsTimeStamped={}
     for x in expectedOutputs:
         if os.path.exists(x):
@@ -42,29 +48,16 @@ def test_segmentsMasks():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
-
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-     
     for ilabel,fileName in zip(labels,fileName2Process):
         
-        # for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        log1.addSimpleText("**Analyzing label: {}**".format(label))
-        
         # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
-        param.param['parallel']=False
+        param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+        param.param['parallel']=HiM.parallel
             
         dataFolder = folders(param.param["rootFolder"])
         dataFolder.createsFolders(rootFolder, param)
     
-        segmentMasks(param, log1, session1,fileName=fileName)
-        
+        HiM.segmentMasks(param, ilabel)      
 
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     

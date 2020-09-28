@@ -12,7 +12,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.alignImages import appliesRegistrations2currentFolder
+from fileProcessing.functionCaller import HiMfunctionCaller
 
 
 def test_appliesProjections():
@@ -28,6 +28,10 @@ def test_appliesProjections():
     expectedOutputs = testData["test_appliesRegistrations"]["expectedOutput"]
     ilabel=testData["test_appliesRegistrations"]["label"]
 
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
+    
     expectedOutputsTimeStamped={}
     for x in expectedOutputs:
         if os.path.exists(x):
@@ -40,27 +44,15 @@ def test_appliesProjections():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
 
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-     
-    # for ilabel in range(len(labels2Process)):
-    label = labels2Process[ilabel]["label"]
-    labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
-    
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
-        
-    dataFolder = folders(param.param["rootFolder"])
-    dataFolder.createsFolders(rootFolder, param)
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
+    
+    HiM.appliesRegistrations(param, ilabel)
 
-    appliesRegistrations2currentFolder(rootFolder,param,dataFolder,log1,session1,fileName=None)
-  
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     
     test=[]

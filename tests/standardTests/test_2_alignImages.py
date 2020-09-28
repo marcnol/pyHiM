@@ -13,7 +13,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, loadJSON,Parameters,folders)
 
-from imageProcessing.alignImages import alignImages
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 def test_alignImages():
     
@@ -26,7 +26,11 @@ def test_alignImages():
         
     rootFolder = testData["test_alignImages"]["rootFolder"]
     ilabel=testData["test_alignImages"]["label"]
-   
+
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
+    
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
@@ -34,25 +38,14 @@ def test_alignImages():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
-
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-     
+    HiM = HiMfunctionCaller(runParameters, sessionName="makesProjections")
+    HiM.initialize()  
    
-    # for ilabel in range(len(labels2Process)):
-    label = labels2Process[ilabel]["label"]
-    labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
-    
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
-        
-    if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-        alignImages(param, log1, session1)
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
+    
+    HiM.alignImages(param, ilabel)
 
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.createsFolders(rootFolder, param)

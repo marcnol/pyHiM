@@ -12,7 +12,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.refitBarcodes3D import refitBarcodesClass
+from fileProcessing.functionCaller import HiMfunctionCaller
 
 def test_refitBarcodes3D():
 
@@ -26,6 +26,13 @@ def test_refitBarcodes3D():
     expectedOutputs = testData["test_refitBarcodes3D"]["expectedOutputs"]
     ilabel=testData["test_refitBarcodes3D"]["labels"]
 
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
+    runParameters["refit"]=True
+
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
 
     expectedOutputsTimeStamped={}
     for x in expectedOutputs:
@@ -39,35 +46,18 @@ def test_refitBarcodes3D():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
-
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-  
-    # for ilabel in range(len(labels2Process)):
-    label = labels2Process[ilabel]["label"]
-    labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
-    
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
-        
-    dataFolder = folders(param.param["rootFolder"])
-    dataFolder.createsFolders(rootFolder, param)
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
 
     # [refits spots in 3D]
-    if label == "barcode":
-        fittingSession = refitBarcodesClass(param, log1, session1)
-        fittingSession.refitFolders()        
-
+    HiM.refitBarcodes(param, ilabel)
+    
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     
     test=[]
     for key in expectedOutputsTimeStamped.keys():
-        # print("{}--{}".format(os.path.getmtime(x),expectedOutputsTimeStamped[x]))
+        print("{}--{}".format(os.path.getmtime(x),expectedOutputsTimeStamped[x]))
         if os.path.getmtime(x)>expectedOutputsTimeStamped[x]:
             test.append(True)
             

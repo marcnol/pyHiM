@@ -12,7 +12,8 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from matrixOperations.alignBarcodesMasks import processesPWDmatrices
+from fileProcessing.functionCaller import HiMfunctionCaller
+
 
 
 def test_processesPWDmatrices():
@@ -39,28 +40,19 @@ def test_processesPWDmatrices():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
 
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-     
-        
-    # for ilabel in range(len(labels2Process)):
-    label = labels2Process[ilabel]["label"]
-    labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
     
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
-        
-    dataFolder = folders(param.param["rootFolder"])
-    dataFolder.createsFolders(rootFolder, param)
-
-    processesPWDmatrices(param, log1, session1)
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
     
+    HiM.processesPWDmatrices(param, ilabel)
+
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     
     test=[]

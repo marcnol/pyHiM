@@ -12,7 +12,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.localDriftCorrection import localDriftCorrection
+from fileProcessing.functionCaller import HiMfunctionCaller
 
 def test_localDriftCorrection():
 
@@ -38,32 +38,30 @@ def test_localDriftCorrection():
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    # session
-    sessionName = "test_localDriftCorrection"
-    session1 = session(rootFolder, sessionName)
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
+    runParameters["localAlignment"]=True
 
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
-  
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
+     
     # for ilabel in range(len(labels2Process)):
     label = labels2Process[ilabel]["label"]
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
     
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
         
-    dataFolder = folders(param.param["rootFolder"])
-    dataFolder.createsFolders(rootFolder, param)
-
     # [local drift correction]
-    if label == "DAPI" and param.param["alignImages"]["localAlignment"]=='overwrite':
-        errorCode, _, _ = localDriftCorrection(param, log1, session1)
+    HiM.localDriftCorrection(param, ilabel)
 
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     
     test=[]
     for key in expectedOutputsTimeStamped.keys():
+        print("{}--{}".format(os.path.getmtime(x),expectedOutputsTimeStamped[x]))
         if os.path.getmtime(x)>expectedOutputsTimeStamped[x]:
             test.append(True)
             

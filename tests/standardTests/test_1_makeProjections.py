@@ -12,7 +12,7 @@ import pytest
 from fileProcessing.fileManagement import (
     session, log, Parameters,folders,loadJSON)
 
-from imageProcessing.makeProjections import makeProjections, makes2DProjectionsFile
+from fileProcessing.functionCaller import HiMfunctionCaller
 
 
 def test_makeProjections():
@@ -27,44 +27,25 @@ def test_makeProjections():
     fileName2Process = testData["test_makeProjections"]["fileName2Process"]
     expectedOutputs = testData["test_makeProjections"]["expectedOutputs"]
 
-    labels2Process = [
-        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-    ]
+    runParameters={}
+    runParameters["rootFolder"]=rootFolder
+    runParameters["parallel"]=False
 
-    # session
-    sessionName = "makesProjections"
-    session1 = session(rootFolder, sessionName)
-
-    # setup logs
-    log1 = log(rootFolder=rootFolder,parallel=False)
+    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
+    HiM.initialize()  
      
     ilabel=2
-    
-    # for ilabel in range(len(labels2Process)):
-    label = labels2Process[ilabel]["label"]
-    labelParameterFile = labels2Process[ilabel]["parameterFile"]
-    log1.addSimpleText("**Analyzing label: {}**".format(label))
-    
     # sets parameters
-    param = Parameters(rootFolder, labelParameterFile)
-    param.param['parallel']=False
-        
-    # [projects 3D images in 2d]
-    dataFolder = folders(param.param["rootFolder"])
-    dataFolder.createsFolders(rootFolder, param)
-
-    # expectedOutputFileName =  dataFolder.outputFolders["zProject"] + os.sep + os.path.basename(fileName2Process).split(".")[0] + "_2d.npy"
-
+    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
+    param.param['parallel']=HiM.parallel
+                
     expectedOutputsTimeStamped={}
     for x in expectedOutputs:
         if os.path.exists(x):
             expectedOutputsTimeStamped[x]=os.path.getmtime(x)
 
-    
-    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
+    # [projects 3D images in 2d]
+    HiM.makeProjections(param)    
 
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     
@@ -76,4 +57,4 @@ def test_makeProjections():
     assert len(test)==len(expectedOutputs)
     
     
-# test_makeProjections()
+test_makeProjections()
