@@ -225,6 +225,8 @@ class Parameters:
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
+                "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
+                "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
                 "localShiftTolerance": 1,
                 "bezel": 20,                
             },
