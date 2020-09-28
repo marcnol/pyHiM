@@ -53,8 +53,6 @@ optional arguments:
 
 
 
-
-
 #### infoList parameters files
 
 a typical file (DAPI example) looks like:
@@ -221,7 +219,35 @@ In most cases, this works very well. A good example is:
 ![image-20200928145118596](Running_pyHiM.assets/image-20200928145118596.png)
 
 
-Expections are:
+
+##### Applying drift corrections
+
+
+
+You can apply registrations by running:
+
+```sh
+runAppliesRegistrations.py -F .
+
+usage: runAppliesRegistrations.py [-h] [-F ROOTFOLDER] [--parallel]
+                                  [--localAlignment] [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting
+                        function.
+
+```
+
+
+
+##### Problems with drift correction
+
+Exceptions are:
 
 1. there is a bit of crap in one cycle that distorts the cross correlation. This is not addressed currently.
 2. The cross correlation is biased towards a bright spot in the image that is shifted with respect to the others. This can be addressed by adapting thresholds.
@@ -263,6 +289,29 @@ Example: left image is a 2D projection of a fiducial without contamination. The 
 
 
 
+##### Segmenting masks
+
+To manually segment masks, run
+
+```sh
+runSegmentMasks.py -F .
+
+usage: runSegmentMasks.py [-h] [-F ROOTFOLDER] [--parallel] [--localAlignment]
+                          [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting
+                        function.
+
+```
+
+
+
 #### 3D fits of barcode positions
 
 Barcode 3D positions are now calculated as follows.
@@ -281,6 +330,41 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 ![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
 ### 
+
+##### Align DAPI masks and barcodes
+
+This last function will align DAPI masks and barcodes and construct the single cell contact matrix.
+
+```sh
+runAlignBarcodesMasks.py -F .
+
+usage: runAlignBarcodesMasks.py [-h] [-F ROOTFOLDER] [--parallel]
+                                [--localAlignment] [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting
+                        function.
+
+```
+
+
+
+<u>Example outputs:</u>
+
+Mean pairwise distance matrix. By default means are calculated using Kernel Density Estimators of the PWD distributions.
+
+![buildsPWDmatrix_HiMmatrix](Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png)
+
+In addition, the function outputs the distribution of distances for each combination of barcodes:
+
+![buildsPWDmatrix_PWDhistograms](Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png)
+
+
 
 ### Process second channel (i.e RNA, segments, etc)
 
@@ -861,3 +945,72 @@ figure4Mmatrix.py --rootFolder1 "$DATA2" --rootFolder2 "$DATA2" --label1 doc --l
 produces
 
 ![Fig_4Mcontacts_dataset1:wt_docTAD_nc14_label1:doc_action1:labeled_dataset2:wt_docTAD_nc14_label2:M_action2:labeled](Running_pyHiM.assets/Fig_4Mcontacts_dataset1wt_docTAD_nc14_label1doc_action1labeled_dataset2wt_docTAD_nc14_label2M_action2labeled.png)
+
+#### Plotting different matrices together
+
+This function is useful when you want to plot side by side the matrices from different datasets. One typical example is the matrices for different segments of an embryo.
+
+```sh
+figureN_HiMmatrices.py
+
+usage: figureN_HiMmatrices.py [-h] [-F ROOTFOLDER] [-O OUTPUTFOLDER]
+                              [-P PARAMETERS] [-A LABEL] [-W ACTION]
+                              [--fontsize FONTSIZE] [--axisLabel]
+                              [--axisTicks] [--barcodes]
+                              [--scalingParameter SCALINGPARAMETER]
+                              [--plottingFileExtension PLOTTINGFILEEXTENSION]
+                              [--shuffle SHUFFLE] [--scalogram] [--type TYPE]
+                              [--pixelSize PIXELSIZE] [--cAxis CAXIS]
+                              [--ratio] [--normalizeMatrix]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with dataset
+  -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+                        Folder for outputs
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --fontsize FONTSIZE   Size of fonts to be used in matrix
+  --axisLabel           Use if you want a label in x and y
+  --axisTicks           Use if you want axes ticks
+  --barcodes            Use if you want barcode images to be displayed
+  --scalingParameter SCALINGPARAMETER
+                        Scaling parameter of colormap
+  --plottingFileExtension PLOTTINGFILEEXTENSION
+                        By default: svg. Other options: pdf, png
+  --shuffle SHUFFLE     Provide shuffle vector: 0,1,2,3... of the same size or
+                        smaller than the original matrix. No spaces! comma-
+                        separated!
+  --scalogram           Use if you want scalogram image to be displayed
+  --type TYPE           Provide one of the following: PWD, contact, iPWD
+  --pixelSize PIXELSIZE
+                        Provide pixelSize in um
+  --cAxis CAXIS         absolute cAxis value for colormap
+  --ratio               Does ratio between matrices. Default: difference
+  --normalizeMatrix     Normalizes matrices by maximum. Default: True
+
+```
+The two outputs are:
+
+1. the entire matrices 
+
+![image-20200928162116627](Running_pyHiM.assets/image-20200928162116627.png)
+
+
+
+2. A subset of bins, for instance to highlight how a TAD changes (normalized by the first matrix):
+
+![image-20200928162310354](Running_pyHiM.assets/image-20200928162310354.png)
+
+3. A line scan over all the matrices normalized by a segment
+
+![image-20200928162417318](Running_pyHiM.assets/image-20200928162417318.png)
+
+
+
