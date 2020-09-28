@@ -47,10 +47,6 @@ def displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName,
     # hist1_before, hist1_after,hist2_before, hist2_after, , vebose=False, fileName='test'):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
     # fig= plt.figure(figsize=(6, 3))
-    # ax1 = plt.subplot(2, 2, 1)
-    # ax2 = plt.subplot(2, 2, 2)
-    # ax3 = plt.subplot(2, 2, 3)
-    # ax4 = plt.subplot(2, 2, 4)
 
     ax1.plot(I_histogram["Im1"][0][1], I_histogram["Im1"][0][0])
     ax2.plot(I_histogram["Im2"][0][1], I_histogram["Im2"][0][0])
@@ -140,6 +136,17 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     # Normalises images
     image1_uncorrected = imReference.data_2D / imReference.data_2D.max()
     image2_uncorrected = Im2.data_2D / Im2.data_2D.max()
+    
+    if "lower_threshold" in param.param["alignImages"].keys():
+        lower_threshold = param.param["alignImages"]["lower_threshold"]
+    else:
+        lower_threshold = 0.999
+        
+    if "higher_threshold" in param.param["alignImages"].keys():
+        higher_threshold = param.param["alignImages"]["higher_threshold"]
+    else:
+        higher_threshold = 0.9999999
+
 
     # calculates shift using cross-correlation
     (
@@ -151,7 +158,10 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         image2_corrected,
         image1_adjusted,
         image2_adjusted,
-    ) = align2ImagesCrossCorrelation(image1_uncorrected, image2_uncorrected)
+    ) = align2ImagesCrossCorrelation(image1_uncorrected, 
+                                     image2_uncorrected,
+                                     lower_threshold=lower_threshold, 
+                                     higher_threshold=higher_threshold)
 
     image2_corrected_raw = shiftImage(image2_uncorrected, shift)
     image2_corrected_raw[image2_corrected_raw < 0] = 0

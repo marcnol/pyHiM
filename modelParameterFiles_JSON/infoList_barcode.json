@@ -15,6 +15,8 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
+        "lower_threshold": 0.999, 
+        "higher_threshold": 0.9999999, 
 		"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"

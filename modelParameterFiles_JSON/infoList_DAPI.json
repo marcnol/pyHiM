@@ -16,6 +16,8 @@
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
 		"localShiftTolerance": 1,
+        "lower_threshold": 0.999, 
+        "higher_threshold": 0.9999999, 
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
