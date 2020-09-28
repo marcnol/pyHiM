@@ -158,7 +158,7 @@ def HiM_parseArguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
     parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
-    parser.add_argument("--refit", help="Runs localAlignment function", action="store_true")
+    parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
     
     args = parser.parse_args()
 

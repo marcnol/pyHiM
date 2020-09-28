@@ -24,6 +24,37 @@ pyHiM.py
 
 This assumes that you are running it from the ```destination_directory```. If it is not the case, use the ``-F`` flag with the directory with your data.
 
+
+
+The arguments are
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [--parallel] [--localAlignment] [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting function.
+
+```
+
+
+
+```-F ``` indicates the rootFolder where pyHiM expects to find the dataset.
+
+```--parallel``` flag will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
+
+```---localAlignment``` will run the local alignment function. See below
+
+```---refit```  will refit barcode spots using a Gaussian axial fitting function.
+
+
+
+
+
 #### infoList parameters files
 
 a typical file (DAPI example) looks like:
@@ -47,6 +78,8 @@ a typical file (DAPI example) looks like:
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
 		"localAlignment": "overwrite",
+        "lower_threshold": 0.999, 
+        "higher_threshold": 0.9999999, 
 		"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"
@@ -104,7 +137,7 @@ Here are some options for the different parameters and a brief description
 "barcode_channel": "ch01",
 "fiducialBarcode_channel": "ch00",
 "fiducialDAPI_channel": "ch02",
-"label": "DAPI", *Options: DAPI, fiducial, barcode
+"label": "DAPI", *Options: DAPI, fiducial, barcode, RNA
 "pixelSizeXY": 0.1, *lateral pixel size in nm*
 "pixelSizeZ": 0.25 *axial pixel size in nm*
 "positionROIinformation": 3 *position for the ROI in the filename: will be removed in future versions!*
@@ -114,7 +147,7 @@ Here are some options for the different parameters and a brief description
 
 ```
 "folder": "zProject",  *Description:* output folder
-"operation": "skip",  *Options:* overwrite | skip
+"operation": "overwrite",  *Options:* overwrite | skip
 "mode": "full",  *Options:* full | manual | automatic
 "display": True,
 "saveImage": True,
@@ -131,6 +164,8 @@ Here are some options for the different parameters and a brief description
 "operation": "overwrite",  *Options:* overwrite | skip
 "outputFile": "alignImages",
 "referenceFiducial": "RT18"
+"lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
+"higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
 "localShiftTolerance": 1,
 "bezel": 20,
 ```
@@ -164,6 +199,88 @@ Here are some options for the different parameters and a brief description
 "centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
 "3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
 ```
+
+#### MakeProjections
+
+This uses the Threadpool. The gain for a small number of files is zero. It seems, at the moment, to be marginal for a large number of files. I imaging the reason is that the rate-limiting factor is loading 3D stacks from disk and this process is serialized by the OS. So if you do all computations in the same cluster, all the threads need to go to though the same bottleneck. I will continue searching if this the case and whether there is a way round it.
+
+
+
+#### Drift Correction
+
+Global drift correction will be run by default. This finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
+
+This can be run by typing 
+```sh
+runAlignImages -F .
+```
+in the working directory. Otherwise provide full path.
+
+In most cases, this works very well. A good example is:
+
+![image-20200928145118596](Running_pyHiM.assets/image-20200928145118596.png)
+
+
+Expections are:
+
+1. there is a bit of crap in one cycle that distorts the cross correlation. This is not addressed currently.
+2. The cross correlation is biased towards a bright spot in the image that is shifted with respect to the others. This can be addressed by adapting thresholds.
+3. There is a deformation in the sample that cannot be corrected by a global translation. See solution in LocalDriftCorrection (below)
+
+##### Adapting thresholds
+The function will first take the pixels whose intensities reside within the ```lower_threshold``` and the ```higher_threshold``` highest pixel intensities. This reduces problems with intense backgrounds skewing the cross-correlation.
+By default, the values are ```lower_threshold=0.999``` and the ```higher_threshold=0.9999999```.
+
+In the example below a bright spot is affecting the alignment. 
+
+
+In this case this can be solved by using lower thresholds, for instance ```lower_threshold=0.99``` and the ```higher_threshold=0.999```.
+
+
+#####  LocalDriftCorrection
+
+Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
+
+![image-20200928150007248](Running_pyHiM.assets/image-20200928150007248.png)
+
+
+
+
+
+The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
+
+To invoke local drift correction, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .``` in the working directory or provide full path.
+
+
+
+#### Contamination in one cycle
+
+This is not addressed yet.
+
+Example: left image is a 2D projection of a fiducial without contamination. The right panel a fiducial with a contamination in the top right.
+
+![image-20200928145733668](Running_pyHiM.assets/image-20200928145733668.png)
+
+
+
+#### 3D fits of barcode positions
+
+Barcode 3D positions are now calculated as follows.
+
+First ASTROPY calculates the 2D positions using 2D projected images.
+
+Then the ```fittingSession.refitFolders``` class function draws a subVolume around each localized barcode (default: 7x7 window), estimates the axial intensity profile, substracts background, calculates the z position by calculating the weighted moment, then uses it as a seed to Gaussian fit the axial intensity distribution and find a better estimate of the z-position based on Gaussian fitting.
+Finally, the localizations are filtered by following various criteria
+
+- the residual of the fit has to be small (see parameter in infoList)
+- the difference between Moment and Gaussian positions has to me small (see parameter in infoList)
+- the sigma of the Gaussian fit has to be smaller than a threshold (see parameter in infoList)
+
+The results for any given ROI and barcode appear as a figure with two subplots where these values are shown. The dots in black represent the spots that will be kept for further analysis.
+
+![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
+
+### 
 
 ### Process second channel (i.e RNA, segments, etc)
 
@@ -277,29 +394,7 @@ Invoke using the ```--parallel``` flag in ```pyHiM.py```.
 
 Go to your browser and open ```http://localhost:8787``` to see the progress.
 
-#### MakeProjections
 
-This uses the Threadpool. The gain for a small number of files is zero. It seems, at the moment, to be marginal for a large number of files. I imaging the reason is that the rate-limiting factor is loading 3D stacks from disk and this process is serialized by the OS. So if you do all computations in the same cluster, all the threads need to go to though the same bottleneck. I will continue searching if this the case and whether there is a way round it.
-
-#### LocalDriftCorrection
-
-To invoke local drift correction, use the ```--localAlignment``` flag
-
-#### 3D fits of barcode positions
-
-Barcode 3D positions are now calculated as follows.
-
-First ASTROPY calculates the 2D positions using 2D projected images.
-
-Then the ```fittingSession.refitFolders``` class function draws a subVolume around each localized barcode (default: 7x7 window), estimates the axial intensity profile, substracts background, calculates the z position by calculating the weighted moment, then uses it as a seed to Gaussian fit the axial intensity distribution and find a better estimate of the z-position based on Gaussian fitting.
-Finally, the localizations are filtered by following various criteria
-- the residual of the fit has to be small (see parameter in infoList)
-- the difference between Moment and Gaussian positions has to me small (see parameter in infoList)
-- the sigma of the Gaussian fit has to be smaller than a threshold (see parameter in infoList)
-
-The results for any given ROI and barcode appear as a figure with two subplots where these values are shown. The dots in black represent the spots that will be kept for further analysis.
-
-![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
 ### zipping and erasing run
 
@@ -333,7 +428,7 @@ Now, you can run ```processHiMmatrix.py``` locally. You should setup your files 
 
 containing each of the analysis from different embryos of the same experiment. Now, in this directory, you should create a file called ```folders2Load.json``` with the following:
 
-​```python
+```python
 {
     "wt_docTAD": {
         "Folders": [
@@ -357,11 +452,13 @@ containing each of the analysis from different embryos of the same experiment. N
 }
 ```
 
+```
+
 This file contains the directories with the data to be analyzed and some parameters for the analysis (more on this later).
 
 Go to the root folder (```/mnt/disk2/marcnol/data/Experiment_19```) and run
 
-```bash
+​```bash
  processHiMmatrix.py
 ```
 
