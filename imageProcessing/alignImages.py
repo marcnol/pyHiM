@@ -24,6 +24,9 @@ from dask.distributed import Client, get_client
 
 from skimage.feature.register_translation import _upsampled_dft
 
+from astropy.stats import SigmaClip
+from photutils import Background2D, MedianBackground
+
 from imageProcessing.imageProcessing import (
     Image,
     save2imagesRGB,
@@ -38,6 +41,9 @@ from fileProcessing.fileManagement import (
 from astropy.table import Table
 from scipy.ndimage import shift as shiftImage
 
+# to remove in a future version
+import warnings
+warnings.filterwarnings("ignore")
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -95,6 +101,22 @@ def saveImageAdjusted(fileName, fileNameMD, image1):
     plt.close()
 
 
+def removesThreshold(im,param):
+    # threshold_over_std = param.param["segmentedObjects"]["threshold_over_std"]
+    # fwhm = param.param["segmentedObjects"]["fwhm"]
+    # brightest = param.param["segmentedObjects"]["brightest"]  # keeps brightest sources
+
+    # estimates inhomogeneous background
+    # sigma_clip = SigmaClip(sigma=3.0)
+    sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
+    bkg_estimator = MedianBackground()
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+
+    im1_bkg_substracted = im - bkg.background
+    
+    return im1_bkg_substracted
+
+
 def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbose):
     """
     Uses preloaded ImReference Object and aligns it against filename
@@ -136,6 +158,10 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     # Normalises images
     image1_uncorrected = imReference.data_2D / imReference.data_2D.max()
     image2_uncorrected = Im2.data_2D / Im2.data_2D.max()
+
+    # removes inhomogeneous threshold
+    image1_uncorrected = removesThreshold(image1_uncorrected,param)
+    image2_uncorrected = removesThreshold(image2_uncorrected,param)
     
     if "lower_threshold" in param.param["alignImages"].keys():
         lower_threshold = param.param["alignImages"]["lower_threshold"]

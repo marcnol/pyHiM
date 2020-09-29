@@ -193,8 +193,8 @@ class Image:
         if save and not show:
             fig.add_axes(ax)
             ax.imshow(self.data_2D, origin="lower", cmap="Greys_r", norm=norm)
-            plt.savefig(outputName)
-            plt.close()
+            fig.savefig(outputName)
+            plt.close(fig)
 
     def removesBackground2D(self, normalize=False):
         sigma_clip = SigmaClip(sigma=3.0)
@@ -346,9 +346,9 @@ def save2imagesRGB(I1, I2, outputFileName):
     ax1.imshow(RGB)
     ax1.axis("off")
    
-    plt.savefig(outputFileName)
+    fig.savefig(outputFileName)
 
-    plt.close()
+    plt.close(fig)
 
 
 def saveImage2Dcmd(image, fileName, log):
