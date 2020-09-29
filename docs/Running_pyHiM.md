@@ -216,7 +216,7 @@ in the working directory. Otherwise provide full path.
 
 In most cases, this works very well. A good example is:
 
-![image-20200928145118596](Running_pyHiM.assets/image-20200928145118596.png)
+<img src="Running_pyHiM.assets/image-20200929135403059.png" alt="image-20200929135403059" style="zoom:150%;" />
 
 
 
@@ -282,6 +282,8 @@ To invoke local drift correction, use the ```--localAlignment``` flag when you c
 #### Contamination in one cycle
 
 This is not addressed yet.
+
+<u>**Futures:** This may need that we enable the use of a subregion within the image (center? with a user-defined box size?) for the alignment, instead of the full image.</u>
 
 Example: left image is a 2D projection of a fiducial without contamination. The right panel a fiducial with a contamination in the top right.
 
