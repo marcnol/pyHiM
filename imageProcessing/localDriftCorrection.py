@@ -218,6 +218,26 @@ def pad_images_to_same_size(images):
 
     return images_padded
 
+def plotMontageImage(montage2DReference,montage2DCorrected,outputFileName,fileNameMD,fileInformation,tag="_Corrected.png"):
+    fig, ax1 = plt.subplots()
+    fig.set_size_inches((30, 30))
+    
+    montage2DReference = montage2DReference/montage2DReference.max()
+    montage2DCorrected = montage2DCorrected/montage2DCorrected.max()
+    
+    sz = montage2DReference.shape
+
+    nullImage = np.zeros(sz)
+    RGB = np.dstack([montage2DReference, montage2DCorrected, nullImage])
+
+    ax1.imshow(RGB)
+    ax1.axis("off")
+    fig.savefig(outputFileName + tag)
+    plt.close(fig)
+
+    writeString2File(fileNameMD,fileInformation+"\n![]({})\n".format(outputFileName + tag),"a")
+
+
 def localDriftCorrection_plotsLocalAlignments(
     imageListCorrected, imageListunCorrected, imageListReference, log1, dataFolder, ROI, barcode
 ):
@@ -240,9 +260,7 @@ def localDriftCorrection_plotsLocalAlignments(
     None.
 
     """
-    outputFileName = (
-        dataFolder.outputFolders["alignImages"] + os.sep + "localDriftCorrection_" + "ROI:" + ROI + "barcode:" + barcode
-    )
+    outputFileName = (dataFolder.outputFolders["alignImages"] + os.sep + "localDriftCorrection_" + "ROI:" + ROI + "barcode:" + barcode)
 
     imageListCorrectedPadded = pad_images_to_same_size(imageListCorrected)
     imageListunCorrectedPadded = pad_images_to_same_size(imageListunCorrected)
@@ -252,35 +270,11 @@ def localDriftCorrection_plotsLocalAlignments(
     montage2DCorrected = montage(imageListCorrectedPadded)
     montage2DunCorrected = montage(imageListunCorrectedPadded)
 
-    fig = plt.figure()
-    fig.set_size_inches((30, 30))
-    plt.imshow(montage2DReference, cmap="Blues", alpha=0.5)
-    plt.imshow(montage2DunCorrected, cmap="Reds", alpha=0.5)
-    plt.axis("off")
-    plt.savefig(outputFileName + "_unCorrected.png")
-    plt.close()
-    writeString2File(
-        log1.fileNameMD,
-        "Corrected **global** drift for ROI: {} barcode:{} \n ![]({})\n".format(
-            ROI, barcode, outputFileName + "_unCorrected.png"
-        ),
-        "a",
-    )
+    fileInformation = "**uncorrected** drift for ROI: {} barcode:{}".format(ROI, barcode)
+    plotMontageImage(montage2DReference,montage2DunCorrected,outputFileName,log1.fileNameMD,fileInformation,tag="_uncorrected.png")
 
-    fig = plt.figure()
-    fig.set_size_inches((30, 30))
-    plt.imshow(montage2DReference, cmap="Blues", alpha=0.5)
-    plt.imshow(montage2DCorrected, cmap="Reds", alpha=0.5)
-    plt.axis("off")
-    plt.savefig(outputFileName + "_Corrected.png")
-    plt.close()
-    writeString2File(
-        log1.fileNameMD,
-        "Corrected **global+local** drift for ROI: {} barcode:{}\n ![]({})\n".format(
-            ROI, barcode, outputFileName + "_Corrected.png"
-        ),
-        "a",
-    )
+    fileInformation = "**corrected** drift for ROI: {} barcode:{}".format(ROI, barcode)
+    plotMontageImage(montage2DReference,montage2DCorrected,outputFileName,log1.fileNameMD,fileInformation,tag="_corrected.png")
 
     del montage2DReference, montage2DCorrected, imageListReferencePadded, imageListCorrectedPadded
     del imageListReference, imageListCorrected
