@@ -323,13 +323,33 @@ def save2imagesRGB(I1, I2, outputFileName):
     # plt.close()
 
     
-    I1, I2 = I1 / I1.max(), I2 / I2.max()
-    fig, ax = plt.subplots()
-    plt.figure(figsize=(30, 30))
-    RGB_falsecolor_image = np.dstack([I1, I2, np.zeros([2048, 2048])])
-    plt.imshow(RGB_falsecolor_image)
+    # I1, I2 = I1 / I1.max(), I2 / I2.max()
+    # fig, ax = plt.subplots()
+    # plt.figure(figsize=(30, 30))
+    # RGB_falsecolor_image = np.dstack([I1, I2, np.zeros([2048, 2048])])
+    # plt.imshow(RGB_falsecolor_image)
+    # plt.savefig(outputFileName)
+    # plt.close()
+
+    sz = I1.shape
+    I1, I2 = I1 / I1.max(), I2 / I2.max()   
+
+    I1,_,_,_,_ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
+    I2,_,_,_,_ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
+    
+    fig, ax1 = plt.subplots()
+    fig.set_size_inches((30, 30))
+   
+    nullImage = np.zeros(sz)
+   
+    RGB = np.dstack([I1, I2, nullImage])
+    ax1.imshow(RGB)
+    ax1.axis("off")
+   
     plt.savefig(outputFileName)
+
     plt.close()
+
 
 def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
