@@ -69,16 +69,19 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
         (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
     )  # for some reason sources are always displays 1/2 px from center of spot
 
+    # percent = 99.99 % this is too restrictive and only shows the top intensities
+    percent = 99.5
+    
     apertures = CircularAperture(positions, r=4.0)
-    norm = simple_norm(im, "sqrt", percent=99.99)
+    norm = simple_norm(im, "sqrt", percent=percent)
     ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
     apertures.plot(color="blue", lw=1.5, alpha=0.35)
     
     ax.set_xlim(0, im.shape[1] - 1)
     ax.set_ylim(0, im.shape[1] - 1)
 
-    plt.savefig(outputFileName + "_segmentedSources.png")
-    plt.close()
+    fig.savefig(outputFileName + "_segmentedSources.png")
+    plt.close(fig)
     
     writeString2File(
         log1.fileNameMD,
