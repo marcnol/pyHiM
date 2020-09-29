@@ -19,15 +19,15 @@ $ processHiMmatrix.py -F rootFolder
 # =============================================================================q
 
 import numpy as np
-import os
+import os, sys
 import json
 from datetime import datetime
 import argparse
 import csv
 
-from fileManagement import writeString2File
+from fileProcessing.fileManagement import writeString2File
 
-from HIMmatrixOperations import (
+from matrixOperations.HIMmatrixOperations import (
     loadsSCdata,
     plotsEnsemble3wayContactMatrix,
     loadsSCdataMATLAB,
@@ -35,36 +35,28 @@ from HIMmatrixOperations import (
     plotsInversePWDmatrix,
     plotsSingleContactProbabilityMatrix,
     plotsEnsembleContactProbabilityMatrix,
-    
 )
 
 # to remove in a future version
 import warnings
 
-warnings.filterwarnings("ignore")
+# warnings.filterwarnings("ignore")
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================q
 
-def joinsListArrays(ListArrays,axis=0):
-    joinedArray=np.zeros(0)
+
+def joinsListArrays(ListArrays, axis=0):
+    joinedArray = np.zeros(0)
     for iArray in ListArrays:
-        if joinedArray.shape[0]==0:
+        if joinedArray.shape[0] == 0:
             joinedArray = iArray
         else:
-            joinedArray = np.concatenate((joinedArray,iArray) ,axis=axis)
+            joinedArray = np.concatenate((joinedArray, iArray), axis=axis)
     return joinedArray
-    
-   
-# =============================================================================
-# MAIN
-# =============================================================================
 
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    # [parsing arguments]
+def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
@@ -75,15 +67,15 @@ if __name__ == "__main__":
     parser.add_argument("--matlab", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
+    parser.add_argument("--pixelSize", help="pixelSize in um")
 
+    p={}
+    
     args = parser.parse_args()
     if args.rootFolder:
-        rootFolder = args.rootFolder
+        p["rootFolder"] = args.rootFolder
     else:
-        rootFolder = "."
-
-    p = {}
-    p["pixelSize"] = 0.1
+        p["rootFolder"] = "."
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -115,6 +107,21 @@ if __name__ == "__main__":
     else:
         p["getStructure"] = False
 
+    if args.pixelSize:
+        p["pixelSize"] = float(args.pixelSize)
+    else:
+        p["pixelSize"] = 0.1
+
+    return p
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+    begin_time = datetime.now()
+
+    # [parsing arguments]
+    p=parseArguments()    
 
     # [ initialises MD file]
     now = datetime.now()
@@ -122,15 +129,18 @@ if __name__ == "__main__":
     fileNameRoot = "processHiMmatrixAnalysis_"
 
     # [ Lists and loads datasets from different embryos]
-    fileNameListDataJSON = rootFolder + os.sep + p["parametersFileName"]
+    fileNameListDataJSON = p["rootFolder"] + os.sep + p["parametersFileName"]
     print("\n--------------------------------------------------------------------------")
     if os.path.exists(fileNameListDataJSON):
         with open(fileNameListDataJSON) as json_file:
             ListData = json.load(json_file)
         print("Loaded JSON file with {} datasets from {}\n".format(len(ListData), fileNameListDataJSON))
+    else:
+        print("File not found: {}".format(fileNameListDataJSON))
+        sys.exit()    
 
     # [ creates output folder]
-    p["outputFolder"] = rootFolder + os.sep + "scHiMmatrices"
+    p["outputFolder"] = p["rootFolder"] + os.sep + "scHiMmatrices"
     if not os.path.exists(p["outputFolder"]):
         os.mkdir(p["outputFolder"])
         print("Folder created: {}".format(p["outputFolder"]))
@@ -139,14 +149,18 @@ if __name__ == "__main__":
     for datasetName in list(ListData.keys()):
 
         # [loads SC matrices]
-        if p["format"]=='pyHiM':
-            print('>>> Loading pyHiM-formatted dataset')
-            SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName, SClabeledCollated = loadsSCdata(ListData, datasetName, p)
-        elif p["format"]=='matlab':
-            print('>>> Loading MATLAB-formatted dataset')
+        if p["format"] == "pyHiM":
+            print(">>> Loading pyHiM-formatted dataset")
+            SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName, SClabeledCollated = loadsSCdata(
+                ListData, datasetName, p
+            )
+        elif p["format"] == "matlab":
+            print(">>> Loading MATLAB-formatted dataset")
             SCmatrixCollated, uniqueBarcodes, runName, SClabeledCollated = loadsSCdataMATLAB(ListData, datasetName, p)
 
-        fileNameMD = rootFolder + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
+        fileNameMD = (
+            p["rootFolder"] + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
+        )
         writeString2File(fileNameMD, "# Post-processing of Hi-M matrices", "w")
         writeString2File(fileNameMD, "**dataset: {}** - **Cells: {}**".format(datasetName, p["action"]), "a")
         p["SClabeledCollated"] = SClabeledCollated
@@ -156,9 +170,15 @@ if __name__ == "__main__":
             writeString2File(fileNameMD, "## single cell PWD matrices", "a")
             print(">>> Producing {} PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsSinglePWDmatrices(
-                SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], p, fileNameMD, datasetName=datasetName,
+                SCmatrixCollated,
+                uniqueBarcodes,
+                runName,
+                ListData[datasetName],
+                p,
+                fileNameMD,
+                datasetName=datasetName,
             )
-            
+
             # plots histograms for each dataset
             # for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated, uniqueBarcodes):
             #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)
@@ -167,7 +187,13 @@ if __name__ == "__main__":
             writeString2File(fileNameMD, "## single cell inverse PWD matrices", "a")
             print(">>> Producing {} inverse PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsInversePWDmatrix(
-                SCmatrixCollated, uniqueBarcodes, runName, ListData[datasetName], p, fileNameMD, datasetName=datasetName,
+                SCmatrixCollated,
+                uniqueBarcodes,
+                runName,
+                ListData[datasetName],
+                p,
+                fileNameMD,
+                datasetName=datasetName,
             )
 
             # [Plots contact probability matrices for each dataset]
@@ -196,7 +222,7 @@ if __name__ == "__main__":
                 datasetName=datasetName,
             )
 
-            anchors=ListData[datasetName]['3wayContacts_anchors']
+            anchors = ListData[datasetName]["3wayContacts_anchors"]
             anchors = [a - 1 for a in anchors]  # convert to zero-based
             sOut = "Probability"  # Probability or Counts
             writeString2File(fileNameMD, "## Ensemble 3way contacts", "a")
@@ -223,16 +249,19 @@ if __name__ == "__main__":
 
         # creates outputFileName root
         outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"]
-        
+
         # saves npy arrays
-        np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
-        np.save(outputFileName + "_SCmatrixCollated.npy", joinsListArrays(SCmatrixCollated,axis=2))
-        np.save(outputFileName + "_SClabeledCollated.npy", joinsListArrays(SClabeledCollated,axis=0))
+        if 'SCmatrixCollatedEnsemble' in locals():
+            np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
+
+        np.save(outputFileName + "_SCmatrixCollated.npy", joinsListArrays(SCmatrixCollated, axis=2))
+        np.save(outputFileName + "_SClabeledCollated.npy", joinsListArrays(SClabeledCollated, axis=0))
 
         # saves lists
-        with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow(commonSetUniqueBarcodes)
+        if 'SCmatrixCollatedEnsemble' in locals():
+            with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
+                spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
+                spamwriter.writerow(commonSetUniqueBarcodes)
 
         p["SClabeledCollated"] = []
         with open(outputFileName + "_parameters.json", "w") as f:
@@ -241,40 +270,5 @@ if __name__ == "__main__":
         with open(outputFileName + "_runName.csv", "w", newline="") as csvfile:
             spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
             spamwriter.writerow(runName)
-        
+
         print("Finished execution")
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

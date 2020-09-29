@@ -1,18 +1,26 @@
 {
     "acquisition": {
+        "DAPI_channel": "ch00",
+        "RNA_channel": "ch01",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+        "barcode_channel": "ch01",
+        "fiducialBarcode_channel": "ch00",
+        "fiducialDAPI_channel": "ch02",
         "label": "barcode",
+        "pixelSizeXY": 0.1,
+        "pixelSizeZ": 0.25,        
         "positionROIinformation": 3
     },
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-        "referenceFiducial": "RT33"
-    },
-    "image": {
-        "claheGridH": 8,
-        "claheGridW": 8,
-        "currentPlane": 1
+        "lower_threshold": 0.999, 
+        "higher_threshold": 0.9999999, 
+	"localAlignment": "overwrite",
+	"localShiftTolerance": 3,
+        "bezel": 20,               
+        "referenceFiducial": "RT27"
     },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
@@ -31,6 +39,12 @@
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
+        "Segment3D": "overwrite",
+        "flux_min": 1000,
+        "residual_max": 2.5,
+        "sigma_max": 5,
+        "centroidDifference_max": 5,        
+        "3DGaussianfitWindow": 3,
         "threshold_over_std": 1.0
     },
     "zProject": {
@@ -40,7 +54,7 @@
         "operation": "skip",
         "saveImage": true,
         "windowSecurity": 2,
-        "zProjectOption": "sum",
+        "zProjectOption": "MIP",
         "zmax": 59,
         "zmin": 1,
         "zwindows": 10

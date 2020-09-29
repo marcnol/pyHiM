@@ -1,53 +1,13 @@
-# list of packages needed
-pandas=1.0.1=py37h0573a6f_0
-scikit-image=0.16.2=py37h0573a6f_0
-numpy=1.18.1=py37h4f9e942_0
-numpy-base=1.18.1=py37hde5b4d6_1
-numpydoc=0.9.2=py_0
-matplotlib=3.1.3=py37_0
-matplotlib-base=3.1.3=py37hef1b27d_0
-tqdm=4.42.1=py_0
-astropy=4.0=py37h7b6447c_0
-photutils=0.7.2=py37h516909a_1
-h5py=2.10.0=py37h7918eee_0
-imageio=2.6.1=py37_0
-keras=2.3.1=py37_0
-keras-applications=1.0.8=py_1
-keras-preprocessing=1.1.0=py_0
-pillow=7.0.0=py37hb39fc2d_0
-tensorflow=2.1.0=mkl_py37h80a91df_0
-tensorflow-base=2.1.0=mkl_py37h6d63fb7_0
-tensorflow-estimator=2.1.0=pyhd54b08b_0
-tifffile=2020.2.16=py_0
-
-# minimal installation instructions
-conda install pandas scikit-image numpy matplotlib tqdm astropy
-conda install photutils -c astropy
-
-pip install roipoly
-pip install scaleogram
-
-##################
-## not really used
-##################
-tqdm: progressbar
-Keras==2.2.5
-tensorflow==1.5.0
-Pillow==6.1.0
-pandas==0.25.1
-
-#conda install -c conda-forge opencv
-conda install -c conda-forge imageio keras pillow tensorflow tifffile
-conda install -c anaconda h5py
-
-from conda (base) shell, run:
-#pip install imreg
-#pip install astroalign
-#conda install -c juliotux image_registration 
-
-##################
-## not for python
-##################
- 
-apt install texlive-xetex pandoc
-
+roipoly
+scaleogram
+opencv-python
+progress
+astropy
+photutils
+tqdm
+numpy
+matplotlib
+scikit-image
+stardist
+csbdeep
+tensorflow

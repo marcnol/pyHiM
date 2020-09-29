@@ -1,18 +1,26 @@
 {
     "acquisition": {
+        "DAPI_channel": "ch00",
+        "RNA_channel": "ch01",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+        "barcode_channel": "ch01",
+        "fiducialBarcode_channel": "ch00",
+        "fiducialDAPI_channel": "ch02",
         "label": "fiducial",
+        "pixelSizeXY": 0.1,
+        "pixelSizeZ": 0.25,        
         "positionROIinformation": 3
     },
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
+	"localAlignment": "overwrite",
+        "lower_threshold": 0.999, 
+        "higher_threshold": 0.9999999, 
+	"localShiftTolerance": 3,
+        "bezel": 20,               
         "outputFile": "alignImages.bed",
-        "referenceFiducial": "RT33"
-    },
-    "image": {
-        "claheGridH": 8,
-        "claheGridW": 8,
-        "currentPlane": 1
+        "referenceFiducial": "RT27"
     },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
@@ -40,7 +48,7 @@
         "operation": "skip",
         "saveImage": true,
         "windowSecurity": 2,
-        "zProjectOption": "sum",
+        "zProjectOption": "MIP",
         "zmax": 59,
         "zmin": 1,
         "zwindows": 10
