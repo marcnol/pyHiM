@@ -31,6 +31,7 @@ from imageProcessing.imageProcessing import (
     Image,
     save2imagesRGB,
     saveImage2Dcmd,
+    saveImageDifferences,
     align2ImagesCrossCorrelation,
 )
 
@@ -213,14 +214,15 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     # image1_corrected=image1_adjusted>0.1
     image2_corrected = image2_corrected > 0.1
     image1_uncorrected[image1_uncorrected < 0] = 0
-    save2imagesRGB(
-        image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png",
-    )
+    image2_uncorrected[image2_uncorrected < 0] = 0
+
+    save2imagesRGB(image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png")
+
+    saveImageDifferences(image1_uncorrected, image2_uncorrected, image1_uncorrected, image2_corrected_raw, outputFileName + "_referenceDifference.png")
     
     # reports image in MD file
-    writeString2File(
-        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_overlay_corrected.png"), "a",
-    )
+    writeString2File(log1.fileNameMD, "{}\n ![]({})\n ![]({})\n".format(os.path.basename(outputFileName), 
+                                                              outputFileName + "_overlay_corrected.png",outputFileName + "_referenceDifference.png"), "a")
 
     # outputs results to logfile
     alignmentOutput = dataFolder.outputFiles["alignImages"]

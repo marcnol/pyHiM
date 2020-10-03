@@ -350,6 +350,37 @@ def save2imagesRGB(I1, I2, outputFileName):
 
     plt.close(fig)
 
+def saveImageDifferences(I1, I2, I3, I4, outputFileName):
+    """
+    Overlays two images as R and B and saves them to output file
+    """
+
+    I1, I2 = I1 / I1.max(), I2 / I2.max()   
+    I3, I4 = I3 / I3.max(), I4 / I4.max()   
+
+    I1,_,_,_,_ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
+    I2,_,_,_,_ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
+    I3,_,_,_,_ = imageAdjust(I3, lower_threshold=0.5, higher_threshold=0.9999)
+    I4,_,_,_,_ = imageAdjust(I4, lower_threshold=0.5, higher_threshold=0.9999)
+
+    cmap = 'seismic'
+    
+    fig, (ax1,ax2) = plt.subplots(1,2)
+    fig.set_size_inches((60, 30))
+    
+    ax1.imshow(I1-I2, cmap=cmap)
+    ax1.axis("off")
+    ax1.set_title("uncorrected")
+    
+    ax2.imshow(I3-I4, cmap=cmap)
+    ax2.axis("off")
+    ax2.set_title("corrected")
+    
+    fig.savefig(outputFileName)
+
+    plt.close(fig)
+
+
 
 def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):

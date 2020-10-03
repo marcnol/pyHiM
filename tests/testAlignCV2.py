@@ -113,4 +113,23 @@ ax2.axis("off")
 plt.savefig(outputFileName)
 
 
+#%% difference image
+
+outputFileName = '/home/marcnol/Downloads/'+'difference_'+model+'.png'
+cmap = 'seismic'
+
+fig, (ax1,ax2) = plt.subplots(1,2)
+fig.set_size_inches((60, 30))
+
+nullImage = np.zeros(sz)
+
+ax1.imshow(image1-image2, cmap=cmap)
+ax1.axis("off")
+
+ax2.imshow(image1-im2_aligned, cmap=cmap)
+ax2.axis("off")
+
+plt.savefig(outputFileName)
+
+
 
