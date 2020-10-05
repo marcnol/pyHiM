@@ -66,7 +66,7 @@ class log:
     # returns formatted line to be outputed
     def getFullString(self, text="", status="info"):
         now = datetime.now()
-        return "{}|{}>{}".format(now.strftime("%d/%m/%Y %H:%M:%S"), status, text)
+        return "{}> {}".format(now.strftime("%d/%m/%Y %H:%M:%S"), text)
 
     def addSimpleText(self, title):
         print("{}".format(title))
@@ -220,11 +220,12 @@ class Parameters:
                 "windowSecurity": 2,
                 "zProjectOption": "sum",  # sum or MIP
             },
-            "alignImages": {
+            "alignImages": { 
                 "folder": "alignImages",  # output folder
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
+                "alignByBlock": True, # alignByBlock True will perform block alignment
                 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
                 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
                 "localShiftTolerance": 1,

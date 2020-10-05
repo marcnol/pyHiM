@@ -23,7 +23,8 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     runParameters=HiM_parseArguments()    
-
+    # runParameters['rootFolder']="/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
     session1, log1=HiM.session1, HiM.log1

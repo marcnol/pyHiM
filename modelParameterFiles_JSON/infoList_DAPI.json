@@ -15,10 +15,11 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
+        "alignByBlock": true,
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
-	"localAlignment": "overwrite",
-	"localShiftTolerance": 3,
+		"localAlignment": "overwrite",
+		"localShiftTolerance": 3,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },

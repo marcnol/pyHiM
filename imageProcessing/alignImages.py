@@ -23,6 +23,7 @@ import os, glob
 from dask.distributed import Client, get_client
 
 from skimage.feature.register_translation import _upsampled_dft
+from skimage.exposure import match_histograms
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
@@ -33,6 +34,9 @@ from imageProcessing.imageProcessing import (
     saveImage2Dcmd,
     saveImageDifferences,
     align2ImagesCrossCorrelation,
+    alignImagesByBlocks,
+    plottingBlockALignmentResults,
+    applyCorrection,    
 )
 
 from fileProcessing.fileManagement import (
@@ -174,45 +178,67 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     else:
         higher_threshold = 0.9999999
 
+    alignByBlock = param.param["alignImages"]["alignByBlock"]
+    
+    if not alignByBlock:
 
-    # calculates shift using cross-correlation
-    (
-        shift,
-        error,
-        diffphase,
-        lower_threshold,
-        I_histogram,
-        image2_corrected,
-        image1_adjusted,
-        image2_adjusted,
-    ) = align2ImagesCrossCorrelation(image1_uncorrected, 
-                                     image2_uncorrected,
-                                     lower_threshold=lower_threshold, 
-                                     higher_threshold=higher_threshold)
+        # calculates unique translation for the entire image using cross-correlation
+        (
+            shift,
+            error,
+            diffphase,
+            lower_threshold,
+            I_histogram,
+            image2_corrected,
+            image1_adjusted,
+            image2_adjusted,
+        ) = align2ImagesCrossCorrelation(image1_uncorrected, 
+                                         image2_uncorrected,
+                                         lower_threshold=lower_threshold, 
+                                         higher_threshold=higher_threshold)
+    
+        image2_corrected_raw = shiftImage(image2_uncorrected, shift)
 
-    image2_corrected_raw = shiftImage(image2_uncorrected, shift)
-    image2_corrected_raw[image2_corrected_raw < 0] = 0
+        # displays intensity histograms
+        displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
+        
+        image2_corrected_raw[image2_corrected_raw < 0] = 0
+        
+        error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw),axis=1)) 
+        
+    else:
+        # calculates block translations by cross-correlation and gets overall shift by polling
+        
+        # normalizes images
+        image1_uncorrected, image2_uncorrected=np.float32(image1_uncorrected), np.float32(image2_uncorrected)
 
-    # saveImageAdjusted(outputFileName+'_ref',log1.fileNameMD, image1_adjusted)
-    # saveImageAdjusted(outputFileName,log1.fileNameMD, image2_adjusted)
+        # matches histograms
+        image2_uncorrected=np.float32(match_histograms(image2_uncorrected,image1_uncorrected))
+        
+        # calculates block shifts and polls for most favourable shift
+        upsample_factor=100
+        blockSize=(256,256)
 
-    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName + "_ref"), lower_threshold["Im1"]))
-    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName), lower_threshold["Im2"]))
+        shift, warp_matrix, error, maskValidBlocks, relativeShifts, rmsImage, contour  = alignImagesByBlocks(image1_uncorrected,image2_uncorrected,blockSize,upsample_factor=upsample_factor)
+        diffphase=0
+        
+        plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName=outputFileName + "_block_alignments.png")
+        writeString2File(log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), 
+                                                              outputFileName + "_block_alignments.png"), "a")
 
-    log1.report(f"Detected subpixel offset (y, x): {shift} px\n")
+        image2_corrected_raw = applyCorrection(image2_uncorrected,warp_matrix)
+        
+        # saves mask of valid regions with a correction within the tolerance
+        saveImage2Dcmd(maskValidBlocks, outputFileName + "_maskValidBlocks", log1)
 
-    # displays intensity histograms
-    displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
+        image2_corrected_raw[image2_corrected_raw < 0] = 0
 
-    """
-    # saves uncrrected images to file
-    save2imagesRGB(image1_uncorrected,image2_uncorrected,
-                   outputFileName+'_overlay_uncorrected.png')
-    """
+    # log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName + "_ref"), lower_threshold["Im1"]))
+    # log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName), lower_threshold["Im2"]))
+
+    log1.report(f"Detected subpixel offset (y, x): {shift} px")
 
     # thresholds corrected images for better display and saves
-    # image1_corrected=image1_adjusted>0.1
-    image2_corrected = image2_corrected > 0.1
     image1_uncorrected[image1_uncorrected < 0] = 0
     image2_uncorrected[image2_uncorrected < 0] = 0
 
@@ -286,7 +312,8 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
             ROI = ROIList[fileNameReference]
             imReference = Image(param,log1)
             imReference.loadImage2D(fileNameReference, log1, dataFolder.outputFolders["zProject"])
-    
+            log1.report("Loading reference Image {}".format(fileNameReference))
+
             # saves reference 2D image of fiducial
             if not os.path.exists(imReference.getImageFileName(dataFolder.outputFolders["alignImages"], tag="_2d_registered")):
                 imReference.saveImage2D(
@@ -344,7 +371,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
             del imReference
     
         # saves dicShifts dictionary with shift results
-        saveJSON(dataFolder.outputFiles["dictShifts"] + ".json", dictShifts)
+        saveJSON(os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json", dictShifts)
     else:
         log1.report(
             "Reference Barcode file does not exist: {}", format(referenceBarcode),
@@ -390,7 +417,7 @@ def alignImages(param, log1, session1, fileName=None):
 
         # saves Table with all shifts
         alignmentResultsTable.write(
-            dataFolder.outputFiles["alignImages"].split(".")[0] + ".dat", format="ascii.ecsv", overwrite=True,
+            dataFolder.outputFiles["alignImages"].split(".")[0] + ".table", format="ascii.ecsv", overwrite=True,
         )
         
         del dataFolder
