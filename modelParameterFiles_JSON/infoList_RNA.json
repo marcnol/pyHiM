@@ -9,7 +9,7 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
+        "outputFile": "alignImages",
         "alignByBlock": true,
     	"localAlignment": "overwrite",
         "lower_threshold": 0.999, 

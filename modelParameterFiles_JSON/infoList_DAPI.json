@@ -14,7 +14,7 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
+        "outputFile": "alignImages",
         "alignByBlock": true,
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
@@ -31,7 +31,7 @@
     "segmentedObjects": {
         "area_max": 3000,
         "area_min": 150,
-        "background_method": "stardist",
+        "background_method": "inhomogeneous",
         "stardist_network": "stardist_nc14_nrays:128_epochs:400_grid:2",
         "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
         "background_sigma": 3.0,

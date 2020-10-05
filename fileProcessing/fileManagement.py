@@ -139,7 +139,7 @@ class folders:
         self.outputFiles["alignImages"] = (
             self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
         )
-        self.outputFiles["dictShifts"] = self.masterFolder + os.sep + param.param["alignImages"]["outputFile"]
+        self.outputFiles["dictShifts"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
         self.outputFiles["segmentedObjects"] = (
             self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
         )

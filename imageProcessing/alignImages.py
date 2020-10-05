@@ -178,8 +178,11 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     else:
         higher_threshold = 0.9999999
 
-    alignByBlock = param.param["alignImages"]["alignByBlock"]
-    
+    if "alignByBlock" in param.param["alignImages"].keys():
+        alignByBlock = param.param["alignImages"]["alignByBlock"]
+    else:
+        alignByBlock = False
+        
     if not alignByBlock:
 
         # calculates unique translation for the entire image using cross-correlation
@@ -255,7 +258,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     list2output = "{}\t{}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}".format(
         os.path.basename(fileName2), os.path.basename(fileName1), shift[0], shift[1], error, diffphase,
     )
-    writeString2File(alignmentOutput + ".bed", list2output, "a")
+    writeString2File(alignmentOutput, list2output, "a")
 
     # creates Table entry to return
     tableEntry = [
@@ -293,7 +296,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     log1.report("-------> Processing Folder: {}".format(currentFolder))
     log1.info("About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
-        dataFolder.outputFiles["alignImages"] + ".bed", "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase", "w",
+        dataFolder.outputFiles["alignImages"], "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase", "w",
     )
     
     # Finds and loads Reference fiducial information
@@ -445,13 +448,12 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
     # session
     sessionName = "registersImages"
 
-    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
-    
     # gets shift from dictionary
     # ROI = os.path.basename(fileName2Process).split("_")[positionROIinformation]
     ROI = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
 
-    label = os.path.basename(fileName2Process).split("_")[2]
+    label = os.path.basename(fileName2Process).split("_")[2] # to FIX
+    
     try:
         shiftArray = dictShifts["ROI:" + ROI][label]
     except KeyError:
@@ -520,7 +522,12 @@ def appliesRegistrations2currentFolder(currentFolder,param,dataFolder,log1,sessi
     log1.report("-------> Processing Folder: {}".format(currentFolder))
     
     # loads dicShifts with shifts for all ROIs and all labels
-    dictShifts = loadJSON(dataFolder.outputFiles["dictShifts"] + ".json")
+    dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+    dictShifts = loadJSON(dictFileName)
+    if len(dictShifts)==0:
+        log1.report("File with dictionary not found!: {}".format(dictFileName))
+    else:
+        log1.report("Dictionary File loaded: {}".format(dictFileName))
     
     # generates lists of files to process
     param.files2Process(filesFolder)

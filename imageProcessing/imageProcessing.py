@@ -129,7 +129,7 @@ class Image:
     def printImageProperties(self):
         # print("Image Name={}".format(self.fileName))
         self.log.report("Image Size={}".format(self.imageSize))
-        self.log.report("Stage position={}".format(self.stageCoordinates))
+        # self.log.report("Stage position={}".format(self.stageCoordinates))
         self.log.report("Focal plane={}".format(self.focusPlane))
 
     # processes sum image in axial direction given range
