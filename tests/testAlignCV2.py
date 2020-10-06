@@ -25,6 +25,7 @@ from tqdm import trange
 from skimage import data, segmentation,measure
 from skimage import filters
 from skimage.feature import register_translation
+from skimage.registration import phase_cross_correlation
 from scipy.ndimage import shift as shiftImage
 import cv2
 from skimage.exposure import match_histograms
@@ -46,7 +47,7 @@ def alignCV2(im1,im2,warp_mode):
         warp_matrix = np.eye(2, 3, dtype=np.float32)
     
     # Specify the number of iterations.
-    number_of_iterations = 5000;
+    number_of_iterations = 1000;
     
     # Specify the threshold of the increment
     # in the correlation coefficient between two iterations
@@ -55,12 +56,21 @@ def alignCV2(im1,im2,warp_mode):
     # Define termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
     
+    # # Run the ECC algorithm. The results are stored in warp_matrix.
+    # try:
+    #     cc, warp_matrix = cv2.findTransformECC(im1,im2,warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
+    # except TypeError:
+    #     cc, warp_matrix = cv2.findTransformECC(im1,im2,warp_matrix, warp_mode, criteria)
+
     # Run the ECC algorithm. The results are stored in warp_matrix.
     try:
         cc, warp_matrix = cv2.findTransformECC(im1,im2,warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
     except TypeError:
         cc, warp_matrix = cv2.findTransformECC(im1,im2,warp_matrix, warp_mode, criteria)
-
+    except cv2.error:
+        cc=0
+        print('Warning: find transform failed. Set warp as identity')
+        
     return cc, warp_matrix
 
 def applyCorrection(im2,warp_matrix):
@@ -91,6 +101,7 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
 
     Block1=view_as_blocks(image1,blockSize)
     Block2=view_as_blocks(image2,blockSize)
+    warp_matrix = np.eye(2, 3, dtype=np.float32)
     
     shiftImageNorm= np.zeros((Block1.shape[0],Block1.shape[1]))
     shiftedImage = np.zeros((Block1.shape[0],Block1.shape[1],2))
@@ -100,14 +111,15 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
         for j in range(Block1.shape[1]):
             
             # shift, error, diffphase = register_translation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
-            # shiftImageNorm[i,j] = LA.norm(shift)
-            # shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
-            # I2_aligned = shiftImage(I2, shift)
+            shift, error, diffphase = phase_cross_correlation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
+            shiftImageNorm[i,j] = LA.norm(shift)
+            shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
+            I2_aligned = shiftImage(I2, shift)
               
-            cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
-            shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
-            shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
-            I2_aligned = applyCorrection(I2,warp_matrix)
+            # cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
+            # shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
+            # shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
+            # I2_aligned = applyCorrection(I2,warp_matrix)
             
             rmsImage[i,j] =np.sum(np.sum(np.abs(I1-I2_aligned),axis=1)) 
             
@@ -118,8 +130,11 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
     threshold = (1+tolerance)*np.min(rmsImage)
     mask = rmsImage < threshold 
     contours = measure.find_contours(rmsImage, threshold)
-    contour = sorted(contours, key=lambda x: len(x))[-1]
-
+    try:
+        contour = sorted(contours, key=lambda x: len(x))[-1]
+    except IndexError:
+        contour=np.array([0,0])
+        
     meanShifts =  [np.mean(shiftedImage[mask,0]), np.mean(shiftedImage[mask,1])]
     warp_matrix[:,2]=meanShifts
     stdShifts =[np.std(shiftedImage[mask,0]), np.std(shiftedImage[mask,1])]
@@ -129,6 +144,19 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
 
     relativeShifts= shiftImageNorm-meanShiftNorm
     
+    # if it does not have enough pollsters to fall back to then it does a global cross correlation!
+    if np.sum(mask)<4:
+        cc, warp_matrix_global = alignCV2(I1,I2, warp_mode)
+        meanShifts_global =  warp_matrix_global[:,2]
+        I2_aligned_global = applyCorrection(I2,warp_matrix_global)
+        meanError_global = np.sum(np.sum(np.abs(I1-I2_aligned_global),axis=1)) 
+        
+        if meanError_global < meanError:
+            meanShifts = meanShifts_global             
+            warp_matrix = warp_matrix_global
+            meanError=meanError_global
+            print("Falling back to global registration")
+            
     print("Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
     
     return meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, contour
@@ -159,8 +187,11 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='B
     
 ## main
 rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject"
-imFileName1=rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00_2d.npy"
-imFileName2=rootFolder+os.sep+"scan_001_RT37_001_ROI_converted_decon_ch00_2d.npy"
+# imFileName1=rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00_2d.npy"
+# imFileName2=rootFolder+os.sep+"scan_001_RT37_001_ROI_converted_decon_ch00_2d.npy"
+
+imFileName1=rootFolder+os.sep+"scan_001_RT27_003_ROI_converted_decon_ch00_2d.npy"
+imFileName2=rootFolder+os.sep+"scan_001_RT40_003_ROI_converted_decon_ch00_2d.npy"
 
 image1 = np.load(imFileName1).squeeze()
 image2 = np.load(imFileName2).squeeze()
@@ -195,11 +226,19 @@ begin_time = datetime.now()
 
 cc, warp_matrix = alignCV2(image1,image2,warp_mode)
 im2_aligned = applyCorrection(image2,warp_matrix)
+print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+begin_time = datetime.now()
     
-print('Done registering!')
+# shift, error, diffphase = register_translation(image1,image2,upsample_factor=100)
+shift, error, diffphase = phase_cross_correlation(image1,image2,upsample_factor=100)
+im2_aligned  = shiftImage(image2, shift)
 
 print("Elapsed time: {}".format(datetime.now() - begin_time))
 
+
+print('Done registering with CV: Shifts={}'.format(warp_matrix[:,2]))
+print('Done registering with Skkimage: Shifts={}'.format(shift))
 
 # showing RGB image
 sz = image1.shape
