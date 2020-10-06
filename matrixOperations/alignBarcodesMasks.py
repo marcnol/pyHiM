@@ -5,13 +5,11 @@ Created on Fri Apr 17 09:23:36 2020
 
 @author: marcnol
 
-test fitting barcode spots to masks
+These scripts assign barcodes to DAPI masks, calculates the pair-wise distances 
+for each barcode set in a cell, and computes the single-cell PWD matrix and 
+its ensemble (which is represented).
 
-
-TO SOLVE:
-    - I need to find a simple way of specifying the genomic coordinates of 
-    barcodes for the production of the Hi-M matrix. At the moment it is just 
-    using barcodeID from the file name.
+This file contains as well some tools for representation of matrices.
     
 
 """

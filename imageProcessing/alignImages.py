@@ -215,7 +215,6 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
         (   shift, 
             error, 
-            maskValidBlocks, 
             relativeShifts, 
             rmsImage, 
             contour,
@@ -235,9 +234,9 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
        
         # saves mask of valid regions with a correction within the tolerance
-        # saveImage2Dcmd(maskValidBlocks, outputFileName + "_maskValidBlocks", log1)
-        saveImage2Dcmd(rmsImage, outputFileName + "_rmsImage", log1)
-
+        saveImage2Dcmd(rmsImage, outputFileName + "_rmsBlockMap", log1)
+        saveImage2Dcmd(relativeShifts, outputFileName + "_errorAlignmentBlockMap", log1)
+        
     image2_corrected_raw = shiftImage(image2_uncorrected, shift)
 
     image2_corrected_raw[image2_corrected_raw < 0] = 0

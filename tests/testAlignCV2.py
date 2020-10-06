@@ -32,9 +32,6 @@ from skimage.exposure import match_histograms
 
 ## Functions
     
-
-
-
 def alignCV2(im1,im2,warp_mode):
     
     # Find size of image1
@@ -112,10 +109,11 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
             
             # shift, error, diffphase = register_translation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
             shift, error, diffphase = phase_cross_correlation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
+
             shiftImageNorm[i,j] = LA.norm(shift)
             shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
             I2_aligned = shiftImage(I2, shift)
-              
+            
             # cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
             # shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
             # shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
@@ -142,8 +140,8 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
     
     meanError = np.mean(rmsImage[mask])
 
-    relativeShifts= shiftImageNorm-meanShiftNorm
-    
+    relativeShifts= np.abs(shiftImageNorm-meanShiftNorm)
+       
     # if it does not have enough pollsters to fall back to then it does a global cross correlation!
     if np.sum(mask)<4:
         cc, warp_matrix_global = alignCV2(I1,I2, warp_mode)
@@ -157,28 +155,41 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
             meanError=meanError_global
             print("Falling back to global registration")
             
+ 
     print("Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
-    
-    return meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, contour
 
-def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='BlockALignmentResults.png'):    
+    # We apply the consensous correction and we calculate how well it does for each block to get a benchmark
+    rmsBlock= np.zeros((Block1.shape[0],Block1.shape[1])) #new
+    for i in trange(Block1.shape[0]):
+        for j in range(Block1.shape[1]):
+            Block2aligned = shiftImage(Block2[i,j], meanShifts)              #new
+            rmsBlock[i,j] =np.sum(np.sum(np.abs(Block1[i,j]-Block2aligned),axis=1))/(np.sum(Block1[i,j])+np.sum(Block2aligned))  #new
+            
+    return meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, rmsBlock, contour
+
+def plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour, fileName='BlockALignmentResults.png'):    
 
     # plotting
-    fig, axes = plt.subplots(1,2)
+    fig, axes = plt.subplots(2,2)
     ax=axes.ravel()
-    fig.set_size_inches((10,5))
+    fig.set_size_inches((10,10))
     
-    cbwindow=5
-    p1 = ax[0].imshow(relativeShifts,cmap='RdBu',vmin=-cbwindow, vmax=cbwindow)
+    cbwindow=3
+    p1 = ax[0].imshow(relativeShifts,cmap='terrain',vmin=0, vmax=cbwindow)
     ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c='k')
-    ax[0].set_title("relative shift, px")
+    ax[0].set_title("abs(global-block) shifts, px")
     fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
     
     p2 = ax[1].imshow(rmsImage,cmap='terrain',vmin=np.min(rmsImage), vmax=np.max(rmsImage))
     ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c='k')
-    ax[1].set_title("RMS")
+    ax[1].set_title("RMS-image")
     fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
     
+    # add
+    p3 = ax[2].imshow(rmsBlock,cmap='terrain',vmin=np.min(rmsBlock), vmax=np.max(rmsBlock))
+    ax[2].set_title("RMS-block")
+    fig.colorbar(p3,ax=ax[2],fraction=0.046, pad=0.04)
+
     for x in range(len(ax)):
         ax[x].axis('off')
 
@@ -318,6 +329,6 @@ ax3.set_ylabel('relative shifts')
 upsample_factor=100
 blockSize=(256,256)
        
-meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, contour  = alignImagesByBlocks(image1,image2,blockSize,upsample_factor)
+meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, rmsBlock, contour  = alignImagesByBlocks(image1,image2,blockSize,upsample_factor)
 
-plottingBlockALignmentResults(relativeShifts, rmsImage, contour)
+plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour)

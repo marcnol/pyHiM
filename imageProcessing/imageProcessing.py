@@ -573,7 +573,7 @@ def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberP
     stdShifts =[np.std(shiftedImage[mask,0]), np.std(shiftedImage[mask,1])]
     meanShiftNorm = np.mean(shiftImageNorm[mask])
     meanError = np.mean(rmsImage[mask])
-    relativeShifts= shiftImageNorm-meanShiftNorm
+    relativeShifts= np.abs(shiftImageNorm-meanShiftNorm)
 
     # [calculates global shift, if it is better than the polled shift, or
     # if we do not have enough pollsters to fall back to then it does a global cross correlation!]
@@ -591,7 +591,7 @@ def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberP
     log1.info("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))            
     log1.info("*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
     
-    return np.array(meanShifts), meanError, mask, relativeShifts, rmsImage, contour
+    return np.array(meanShifts), meanError, relativeShifts, rmsImage, contour
 
 def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='BlockALignmentResults.png'):    
 
@@ -600,10 +600,10 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='B
     ax=axes.ravel()
     fig.set_size_inches((10,5))
     
-    cbwindow=5
-    p1 = ax[0].imshow(relativeShifts,cmap='RdBu',vmin=-cbwindow, vmax=cbwindow)
+    cbwindow=3
+    p1 = ax[0].imshow(relativeShifts,cmap='terrain',vmin=0, vmax=cbwindow)
     ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c='k')
-    ax[0].set_title("relative shift, px")
+    ax[0].set_title("abs(global-block) shifts, px")
     fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
     
     p2 = ax[1].imshow(rmsImage,cmap='terrain',vmin=np.min(rmsImage), vmax=np.max(rmsImage))
