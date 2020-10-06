@@ -16,6 +16,7 @@
         "operation": "overwrite",
         "outputFile": "alignImages",
         "alignByBlock": true,
+        "tolerance": 0.1,
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
 		"localAlignment": "overwrite",
