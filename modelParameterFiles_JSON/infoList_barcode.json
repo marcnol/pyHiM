@@ -14,11 +14,13 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
+        "outputFile": "alignImages",
+        "alignByBlock": true,
+        "tolerance": 0.1,
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
-	"localAlignment": "overwrite",
-	"localShiftTolerance": 3,
+		"localAlignment": "overwrite",
+		"localShiftTolerance": 3,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },

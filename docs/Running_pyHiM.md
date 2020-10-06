@@ -75,7 +75,9 @@ a typical file (DAPI example) looks like:
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-		"localAlignment": "overwrite",
+        "alignByBlock": true,
+        "tolerance": 0.1,
+        "localAlignment": "overwrite",
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
 		"localShiftTolerance": 1,
@@ -162,6 +164,8 @@ Here are some options for the different parameters and a brief description
 "operation": "overwrite",  *Options:* overwrite | skip
 "outputFile": "alignImages",
 "referenceFiducial": "RT18"
+"alignByBlock": True, # alignByBlock True will perform block alignment
+"tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
 "localShiftTolerance": 1,
@@ -249,7 +253,7 @@ optional arguments:
 
 Exceptions are:
 
-1. there is a bit of crap in one cycle that distorts the cross correlation. This is not addressed currently.
+1. there is a bit of crap in one cycle that distorts the cross correlation. This is addressed with blockAlignment.
 2. The cross correlation is biased towards a bright spot in the image that is shifted with respect to the others. This can be addressed by adapting thresholds.
 3. There is a deformation in the sample that cannot be corrected by a global translation. See solution in LocalDriftCorrection (below)
 
@@ -259,8 +263,76 @@ By default, the values are ```lower_threshold=0.999``` and the ```higher_thresho
 
 In the example below a bright spot is affecting the alignment. 
 
-
 In this case this can be solved by using lower thresholds, for instance ```lower_threshold=0.99``` and the ```higher_threshold=0.999```.
+
+
+
+##### Block Alignments
+
+Inspired by the use of blocks to restore large images, I implemented a new registration routine that:
+
+1. breaks the image into non-overlapping blocks of 256x256
+
+2. calculates the optimal translational shift between fiducial and reference in each block
+
+3. estimates the root mean square error (RMS) between the reference and the shifted image for each block (using the optimal shift for that block). This is performed for the entire image, not the block.
+
+4. finds the blocks with RMS within ```tolerance``` of the minimum RMS. For instance, if ```tolerance=0.1``` then a block with RMS 10% higher than that of the minimum is tolerated. 
+
+5. Mean and standard deviation of the XY shifts are calculated from the blocks selected in step 4. Mean shifts are used for shifting the image and getting the final RMS error (reported now in the output alignment Table).
+
+6. We re-calculate the global shift by using the entire image, and the associated RMS error. We estimate the shift errors from the polled blocks.
+
+   1.  If the global RMS error is lower than the polled RMS error (see 4) 
+   2. or if the number of blocks within the ```tolerance``` is lower than ```minNumberPollsters``` (this is not yet provided as a parameter in infoList.json, but should in future)
+   3. or if the shift errors are higher than 5 pixels (this could be added as a parameter in infoList.json if needed)
+
+   then we fall back to global alignment.
+
+To turn the routing on, just set ```alignByBlock``` to True.
+
+###### Examples
+
+<u>Nice ROI</u>
+
+![scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments.png)
+
+![scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected.png)
+
+<img src="Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference.png" alt="scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference" style="zoom:200%;" />
+
+
+
+<u>Challenging ROI</u>
+
+These are typical results in a challenging ROI with a bit of 'dirt' on the edge that typically skews the global cross correlation:
+
+Example: left image is a 2D projection of a fiducial without contamination. The right panel a fiducial with a contamination in the top right.
+
+![image-20200928145733668](Running_pyHiM.assets/image-20200928145733668.png)
+
+
+
+Alignment using global alignment:
+
+![scan_001_RT31_001_ROI_converted_decon_ch00_overlay_corrected](Running_pyHiM.assets/scan_001_RT31_001_ROI_converted_decon_ch00_overlay_corrected-1601972166646.png)
+
+![scan_001_RT31_001_ROI_converted_decon_ch00_referenceDifference](Running_pyHiM.assets/scan_001_RT31_001_ROI_converted_decon_ch00_referenceDifference-1601972172822.png)
+
+Alignment using blockAlignment:
+
+
+
+![scan_006_DAPI_001_ROI_converted_decon_ch02_block_alignments](Running_pyHiM.assets/scan_006_DAPI_001_ROI_converted_decon_ch02_block_alignments.png)
+
+![scan_001_RT31_001_ROI_converted_decon_ch00_overlay_corrected](Running_pyHiM.assets/scan_001_RT31_001_ROI_converted_decon_ch00_overlay_corrected.png)
+
+![scan_001_RT31_001_ROI_converted_decon_ch00_referenceDifference](Running_pyHiM.assets/scan_001_RT31_001_ROI_converted_decon_ch00_referenceDifference.png)
+
+
+
+
+
 
 
 #####  LocalDriftCorrection
@@ -271,23 +343,11 @@ Deformation of samples means a simple translation will not be enough to correct 
 
 
 
-
-
 The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
 
 To invoke local drift correction, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .``` in the working directory or provide full path.
 
 
-
-#### Contamination in one cycle
-
-This is not addressed yet.
-
-<u>**Futures:** This may need that we enable the use of a subregion within the image (center? with a user-defined box size?) for the alignment, instead of the full image.</u>
-
-Example: left image is a 2D projection of a fiducial without contamination. The right panel a fiducial with a contamination in the top right.
-
-![image-20200928145733668](Running_pyHiM.assets/image-20200928145733668.png)
 
 
 

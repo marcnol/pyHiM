@@ -9,11 +9,13 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages.bed",
-	"localAlignment": "overwrite",
+        "outputFile": "alignImages",
+        "alignByBlock": true,
+        "tolerance": 0.1,
+     	"localAlignment": "overwrite",
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
-	"localShiftTolerance": 3,
+		"localShiftTolerance": 3,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },

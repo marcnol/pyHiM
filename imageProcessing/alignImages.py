@@ -22,7 +22,8 @@ import matplotlib.pyplot as plt
 import os, glob
 from dask.distributed import Client, get_client
 
-from skimage.feature.register_translation import _upsampled_dft
+from skimage.registration._phase_cross_correlation import _upsampled_dft
+from skimage.exposure import match_histograms
 
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
@@ -31,7 +32,11 @@ from imageProcessing.imageProcessing import (
     Image,
     save2imagesRGB,
     saveImage2Dcmd,
+    saveImageDifferences,
     align2ImagesCrossCorrelation,
+    alignImagesByBlocks,
+    plottingBlockALignmentResults,
+    applyCorrection,    
 )
 
 from fileProcessing.fileManagement import (
@@ -173,61 +178,99 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     else:
         higher_threshold = 0.9999999
 
+    if "alignByBlock" in param.param["alignImages"].keys():
+        alignByBlock = param.param["alignImages"]["alignByBlock"]
+    else:
+        alignByBlock = False
 
-    # calculates shift using cross-correlation
-    (
-        shift,
-        error,
-        diffphase,
-        lower_threshold,
-        I_histogram,
-        image2_corrected,
-        image1_adjusted,
-        image2_adjusted,
-    ) = align2ImagesCrossCorrelation(image1_uncorrected, 
-                                     image2_uncorrected,
-                                     lower_threshold=lower_threshold, 
-                                     higher_threshold=higher_threshold)
+    if "tolerance" in param.param["alignImages"].keys():
+        tolerance = param.param["alignImages"]["tolerance"]
+    else:
+        tolerance = 0.1
+
+    if not alignByBlock:
+        # [calculates unique translation for the entire image using cross-correlation]
+        (   shift,
+            error,
+            diffphase,
+            lower_threshold,
+            I_histogram,
+            image2_corrected,
+            image1_adjusted,
+            image2_adjusted) = align2ImagesCrossCorrelation(image1_uncorrected, 
+                                         image2_uncorrected,
+                                         lower_threshold=lower_threshold, 
+                                         higher_threshold=higher_threshold)
+    
+        # displays intensity histograms
+        displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
+        
+    else:
+        # [calculates block translations by cross-correlation and gets overall shift by polling]
+        
+        # normalizes images
+        image1_uncorrected, image2_uncorrected=np.float32(image1_uncorrected), np.float32(image2_uncorrected)
+
+        # matches histograms
+        image2_uncorrected=np.float32(match_histograms(image2_uncorrected,image1_uncorrected))
+        
+        # calculates block shifts and polls for most favourable shift
+        upsample_factor=100
+        blockSize=(256,256)
+
+        (   shift, 
+            error, 
+            maskValidBlocks, 
+            relativeShifts, 
+            rmsImage, 
+            contour,
+            ) = alignImagesByBlocks(image1_uncorrected,
+                                    image2_uncorrected,
+                                    blockSize,
+                                    log1,
+                                    upsample_factor=upsample_factor,
+                                    minNumberPollsters=4,
+                                    tolerance=tolerance)
+        diffphase=0
+        
+        plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName=outputFileName + "_block_alignments.png")
+
+        writeString2File(log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), 
+                                                              outputFileName + "_block_alignments.png"), "a")
+
+       
+        # saves mask of valid regions with a correction within the tolerance
+        # saveImage2Dcmd(maskValidBlocks, outputFileName + "_maskValidBlocks", log1)
+        saveImage2Dcmd(rmsImage, outputFileName + "_rmsImage", log1)
 
     image2_corrected_raw = shiftImage(image2_uncorrected, shift)
+
     image2_corrected_raw[image2_corrected_raw < 0] = 0
+    
+    error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw),axis=1)) 
 
-    # saveImageAdjusted(outputFileName+'_ref',log1.fileNameMD, image1_adjusted)
-    # saveImageAdjusted(outputFileName,log1.fileNameMD, image2_adjusted)
+    log1.report(f"Detected subpixel offset (y, x): {shift} px")
 
-    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName + "_ref"), lower_threshold["Im1"]))
-    log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName), lower_threshold["Im2"]))
-
-    log1.report(f"Detected subpixel offset (y, x): {shift} px\n")
-
-    # displays intensity histograms
-    displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
-
-    """
-    # saves uncrrected images to file
-    save2imagesRGB(image1_uncorrected,image2_uncorrected,
-                   outputFileName+'_overlay_uncorrected.png')
-    """
-
+    # [displays and saves results] 
+    
     # thresholds corrected images for better display and saves
-    # image1_corrected=image1_adjusted>0.1
-    image2_corrected = image2_corrected > 0.1
     image1_uncorrected[image1_uncorrected < 0] = 0
-    save2imagesRGB(
-        image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png",
-    )
+    image2_uncorrected[image2_uncorrected < 0] = 0
+
+    save2imagesRGB(image1_uncorrected, image2_corrected_raw, outputFileName + "_overlay_corrected.png")
+
+    saveImageDifferences(image1_uncorrected, image2_uncorrected, image1_uncorrected, image2_corrected_raw, outputFileName + "_referenceDifference.png")
     
     # reports image in MD file
-    writeString2File(
-        log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_overlay_corrected.png"), "a",
-    )
+    writeString2File(log1.fileNameMD, "{}\n ![]({})\n ![]({})\n".format(os.path.basename(outputFileName), 
+                                                              outputFileName + "_overlay_corrected.png",outputFileName + "_referenceDifference.png"), "a")
 
     # outputs results to logfile
     alignmentOutput = dataFolder.outputFiles["alignImages"]
     list2output = "{}\t{}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}".format(
         os.path.basename(fileName2), os.path.basename(fileName1), shift[0], shift[1], error, diffphase,
     )
-    writeString2File(alignmentOutput + ".bed", list2output, "a")
+    writeString2File(alignmentOutput, list2output, "a")
 
     # creates Table entry to return
     tableEntry = [
@@ -265,7 +308,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
     log1.report("-------> Processing Folder: {}".format(currentFolder))
     log1.info("About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
-        dataFolder.outputFiles["alignImages"] + ".bed", "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase", "w",
+        dataFolder.outputFiles["alignImages"], "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase", "w",
     )
     
     # Finds and loads Reference fiducial information
@@ -284,7 +327,8 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
             ROI = ROIList[fileNameReference]
             imReference = Image(param,log1)
             imReference.loadImage2D(fileNameReference, log1, dataFolder.outputFolders["zProject"])
-    
+            log1.report("Loading reference Image {}".format(fileNameReference))
+
             # saves reference 2D image of fiducial
             if not os.path.exists(imReference.getImageFileName(dataFolder.outputFolders["alignImages"], tag="_2d_registered")):
                 imReference.saveImage2D(
@@ -342,7 +386,7 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
             del imReference
     
         # saves dicShifts dictionary with shift results
-        saveJSON(dataFolder.outputFiles["dictShifts"] + ".json", dictShifts)
+        saveJSON(os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json", dictShifts)
     else:
         log1.report(
             "Reference Barcode file does not exist: {}", format(referenceBarcode),
@@ -388,7 +432,7 @@ def alignImages(param, log1, session1, fileName=None):
 
         # saves Table with all shifts
         alignmentResultsTable.write(
-            dataFolder.outputFiles["alignImages"].split(".")[0] + ".dat", format="ascii.ecsv", overwrite=True,
+            dataFolder.outputFiles["alignImages"].split(".")[0] + ".table", format="ascii.ecsv", overwrite=True,
         )
         
         del dataFolder
@@ -416,13 +460,12 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
     # session
     sessionName = "registersImages"
 
-    # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
-    
     # gets shift from dictionary
     # ROI = os.path.basename(fileName2Process).split("_")[positionROIinformation]
     ROI = param.decodesFileParts(os.path.basename(fileName2Process))['roi']
 
-    label = os.path.basename(fileName2Process).split("_")[2]
+    label = os.path.basename(fileName2Process).split("_")[2] # to FIX
+    
     try:
         shiftArray = dictShifts["ROI:" + ROI][label]
     except KeyError:
@@ -491,7 +534,12 @@ def appliesRegistrations2currentFolder(currentFolder,param,dataFolder,log1,sessi
     log1.report("-------> Processing Folder: {}".format(currentFolder))
     
     # loads dicShifts with shifts for all ROIs and all labels
-    dictShifts = loadJSON(dataFolder.outputFiles["dictShifts"] + ".json")
+    dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+    dictShifts = loadJSON(dictFileName)
+    if len(dictShifts)==0:
+        log1.report("File with dictionary not found!: {}".format(dictFileName))
+    else:
+        log1.report("Dictionary File loaded: {}".format(dictFileName))
     
     # generates lists of files to process
     param.files2Process(filesFolder)

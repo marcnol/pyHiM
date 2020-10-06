@@ -12,6 +12,7 @@
         "positionROIinformation": 3
     },
     "alignImages": {
+        "alignByBlock": true,
         "bezel": 20,
         "folder": "alignImages",
         "higher_threshold": 0.9999999,
