@@ -106,13 +106,8 @@ def saveImageAdjusted(fileName, fileNameMD, image1):
     plt.close()
 
 
-def removesThreshold(im,param):
-    # threshold_over_std = param.param["segmentedObjects"]["threshold_over_std"]
-    # fwhm = param.param["segmentedObjects"]["fwhm"]
-    # brightest = param.param["segmentedObjects"]["brightest"]  # keeps brightest sources
+def removesInhomogeneousBackground(im,param):
 
-    # estimates inhomogeneous background
-    # sigma_clip = SigmaClip(sigma=3.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
     bkg_estimator = MedianBackground()
     bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
@@ -164,9 +159,9 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     image1_uncorrected = imReference.data_2D / imReference.data_2D.max()
     image2_uncorrected = Im2.data_2D / Im2.data_2D.max()
 
-    # removes inhomogeneous threshold
-    image1_uncorrected = removesThreshold(image1_uncorrected,param)
-    image2_uncorrected = removesThreshold(image2_uncorrected,param)
+    # removes inhomogeneous background
+    image1_uncorrected = removesInhomogeneousBackground(image1_uncorrected,param)
+    image2_uncorrected = removesInhomogeneousBackground(image2_uncorrected,param)
     
     if "lower_threshold" in param.param["alignImages"].keys():
         lower_threshold = param.param["alignImages"]["lower_threshold"]
