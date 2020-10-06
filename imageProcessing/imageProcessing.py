@@ -23,16 +23,16 @@ from numba import jit
 from skimage import exposure
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
-from skimage.feature import register_translation
+# from skimage.feature import register_translation
 from scipy.ndimage import shift as shiftImage
 
 from skimage.util.shape import view_as_blocks
 from numpy import linalg as LA
 from tqdm import trange
 from skimage import measure
-from skimage.feature import register_translation
 from scipy.ndimage import shift as shiftImage
 from skimage.exposure import match_histograms
+from skimage.registration import phase_cross_correlation
 
 
 from astropy.stats import SigmaClip
@@ -396,7 +396,7 @@ def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
         np.save(fileName, image)
         # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        log.report("Image saved to disk: {}\n".format(fileName + ".npy"), "info")
+        log.report("Image saved to disk: {}".format(fileName + ".npy"), "info")
     else:
         log.report("Warning, image is empty", "Warning")
 
@@ -454,8 +454,10 @@ def align2ImagesCrossCorrelation(image1_uncorrected,
 
     # calculates shift
     
-    shift, error, diffphase = register_translation(image1_adjusted, image2_adjusted, upsample_factor=upsample_factor)
-        
+    # shift, error, diffphase = register_translation(image1_adjusted, image2_adjusted, upsample_factor=upsample_factor)
+    shift, error, diffphase = phase_cross_correlation(image1_adjusted, image2_adjusted, upsample_factor=upsample_factor)
+    
+    
     # corrects image
     # The shift corresponds to the pixel offset relative to the reference image
     image2_corrected = shiftImage(image2_adjusted, shift)
@@ -523,12 +525,14 @@ def applyCorrection(im2,warp_matrix):
     return im2_aligned 
 
    
-def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
-
-    warp_mode = cv2.MOTION_TRANSLATION
+def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberPollsters=4, tolerance=0.1, useCV2=False,shiftErrorTolerance = 5):
 
     Block1=view_as_blocks(I1,blockSize)
     Block2=view_as_blocks(I2,blockSize)
+    
+    if useCV2:
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
+        warp_mode = cv2.MOTION_TRANSLATION
     
     shiftImageNorm= np.zeros((Block1.shape[0],Block1.shape[1]))
     shiftedImage = np.zeros((Block1.shape[0],Block1.shape[1],2))
@@ -536,27 +540,27 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
     
     for i in trange(Block1.shape[0]):
         for j in range(Block1.shape[1]):
-            
-            # using Scimage registration functions
-            # shift, error, diffphase = register_translation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
-            # shiftImageNorm[i,j] = LA.norm(shift)
-            # shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
-            # I2_aligned = shiftImage(I2, shift)
-              
-            # uses CV2 cause it is 20 times faster than Scimage
-            cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
-            shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
-            shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
-            I2_aligned = applyCorrection(I2,warp_matrix)
+            if not useCV2:
+                # using Scimage registration functions
+                shift, error, diffphase = phase_cross_correlation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
+                shiftImageNorm[i,j] = LA.norm(shift)
+                shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
+                I2_aligned = shiftImage(I2, shift)
+            else:              
+                # uses CV2 cause it is 20 times faster than Scimage
+                cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
+                shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
+                shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
+                I2_aligned = applyCorrection(I2,warp_matrix)
             
             rmsImage[i,j] =np.sum(np.sum(np.abs(I1-I2_aligned),axis=1)) 
             
-    # calculates optimal shifts by polling blocks showing the best RMS
-    tolerance=0.1
-    
+    # [calculates optimal shifts by polling blocks showing the best RMS]
+
     # threshold = filters.threshold_otsu(rmsImage)
     threshold = (1+tolerance)*np.min(rmsImage)
     mask = rmsImage < threshold 
+    
     contours = measure.find_contours(rmsImage, threshold)
     
     try:
@@ -564,18 +568,30 @@ def alignImagesByBlocks(I1,I2,blockSize,upsample_factor=100):
     except IndexError:
         contour=np.array([0,0])
             
-    meanShifts = [-np.mean(shiftedImage[mask,1]), -np.mean(shiftedImage[mask,0])]
-    warp_matrix[:,2] = [np.mean(shiftedImage[mask,0]), np.mean(shiftedImage[mask,1])]
+    # [Averages shifts and errors from regions within the tolerated blocks]
+    meanShifts = [np.mean(shiftedImage[mask,0]), np.mean(shiftedImage[mask,1])]
     stdShifts =[np.std(shiftedImage[mask,0]), np.std(shiftedImage[mask,1])]
     meanShiftNorm = np.mean(shiftImageNorm[mask])
-    
     meanError = np.mean(rmsImage[mask])
-
     relativeShifts= shiftImageNorm-meanShiftNorm
+
+    # [calculates global shift, if it is better than the polled shift, or
+    # if we do not have enough pollsters to fall back to then it does a global cross correlation!]
+    meanShifts_global, _, _= phase_cross_correlation(I1,I2,upsample_factor=100)
+    I2_aligned_global  = shiftImage(I2, shift)
+    meanError_global = np.sum(np.sum(np.abs(I1-I2_aligned_global),axis=1)) 
+
+    log1.info("Block alignment error: {}, global alignment error: {}".format(meanError,meanError_global))
+
+    if np.sum(mask)<minNumberPollsters or meanError_global<meanError or np.max(stdShifts)>shiftErrorTolerance:
+        meanShifts = meanShifts_global             
+        meanError=meanError_global
+        log1.info("Falling back to global registration")
+
+    log1.info("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))            
+    log1.info("*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
     
-    print("Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
-    
-    return np.array(meanShifts), warp_matrix, meanError, mask, relativeShifts, rmsImage, contour
+    return np.array(meanShifts), meanError, mask, relativeShifts, rmsImage, contour
 
 def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='BlockALignmentResults.png'):    
 

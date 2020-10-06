@@ -272,11 +272,22 @@ In this case this can be solved by using lower thresholds, for instance ```lower
 Inspired by the use of blocks to restore large images, I implemented a new registration routine that:
 
 1. breaks the image into non-overlapping blocks of 256x256
+
 2. calculates the optimal translational shift between fiducial and reference in each block
+
 3. estimates the root mean square error (RMS) between the reference and the shifted image for each block (using the optimal shift for that block). This is performed for the entire image, not the block.
+
 4. finds the blocks with RMS within ```tolerance``` of the minimum RMS. For instance, if ```tolerance=0.1``` then a block with RMS 10% higher than that of the minimum is tolerated. 
+
 5. Mean and standard deviation of the XY shifts are calculated from the blocks selected in step 4. Mean shifts are used for shifting the image and getting the final RMS error (reported now in the output alignment Table).
-6. We re-calculate the global shift obtaining by using the entire image, and the associated RMS error. If this error is lower than the polled error (see 4) or if the number of blocks within the ```tolerance``` is lower than ```minNumberPollsters``` (this is not yet provided as a parameter in infoList.json) then we fall back to global alignment.
+
+6. We re-calculate the global shift by using the entire image, and the associated RMS error. We estimate the shift errors from the polled blocks.
+
+   1.  If the global RMS error is lower than the polled RMS error (see 4) 
+   2. or if the number of blocks within the ```tolerance``` is lower than ```minNumberPollsters``` (this is not yet provided as a parameter in infoList.json, but should in future)
+   3. or if the shift errors are higher than 5 pixels (this could be added as a parameter in infoList.json if needed)
+
+   then we fall back to global alignment.
 
 To turn the routing on, just set ```alignByBlock``` to True.
 

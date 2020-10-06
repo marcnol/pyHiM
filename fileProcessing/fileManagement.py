@@ -226,6 +226,7 @@ class Parameters:
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
                 "alignByBlock": True, # alignByBlock True will perform block alignment
+                "tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
                 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
                 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
                 "localShiftTolerance": 1,

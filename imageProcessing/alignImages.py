@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 import os, glob
 from dask.distributed import Client, get_client
 
-from skimage.feature.register_translation import _upsampled_dft
+from skimage.registration._phase_cross_correlation import _upsampled_dft
 from skimage.exposure import match_histograms
 
 from astropy.stats import SigmaClip
@@ -182,35 +182,31 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         alignByBlock = param.param["alignImages"]["alignByBlock"]
     else:
         alignByBlock = False
-        
-    if not alignByBlock:
 
-        # calculates unique translation for the entire image using cross-correlation
-        (
-            shift,
+    if "tolerance" in param.param["alignImages"].keys():
+        tolerance = param.param["alignImages"]["tolerance"]
+    else:
+        tolerance = 0.1
+
+    if not alignByBlock:
+        # [calculates unique translation for the entire image using cross-correlation]
+        (   shift,
             error,
             diffphase,
             lower_threshold,
             I_histogram,
             image2_corrected,
             image1_adjusted,
-            image2_adjusted,
-        ) = align2ImagesCrossCorrelation(image1_uncorrected, 
+            image2_adjusted) = align2ImagesCrossCorrelation(image1_uncorrected, 
                                          image2_uncorrected,
                                          lower_threshold=lower_threshold, 
                                          higher_threshold=higher_threshold)
     
-        image2_corrected_raw = shiftImage(image2_uncorrected, shift)
-
         # displays intensity histograms
         displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
         
-        image2_corrected_raw[image2_corrected_raw < 0] = 0
-        
-        error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw),axis=1)) 
-        
     else:
-        # calculates block translations by cross-correlation and gets overall shift by polling
+        # [calculates block translations by cross-correlation and gets overall shift by polling]
         
         # normalizes images
         image1_uncorrected, image2_uncorrected=np.float32(image1_uncorrected), np.float32(image2_uncorrected)
@@ -222,25 +218,41 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         upsample_factor=100
         blockSize=(256,256)
 
-        shift, warp_matrix, error, maskValidBlocks, relativeShifts, rmsImage, contour  = alignImagesByBlocks(image1_uncorrected,image2_uncorrected,blockSize,upsample_factor=upsample_factor)
+        (   shift, 
+            error, 
+            maskValidBlocks, 
+            relativeShifts, 
+            rmsImage, 
+            contour,
+            ) = alignImagesByBlocks(image1_uncorrected,
+                                    image2_uncorrected,
+                                    blockSize,
+                                    log1,
+                                    upsample_factor=upsample_factor,
+                                    minNumberPollsters=4,
+                                    tolerance=tolerance)
         diffphase=0
         
         plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName=outputFileName + "_block_alignments.png")
+
         writeString2File(log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(outputFileName), 
                                                               outputFileName + "_block_alignments.png"), "a")
 
-        image2_corrected_raw = applyCorrection(image2_uncorrected,warp_matrix)
-        
+       
         # saves mask of valid regions with a correction within the tolerance
-        saveImage2Dcmd(maskValidBlocks, outputFileName + "_maskValidBlocks", log1)
+        # saveImage2Dcmd(maskValidBlocks, outputFileName + "_maskValidBlocks", log1)
+        saveImage2Dcmd(rmsImage, outputFileName + "_rmsImage", log1)
 
-        image2_corrected_raw[image2_corrected_raw < 0] = 0
+    image2_corrected_raw = shiftImage(image2_uncorrected, shift)
 
-    # log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName + "_ref"), lower_threshold["Im1"]))
-    # log1.report("Lower threshold for {}: {:.2f}".format(os.path.basename(outputFileName), lower_threshold["Im2"]))
+    image2_corrected_raw[image2_corrected_raw < 0] = 0
+    
+    error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw),axis=1)) 
 
     log1.report(f"Detected subpixel offset (y, x): {shift} px")
 
+    # [displays and saves results] 
+    
     # thresholds corrected images for better display and saves
     image1_uncorrected[image1_uncorrected < 0] = 0
     image2_uncorrected[image2_uncorrected < 0] = 0
