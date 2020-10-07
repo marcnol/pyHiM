@@ -26,7 +26,7 @@ from astropy.visualization import SqrtStretch, simple_norm
 
 #%% loads all images
 rootFolder="/home/marcnol/grey/Olivier/2020_08_13_Experiment_tetraspeck/Deconvolved/Tetraspeck_Scan_1"
-rootFolder  ="/mnt/grey/DATA/Olivier/2020_08_14_Experiment_Chromatic_aberration_Embryo_Locus2L/Deconvolved/Embryo_Scan_10"
+rootFolder  ="/mnt/grey/DATA/Olivier/2020_08_14_Experiment_Chromatic_aberration_Embryo_Locus2L/Deconvolved/Embryo_Scan_11"
 files=glob.glob(rootFolder + os.sep + "*.tif")
 
 print("Files to load {}\n".format("\n".join([os.path.basename(x) for x in files])))
@@ -76,7 +76,7 @@ for iRow in range(nRows):
 
 outputFileName = outputFileNameRoot + "single_ch" + ".png"
 
-percents = [99.99, 99.99, 99.9]
+percents = [97., 99.9, 99.9]
 # percents = [99.99, 99., 99.9, 99.]
 
 for ax, im, file, percent in zip(FigList,images,files, percents):
@@ -90,7 +90,8 @@ fig.savefig(outputFileName)
 # plt.close(fig)
 #%% plots RGB images 
 
-lower_threshold, higher_threshold = 0.85, 0.99
+thresholds= [[0.9, 0.99],[0.9, 0.999],[0.85, 0.999],[0.85, 0.90]]
+
 cmaps=["Blues","Greens","Reds"]
 for i in range(len(images)-2):
     fig, ax = plt.subplots()
@@ -99,10 +100,10 @@ for i in range(len(images)-2):
     fig.set_size_inches((30, 30))
     
     images2=[]
-    for x in images[i:i+3]:
+    for j,x in enumerate(images[i:i+3]):
         x=x-x.min()
         x=x/x.max()
-        x,_,_,_,_=imageAdjust(x, lower_threshold=lower_threshold, higher_threshold=higher_threshold)
+        x,_,_,_,_=imageAdjust(x, lower_threshold=thresholds[j][0], higher_threshold=thresholds[j][1])
         images2.append(x)
 
     RGB = np.dstack(images[i:i+3])
