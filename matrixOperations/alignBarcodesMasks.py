@@ -88,6 +88,72 @@ class cellID:
     #     # # plt.imshow(Masks, origin="lower", cmap="jet")
     #     # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
 
+    def testBarcodeFilter(self,i,flux_min):
+        """
+        [filters barcode localizations either by]
+
+        Parameters
+        ----------
+        i : int
+            index in barcodeMap Table
+        flux_min : float
+            Minimum flux to keep barcode localization
+
+        Returns
+        -------
+        keep : Boolean
+            True if the test is passed.
+
+        """
+        if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
+            # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
+            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
+        else:
+            # [or by reading the flux from 2D localization]
+            keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
+
+        return keep
+
+
+    def testBlockAlignment(self,i,toleranceDrift,blockSize):
+        """
+        [filters barcode per blockAlignmentMask, if existing]            
+        runs only if localAligment was not run!     
+
+        Parameters
+        ----------
+        i : int
+            index in barcodeMap Table
+        toleranceDrift : float
+            tolerance to keep barcode localization, in pixel units
+        blockSize : int
+            size of blocks used for blockAlignment.
+
+        Returns
+        -------
+        keepAlignment : Boolean
+            True if the test is passed.
+
+        """
+        y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+        x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+        keepAlignment = True
+        if not self.alignmentResultsTableRead:
+            barcodeID = 'barcode:' + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
+            barcodeROI = 'ROI:' + str(self.barcodeMapROI.groups[0]["ROI #"][i])
+            
+            if len(self.dictErrorBlockMasks)>0:
+                if barcodeROI in self.dictErrorBlockMasks.keys():
+                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
+                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
+                        keepAlignment = errorMask[int(np.floor(x_int/blockSize)),int(np.floor(y_int/blockSize))] < toleranceDrift 
+            
+            # keeps it always if barcode is fiducial
+            if  "RT" + str(self.barcodeMapROI.groups[0]["Barcode #"][i]) in self.param.param["alignImages"]["referenceFiducial"]:
+                keepAlignment=True
+        return keepAlignment 
+
+
     def alignByMasking(self):
         '''
         Assigns barcodes to masks and creates <NbarcodesinMask>
@@ -120,36 +186,18 @@ class cellID:
         # loops over barcode Table rows in a given ROI
         for i in trange(len(self.barcodeMapROI.groups[0])):
 
-            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-            
             # [filters barcode localizations either by]
-            if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
-                # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-                keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
-            else:
-                # [or by reading the flux from 2D localization]
-                keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
-         
+            keep = self.testBarcodeFilter(i,flux_min)
+        
             # [filters barcode per blockAlignmentMask, if existing]            
-            barcodeID = 'barcode:' + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
-            barcodeROI = 'ROI:' + str(self.barcodeMapROI.groups[0]["ROI #"][i])
-            keepAlignment = False
-            
-            if len(self.dictErrorBlockMasks)>0:
-                if barcodeROI in self.dictErrorBlockMasks.keys():
-                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
-                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
-                        keepAlignment = errorMask[int(np.floor(x_int/blockSize)),int(np.floor(y_int/blockSize))] < toleranceDrift 
-            
-            # keeps it always if barcode is fiducial
-            if  "RT" + str(self.barcodeMapROI.groups[0]["Barcode #"][i]) in self.param.param["alignImages"]["referenceFiducial"]:
-                keepAlignment=True
-                
+            keepAlignment = self.testBlockAlignment(i,toleranceDrift,blockSize)
+
             # applies all filters
             if keep and keepAlignment:
                 # keeps the particle if the test passed
-    
+                y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+                x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+                
                 #finds what mask label this barcode is sitting on
                 maskID = self.Masks[x_int][y_int]
     
@@ -481,12 +529,10 @@ def buildsDictionaryErrorAlignmentMasks(param,dataFolder):
     fileList = glob.glob(folder + os.sep + "*_errorAlignmentBlockMap.npy")
 
     # decodes files and builds dictionnary
-
     fileNameRegExp = param.param["acquisition"]["fileNameRegExp"]
     fileNameRegExp = fileNameRegExp.split('.')[0]
     listRE = [re.search(fileNameRegExp,os.path.basename(x).split("_errorAlignmentBlockMap.npy")[0]) for x in fileList]
     
-    #%%
     dictErrorBlockMasks = dict()
 
     for file, regExp in zip(fileList,listRE):
@@ -496,7 +542,6 @@ def buildsDictionaryErrorAlignmentMasks(param,dataFolder):
             newMask = np.load(file)
             dictErrorBlockMasks['ROI:'+str(int(regExp['roi']))]['barcode:'+regExp['cycle'].split('RT')[-1]]= newMask
 
-       #%%     
     return dictErrorBlockMasks
 
 def buildsPWDmatrix(param,
@@ -554,6 +599,8 @@ def buildsPWDmatrix(param,
                     cellROI.alignmentResultsTable = alignmentResultsTable
                     
                 cellROI.dictErrorBlockMasks = dictErrorBlockMasks
+                cellROI.alignmentResultsTableRead = alignmentResultsTableRead
+                
                 # finds what barcodes are in each cell mask    
                 cellROI.alignByMasking()
 
