@@ -18,17 +18,14 @@ This file contains as well some tools for representation of matrices.
 # IMPORTS
 # =============================================================================
 
-import glob, os
+import glob, os, sys
 import uuid
+import re
 import numpy as np
-import matplotlib.pyplot as plt
 from tqdm.contrib import tzip
-from numba import jit
+from tqdm import trange
 
 from sklearn.metrics import pairwise_distances
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import LeaveOneOut
-from sklearn.neighbors import KernelDensity
 
 from astropy.table import Table
 
@@ -36,11 +33,10 @@ from photutils.segmentation import SegmentationImage
 
 from fileProcessing.fileManagement import (
     folders,
-    isnotebook,
-    session,
     writeString2File,
-    Parameters, 
-    log)
+    )
+
+from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms
 
 # to remove in a future version
 import warnings
@@ -60,6 +56,7 @@ class cellID:
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
         self.ndims=ndims
+        self.dictErrorBlockMasks={} # contains the results from blockAlignment, if existing
         
         self.SegmentationMask = SegmentationImage(self.Masks)
         self.numberMasks = self.SegmentationMask.nlabels
@@ -94,6 +91,16 @@ class cellID:
     def alignByMasking(self):
         '''
         Assigns barcodes to masks and creates <NbarcodesinMask>
+
+
+        Returns
+        -------
+        self.barcodesinMask # dictionnary with the identities of barcodes contained in each mask.
+            Keys: 'maskID_1', 'maskID_2', and so on
+            
+        self.NbarcodesinMask # vector containing the number of barcodes for each mask
+        self.NcellsAssigned # number of cells assigned
+        self.NcellsUnAssigned # number of cells unassigned
         '''
 
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
@@ -101,19 +108,47 @@ class cellID:
             flux_min = self.param.param["segmentedObjects"]["flux_min"]
         else:
             flux_min = 0
-        print("Flux min = {}".format(flux_min))
+        if "toleranceDrift" in self.param.param["segmentedObjects"]:
+            toleranceDrift = self.param.param["segmentedObjects"]["toleranceDrift"]
+        else:
+            toleranceDrift= 100
+
+        print("Flux min = {} | ToleranceDrift = {}".format(flux_min,toleranceDrift))
+        
+        blockSize=256
         
         # loops over barcode Table rows in a given ROI
-        for i in range(len(self.barcodeMapROI.groups[0])):
+        for i in trange(len(self.barcodeMapROI.groups[0])):
+
+            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
             
+            # [filters barcode localizations either by]
             if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
+                # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
                 keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
             else:
+                # [or by reading the flux from 2D localization]
                 keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
+         
+            # [filters barcode per blockAlignmentMask, if existing]            
+            barcodeID = 'barcode:' + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
+            barcodeROI = 'ROI:' + str(self.barcodeMapROI.groups[0]["ROI #"][i])
+            keepAlignment = False
             
-            if keep:
-                y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-                x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+            if len(self.dictErrorBlockMasks)>0:
+                if barcodeROI in self.dictErrorBlockMasks.keys():
+                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
+                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
+                        keepAlignment = errorMask[int(np.floor(x_int/blockSize)),int(np.floor(y_int/blockSize))] < toleranceDrift 
+            
+            # keeps it always if barcode is fiducial
+            if  "RT" + str(self.barcodeMapROI.groups[0]["Barcode #"][i]) in self.param.param["alignImages"]["referenceFiducial"]:
+                keepAlignment=True
+                
+            # applies all filters
+            if keep and keepAlignment:
+                # keeps the particle if the test passed
     
                 #finds what mask label this barcode is sitting on
                 maskID = self.Masks[x_int][y_int]
@@ -136,6 +171,8 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
         
+        print("Assigned: {} | discarded: {}\n".format(self.NcellsAssigned,self.NcellsUnAssigned))
+    
     def searchLocalShift(self,ROI,CellID,x_uncorrected,y_uncorrected):
         '''
         Searches for local drift for current mask. If it exists then id adds it to the uncorrected coordinates
@@ -316,8 +353,6 @@ class cellID:
         self.uniqueBarcodes list of unique barcodes
         
         """
-        # print("building distance matrix")
-
         # [ builds SCdistanceTable ]
         self.buildsSCdistanceTable()
         print("Cells with barcodes found: {}".format(len(self.SCdistanceTable)))
@@ -368,290 +403,24 @@ class cellID:
 # FUNCTIONS
 # =============================================================================
 
-@jit(nopython=True)
-def findsOptimalKernelWidth(distanceDistribution):
-    bandwidths = 10 ** np.linspace(-1, 1, 100)
-    grid = GridSearchCV(KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut())
-    grid.fit(distanceDistribution[:, None])
-    return grid.best_params_
 
-@jit(nopython=True)
-def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
+def loadsLocalAlignment(dataFolder):
     '''
-    Gets the kernel density function and maximum from a distribution of PWD distances
+    reads and returns localAlignmentTable, if it exists
 
     Parameters
     ----------
-    distanceDistribution0 : nd array
-        List of PWD distances.
-    x_d : nd array
-        x grid.
-    optimizeKernelWidth : Boolean, optional
-        whether to optimize bandwidth. The default is False.
+    dataFolder : folder()
+        DESCRIPTION.
 
     Returns
     -------
-    np array
-        KDE distribution.
-    np array
-        Original distribution without NaNs
+    alignmentResultsTable : Table()
+        DESCRIPTION.
+    alignmentResultsTableRead : Boolean
+        DESCRIPTION.
 
     '''
-
-    nan_array = np.isnan(distanceDistribution0)
-
-    not_nan_array = ~nan_array
-
-    distanceDistribution = distanceDistribution0[not_nan_array]
-
-    # instantiate and fit the KDE model
-    if optimizeKernelWidth:
-        kernelWidth = findsOptimalKernelWidth(distanceDistribution)["bandwidth"]
-    else:
-        kernelWidth = 0.3
-
-    kde = KernelDensity(bandwidth=kernelWidth, kernel="gaussian")
-    
-    # makes sure the list is not full of NaNs.
-    if distanceDistribution.shape[0]>0:
-        kde.fit(distanceDistribution[:, None])
-    else:
-        return np.array([0]), np.array([0])
-    
-    # score_samples returns the log of the probability density
-    logprob = kde.score_samples(x_d[:, None])
-
-    return logprob, distanceDistribution
-
-
-@jit(nopython=True)
-def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
-    '''
-    calculates the kernel distribution and its maximum from a set of PWD distances
-
-    Parameters
-    ----------
-    SCmatrixCollated : np array 3 dims
-        SC PWD matrix.
-    bin1 : int
-        first bin.
-    bin2 : int
-        first bin.
-    pixelSize : float
-        pixel size in um
-    optimizeKernelWidth : Boolean, optional
-        does kernel need optimization?. The default is False.
-
-    Returns
-    -------
-    float
-        maximum of kernel.
-    np array
-        list of PWD distances used.
-    np array
-        kernel distribution.
-    x_d : np array
-        x grid.
-
-    '''
-    distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
-    x_d = np.linspace(0, 5, 2000)
-
-    # checks that distribution is not empty
-    if distanceDistribution0.shape[0] > 0:
-        logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
-        if logprob.shape[0]>1:
-            kernelDistribution = 10 * np.exp(logprob)
-            maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
-            return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
-        else:
-            return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
-    else:
-        return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
-
-
-def plotMatrix(
-    SCmatrixCollated,
-    uniqueBarcodes,
-    pixelSize,
-    numberROIs=1,
-    outputFileName="test",
-    logNameMD="log.md",
-    clim=1.4,
-    cm="seismic",
-    figtitle="PWD matrix",
-    cmtitle="distance, um",
-    nCells=0,
-    mode="median",
-    inverseMatrix=False,
-    cMin=0,
-    cells2Plot=[],
-):
-    Nbarcodes = SCmatrixCollated.shape[0]
-    # projects matrix by calculating median in the nCell direction
-
-    # Calculates ensemble matrix from single cell matrices
-    if len(SCmatrixCollated.shape) == 3:
-        if len(cells2Plot) == 0:
-            cells2Plot = range(SCmatrixCollated.shape[2])
-
-        if mode == "median":
-            # calculates the median of all values
-            if max(cells2Plot) > SCmatrixCollated.shape[2]:
-                print(
-                    "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                        max(cells2Plot), SCmatrixCollated.shape[2]
-                    )
-                )
-                keepPlotting = False
-            else:
-                meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:, :, cells2Plot], axis=2)
-                nCells = SCmatrixCollated[:, :, cells2Plot].shape[2]
-                # print("Dataset {} cells2plot: {}".format(figtitle, nCells))
-                # print('nCells={}'.format(nCells))
-                keepPlotting = True
-        elif mode == "KDE":
-            # performs a Kernel Estimation to calculate the max of the distribution
-            keepPlotting = True
-            meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
-            for bin1 in range(Nbarcodes):
-                for bin2 in range(Nbarcodes):
-                    if bin1 != bin2:
-                        (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
-                            SCmatrixCollated[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
-                        )
-                        meanSCmatrix[bin1, bin2] = maximumKernelDistribution
-    else:
-        if mode == "counts":
-            meanSCmatrix = SCmatrixCollated
-            keepPlotting = True
-        else:
-            meanSCmatrix = pixelSize * SCmatrixCollated
-            keepPlotting = True
-
-    if keepPlotting:
-        # Calculates the inverse distance matrix if requested in the argument.
-        if inverseMatrix:
-            meanSCmatrix = np.reciprocal(meanSCmatrix)
-
-        # plots figure
-        fig = plt.figure(figsize=(10, 10))
-        pos = plt.imshow(meanSCmatrix, cmap=cm)  # colormaps RdBu seismic
-        plt.xlabel("barcode #")
-        plt.ylabel("barcode #")
-        plt.title(
-            figtitle
-            + " | "
-            + str(meanSCmatrix.shape[0])
-            + " barcodes | n="
-            + str(nCells)
-            + " | ROIs="
-            + str(numberROIs)
-        )
-        plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
-        plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
-        cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-        cbar.minorticks_on()
-        cbar.set_label(cmtitle)
-        plt.clim(cMin, clim)
-
-        if len(outputFileName.split(".")) > 1:
-            if outputFileName.split(".")[1] != "png":
-                o=outputFileName
-                plt.savefig(outputFileName)
-            else:
-                o=outputFileName.split(".")[0] + "_HiMmatrix.png"
-                plt.savefig(o)
-        else:
-            o=outputFileName + "_HiMmatrix.png"
-            plt.savefig(o)
-
-        if not isnotebook():
-            plt.close()
-        if 'png' not in o:
-            o+=".png"
-        writeString2File(logNameMD, "![]({})\n".format(o), "a")
-    else:
-        print("Error plotting figure. Not executing script to avoid crash.")
-
-
-def plotDistanceHistograms(
-    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,
-):
-
-    if not isnotebook():
-        NplotsX = NplotsY = SCmatrixCollated.shape[0]
-    else:
-        if limitNplots == 0:
-            NplotsX = NplotsY = SCmatrixCollated.shape[0]
-        else:
-            NplotsX = NplotsY = min(
-                [limitNplots, SCmatrixCollated.shape[0]]
-            )  # sets a max of subplots if you are outputing to screen!
-
-    bins = np.arange(0, 4, 0.25)
-
-    sizeX, sizeY = NplotsX * 4, NplotsY * 4
-
-    fig, axs = plt.subplots(figsize=(sizeX, sizeY), ncols=NplotsX, nrows=NplotsY, sharex=True)
-
-    for i in range(NplotsX):
-        for j in range(NplotsY):
-            if i != j:
-                # print('Printing [{}:{}]'.format(i,j))
-                if mode == "hist":
-                    axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
-                else:
-                    (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=False
-                    )
-                    axs[i, j].fill_between(x_d, KDE, alpha=0.5)
-                    axs[i, j].plot(
-                        distanceDistribution, np.full_like(distanceDistribution, -0.01), "|k", markeredgewidth=1,
-                    )
-                    axs[i, j].vlines(maxKDE, 0, KDE.max(), colors="r")
-
-    plt.xlabel("distance, um")
-    plt.ylabel("counts")
-    plt.savefig(outputFileName + "_PWDhistograms.png")
-
-    if not isnotebook():
-        plt.close()
-
-    writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_PWDhistograms.png"), "a")
-
-@jit(nopython=True)
-def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells"):
-    # SCthresholdMatrix=iSCmatrixCollated<threshold
-
-    nX = nY = iSCmatrixCollated.shape[0]
-    nCells = iSCmatrixCollated.shape[2]
-    SCmatrix = np.zeros((nX, nY))
-
-    for i in range(nX):
-        for j in range(nY):
-            if i != j:
-                distanceDistribution = pixelSize * iSCmatrixCollated[i, j, :]
-                if norm == "nCells":
-                    probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
-                    # print('Using nCells normalisation')
-                elif norm == "nonNANs":
-                    numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
-                    if nCells == numberNANs:
-                        probability = 1
-                    else:
-                        probability = len(np.nonzero(distanceDistribution < threshold)[0]) / (nCells - numberNANs)
-                    # print('Using NonNANs normalisation {}'.format(nCells-numberNANs))
-                SCmatrix[i, j] = probability
-
-    return SCmatrix, nCells
-
-
-def buildsPWDmatrix(param,
-    currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md", ndims=2
-):
-
-    # Loads localAlignment if it exists
     localAlignmentFileName=dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat"
     if os.path.exists(localAlignmentFileName):
         alignmentResultsTable= Table.read(localAlignmentFileName, format="ascii.ecsv")
@@ -659,8 +428,28 @@ def buildsPWDmatrix(param,
     else:
         print("\n\n *** Warning: could not found localAlignment: {}\n Proceeding with only global alignments...".format(localAlignmentFileName))
         alignmentResultsTableRead=False
+        alignmentResultsTable=Table()
 
-    # Loads coordinate Tables        
+    return alignmentResultsTable, alignmentResultsTableRead
+
+def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
+    '''
+    Loads barcodeMap
+
+    Parameters
+    ----------
+    fileNameBarcodeCoordinates : string
+        filename with barcodeMap
+    ndims : int
+        either 2 or 3.
+
+    Returns
+    -------
+    barcodeMap : Table()
+    localizationDimension : int
+        either 2 or 3.
+
+    '''
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
         if ndims==3 and "zcentroidGauss" in barcodeMap.keys():
@@ -668,20 +457,71 @@ def buildsPWDmatrix(param,
         else:
             localizationDimension = 2
     else:
-        print("\n\n *** ERROR: could not found coordinates file: {}".format(fileNameBarcodeCoordinates))
-        return -1
+        print("\n\n *** ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
+        sys.exit()
+        
+    return  barcodeMap, localizationDimension
+
+def buildsDictionaryErrorAlignmentMasks(param,dataFolder):
+    """
+    Builds and returns dictionary with error alignment block masks produced during the alignment process if 
+    the 'blockAlignment' option was used
+
+    Parameters
+    ----------
+    param : Parameters()
+    dataFolder : folder()
+
+    Returns
+    -------
+    dictErrorBlockMasks : dict
+
+    """
+    folder = dataFolder.outputFolders["alignImages"] 
+    fileList = glob.glob(folder + os.sep + "*_errorAlignmentBlockMap.npy")
+
+    # decodes files and builds dictionnary
+
+    fileNameRegExp = param.param["acquisition"]["fileNameRegExp"]
+    fileNameRegExp = fileNameRegExp.split('.')[0]
+    listRE = [re.search(fileNameRegExp,os.path.basename(x).split("_errorAlignmentBlockMap.npy")[0]) for x in fileList]
     
+    #%%
+    dictErrorBlockMasks = dict()
+
+    for file, regExp in zip(fileList,listRE):
+        if 'ROI:'+str(int(regExp['roi'])) not in dictErrorBlockMasks.keys():
+            dictErrorBlockMasks['ROI:'+str(int(regExp['roi']))]= {}
+        if 'barcode:'+regExp['cycle'].split('RT')[-1] not in dictErrorBlockMasks.keys():
+            newMask = np.load(file)
+            dictErrorBlockMasks['ROI:'+str(int(regExp['roi']))]['barcode:'+regExp['cycle'].split('RT')[-1]]= newMask
+
+       #%%     
+    return dictErrorBlockMasks
+
+def buildsPWDmatrix(param,
+    currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md", ndims=2
+):
+
+    # Loads localAlignment if it exists
+    alignmentResultsTable, alignmentResultsTableRead = loadsLocalAlignment(dataFolder)
+
+    # Loads coordinate Tables      
+    barcodeMap, localizationDimension = loadsBarcodeMap(fileNameBarcodeCoordinates, ndims)
+
+
+    # Builds dictionnary with filenames of errorAlignmentBlockMasks for each ROI and each barcode
+    dictErrorBlockMasks = buildsDictionaryErrorAlignmentMasks(param,dataFolder)
+   
     # processes tables 
     barcodeMapROI = barcodeMap.group_by("ROI #")
-
-    SCmatrixCollated, uniqueBarcodes = [], []
     numberROIs = len(barcodeMapROI.groups.keys)
-    filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
-
-    print("\nROIs detected: {}".format(barcodeMapROI.groups.keys))
-    processingOrder = 0
+    print("\nROIs detected: {}".format(numberROIs))
     
     # loops over ROIs
+    filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
+    SCmatrixCollated, uniqueBarcodes, processingOrder = [], [], 0
+
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
@@ -713,6 +553,7 @@ def buildsPWDmatrix(param,
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
                     
+                cellROI.dictErrorBlockMasks = dictErrorBlockMasks
                 # finds what barcodes are in each cell mask    
                 cellROI.alignByMasking()
 

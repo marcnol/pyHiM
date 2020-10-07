@@ -108,7 +108,8 @@ a typical file (DAPI example) looks like:
         "sigma_max": 5,
         "centroidDifference_max": 5,        
         "3DGaussianfitWindow": 3,
-        "threshold_over_std": 1.0
+        "threshold_over_std": 1.0,
+        "toleranceDrift":1,
     },
     "zProject": {
         "display": true,
@@ -200,6 +201,7 @@ Here are some options for the different parameters and a brief description
 "sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
 "centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
 "3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
+"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
 ```
 
 #### MakeProjections
@@ -290,6 +292,14 @@ Inspired by the use of blocks to restore large images, I implemented a new regis
    then we fall back to global alignment.
 
 To turn the routing on, just set ```alignByBlock``` to True.
+
+**Important note**: When you use blockAlignment, pyHiM will produce 8x8 output matrices with the abs(shift-global_shift) maps. These will be stored in ```alignImages``` folder with names such as ```scan_006_DAPI_003_ROI_converted_decon_ch02_errorAlignmentBlockMap.npy```.
+
+When alignBarcodesMasks() runs, it will search for this files. If it finds them it will filter out barcode localizations that displayed an absolute drift larger than the ```toleranceDrift``` parameter in the ```segmentedObjects``` segment of the ```infoList_DAPI.json``` file.
+
+So if you see a large drop in the barcodes that are used (this can be seen by matrices with empty rows/columns) it may be that your inaccurate barcode localizations are being dropped. Check for this the ```Assigned: 266 | discarded: 285``` outputted by alignBarcodesMasks(), and change ```toleranceDrift``` if needed.
+
+
 
 ###### Examples
 
