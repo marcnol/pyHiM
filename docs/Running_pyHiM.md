@@ -359,9 +359,7 @@ To invoke local drift correction, use the ```--localAlignment``` flag when you c
 
 
 
-
-
-##### Segmenting masks
+#### Segmenting masks
 
 To manually segment masks, run
 
@@ -384,7 +382,7 @@ optional arguments:
 
 
 
-#### 3D fits of barcode positions
+##### 3D fits of barcode positions
 
 Barcode 3D positions are now calculated as follows.
 
@@ -401,7 +399,6 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 ![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
-### 
 
 ##### Align DAPI masks and barcodes
 
@@ -425,16 +422,39 @@ optional arguments:
 ```
 
 
-
 <u>Example outputs:</u>
 
 Mean pairwise distance matrix. By default means are calculated using Kernel Density Estimators of the PWD distributions.
 
-![buildsPWDmatrix_HiMmatrix](Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png)
+<img src="Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png" alt="buildsPWDmatrix_HiMmatrix" style="zoom:50%;" />
 
 In addition, the function outputs the distribution of distances for each combination of barcodes:
 
-![buildsPWDmatrix_PWDhistograms](Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png)
+<img src="Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png" alt="buildsPWDmatrix_PWDhistograms" style="zoom: 25%;" />
+
+
+##### Filtering barcode localizations
+
+There are several filters:
+1. Properties of 2D localization algorithm (e.g. brightness)
+
+2. Accuracy of 3D localization: sigma of fit, correlation between z-position from weighted moment and from gaussian fit, etc
+
+3. Accuracy of drift correction in the region where the barcode was localized. 
+
+   This is only applied if LocalDrift correction was **not** run. 
+
+   
+
+*Examples.*
+
+| Filtering | Matrix |
+| --- |  ---- |
+| Unfiltered matrix. Total barcode localizations: 18700 | <img src="Running_pyHiM.assets/buildsPWDmatrix.png" alt="buildsPWDmatrix" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```. Barcode localizations kept: 12377 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrixFilterBlockDrift.png" alt="buildsPWDmatrixFilterBlockDrift" style="zoom:25%;" />|
+| ```toleranceDrift = 1px```  ```Flux = 100```. Barcode localizations kept: 4528 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux100.png" alt="buildsPWDmatrix_filterFlux100" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```  ```Flux = 200```. Barcode localizations kept: 4528 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux.png" alt="buildsPWDmatrix_filterFlux" style="zoom:25%;" />|
+|```toleranceDrift = 1px``` ```Flux = 1000```. Barcode localizations kept: 1923 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux1000.png" alt="buildsPWDmatrix_filterFlux1000" style="zoom:25%;" />|
 
 
 

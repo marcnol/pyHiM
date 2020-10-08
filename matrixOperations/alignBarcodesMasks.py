@@ -88,9 +88,9 @@ class cellID:
     #     # # plt.imshow(Masks, origin="lower", cmap="jet")
     #     # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
 
-    def testBarcodeFilter(self,i,flux_min):
+    def filterLocalizations_Quality(self,i,flux_min):
         """
-        [filters barcode localizations either by]
+        [filters barcode localizations either by brigthness or 3D localization accuracy]
 
         Parameters
         ----------
@@ -115,7 +115,7 @@ class cellID:
         return keep
 
 
-    def testBlockAlignment(self,i,toleranceDrift,blockSize):
+    def filterLocalizations_BlockAlignment(self,i,toleranceDrift,blockSize):
         """
         [filters barcode per blockAlignmentMask, if existing]            
         runs only if localAligment was not run!     
@@ -179,19 +179,22 @@ class cellID:
         else:
             toleranceDrift= 100
 
-        print("Flux min = {} | ToleranceDrift = {}".format(flux_min,toleranceDrift))
+        print("Flux min = {} | ToleranceDrift = {} px".format(flux_min,toleranceDrift))
+        
+        # Produces images of distribution of fluxes.
+        
         
         blockSize=256
-        
+        keepAll, keepAlignmentAll, NbarcodesROI=[],[], 0
         # loops over barcode Table rows in a given ROI
         for i in trange(len(self.barcodeMapROI.groups[0])):
 
             # [filters barcode localizations either by]
-            keep = self.testBarcodeFilter(i,flux_min)
-        
+            keep = self.filterLocalizations_Quality(i,flux_min)
+            
             # [filters barcode per blockAlignmentMask, if existing]            
-            keepAlignment = self.testBlockAlignment(i,toleranceDrift,blockSize)
-
+            keepAlignment = self.filterLocalizations_BlockAlignment(i,toleranceDrift,blockSize)
+            
             # applies all filters
             if keep and keepAlignment:
                 # keeps the particle if the test passed
@@ -212,6 +215,12 @@ class cellID:
                     # stores the identify of the barcode to the mask
                     self.barcodesinMask["maskID_" + str(maskID)].append(i)
 
+            # keeps statistics
+            if int(self.barcodeMapROI.groups[0]["ROI #"][i]) == int(self.nROI):
+                keepAll.append(keep)
+                keepAlignmentAll.append(keepAlignment)
+                NbarcodesROI+=1
+
         # Total number of masks assigned and not assigned
         self.NcellsAssigned = np.count_nonzero(NbarcodesinMask > 0)
         self.NcellsUnAssigned = self.numberMasks - self.NcellsAssigned
@@ -219,7 +228,14 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
         
-        print("Assigned: {} | discarded: {}\n".format(self.NcellsAssigned,self.NcellsUnAssigned))
+        print("KeepQuality: {}| keepAlignment: {}| Total: {}".format(
+            sum(keepAll),
+            sum(keepAlignmentAll),
+            NbarcodesROI))        
+
+        print("Number cells assigned: {} | discarded: {}".format(
+            self.NcellsAssigned,
+            self.NcellsUnAssigned))        
     
     def searchLocalShift(self,ROI,CellID,x_uncorrected,y_uncorrected):
         '''
@@ -473,8 +489,9 @@ def loadsLocalAlignment(dataFolder):
     if os.path.exists(localAlignmentFileName):
         alignmentResultsTable= Table.read(localAlignmentFileName, format="ascii.ecsv")
         alignmentResultsTableRead=True
+        print("LocalAlignment file loaded")
     else:
-        print("\n\n *** Warning: could not found localAlignment: {}\n Proceeding with only global alignments...".format(localAlignmentFileName))
+        print("\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(localAlignmentFileName))
         alignmentResultsTableRead=False
         alignmentResultsTable=Table()
 
@@ -505,7 +522,7 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
         else:
             localizationDimension = 2
     else:
-        print("\n\n *** ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
+        print("\n\n*** ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
         sys.exit()
         
     return  barcodeMap, localizationDimension
@@ -594,6 +611,7 @@ def buildsPWDmatrix(param,
                 # Assigns barcodes to Masks for a given ROI
                 cellROI = cellID(param,barcodeMapSingleROI, Masks, ROI,ndims=localizationDimension)
                 cellROI.ndims=ndims
+                cellROI.nROI = nROI
                 
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
