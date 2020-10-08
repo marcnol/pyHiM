@@ -24,6 +24,7 @@ import re
 import numpy as np
 from tqdm.contrib import tzip
 from tqdm import trange
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import pairwise_distances
 
@@ -48,8 +49,9 @@ warnings.filterwarnings("ignore")
 
 
 class cellID:
-    def __init__(self, param, barcodeMapROI, Masks, ROI,ndims=2):
+    def __init__(self, param, dataFolder,barcodeMapROI, Masks, ROI,ndims=2):
         self.param=param
+        self.dataFolder = dataFolder
         self.barcodeMapROI = barcodeMapROI
         self.Masks = Masks
         self.NcellsAssigned = 0
@@ -63,6 +65,7 @@ class cellID:
         self.ROI = ROI
         self.alignmentResultsTable=Table()
         self.barcodesinMask = dict()
+        self.logNameMD=''
         for mask in range(self.numberMasks + 1):
             self.barcodesinMask["maskID_" + str(mask)] = []
 
@@ -153,7 +156,82 @@ class cellID:
                 keepAlignment=True
         return keepAlignment 
 
+    def plots_distributionFluxes(self):
+        fileName = self.dataFolder.outputFolders["buildsPWDmatrix"]+\
+            os.sep + "BarcodeStats_ROI:" + str(self.nROI) + "_" + str(self.ndims) + "D.png"
+        
+        fig, axes = plt.subplots(1,2)
+        ax=axes.ravel()
+        fig.set_size_inches((10,5))
+        
+        fluxes = self.barcodeMapROI.groups[0]["flux"]
+        sharpness = self.barcodeMapROI.groups[0]["sharpness"]
+        roundness = self.barcodeMapROI.groups[0]["roundness1"]
+        peak = self.barcodeMapROI.groups[0]["peak"]
+        mag = self.barcodeMapROI.groups[0]["mag"]
 
+        # p1 = ax[0].hist(fluxes,bins=25)
+        p1 = ax[0].scatter(fluxes,sharpness,c=peak,cmap='terrain',alpha=0.5)
+        ax[0].set_title("color: peak intensity")
+        ax[0].set_xlabel("flux")
+        ax[0].set_ylabel("sharpness")
+
+        p2 = ax[1].scatter(roundness,mag,c=peak,cmap='terrain',alpha=0.5)
+        ax[1].set_title("color: peak intensity")
+        ax[1].set_xlabel("roundness")
+        ax[1].set_ylabel("magnitude")
+        fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
+       
+        fig.savefig(fileName)
+    
+        plt.close(fig)
+
+        writeString2File(self.logNameMD, "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.nROI,self.ndims,fileName), "a")
+       
+    def plots_barcodesAlignment(self, blockSize):
+        """
+        plots barcode localizations together with the blockAlignment map
+
+        Returns
+        -------
+        None.
+
+        """
+        fileName = self.dataFolder.outputFolders["buildsPWDmatrix"]+\
+            os.sep + "BarcodeAlignmentAccuracy_ROI:" + str(self.nROI) + "_" + str(self.ndims) + "D.png"
+
+        fig, axes = plt.subplots()
+        fig.set_size_inches((20,20))
+
+        accuracy,x,y=[],[],[]
+        
+        for i in trange(len(self.barcodeMapROI.groups[0])):
+            barcodeID = 'barcode:' + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
+            barcodeROI = 'ROI:' + str(self.barcodeMapROI.groups[0]["ROI #"][i])
+            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
+            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+
+            
+            if len(self.dictErrorBlockMasks)>0:
+                if barcodeROI in self.dictErrorBlockMasks.keys():
+                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
+                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
+                        accuracy.append(errorMask[int(np.floor(x_int/blockSize)),int(np.floor(y_int/blockSize))])
+                        x.append(self.barcodeMapROI.groups[0]["xcentroid"][i])
+                        y.append(self.barcodeMapROI.groups[0]["ycentroid"][i])        
+
+        p1 = axes.scatter(x,y,s=5,c=accuracy,cmap='terrain',alpha=0.5,vmin=0, vmax=5)
+        fig.colorbar(p1,ax=axes,fraction=0.046, pad=0.04)
+        axes.set_title("barcode drift correction accuracy, px")
+        
+        axes.axis('off')
+        
+        fig.savefig(fileName)
+    
+        plt.close(fig)
+
+        writeString2File(self.logNameMD, "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.nROI,self.ndims,fileName), "a")
+        
     def alignByMasking(self):
         '''
         Assigns barcodes to masks and creates <NbarcodesinMask>
@@ -181,10 +259,12 @@ class cellID:
 
         print("Flux min = {} | ToleranceDrift = {} px".format(flux_min,toleranceDrift))
         
-        # Produces images of distribution of fluxes.
-        
-        
         blockSize=256
+
+        # Produces images of distribution of fluxes.
+        self.plots_distributionFluxes()
+        self.plots_barcodesAlignment(blockSize)
+
         keepAll, keepAlignmentAll, NbarcodesROI=[],[], 0
         # loops over barcode Table rows in a given ROI
         for i in trange(len(self.barcodeMapROI.groups[0])):
@@ -609,10 +689,9 @@ def buildsPWDmatrix(param,
                 Masks = np.load(fullFileNameROImasks)
 
                 # Assigns barcodes to Masks for a given ROI
-                cellROI = cellID(param,barcodeMapSingleROI, Masks, ROI,ndims=localizationDimension)
-                cellROI.ndims=ndims
-                cellROI.nROI = nROI
-                
+                cellROI = cellID(param,dataFolder,barcodeMapSingleROI, Masks, ROI,ndims=localizationDimension)
+                cellROI.ndims, cellROI.nROI, cellROI.logNameMD = ndims, nROI, logNameMD
+
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
                     
