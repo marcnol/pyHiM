@@ -382,6 +382,20 @@ optional arguments:
 
 
 
+
+
+An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
+
+![image-20201009113923988](Running_pyHiM.assets/image-20201009113923988.png)
+
+
+
+An example of a barcode where localization signals are far from optimal: note that crosses are now all blue (low fluxes)
+
+![image-20201009114117140](Running_pyHiM.assets/image-20201009114117140.png)
+
+
+
 ##### 3D fits of barcode positions
 
 Barcode 3D positions are now calculated as follows.
@@ -400,7 +414,7 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 ![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
 
-##### Align DAPI masks and barcodes
+#### Align DAPI masks and barcodes
 
 This last function will align DAPI masks and barcodes and construct the single cell contact matrix.
 
@@ -458,17 +472,19 @@ There are several filters:
 
 
 
-**Outputs**
+##### Outputs
 
 In addition to the PWD matrix, we now also have a map of the alignment accuracy  and scatter plots showing the flux of each barcode, its sharpness, magnitude and roundness. These are used in order to validate the segmentation process and help with the selection of the ```flux``` threshold used in this filtering step.
 
 *Alignment accuracy*
 
-<img src="Running_pyHiM.assets/BarcodeAlignmentAccuracy_ROI1_2D2.png" alt="BarcodeAlignmentAccuracy_ROI:1_2D2" style="zoom: 25%;" />
+This provides a map of all barcode localizations in an ROI, colorcoded by the accuracy of localization. Colorbar scale is in pixels.
 
-
+<img src="Running_pyHiM.assets/BarcodeAlignmentAccuracy_ROI1_2D2.png" alt="BarcodeAlignmentAccuracy_ROI:1_2D2" style="zoom: 50%;" />
 
 *Barcode localization statistics*
+
+This provides the localization statistics from ASTROPY. The main use of these plots is to determine if the threshold ```flux``` used is correct. Default is *200*.
 
 <img src="Running_pyHiM.assets/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
 
