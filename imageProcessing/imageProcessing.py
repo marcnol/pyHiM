@@ -153,6 +153,8 @@ class Image:
                 self.param.param["zProject"]["zmin"],
                 self.param.param["zProject"]["zmax"],
             )
+            if zmin >= zmax:
+                raise SystemExit('zmin is equal or larger than zmax in configuration file. Cannot proceed.')
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
 
         self.log.report("Processing zRange:{}".format(zRange))
