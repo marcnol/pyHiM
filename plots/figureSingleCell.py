@@ -138,7 +138,7 @@ def returnCellsHighestNumberPWD(sortedValues, n):
     
     return cellID, Npwd
 
-def visualize3D(coordinates,colors=[],cmap='hsv',title=[]):
+def visualize3D(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.png'):
    
     fig = plt.figure()
     fig.set_size_inches((10, 10))
@@ -170,8 +170,10 @@ def visualize3D(coordinates,colors=[],cmap='hsv',title=[]):
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     ax.set_title(title)
-
-def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[]):
+    fig.savefig(output)
+    plt.close(fig)
+    
+def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[],output='visualize2D.png'):
     
     nRows=len(coordinateList)
 
@@ -184,8 +186,6 @@ def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[]):
         if len(colors)==0:
             colors=np.arange(coordinates.shape[0])
             colors=colors.flatten()
-
-
             
         xdata, ydata, zdata, barcodeID = [],[],[], [] 
         for i,r in enumerate(coordinates):
@@ -205,7 +205,10 @@ def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[]):
         ax.set_ylabel('')
 
         ax.set_title(title)
-            
+        
+        fig.savefig(output)
+        plt.close(fig)
+        
 def getsCoordinatesFromPWDmatrix(matrix):
     ## multi-dimensional scaling to get coordinates from PWDs
     # make sure meanSCmatrix is symmetric
@@ -226,9 +229,111 @@ def getsCoordinatesFromPWDmatrix(matrix):
     
     XYZ = mds.fit(matrix).embedding_
 
-
     return XYZ
  
+def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID):
+    
+    PWDmatrix=SCmatrix[:,:,cellID]
+    EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
+
+    ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]["BarcodeColormap"]) / 10
+    colors = np.atleast_2d(ATACseqMatrix).flatten()
+
+    singleCellTitle="Cell #"+str(cellID)
+    ensembleTitle = "Ensemble"
+    
+    # removes nans
+    for i in range(PWDmatrix.shape[0]):
+        PWDmatrix[i,i]=0
+        EnsembleMatrix[i,i]=0
+        
+    # gets coordinates
+    coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
+    coordinates = 0.1*getsCoordinatesFromPWDmatrix(PWDmatrix)
+
+    # makes plots
+    output= outputFileNameRoot+ "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
+    visualize2D([coordinates,coordinatesEnsemble],colors=colors,cmap='rainbow',titles=[singleCellTitle,ensembleTitle],output=output)
+
+    output= outputFileNameRoot+ "_3DensembleMatrix" + runParameters["plottingFileExtension"]
+    visualize3D(coordinatesEnsemble,colors=colors,cmap='rainbow',title=ensembleTitle,output=output)
+
+    output= outputFileNameRoot+ "_3DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
+    visualize3D(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
+
+
+def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png'):
+    datasetName=list(HiMdata.ListData.keys())[0]
+
+    vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
+    cmap = HiMdata.ListData[datasetName]["iPWD_cm"]
+    SCmatrix = HiMdata.data["SCmatrixCollated"]
+
+    singleCellTitle="Cell #"+str(cellID)
+    ensembleTitle = "Ensemble"
+
+    EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
+
+    PWDmatrix=SCmatrix[:,:,cellID]
+    
+    fig, allAxes = plt.subplots(1,2)
+    fig.set_size_inches((10,10))
+    
+    ax=allAxes.ravel()
+    p1=ax[0].imshow(1/PWDmatrix, cmap=cmap,vmin=0,vmax=vmax)
+    fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
+    ax[0].set_title(singleCellTitle)
+    
+    p2=ax[1].imshow(1/EnsembleMatrix[:,:],cmap=cmap,vmin=0,vmax=vmax)
+    fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
+    ax[1].set_title(ensembleTitle)
+
+    output= outputFileNameRoot+ "_scMatrix:" + str(cellID) + runParameters["plottingFileExtension"]
+    plt.savefig(outputFileNameRoot)
+    plt.close(fig)
+    
+def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
+    datasetName=list(HiMdata.ListData.keys())[0]
+  
+    # finds the number of barcodes detected per cell.
+    nBarcodePerCell = list()
+    values = list()
+    dtype = [('cellID', int), ('nPWD', int)]
+    
+    for iCell in range(nCells):
+        SCmatrixCell = SCmatrix[:,:,iCell]
+        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell))/2)
+        nBarcodePerCell.append(nPWD)
+        values.append((iCell,nPWD))        
+        
+    valuesArray = np.array(values, dtype=dtype)       # create a structured array
+    sortedValues = np.sort(valuesArray, order='nPWD')                        
+    
+    # displays plots
+    Ncells2Process = nRows**2
+    
+    cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    
+    fig, allAxes = plt.subplots(nRows,nRows)
+    fig.set_size_inches((50, 50))
+    ax=allAxes.ravel()
+
+    cmap = HiMdata.ListData[datasetName]["ContactProbability_cm"]
+    vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
+
+    iplot=0    
+    for iCell in cellID:
+        pos = ax[iplot].imshow(1/SCmatrix[:,:,iCell],cmap=cmap,vmin=0,vmax=vmax)
+        ax[iplot].set_xticklabels(())
+        ax[iplot].set_yticklabels(())
+        ax[iplot].set_axis_off()
+        ax[iplot].set_title(str(iCell))
+
+        iplot+=1
+
+    plt.savefig(output)
+    plt.close(fig)
+
 
 #%%
 # =============================================================================
@@ -246,14 +351,6 @@ if __name__ == "__main__":
 
     HiMdata.loadData()
 
-    # panel C: contact probability matrix
-
-    # matrix = HiMdata.data["ensembleContactProbability"]
-    # matrix=normalizeMatrix(matrix)
-
-    # cScale = matrix.max() / runParameters["scalingParameter"]
-    # print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"], cScale))
-
     nCells = HiMdata.nCellsLoaded()
 
     nDatasets = len(HiMdata.data["runName"])
@@ -261,7 +358,7 @@ if __name__ == "__main__":
     if outputFolder == "none":
         outputFolder = HiMdata.dataFolder
 
-    outputFileName = (
+    outputFileNameRoot = (
         outputFolder
         + os.sep
         + "Fig_SCmatrices"
@@ -271,100 +368,27 @@ if __name__ == "__main__":
         + runParameters["label"]
         + "_action:"
         + runParameters["action"]
-        + runParameters["plottingFileExtension"]
     )
+    datasetName=list(HiMdata.ListData.keys())[0]
 
     SCmatrix = HiMdata.data["SCmatrixCollated"]
     nCells=SCmatrix.shape[2]
     print("Number of cells loaded: {}".format(nCells))
     
-  
-
-    
-    #%%
-    # finds the number of barcodes detected per cell.
-    cmap = 'coolwarm'
-    nBarcodePerCell = list()
-    values = list()
-    dtype = [('cellID', int), ('nPWD', int)]
-    
-    for iCell in range(nCells):
-        SCmatrixCell = SCmatrix[:,:,iCell]
-        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell))/2)
-        nBarcodePerCell.append(nPWD)
-        values.append((iCell,nPWD))        
-        
-    # plt.hist(nBarcodePerCell)
-
-    valuesArray = np.array(values, dtype=dtype)       # create a structured array
-    sortedValues = np.sort(valuesArray, order='nPWD')                        
-    
+    # makes subplots
     nRows=10
-    Ncells2Process = nRows**2
+    output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
+    plotsSubplotSCmatrices(HiMdata,nRows,output=output)
     
-    cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
-    
-    fig, allAxes = plt.subplots(nRows,nRows)
-    fig.set_size_inches((50, 50))
-    ax=allAxes.ravel()
-
-    iplot=0    
-    for iCell in cellID:
-        pos = ax[iplot].imshow(1/SCmatrix[:,:,iCell],cmap=cmap,vmin=0,vmax=1.2)
-        ax[iplot].set_xticklabels(())
-        ax[iplot].set_yticklabels(())
-        ax[iplot].set_axis_off()
-        ax[iplot].set_title(str(iCell))
-
-        iplot+=1
-
-    plt.savefig(outputFileName)
-    
-    #%%
     #  Plots SC matrix and ensemble matrix together
-
-    vmax=1.2
-    cellID=14433
-    singleCellTitle="Cell #"+str(cellID)
-    ensembleTitle = "Ensemble"
+    CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
     
-    EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
-
-    PWDmatrix=SCmatrix[:,:,cellID]
-    
-    fig, allAxes = plt.subplots(1,2)
-    fig.set_size_inches((10,10))
-    
-    ax=allAxes.ravel()
-    p1=ax[0].imshow(1/PWDmatrix, cmap='Reds',vmin=0,vmax=vmax)
-    fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
-    ax[0].set_title(singleCellTitle)
-    
-    p2=ax[1].imshow(1/EnsembleMatrix[:,:],cmap='Reds',vmin=0,vmax=vmax)
-    fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
-    ax[1].set_title(ensembleTitle)
- 
-    # removes nans
-    for i in range(PWDmatrix.shape[0]):
-        PWDmatrix[i,i]=0
-        EnsembleMatrix[i,i]=0
+    for cellID in CellIDs:
         
-    # plots trajectories
+        # cellID=14433
+        plotSCmatrix(HiMdata,cellID,outputFileNameRoot)
         
-    coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
-    coordinates = 0.1*getsCoordinatesFromPWDmatrix(PWDmatrix)
-
-    ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]["BarcodeColormap"]) / 10
-
-    colors = np.atleast_2d(ATACseqMatrix).flatten()
+        # plots trajectories
+        plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
     
-    visualize2D([coordinates,coordinatesEnsemble],colors=colors,cmap='rainbow',titles=[singleCellTitle,ensembleTitle])
-
-    visualize3D(coordinatesEnsemble,colors=colors,cmap='rainbow',title=ensembleTitle)
-
-    visualize3D(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle)
-
-        
-
-
     print("\nDone\n\n")
