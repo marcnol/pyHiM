@@ -552,6 +552,21 @@ Other utilities have been written to retrieve data from a run to a remote server
 
 If you want to erase a run, for instance to make sure you can run it again without any leftover, you can run ```cleanHiM_run.py` in the directory with the data.
 
+#### Link folder
+
+If you want to link many files in a folder without having to copy very large  files (e.g. TIFF) then you can run  ```lndir```.
+
+This script  links of files in a directory to a second directory. it selects the files in the first folder by following rules provided by the user where wildcards are possible.
+
+For instance, In the command line, 
+
+```sh
+$ lndir.py "/home/marcnol/Repositories/pyHiM/*py" ~/Downloads/test
+```
+to **link** all files with extension ```py``` from ```/home/marcnol/Repositories/pyHiM/``` to ```~/Downloads/test```.
+
+Make sure that the first argument has quotation marks if you use wildcards!
+
 
 
 ## 2- Combining results from different experiments
