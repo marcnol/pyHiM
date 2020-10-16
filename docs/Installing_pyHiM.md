@@ -44,7 +44,7 @@ nano ~/.bashrc
 and add the following line to the end
 
 ```sh
-export PATH="$PATH:/home/rata/Repositories/pyHiM/:home/rata/Repositories/pyHiM/fileProcessing"
+export PATH="$PATH:/home/rata/Repositories/pyHiM/:/home/rata/Repositories/pyHiM/fileProcessing"
 export PYTHONPATH="/home/rata/Repositories/pyHiM"
 
 export MPLBACKEND=agg
