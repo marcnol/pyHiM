@@ -56,15 +56,53 @@ make sure you use a different directory name if this is not where you put pyHiM 
 To install the necessary packages using conda, run:
 
 ```sh
-conda install scikit-image numpy matplotlib astropy
+conda install numpy matplotlib astropy
 
 conda install photutils -c astropy
 
-pip install tqdm roipoly opencv-python stardist csbdeep
+conda install dask
+
+pip install tqdm roipoly opencv-python stardist csbdeep numba
 
 pip install --upgrade tensorflow
 
+pip install --upgrade scikit-image
+
+pip install mayavi
 ```
+
+
+
+### Upgrade scikit-image to development version
+
+Uninstall any existing installations:
+
+```
+pip uninstall scikit-image
+```
+
+or, on conda-based systems:
+
+```
+conda uninstall scikit-image
+```
+
+Now, clone scikit-image on your local computer, and install:
+
+```
+git clone https://github.com/scikit-image/scikit-image.git
+cd scikit-image
+pip install -e .
+```
+
+To update the installation:
+
+```
+git pull  # Grab latest source
+pip install -e .  # Reinstall
+```
+
+
 
 You should be set!
 
