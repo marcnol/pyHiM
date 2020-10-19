@@ -20,7 +20,8 @@
         "lower_threshold": 0.999,
         "operation": "overwrite",
         "outputFile": "alignImages",
-        "referenceFiducial": "RT18"
+        "referenceFiducial": "RT18",
+        "tolerance": 0.1
     },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
@@ -46,7 +47,8 @@
         "sigma_max": 5,
         "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
         "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-        "threshold_over_std": 1.0
+        "threshold_over_std": 1.0,
+        "toleranceDrift": 1
     },
     "zProject": {
         "display": true,

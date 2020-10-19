@@ -108,7 +108,8 @@ a typical file (DAPI example) looks like:
         "sigma_max": 5,
         "centroidDifference_max": 5,        
         "3DGaussianfitWindow": 3,
-        "threshold_over_std": 1.0
+        "threshold_over_std": 1.0,
+        "toleranceDrift":1,
     },
     "zProject": {
         "display": true,
@@ -200,6 +201,7 @@ Here are some options for the different parameters and a brief description
 "sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
 "centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
 "3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
+"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
 ```
 
 #### MakeProjections
@@ -291,6 +293,14 @@ Inspired by the use of blocks to restore large images, I implemented a new regis
 
 To turn the routing on, just set ```alignByBlock``` to True.
 
+**Important note**: When you use blockAlignment, pyHiM will produce 8x8 output matrices with the abs(shift-global_shift) maps. These will be stored in ```alignImages``` folder with names such as ```scan_006_DAPI_003_ROI_converted_decon_ch02_errorAlignmentBlockMap.npy```.
+
+When alignBarcodesMasks() runs, it will search for this files. If it finds them it will filter out barcode localizations that displayed an absolute drift larger than the ```toleranceDrift``` parameter in the ```segmentedObjects``` segment of the ```infoList_DAPI.json``` file.
+
+So if you see a large drop in the barcodes that are used (this can be seen by matrices with empty rows/columns) it may be that your inaccurate barcode localizations are being dropped. Check for this the ```Assigned: 266 | discarded: 285``` outputted by alignBarcodesMasks(), and change ```toleranceDrift``` if needed.
+
+
+
 ###### Examples
 
 <u>Nice ROI</u>
@@ -349,9 +359,7 @@ To invoke local drift correction, use the ```--localAlignment``` flag when you c
 
 
 
-
-
-##### Segmenting masks
+#### Segmenting masks
 
 To manually segment masks, run
 
@@ -374,7 +382,21 @@ optional arguments:
 
 
 
-#### 3D fits of barcode positions
+
+
+An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
+
+![image-20201009113923988](Running_pyHiM.assets/image-20201009113923988.png)
+
+
+
+An example of a barcode where localization signals are far from optimal: note that crosses are now all blue (low fluxes)
+
+![image-20201009114117140](Running_pyHiM.assets/image-20201009114117140.png)
+
+
+
+##### 3D fits of barcode positions
 
 Barcode 3D positions are now calculated as follows.
 
@@ -391,9 +413,8 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 ![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
-### 
 
-##### Align DAPI masks and barcodes
+#### Align DAPI masks and barcodes
 
 This last function will align DAPI masks and barcodes and construct the single cell contact matrix.
 
@@ -415,16 +436,57 @@ optional arguments:
 ```
 
 
-
 <u>Example outputs:</u>
 
 Mean pairwise distance matrix. By default means are calculated using Kernel Density Estimators of the PWD distributions.
 
-![buildsPWDmatrix_HiMmatrix](Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png)
+<img src="Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png" alt="buildsPWDmatrix_HiMmatrix" style="zoom:50%;" />
 
 In addition, the function outputs the distribution of distances for each combination of barcodes:
 
-![buildsPWDmatrix_PWDhistograms](Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png)
+<img src="Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png" alt="buildsPWDmatrix_PWDhistograms" style="zoom: 25%;" />
+
+
+##### Filtering barcode localizations
+
+There are several filters:
+1. Properties of 2D localization algorithm (e.g. brightness)
+
+2. Accuracy of 3D localization: sigma of fit, correlation between z-position from weighted moment and from gaussian fit, etc
+
+3. Accuracy of drift correction in the region where the barcode was localized. 
+
+   This is only applied if LocalDrift correction was **not** run. 
+
+   
+
+*Examples.*
+
+| Filtering | Matrix |
+| --- |  ---- |
+| Unfiltered matrix. Total barcode localizations: 18700 | <img src="Running_pyHiM.assets/buildsPWDmatrix.png" alt="buildsPWDmatrix" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```. Barcode localizations kept: 12377 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrixFilterBlockDrift.png" alt="buildsPWDmatrixFilterBlockDrift" style="zoom:25%;" />|
+| ```toleranceDrift = 1px```  ```Flux = 100```. Barcode localizations kept: 5562 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux100.png" alt="buildsPWDmatrix_filterFlux100" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```  ```Flux = 200```. Barcode localizations kept: 4528 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux.png" alt="buildsPWDmatrix_filterFlux" style="zoom:25%;" />|
+|```toleranceDrift = 1px``` ```Flux = 1000```. Barcode localizations kept: 1923 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux1000.png" alt="buildsPWDmatrix_filterFlux1000" style="zoom:25%;" />|
+
+
+
+##### Outputs
+
+In addition to the PWD matrix, we now also have a map of the alignment accuracy  and scatter plots showing the flux of each barcode, its sharpness, magnitude and roundness. These are used in order to validate the segmentation process and help with the selection of the ```flux``` threshold used in this filtering step.
+
+*Alignment accuracy*
+
+This provides a map of all barcode localizations in an ROI, colorcoded by the accuracy of localization. Colorbar scale is in pixels.
+
+<img src="Running_pyHiM.assets/BarcodeAlignmentAccuracy_ROI1_2D2.png" alt="BarcodeAlignmentAccuracy_ROI:1_2D2" style="zoom: 50%;" />
+
+*Barcode localization statistics*
+
+This provides the localization statistics from ASTROPY. The main use of these plots is to determine if the threshold ```flux``` used is correct. Default is *200*.
+
+<img src="Running_pyHiM.assets/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
 
 
 
@@ -1090,4 +1152,10 @@ The two outputs are:
 ![image-20200928162417318](Running_pyHiM.assets/image-20200928162417318.png)
 
 
+
+#### Displaying single cells
+
+A thorough description of the work in displaying single cells will be maintained in the following MD file within the */doc* directory of pyHiM:
+
+[Single Cell MD tutorial](SingleCellsAnalysis.md)
 

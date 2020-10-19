@@ -63,20 +63,26 @@ warnings.filterwarnings("ignore")
 
 def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     fig, ax = plt.subplots()
-    fig.set_size_inches((30, 30))
+    fig.set_size_inches((50, 50))
     
-    positions = np.transpose(
-        (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
-    )  # for some reason sources are always displays 1/2 px from center of spot
-
+    flux = sources["flux"]
+    x=sources["xcentroid"]+0.5
+    y=sources["ycentroid"]+0.5
     # percent = 99.99 % this is too restrictive and only shows the top intensities
     percent = 99.5
     
-    apertures = CircularAperture(positions, r=4.0)
     norm = simple_norm(im, "sqrt", percent=percent)
     ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
-    apertures.plot(color="blue", lw=1.5, alpha=0.35)
-    
+
+    p1=ax.scatter(x,y,c=flux,s=50,facecolors='none',cmap='jet',marker='x',vmin=0,vmax=2000)
+    fig.colorbar(p1,ax=ax,fraction=0.046, pad=0.04)
+
+    # positions = np.transpose(
+    #     (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
+    # )  # for some reason sources are always displays 1/2 px from center of spot
+    # apertures = CircularAperture(positions, r=4.0)
+    # apertures.plot(color="blue", lw=1.5, alpha=0.35)
+
     ax.set_xlim(0, im.shape[1] - 1)
     ax.set_ylim(0, im.shape[1] - 1)
 

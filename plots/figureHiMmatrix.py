@@ -17,7 +17,7 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
 
 # import scaleogram as scg
 

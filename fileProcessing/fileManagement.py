@@ -257,6 +257,7 @@ class Parameters:
                 "sigma_max": 5,  # max sigma 3D fitting to keeep object                
                 "centroidDifference_max": 5,  # max diff between Moment and Gaussian z fits to keeep object                
                 "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
+                "toleranceDrift":1, # tolerance used for block drift correction, in px
             },
         }
         self.initializeStandardParameters()
