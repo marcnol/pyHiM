@@ -15,6 +15,8 @@ import numpy as np
 import argparse
 import numpy.linalg as npl
 from sklearn import manifold
+import cv2
+from mayavi.mlab import *
 
 import networkx as nx
 from mpl_toolkits.mplot3d import Axes3D
@@ -46,13 +48,16 @@ def parseArguments():
     parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
-    parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
+    parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
     )
-    parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
+    parser.add_argument("--ensembleMatrix", help="Use if you want ensembleMatrix to be plotted alongside sc matrices", action="store_true")
+    parser.add_argument("--video", help="Use if you want to output video", action="store_true")
+    parser.add_argument("--videoAllcells", help="Use if you want all nRows**2 single cells to take part of the video", action="store_true")
+    
 
     args = parser.parse_args()
 
@@ -68,7 +73,11 @@ def parseArguments():
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = "none"
+        outputFolder = rootFolder+os.sep+"figureSingleCell"
+
+    if not os.path.exists(outputFolder):
+        os.mkdir(outputFolder)
+        print("Folder created: {}".format(outputFolder))
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -105,11 +114,6 @@ def parseArguments():
     else:
         runParameters["barcodes"] = False
 
-    if args.scalingParameter:
-        runParameters["scalingParameter"] = float(args.scalingParameter)
-    else:
-        runParameters["scalingParameter"] = 1.0
-
     if args.plottingFileExtension:
         runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
@@ -120,10 +124,26 @@ def parseArguments():
     else:
         runParameters["shuffle"] = 0
 
-    if args.scalogram:
-        runParameters["scalogram"] = args.scalogram
+    if args.nRows:
+        runParameters["nRows"] = args.nRows
     else:
-        runParameters["scalogram"] = False
+        runParameters["nRows"] = 10
+        
+    if args.ensembleMatrix:
+        runParameters["ensembleMatrix"] = args.ensembleMatrix
+    else:
+        runParameters["ensembleMatrix"] = False
+
+    if args.video:
+        runParameters["video"] = args.video
+    else:
+        runParameters["video"] = False
+
+    if args.videoAllcells:
+        runParameters["videoAllcells"] = args.videoAllcells
+    else:
+        runParameters["videoAllcells"] = False
+
 
     return rootFolder, outputFolder, runParameters
 
@@ -173,10 +193,48 @@ def visualize3D(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.pn
     fig.savefig(output)
     plt.close(fig)
     
+# def visualize3D_mayavi(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.png'):
+   
+#     fig = plt.figure()
+#     fig.set_size_inches((10, 10))
+    
+#     ax = plt.axes(projection='3d')
+        
+#     ax = plt.axes(projection='3d')
+ 
+#     xdata, ydata, zdata, barcodeID = [],[],[], [] 
+#     for i,r in enumerate(coordinates):
+#         xdata.append(r[0])    
+#         ydata.append(r[1])    
+#         zdata.append(r[2])    
+#         barcodeID.append(i)
+
+#     if len(colors)==0:
+#         colors=np.arange(coordinates.shape[0])
+#         colors=colors.flatten()
+ 
+#     # points3d()
+#     points3d(xdata, ydata, zdata, np.ones(coordinates.shape[0]), colormap="hsv", scale_factor=.1)
+#     plot3d(xdata, ydata, zdata,tube_radius=0.01, colormap='Spectral')
+
+#     ax.plot3D(xdata, ydata, zdata, 'black')
+#     pos=ax.scatter3D(xdata, ydata, zdata, c=colors,
+#                       s=200,
+#                       cmap=cmap,
+#                       marker='o',
+#                       edgecolors = 'k',
+#                       linewidths=2,
+#                       alpha=0.7) #'terrain_r'
+#     ax.set_xlabel('x')
+#     ax.set_ylabel('y')
+#     ax.set_zlabel('z')
+#     ax.set_title(title)
+#     fig.savefig(output)
+#     plt.close(fig)    
+    
 def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[],output='visualize2D.png'):
     
     nRows=len(coordinateList)
-
     
     fig, allAxes = plt.subplots(1,nRows)
     fig.set_size_inches((10*nRows, 10))
@@ -231,7 +289,7 @@ def getsCoordinatesFromPWDmatrix(matrix):
 
     return XYZ
  
-def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID):
+def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matplotlib'):
     
     PWDmatrix=SCmatrix[:,:,cellID]
     EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
@@ -259,10 +317,15 @@ def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID):
     visualize3D(coordinatesEnsemble,colors=colors,cmap='rainbow',title=ensembleTitle,output=output)
 
     output= outputFileNameRoot+ "_3DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
-    visualize3D(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
+    
+    if mode=='matplotlib':
+        visualize3D(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
+        
+    # else:
+    #     visualize3D_mayavi(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
 
 
-def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png'):
+def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix=False,searchPattern="_scMatrix:"):
     datasetName=list(HiMdata.ListData.keys())[0]
 
     vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
@@ -270,26 +333,33 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png'):
     SCmatrix = HiMdata.data["SCmatrixCollated"]
 
     singleCellTitle="Cell #"+str(cellID)
-    ensembleTitle = "Ensemble"
 
-    EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
+    if ensembleMatrix:
+        ensembleTitle = "Ensemble"
+        EnsembleMatrix= 1/HiMdata.data["ensembleContactProbability"]
 
     PWDmatrix=SCmatrix[:,:,cellID]
     
-    fig, allAxes = plt.subplots(1,2)
-    fig.set_size_inches((10,10))
+    if ensembleMatrix:
+        fig, allAxes = plt.subplots(1,2)
+        ax=allAxes.ravel()
+        fig.set_size_inches((20,10))
+    else:
+        fig, allAxes = plt.subplots(1,1)
+        fig.set_size_inches((10,10))
+        ax=[allAxes]
     
-    ax=allAxes.ravel()
     p1=ax[0].imshow(1/PWDmatrix, cmap=cmap,vmin=0,vmax=vmax)
     fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
     ax[0].set_title(singleCellTitle)
     
-    p2=ax[1].imshow(1/EnsembleMatrix[:,:],cmap=cmap,vmin=0,vmax=vmax)
-    fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
-    ax[1].set_title(ensembleTitle)
+    if ensembleMatrix:    
+        p2=ax[1].imshow(1/EnsembleMatrix[:,:],cmap=cmap,vmin=0,vmax=vmax)
+        fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
+        ax[1].set_title(ensembleTitle)
 
-    output= outputFileNameRoot+ "_scMatrix:" + str(cellID) + runParameters["plottingFileExtension"]
-    plt.savefig(outputFileNameRoot)
+    output= outputFileNameRoot+ searchPattern + str(cellID) + runParameters["plottingFileExtension"]
+    plt.savefig(output)
     plt.close(fig)
     
 def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
@@ -311,7 +381,6 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
     
     # displays plots
     Ncells2Process = nRows**2
-    
     cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
     
     fig, allAxes = plt.subplots(nRows,nRows)
@@ -333,8 +402,25 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
 
     plt.savefig(output)
     plt.close(fig)
+    return cellID
 
-
+def makesVideo(folder,video_name,searchPattern):
+    
+    images = [img for img in os.listdir( os.path.dirname(folder)) if img.endswith(".png") and searchPattern in img]
+    if len(images)>0:
+        frame = cv2.imread(os.path.join( os.path.dirname(folder), images[0]))
+        height, width, layers = frame.shape
+        
+        video = cv2.VideoWriter(video_name, 0, 5, (width,height))
+        
+        for image in images:
+            video.write(cv2.imread(os.path.join( os.path.dirname(folder), image)))
+        
+        cv2.destroyAllWindows()
+        video.release()
+    else:
+        print("Sorry, no images found fitting the pattern {} in this folder: {}".format(searchPattern,folder))
+        
 #%%
 # =============================================================================
 # MAIN
@@ -346,7 +432,7 @@ if __name__ == "__main__":
     rootFolder, outputFolder, runParameters = parseArguments()
     
     rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
-    outputFolder = "/home/marcnol/Downloads/test"
+    
     HiMdata = analysisHiMmatrix(runParameters, rootFolder)
 
     HiMdata.loadData()
@@ -375,20 +461,40 @@ if __name__ == "__main__":
     nCells=SCmatrix.shape[2]
     print("Number of cells loaded: {}".format(nCells))
     
-    # makes subplots
-    nRows=10
+    # makes subplots with sc 1/PWD matrices
+    nRows=runParameters["nRows"]
     output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
-    plotsSubplotSCmatrices(HiMdata,nRows,output=output)
+    cellID_most_PWDs = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
     
-    #  Plots SC matrix and ensemble matrix together
     CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
     
     for cellID in CellIDs:
-        
-        # cellID=14433
-        plotSCmatrix(HiMdata,cellID,outputFileNameRoot)
-        
-        # plots trajectories
-        plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
+        if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
+            #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
+            plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
     
+            # plots trajectories
+            plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
+    
+
+    # makes video
+    if runParameters["video"]:
+        print("Making video...")
+        if runParameters["videoAllcells"] :
+            searchPattern = "_scMostPWD:"
+            for cellID in cellID_most_PWDs:
+                plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"],searchPattern=searchPattern)
+        else:
+            searchPattern = "_scMatrix:"
+            
+        video_name =os.path.dirname(outputFileNameRoot)+os.sep+ 'video.avi'
+
+        makesVideo(outputFileNameRoot,video_name,searchPattern)
+
     print("\nDone\n\n")
+    
+    
+    #%%
+    
+
+ 
