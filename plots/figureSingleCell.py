@@ -26,7 +26,7 @@ from mpl_toolkits import mplot3d
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix, getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
 
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
 
