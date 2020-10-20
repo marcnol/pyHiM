@@ -460,11 +460,24 @@ if __name__ == "__main__":
     SCmatrix = HiMdata.data["SCmatrixCollated"]
     nCells=SCmatrix.shape[2]
     print("Number of cells loaded: {}".format(nCells))
-    
-    # makes subplots with sc 1/PWD matrices
+
+    # "makes subplots with sc 1/PWD matrices"
     nRows=runParameters["nRows"]
     output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
     cellID_most_PWDs = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
+    
+    # "calculates the number of barcodes per cell and makes histograms"
+    # numBarcodes= getBarcodesPerCell(SCmatrixCollated)
+    
+    # "calculates the detection efficiency for each barcode"
+    # eff = getDetectionEffBarcodes(SCmatrixCollated)
+    
+    
+    # "calculates the Rg for each cell from the PWD sc matrix"
+    # Rg = getRgFromPWD(PWDmatrix, minFracNotNaN=0.8)
+    
+    
+    # "plots trajectories for selected cells"
     
     CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
     
@@ -477,7 +490,7 @@ if __name__ == "__main__":
             plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
     
 
-    # makes video
+    # "makes video of SC matrix for selected cells"
     if runParameters["video"]:
         print("Making video...")
         if runParameters["videoAllcells"] :
