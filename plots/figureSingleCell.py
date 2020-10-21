@@ -362,9 +362,12 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
     plt.savefig(output)
     plt.close(fig)
     
-def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
-    datasetName=list(HiMdata.ListData.keys())[0]
-  
+def sortsCellsbyNumberPWD(HiMdata):
+
+    SCmatrix = HiMdata.data["SCmatrixCollated"]
+    nCells=SCmatrix.shape[2]
+    print("Number of cells loaded: {}".format(nCells))
+
     # finds the number of barcodes detected per cell.
     nBarcodePerCell = list()
     values = list()
@@ -379,6 +382,14 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
     valuesArray = np.array(values, dtype=dtype)       # create a structured array
     sortedValues = np.sort(valuesArray, order='nPWD')                        
     
+    return SCmatrix, sortedValues, nCells
+    
+def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
+    
+    datasetName=list(HiMdata.ListData.keys())[0]
+
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)
+
     # displays plots
     Ncells2Process = nRows**2
     cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
@@ -402,7 +413,7 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
 
     plt.savefig(output)
     plt.close(fig)
-    return cellID
+    return cellID, SCmatrix
 
 def makesVideo(folder,video_name,searchPattern):
     
@@ -421,6 +432,43 @@ def makesVideo(folder,video_name,searchPattern):
     else:
         print("Sorry, no images found fitting the pattern {} in this folder: {}".format(searchPattern,folder))
         
+        
+def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='SChistBarcodesPerCell.png'):
+    
+    numBarcodes= getBarcodesPerCell(SCmatrix)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches((10, 10))
+    ax.hist(numBarcodes)
+    ax.set_xlabel("number of barcodes")
+    ax.set_ylabel("counts")
+    
+    output= outputFileNameRoot+ "SChistBarcodesPerCell" + runParameters["plottingFileExtension"]
+    plt.savefig(output)
+    plt.close(fig)
+    
+
+   
+def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
+                              outputFileNameRoot='SCBarcodesEfficiency.png'):
+    
+    eff = getDetectionEffBarcodes(SCmatrix)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches((10, 10))
+    ax.bar(uniqueBarcodes,eff)
+    ax.set_xlabel("barcode ID")
+    ax.set_ylabel("efficiency")
+    ax.set_xticks(np.arange(len(eff)))
+    ax.set_xticklabels(uniqueBarcodes)
+    
+    output= outputFileNameRoot+ "SCBarcodesEfficiency" + runParameters["plottingFileExtension"]
+    plt.savefig(output)
+    plt.close(fig)
+        
+    
+
+     
 #%%
 # =============================================================================
 # MAIN
@@ -457,21 +505,17 @@ if __name__ == "__main__":
     )
     datasetName=list(HiMdata.ListData.keys())[0]
 
-    SCmatrix = HiMdata.data["SCmatrixCollated"]
-    nCells=SCmatrix.shape[2]
-    print("Number of cells loaded: {}".format(nCells))
-
     # "makes subplots with sc 1/PWD matrices"
     nRows=runParameters["nRows"]
     output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
-    cellID_most_PWDs = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
+    cellID_most_PWDs, SCmatrix = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
     
     # "calculates the number of barcodes per cell and makes histograms"
-    # numBarcodes= getBarcodesPerCell(SCmatrixCollated)
+    plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot=outputFileNameRoot)
+    
     
     # "calculates the detection efficiency for each barcode"
-    # eff = getDetectionEffBarcodes(SCmatrixCollated)
-    
+    plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
     # "calculates the Rg for each cell from the PWD sc matrix"
     # Rg = getRgFromPWD(PWDmatrix, minFracNotNaN=0.8)

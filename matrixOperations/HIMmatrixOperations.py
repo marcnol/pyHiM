@@ -1559,7 +1559,7 @@ def getDetectionEffBarcodes(SCmatrixCollated):
     
     eff = np.sum(~np.isnan(SCmatrixCollated), axis=0)
     eff[eff>1] = 1
-    # print(eff.shape)
+
     eff = np.sum(eff, axis=-1) # sum over all cells
     
     eff = eff/nCells
