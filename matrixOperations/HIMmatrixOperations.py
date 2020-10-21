@@ -1396,14 +1396,14 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
     return SCmatrix, nCells
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def findsOptimalKernelWidth(distanceDistribution):
     bandwidths = 10 ** np.linspace(-1, 1, 100)
     grid = GridSearchCV(KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut())
     grid.fit(distanceDistribution[:, None])
     return grid.best_params_
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
     '''
     Gets the kernel density function and maximum from a distribution of PWD distances
@@ -1453,7 +1453,7 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
 
 
 
-@jit(nopython=True)
+# @jit(nopython=True)
 def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
     '''
     calculates the kernel distribution and its maximum from a set of PWD distances
