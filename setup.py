@@ -70,7 +70,7 @@ setup(
 ######################################################
 ############# conventional installation ##############
 ######################################################
-# conda install pandas scikit-image numpy matplotlib astropy graphviz
+# conda install pandas numpy matplotlib astropy graphviz
 # conda install photutils -c astropy
 
 # pip install roipoly opencv-python tqdm stardist csbdeep tox numba dask
