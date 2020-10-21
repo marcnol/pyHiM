@@ -95,14 +95,6 @@ class Image:
         _im = _im / _max
         return _im
 
-        # im_ = np.array(im,dtype=np.float32)
-        # im_blur = np.array([cv2.blur(im__,(sz,sz)) for im__ in im_])
-        # if ratio:
-        #     im_ =im
-        # else:
-        #     im_ =(im_-im_blur)/np.median(im_blur)
-        # return im_
-
     # returns the imagename
     def getImageFilename(self):
         return self.fileName
@@ -229,14 +221,14 @@ class Image:
 
 
 # Gaussian function
-@jit(nopython=True) 
+# @jit(nopython=True) 
 def gaussian(x, a=1, mean=0, std=0.5):
     return a * (1 / (std * (np.sqrt(2 * np.pi)))) * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
 
-@jit(nopython=True) 
+# @jit(nopython=True) 
 def calculate_zrange(idata, parameters):
     """
     Calculates the focal planes based max standard deviation
@@ -245,8 +237,8 @@ def calculate_zrange(idata, parameters):
     numPlanes = parameters.param["zProject"]["zmax"] - parameters.param["zProject"]["zmin"]
     stdMatrix = np.zeros(numPlanes)
     meanMatrix = np.zeros(numPlanes)
+
     # calculate STD in each plane
-    # print("Building planes..." )
     for i in range(0, numPlanes):
         stdMatrix[i] = np.std(idata[i])
         meanMatrix[i] = np.mean(idata[i])
@@ -278,7 +270,7 @@ def calculate_zrange(idata, parameters):
 
         stdMatrix -= np.min(stdMatrix)
         stdMatrix /= np.max(stdMatrix)
-        # plt.plot(stdMatrix)
+
         try:
             fitgauss = spo.curve_fit(gaussian, axisZ, stdMatrix[axisZ[0] : axisZ[-1] + 1])
             # print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
@@ -326,22 +318,6 @@ def save2imagesRGB(I1, I2, outputFileName):
     """
     Overlays two images as R and B and saves them to output file
     """
-    # fig, ax = plt.subplots()
-    # plt.figure(figsize=(50, 50))
-    # I1, I2 = I1 / I1.max(), I2 / I2.max()
-    # ax.imshow(I1,cmap = 'Blues', alpha = 0.75)
-    # ax.imshow(I2,cmap = 'Reds', alpha = 0.75)
-    # plt.savefig(outputFileName)
-    # plt.close()
-
-    
-    # I1, I2 = I1 / I1.max(), I2 / I2.max()
-    # fig, ax = plt.subplots()
-    # plt.figure(figsize=(30, 30))
-    # RGB_falsecolor_image = np.dstack([I1, I2, np.zeros([2048, 2048])])
-    # plt.imshow(RGB_falsecolor_image)
-    # plt.savefig(outputFileName)
-    # plt.close()
 
     sz = I1.shape
     I1, I2 = I1 / I1.max(), I2 / I2.max()   
