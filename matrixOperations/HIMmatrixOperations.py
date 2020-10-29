@@ -1536,8 +1536,6 @@ def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
     
     return Rg
 
-
-
 def getDetectionEffBarcodes(SCmatrixCollated):
     """
     Return the detection efficiency of all barcodes.

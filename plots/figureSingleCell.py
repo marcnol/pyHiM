@@ -13,22 +13,15 @@ produces movies and structures from single cell PWD matrices
 import os
 import numpy as np
 import argparse
-import numpy.linalg as npl
 from sklearn import manifold
 import cv2
-from mayavi.mlab import *
+# from mayavi.mlab import *
 
-import networkx as nx
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits import mplot3d
-    
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix, getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
+from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
 
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
 
 #%% define and loads datasets
 
@@ -467,8 +460,6 @@ def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
     plt.close(fig)
         
     
-
-     
 #%%
 # =============================================================================
 # MAIN
@@ -518,13 +509,17 @@ if __name__ == "__main__":
     plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
     # "calculates the Rg for each cell from the PWD sc matrix"
-    # Rg = getRgFromPWD(PWDmatrix, minFracNotNaN=0.8)
+    datasetName=list(HiMdata.ListData.keys())[0]
+
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
+    Ncells2Process = nRows**2
+    cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    PWDmatrix= SCmatrix[:,:,cellID]
     
+    Rg = getRgFromPWD(PWDmatrix, minFracNotNaN=0.8)
     
     # "plots trajectories for selected cells"
-    
     CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
-    
     for cellID in CellIDs:
         if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
             #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
@@ -549,9 +544,3 @@ if __name__ == "__main__":
         makesVideo(outputFileNameRoot,video_name,searchPattern)
 
     print("\nDone\n\n")
-    
-    
-    #%%
-    
-
- 
