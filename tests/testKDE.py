@@ -40,7 +40,7 @@ def make_data1(N, baseline=2, errorAmp=1, rseed=1):
 
 def kdeFit(x,x_d,bandwidth=1, kernel='gaussian'):
     
-    kde = KernelDensity(bandwidth=1.0, kernel='gaussian')
+    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
     kde.fit(x[:, None])
 
     logprob = kde.score_samples(x_d[:, None])
@@ -64,11 +64,11 @@ def kdeFit(x,x_d,bandwidth=1, kernel='gaussian'):
 #     return amp1*(1/(sigma1*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen1)/sigma1)**2))) + \
 #             amp2*(1/(sigma2*(np.sqrt(2*np.pi))))*(np.exp((-1.0/2.0)*(((x-cen2)/sigma2)**2)))
             
-f=0.15
-N=[100,5000]
+f=0.05
+N=[100,10000]
 shift=3
-baselines=[0.1,3.5]
-bandwidth=0.5
+baselines=[0.1,3]
+bandwidth=0.2
 threshold = 2
 errorAmp=1
 
