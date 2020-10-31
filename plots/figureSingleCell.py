@@ -19,9 +19,18 @@ import cv2
 
 # import matplotlib as plt
 import matplotlib.pyplot as plt
+import matplotlib
+
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
 
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
+
+font = {'family' : 'helvetica',
+        'weight' : 'normal',
+        'size'   : 22}
+
+matplotlib.rc('font', **font)
+
 
 #%% define and loads datasets
 
@@ -42,6 +51,8 @@ def parseArguments():
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
+    parser.add_argument("--pixelSize", help="Pixel Size in um")
+
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
         "--shuffle",
@@ -55,14 +66,15 @@ def parseArguments():
     args = parser.parse_args()
 
     runParameters = {}
-    runParameters["pixelSize"] = 0.1
 
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
-        rootFolder = "."
+        # rootFolder = "."
         # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
-
+        # rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
+        rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
+    
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
@@ -91,6 +103,11 @@ def parseArguments():
         runParameters["fontsize"] = args.fontsize
     else:
         runParameters["fontsize"] = 12
+
+    if args.pixelSize:
+        runParameters["pixelSize"] = args.pixelSize
+    else:
+        runParameters["pixelSize"] = 0.1
 
     if args.axisLabel:
         runParameters["axisLabel"] = args.axisLabel
@@ -443,7 +460,7 @@ def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='SChistBarco
 
    
 def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
-                              outputFileNameRoot='SCBarcodesEfficiency.png'):
+                              outputFileNameRoot='./'):
     
     eff = getDetectionEffBarcodes(SCmatrix)
 
@@ -459,6 +476,45 @@ def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
     plt.savefig(output)
     plt.close(fig)
         
+
+def plotsRgvalues(HiMdata,nRows,runParameters,
+                              outputFileName='./RgValues.png',minFracNotNaN=0.8):
+
+    
+    datasetName=list(HiMdata.ListData.keys())[0]
+
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
+    Ncells2Process = nRows**2
+    selectedCellsIDs,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    # PWDmatrix= SCmatrix[:,:,CellIDs]
+    
+    RgList=list()
+    for cellID in selectedCellsIDs:
+        RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minFracNotNaN=minFracNotNaN))
+
+    RgListArray=np.array(RgList)
+    fig, ax = plt.subplots()
+    fig.set_size_inches((10, 10))
+    # ax.plot(RgList)
+    ax.hist(RgListArray, alpha=0.5, bins=10)
+    mean=np.nanmedian(RgListArray)
+    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
+    print(mean)
+    ax.set_xlabel("barcode ID")
+    ax.set_ylabel("efficiency")
+    # ax.set_xticks(np.arange(len(eff)))
+    # ax.set_xticklabels(uniqueBarcodes)
+    # parts = ax.violinplot(
+    #         RgListArray, showmeans=False, showmedians=False,
+    #         showextrema=False)
+    
+    # for pc in parts['bodies']:
+    #     pc.set_facecolor('#D43F3A')
+    #     pc.set_edgecolor('black')
+    #     pc.set_alpha(1)
+    
+    plt.savefig(outputFileName)
+    # plt.close(fig)    
     
 #%%
 # =============================================================================
@@ -469,8 +525,6 @@ if __name__ == "__main__":
 
     print(">>> Producing HiM matrix")
     rootFolder, outputFolder, runParameters = parseArguments()
-    
-    rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
     
     HiMdata = analysisHiMmatrix(runParameters, rootFolder)
 
@@ -509,25 +563,20 @@ if __name__ == "__main__":
     plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
     # "calculates the Rg for each cell from the PWD sc matrix"
-    datasetName=list(HiMdata.ListData.keys())[0]
-
-    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
-    Ncells2Process = nRows**2
-    cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
-    PWDmatrix= SCmatrix[:,:,cellID]
-    
-    Rg = getRgFromPWD(PWDmatrix, minFracNotNaN=0.8)
-    
+    output= outputFolder + os.sep + "RgValues" + runParameters["plottingFileExtension"]
+    minFracNotNaN=0.5
+    plotsRgvalues(HiMdata,nRows,runParameters,outputFileName=output,minFracNotNaN=minFracNotNaN)
+   
     # "plots trajectories for selected cells"
-    CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
-    for cellID in CellIDs:
-        if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
-            #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
-            plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
-    
-            # plots trajectories
-            plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
-    
+    if "CellIDs" in HiMdata.ListData[datasetName].keys():
+        CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
+        for cellID in CellIDs:
+            if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
+                #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
+                plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
+        
+                # plots trajectories
+                plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
 
     # "makes video of SC matrix for selected cells"
     if runParameters["video"]:
