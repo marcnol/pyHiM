@@ -13,18 +13,18 @@ produces movies and structures from single cell PWD matrices
 import os
 import numpy as np
 import argparse
-from sklearn import manifold
+
 import cv2
 # from mayavi.mlab import *
-
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import matplotlib
+from sklearn.neighbors import KernelDensity
+from sklearn import manifold
 
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
-
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
-from sklearn.neighbors import KernelDensity
+
 
 font = {'family' : 'DejaVu Sans',
         'weight' : 'normal',
@@ -513,7 +513,7 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     
     # calculates and displays median
     mean=np.nanmedian(RgListArray)
-    print(mean)
+    print("Median Rg = {}".format(mean))
     ax.set_xlabel("counts")
     ax.set_ylabel("Rg, um")
     x_d = np.linspace(0, 2, 100)
@@ -538,11 +538,13 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     
     ax.fill_between(x_d, np.exp(logprob), alpha=0.3)
 
-    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
+    mean =   x_d[np.argmax(logprob, axis=0)]
+    print("KDE max Rg = {}".format(mean))
 
+    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
     
     plt.savefig(outputFileName)
-    plt.close(fig)    
+    # plt.close(fig)    
     
 #%%
 # =============================================================================
