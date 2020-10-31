@@ -24,8 +24,9 @@ import matplotlib
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
 
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
+from sklearn.neighbors import KernelDensity
 
-font = {'family' : 'helvetica',
+font = {'family' : 'DejaVu Sans',
         'weight' : 'normal',
         'size'   : 22}
 
@@ -476,6 +477,14 @@ def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
     plt.savefig(output)
     plt.close(fig)
         
+def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
+    
+    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
+    kde.fit(x[:, None])
+
+    logprob = kde.score_samples(x_d[:, None])
+    
+    return logprob,kde
 
 def plotsRgvalues(HiMdata,nRows,runParameters,
                               outputFileName='./RgValues.png',minFracNotNaN=0.8):
@@ -493,28 +502,47 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
         RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minFracNotNaN=minFracNotNaN))
 
     RgListArray=np.array(RgList)
-    fig, ax = plt.subplots()
-    fig.set_size_inches((10, 10))
-    # ax.plot(RgList)
-    ax.hist(RgListArray, alpha=0.5, bins=10)
-    mean=np.nanmedian(RgListArray)
-    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
-    print(mean)
-    ax.set_xlabel("barcode ID")
-    ax.set_ylabel("efficiency")
-    # ax.set_xticks(np.arange(len(eff)))
-    # ax.set_xticklabels(uniqueBarcodes)
-    # parts = ax.violinplot(
-    #         RgListArray, showmeans=False, showmedians=False,
-    #         showextrema=False)
+
+    # plots single Rg as bars
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10),
+                       sharex=True, sharey=True,
+                       subplot_kw={'xlim':(0, 2),
+                                   'ylim':(-0.02, 1.2)})
+    ax.plot(RgListArray, np.full_like(RgListArray, -0.01), '|k',
+           markeredgewidth=.5)
     
-    # for pc in parts['bodies']:
-    #     pc.set_facecolor('#D43F3A')
-    #     pc.set_edgecolor('black')
-    #     pc.set_alpha(1)
+    # calculates and displays median
+    mean=np.nanmedian(RgListArray)
+    print(mean)
+    ax.set_xlabel("counts")
+    ax.set_ylabel("Rg, um")
+    x_d = np.linspace(0, 2, 100)
+    
+    # KDE fit
+    # fist finds best bandwidth
+        
+    from sklearn.model_selection import GridSearchCV,LeaveOneOut
+    
+    bandwidths = 10 ** np.linspace(-1, 0, 20)
+    grid = GridSearchCV(KernelDensity(kernel='gaussian'),
+                        {'bandwidth': bandwidths},
+                        cv=LeaveOneOut())
+    grid.fit(RgListArray[:, None]);
+    bandwidth=grid.best_params_["bandwidth"]
+    print("bandwidth = {}".format(bandwidth))
+
+    # calculates KDE with optimal bandwidth
+    logprob,kde = kdeFit(RgListArray,x_d,bandwidth=bandwidth)
+    kde_params=kde.get_params()
+    # print(kde_params)
+    
+    ax.fill_between(x_d, np.exp(logprob), alpha=0.3)
+
+    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
+
     
     plt.savefig(outputFileName)
-    # plt.close(fig)    
+    plt.close(fig)    
     
 #%%
 # =============================================================================
