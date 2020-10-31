@@ -1532,6 +1532,8 @@ def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
     
     Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
     
+    Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
+    
     Rg = np.sqrt(Rg_sq)
     
     return Rg

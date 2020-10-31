@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from sklearn.neighbors import KernelDensity
 from sklearn import manifold
+from sklearn.model_selection import GridSearchCV,LeaveOneOut
 
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
@@ -502,11 +503,11 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
         RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minFracNotNaN=minFracNotNaN))
 
     RgListArray=np.array(RgList)
-
+    maxRange=RgListArray.max()
     # plots single Rg as bars
     fig, ax = plt.subplots(1, 1, figsize=(10, 10),
                        sharex=True, sharey=True,
-                       subplot_kw={'xlim':(0, 2),
+                       subplot_kw={'xlim':(0, maxRange),
                                    'ylim':(-0.02, 1.2)})
     ax.plot(RgListArray, np.full_like(RgListArray, -0.01), '|k',
            markeredgewidth=.5)
@@ -514,15 +515,13 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     # calculates and displays median
     mean=np.nanmedian(RgListArray)
     print("Median Rg = {}".format(mean))
-    ax.set_xlabel("counts")
-    ax.set_ylabel("Rg, um")
-    x_d = np.linspace(0, 2, 100)
+    ax.set_ylabel("counts")
+    ax.set_xlabel("Rg, "+r'$\mu$m')
+    x_d = np.linspace(0, maxRange, 100)
     
     # KDE fit
     # fist finds best bandwidth
-        
-    from sklearn.model_selection import GridSearchCV,LeaveOneOut
-    
+    print("Calculating optimal KDE bandwidth...")
     bandwidths = 10 ** np.linspace(-1, 0, 20)
     grid = GridSearchCV(KernelDensity(kernel='gaussian'),
                         {'bandwidth': bandwidths},
@@ -535,8 +534,8 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     logprob,kde = kdeFit(RgListArray,x_d,bandwidth=bandwidth)
     kde_params=kde.get_params()
     # print(kde_params)
-    
-    ax.fill_between(x_d, np.exp(logprob), alpha=0.3)
+    maxlogprob=logprob.max()
+    ax.fill_between(x_d, np.exp(logprob)/np.exp(maxlogprob), alpha=0.3)
 
     mean =   x_d[np.argmax(logprob, axis=0)]
     print("KDE max Rg = {}".format(mean))
