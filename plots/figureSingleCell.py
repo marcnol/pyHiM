@@ -29,7 +29,7 @@ from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
 
 font = {'family' : 'DejaVu Sans',
         'weight' : 'normal',
-        'size'   : 22}
+        'size'   : 25}
 
 matplotlib.rc('font', **font)
 
@@ -522,7 +522,7 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     # KDE fit
     # fist finds best bandwidth
     print("Calculating optimal KDE bandwidth...")
-    bandwidths = 10 ** np.linspace(-1, 0, 20)
+    bandwidths = 10 ** np.linspace(-2, 0, 20)
     grid = GridSearchCV(KernelDensity(kernel='gaussian'),
                         {'bandwidth': bandwidths},
                         cv=LeaveOneOut())

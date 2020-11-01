@@ -1530,9 +1530,12 @@ def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
     sq = np.square(PWDmatrix)
     sq = np.nansum(sq) # default is to compute the sum of the flattened array
     
-    Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
+    # Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
     
-    Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
+    ## Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
+
+    Rg_sq = sq / (8 * numNotNan**2) # replaces 1/(2*N^2)
+    # Rg_sq = sq / (2 * (PWDmatrix.shape[0])**2) # replaces 1/(2*N^2)
     
     Rg = np.sqrt(Rg_sq)
     
