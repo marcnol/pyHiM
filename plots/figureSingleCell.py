@@ -19,6 +19,7 @@ import cv2
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import matplotlib
+from mpl_toolkits.mplot3d import Axes3D
 from sklearn.neighbors import KernelDensity
 from sklearn import manifold
 from sklearn.model_selection import GridSearchCV,LeaveOneOut
@@ -63,7 +64,8 @@ def parseArguments():
     parser.add_argument("--ensembleMatrix", help="Use if you want ensembleMatrix to be plotted alongside sc matrices", action="store_true")
     parser.add_argument("--video", help="Use if you want to output video", action="store_true")
     parser.add_argument("--videoAllcells", help="Use if you want all nRows**2 single cells to take part of the video", action="store_true")
-    
+    parser.add_argument("--minNumberPWD", help="Minimum number of PWD to calculate Rg")
+    parser.add_argument("--threshold", help="Maximum accepted PWD to calculate Rg, in px")
 
     args = parser.parse_args()
 
@@ -74,8 +76,8 @@ def parseArguments():
     else:
         # rootFolder = "."
         # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
-        # rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
-        rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
+        rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
+        # rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
     
     if args.outputFolder:
         outputFolder = args.outputFolder
@@ -107,9 +109,19 @@ def parseArguments():
         runParameters["fontsize"] = 12
 
     if args.pixelSize:
-        runParameters["pixelSize"] = args.pixelSize
+        runParameters["pixelSize"] = float(args.pixelSize)
     else:
         runParameters["pixelSize"] = 0.1
+
+    if args.threshold:
+        runParameters["threshold"] = float(args.threshold)
+    else:
+        runParameters["threshold"] = 6
+
+    if args.minNumberPWD:
+        runParameters["minNumberPWD"] = args.minNumberPWD
+    else:
+        runParameters["minNumberPWD"] = 6
 
     if args.axisLabel:
         runParameters["axisLabel"] = args.axisLabel
@@ -175,8 +187,6 @@ def visualize3D(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.pn
     fig = plt.figure()
     fig.set_size_inches((10, 10))
     
-    ax = plt.axes(projection='3d')
-        
     ax = plt.axes(projection='3d')
  
     xdata, ydata, zdata, barcodeID = [],[],[], [] 
@@ -319,7 +329,7 @@ def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matpl
         
     # gets coordinates
     coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
-    coordinates = 0.1*getsCoordinatesFromPWDmatrix(PWDmatrix)
+    coordinates = runParameters["pixelSize"]*getsCoordinatesFromPWDmatrix(PWDmatrix)
 
     # makes plots
     output= outputFileNameRoot+ "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
@@ -488,10 +498,12 @@ def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
     return logprob,kde
 
 def plotsRgvalues(HiMdata,nRows,runParameters,
-                              outputFileName='./RgValues.png',minFracNotNaN=0.8):
+                              outputFileName='./RgValues.png',
+                              minNumberPWD=6,
+                              threshold=6,
+                              bandwidths = 10 ** np.linspace(-1.5, 0, 20)):
 
-    
-    datasetName=list(HiMdata.ListData.keys())[0]
+    print("Threshold = {} px | min number PWDs = {}".format(threshold,minNumberPWD))
 
     SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
     Ncells2Process = nRows**2
@@ -500,10 +512,10 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     
     RgList=list()
     for cellID in selectedCellsIDs:
-        RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minFracNotNaN=minFracNotNaN))
+        RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minNumberPWD=minNumberPWD,threshold=threshold))
 
     RgListArray=np.array(RgList)
-    maxRange=RgListArray.max()
+    maxRange=1.5*RgListArray.max()
     # plots single Rg as bars
     fig, ax = plt.subplots(1, 1, figsize=(10, 10),
                        sharex=True, sharey=True,
@@ -522,7 +534,7 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     # KDE fit
     # fist finds best bandwidth
     print("Calculating optimal KDE bandwidth...")
-    bandwidths = 10 ** np.linspace(-2, 0, 20)
+    
     grid = GridSearchCV(KernelDensity(kernel='gaussian'),
                         {'bandwidth': bandwidths},
                         cv=LeaveOneOut())
@@ -544,7 +556,8 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     
     plt.savefig(outputFileName)
     # plt.close(fig)    
-    
+    return RgList
+
 #%%
 # =============================================================================
 # MAIN
@@ -593,9 +606,14 @@ if __name__ == "__main__":
     
     # "calculates the Rg for each cell from the PWD sc matrix"
     output= outputFolder + os.sep + "RgValues" + runParameters["plottingFileExtension"]
-    minFracNotNaN=0.5
-    plotsRgvalues(HiMdata,nRows,runParameters,outputFileName=output,minFracNotNaN=minFracNotNaN)
-   
+    RgList=plotsRgvalues(HiMdata,
+                  nRows,
+                  runParameters,
+                  outputFileName=output,
+                  minNumberPWD=int(runParameters["minNumberPWD"]),
+                  threshold = 6,
+                  bandwidths = 10 ** np.linspace(-1.5, 0, 20))
+
     # "plots trajectories for selected cells"
     if "CellIDs" in HiMdata.ListData[datasetName].keys():
         CellIDs = HiMdata.ListData[datasetName]["CellIDs"]

@@ -1499,7 +1499,7 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
         return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
     
     
-def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
+def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
     """
     Calculates the Rg from a 2D pairwise distance matrix
     while taking into account that some of the PWD might be NaN
@@ -1509,6 +1509,8 @@ def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
     
     for the math, see https://en.wikipedia.org/wiki/Radius_of_gyration#Molecular_applications
     """
+
+    PWDmatrix = PWDmatrix0.copy()
     
     # check that PWDmatrix is of right shape
     if (PWDmatrix.ndim != 2):
@@ -1519,22 +1521,28 @@ def getRgFromPWD(PWDmatrix, minFracNotNaN=0.8):
     # make sure the diagonal is NaN
     np.fill_diagonal(PWDmatrix, np.NaN)
     
+    # filters out PWD 
+    PWDmatrix[PWDmatrix > threshold]=np.nan
+
     # get the number of PWDs that are not NaN
     numPWDs = PWDmatrix.shape[0]*(PWDmatrix.shape[0]-1)/2
     numNotNan = np.sum(~np.isnan(PWDmatrix)) / 2 # default is to compute the sum of the flattened array
     #print("numNotNaN", numNotNan)
-    if (numNotNan/numPWDs < minFracNotNaN):
+    # if (numNotNan/numPWDs < minFracNotNaN):
+    #     return np.NaN
+
+    if (numNotNan < minNumberPWD):
         return np.NaN
     
     # calculate Rg
     sq = np.square(PWDmatrix)
     sq = np.nansum(sq) # default is to compute the sum of the flattened array
     
-    # Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
+    Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
     
     ## Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
 
-    Rg_sq = sq / (8 * numNotNan**2) # replaces 1/(2*N^2)
+    # Rg_sq = sq / (8 * numNotNan**2) # replaces 1/(2*N^2)
     # Rg_sq = sq / (2 * (PWDmatrix.shape[0])**2) # replaces 1/(2*N^2)
     
     Rg = np.sqrt(Rg_sq)
