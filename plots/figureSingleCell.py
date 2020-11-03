@@ -13,22 +13,26 @@ produces movies and structures from single cell PWD matrices
 import os
 import numpy as np
 import argparse
-import numpy.linalg as npl
-from sklearn import manifold
-import cv2
-from mayavi.mlab import *
 
-import networkx as nx
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits import mplot3d
-    
+import cv2
+# from mayavi.mlab import *
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
+import matplotlib
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.neighbors import KernelDensity
+from sklearn import manifold
+from sklearn.model_selection import GridSearchCV,LeaveOneOut
 
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
+from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
+
+
+font = {'family' : 'DejaVu Sans',
+        'weight' : 'normal',
+        'size'   : 22}
+
+matplotlib.rc('font', **font)
 
 #%% define and loads datasets
 
@@ -49,6 +53,8 @@ def parseArguments():
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
+    parser.add_argument("--pixelSize", help="Pixel Size in um")
+
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
         "--shuffle",
@@ -57,19 +63,21 @@ def parseArguments():
     parser.add_argument("--ensembleMatrix", help="Use if you want ensembleMatrix to be plotted alongside sc matrices", action="store_true")
     parser.add_argument("--video", help="Use if you want to output video", action="store_true")
     parser.add_argument("--videoAllcells", help="Use if you want all nRows**2 single cells to take part of the video", action="store_true")
-    
+    parser.add_argument("--minNumberPWD", help="Minimum number of PWD to calculate Rg")
+    parser.add_argument("--threshold", help="Maximum accepted PWD to calculate Rg, in px")
 
     args = parser.parse_args()
 
     runParameters = {}
-    runParameters["pixelSize"] = 0.1
 
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
-        rootFolder = "."
+        # rootFolder = "."
         # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
-
+        # rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
+        rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
+    
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
@@ -92,12 +100,27 @@ def parseArguments():
     if args.action:
         runParameters["action"] = args.action
     else:
-        runParameters["action"] = "labeled"
+        runParameters["action"] = "all"
 
     if args.fontsize:
         runParameters["fontsize"] = args.fontsize
     else:
         runParameters["fontsize"] = 12
+
+    if args.pixelSize:
+        runParameters["pixelSize"] = float(args.pixelSize)
+    else:
+        runParameters["pixelSize"] = 0.1
+
+    if args.threshold:
+        runParameters["threshold"] = float(args.threshold)
+    else:
+        runParameters["threshold"] = 8
+
+    if args.minNumberPWD:
+        runParameters["minNumberPWD"] = args.minNumberPWD
+    else:
+        runParameters["minNumberPWD"] = 6
 
     if args.axisLabel:
         runParameters["axisLabel"] = args.axisLabel
@@ -163,8 +186,6 @@ def visualize3D(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.pn
     fig = plt.figure()
     fig.set_size_inches((10, 10))
     
-    ax = plt.axes(projection='3d')
-        
     ax = plt.axes(projection='3d')
  
     xdata, ydata, zdata, barcodeID = [],[],[], [] 
@@ -307,7 +328,7 @@ def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matpl
         
     # gets coordinates
     coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
-    coordinates = 0.1*getsCoordinatesFromPWDmatrix(PWDmatrix)
+    coordinates = runParameters["pixelSize"]*getsCoordinatesFromPWDmatrix(PWDmatrix)
 
     # makes plots
     output= outputFileNameRoot+ "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
@@ -330,7 +351,7 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
 
     vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
     cmap = HiMdata.ListData[datasetName]["iPWD_cm"]
-    SCmatrix = HiMdata.data["SCmatrixCollated"]
+    SCmatrix = HiMdata.SCmatrixSelected
 
     singleCellTitle="Cell #"+str(cellID)
 
@@ -362,9 +383,14 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
     plt.savefig(output)
     plt.close(fig)
     
-def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
-    datasetName=list(HiMdata.ListData.keys())[0]
-  
+def sortsCellsbyNumberPWD(HiMdata):
+
+    # SCmatrix = HiMdata.data["SCmatrixCollated"]
+    SCmatrix = HiMdata.SCmatrixSelected
+        
+    nCells=SCmatrix.shape[2]
+    # print("Number of cells loaded: {}".format(nCells))
+
     # finds the number of barcodes detected per cell.
     nBarcodePerCell = list()
     values = list()
@@ -379,6 +405,14 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
     valuesArray = np.array(values, dtype=dtype)       # create a structured array
     sortedValues = np.sort(valuesArray, order='nPWD')                        
     
+    return SCmatrix, sortedValues, nCells
+    
+def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
+    
+    datasetName=list(HiMdata.ListData.keys())[0]
+
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)
+
     # displays plots
     Ncells2Process = nRows**2
     cellID,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
@@ -402,7 +436,7 @@ def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
 
     plt.savefig(output)
     plt.close(fig)
-    return cellID
+    return cellID, SCmatrix
 
 def makesVideo(folder,video_name,searchPattern):
     
@@ -421,6 +455,110 @@ def makesVideo(folder,video_name,searchPattern):
     else:
         print("Sorry, no images found fitting the pattern {} in this folder: {}".format(searchPattern,folder))
         
+        
+def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='./'):
+    
+    numBarcodes= getBarcodesPerCell(SCmatrix)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches((10, 10))
+    ax.hist(numBarcodes)
+    ax.set_xlabel("number of barcodes")
+    ax.set_ylabel("counts")
+    
+    output= outputFileNameRoot+ "_SChistBarcodesPerCell" + runParameters["plottingFileExtension"]
+    plt.savefig(output)
+    plt.close(fig)
+    
+
+   
+def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
+                              outputFileNameRoot='./'):
+    
+    eff = getDetectionEffBarcodes(SCmatrix)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches((10, 10))
+    ax.bar(uniqueBarcodes,eff)
+    ax.set_xlabel("barcode ID")
+    ax.set_ylabel("efficiency")
+    ax.set_xticks(np.arange(len(eff)))
+    ax.set_xticklabels(uniqueBarcodes)
+    
+    output= outputFileNameRoot+ "_SCBarcodesEfficiency" + runParameters["plottingFileExtension"]
+    plt.savefig(output)
+    plt.close(fig)
+        
+def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
+    
+    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
+    kde.fit(x[:, None])
+
+    logprob = kde.score_samples(x_d[:, None])
+    
+    return logprob,kde
+
+def plotsRgvalues(HiMdata,nRows,runParameters,
+                              outputFileName='./RgValues.png',
+                              minNumberPWD=6,
+                              threshold=6,
+                              bandwidths = 10 ** np.linspace(-1.5, 0, 20)):
+
+    print("Threshold = {} px | min number PWDs = {}".format(threshold,minNumberPWD))
+
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
+    Ncells2Process = nRows**2
+    selectedCellsIDs,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    # PWDmatrix= SCmatrix[:,:,CellIDs]
+    
+    RgList=list()
+    for cellID in selectedCellsIDs:
+        RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minNumberPWD=minNumberPWD,threshold=threshold))
+
+    RgListArray=np.array(RgList)
+    maxRange=1.5*RgListArray.max()
+    # plots single Rg as bars
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10),
+                       sharex=True, sharey=True,
+                       subplot_kw={'xlim':(0, maxRange),
+                                   'ylim':(-0.02, 1.2)})
+    ax.plot(RgListArray, np.full_like(RgListArray, -0.01), '|k',
+           markeredgewidth=.5)
+    
+    # calculates and displays median
+    mean=np.nanmedian(RgListArray)
+    print("Median Rg = {}".format(mean))
+    ax.set_ylabel("counts")
+    ax.set_xlabel("Rg, "+r'$\mu$m')
+    x_d = np.linspace(0, maxRange, 100)
+    
+    # KDE fit
+    # fist finds best bandwidth
+    print("Calculating optimal KDE bandwidth...")
+    
+    grid = GridSearchCV(KernelDensity(kernel='gaussian'),
+                        {'bandwidth': bandwidths},
+                        cv=LeaveOneOut())
+    grid.fit(RgListArray[:, None]);
+    bandwidth=grid.best_params_["bandwidth"]
+    print("bandwidth = {}".format(bandwidth))
+
+    # calculates KDE with optimal bandwidth
+    logprob,kde = kdeFit(RgListArray,x_d,bandwidth=bandwidth)
+    kde_params=kde.get_params()
+    # print(kde_params)
+    maxlogprob=logprob.max()
+    ax.fill_between(x_d, np.exp(logprob)/np.exp(maxlogprob), alpha=0.3)
+
+    mean =   x_d[np.argmax(logprob, axis=0)]
+    print("KDE max Rg = {}".format(mean))
+
+    ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
+    
+    plt.savefig(outputFileName)
+    # plt.close(fig)    
+    return RgList
+
 #%%
 # =============================================================================
 # MAIN
@@ -431,14 +569,14 @@ if __name__ == "__main__":
     print(">>> Producing HiM matrix")
     rootFolder, outputFolder, runParameters = parseArguments()
     
-    rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
-    
     HiMdata = analysisHiMmatrix(runParameters, rootFolder)
 
     HiMdata.loadData()
 
     nCells = HiMdata.nCellsLoaded()
 
+    HiMdata.retrieveSCmatrix()
+    
     nDatasets = len(HiMdata.data["runName"])
 
     if outputFolder == "none":
@@ -457,27 +595,40 @@ if __name__ == "__main__":
     )
     datasetName=list(HiMdata.ListData.keys())[0]
 
-    SCmatrix = HiMdata.data["SCmatrixCollated"]
-    nCells=SCmatrix.shape[2]
-    print("Number of cells loaded: {}".format(nCells))
-    
-    # makes subplots with sc 1/PWD matrices
+    # "makes subplots with sc 1/PWD matrices"
     nRows=runParameters["nRows"]
     output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
-    cellID_most_PWDs = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
+    cellID_most_PWDs, SCmatrix = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
     
-    CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
+    # "calculates the number of barcodes per cell and makes histograms"
+    plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot=outputFileNameRoot)
     
-    for cellID in CellIDs:
-        if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
-            #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
-            plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
     
-            # plots trajectories
-            plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
+    # "calculates the detection efficiency for each barcode"
+    plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
+    # "calculates the Rg for each cell from the PWD sc matrix"
+    output= outputFileNameRoot + "_RgValues" + runParameters["plottingFileExtension"]
+    RgList=plotsRgvalues(HiMdata,
+                  nRows,
+                  runParameters,
+                  outputFileName=output,
+                  minNumberPWD=int(runParameters["minNumberPWD"]),
+                  threshold = float(runParameters["threshold"]),
+                  bandwidths = 10 ** np.linspace(-1, 0, 20))
 
-    # makes video
+    # "plots trajectories for selected cells"
+    if "CellIDs" in HiMdata.ListData[datasetName].keys():
+        CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
+        for cellID in CellIDs:
+            if cellID<HiMdata.SCmatrixSelected.shape[2]:
+                #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
+                plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
+        
+                # plots trajectories
+                plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID)    
+
+    # "makes video of SC matrix for selected cells"
     if runParameters["video"]:
         print("Making video...")
         if runParameters["videoAllcells"] :
@@ -492,9 +643,3 @@ if __name__ == "__main__":
         makesVideo(outputFileNameRoot,video_name,searchPattern)
 
     print("\nDone\n\n")
-    
-    
-    #%%
-    
-
- 

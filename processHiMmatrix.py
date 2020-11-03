@@ -11,6 +11,11 @@ stored and processes multiple PWD matrices together.
 
 $ processHiMmatrix.py -F rootFolder
 
+outputs
+
+SCmatrixCollated: 3D npy matrix. PWD matrix for single cells. Axes:0-1 barcodes, Axis:2, cellID
+uniqueBarcodes: npy array. list of unique barcodes
+SClabeledCollated: npy array. binary label indicating if cell is in pattern or not. Axis:0 cellID
 
 """
 

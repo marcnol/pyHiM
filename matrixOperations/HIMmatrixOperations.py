@@ -52,7 +52,8 @@ class analysisHiMmatrix:
         self.data = []
         self.dataFiles = []
         self.folders2Load = []
-
+        self.numberBarcodes=0
+        
     def loadData(self):
         """
         loads dataset
@@ -114,6 +115,7 @@ class analysisHiMmatrix:
 
         data["uniqueBarcodes"] = loadList(outputFileName + "_uniqueBarcodes.csv")
         print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
+        self.numberBarcodes=len(data["uniqueBarcodes"])
 
         print("Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
         print("Number Datasets loaded: {}".format(len(data["runName"])))
@@ -246,6 +248,27 @@ class analysisHiMmatrix:
         return nCells
 
 
+    def retrieveSCmatrix(self):
+        nCells=self.nCellsLoaded()
+        SCmatrixSelected=np.zeros((self.numberBarcodes,self.numberBarcodes,nCells))
+        
+        if self.runParameters["action"] == "labeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x > 0]
+            newCell=0
+            for iCell in cellswithLabel:
+                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
+                newCell+=1
+        elif self.runParameters["action"] == "unlabeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x == 0]
+            newCell=0
+            for iCell in cellswithLabel:
+                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
+                newCell+=1
+        else:
+            SCmatrixSelected = self.data["SCmatrixCollated"]
+        print("nCells retrieved: {}".format(SCmatrixSelected.shape[2]))
+        self.SCmatrixSelected= SCmatrixSelected
+    
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -1497,3 +1520,99 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
             return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
     else:
         return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
+    
+    
+def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
+    """
+    Calculates the Rg from a 2D pairwise distance matrix
+    while taking into account that some of the PWD might be NaN
+    
+    PWDmatrix:       numpy array, NxN
+    minFracNotNaN:   require a minimal fraction of PWDs to be not NaN, return NaN otherwise
+    
+    for the math, see https://en.wikipedia.org/wiki/Radius_of_gyration#Molecular_applications
+    """
+
+    PWDmatrix = PWDmatrix0.copy()
+    
+    # check that PWDmatrix is of right shape
+    if (PWDmatrix.ndim != 2):
+        raise SystemExit("getRgFromPWD: Expected 2D input but got {}D.".format(PWDmatrix.ndim))
+    if (PWDmatrix.shape[0] != PWDmatrix.shape[1]):
+        raise SystemExit("getRgFromPWD: Expected square matrix as input.")
+    
+    # make sure the diagonal is NaN
+    np.fill_diagonal(PWDmatrix, np.NaN)
+    
+    # filters out PWD 
+    PWDmatrix[PWDmatrix > threshold]=np.nan
+
+    # get the number of PWDs that are not NaN
+    numPWDs = PWDmatrix.shape[0]*(PWDmatrix.shape[0]-1)/2
+    numNotNan = np.sum(~np.isnan(PWDmatrix)) / 2 # default is to compute the sum of the flattened array
+    #print("numNotNaN", numNotNan)
+    # if (numNotNan/numPWDs < minFracNotNaN):
+    #     return np.NaN
+
+    if (numNotNan < minNumberPWD):
+        return np.NaN
+    
+    # calculate Rg
+    sq = np.square(PWDmatrix)
+    sq = np.nansum(sq) # default is to compute the sum of the flattened array
+    
+    Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
+    
+    ## Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
+
+    # Rg_sq = sq / (8 * numNotNan**2) # replaces 1/(2*N^2)
+    # Rg_sq = sq / (2 * (PWDmatrix.shape[0])**2) # replaces 1/(2*N^2)
+    
+    Rg = np.sqrt(Rg_sq)
+    
+    return Rg
+
+def getDetectionEffBarcodes(SCmatrixCollated):
+    """
+    Return the detection efficiency of all barcodes.
+    Assumes a barcode is detected as soon as one PWD with this barcode is detected.
+    """
+    
+    # check that PWDmatrix is of right shape
+    if (SCmatrixCollated.ndim != 3):
+        raise SystemExit("getBarcodeEff: Expected 3D input but got {}D.".format(SCmatrixCollated.ndim))
+    if (SCmatrixCollated.shape[0] != SCmatrixCollated.shape[1]):
+        raise SystemExit("getBarcodeEff: Expected axis 0 and 1 to have the same length.")
+    
+    # make sure the diagonal is NaN
+    for i in range(SCmatrixCollated.shape[0]):
+        SCmatrixCollated[i,i,:] = np.NaN
+    
+    # calculate barcode efficiency
+    nCells = SCmatrixCollated.shape[2]
+    
+    eff = np.sum(~np.isnan(SCmatrixCollated), axis=0)
+    eff[eff>1] = 1
+
+    eff = np.sum(eff, axis=-1) # sum over all cells
+    
+    eff = eff/nCells
+    
+    return eff
+
+
+
+def getBarcodesPerCell(SCmatrixCollated):
+    """
+    Returns the number of barcodes that were detected in each cell of SCmatrixCollated.
+    """
+    
+    # make sure the diagonal is NaN
+    for i in range(SCmatrixCollated.shape[0]):
+        SCmatrixCollated[i,i,:] = np.NaN
+    
+    numBarcodes = np.sum(~np.isnan(SCmatrixCollated), axis=0)
+    numBarcodes[numBarcodes>1] = 1
+    numBarcodes = np.sum(numBarcodes, axis=0)
+    
+    return numBarcodes
