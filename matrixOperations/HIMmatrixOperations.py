@@ -1550,9 +1550,6 @@ def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
     # get the number of PWDs that are not NaN
     numPWDs = PWDmatrix.shape[0]*(PWDmatrix.shape[0]-1)/2
     numNotNan = np.sum(~np.isnan(PWDmatrix)) / 2 # default is to compute the sum of the flattened array
-    #print("numNotNaN", numNotNan)
-    # if (numNotNan/numPWDs < minFracNotNaN):
-    #     return np.NaN
 
     if (numNotNan < minNumberPWD):
         return np.NaN
@@ -1562,12 +1559,7 @@ def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
     sq = np.nansum(sq) # default is to compute the sum of the flattened array
     
     Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
-    
-    ## Rg_sq = Rg_sq / 2 # there is a factor of two because interactions pairwise distances counted twice.
-
-    # Rg_sq = sq / (8 * numNotNan**2) # replaces 1/(2*N^2)
-    # Rg_sq = sq / (2 * (PWDmatrix.shape[0])**2) # replaces 1/(2*N^2)
-    
+       
     Rg = np.sqrt(Rg_sq)
     
     return Rg
@@ -1616,3 +1608,58 @@ def getBarcodesPerCell(SCmatrixCollated):
     numBarcodes = np.sum(numBarcodes, axis=0)
     
     return numBarcodes
+
+def getsCoordinatesFromPWDmatrix(matrix):
+    ## multi-dimensional scaling to get coordinates from PWDs
+    # make sure meanSCmatrix is symmetric
+    matrix = 0.5 * (matrix + np.transpose(matrix))
+    # run metric mds
+    verbosity = 0  # default: 0, quite verbose: 2
+    mds = manifold.MDS(
+        n_components=3,
+        metric=True,
+        n_init=20,
+        max_iter=3000,
+        verbose=verbosity,
+        eps=1e-9,
+        n_jobs=1,
+        random_state=1,
+        dissimilarity="precomputed",  # euclidean | precomputed
+    )
+    
+    XYZ = mds.fit(matrix).embedding_
+
+    return XYZ
+
+def sortsCellsbyNumberPWD(HiMdata):
+
+    # SCmatrix = HiMdata.data["SCmatrixCollated"]
+    SCmatrix = HiMdata.SCmatrixSelected
+        
+    nCells=SCmatrix.shape[2]
+    # print("Number of cells loaded: {}".format(nCells))
+
+    # finds the number of barcodes detected per cell.
+    nBarcodePerCell = list()
+    values = list()
+    dtype = [('cellID', int), ('nPWD', int)]
+    
+    for iCell in range(nCells):
+        SCmatrixCell = SCmatrix[:,:,iCell]
+        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell))/2)
+        nBarcodePerCell.append(nPWD)
+        values.append((iCell,nPWD))        
+        
+    valuesArray = np.array(values, dtype=dtype)       # create a structured array
+    sortedValues = np.sort(valuesArray, order='nPWD')                        
+    
+    return SCmatrix, sortedValues, nCells
+
+def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
+    
+    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
+    kde.fit(x[:, None])
+
+    logprob = kde.score_samples(x_d[:, None])
+    
+    return logprob,kde

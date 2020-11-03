@@ -24,8 +24,8 @@ from sklearn.neighbors import KernelDensity
 from sklearn import manifold
 from sklearn.model_selection import GridSearchCV,LeaveOneOut
 
-from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
+from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell, kdeFit
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, getsCoordinatesFromPWDmatrix, sortsCellsbyNumberPWD
 
 
 font = {'family' : 'DejaVu Sans',
@@ -288,28 +288,7 @@ def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[],output='visualize2
         fig.savefig(output)
         plt.close(fig)
         
-def getsCoordinatesFromPWDmatrix(matrix):
-    ## multi-dimensional scaling to get coordinates from PWDs
-    # make sure meanSCmatrix is symmetric
-    matrix = 0.5 * (matrix + np.transpose(matrix))
-    # run metric mds
-    verbosity = 0  # default: 0, quite verbose: 2
-    mds = manifold.MDS(
-        n_components=3,
-        metric=True,
-        n_init=20,
-        max_iter=3000,
-        verbose=verbosity,
-        eps=1e-9,
-        n_jobs=1,
-        random_state=1,
-        dissimilarity="precomputed",  # euclidean | precomputed
-    )
-    
-    XYZ = mds.fit(matrix).embedding_
 
-    return XYZ
- 
 def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matplotlib'):
     
     PWDmatrix=SCmatrix[:,:,cellID]
@@ -383,29 +362,6 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
     plt.savefig(output)
     plt.close(fig)
     
-def sortsCellsbyNumberPWD(HiMdata):
-
-    # SCmatrix = HiMdata.data["SCmatrixCollated"]
-    SCmatrix = HiMdata.SCmatrixSelected
-        
-    nCells=SCmatrix.shape[2]
-    # print("Number of cells loaded: {}".format(nCells))
-
-    # finds the number of barcodes detected per cell.
-    nBarcodePerCell = list()
-    values = list()
-    dtype = [('cellID', int), ('nPWD', int)]
-    
-    for iCell in range(nCells):
-        SCmatrixCell = SCmatrix[:,:,iCell]
-        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell))/2)
-        nBarcodePerCell.append(nPWD)
-        values.append((iCell,nPWD))        
-        
-    valuesArray = np.array(values, dtype=dtype)       # create a structured array
-    sortedValues = np.sort(valuesArray, order='nPWD')                        
-    
-    return SCmatrix, sortedValues, nCells
     
 def plotsSubplotSCmatrices(HiMdata,nRows,output='subplotMatrices.png'):
     
@@ -489,15 +445,6 @@ def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
     plt.savefig(output)
     plt.close(fig)
         
-def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
-    
-    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
-    kde.fit(x[:, None])
-
-    logprob = kde.score_samples(x_d[:, None])
-    
-    return logprob,kde
-
 def plotsRgvalues(HiMdata,nRows,runParameters,
                               outputFileName='./RgValues.png',
                               minNumberPWD=6,
@@ -509,14 +456,15 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
     Ncells2Process = nRows**2
     selectedCellsIDs,Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
-    # PWDmatrix= SCmatrix[:,:,CellIDs]
-    
+
+    # calculates Rg for all cells
     RgList=list()
     for cellID in selectedCellsIDs:
         RgList.append(runParameters["pixelSize"]*getRgFromPWD(SCmatrix[:,:,cellID], minNumberPWD=minNumberPWD,threshold=threshold))
 
     RgListArray=np.array(RgList)
     maxRange=1.5*RgListArray.max()
+    
     # plots single Rg as bars
     fig, ax = plt.subplots(1, 1, figsize=(10, 10),
                        sharex=True, sharey=True,
@@ -546,7 +494,6 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     # calculates KDE with optimal bandwidth
     logprob,kde = kdeFit(RgListArray,x_d,bandwidth=bandwidth)
     kde_params=kde.get_params()
-    # print(kde_params)
     maxlogprob=logprob.max()
     ax.fill_between(x_d, np.exp(logprob)/np.exp(maxlogprob), alpha=0.3)
 
@@ -556,7 +503,7 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     ax.axvline(x=mean,color="black", linestyle=(0, (5, 5)))
     
     plt.savefig(outputFileName)
-    # plt.close(fig)    
+    plt.close(fig)    
     return RgList
 
 #%%
