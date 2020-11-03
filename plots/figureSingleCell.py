@@ -30,10 +30,9 @@ from matrixOperations.HIMmatrixOperations import analysisHiMmatrix
 
 font = {'family' : 'DejaVu Sans',
         'weight' : 'normal',
-        'size'   : 25}
+        'size'   : 22}
 
 matplotlib.rc('font', **font)
-
 
 #%% define and loads datasets
 
@@ -76,8 +75,8 @@ def parseArguments():
     else:
         # rootFolder = "."
         # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
-        rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
-        # rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
+        # rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
+        rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
     
     if args.outputFolder:
         outputFolder = args.outputFolder
@@ -101,7 +100,7 @@ def parseArguments():
     if args.action:
         runParameters["action"] = args.action
     else:
-        runParameters["action"] = "labeled"
+        runParameters["action"] = "all"
 
     if args.fontsize:
         runParameters["fontsize"] = args.fontsize
@@ -116,7 +115,7 @@ def parseArguments():
     if args.threshold:
         runParameters["threshold"] = float(args.threshold)
     else:
-        runParameters["threshold"] = 6
+        runParameters["threshold"] = 8
 
     if args.minNumberPWD:
         runParameters["minNumberPWD"] = args.minNumberPWD
@@ -352,7 +351,7 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
 
     vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
     cmap = HiMdata.ListData[datasetName]["iPWD_cm"]
-    SCmatrix = HiMdata.data["SCmatrixCollated"]
+    SCmatrix = HiMdata.SCmatrixSelected
 
     singleCellTitle="Cell #"+str(cellID)
 
@@ -386,9 +385,11 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
     
 def sortsCellsbyNumberPWD(HiMdata):
 
-    SCmatrix = HiMdata.data["SCmatrixCollated"]
+    # SCmatrix = HiMdata.data["SCmatrixCollated"]
+    SCmatrix = HiMdata.SCmatrixSelected
+        
     nCells=SCmatrix.shape[2]
-    print("Number of cells loaded: {}".format(nCells))
+    # print("Number of cells loaded: {}".format(nCells))
 
     # finds the number of barcodes detected per cell.
     nBarcodePerCell = list()
@@ -455,7 +456,7 @@ def makesVideo(folder,video_name,searchPattern):
         print("Sorry, no images found fitting the pattern {} in this folder: {}".format(searchPattern,folder))
         
         
-def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='SChistBarcodesPerCell.png'):
+def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='./'):
     
     numBarcodes= getBarcodesPerCell(SCmatrix)
 
@@ -465,7 +466,7 @@ def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='SChistBarco
     ax.set_xlabel("number of barcodes")
     ax.set_ylabel("counts")
     
-    output= outputFileNameRoot+ "SChistBarcodesPerCell" + runParameters["plottingFileExtension"]
+    output= outputFileNameRoot+ "_SChistBarcodesPerCell" + runParameters["plottingFileExtension"]
     plt.savefig(output)
     plt.close(fig)
     
@@ -484,7 +485,7 @@ def plotsBarcodesEfficiencies(SCmatrix,runParameters, uniqueBarcodes,
     ax.set_xticks(np.arange(len(eff)))
     ax.set_xticklabels(uniqueBarcodes)
     
-    output= outputFileNameRoot+ "SCBarcodesEfficiency" + runParameters["plottingFileExtension"]
+    output= outputFileNameRoot+ "_SCBarcodesEfficiency" + runParameters["plottingFileExtension"]
     plt.savefig(output)
     plt.close(fig)
         
@@ -574,6 +575,8 @@ if __name__ == "__main__":
 
     nCells = HiMdata.nCellsLoaded()
 
+    HiMdata.retrieveSCmatrix()
+    
     nDatasets = len(HiMdata.data["runName"])
 
     if outputFolder == "none":
@@ -605,20 +608,20 @@ if __name__ == "__main__":
     plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
     # "calculates the Rg for each cell from the PWD sc matrix"
-    output= outputFolder + os.sep + "RgValues" + runParameters["plottingFileExtension"]
+    output= outputFileNameRoot + "_RgValues" + runParameters["plottingFileExtension"]
     RgList=plotsRgvalues(HiMdata,
                   nRows,
                   runParameters,
                   outputFileName=output,
                   minNumberPWD=int(runParameters["minNumberPWD"]),
-                  threshold = 6,
-                  bandwidths = 10 ** np.linspace(-1.5, 0, 20))
+                  threshold = float(runParameters["threshold"]),
+                  bandwidths = 10 ** np.linspace(-1, 0, 20))
 
     # "plots trajectories for selected cells"
     if "CellIDs" in HiMdata.ListData[datasetName].keys():
         CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
         for cellID in CellIDs:
-            if cellID<HiMdata.data["SCmatrixCollated"].shape[2]:
+            if cellID<HiMdata.SCmatrixSelected.shape[2]:
                 #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
                 plotSCmatrix(HiMdata,cellID,outputFileNameRoot,ensembleMatrix=runParameters["ensembleMatrix"])
         

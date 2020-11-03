@@ -52,7 +52,8 @@ class analysisHiMmatrix:
         self.data = []
         self.dataFiles = []
         self.folders2Load = []
-
+        self.numberBarcodes=0
+        
     def loadData(self):
         """
         loads dataset
@@ -114,6 +115,7 @@ class analysisHiMmatrix:
 
         data["uniqueBarcodes"] = loadList(outputFileName + "_uniqueBarcodes.csv")
         print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
+        self.numberBarcodes=len(data["uniqueBarcodes"])
 
         print("Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
         print("Number Datasets loaded: {}".format(len(data["runName"])))
@@ -246,6 +248,27 @@ class analysisHiMmatrix:
         return nCells
 
 
+    def retrieveSCmatrix(self):
+        nCells=self.nCellsLoaded()
+        SCmatrixSelected=np.zeros((self.numberBarcodes,self.numberBarcodes,nCells))
+        
+        if self.runParameters["action"] == "labeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x > 0]
+            newCell=0
+            for iCell in cellswithLabel:
+                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
+                newCell+=1
+        elif self.runParameters["action"] == "unlabeled":
+            cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x == 0]
+            newCell=0
+            for iCell in cellswithLabel:
+                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
+                newCell+=1
+        else:
+            SCmatrixSelected = self.data["SCmatrixCollated"]
+        print("nCells retrieved: {}".format(SCmatrixSelected.shape[2]))
+        self.SCmatrixSelected= SCmatrixSelected
+    
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -1593,4 +1616,3 @@ def getBarcodesPerCell(SCmatrixCollated):
     numBarcodes = np.sum(numBarcodes, axis=0)
     
     return numBarcodes
-    
