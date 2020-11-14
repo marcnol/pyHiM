@@ -35,6 +35,7 @@
         "background_method": "inhomogeneous",
         "stardist_network": "stardist_nc14_nrays:128_epochs:400_grid:2",
         "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+        "tesselation": true,
         "background_sigma": 3.0,
         "folder": "segmentedObjects",
         "fwhm": 3.0,

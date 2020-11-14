@@ -21,8 +21,13 @@ after image segmentation.
 # ---- stardist
 from __future__ import print_function, unicode_literals, absolute_import, division
 
-import glob, os
+import glob, os, time
 import matplotlib.pylab as plt
+from matplotlib.path import Path
+from scipy.ndimage import gaussian_filter
+from scipy.spatial import Voronoi, voronoi_plot_2d
+from skimage.measure import regionprops
+
 import numpy as np
 import uuid
 from dask.distributed import Client, get_client
@@ -96,7 +101,7 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     )
     
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
-
+    
     norm = ImageNormalize(stretch=SqrtStretch())
     cmap = lbl_cmap
 
@@ -220,6 +225,163 @@ def segmentSourceFlatBackground(im, param):
 
     return sources, im1_bkg_substracted
 
+def tessellate_DAPI_masks(segm_deblend):
+    """
+    * takes a DAPI mask (background 0, nuclei labeled 1, 2, ...)
+    * calls get_tessellation(xy, img_shape)
+    * returns the tesselated DAPI mask and the voronoi data structure
+
+    Parameters
+    ----------
+    dapi_mask : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    voronoiData : TYPE
+        DESCRIPTION.
+    dapi_mask_voronoi : TYPE
+        DESCRIPTION.
+
+    """
+    start_time = time.time()
+    
+    # get centroids
+    dapi_mask = segm_deblend.data
+    dapi_mask_binary = dapi_mask.copy()
+    dapi_mask_binary[dapi_mask_binary>0] = 1
+    
+    regions_dapi = regionprops(dapi_mask)
+    
+    numMasks = np.max(dapi_mask)
+    centroid = np.zeros((numMasks+1, 2)) # +1 as labels run from 0 to max
+
+    for props in regions_dapi:
+        y0, x0 = props.centroid
+        label = props.label
+        centroid[label,:] = x0, y0
+    
+    # tesselation
+    # remove first centroid (this is the background label)
+    xy = centroid[1:,:]
+    voronoiData = get_tessellation(xy, dapi_mask.shape)
+    
+    # add some clipping to the tessellation
+    # gaussian blur and thresholding; magic numbers!
+    dapi_mask_blurred = gaussian_filter(dapi_mask_binary.astype("float64"), sigma=20)
+    dapi_mask_blurred = dapi_mask_blurred>0.01
+    
+    # convert tessellation to mask
+    np.random.seed(42)    
+    
+    dapi_mask_voronoi = np.zeros(dapi_mask.shape, dtype="int64")
+    
+    nx, ny = dapi_mask.shape
+    
+    # Create vertex coordinates for each grid cell...
+    # (<0,0> is at the top left of the grid in this system)
+    x, y = np.meshgrid(np.arange(nx), np.arange(ny))
+    x, y = x.flatten(), y.flatten()
+    
+    points = np.vstack((x,y)).T    
+    
+    # currently takes 1min for approx 600 polygons
+    for label in range(0, numMasks): # label is shifted by -1 now
+        maskID = label+1
+        
+        idx_vor_region = voronoiData.point_region[label]
+        idx_vor_vertices = voronoiData.regions[idx_vor_region] # list of indices of the Voronoi vertices
+        
+        vertices = np.full((len(idx_vor_vertices),2), np.NaN)
+        drop_vert = False
+        for i in range(len(idx_vor_vertices)):
+            idx = idx_vor_vertices[i]
+            if idx == -1: # this means a "virtual point" at infinity as the vertex is not closed
+                drop_vert = True
+                print("Detected \"virtual point\" at infinity. Skipping this mask.")
+                break
+            vertices[i,:] = voronoiData.vertices[idx]
+        
+        if drop_vert: # region is not bounded
+            continue
+        
+        poly_path = Path(vertices)
+        mask = poly_path.contains_points(points)
+        mask = mask.reshape((ny,nx))
+        dapi_mask_voronoi[mask & dapi_mask_blurred] = maskID
+        
+    # print("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
+    print("Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
+    
+    return voronoiData, dapi_mask_voronoi
+
+def get_tessellation(xy, img_shape):
+    """
+    * runs the actual tesselation based on the xy position of the markers in
+    an image of given shape
+
+    # follow this tutorial
+    # https://hpaulkeeler.com/voronoi-dirichlet-tessellations/
+    # https://github.com/hpaulkeeler/posts/blob/master/PoissonVoronoi/PoissonVoronoi.py
+
+    # changes:
+    # added dummy points outside of the image corners (in quite some distance)
+    # they are supposed "catch" all the vertices that end up at infinity
+    # follows an answer given here
+    # https://stackoverflow.com/questions/20515554/colorize-voronoi-diagram/20678647#20678647
+
+    Parameters
+    ----------
+    xy : TYPE
+        DESCRIPTION.
+    img_shape : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    voronoiData : TYPE
+        DESCRIPTION.
+
+    """
+    
+    x_center, y_center = np.array(img_shape)/2
+    x_max, y_max = np.array(img_shape)
+    
+    corner1 = [x_center-100*x_max, y_center-100*y_max]
+    corner2 = [x_center+100*x_max, y_center-100*y_max]
+    corner3 = [x_center-100*x_max, y_center+100*y_max]
+    corner4 = [x_center+100*x_max, y_center+100*y_max]
+    
+    xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
+    
+    
+    # perform Voroin tesseslation
+    voronoiData=Voronoi(xy)
+    
+    #Attributes
+    #    points ndarray of double, shape (npoints, ndim)
+    #        Coordinates of input points.
+    #
+    #    vertices ndarray of double, shape (nvertices, ndim)
+    #        Coordinates of the Voronoi vertices.
+    #
+    #    ridge_points ndarray of ints, shape (nridges, 2)
+    #        Indices of the points between which each Voronoi ridge lies.
+    #
+    #    ridge_vertices list of list of ints, shape (nridges, *)
+    #        Indices of the Voronoi vertices forming each Voronoi ridge.
+    #
+    #    regions list of list of ints, shape (nregions, *)
+    #        Indices of the Voronoi vertices forming each Voronoi region. -1 indicates vertex outside the Voronoi diagram.
+    #
+    #    point_region list of ints, shape (npoints)
+    #        Index of the Voronoi region for each input point. If qhull option “Qc” was not specified, the list will contain -1 for points that are not associated with a Voronoi region.
+    #
+    #    furthest_site
+    #        True if this was a furthest site triangulation and False if not.
+    #        New in version 1.4.0.
+    
+    return voronoiData
 
 def segmentMaskInhomogBackground(im, param):
     """
@@ -299,14 +461,14 @@ def segmentMaskStardist(im, param):
 
     """
     # removes background
-    threshold = detect_threshold(im, nsigma=2.0)
-    sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
+    # threshold = detect_threshold(im, nsigma=2.0)
+    # sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
 
-    bkg_estimator = MedianBackground()
-    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
-    threshold = bkg.background + (
-        param.param["segmentedObjects"]["threshold_over_std"] * bkg.background_rms
-    )  # background-only error image, typically 1.0
+    # bkg_estimator = MedianBackground()
+    # bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+    # threshold = bkg.background + (
+    #     param.param["segmentedObjects"]["threshold_over_std"] * bkg.background_rms
+    # )  # background-only error image, typically 1.0
 
     sigma = param.param["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
@@ -329,11 +491,11 @@ def segmentMaskStardist(im, param):
     img = normalize(im, 1, 99.8, axis=axis_norm)
     labeled, details = model.predict_instances(img)
 
-    if True:
-        plt.figure(figsize=(8, 8))
-        plt.imshow(img, clim=(0, 1), cmap="gray")
-        plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
-        plt.axis("off")
+    # if True:
+    #     plt.figure(figsize=(8, 8))
+    #     plt.imshow(img, clim=(0, 1), cmap="gray")
+    #     plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
+    #     plt.axis("off")
 
     # estimates masks and deblends
     segm = SegmentationImage(labeled)
@@ -379,6 +541,10 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         im = Im.data_2D
         log1.report("[{}] Loaded 2D registered file: {}".format(label, os.path.basename(fileName)))
 
+        ##########################################
+        #               Segments barcodes
+        ##########################################
+        
         if label == "barcode" and len([i for i in rootFileName.split("_") if "RT" in i]) > 0:
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentSourceFlatBackground(im, param)
@@ -417,6 +583,9 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             # for col in output.colnames:
             #    output[col].info.format = '%.8g'  # for consistent table output
 
+        #######################################
+        #           Segments DAPI Masks
+        #######################################
         elif label == "DAPI" and rootFileName.split("_")[2] == "DAPI":
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentMaskInhomogBackground(im, param)
@@ -430,13 +599,18 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 )
                 output = np.zeros(1)
                 return output
-
+            
+            if "tesselation" in param.param["segmentedObjects"].keys():
+                if param.param["segmentedObjects"]["tesselation"]:
+                    _, output = tessellate_DAPI_masks(output)
+            
             # show results
             if "labeled" in locals():
                 outputFileNameStarDist = (
                     dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName + "_stardist"
                 )
                 showsImageMasks(im, log1, labeled, outputFileNameStarDist)
+
             showsImageMasks(im, log1, output, outputFileName)
 
             # saves output 2d zProjection as matrix
