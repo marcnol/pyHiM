@@ -1304,15 +1304,22 @@ def plotMatrix(
     inverseMatrix=False,
     cMin=0,
     cells2Plot=[],
+    fileNameEnding="_HiMmatrix.png"
 ):
-    Nbarcodes = SCmatrixCollated.shape[0]
-    # projects matrix by calculating median in the nCell direction
 
+    Nbarcodes = SCmatrixCollated.shape[0]
+
+    ######################################################
     # Calculates ensemble matrix from single cell matrices
+    ######################################################
+    
+    # matrix is 3D and needs combining SC matrices into an ensemble matrix
+
     if len(SCmatrixCollated.shape) == 3:
         if len(cells2Plot) == 0:
             cells2Plot = range(SCmatrixCollated.shape[2])
 
+        # projects matrix by calculating median in the nCell direction
         if mode == "median":
             # calculates the median of all values
             if max(cells2Plot) > SCmatrixCollated.shape[2]:
@@ -1328,8 +1335,10 @@ def plotMatrix(
                 # print("Dataset {} cells2plot: {}".format(figtitle, nCells))
                 # print('nCells={}'.format(nCells))
                 keepPlotting = True
+        
+        # projects matrix by calculating Kernel Density Estimation
         elif mode == "KDE":
-            # performs a Kernel Estimation to calculate the max of the distribution
+            # performs a KDE to calculate the max of the distribution
             keepPlotting = True
             meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
             for bin1 in range(Nbarcodes):
@@ -1339,6 +1348,8 @@ def plotMatrix(
                             SCmatrixCollated[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
                         )
                         meanSCmatrix[bin1, bin2] = maximumKernelDistribution
+    
+    # matrix is 2D and does not need further treatment
     else:
         if mode == "counts":
             meanSCmatrix = SCmatrixCollated
@@ -1375,13 +1386,19 @@ def plotMatrix(
 
         if len(outputFileName.split(".")) > 1:
             if outputFileName.split(".")[1] != "png":
-                o=outputFileName
-                plt.savefig(outputFileName)
+                if len(outputFileName.split(".")[1])==3:
+                    # keeps original extension
+                    o=outputFileName
+                    plt.savefig(outputFileName)
+                else:
+                    # most likely the full filname contains other '.' in addition to that in the extension
+                    o=outputFileName + fileNameEnding
+                    plt.savefig(o)
             else:
-                o=outputFileName.split(".")[0] + "_HiMmatrix.png"
+                o=outputFileName.split(".")[0] + fileNameEnding
                 plt.savefig(o)
         else:
-            o=outputFileName + "_HiMmatrix.png"
+            o=outputFileName + fileNameEnding
             plt.savefig(o)
 
         if not isnotebook():
@@ -1394,7 +1411,6 @@ def plotMatrix(
 
 
 def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells"):
-    # SCthresholdMatrix=iSCmatrixCollated<threshold
 
     nX = nY = iSCmatrixCollated.shape[0]
     nCells = iSCmatrixCollated.shape[2]

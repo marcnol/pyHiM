@@ -72,25 +72,6 @@ class cellID:
     def initializeLists(self):
         self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.p, self.cuid, self.buid = [], [], [], [], [], [], []
 
-    # def visualize(self):
-    #     pass
-    #     # imageBarcodes = np.zeros([2048, 2048])
-    #     # MasksBarcodes = Masks
-    #     # R = []
-
-    #     # for i in range(len(self.barcodeMapROI.groups[0])):
-    #     #     y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-    #     #     x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-    #     #     barcodeID = self.barcodeMapROI.groups[0]["Barcode #"][i]
-    #     #     imageBarcodes[x_int][y_int] = barcodeID
-    #     #     MasksBarcodes[x_int][y_int] += 20 * barcodeID
-    #     #     R.append([y_int, x_int, barcodeID])
-
-    #     # # Shows results
-    #     # Ra = np.array(R)
-    #     # # plt.imshow(Masks, origin="lower", cmap="jet")
-    #     # plt.scatter(Ra[:, 0], Ra[:, 1], s=5, c=Ra[:, 2], alpha=0.5)
-
     def filterLocalizations_Quality(self,i,flux_min):
         """
         [filters barcode localizations either by brigthness or 3D localization accuracy]
@@ -543,10 +524,21 @@ class cellID:
         self.meanSCmatrix = np.nanmean(SCmatrix, axis=2)
         self.uniqueBarcodes = uniqueBarcodes
 
+
+            
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
+def calculatesNmatrix(SCmatrix):
+    
+    if SCmatrix.shape[2] > 0:
+        Nmatrix = np.sum(~np.isnan(SCmatrix), axis=2)
+    else:
+        numberBarcodes=SCmatrix.shape[0]
+        Nmatrix = np.zeros((numberBarcodes,numberBarcodes))
+    
+    return Nmatrix 
 
 def loadsLocalAlignment(dataFolder):
     '''
@@ -704,6 +696,7 @@ def buildsPWDmatrix(param,
                 # builds the single cell distance Matrix
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
+                
                 print(
                     "ROI: {}, N cells assigned: {} out of {}\n".format(ROI, cellROI.NcellsAssigned-1, cellROI.numberMasks)
                 )
@@ -747,26 +740,54 @@ def buildsPWDmatrix(param,
                             int(os.path.basename(file).split("_")[3]),
                         )
                     )
+    # calculates N-matrix: number of PWD distances for each barcode combination
+    Nmatrix = calculatesNmatrix(SCmatrixCollated)
 
     # saves output
     np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
     np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
+    np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
 
+    ###############
     # plots outputs
+    ###############
     
-    # adapts clim depending on whether 2 or 3 dimensions are use for the barcode localizations
+    # adapts clim depending on whether 2 or 3 dimensions are used for barcode localizations
     if localizationDimension==2:
         clim=1.6
     else:
         clim=2.2
         
+    # plots PWD matrix
     plotMatrix(
-        SCmatrixCollated, uniqueBarcodes, pixelSize, numberROIs, outputFileName, logNameMD, mode="median", clim=clim, cm='terrain'
-    )  # need to validate use of KDE. For the moment it does not handle well null distributions
+        SCmatrixCollated, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        mode="median", 
+        clim=clim, 
+        cm='terrain',
+        fileNameEnding="_HiMmatrix.png") # need to validate use of KDE. For the moment it does not handle well null distributions
+
+    # plots Nmatrix
+    plotMatrix(
+        Nmatrix, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        figtitle="N-matrix",
+        mode="counts", 
+        clim=np.max(Nmatrix), 
+        cm='Blues',
+        fileNameEnding="_Nmatrix.png")
 
     plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName, logNameMD)
 
-
+                
 def processesPWDmatrices(param, log1, session1):
     sessionName = "buildsPWDmatrix"
 
