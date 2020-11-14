@@ -82,9 +82,10 @@ setup(
 ######################################################
 ############# upgrades                  ##############
 ######################################################
-# conda update astropy
+# conda update -c astropy astropy
 # conda update photoutils -c astropy
 # pip install update stardist
-
+# pip install --upgrade pip
+# pip install --upgrade dask
 
 

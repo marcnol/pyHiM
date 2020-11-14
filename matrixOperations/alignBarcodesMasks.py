@@ -37,7 +37,7 @@ from fileProcessing.fileManagement import (
     writeString2File,
     )
 
-from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms
+from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms, calculateContactProbabilityMatrix
 
 # to remove in a future version
 import warnings
@@ -633,10 +633,150 @@ def buildsDictionaryErrorAlignmentMasks(param,dataFolder):
 
     return dictErrorBlockMasks
 
+    
+def plotsAllmatrices(SCmatrixCollated, 
+                    Nmatrix,
+                    uniqueBarcodes, 
+                    pixelSize, 
+                    numberROIs, 
+                    outputFileName, 
+                    logNameMD,
+                    localizationDimension):
+    """
+    Plots all matrices after analysis
+
+    Parameters
+    ----------
+    SCmatrixCollated : npy array
+        PWD matrix for single cells.
+    Nmatrix : npy array
+        2d matrix with number of measurements per barcode combination.
+    uniqueBarcodes : npy array
+        barcode identities.
+    pixelSize : npy array
+        pixelsize in um.
+    numberROIs : int
+        self explanatory.
+    outputFileName : str
+        self explanatory.
+    logNameMD : str
+        Markdown filename.
+    localizationDimension : int
+        indicates dimension of barcode localization.
+
+    Returns
+    -------
+    None.
+
+    """
+    # adapts clim depending on whether 2 or 3 dimensions are used for barcode localizations
+    if localizationDimension==2:
+        clim=1.6
+    else:
+        clim=2.2
+        
+    # plots PWD matrix
+    # uses KDE
+    plotMatrix(
+        SCmatrixCollated, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        figtitle="PWD matrix - KDE",
+        mode="KDE", # median or KDE
+        clim=clim, 
+        cm='coolwarm',
+        fileNameEnding="_PWDmatrixKDE.png") # need to validate use of KDE. For the moment it does not handle well null distributions
+
+    # uses median
+    plotMatrix(
+        SCmatrixCollated, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        figtitle="PWD matrix - median",
+        mode="median", # median or KDE
+        clim=clim, 
+        cm='coolwarm',
+        fileNameEnding="_PWDmatrixMedian.png") # need to validate use of KDE. For the moment it does not handle well null distributions
+        
+    # calculates and plots contact probability matrix from merged samples/datasets
+    HiMmatrix, nCells = calculateContactProbabilityMatrix(
+        SCmatrixCollated,
+        uniqueBarcodes,
+        pixelSize,
+        norm="nonNANs",
+    )  # norm: nCells (default), nonNANs
+
+    cScale = HiMmatrix.max()
+    plotMatrix(
+        HiMmatrix, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        figtitle="Hi-M matrix",
+        mode="counts", 
+        clim=cScale, 
+        cm='coolwarm',
+        fileNameEnding="_HiMmatrix.png")
+    
+    # plots Nmatrix
+    plotMatrix(
+        Nmatrix, 
+        uniqueBarcodes, 
+        pixelSize, 
+        numberROIs, 
+        outputFileName, 
+        logNameMD, 
+        figtitle="N-matrix",
+        mode="counts", 
+        clim=np.max(Nmatrix), 
+        cm='Blues',
+        fileNameEnding="_Nmatrix.png")
+
+    plotDistanceHistograms(SCmatrixCollated, 
+                           pixelSize,
+                           outputFileName, 
+                           logNameMD,
+                           mode="KDE",
+                           kernelWidth=0.25,
+                           optimizeKernelWidth=False)
+    
 def buildsPWDmatrix(param,
     currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize=0.1, logNameMD="log.md", ndims=2
 ):
+    """
+    Main function that:
+        loads and processes barcode localization files, local alignment file, and masks
+        initializes <cellROI> class and assigns barcode localizations to masks
+        then constructs the single cell PWD matrix and outputs it toghether with the contact map and the N-map.
+      
+    Parameters
+    ----------
+    param : Parameters Class
+    currentFolder : string
+    fileNameBarcodeCoordinates : string
+    outputFileName : string
+    dataFolder : Folder Class
+        information to find barcode localizations, local drift corrections and masks
+    pixelSize : npy array, optional
+        DESCRIPTION. The default is 0.1. Pixelsize in um
+    logNameMD : str, optional
+        Filename of Markdown output. The default is "log.md".
+    ndims : int, optional
+        indicates whether barcodes were localized in 2 or 3D. The default is 2.
 
+    Returns
+    -------
+    None.
+
+    """
     # Loads localAlignment if it exists
     alignmentResultsTable, alignmentResultsTableRead = loadsLocalAlignment(dataFolder)
 
@@ -695,7 +835,6 @@ def buildsPWDmatrix(param,
 
                 # builds the single cell distance Matrix
                 cellROI.buildsdistanceMatrix("min")  # mean min last
-
                 
                 print(
                     "ROI: {}, N cells assigned: {} out of {}\n".format(ROI, cellROI.NcellsAssigned-1, cellROI.numberMasks)
@@ -718,6 +857,8 @@ def buildsPWDmatrix(param,
 
                 processingOrder += 1
 
+            # Could not find a file with masks to assign. Report and continue with next ROI
+            ###############################################################################
             else:
                 print(
                     "Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
@@ -748,47 +889,37 @@ def buildsPWDmatrix(param,
     np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
     np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
 
-    ###############
-    # plots outputs
-    ###############
-    
-    # adapts clim depending on whether 2 or 3 dimensions are used for barcode localizations
-    if localizationDimension==2:
-        clim=1.6
-    else:
-        clim=2.2
-        
-    # plots PWD matrix
-    plotMatrix(
-        SCmatrixCollated, 
-        uniqueBarcodes, 
-        pixelSize, 
-        numberROIs, 
-        outputFileName, 
-        logNameMD, 
-        mode="median", 
-        clim=clim, 
-        cm='terrain',
-        fileNameEnding="_HiMmatrix.png") # need to validate use of KDE. For the moment it does not handle well null distributions
+    #################################
+    # makes and saves outputs plots #
+    #################################
+    plotsAllmatrices(SCmatrixCollated, 
+                    Nmatrix,
+                    uniqueBarcodes, 
+                    pixelSize, 
+                    numberROIs, 
+                    outputFileName, 
+                    logNameMD,
+                    localizationDimension)
 
-    # plots Nmatrix
-    plotMatrix(
-        Nmatrix, 
-        uniqueBarcodes, 
-        pixelSize, 
-        numberROIs, 
-        outputFileName, 
-        logNameMD, 
-        figtitle="N-matrix",
-        mode="counts", 
-        clim=np.max(Nmatrix), 
-        cm='Blues',
-        fileNameEnding="_Nmatrix.png")
-
-    plotDistanceHistograms(SCmatrixCollated, pixelSize, outputFileName, logNameMD)
-
-                
+               
 def processesPWDmatrices(param, log1, session1):
+    """
+    Function that assigns barcode localizations to DAPI masks and constructs single cell cummulative PWD matrix.
+
+    Parameters
+    ----------
+    param : class
+        Parameters 
+    log1 : class
+        logging class.
+    session1 : class
+        session information
+
+    Returns
+    -------
+    None.
+
+    """
     sessionName = "buildsPWDmatrix"
 
     # processes folders and files

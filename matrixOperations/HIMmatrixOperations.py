@@ -1242,7 +1242,7 @@ def write_XYZ_2_pdb(fileName, XYZ):
 
 
 def plotDistanceHistograms(
-    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,
+    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,kernelWidth=0.25,optimizeKernelWidth=False
 ):
 
     if not isnotebook():
@@ -1269,7 +1269,7 @@ def plotDistanceHistograms(
                     axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
                 else:
                     (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=False
+                        SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=optimizeKernelWidth, kernelWidth=kernelWidth
                     )
                     axs[i, j].fill_between(x_d, KDE, alpha=0.5)
                     axs[i, j].plot(
@@ -1321,7 +1321,9 @@ def plotMatrix(
 
         # projects matrix by calculating median in the nCell direction
         if mode == "median":
-            # calculates the median of all values
+
+            # calculates the median of all values #
+            #######################################
             if max(cells2Plot) > SCmatrixCollated.shape[2]:
                 print(
                     "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
@@ -1335,8 +1337,10 @@ def plotMatrix(
                 # print("Dataset {} cells2plot: {}".format(figtitle, nCells))
                 # print('nCells={}'.format(nCells))
                 keepPlotting = True
-        
-        # projects matrix by calculating Kernel Density Estimation
+                
+
+        # projects matrix by calculating Kernel Density Estimation #
+        ############################################################
         elif mode == "KDE":
             # performs a KDE to calculate the max of the distribution
             keepPlotting = True
@@ -1420,9 +1424,13 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
         for j in range(nY):
             if i != j:
                 distanceDistribution = pixelSize * iSCmatrixCollated[i, j, :]
+                
+                # normalizes # of contacts by the # of cells
                 if norm == "nCells":
                     probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
                     # print('Using nCells normalisation')
+
+                # normalizes # of contacts by the # of PWD detected in each bin
                 elif norm == "nonNANs":
                     numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
                     if nCells == numberNANs:
@@ -1443,7 +1451,7 @@ def findsOptimalKernelWidth(distanceDistribution):
     return grid.best_params_
 
 # @jit(nopython=True)
-def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False):
+def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False,kernelWidth=0.25):
     '''
     Gets the kernel density function and maximum from a distribution of PWD distances
 
@@ -1475,7 +1483,7 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
     if optimizeKernelWidth:
         kernelWidth = findsOptimalKernelWidth(distanceDistribution)["bandwidth"]
     else:
-        kernelWidth = 0.3
+        kernelWidth = kernelWidth
 
     kde = KernelDensity(bandwidth=kernelWidth, kernel="gaussian")
     
@@ -1493,7 +1501,7 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
 
 
 # @jit(nopython=True)
-def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False):
+def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False, kernelWidth=0.25):
     '''
     calculates the kernel distribution and its maximum from a set of PWD distances
 
@@ -1527,7 +1535,7 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
 
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
-        logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth)
+        logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth,kernelWidth)
         if logprob.shape[0]>1:
             kernelDistribution = 10 * np.exp(logprob)
             maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
