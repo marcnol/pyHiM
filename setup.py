@@ -78,3 +78,13 @@ setup(
 # pip install roipoly opencv-python tqdm stardist csbdeep tox numba dask
 # pip install --upgrade tensorflow
 
+
+######################################################
+############# upgrades                  ##############
+######################################################
+# conda update astropy
+# conda update photoutils -c astropy
+# pip install update stardist
+
+
+

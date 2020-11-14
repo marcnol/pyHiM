@@ -42,7 +42,7 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "Segment3D": "overwrite",
-        "flux_min": 1000,
+        "flux_min": 200,
         "residual_max": 2.5,
         "sigma_max": 5,
         "centroidDifference_max": 5,        
