@@ -17,11 +17,11 @@ import argparse
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
 
 # import scaleogram as scg
 
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
+from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram, calculatesEnsemblePWDmatrix
 
 #%% define and loads datasets
 
@@ -41,18 +41,22 @@ def parseArguments():
     parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
-    parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
+    parser.add_argument("--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter")
+    parser.add_argument("--cScale", help="Colormap absolute scale")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
     )
     parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
-
+    parser.add_argument("--display", help="contact, PWD, or iPWD. Default is contact")
+    parser.add_argument("--pixelSize", help="pixel size in um")
+    parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
+    parser.add_argument("--PWDmode", help="Mode used to calculate the mean distance. Can be either 'median' or KDE. Default: median")
+    
     args = parser.parse_args()
 
     runParameters = {}
-    runParameters["pixelSize"] = 0.1
 
     if args.rootFolder:
         rootFolder = args.rootFolder
@@ -105,10 +109,15 @@ def parseArguments():
     else:
         runParameters["scalingParameter"] = 1.0
 
+    if args.cScale:
+        runParameters["cScale"] = float(args.cScale)
+    else:
+        runParameters["cScale"] = 0.0
+        
     if args.plottingFileExtension:
         runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".svg"
+        runParameters["plottingFileExtension"] = ".png"
 
     if args.shuffle:
         runParameters["shuffle"] = args.shuffle
@@ -120,9 +129,31 @@ def parseArguments():
     else:
         runParameters["scalogram"] = False
 
+    if args.display:
+        runParameters["display"] = args.display
+    else:
+        runParameters["display"] = 'contact'
+        
+    if args.pixelSize:
+        runParameters["pixelSize"] = args.pixelSize
+    else:
+        runParameters["pixelSize"] = 0.1
+
+    if args.cmap:
+        runParameters["cmap"] = args.cmap
+    else:
+        runParameters["cmap"] = "coolwarm"
+    
+    if args.PWDmode:
+        runParameters["PWDmode"] = args.PWDmode
+    else:
+        runParameters["PWDmode"] = "median"
+                
     return rootFolder, outputFolder, runParameters
 
 
+#%%
+    
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -136,12 +167,25 @@ if __name__ == "__main__":
 
     HiMdata.loadData()
 
-    # panel C: contact probability matrix
+    nCells = HiMdata.nCellsLoaded()
 
-    matrix = HiMdata.data["ensembleContactProbability"]
-    # matrix=normalizeMatrix(matrix)
+    HiMdata.retrieveSCmatrix()
 
-    cScale = matrix.max() / runParameters["scalingParameter"]
+    if runParameters["display"] == 'contact':
+        # contact probability matrix
+        matrix = HiMdata.data["ensembleContactProbability"]
+        cScale = matrix.max() / runParameters["scalingParameter"]
+    elif runParameters["display"] == 'PWD':
+        # PWD matrix
+        SCmatrix = HiMdata.SCmatrixSelected
+                # SCmatrix = HiMdata.data["SCmatrixCollated"]
+        print("SC matrix size: {}".format(SCmatrix.shape))
+        matrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrix, runParameters["pixelSize"],mode=runParameters["PWDmode"])
+        if runParameters["cScale"]==0:
+            cScale = matrix[~np.isnan(matrix)].max()/runParameters["scalingParameter"]        
+        else:
+            cScale = runParameters["cScale"]
+
     print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"], cScale))
 
     nCells = HiMdata.nCellsLoaded()
@@ -225,6 +269,7 @@ if __name__ == "__main__":
         cmtitle="probability",
         cMin=0,
         cMax=cScale,
+        cm=runParameters["cmap"],
         fontsize=runParameters["fontsize"],
         colorbar=colorbar,
         axisTicks=runParameters["axisTicks"],
@@ -240,20 +285,20 @@ if __name__ == "__main__":
     print("Title: {}".format(titleText))
     print("Output figure: {}".format(outputFileName))
 
-    if runParameters["scalogram"]:
-        outputFileNameScalogram = (
-            outputFolder
-            + os.sep
-            + "Fig_HiMmatrix_scalogram"
-            + "_dataset1:"
-            + HiMdata.datasetName
-            + "_label:"
-            + runParameters["label"]
-            + "_action:"
-            + runParameters["action"]
-            + runParameters["plottingFileExtension"]
-        )
+    # if runParameters["scalogram"]:
+    #     outputFileNameScalogram = (
+    #         outputFolder
+    #         + os.sep
+    #         + "Fig_HiMmatrix_scalogram"
+    #         + "_dataset1:"
+    #         + HiMdata.datasetName
+    #         + "_label:"
+    #         + runParameters["label"]
+    #         + "_action:"
+    #         + runParameters["action"]
+    #         + runParameters["plottingFileExtension"]
+    #     )
 
-        plotScalogram(matrix, outputFileNameScalogram)
+    #     plotScalogram(matrix, outputFileNameScalogram)
 
     print("\nDone\n\n")

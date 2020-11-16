@@ -23,6 +23,7 @@ import matplotlib.gridspec as gridspec
 from scipy import interpolate
 from pylab import contourf, colorbar
 from numba import jit
+from tqdm import trange
 
 from scipy.io import loadmat
 from sklearn import manifold
@@ -249,6 +250,14 @@ class analysisHiMmatrix:
 
 
     def retrieveSCmatrix(self):
+        """
+        retrieves single cells that have the label requested
+
+        Returns
+        -------
+        self.SCmatrixSelected
+
+        """
         nCells=self.nCellsLoaded()
         SCmatrixSelected=np.zeros((self.numberBarcodes,self.numberBarcodes,nCells))
         
@@ -1313,48 +1322,17 @@ def plotMatrix(
     # Calculates ensemble matrix from single cell matrices
     ######################################################
     
-    # matrix is 3D and needs combining SC matrices into an ensemble matrix
-
     if len(SCmatrixCollated.shape) == 3:
+
+        # matrix is 3D and needs combining SC matrices into an ensemble matrix
         if len(cells2Plot) == 0:
             cells2Plot = range(SCmatrixCollated.shape[2])
-
-        # projects matrix by calculating median in the nCell direction
-        if mode == "median":
-
-            # calculates the median of all values #
-            #######################################
-            if max(cells2Plot) > SCmatrixCollated.shape[2]:
-                print(
-                    "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                        max(cells2Plot), SCmatrixCollated.shape[2]
-                    )
-                )
-                keepPlotting = False
-            else:
-                meanSCmatrix = pixelSize * np.nanmedian(SCmatrixCollated[:, :, cells2Plot], axis=2)
-                nCells = SCmatrixCollated[:, :, cells2Plot].shape[2]
-                # print("Dataset {} cells2plot: {}".format(figtitle, nCells))
-                # print('nCells={}'.format(nCells))
-                keepPlotting = True
-                
-
-        # projects matrix by calculating Kernel Density Estimation #
-        ############################################################
-        elif mode == "KDE":
-            # performs a KDE to calculate the max of the distribution
-            keepPlotting = True
-            meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
-            for bin1 in range(Nbarcodes):
-                for bin2 in range(Nbarcodes):
-                    if bin1 != bin2:
-                        (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
-                            SCmatrixCollated[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
-                        )
-                        meanSCmatrix[bin1, bin2] = maximumKernelDistribution
+        
+        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, mode = mode)
     
-    # matrix is 2D and does not need further treatment
     else:
+
+        # matrix is 2D and does not need further treatment
         if mode == "counts":
             meanSCmatrix = SCmatrixCollated
             keepPlotting = True
@@ -1363,6 +1341,8 @@ def plotMatrix(
             keepPlotting = True
 
     if keepPlotting:
+        # no errors occurred
+        
         # Calculates the inverse distance matrix if requested in the argument.
         if inverseMatrix:
             meanSCmatrix = np.reciprocal(meanSCmatrix)
@@ -1411,6 +1391,7 @@ def plotMatrix(
             o+=".png"
         writeString2File(logNameMD, "![]({})\n".format(o), "a")
     else:
+        # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
 
 
@@ -1687,3 +1668,55 @@ def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
     logprob = kde.score_samples(x_d[:, None])
     
     return logprob,kde
+
+
+def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, mode = 'median'):
+    """
+    performs a KDE or median to calculate the max of the PWD distribution
+
+    Parameters
+    ----------
+    SCmatrix : TYPE
+        DESCRIPTION.
+    pixelSize : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    matrix = 2D npy array.
+
+    """
+    
+    
+    Nbarcodes = SCmatrix.shape[0]
+    cells2Plot = range(SCmatrix.shape[2])
+
+    meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
+    
+    if mode =='median':
+            # calculates the median of all values #
+            #######################################
+            if max(cells2Plot) > SCmatrix.shape[2]:
+                print(
+                    "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
+                        max(cells2Plot), SCmatrix.shape[2]
+                    )
+                )
+                keepPlotting = False
+            else:
+                meanSCmatrix = pixelSize * np.nanmedian(SCmatrix[:, :, cells2Plot], axis=2)
+                nCells = SCmatrix[:, :, cells2Plot].shape[2]
+                keepPlotting = True
+                
+    elif mode == 'KDE':
+        keepPlotting = True
+
+        for bin1 in trange(Nbarcodes):
+            for bin2 in range(Nbarcodes):
+                if bin1 != bin2:
+                    (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
+                        SCmatrix[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
+                    )
+                    meanSCmatrix[bin1, bin2] = maximumKernelDistribution
+                
+    return meanSCmatrix, keepPlotting
