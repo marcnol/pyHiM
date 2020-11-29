@@ -12,8 +12,6 @@ from datetime import datetime
 with open("README.md", "r") as fh:
     long_description = fh.read()
     
-
-
 version = "0.3.0_" + datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
 setup(
@@ -55,7 +53,7 @@ setup(
 ######################################################
 #################### to install ######################
 ######################################################
-# pip install pyHiM-0.1.0.tar.gz
+# pip install pyHiM-0.3.0.tar.gz
 
 ######################################################
 #################### to test #########################
@@ -72,12 +70,13 @@ setup(
 ######################################################
 ############# conventional installation ##############
 ######################################################
-# conda install pandas scikit-image numpy matplotlib astropy graphviz
+# conda install pandas numpy matplotlib astropy graphviz
 # conda install photutils -c astropy
 
 # pip install roipoly opencv-python tqdm stardist csbdeep tox numba dask
 # pip install --upgrade tensorflow
 
+# pip install --upgrade scikit-image
 
 ######################################################
 ############# upgrades                  ##############
