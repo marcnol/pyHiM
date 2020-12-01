@@ -26,6 +26,7 @@ from sklearn.model_selection import GridSearchCV,LeaveOneOut
 
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell, kdeFit
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, getsCoordinatesFromPWDmatrix, sortsCellsbyNumberPWD
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms
 
 
 font = {'family' : 'DejaVu Sans',
@@ -54,7 +55,8 @@ def parseArguments():
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
     parser.add_argument("--pixelSize", help="Pixel Size in um")
-
+    parser.add_argument("--maxDistance", help="Maximum distance for histograms, in um")
+    
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
         "--shuffle",
@@ -63,6 +65,7 @@ def parseArguments():
     parser.add_argument("--ensembleMatrix", help="Use if you want ensembleMatrix to be plotted alongside sc matrices", action="store_true")
     parser.add_argument("--video", help="Use if you want to output video", action="store_true")
     parser.add_argument("--videoAllcells", help="Use if you want all nRows**2 single cells to take part of the video", action="store_true")
+    parser.add_argument("--plotHistogramMatrix", help="Use if you want to plot the PWD histograms for all bin combinations. This is slow!", action="store_true")
     parser.add_argument("--minNumberPWD", help="Minimum number of PWD to calculate Rg")
     parser.add_argument("--threshold", help="Maximum accepted PWD to calculate Rg, in px")
 
@@ -111,6 +114,12 @@ def parseArguments():
         runParameters["pixelSize"] = float(args.pixelSize)
     else:
         runParameters["pixelSize"] = 0.1
+
+    if args.maxDistance:
+        runParameters["maxDistance"] = float(args.maxDistance)
+    else:
+        runParameters["maxDistance"] = 4.0
+
 
     if args.threshold:
         runParameters["threshold"] = float(args.threshold)
@@ -166,6 +175,11 @@ def parseArguments():
         runParameters["videoAllcells"] = args.videoAllcells
     else:
         runParameters["videoAllcells"] = False
+
+    if args.plotHistogramMatrix:
+        runParameters["plotHistogramMatrix"] = args.plotHistogramMatrix
+    else:
+        runParameters["plotHistogramMatrix"] = False
 
 
     return rootFolder, outputFolder, runParameters
@@ -415,10 +429,11 @@ def makesVideo(folder,video_name,searchPattern):
 def plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot='./'):
     
     numBarcodes= getBarcodesPerCell(SCmatrix)
-
+    maxNumberBarcodes=SCmatrix.shape[0]
+    
     fig, ax = plt.subplots()
     fig.set_size_inches((10, 10))
-    ax.hist(numBarcodes)
+    ax.hist(numBarcodes,bins=range(2,maxNumberBarcodes+1))
     ax.set_xlabel("number of barcodes")
     ax.set_ylabel("counts")
     
@@ -506,6 +521,23 @@ def plotsRgvalues(HiMdata,nRows,runParameters,
     plt.close(fig)    
     return RgList
 
+def makesPlotHistograms(HiMdata,
+                        runParameters,
+                        outputFileName='./HiMhistograms.png',
+                        mode="KDE",
+                        kernelWidth=0.25,
+                        optimizeKernelWidth=False
+                        ):
+    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)    
+    
+    plotDistanceHistograms(SCmatrix, 
+                       runParameters["pixelSize"],
+                       outputFileName, 
+                       mode="KDE",
+                       kernelWidth=0.25,
+                       optimizeKernelWidth=False,
+                       maxDistance=runParameters["maxDistance"])
+
 #%%
 # =============================================================================
 # MAIN
@@ -543,18 +575,21 @@ if __name__ == "__main__":
     datasetName=list(HiMdata.ListData.keys())[0]
 
     # "makes subplots with sc 1/PWD matrices"
+    print("\n>>>Plotting subplots with 1/PWD matrices<<<\n")       
     nRows=runParameters["nRows"]
     output=outputFileNameRoot+ "_scMatrices" + runParameters["plottingFileExtension"]
     cellID_most_PWDs, SCmatrix = plotsSubplotSCmatrices(HiMdata,nRows,output=output)
     
     # "calculates the number of barcodes per cell and makes histograms"
+    print("\n>>>Calculating distribution of barcodes<<<\n")
     plotsBarcodesPerCell(SCmatrix,runParameters, outputFileNameRoot=outputFileNameRoot)
     
-    
     # "calculates the detection efficiency for each barcode"
+    print("\n>>>Calculating detection efficiency distribution<<<\n")    
     plotsBarcodesEfficiencies(SCmatrix,runParameters, list(HiMdata.data["uniqueBarcodes"]),outputFileNameRoot=outputFileNameRoot)       
     
     # "calculates the Rg for each cell from the PWD sc matrix"
+    print("\n>>>Calculating Rg distributions<<<\n")
     output= outputFileNameRoot + "_RgValues" + runParameters["plottingFileExtension"]
     RgList=plotsRgvalues(HiMdata,
                   nRows,
@@ -564,7 +599,20 @@ if __name__ == "__main__":
                   threshold = float(runParameters["threshold"]),
                   bandwidths = 10 ** np.linspace(-1, 0, 20))
 
+    # plots distance histograms
+    if runParameters["plotHistogramMatrix"]:
+        print("\n>>>Plotting distance histograms<<<\n")
+        output= outputFileNameRoot + "_HistogramPWDs" + runParameters["plottingFileExtension"]
+        makesPlotHistograms(HiMdata,
+                            runParameters,
+                            outputFileName=output,
+                            mode="KDE",
+                            kernelWidth=0.25,
+                            optimizeKernelWidth=False
+                            )
+    
     # "plots trajectories for selected cells"
+    print("\n>>>Plotting trajectories for selected cells<<<\n")
     if "CellIDs" in HiMdata.ListData[datasetName].keys():
         CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
         for cellID in CellIDs:
@@ -577,7 +625,7 @@ if __name__ == "__main__":
 
     # "makes video of SC matrix for selected cells"
     if runParameters["video"]:
-        print("Making video...")
+        print("\n>>>Making video<<<\n")
         if runParameters["videoAllcells"] :
             searchPattern = "_scMostPWD:"
             for cellID in cellID_most_PWDs:

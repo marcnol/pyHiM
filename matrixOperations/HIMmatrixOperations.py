@@ -1251,8 +1251,16 @@ def write_XYZ_2_pdb(fileName, XYZ):
 
 
 def plotDistanceHistograms(
-    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,kernelWidth=0.25,optimizeKernelWidth=False
-):
+    SCmatrixCollated, 
+    pixelSize, 
+    outputFileName="test", 
+    logNameMD="log.md", 
+    mode="hist", 
+    limitNplots=10,
+    kernelWidth=0.25,
+    optimizeKernelWidth=False,
+    maxDistance=4.0
+    ):
 
     if not isnotebook():
         NplotsX = NplotsY = SCmatrixCollated.shape[0]
@@ -1264,31 +1272,51 @@ def plotDistanceHistograms(
                 [limitNplots, SCmatrixCollated.shape[0]]
             )  # sets a max of subplots if you are outputing to screen!
 
-    bins = np.arange(0, 4, 0.25)
+    bins = np.arange(0, maxDistance, 0.25)
 
     sizeX, sizeY = NplotsX * 4, NplotsY * 4
 
     fig, axs = plt.subplots(figsize=(sizeX, sizeY), ncols=NplotsX, nrows=NplotsY, sharex=True)
 
-    for i in range(NplotsX):
+    for i in trange(NplotsX):
         for j in range(NplotsY):
             if i != j:
                 # print('Printing [{}:{}]'.format(i,j))
                 if mode == "hist":
                     axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
                 else:
-                    (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=optimizeKernelWidth, kernelWidth=kernelWidth
-                    )
+                    (maxKDE, 
+                     distanceDistribution, 
+                     KDE, 
+                     x_d,) = distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                                                        i,
+                                                                        j,
+                                                                        pixelSize, 
+                                                                        optimizeKernelWidth=optimizeKernelWidth, 
+                                                                        kernelWidth=kernelWidth, 
+                                                                        maxDistance=maxDistance
+                                                                        )
                     axs[i, j].fill_between(x_d, KDE, alpha=0.5)
                     axs[i, j].plot(
                         distanceDistribution, np.full_like(distanceDistribution, -0.01), "|k", markeredgewidth=1,
                     )
                     axs[i, j].vlines(maxKDE, 0, KDE.max(), colors="r")
+                
+            axs[i, j].set_xlim(0,maxDistance)
+            axs[i, j].set_yticklabels([])
 
     plt.xlabel("distance, um")
     plt.ylabel("counts")
-    plt.savefig(outputFileName + "_PWDhistograms.png")
+    
+    fileExtension = outputFileName.split('.')[-1]
+
+    if len(fileExtension)==3:
+        fileName=outputFileName + "_PWDhistograms."+fileExtension
+    else:
+        fileName=outputFileName + "_PWDhistograms.png"    
+
+    print("Output figure: {}\n".format(fileName)) 
+    plt.savefig(fileName)
 
     if not isnotebook():
         plt.close()
@@ -1482,7 +1510,13 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
 
 
 # @jit(nopython=True)
-def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False, kernelWidth=0.25):
+def distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                               bin1, 
+                                               bin2, 
+                                               pixelSize, 
+                                               optimizeKernelWidth=False, 
+                                               kernelWidth=0.25,
+                                               maxDistance=4.0):
     '''
     calculates the kernel distribution and its maximum from a set of PWD distances
 
@@ -1511,8 +1545,16 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
         x grid.
 
     '''
-    distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
-    x_d = np.linspace(0, 5, 2000)
+    distanceDistributionUnlimited = pixelSize * SCmatrixCollated[bin1, bin2, :] # full distribution
+    distanceDistributionUnlimited = distanceDistributionUnlimited[~np.isnan(distanceDistributionUnlimited)] # removes nans
+    
+    if bin1==bin2:
+        # protection agains bins in the diagonal
+        distanceDistribution0  = distanceDistributionUnlimited
+    else:
+        # removes values larger than maxDistance
+        distanceDistribution0 = distanceDistributionUnlimited[np.nonzero(distanceDistributionUnlimited<maxDistance)]
+    x_d = np.linspace(0, maxDistance, 2000)
 
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
