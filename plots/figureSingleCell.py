@@ -157,9 +157,9 @@ def parseArguments():
         runParameters["shuffle"] = 0
 
     if args.nRows:
-        runParameters["nRows"] = args.nRows
+        runParameters["nRows"] = int(args.nRows)
     else:
-        runParameters["nRows"] = 10
+        runParameters["nRows"] = int(10)
         
     if args.ensembleMatrix:
         runParameters["ensembleMatrix"] = args.ensembleMatrix

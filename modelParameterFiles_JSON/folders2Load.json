@@ -1,7 +1,7 @@
 {
-    "wt_docTAD": {
+    "wt_docTAD_nc14": {
         "Folders": [
-            "/mnt/disk2/marcnol/data/Experiment_18/0_Embryo/buildsPWDmatrix"
+		"/home/marcnol/data/Experiment_24_Sergio/Embryo_000"
         ],
         "PWD_clim": 1.4,
         "PWD_mode": "median",
@@ -13,6 +13,8 @@
         "ContactProbability_cmin": 0.0,
         "ContactProbability_distanceThreshold": 0.25,
 	"ContactProbability_cm": "coolwarm",
+        "BarcodeColormap": [7, 7, 7, 7, 9, 7, 6, 7, 7, 9, 6, 7, 7, 9, 7, 9, 6],
+	"CellIDs":[12],
 	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
     }
 }
