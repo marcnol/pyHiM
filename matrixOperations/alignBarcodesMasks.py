@@ -532,7 +532,19 @@ class cellID:
 
 def calculatesNmatrix(SCmatrix):
     
-    if SCmatrix.shape[2] > 0:
+    # print("SCmatrix type:{}".format(type(SCmatrix)))
+    # if type(SCmatrix) is list:
+    #     print("len(SCmatrix): {}".format(len(SCmatrix)))
+    #     if len(SCmatrix)>0:
+    #         numberCells=SCmatrix[0].shape[2]
+    #     else:
+    #         numberCells=0
+    #         return np.zeros((1,1))
+    # else:
+
+    numberCells=SCmatrix.shape[2]
+        
+    if numberCells > 0:
         Nmatrix = np.sum(~np.isnan(SCmatrix), axis=2)
     else:
         numberBarcodes=SCmatrix.shape[0]
@@ -881,26 +893,28 @@ def buildsPWDmatrix(param,
                             int(os.path.basename(file).split("_")[3]),
                         )
                     )
-    # calculates N-matrix: number of PWD distances for each barcode combination
-    Nmatrix = calculatesNmatrix(SCmatrixCollated)
 
-    # saves output
-    np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
-    np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
-    np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
+    if processingOrder>0:
+        # calculates N-matrix: number of PWD distances for each barcode combination
+        Nmatrix = calculatesNmatrix(SCmatrixCollated)
 
-    #################################
-    # makes and saves outputs plots #
-    #################################
-    plotsAllmatrices(SCmatrixCollated, 
-                    Nmatrix,
-                    uniqueBarcodes, 
-                    pixelSize, 
-                    numberROIs, 
-                    outputFileName, 
-                    logNameMD,
-                    localizationDimension)
+        # saves output
+        np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
+        np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
+        np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
 
+        #################################
+        # makes and saves outputs plots #
+        #################################
+        plotsAllmatrices(SCmatrixCollated, 
+                        Nmatrix,
+                        uniqueBarcodes, 
+                        pixelSize, 
+                        numberROIs, 
+                        outputFileName, 
+                        logNameMD,
+                        localizationDimension)
+    
                
 def processesPWDmatrices(param, log1, session1):
     """

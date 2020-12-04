@@ -81,6 +81,7 @@ def parseArguments():
         p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
+        p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -172,7 +173,7 @@ if __name__ == "__main__":
 
         if len(SCmatrixCollated) > 0:
             # [plots distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single cell PWD matrices", "a")
+            writeString2File(fileNameMD, "## single dataset PWD matrices", "a")
             print(">>> Producing {} PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsSinglePWDmatrices(
                 SCmatrixCollated,
@@ -189,7 +190,7 @@ if __name__ == "__main__":
             #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)
 
             # [plots inverse distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single cell inverse PWD matrices", "a")
+            writeString2File(fileNameMD, "## single dataset inverse PWD matrices", "a")
             print(">>> Producing {} inverse PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsInversePWDmatrix(
                 SCmatrixCollated,
@@ -202,7 +203,7 @@ if __name__ == "__main__":
             )
 
             # [Plots contact probability matrices for each dataset]
-            writeString2File(fileNameMD, "## single cell Contact Probability matrices", "a")
+            writeString2File(fileNameMD, "## single dataset Contact Probability matrices", "a")
             print(">>> Producing {} contact matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsSingleContactProbabilityMatrix(
                 SCmatrixCollated,

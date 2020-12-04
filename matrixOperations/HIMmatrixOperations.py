@@ -726,7 +726,7 @@ def plotsEnsemble3wayContactMatrix(
         # plots 3-way matrix
         plotMatrix(
             SCmatrix,
-            uniqueBarcodes,
+            commonSetUniqueBarcodes, #before uniqueBarcodes 
             p["pixelSize"],
             cm=iListData["ContactProbability_cm"],
             outputFileName=outputFileName,
@@ -1389,6 +1389,7 @@ def plotMatrix(
             + " | ROIs="
             + str(numberROIs)
         )
+        # print("matrix size: {} | barcodes:{}".format(SCmatrixCollated.shape[0],list(uniqueBarcodes)))
         plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
