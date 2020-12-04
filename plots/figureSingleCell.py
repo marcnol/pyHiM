@@ -220,11 +220,14 @@ def visualize3D(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.pn
                      marker='o',
                      edgecolors = 'k',
                      linewidths=2,
-                     alpha=0.7) #'terrain_r'
+                     alpha=0.7,vmin=0, vmax=1) #'terrain_r'
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     ax.set_title(title)
+    ax.set_xticklabels(())
+    ax.set_yticklabels(())
+    ax.set_zticklabels(())
     fig.savefig(output)
     plt.close(fig)
     
@@ -293,9 +296,9 @@ def visualize2D(coordinateList,colors=[],cmap='hsv',titles=[],output='visualize2
                          marker='o',
                          edgecolors = 'k',
                          linewidths=2,
-                         alpha=0.7) #'terrain_r'
-        ax.set_xlabel('')
-        ax.set_ylabel('')
+                         alpha=0.7,vmax=1, vmin=0) #'terrain_r'
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
 
         ax.set_title(title)
         
@@ -320,20 +323,24 @@ def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matpl
         EnsembleMatrix[i,i]=0
         
     # gets coordinates
+    EnsembleMatrix[np.isnan(EnsembleMatrix)]=0 # removes NaNs from matrix
     coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
+    
+    PWDmatrix[np.isnan(PWDmatrix)]=0 # removes NaNs from matrix
     coordinates = runParameters["pixelSize"]*getsCoordinatesFromPWDmatrix(PWDmatrix)
-
+    
     # makes plots
+    cmap='tab10'
     output= outputFileNameRoot+ "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
-    visualize2D([coordinates,coordinatesEnsemble],colors=colors,cmap='rainbow',titles=[singleCellTitle,ensembleTitle],output=output)
+    visualize2D([coordinates,coordinatesEnsemble],colors=colors ,cmap=cmap,titles=[singleCellTitle,ensembleTitle],output=output)
 
     output= outputFileNameRoot+ "_3DensembleMatrix" + runParameters["plottingFileExtension"]
-    visualize3D(coordinatesEnsemble,colors=colors,cmap='rainbow',title=ensembleTitle,output=output)
+    visualize3D(coordinatesEnsemble,colors=colors,cmap=cmap,title=ensembleTitle,output=output)
 
     output= outputFileNameRoot+ "_3DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
     
     if mode=='matplotlib':
-        visualize3D(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
+        visualize3D(coordinates,colors=colors,cmap=cmap,title=singleCellTitle, output=output)
         
     # else:
     #     visualize3D_mayavi(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
@@ -345,7 +352,6 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
     vmax=HiMdata.ListData[datasetName]["iPWD_clim"]
     cmap = HiMdata.ListData[datasetName]["iPWD_cm"]
     SCmatrix = HiMdata.SCmatrixSelected
-
     singleCellTitle="Cell #"+str(cellID)
 
     if ensembleMatrix:
@@ -362,10 +368,14 @@ def plotSCmatrix(HiMdata,cellID,outputFileNameRoot='SCmatrix.png',ensembleMatrix
         fig, allAxes = plt.subplots(1,1)
         fig.set_size_inches((10,10))
         ax=[allAxes]
+
+    uniqueBarcodes = 1+np.arange(PWDmatrix.shape[0])
     
     p1=ax[0].imshow(1/PWDmatrix, cmap=cmap,vmin=0,vmax=vmax)
     fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
     ax[0].set_title(singleCellTitle)
+    plt.xticks(np.arange(PWDmatrix.shape[0]), uniqueBarcodes)
+    plt.yticks(np.arange(PWDmatrix.shape[0]), uniqueBarcodes)
     
     if ensembleMatrix:    
         p2=ax[1].imshow(1/EnsembleMatrix[:,:],cmap=cmap,vmin=0,vmax=vmax)
@@ -573,7 +583,8 @@ if __name__ == "__main__":
         + runParameters["action"]
     )
     datasetName=list(HiMdata.ListData.keys())[0]
-
+    print("Data output: {}".format(outputFileNameRoot))
+    
     # "makes subplots with sc 1/PWD matrices"
     print("\n>>>Plotting subplots with 1/PWD matrices<<<\n")       
     nRows=runParameters["nRows"]
@@ -615,6 +626,7 @@ if __name__ == "__main__":
     print("\n>>>Plotting trajectories for selected cells<<<\n")
     if "CellIDs" in HiMdata.ListData[datasetName].keys():
         CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
+        print("CellIDs to process: {}".format(CellIDs))
         for cellID in CellIDs:
             if cellID<HiMdata.SCmatrixSelected.shape[2]:
                 #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
