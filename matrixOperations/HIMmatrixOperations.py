@@ -1036,7 +1036,7 @@ def plotsEnsembleContactProbabilityMatrix(
         commonSetUniqueBarcodes,
         p["pixelSize"],
         threshold=iListData["ContactProbability_distanceThreshold"],
-        norm="nonNANs",
+        norm=p["HiMnormalization"],
     )  # norm: nCells (default), nonNANs
 
     # outputs line for MD file and sets output filename
