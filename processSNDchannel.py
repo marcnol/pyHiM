@@ -23,7 +23,7 @@ import numpy as np
 from roipoly import MultiRoi
 from astropy.table import Table, Column, vstack
 
-from imageProcessing.imageProcessingimageProcessing import Image
+from imageProcessing.imageProcessing import Image
 
 from fileProcessing.fileManagement import ( Parameters, log, session, 
                                            folders, writeString2File)
