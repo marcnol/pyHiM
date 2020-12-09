@@ -282,6 +282,24 @@ class analysisHiMmatrix:
 # FUNCTIONS
 # =============================================================================
 
+def normalizeProfile(profile1, profile2, runParameters):
+    
+    print("Normalization: {}".format(runParameters["normalize"]))
+    
+    mode=runParameters["normalize"]
+    
+    if "maximum" in mode: # normalizes by maximum
+        profile1=profile1/profile1.max()/2
+        profile2=profile2/profile2.max()/2
+    elif 'none' in mode: # no normalization
+        m1_norm=1
+        m2_norm=1
+    else: # normalizes by given factor
+        normFactor=float(mode)
+        profile1=profile1/1
+        profile2=profile2/normFactor
+
+    return profile1,profile2
 
 def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend=False):
 
@@ -292,6 +310,9 @@ def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, i
 
     profile1 = HiMdata1.data["ensembleContactProbability"][:, anchor - 1]
     profile2 = HiMdata2.data["ensembleContactProbability"][:, anchor - 1]
+    
+    profile1,profile2 = normalizeProfile(profile1, profile2, runParameters)
+
     x = np.linspace(0, profile1.shape[0], num=profile1.shape[0], endpoint=True)
     tck1 = interpolate.splrep(x, profile1, s=0)
     tck2 = interpolate.splrep(x, profile2, s=0)
@@ -1634,10 +1655,14 @@ def getDetectionEffBarcodes(SCmatrixCollated):
     eff = np.sum(~np.isnan(SCmatrixCollated), axis=0)
     eff[eff>1] = 1
 
+    eff0=eff.copy()
+    nCells2 = np.nonzero(np.sum(eff0,axis=0)>2)[0].shape[0]
+    
     eff = np.sum(eff, axis=-1) # sum over all cells
     
-    eff = eff/nCells
-    
+    eff = eff/nCells2
+
+    print("\n\n *** nCells={} | nCells2={}".format(nCells,nCells2))
     return eff
 
 

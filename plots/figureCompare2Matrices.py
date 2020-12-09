@@ -46,11 +46,11 @@ def parseArguments():
     parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
-
-    args = parser.parse_args()
+    parser.add_argument("--normalize", help="Matrix normalization factor: maximum, none, single value (normalize 2nd matrix by), bin pair e.g. 1,2")
 
     runParameters = {}
     runParameters["pixelSize"] = 0.1
+    args = parser.parse_args()
 
     if args.rootFolder1:
         rootFolder1 = args.rootFolder1
@@ -124,11 +124,43 @@ def parseArguments():
     else:
         runParameters["plottingFileExtension"] = ".svg"
 
+    if args.normalize:
+        runParameters["normalize"] = args.normalize
+    else:
+        runParameters["normalize"] = "none"
+
+    args = parser.parse_args()
+
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
 
     return rootFolder1, rootFolder2, outputFolder, runParameters
 
+def normalizeMatrix(m1,m2,mode):
+
+    print("Normalization: {}".format(mode))
+    
+    if "maximum" in mode: # normalizes by maximum
+        m1_norm=m1.max()
+        m2_norm=m2.max()
+    elif len(mode.split(',')) > 1: # normalizes by bin
+        N=mode.split(',')
+        m1_norm=1
+        m2_norm=m2[int(N[0]),int(N[1])]/m1[int(N[0]),int(N[1])]
+    elif 'none' in mode: # no normalization
+        m1_norm=1
+        m2_norm=1
+    else: # normalizes by given factor
+        normFactor=float(mode)
+        m1_norm=1
+        m2_norm=normFactor
+
+    print("Normalizations: m1= {} | m2={}".format(m1_norm,m2_norm))
+        
+    m1 = m1 / m1_norm
+    m2 = m2 / m2_norm
+
+    return m1,m2
 
 # =============================================================================
 # MAIN
@@ -202,9 +234,11 @@ if __name__ == "__main__":
         f1 = fig1.add_subplot(spec1[0, 0])  # 16
         m1 = HiMdata1.data["ensembleContactProbability"]
         m2 = HiMdata2.data["ensembleContactProbability"]
-
-        m1 = m1 / m1.max()
-        m2 = m2 / m2.max()
+        if "none" in runParameters["normalize"]: # sets default operation
+            mode="maximum"
+        else:
+            mode=runParameters["normalize"]
+        m1,m2=normalizeMatrix(m1,m2,mode)
 
         if runParameters["ratio"] == True:
             matrix = np.log(m1 / m2)
@@ -243,10 +277,18 @@ if __name__ == "__main__":
         f2 = fig2.add_subplot(spec2[0, 0])  # 16
 
         # plots mixed matrix
-        matrix2 = HiMdata1.data["ensembleContactProbability"]
+        m1 = HiMdata1.data["ensembleContactProbability"]
+        m2 = HiMdata2.data["ensembleContactProbability"]
+        if "none" in runParameters["normalize"]: # sets default operation
+            mode="none"
+        else:
+            mode=runParameters["normalize"]
+        m1,m2=normalizeMatrix(m1,m2,mode)
+        matrix2=m1
+        
         for i in range(matrix2.shape[0]):
             for j in range(0, i):
-                matrix2[i, j] = HiMdata2.data["ensembleContactProbability"][i, j]
+                matrix2[i, j] = m2[i, j]
 
         HiMdata1.plot2DMatrixSimple(
             f2,

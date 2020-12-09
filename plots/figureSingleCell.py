@@ -26,7 +26,7 @@ from sklearn.model_selection import GridSearchCV,LeaveOneOut
 
 from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell, kdeFit
 from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, getsCoordinatesFromPWDmatrix, sortsCellsbyNumberPWD
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms,write_XYZ_2_pdb
 
 
 font = {'family' : 'DejaVu Sans',
@@ -322,13 +322,15 @@ def plotTrajectories(HiMdata,runParameters,outputFileNameRoot,cellID,mode='matpl
         PWDmatrix[i,i]=0
         EnsembleMatrix[i,i]=0
         
-    # gets coordinates
+    # gets coordinates and saves in PDB format
     EnsembleMatrix[np.isnan(EnsembleMatrix)]=0 # removes NaNs from matrix
     coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
     
     PWDmatrix[np.isnan(PWDmatrix)]=0 # removes NaNs from matrix
     coordinates = runParameters["pixelSize"]*getsCoordinatesFromPWDmatrix(PWDmatrix)
-    
+    outputFileNamePDB= outputFileNameRoot+ "_SingleCellTrajectory:" + str(cellID) + ".pdb"
+    write_XYZ_2_pdb(outputFileNamePDB, coordinates)
+
     # makes plots
     cmap='tab10'
     output= outputFileNameRoot+ "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
