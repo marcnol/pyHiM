@@ -1377,7 +1377,7 @@ def plotMatrix(
         if len(cells2Plot) == 0:
             cells2Plot = range(SCmatrixCollated.shape[2])
         
-        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, mode = mode)
+        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, cells2Plot, mode = mode)
     
     else:
 
@@ -1738,7 +1738,7 @@ def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
     return logprob,kde
 
 
-def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, mode = 'median'):
+def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode = 'median'):
     """
     performs a KDE or median to calculate the max of the PWD distribution
 
@@ -1755,9 +1755,8 @@ def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, mode = 'median'):
 
     """
     
-    
     Nbarcodes = SCmatrix.shape[0]
-    cells2Plot = range(SCmatrix.shape[2])
+    # cells2Plot = range(SCmatrix.shape[2])
 
     meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
     
