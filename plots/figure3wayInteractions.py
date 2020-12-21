@@ -34,9 +34,8 @@ def parseArguments():
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
-    parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
-    )
+    parser.add_argument("-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default")
+    parser.add_argument("-P2", "--parameters2", help="Provide name of parameter files for dataset 2. folders2Load.json assumed as default")
     parser.add_argument("-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)")
     parser.add_argument("-W1", "--action1", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
     parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
@@ -74,6 +73,11 @@ def parseArguments():
         runParameters["parametersFileName"] = args.parameters
     else:
         runParameters["parametersFileName"] = "folders2Load.json"
+
+    if args.parameters2:
+        runParameters["parametersFileName2"] = args.parameters2
+    else:
+        runParameters["parametersFileName2"] = "folders2Load.json"
 
     if args.label1:
         runParameters["label1"] = args.label1
@@ -160,6 +164,7 @@ if __name__ == "__main__":
         HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
         HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
         HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
+        HiMdata2.runParameters["parametersFileName"] = HiMdata2.runParameters["parametersFileName2"]
         HiMdata2.loadData()
         nCells2 = HiMdata2.nCellsLoaded()
 
@@ -198,6 +203,7 @@ if __name__ == "__main__":
                 Yticks.append(False)
 
     FigLabels = [i for i in list(HiMdata1.dataFiles.keys()) if "anchor" in i]
+    # print("FigList:{}".format(FigLabels))
     legendList = [False] * len(anchors)
     legendList[0] = True
 
@@ -231,6 +237,11 @@ if __name__ == "__main__":
             cMax=cMax,
             fontsize=12,
         )
+        
+        matrixOutputFileName=outputFileName + "_" + iFigLabel + ".npy"
+        print("Saving Matrix: {}".format(matrixOutputFileName))
+        np.save(matrixOutputFileName,matrix)
+        
     if runParameters["colorbar"]:
         cbar_ax = fig2.add_axes([0.995, 0.25, 0.02, 0.6])
         cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
@@ -241,6 +252,7 @@ if __name__ == "__main__":
     #     HiMdata1.update_clims(0, cMax, ifigure)
 
     # update_clims(0, cMax, FigList)
+
 
     plt.savefig(outputFileName)
     print("Output figure: {}".format(outputFileName))
