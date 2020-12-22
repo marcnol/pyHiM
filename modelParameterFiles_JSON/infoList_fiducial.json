@@ -42,7 +42,6 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "threshold_over_std": 1.0,
-        "toleranceDrift":1
     },
     "zProject": {
         "display": true,

@@ -126,7 +126,7 @@ class folders:
         self.outputFolders["zProject"] = filesFolder + os.sep + param.param["zProject"]["folder"]
         self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
         self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
-        self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"
+        self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"] 
         self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
 
         self.createSingleFolder(self.outputFolders["zProject"])
@@ -237,6 +237,11 @@ class Parameters:
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "projectsBarcodes",
             },
+            "buildsPWDmatrix": {
+                "folder": "buildsPWDmatrix",  # output folder
+                "flux_min": 200,  # min flux to keeep object                
+                "toleranceDrift":1, # tolerance used for block drift correction, in px
+            },            
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
                 "operation": "overwrite",  # overwrite, skip
@@ -253,12 +258,10 @@ class Parameters:
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
-                "flux_min": 200,  # min flux to keeep object                
                 "residual_max": 2.5,  # max residuals to keeep object                
                 "sigma_max": 5,  # max sigma 3D fitting to keeep object                
                 "centroidDifference_max": 5,  # max diff between Moment and Gaussian z fits to keeep object                
                 "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
-                "toleranceDrift":1, # tolerance used for block drift correction, in px
             },
         }
         self.initializeStandardParameters()

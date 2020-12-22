@@ -89,6 +89,11 @@ a typical file (DAPI example) looks like:
         "operation": "overwrite",
         "outputFile": "projectsBarcodes"
     },
+    "buildsPWDmatrix": {
+        "folder": "buildsPWDmatrix",  # output folder
+        "flux_min": 200  # min flux to keeep object                
+        "toleranceDrift":1,
+    },    
     "segmentedObjects": {
         "area_max": 3000,
         "area_min": 150,
@@ -103,13 +108,11 @@ a typical file (DAPI example) looks like:
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
-        "flux_min": 1000,
         "residual_max": 2.5,
         "sigma_max": 5,
         "centroidDifference_max": 5,        
         "3DGaussianfitWindow": 3,
         "threshold_over_std": 1.0,
-        "toleranceDrift":1,
     },
     "zProject": {
         "display": true,
@@ -180,7 +183,16 @@ Here are some options for the different parameters and a brief description
 "outputFile": "projectsBarcodes",
 ```
 
+"buildsPWDmatrix"
+
+```
+"folder": "buildsPWDmatrix",  # output folder
+"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
+"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
+```
+
 "segmentedObjects"
+
 ```
 "folder": "segmentedObjects",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
@@ -196,12 +208,10 @@ Here are some options for the different parameters and a brief description
 "intensity_max": 59,  *Description:* max intensity to keep object
 "area_min": 50,  *Description:* min area to keep object
 "area_max": 500,  *Description:* max area to keep object
-"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
 "residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
 "sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
 "centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
 "3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
-"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
 ```
 
 #### MakeProjections
