@@ -73,6 +73,8 @@ def parseArguments():
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
     parser.add_argument("--pixelSize", help="pixelSize in um")
+    parser.add_argument("--HiMnormalization", help="Normalization of contact matrix: nonNANs (default) or nCells")
+    
 
     p={}
     
@@ -81,6 +83,7 @@ def parseArguments():
         p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
+        p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -116,6 +119,12 @@ def parseArguments():
         p["pixelSize"] = float(args.pixelSize)
     else:
         p["pixelSize"] = 0.1
+
+    if args.HiMnormalization:
+        p["HiMnormalization"] = args.HiMnormalization
+    else:
+        p["HiMnormalization"] = "nonNANs"
+
 
     return p
 # =============================================================================
@@ -172,7 +181,7 @@ if __name__ == "__main__":
 
         if len(SCmatrixCollated) > 0:
             # [plots distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single cell PWD matrices", "a")
+            writeString2File(fileNameMD, "## single dataset PWD matrices", "a")
             print(">>> Producing {} PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsSinglePWDmatrices(
                 SCmatrixCollated,
@@ -189,7 +198,7 @@ if __name__ == "__main__":
             #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)
 
             # [plots inverse distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single cell inverse PWD matrices", "a")
+            writeString2File(fileNameMD, "## single dataset inverse PWD matrices", "a")
             print(">>> Producing {} inverse PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsInversePWDmatrix(
                 SCmatrixCollated,
@@ -202,7 +211,7 @@ if __name__ == "__main__":
             )
 
             # [Plots contact probability matrices for each dataset]
-            writeString2File(fileNameMD, "## single cell Contact Probability matrices", "a")
+            writeString2File(fileNameMD, "## single dataset Contact Probability matrices", "a")
             print(">>> Producing {} contact matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
             plotsSingleContactProbabilityMatrix(
                 SCmatrixCollated,

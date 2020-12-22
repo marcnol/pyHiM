@@ -23,7 +23,7 @@ import numpy as np
 from roipoly import MultiRoi
 from astropy.table import Table, Column, vstack
 
-from imageProcessing.imageProcessingimageProcessing import Image
+from imageProcessing.imageProcessing import Image
 
 from fileProcessing.fileManagement import ( Parameters, log, session, 
                                            folders, writeString2File)
@@ -38,12 +38,12 @@ logging.basicConfig(format='%(levelname)s ''%(processName)-10s : %(asctime)s '
 # =============================================================================q
 
 
-def createsUserMask(fileName, outputFileName):
+def createsUserMask(param,log1,fileName, outputFileName):
 
     # loads image
 
     # displays image
-    Im = Image()
+    Im = Image(param,log1)
     Im.data_2D = np.load(fileName).squeeze()
     Im.imageShow(show=True, normalization="simple")
     print("Click on the button to add a new ROI")
@@ -153,7 +153,7 @@ def processesUserMasks(param, log1, session1, processingList):
                                 + processingList["addMask"]
                                 + ".npy"
                             )
-                            createsUserMask(registeredFileName, outputFileName)
+                            createsUserMask(param,log1,registeredFileName, outputFileName)
                             numberMaskedFiles += 1
                             log1.report(
                                 "Segmented image for SND channel ROI#{}: {}".format(ROI, outputFileName), "info",

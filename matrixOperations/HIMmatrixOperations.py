@@ -282,6 +282,24 @@ class analysisHiMmatrix:
 # FUNCTIONS
 # =============================================================================
 
+def normalizeProfile(profile1, profile2, runParameters):
+    
+    print("Normalization: {}".format(runParameters["normalize"]))
+    
+    mode=runParameters["normalize"]
+    
+    if "maximum" in mode: # normalizes by maximum
+        profile1=profile1/profile1.max()/2
+        profile2=profile2/profile2.max()/2
+    elif 'none' in mode: # no normalization
+        m1_norm=1
+        m2_norm=1
+    else: # normalizes by given factor
+        normFactor=float(mode)
+        profile1=profile1/1
+        profile2=profile2/normFactor
+
+    return profile1,profile2
 
 def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend=False):
 
@@ -292,6 +310,9 @@ def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, i
 
     profile1 = HiMdata1.data["ensembleContactProbability"][:, anchor - 1]
     profile2 = HiMdata2.data["ensembleContactProbability"][:, anchor - 1]
+    
+    profile1,profile2 = normalizeProfile(profile1, profile2, runParameters)
+
     x = np.linspace(0, profile1.shape[0], num=profile1.shape[0], endpoint=True)
     tck1 = interpolate.splrep(x, profile1, s=0)
     tck2 = interpolate.splrep(x, profile2, s=0)
@@ -726,7 +747,7 @@ def plotsEnsemble3wayContactMatrix(
         # plots 3-way matrix
         plotMatrix(
             SCmatrix,
-            uniqueBarcodes,
+            commonSetUniqueBarcodes, #before uniqueBarcodes 
             p["pixelSize"],
             cm=iListData["ContactProbability_cm"],
             outputFileName=outputFileName,
@@ -1036,7 +1057,7 @@ def plotsEnsembleContactProbabilityMatrix(
         commonSetUniqueBarcodes,
         p["pixelSize"],
         threshold=iListData["ContactProbability_distanceThreshold"],
-        norm="nonNANs",
+        norm=p["HiMnormalization"],
     )  # norm: nCells (default), nonNANs
 
     # outputs line for MD file and sets output filename
@@ -1251,8 +1272,16 @@ def write_XYZ_2_pdb(fileName, XYZ):
 
 
 def plotDistanceHistograms(
-    SCmatrixCollated, pixelSize, outputFileName="test", logNameMD="log.md", mode="hist", limitNplots=10,kernelWidth=0.25,optimizeKernelWidth=False
-):
+    SCmatrixCollated, 
+    pixelSize, 
+    outputFileName="test", 
+    logNameMD="log.md", 
+    mode="hist", 
+    limitNplots=10,
+    kernelWidth=0.25,
+    optimizeKernelWidth=False,
+    maxDistance=4.0
+    ):
 
     if not isnotebook():
         NplotsX = NplotsY = SCmatrixCollated.shape[0]
@@ -1264,31 +1293,51 @@ def plotDistanceHistograms(
                 [limitNplots, SCmatrixCollated.shape[0]]
             )  # sets a max of subplots if you are outputing to screen!
 
-    bins = np.arange(0, 4, 0.25)
+    bins = np.arange(0, maxDistance, 0.25)
 
     sizeX, sizeY = NplotsX * 4, NplotsY * 4
 
     fig, axs = plt.subplots(figsize=(sizeX, sizeY), ncols=NplotsX, nrows=NplotsY, sharex=True)
 
-    for i in range(NplotsX):
+    for i in trange(NplotsX):
         for j in range(NplotsY):
             if i != j:
                 # print('Printing [{}:{}]'.format(i,j))
                 if mode == "hist":
                     axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
                 else:
-                    (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrixCollated, i, j, pixelSize, optimizeKernelWidth=optimizeKernelWidth, kernelWidth=kernelWidth
-                    )
+                    (maxKDE, 
+                     distanceDistribution, 
+                     KDE, 
+                     x_d,) = distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                                                        i,
+                                                                        j,
+                                                                        pixelSize, 
+                                                                        optimizeKernelWidth=optimizeKernelWidth, 
+                                                                        kernelWidth=kernelWidth, 
+                                                                        maxDistance=maxDistance
+                                                                        )
                     axs[i, j].fill_between(x_d, KDE, alpha=0.5)
                     axs[i, j].plot(
                         distanceDistribution, np.full_like(distanceDistribution, -0.01), "|k", markeredgewidth=1,
                     )
                     axs[i, j].vlines(maxKDE, 0, KDE.max(), colors="r")
+                
+            axs[i, j].set_xlim(0,maxDistance)
+            axs[i, j].set_yticklabels([])
 
     plt.xlabel("distance, um")
     plt.ylabel("counts")
-    plt.savefig(outputFileName + "_PWDhistograms.png")
+    
+    fileExtension = outputFileName.split('.')[-1]
+
+    if len(fileExtension)==3:
+        fileName=outputFileName + "_PWDhistograms."+fileExtension
+    else:
+        fileName=outputFileName + "_PWDhistograms.png"    
+
+    print("Output figure: {}\n".format(fileName)) 
+    plt.savefig(fileName)
 
     if not isnotebook():
         plt.close()
@@ -1328,7 +1377,7 @@ def plotMatrix(
         if len(cells2Plot) == 0:
             cells2Plot = range(SCmatrixCollated.shape[2])
         
-        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, mode = mode)
+        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, cells2Plot, mode = mode)
     
     else:
 
@@ -1361,6 +1410,7 @@ def plotMatrix(
             + " | ROIs="
             + str(numberROIs)
         )
+        # print("matrix size: {} | barcodes:{}".format(SCmatrixCollated.shape[0],list(uniqueBarcodes)))
         plt.xticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         plt.yticks(np.arange(SCmatrixCollated.shape[0]), uniqueBarcodes)
         cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
@@ -1482,7 +1532,13 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
 
 
 # @jit(nopython=True)
-def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False, kernelWidth=0.25):
+def distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
+                                               bin1, 
+                                               bin2, 
+                                               pixelSize, 
+                                               optimizeKernelWidth=False, 
+                                               kernelWidth=0.25,
+                                               maxDistance=4.0):
     '''
     calculates the kernel distribution and its maximum from a set of PWD distances
 
@@ -1511,8 +1567,16 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated, bin1, bin2, pix
         x grid.
 
     '''
-    distanceDistribution0 = pixelSize * SCmatrixCollated[bin1, bin2, :]
-    x_d = np.linspace(0, 5, 2000)
+    distanceDistributionUnlimited = pixelSize * SCmatrixCollated[bin1, bin2, :] # full distribution
+    distanceDistributionUnlimited = distanceDistributionUnlimited[~np.isnan(distanceDistributionUnlimited)] # removes nans
+    
+    if bin1==bin2:
+        # protection agains bins in the diagonal
+        distanceDistribution0  = distanceDistributionUnlimited
+    else:
+        # removes values larger than maxDistance
+        distanceDistribution0 = distanceDistributionUnlimited[np.nonzero(distanceDistributionUnlimited<maxDistance)]
+    x_d = np.linspace(0, maxDistance, 2000)
 
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
@@ -1591,10 +1655,14 @@ def getDetectionEffBarcodes(SCmatrixCollated):
     eff = np.sum(~np.isnan(SCmatrixCollated), axis=0)
     eff[eff>1] = 1
 
+    eff0=eff.copy()
+    nCells2 = np.nonzero(np.sum(eff0,axis=0)>2)[0].shape[0]
+    
     eff = np.sum(eff, axis=-1) # sum over all cells
     
-    eff = eff/nCells
-    
+    eff = eff/nCells2
+
+    print("\n\n *** nCells={} | nCells2={}".format(nCells,nCells2))
     return eff
 
 
@@ -1670,7 +1738,7 @@ def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
     return logprob,kde
 
 
-def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, mode = 'median'):
+def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode = 'median'):
     """
     performs a KDE or median to calculate the max of the PWD distribution
 
@@ -1687,9 +1755,8 @@ def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, mode = 'median'):
 
     """
     
-    
     Nbarcodes = SCmatrix.shape[0]
-    cells2Plot = range(SCmatrix.shape[2])
+    # cells2Plot = range(SCmatrix.shape[2])
 
     meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
     
