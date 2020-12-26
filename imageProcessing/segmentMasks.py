@@ -65,32 +65,30 @@ warnings.filterwarnings("ignore")
 # FUNCTIONS
 # =============================================================================
 
-
-def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
+def _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=99.5,vmin=0,vmax=2000):
+    
     fig, ax = plt.subplots()
     fig.set_size_inches((50, 50))
-    
-    flux = sources["flux"]
-    x=sources["xcentroid"]+0.5
-    y=sources["ycentroid"]+0.5
-    # percent = 99.99 % this is too restrictive and only shows the top intensities
-    percent = 99.5
     
     norm = simple_norm(im, "sqrt", percent=percent)
     ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
 
-    p1=ax.scatter(x,y,c=flux,s=50,facecolors='none',cmap='jet',marker='x',vmin=0,vmax=2000)
+    p1=ax.scatter(x,y,c=flux,s=50,facecolors='none',cmap='jet',marker='x',vmin=vmin,vmax=vmax)
     fig.colorbar(p1,ax=ax,fraction=0.046, pad=0.04)
 
-    # positions = np.transpose(
-    #     (sources["xcentroid"] + 0.5, sources["ycentroid"] + 0.5)
-    # )  # for some reason sources are always displays 1/2 px from center of spot
-    # apertures = CircularAperture(positions, r=4.0)
-    # apertures.plot(color="blue", lw=1.5, alpha=0.35)
-
     ax.set_xlim(0, im.shape[1] - 1)
-    ax.set_ylim(0, im.shape[1] - 1)
+    ax.set_ylim(0, im.shape[0] - 1)
 
+    return fig
+    
+def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
+    
+    percent = 99.5
+    flux = sources["flux"]
+    x=sources["xcentroid"]+0.5
+    y=sources["ycentroid"]+0.5
+
+    fig = _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=percent)
     fig.savefig(outputFileName + "_segmentedSources.png")
     plt.close(fig)
     
@@ -117,10 +115,61 @@ def showsImageMasks(im, log1, segm_deblend, outputFileName):
         "a",
     )
 
+def _segmentSourceInhomogBackground(im,
+                                    threshold_over_std, 
+                                    fwhm, 
+                                    brightest, 
+                                    sigma_clip):
+    """
+    Function that segments barcodes by estimating inhomogeneous background
+    Parameters
+    ----------
+    im : NPY 2D
+        image to be segmented
+
+    Returns
+    -------
+    table : `astropy.table.Table` or `None`
+    A table of found stars with the following parameters:
+    
+    * ``id``: unique object identification number.
+    * ``xcentroid, ycentroid``: object centroid.
+    * ``sharpness``: object sharpness.
+    * ``roundness1``: object roundness based on symmetry.
+    * ``roundness2``: object roundness based on marginal Gaussian
+      fits.
+    * ``npix``: the total number of pixels in the Gaussian kernel
+      array.
+    * ``sky``: the input ``sky`` parameter.
+    * ``peak``: the peak, sky-subtracted, pixel value of the object.
+    * ``flux``: the object flux calculated as the peak density in
+      the convolved image divided by the detection threshold.  This
+      derivation matches that of `DAOFIND`_ if ``sky`` is 0.0.
+    * ``mag``: the object instrumental magnitude calculated as
+      ``-2.5 * log10(flux)``.  The derivation matches that of
+      `DAOFIND`_ if ``sky`` is 0.0.
+    
+    `None` is returned if no stars are found.
+    
+    img_bkc_substracted: 2D NPY array with background substracted image
+    """
+
+    # estimates and removes inhomogeneous background
+    bkg_estimator = MedianBackground()
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+
+    im1_bkg_substracted = im - bkg.background
+    mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
+
+    # estimates sources
+    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest, exclude_border=True,)
+    sources = daofind(im1_bkg_substracted)
+
+    return sources, im1_bkg_substracted
 
 def segmentSourceInhomogBackground(im, param):
     """
-    Segments barcodes by estimating inhomogeneous background
+    Wrapper for function that segments barcodes by estimating inhomogeneous background
     Parameters
     ----------
     im : NPY 2D
@@ -159,19 +208,14 @@ def segmentSourceInhomogBackground(im, param):
     fwhm = param.param["segmentedObjects"]["fwhm"]
     brightest = param.param["segmentedObjects"]["brightest"]  # keeps brightest sources
 
-    # estimates inhomogeneous background
     # sigma_clip = SigmaClip(sigma=3.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
-    bkg_estimator = MedianBackground()
-    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
-
-    im1_bkg_substracted = im - bkg.background
-    mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
-
-    # estimates sources
-    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest, exclude_border=True,)
-    sources = daofind(im1_bkg_substracted)
-
+    
+    sources, im1_bkg_substracted = _segmentSourceInhomogBackground(im,
+                                                                   threshold_over_std, 
+                                                                   fwhm, 
+                                                                   brightest, 
+                                                                   sigma_clip)
     return sources, im1_bkg_substracted
 
 
