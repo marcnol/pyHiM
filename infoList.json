@@ -23,6 +23,11 @@
         "referenceFiducial": "RT18",
         "tolerance": 0.1
     },
+    "buildsPWDmatrix": {
+        "flux_min": 200,
+        "folder": "buildsPWDmatrix",
+        "toleranceDrift": 1
+    },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
         "operation": "overwrite",
@@ -36,7 +41,6 @@
         "background_sigma": 3.0,
         "brightest": 1100,
         "centroidDifference_max": 5,
-        "flux_min": 200,
         "folder": "segmentedObjects",
         "fwhm": 3.0,
         "intensity_max": 59,
@@ -48,8 +52,7 @@
         "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
         "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
         "tesselation": true,
-        "threshold_over_std": 1.0,
-        "toleranceDrift": 1
+        "threshold_over_std": 1.0
     },
     "zProject": {
         "display": true,

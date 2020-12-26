@@ -126,9 +126,14 @@ class folders:
         self.outputFolders["zProject"] = filesFolder + os.sep + param.param["zProject"]["folder"]
         self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
         self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
-        self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"] 
         self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
-
+        
+        # backwards compatibility
+        if "buildsPWDmatrix" in param.param.keys():
+            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"] 
+        else:
+            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"                
+            
         self.createSingleFolder(self.outputFolders["zProject"])
         self.createSingleFolder(self.outputFolders["alignImages"])
         self.createSingleFolder(self.outputFolders["segmentedObjects"])

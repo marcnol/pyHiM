@@ -46,7 +46,7 @@
         "sigma_max": 5,
         "centroidDifference_max": 5,        
         "3DGaussianfitWindow": 3,
-        "threshold_over_std": 1.0,
+        "threshold_over_std": 1.0
     },
     "zProject": {
         "display": true,
