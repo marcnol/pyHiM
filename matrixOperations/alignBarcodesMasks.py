@@ -91,7 +91,7 @@ class cellID:
         """
         if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
             # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
+            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i] and self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
         else:
             # [or by reading the flux from 2D localization]
             keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
