@@ -1,60 +1,60 @@
 {
     "test_alignImages": {
         "label": 0,
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_appliesRegistrations": {
         "expectedOutput": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/alignImages/scan_001_RT29_001_ROI_converted_decon_ch01_2d_registered.npy"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/alignImages/scan_001_RT29_001_ROI_converted_decon_ch01_2d_registered.npy"
         ],
-        "fileName2Process": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/scan_001_RT29_001_ROI_converted_decon_ch00.tif",
+        "fileName2Process": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_001_RT29_001_ROI_converted_decon_ch00.tif",
         "label": 1,
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_localDriftCorrection": {
         "expectedOutputs": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/alignImages/LocalShiftsViolinPlot_ROI:001.png"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/alignImages/LocalShiftsViolinPlot_ROI:001.png"
         ],
         "labels": 2,
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_makeProjections": {
         "expectedOutputs": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/zProject/scan_006_DAPI_001_ROI_converted_decon_ch00_2d.npy"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject/scan_006_DAPI_001_ROI_converted_decon_ch00_2d.npy"
         ],
-        "fileName2Process": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/scan_006_DAPI_001_ROI_converted_decon_ch00.tif",
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "fileName2Process": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_006_DAPI_001_ROI_converted_decon_ch00.tif",
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_processesPWDmatrices": {
         "expectedOutputs": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/buildsPWDmatrix/buildsPWDmatrix_HiMscMatrix.npy"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/buildsPWDmatrix/buildsPWDmatrix_HiMscMatrix.npy"
         ],
         "labels": 2,
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_refitBarcodes3D": {
         "expectedOutputs": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:27.png",
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:29.png",
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:37.png",
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/segmentedObjects_barcode2D.dat"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:27.png",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:29.png",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:37.png",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_barcode2D.dat"
         ],
         "labels": 1,
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_segmentsMasks": {
         "expectedOutputs": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/segmentedObjects_barcode.dat",
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/segmentedObjects/scan_006_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_barcode.dat",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/scan_006_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
         ],
         "fileName2Process": [
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/scan_001_RT29_001_ROI_converted_decon_ch01.tif",
-            "/home/marcnol/grey/users/marcnol/test_HiM/testDataset/scan_006_DAPI_001_ROI_converted_decon_ch00.tif"
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_001_RT29_001_ROI_converted_decon_ch01.tif",
+            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/scan_006_DAPI_001_ROI_converted_decon_ch00.tif"
         ],
         "labels": [
             1,
             2
         ],
-        "rootFolder": "/home/marcnol/grey/users/marcnol/test_HiM/testDataset"
+        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     }
 }
