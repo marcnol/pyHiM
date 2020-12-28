@@ -39,7 +39,7 @@ class log:
         self.parallel=parallel
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
-        
+
     def eraseFile(self):
         # with open(self.fileName, 'w') as file:
         #    file.write("")
@@ -62,7 +62,7 @@ class log:
             self.save("\n" + text, status)
         else:
             self.save("\n" + text, status)
-       
+
     # returns formatted line to be outputed
     def getFullString(self, text="", status="info"):
         now = datetime.now()
@@ -77,7 +77,7 @@ class folders:
     def __init__(self, masterFolder=r"/home/marcnol/Documents/Images"):
         self.masterFolder = masterFolder
         self.listFolders = []
-        
+
         # list of sub-folders in rootFilder with images
         self.zProjectFolder = ""
         self.outputFolders = {}
@@ -113,9 +113,9 @@ class folders:
 
         Parameters
         ----------
-        filesFolder : string 
+        filesFolder : string
             rootFolder
-        param : Parameters Class 
+        param : Parameters Class
             with filenames of folders to be created
 
         Returns
@@ -127,13 +127,13 @@ class folders:
         self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
         self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
         self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
-        
+
         # backwards compatibility
         if "buildsPWDmatrix" in param.param.keys():
-            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"] 
+            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"]
         else:
-            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"                
-            
+            self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"
+
         self.createSingleFolder(self.outputFolders["zProject"])
         self.createSingleFolder(self.outputFolders["alignImages"])
         self.createSingleFolder(self.outputFolders["segmentedObjects"])
@@ -225,7 +225,7 @@ class Parameters:
                 "windowSecurity": 2,
                 "zProjectOption": "sum",  # sum or MIP
             },
-            "alignImages": { 
+            "alignImages": {
                 "folder": "alignImages",  # output folder
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
@@ -235,7 +235,7 @@ class Parameters:
                 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
                 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
                 "localShiftTolerance": 1,
-                "bezel": 20,                
+                "bezel": 20,
             },
             "projectsBarcodes": {
                 "folder": "projectsBarcodes",  # output folder
@@ -244,9 +244,9 @@ class Parameters:
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
-                "flux_min": 200,  # min flux to keeep object                
+                "flux_min": 200,  # min flux to keeep object
                 "toleranceDrift":1, # tolerance used for block drift correction, in px
-            },            
+            },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
                 "operation": "overwrite",  # overwrite, skip
@@ -258,15 +258,20 @@ class Parameters:
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px
-                "brightest": 1100,  # max number of objects segmented per FOV
+                "brightest": 1100,  # max number of sources segmented per FOV
                 "intensity_min": 0,  # min int to keep object
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
-                "residual_max": 2.5,  # max residuals to keeep object                
-                "sigma_max": 5,  # max sigma 3D fitting to keeep object                
-                "centroidDifference_max": 5,  # max diff between Moment and Gaussian z fits to keeep object                
-                "3DGaussianfitWindow": 3,  # size of window to extract subVolume, px. 3 means subvolume will be 7x7.
+                "3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
+                "residual_max": 2.5,  #z-profile Fit: max residuals to keeep object
+                "sigma_max": 5,  #z-profile Fit: max sigma 3D fitting to keeep object
+                "centroidDifference_max": 5,  #z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
+                "3DGaussianfitWindow": 3,  #z-profile Fit: window size to extract subVolume, px. 3 means subvolume will be 7x7.
+                "3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
+                "3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
+                "3dAP_brightest": 100, # number of sources sought in each YZ plane
+                "3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
             },
         }
         self.initializeStandardParameters()
@@ -274,7 +279,7 @@ class Parameters:
         self.loadParametersFile(self.paramFile)
         self.param["rootFolder"] = rootFolder
         self.fileParts={}
-        
+
     def get_param(self, param=False):
         if not param:
             return self.param
@@ -325,7 +330,7 @@ class Parameters:
 
         if channelDAPI_fiducial and len(fileList2Process)==0:
             warn("\n\n****You are using ch02 for channelDAPI_fiducial but there are only 2 channels for DAPI!\n\n")
-        
+
         # selects DAPI files
         if self.param["acquisition"]["label"] == "DAPI":
             self.fileList2Process = [
@@ -367,27 +372,27 @@ class Parameters:
     def decodesFileParts(self, fileName):
         '''
         decodes variables from an input file. typically, RE takes the form:
-            
+
         "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
-        
-        thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present 
+
+        thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present
         in your infoList...json file or a dict as follows if it all worked out fine:
-            
+
         fileParts['runNumber']: runNumber number
         fileParts['cycle']: cycle string
         fileParts['roi']: roi number
         fileParts['channel']: channel string
-        
+
         Parameters
         ----------
         param : Parameters class
         fileName : string
             filename to decode
-    
+
         Returns
         -------
         Dict with fileParts.
-    
+
         '''
         # decodes regular expressions
         if 'fileNameRegExp' in self.param['acquisition'].keys():
@@ -395,24 +400,24 @@ class Parameters:
             return fileParts
         else:
             return {}
-    
+
 class daskCluster:
     def __init__(self, requestedNumberNodes,maximumLoad=0.6,memoryPerWorker = 2000):
         self.requestedNumberNodes = requestedNumberNodes
         # self.nThreads will be created after exetution of initializeCluster()
         self.maximumLoad = maximumLoad  # max number of workers that I can take
-        self.memoryPerWorker = memoryPerWorker# in Mb       
+        self.memoryPerWorker = memoryPerWorker# in Mb
         self.initializeCluster()
 
     def initializeCluster(self):
-        
+
         numberCoresAvailable = multiprocessing.cpu_count()
 
         # we want at least 2 GB per worker
         _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
- 
+
         maxNumberThreads = int(np.min([numberCoresAvailable*self.maximumLoad, free_m / self.memoryPerWorker]))
-        
+
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
 
         print("Cluster with {} workers started ({} requested)".format(self.nThreads,self.requestedNumberNodes))
@@ -423,9 +428,9 @@ class daskCluster:
                                 # threads_per_worker=1,
                                 # memory_limit='2GB',
                                 # ip='tcp://localhost:8787',
-                                ) 
+                                )
         self.client = Client(self.cluster)
-        
+
 
 # =============================================================================
 # FUNCTIONS
@@ -529,7 +534,7 @@ def ROI2FiducialFileName(param, file, barcodeName):
     # gets rootFolder
     rootFolder = os.path.dirname(file)
     ROI = param.decodesFileParts(os.path.basename(file))['roi']
-    
+
     channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
 
     # looks for referenceFiducial file in folder
@@ -553,7 +558,7 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif')
     ----------
     rootFolder : string
     param : string
-        parameterFile 
+        parameterFile
     ext : string, optional
         File extension. The default is 'tif'.
 
@@ -563,29 +568,29 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif')
         number of unique cycles.
 
     """
-    def unique(list1): 
+    def unique(list1):
         ''' function to get unique values'''
-        # intilize a null list 
-        unique_list = [] 
-          
-        # traverse for all elements 
-        for x in list1: 
-            # check if exists in unique_list or not 
-            if x not in unique_list: 
-                unique_list.append(x) 
-    
-        return unique_list      
-            
+        # intilize a null list
+        unique_list = []
+
+        # traverse for all elements
+        for x in list1:
+            # check if exists in unique_list or not
+            if x not in unique_list:
+                unique_list.append(x)
+
+        return unique_list
+
     allFilesinRootFolder=glob.glob(rootFolder+os.sep+"*"+ext)
-    
+
     param = Parameters(rootFolder, rootFolder+parameterFile)
-       
+
     ROIs, RTs = [], []
     for x in allFilesinRootFolder:
         fileParts = param.decodesFileParts(x)
         ROIs.append(fileParts["roi"])
         RTs.append(fileParts["cycle"])
-    
+
     numberUniqueCycles=len(unique(RTs))
-        
+
     return numberUniqueCycles
