@@ -100,27 +100,25 @@ else:
     fileNameBarcodeCoordinates = fittingSession.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
     
     barcodeMap,_=fittingSession.loadsBarcodeMap()
-    
+
+    barcodeMapROI = barcodeMap.group_by("ROI #")
+    numberROIs = len(barcodeMapROI.groups.keys)
+    iROI = 0
+    barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
+
+    barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
+    numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
+
+    iBarcode = 1
+
+    barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
+
     #################
     # loads raw image
     #################
     Im3D = fittingSession.loadsShifts3Dimage(barcodeMapSinglebarcode)
     image2D=Im3D.data_2D
     image3D=Im3D.data
-    
-    barcodeMapROI = barcodeMap.group_by("ROI #")
-    numberROIs = len(barcodeMapROI.groups.keys)
-    iROI=0
-    barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[iROI]
-
-    barcodeMapROI_barcodeID = barcodeMapSingleROI.group_by("Barcode #")
-    numberBarcodes = len(barcodeMapROI_barcodeID.groups.keys)
-    
-    iBarcode=1
-    
-    barcodeMapSinglebarcode = barcodeMapROI_barcodeID.group_by("Barcode #").groups[iBarcode]
-
-
 
 # # refits 3D positions using gaussian z-profile fitting
 # fittingSession.outputFileName = path_output+os.sep+"outputBarcodes"
