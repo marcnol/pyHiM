@@ -11,8 +11,8 @@ from datetime import datetime
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
-    
-version = "0.3.0_" + datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+
+version = "0.4.0_" + datetime.now().strftime("%Y/%m/%d %H:%M:%S")
 
 setup(
     name='pyHiM',
@@ -37,7 +37,6 @@ setup(
               'tensorflow',
               'dask',
               'numba'
-              'tox'
               ],
     python_requires='>=3.6.0',
     install_requires=[''],
@@ -66,14 +65,13 @@ setup(
 # tox
 # configuration lives in tox.ini
 
-
 ######################################################
 ############# conventional installation ##############
 ######################################################
-# conda install pandas numpy matplotlib astropy graphviz
+# conda install pandas numpy matplotlib astropy
 # conda install photutils -c astropy
 
-# pip install roipoly opencv-python tqdm stardist csbdeep tox numba dask
+# pip install roipoly opencv-python tqdm stardist csbdeep numba dask
 # pip install --upgrade tensorflow
 
 # pip install --upgrade scikit-image
@@ -86,5 +84,5 @@ setup(
 # pip install update stardist
 # pip install --upgrade pip
 # pip install --upgrade dask
-
+# conda install spyder=4.2.0
 
