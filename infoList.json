@@ -1,0 +1,74 @@
+{
+    "acquisition": {
+        "DAPI_channel": "ch00",
+        "RNA_channel": "ch02",
+        "barcode_channel": "ch01",
+        "fiducialBarcode_channel": "ch00",
+        "fiducialDAPI_channel": "ch01",
+        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+        "label": "DAPI",
+        "pixelSizeXY": 0.1,
+        "pixelSizeZ": 0.25,
+        "positionROIinformation": 3
+    },
+    "alignImages": {
+        "alignByBlock": true,
+        "bezel": 20,
+        "folder": "alignImages",
+        "higher_threshold": 0.9999999,
+        "localShiftTolerance": 1,
+        "lower_threshold": 0.999,
+        "operation": "overwrite",
+        "outputFile": "alignImages",
+        "referenceFiducial": "RT18",
+        "tolerance": 0.1
+    },
+    "buildsPWDmatrix": {
+        "flux_min": 200,
+        "folder": "buildsPWDmatrix",
+        "toleranceDrift": 1
+    },
+    "projectsBarcodes": {
+        "folder": "projectsBarcodes",
+        "operation": "overwrite",
+        "outputFile": "projectsBarcodes"
+    },
+    "segmentedObjects": {
+        "3DGaussianfitWindow": 3,
+        "3Dmethod": "zASTROPY",
+        "3dAP_brightest": 100,
+        "3dAP_distTolerance": 1,
+        "3dAP_flux_min": 2,
+        "3dAP_window": 5,
+        "area_max": 500,
+        "area_min": 50,
+        "background_method": "inhomogeneous",
+        "background_sigma": 3.0,
+        "brightest": 1100,
+        "centroidDifference_max": 5,
+        "folder": "segmentedObjects",
+        "fwhm": 3.0,
+        "intensity_max": 59,
+        "intensity_min": 0,
+        "operation": "overwrite",
+        "outputFile": "segmentedObjects",
+        "residual_max": 2.5,
+        "sigma_max": 5,
+        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+        "tesselation": true,
+        "threshold_over_std": 1.0
+    },
+    "zProject": {
+        "display": true,
+        "folder": "zProject",
+        "mode": "full",
+        "operation": "skip",
+        "saveImage": true,
+        "windowSecurity": 2,
+        "zProjectOption": "sum",
+        "zmax": 59,
+        "zmin": 1,
+        "zwindows": 10
+    }
+}
