@@ -14,13 +14,9 @@
     "alignImages": {
         "folder": "alignImages",
         "operation": "overwrite",
-        "outputFile": "alignImages",
-        "alignByBlock": true,
-        "tolerance": 0.1,
-        "lower_threshold": 0.999, 
-        "higher_threshold": 0.9999999, 
+        "outputFile": "alignImages.bed",
 		"localAlignment": "overwrite",
-		"localShiftTolerance": 3,
+		"localShiftTolerance": 1,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -42,13 +38,14 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "Segment3D": "overwrite",
-        "flux_min": 200,
-        "residual_max": 2.5,
-        "sigma_max": 5,
-        "centroidDifference_max": 5,        
+        "3Dmethod":"zASTROPY",
         "3DGaussianfitWindow": 3,
         "threshold_over_std": 1.0,
-        "toleranceDrift":1
+        "3dAP_window": 5,
+        "3dAP_flux_min": 2,
+        "3dAP_brightest": 100, 
+        "3dAP_distTolerance": 1
+
     },
     "zProject": {
         "display": true,

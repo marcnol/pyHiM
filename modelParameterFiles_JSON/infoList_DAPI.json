@@ -3,7 +3,7 @@
         "DAPI_channel": "ch00",
         "RNA_channel": "ch01",
         "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-	"barcode_channel": "ch01",
+    	"barcode_channel": "ch01",
         "fiducialBarcode_channel": "ch00",
         "fiducialDAPI_channel": "ch02",
         "label": "DAPI",
@@ -29,6 +29,11 @@
         "operation": "overwrite",
         "outputFile": "projectsBarcodes"
     },
+    "buildsPWDmatrix": {
+        "folder": "buildsPWDmatrix",
+        "flux_min": 200,
+        "toleranceDrift":1
+    },    
     "segmentedObjects": {
         "area_max": 3000,
         "area_min": 150,
@@ -45,13 +50,11 @@
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
         "Segment3D": "overwrite",
-        "flux_min": 200,
         "residual_max": 2.5,
         "sigma_max": 5,
         "centroidDifference_max": 5,        
         "3DGaussianfitWindow": 3,
-        "threshold_over_std": 1.0,
-        "toleranceDrift":1
+        "threshold_over_std": 1.0
     },
     "zProject": {
         "display": true,

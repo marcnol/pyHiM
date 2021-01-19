@@ -23,7 +23,7 @@ else:
     rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
 
 #%% constructs dictionary with settings
-    
+
 testData={}
 
 testData['test_makeProjections']={}
@@ -57,10 +57,7 @@ testData['test_processesPWDmatrices']['labels']= 2
 
 testData['test_refitBarcodes3D']={}
 testData['test_refitBarcodes3D']["rootFolder"] = rootFolder
-testData['test_refitBarcodes3D']['expectedOutputs']= [rootFolder+"/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:27.png",
-                                                      rootFolder+"/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:29.png",
-                                                      rootFolder+"/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:37.png",
-                                                      rootFolder+"/segmentedObjects/segmentedObjects_barcode2D.dat"]
+testData['test_refitBarcodes3D']['expectedOutputs']= [rootFolder+"/segmentedObjects/segmentedObjects_barcode2D.dat"]
 testData['test_refitBarcodes3D']['labels']= 1
 
 testData['test_localDriftCorrection']={}

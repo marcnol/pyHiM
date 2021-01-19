@@ -89,6 +89,11 @@ a typical file (DAPI example) looks like:
         "operation": "overwrite",
         "outputFile": "projectsBarcodes"
     },
+    "buildsPWDmatrix": {
+        "folder": "buildsPWDmatrix",  # output folder
+        "flux_min": 200  # min flux to keeep object                
+        "toleranceDrift":1,
+    },    
     "segmentedObjects": {
         "area_max": 3000,
         "area_min": 150,
@@ -103,13 +108,16 @@ a typical file (DAPI example) looks like:
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
-        "flux_min": 1000,
         "residual_max": 2.5,
         "sigma_max": 5,
-        "centroidDifference_max": 5,        
+        "centroidDifference_max": 5,       
+        "3Dmethod":"zASTROPY",
         "3DGaussianfitWindow": 3,
         "threshold_over_std": 1.0,
-        "toleranceDrift":1,
+        "3dAP_window": 5,
+        "3dAP_flux_min": 2,
+        "3dAP_brightest": 100,
+        "3dAP_distTolerance": 1
     },
     "zProject": {
         "display": true,
@@ -180,7 +188,16 @@ Here are some options for the different parameters and a brief description
 "outputFile": "projectsBarcodes",
 ```
 
+"buildsPWDmatrix"
+
+```
+"folder": "buildsPWDmatrix",  # output folder
+"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
+"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
+```
+
 "segmentedObjects"
+
 ```
 "folder": "segmentedObjects",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
@@ -196,12 +213,15 @@ Here are some options for the different parameters and a brief description
 "intensity_max": 59,  *Description:* max intensity to keep object
 "area_min": 50,  *Description:* min area to keep object
 "area_max": 500,  *Description:* max area to keep object
-"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
 "residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+"3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
 "sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
 "centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
 "3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
-"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
+"3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
+"3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
+"3dAP_brightest": 100, # number of sources sought in each YZ plane
+"3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
 ```
 
 #### MakeProjections
@@ -396,7 +416,9 @@ An example of a barcode where localization signals are far from optimal: note th
 
 
 
-##### 3D fits of barcode positions
+##### 3D fits of barcode positions using zProfiling
+
+```"3Dmethod":"zProfile"```
 
 Barcode 3D positions are now calculated as follows.
 
@@ -413,6 +435,47 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 ![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
 
+
+
+##### 3D fits of barcode positions using ASTROPY
+
+```"3Dmethod":"zASTROPY"```
+
+In this case, the 2D XY source positions calculated using projected images are loaded from disk.
+
+Then the ```fittingSession.refitFolders``` will 
+
+- reinterpolate the 3D stack to correct for XY drift
+- Make a YZ plane projection at a specific xPlane position. For this it will sum the YZ images from ```xPlane-3dAP_window:xPlane+3dAP_window``` . From this YZ projection, it will call ASTROPY and localize new sources using the parameters: 
+  - ```3dAP_flux_min``` it will discard sources that have a flux smaller than this value
+  - ```3dAP_brightest```: it will recover this number of sources per YZ plane
+- Then, it will iterate over the sources in that YZ plane and match them to a source in the original 2D XY source list. For this, it will find the sources within a Y-distance of  ```3dAP_distTolerance```, and match to the closest source found. If no source is found closer than this threshold, it will not match it to anything. *There is an experimental setting ```addSources``` that can be used to add the sources as new sources if no match was found in the original 2D XY list of sources. By default this is set to ```False```.* 
+- If the flux of the 2D XY source is smaller than that of the ZY source, the flux will be updated accordingly.
+- This process is repeated for all xPlanes using ```range(3dAP_window, imageSizeX,3dAP_window)``` (i.e. the x-range of the image will be split into ```imageSizeX/3dAP_window``` equally-spaced planes). Typically ```3dAP_window=5``` works fine.
+
+The results for any given ROI and barcode appear with three figures representing:
+
+- a typical YZ profile in the middle of the x-range. Sources will be represented as crosses.
+- the 2D-projected image with sources represented as crosses. Color-code represents z-position. Colormap is from ```0``` to the max number of z-planes in the image.
+- Finally, a scatter plot displaying the z-position and the flux of every source detected is displayed. 
+
+Important: Sources are not flux-filtered at this stage. The original or updated flux values will be outputted in the Table, and used in the ```alignBarcodesMasks``` module to filter the localization using the value of ```flux_min``` provided in the ```infoList_DAPI.json``` file.
+
+Output examples:
+
+![image-20201228111034499](Running_pyHiM.assets/image-20201228111034499.png)
+
+
+
+![image-20201228111115388](Running_pyHiM.assets/image-20201228111115388.png)
+
+
+
+![image-20201228111138959](Running_pyHiM.assets/image-20201228111138959.png)
+
+
+
+![image-20201228111209001](Running_pyHiM.assets/image-20201228111209001.png)
 
 #### Align DAPI masks and barcodes
 
