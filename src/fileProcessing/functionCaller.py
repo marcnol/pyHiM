@@ -30,18 +30,18 @@ class HiMfunctionCaller:
         self.rootFolder=runParameters["rootFolder"]
         self.parallel=runParameters["parallel"]
         self.sessionName=sessionName
-        
+
         self.log1 = log(rootFolder = self.rootFolder,parallel=self.parallel)
-        
+
         self.labels2Process = [
             {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
             {"label": "barcode", "parameterFile": "infoList_barcode.json"},
             {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
             {"label": "RNA", "parameterFile": "infoList_RNA.json"},
         ]
-        
+
         self.session1 = session(self.rootFolder, self.sessionName)
-          
+
     def initialize(self):
 
         print("\n--------------------------------------------------------------------------")
@@ -55,13 +55,13 @@ class HiMfunctionCaller:
         self.log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(self.sessionName))
         if self.log1.fileNameMD=='.md':
             self.log1.fileNameMD='HiM_report.md'
-            
+
         self.log1.report("Hi-M analysis MD: {}".format(self.log1.fileNameMD))
         writeString2File(
             self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
-        
-        
+
+
     def lauchDaskScheduler(self):
         if self.parallel:
             parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
@@ -69,27 +69,27 @@ class HiMfunctionCaller:
             print("Found {} unique cycles in rootFolder".format(numberUniqueCycles))
             self.daskClusterInstance = daskCluster(numberUniqueCycles)
             print("Go to http://localhost:8787/status for information on progress...")
-            
+
             self.cluster = LocalCluster(n_workers=self.daskClusterInstance.nThreads,
                                 # processes=True,
                                 # threads_per_worker=1,
                                 # memory_limit='2GB',
                                 # ip='tcp://localhost:8787',
-                                ) 
+                                )
             self.client = Client(self.cluster)
-            
+
     def makeProjections(self,param):
         if not self.runParameters["parallel"]:
             makeProjections(param, self.log1, self.session1)
         else:
             result = self.client.submit(makeProjections,param, self.log1, self.session1)
             _ = self.client.gather(result)
-        
+
     def alignImages(self, param, ilabel):
         if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
             self.log1.report("Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info")
             if not self.parallel:
-                alignImages(param, self.log1, self.session1)        
+                alignImages(param, self.log1, self.session1)
             else:
                  result = self.client.submit(alignImages,param, self.log1, self.session1)
                  _ = self.client.gather(result)
@@ -123,21 +123,21 @@ class HiMfunctionCaller:
                 result = self.client.submit(projectsBarcodes,param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
-                                
+
     def refitBarcodes(self, param, ilabel):
         if self.getLabel(ilabel) == "barcode" and self.runParameters["refit"]:
             fittingSession = refitBarcodesClass(param, self.log1, self.session1,parallel=self.parallel)
             if not self.parallel:
-                fittingSession.refitFolders()            
+                fittingSession.refitFolders()
             else:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
-                
+
     def localDriftCorrection(self, param, ilabel):
         if self.getLabel(ilabel) == "DAPI" and self.runParameters["localAlignment"]:
 
             if not self.parallel:
-                errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)                
+                errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
             else:
                 result = self.client.submit(localDriftCorrection,param, self.log1, self.session1)
                 errorCode, _, _ = self.client.gather(result)
@@ -149,7 +149,7 @@ class HiMfunctionCaller:
             else:
                 result = self.client.submit(processesPWDmatrices,param, self.log1, self.session1)
                 a = self.client.gather(result)
-                
+
     def getLabel(self, ilabel):
         return self.labels2Process[ilabel]["label"]
 
@@ -159,7 +159,7 @@ def HiM_parseArguments():
     parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
     parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
     parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
-    
+
     args = parser.parse_args()
 
     print("\n--------------------------------------------------------------------------")
@@ -167,8 +167,14 @@ def HiM_parseArguments():
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        runParameters["rootFolder"] = '.' # os.getcwd()
-       
+        if "HiMdata" in os.environ.keys():
+            # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
+            runParameters["rootFolder"] = "/data"
+            print("\n\n Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
+        else:
+            print("\n\n HiMdata: NOT FOUND")
+            runParameters["rootFolder"] = os.getenv("PWD") #os.getcwd()
+
     if args.parallel:
         runParameters["parallel"] = args.parallel
     else:

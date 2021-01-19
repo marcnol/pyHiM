@@ -1,0 +1,2 @@
+
+sudo docker run -e HiMdata="docker" -v $PWD:/data py_him

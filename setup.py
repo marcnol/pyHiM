@@ -36,6 +36,7 @@ setup(
               'csbdeep',
               'tensorflow',
               'dask',
+              'scikit-learn',
               'numba'
               ],
     python_requires='>=3.6.0',
@@ -48,6 +49,9 @@ setup(
 #################### to package ######################
 ######################################################
 # python3 setup.py sdist bdist_wheel
+#
+# using docker
+# sudo docker build -t py_him .
 
 ######################################################
 #################### to install ######################
@@ -69,7 +73,7 @@ setup(
 ############# conventional installation ##############
 ######################################################
 # conda install pandas numpy matplotlib astropy
-# conda install photutils -c astropy
+# conda install photutils -c astropy scikit-learn
 
 # pip install roipoly opencv-python tqdm stardist csbdeep numba dask
 # pip install --upgrade tensorflow
