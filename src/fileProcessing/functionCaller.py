@@ -167,7 +167,7 @@ def HiM_parseArguments():
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        if "HiMdata" in os.environ.keys():
+        if "docker" in os.environ.keys():
             # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
             runParameters["rootFolder"] = "/data"
             print("\n\n Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
