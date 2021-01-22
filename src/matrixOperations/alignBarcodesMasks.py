@@ -91,7 +91,7 @@ class cellID:
         """
         if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims==3:
             # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i]
+            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i] and self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
         else:
             # [or by reading the flux from 2D localization]
             keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min 
@@ -229,15 +229,17 @@ class cellID:
         '''
 
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
-        if "flux_min" in self.param.param["segmentedObjects"]:
-            flux_min = self.param.param["segmentedObjects"]["flux_min"]
+        if "flux_min" in self.param.param["buildsPWDmatrix"]:
+            flux_min = self.param.param["buildsPWDmatrix"]["flux_min"]
         else:
             flux_min = 0
-        if "toleranceDrift" in self.param.param["segmentedObjects"]:
-            toleranceDrift = self.param.param["segmentedObjects"]["toleranceDrift"]
+            print("Flux min not found. Set to zero!")
+        if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
+            toleranceDrift = self.param.param["buildsPWDmatrix"]["toleranceDrift"]
         else:
-            toleranceDrift= 100
-
+            toleranceDrift= 1
+            print("toleranceDrift not found. Set to 1!")
+            
         print("Flux min = {} | ToleranceDrift = {} px".format(flux_min,toleranceDrift))
         
         blockSize=256

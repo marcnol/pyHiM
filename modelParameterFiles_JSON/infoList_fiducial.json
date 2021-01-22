@@ -41,8 +41,7 @@
         "intensity_min": 0,
         "operation": "overwrite",
         "outputFile": "segmentedObjects",
-        "threshold_over_std": 1.0,
-        "toleranceDrift":1
+        "threshold_over_std": 1.0
     },
     "zProject": {
         "display": true,

@@ -380,7 +380,10 @@ def alignImagesInCurrentFolder(currentFolder,param,dataFolder,log1,session1,file
             del imReference
     
         # saves dicShifts dictionary with shift results
-        saveJSON(os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json", dictShifts)
+        dictionaryFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
+        saveJSON(dictionaryFileName, dictShifts)
+        log1.info("Saved alignment dictionary to {}".format(dictionaryFileName))
+
     else:
         log1.report(
             "Reference Barcode file does not exist: {}", format(referenceBarcode),
@@ -465,7 +468,7 @@ def appliesRegistrations2fileName(fileName2Process,param,dataFolder,log1,session
     except KeyError:
         shiftArray = None
         log1.report(
-            "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(ROI, label), "ERROR",
+            "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format("ROI:" + ROI, label), "ERROR",
         )
 
     if shiftArray != None:
@@ -528,7 +531,9 @@ def appliesRegistrations2currentFolder(currentFolder,param,dataFolder,log1,sessi
     log1.report("-------> Processing Folder: {}".format(currentFolder))
     
     # loads dicShifts with shifts for all ROIs and all labels
-    dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+    dictFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
+
+    # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
     dictShifts = loadJSON(dictFileName)
     if len(dictShifts)==0:
         log1.report("File with dictionary not found!: {}".format(dictFileName))
