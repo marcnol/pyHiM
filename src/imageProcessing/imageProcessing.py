@@ -34,7 +34,6 @@ from scipy.ndimage import shift as shiftImage
 from skimage.exposure import match_histograms
 from skimage.registration import phase_cross_correlation
 
-
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
 
@@ -44,7 +43,7 @@ from photutils import Background2D, MedianBackground
 
 
 class Image:
-    def __init__(self,param,log1):
+    def __init__(self,param=dict(),log1=[]):
         self.param=param
         self.log=log1
         self.data = []
