@@ -317,7 +317,7 @@ class Parameters:
 
         # finds if there is 2 or 3 channels for DAPI acquisition
         fileList2Process = [
-            file for file in filesFolder if self.decodesFileParts(path.basename(file))["channel"] == "ch02" and "DAPI" in file.split("_")
+            file for file in filesFolder if self.decodesFileParts(path.basename(file))["channel"] == "ch02" and "DAPI" in path.basename(file).split("_")
         ]
 
         # defines channels for RNA and DAPI-fiducial
@@ -336,7 +336,7 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if self.decodesFileParts(path.basename(file))["channel"] == channelDAPI and "DAPI" in file.split("_")
+                if self.decodesFileParts(path.basename(file))["channel"] == channelDAPI and "DAPI" in path.basename(file).split("_")
             ]
 
         # selects DAPIch2 files
@@ -344,7 +344,7 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if self.decodesFileParts(path.basename(file))["channel"]== channelDAPI_RNA and "DAPI" in file.split("_")
+                if self.decodesFileParts(path.basename(file))["channel"]== channelDAPI_RNA and "DAPI" in path.basename(file).split("_")
             ]
 
         # selects barcode files
