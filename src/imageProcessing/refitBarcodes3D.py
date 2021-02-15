@@ -800,14 +800,16 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
 
     # ASTROPY yz-fit
     selection_AP_3Dgaussian = np.nonzero((barcodeMapNew["xcentroid"]>xPlane-window) & (barcodeMapNew["xcentroid"]<xPlane+window))
-    y_AP_3Dgaussian=barcodeMapNew["ycentroid"][selection_AP_3Dgaussian]
-    z_AP_3Dgaussian=barcodeMapNew["zcentroidGauss"][selection_AP_3Dgaussian]
-    flux_AP_3Dgaussian = barcodeMapNew["flux"][selection_AP_3Dgaussian]
-
-    fig=_showsImageSources(image3D_ZY , image3D_ZY , y_AP_3Dgaussian, z_AP_3Dgaussian, flux_AP_3Dgaussian, percent=99.5,vmin=0,vmax=flux_AP_3Dgaussian.max())
-    outFileName1=outputFileName + "_segmentedSourcesYZ_Astropy_gaussian.png"
-    fig.savefig(outFileName1)
-    plt.close(fig)
+    
+    if selection_AP_3Dgaussian[0].shape[0]>0:
+        y_AP_3Dgaussian=barcodeMapNew["ycentroid"][selection_AP_3Dgaussian]
+        z_AP_3Dgaussian=barcodeMapNew["zcentroidGauss"][selection_AP_3Dgaussian]
+        flux_AP_3Dgaussian = barcodeMapNew["flux"][selection_AP_3Dgaussian]
+    
+        fig=_showsImageSources(image3D_ZY , image3D_ZY , y_AP_3Dgaussian, z_AP_3Dgaussian, flux_AP_3Dgaussian, percent=99.5,vmin=0,vmax=flux_AP_3Dgaussian.max())
+        outFileName1=outputFileName + "_segmentedSourcesYZ_Astropy_gaussian.png"
+        fig.savefig(outFileName1)
+        plt.close(fig)
 
     # plots ASTROPY XYZ
     fig=_showsImageSources(image2D,
