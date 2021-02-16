@@ -12,31 +12,33 @@ Classes and functions for common image processing
 # =============================================================================
 
 import os
-import numpy as np
 
-from skimage import io
-import scipy.optimize as spo
+
 import matplotlib.pyplot as plt
 import cv2
-from numba import jit
+from tqdm import trange
+import numpy as np
+from numpy import linalg as LA
 
-from skimage import exposure
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
-# from skimage.feature import register_translation
+from astropy.stats import SigmaClip
+from photutils import Background2D, MedianBackground
+
+import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 
+from skimage import io
+from skimage import exposure
 from skimage.util.shape import view_as_blocks
-from numpy import linalg as LA
-from tqdm import trange
 from skimage import measure
-from scipy.ndimage import shift as shiftImage
-from skimage.exposure import match_histograms
 from skimage.registration import phase_cross_correlation
 
 
-from astropy.stats import SigmaClip
-from photutils import Background2D, MedianBackground
+# from numba import jit
+# from scipy.ndimage import shift as shiftImage
+# from skimage.exposure import match_histograms
+# from skimage.feature import register_translation
 
 # =============================================================================
 # CLASSES
@@ -66,11 +68,11 @@ class Image:
     def saveImage2D(self, log, rootFolder, tag="_2d"):
         fileName=self.getImageFileName(rootFolder,tag)
         saveImage2Dcmd(self.data_2D, fileName, log)
-        
+
     def getImageFileName(self,rootFolder,tag):
         fileName = rootFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag
         return fileName
-    
+
     # read an image as a numpy array
     def loadImage2D(self, fileName, log, masterFolder, tag="_2d"):
         self.fileName = fileName
@@ -125,7 +127,7 @@ class Image:
         self.log.report("Focal plane={}".format(self.focusPlane))
 
     # processes sum image in axial direction given range
-    # @jit(nopython=True) 
+    # @jit(nopython=True)
     def zProjectionRange(self):
 
         # find the correct range for the projection
@@ -221,14 +223,14 @@ class Image:
 
 
 # Gaussian function
-# @jit(nopython=True) 
+# @jit(nopython=True)
 def gaussian(x, a=1, mean=0, std=0.5):
     return a * (1 / (std * (np.sqrt(2 * np.pi)))) * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
 
-# @jit(nopython=True) 
+# @jit(nopython=True)
 def calculate_zrange(idata, parameters):
     """
     Calculates the focal planes based max standard deviation
@@ -320,20 +322,20 @@ def save2imagesRGB(I1, I2, outputFileName):
     """
 
     sz = I1.shape
-    I1, I2 = I1 / I1.max(), I2 / I2.max()   
+    I1, I2 = I1 / I1.max(), I2 / I2.max()
 
     I1,_,_,_,_ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
     I2,_,_,_,_ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
-    
+
     fig, ax1 = plt.subplots()
     fig.set_size_inches((30, 30))
-   
+
     nullImage = np.zeros(sz)
-   
+
     RGB = np.dstack([I1, I2, nullImage])
     ax1.imshow(RGB)
     ax1.axis("off")
-   
+
     fig.savefig(outputFileName)
 
     plt.close(fig)
@@ -343,8 +345,8 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     Overlays two images as R and B and saves them to output file
     """
 
-    I1, I2 = I1 / I1.max(), I2 / I2.max()   
-    I3, I4 = I3 / I3.max(), I4 / I4.max()   
+    I1, I2 = I1 / I1.max(), I2 / I2.max()
+    I3, I4 = I3 / I3.max(), I4 / I4.max()
 
     I1,_,_,_,_ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
     I2,_,_,_,_ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
@@ -352,18 +354,18 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     I4,_,_,_,_ = imageAdjust(I4, lower_threshold=0.5, higher_threshold=0.9999)
 
     cmap = 'seismic'
-    
+
     fig, (ax1,ax2) = plt.subplots(1,2)
     fig.set_size_inches((60, 30))
-    
+
     ax1.imshow(I1-I2, cmap=cmap)
     ax1.axis("off")
     ax1.set_title("uncorrected")
-    
+
     ax2.imshow(I3-I4, cmap=cmap)
     ax2.axis("off")
     ax2.set_title("corrected")
-    
+
     fig.savefig(outputFileName)
 
     plt.close(fig)
@@ -379,9 +381,9 @@ def saveImage2Dcmd(image, fileName, log):
         log.report("Warning, image is empty", "Warning")
 
 
-def align2ImagesCrossCorrelation(image1_uncorrected, 
+def align2ImagesCrossCorrelation(image1_uncorrected,
                                  image2_uncorrected,
-                                 lower_threshold=0.999, 
+                                 lower_threshold=0.999,
                                  higher_threshold=0.9999999,
                                  upsample_factor=100):
     """
@@ -431,11 +433,11 @@ def align2ImagesCrossCorrelation(image1_uncorrected,
     }
 
     # calculates shift
-    
+
     # shift, error, diffphase = register_translation(image1_adjusted, image2_adjusted, upsample_factor=upsample_factor)
     shift, error, diffphase = phase_cross_correlation(image1_adjusted, image2_adjusted, upsample_factor=upsample_factor)
-    
-    
+
+
     # corrects image
     # The shift corresponds to the pixel offset relative to the reference image
     image2_corrected = shiftImage(image2_adjusted, shift)
@@ -450,7 +452,7 @@ def align2ImagesCrossCorrelation(image1_uncorrected,
         image2_corrected,
         image1_adjusted,
         image2_adjusted,
-    )       
+    )
 
     return results
 
@@ -462,26 +464,26 @@ def find_transform(im_src, im_dst):
     except:
         print('Warning: find transform failed. Set warp as identity')
     return warp
-    
+
 def alignCV2(im1,im2,warp_mode):
-    
-   
+
+
     # Define 2x3 or 3x3 matrices and initialize the matrix to identity
     if warp_mode == cv2.MOTION_HOMOGRAPHY :
         warp_matrix = np.eye(3, 3, dtype=np.float32)
     else :
         warp_matrix = np.eye(2, 3, dtype=np.float32)
-    
+
     # Specify the number of iterations.
     number_of_iterations = 1000 # 5000
-    
+
     # Specify the threshold of the increment
     # in the correlation coefficient between two iterations
     termination_eps = 1e-10;
-    
+
     # Define termination criteria
     criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, number_of_iterations,  termination_eps)
-    
+
     # Run the ECC algorithm. The results are stored in warp_matrix.
     try:
         cc, warp_matrix = cv2.findTransformECC(im1,im2,warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1)
@@ -494,28 +496,28 @@ def alignCV2(im1,im2,warp_mode):
     return cc, warp_matrix
 
 def applyCorrection(im2,warp_matrix):
-    
+
     sz = im2.shape
 
     # Use warpAffine for Translation, Euclidean and Affine
     im2_aligned = cv2.warpAffine(im2, warp_matrix, (sz[1],sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP);
 
-    return im2_aligned 
+    return im2_aligned
 
-   
+
 def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberPollsters=4, tolerance=0.1, useCV2=False,shiftErrorTolerance = 5):
 
     Block1=view_as_blocks(I1,blockSize)
     Block2=view_as_blocks(I2,blockSize)
-    
+
     if useCV2:
         warp_matrix = np.eye(2, 3, dtype=np.float32)
         warp_mode = cv2.MOTION_TRANSLATION
-    
+
     shiftImageNorm= np.zeros((Block1.shape[0],Block1.shape[1]))
     shiftedImage = np.zeros((Block1.shape[0],Block1.shape[1],2))
     rmsImage= np.zeros((Block1.shape[0],Block1.shape[1]))
-    
+
     for i in trange(Block1.shape[0]):
         for j in range(Block1.shape[1]):
             if not useCV2:
@@ -524,28 +526,28 @@ def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberP
                 shiftImageNorm[i,j] = LA.norm(shift)
                 shiftedImage[i,j,0], shiftedImage[i,j,1] = shift[0], shift[1]
                 I2_aligned = shiftImage(I2, shift)
-            else:              
+            else:
                 # uses CV2 cause it is 20 times faster than Scimage
                 cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
                 shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
                 shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
                 I2_aligned = applyCorrection(I2,warp_matrix)
-            
-            rmsImage[i,j] =np.sum(np.sum(np.abs(I1-I2_aligned),axis=1)) 
-            
+
+            rmsImage[i,j] =np.sum(np.sum(np.abs(I1-I2_aligned),axis=1))
+
     # [calculates optimal shifts by polling blocks showing the best RMS]
 
     # threshold = filters.threshold_otsu(rmsImage)
     threshold = (1+tolerance)*np.min(rmsImage)
-    mask = rmsImage < threshold 
-    
+    mask = rmsImage < threshold
+
     contours = measure.find_contours(rmsImage, threshold)
-    
+
     try:
         contour = sorted(contours, key=lambda x: len(x))[-1]
     except IndexError:
         contour=np.array([0,0])
-            
+
     # [Averages shifts and errors from regions within the tolerated blocks]
     meanShifts = [np.mean(shiftedImage[mask,0]), np.mean(shiftedImage[mask,1])]
     stdShifts =[np.std(shiftedImage[mask,0]), np.std(shiftedImage[mask,1])]
@@ -557,41 +559,41 @@ def alignImagesByBlocks(I1, I2, blockSize, log1, upsample_factor=100, minNumberP
     # if we do not have enough pollsters to fall back to then it does a global cross correlation!]
     meanShifts_global, _, _= phase_cross_correlation(I1,I2,upsample_factor=100)
     I2_aligned_global  = shiftImage(I2, shift)
-    meanError_global = np.sum(np.sum(np.abs(I1-I2_aligned_global),axis=1)) 
+    meanError_global = np.sum(np.sum(np.abs(I1-I2_aligned_global),axis=1))
 
     log1.info("Block alignment error: {}, global alignment error: {}".format(meanError,meanError_global))
 
     if np.sum(mask)<minNumberPollsters or meanError_global<meanError or np.max(stdShifts)>shiftErrorTolerance:
-        meanShifts = meanShifts_global             
+        meanShifts = meanShifts_global
         meanError=meanError_global
         log1.info("Falling back to global registration")
 
-    log1.info("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))            
+    log1.info("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))
     log1.info("*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]))
-    
+
     return np.array(meanShifts), meanError, relativeShifts, rmsImage, contour
 
-def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='BlockALignmentResults.png'):    
+def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='BlockALignmentResults.png'):
 
     # plotting
     fig, axes = plt.subplots(1,2)
     ax=axes.ravel()
     fig.set_size_inches((10,5))
-    
+
     cbwindow=3
     p1 = ax[0].imshow(relativeShifts,cmap='terrain',vmin=0, vmax=cbwindow)
     ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c='k')
     ax[0].set_title("abs(global-block) shifts, px")
     fig.colorbar(p1,ax=ax[0],fraction=0.046, pad=0.04)
-    
+
     p2 = ax[1].imshow(rmsImage,cmap='terrain',vmin=np.min(rmsImage), vmax=np.max(rmsImage))
     ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c='k')
     ax[1].set_title("RMS")
     fig.colorbar(p2,ax=ax[1],fraction=0.046, pad=0.04)
-    
+
     for x in range(len(ax)):
         ax[x].axis('off')
-        
+
     fig.savefig(fileName)
 
     plt.close(fig)
