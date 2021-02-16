@@ -52,6 +52,10 @@ setup(
 #
 # using docker
 # sudo docker build -t py_him .
+#
+# sudo docker save py_him >dist/docker_pyHiM.tar
+# sudo docker load < dist/docker_pyHiM.tar.gz
+# 
 
 ######################################################
 #################### to install ######################
