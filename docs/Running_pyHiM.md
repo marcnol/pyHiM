@@ -224,9 +224,41 @@ Here are some options for the different parameters and a brief description
 "3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
 ```
 
+
+
 #### MakeProjections
 
-This uses the Threadpool. The gain for a small number of files is zero. It seems, at the moment, to be marginal for a large number of files. I imaging the reason is that the rate-limiting factor is loading 3D stacks from disk and this process is serialized by the OS. So if you do all computations in the same cluster, all the threads need to go to though the same bottleneck. I will continue searching if this the case and whether there is a way round it.
+This function will take 3D stacks and project them into 2D.
+
+There are many choices of how to do this:
+
+- ```manual```: indicate the planes in zmin and zmax
+
+- ```automatic```: the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around ```zwindows``` of the focal plane.
+
+- ```full```: projects all planes into a 2D image
+
+  There are some additional options that can be provided to indicate how projections are made:
+
+- ```windowSecurity```: during automatic focal plane search, it will discard maxima located this number of planes away from the border.
+- ```zProjectOption```: how it converts a 3D stack into a 2D projection:
+  - sum: sums all planes
+  - MIP: maximum intensity projection
+
+"zProject"
+
+```
+"folder": "zProject",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"mode": "full",  *Options:* full | manual | automatic
+"display": True,
+"saveImage": True,
+"zmin": 1,
+"zmax": 59,
+"zwindows": 10,
+"windowSecurity": 2,
+"zProjectOption": "sum",  *Options:* **sum** | **MIP**
+```
 
 
 

@@ -46,7 +46,7 @@ from skimage.registration import phase_cross_correlation
 
 
 class Image:
-    def __init__(self,param,log1):
+    def __init__(self,param=dict(),log1=[]):
         self.param=param
         self.log=log1
         self.data = []
