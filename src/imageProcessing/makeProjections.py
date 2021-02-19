@@ -65,6 +65,13 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
                 log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
             )  # initialises MD file
 
+            if param.param["zProject"]["mode"] == "laplacian":  
+                outputName = Im.getImageFileName(dataFolder.outputFolders["zProject"],"_focalPlaneMatrix")
+                Im.imageShowWithValues(outputName)
+
+                writeString2File(
+                    log1.fileNameMD, "{}\n ![Focal Plane matrix]({})\n".format(os.path.basename(fileName), outputName), "a",
+                )  # initialises MD file
         # saves output 2d zProjection as matrix
         Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])
 

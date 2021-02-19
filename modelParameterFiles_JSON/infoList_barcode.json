@@ -52,6 +52,7 @@
         "folder": "zProject",
         "mode": "full",
         "operation": "skip",
+		"blockSize": 512,
         "saveImage": true,
         "windowSecurity": 2,
         "zProjectOption": "MIP",

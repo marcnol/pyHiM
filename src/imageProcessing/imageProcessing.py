@@ -19,6 +19,7 @@ import cv2
 from tqdm import trange
 import numpy as np
 from numpy import linalg as LA
+from matplotlib import ticker
 
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
@@ -138,9 +139,15 @@ class Image:
         if self.param.param["zProject"]["mode"] == "automatic":
             print("Calculating planes...")
             zRange = calculate_zrange(self.data, self.param)
+            
         elif self.param.param["zProject"]["mode"] == "full":
             (zmin, zmax) = (0, self.imageSize[0])
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
+            
+        if self.param.param["zProject"]["mode"] == "laplacian":    
+            print("Stacking using Laplacian variance...")
+            I_collapsed, self.focalPlaneMatrix, zRange, focusPlane = reinterpolatesFocalPlane(self.data,self.param.param)         
+            
         else:
             # Manual: reads from parameters file
             (zmin, zmax) = (
@@ -153,15 +160,16 @@ class Image:
 
         self.log.report("Processing zRange:{}".format(zRange))
 
-        # sums images
-        I_collapsed = np.zeros((self.imageSize[1], self.imageSize[2]))
-        if self.param.param["zProject"]["zProjectOption"] == "MIP":
-            # Max projection of selected planes
-            I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][-1]], axis=0)
-        else:
-            # Sums selected planes
-            for i in zRange[1]:
-                I_collapsed += self.data[i]
+        if "laplacian" not in self.param.param["zProject"]["mode"]:
+            # sums images
+            I_collapsed = np.zeros((self.imageSize[1], self.imageSize[2]))
+            if self.param.param["zProject"]["zProjectOption"] == "MIP":
+                # Max projection of selected planes
+                I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][-1]], axis=0)
+            else:
+                # Sums selected planes
+                for i in zRange[1]:
+                    I_collapsed += self.data[i]
 
         self.data_2D = I_collapsed
         self.zRange = zRange[1]
@@ -216,7 +224,8 @@ class Image:
 
         return im_bkg_substracted
 
-
+    def imageShowWithValues(self,outputName):
+        imageShowWithValues(self.focalPlaneMatrix, outputName=outputName)
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -597,3 +606,235 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='B
     fig.savefig(fileName)
 
     plt.close(fig)
+    
+
+import cv2
+import numpy as np
+
+from skimage.util.shape import view_as_blocks
+from tqdm import trange
+
+def variance_of_laplacian(image):
+	# compute the Laplacian of the image and then return the focus
+	# measure, which is simply the variance of the Laplacian
+	return cv2.Laplacian(image, cv2.CV_64F).var()
+
+def focalPlane(data):
+    nPlanes=data.shape[0]
+
+    LaplacianVariance = [variance_of_laplacian(data[z,:,:].squeeze()) for z in range(nPlanes)]
+
+    return np.argmax(LaplacianVariance),LaplacianVariance
+
+def calculatesFocusPerBlock(data,blockSizeXY=512):
+    nPlanes=data.shape[0]
+
+    blockSize=(nPlanes,blockSizeXY,blockSizeXY)
+
+    block=view_as_blocks(data,blockSize).squeeze()
+    focalPlaneMatrix=np.zeros(block.shape[0:2])
+
+    for i in trange(block.shape[0]):
+        for j in range(block.shape[1]):
+            focalPlaneMatrix[i,j],LaplacianVariance=focalPlane(block[i,j])
+
+    return focalPlaneMatrix, block
+
+def imReassemble(focalPlaneMatrix, block):
+    """
+    Makes 2D image from 3D stack by reassembling sub-blocks
+    For each sub-block we know the optimal focal plane, which is 
+    selected for the assembly of the while image
+
+    Parameters
+    ----------
+    focalPlaneMatrix : numpy 2D array
+        matrix containing the focal plane selected for each block.
+    block : numpy matrix
+        original 3D image sorted by blocks.
+
+    Returns
+    -------
+    output : numpy 2D array
+        output 2D projection
+
+    """
+    # gets image size from block image
+    numberBlocks = block.shape[0]
+    blockSizeXY = block.shape[3]
+    imSize = numberBlocks*blockSizeXY
+
+    # gets ranges for slicing
+    sliceCoordinates = [range(x*blockSizeXY,(x+1)*blockSizeXY) for x in range(numberBlocks)]
+
+    # creates output image
+    output = np.zeros((imSize,imSize))
+
+    # reassembles image
+    for i, iSlice in enumerate(sliceCoordinates):
+        for j, jSlice in enumerate(sliceCoordinates):
+            output[iSlice[0]:iSlice[-1]+1,jSlice[0]:jSlice[-1]+1] = block[i,j][int(focalPlaneMatrix[i,j]),:,:]
+
+    return output
+
+
+def reinterpolatesFocalPlane(data, param):
+
+   
+    # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
+    if "blockSize" in param["zProject"]:
+        blockSizeXY=param["zProject"]["blockSize"]
+    else:
+        blockSizeXY=512
+        
+    focalPlaneMatrix, block = calculatesFocusPerBlock(data,blockSizeXY=blockSizeXY)
+    
+    # reassembles image
+    output = imReassemble(focalPlaneMatrix, block)
+    
+    focusPlane = 0
+    zRange=range(data.shape[0])
+    
+    return output, focalPlaneMatrix, zRange, focusPlane
+
+
+def heatmap(data, row_labels, col_labels, ax=None,
+            cbar_kw={}, cbarlabel="", fontsize=12, **kwargs):
+    """
+    Create a heatmap from a numpy array and two lists of labels.
+
+    Parameters
+    ----------
+    data
+        A 2D numpy array of shape (N, M).
+    row_labels
+        A list or array of length N with the labels for the rows.
+    col_labels
+        A list or array of length M with the labels for the columns.
+    ax
+        A `matplotlib.axes.Axes` instance to which the heatmap is plotted.  If
+        not provided, use current axes or create a new one.  Optional.
+    cbar_kw
+        A dictionary with arguments to `matplotlib.Figure.colorbar`.  Optional.
+    cbarlabel
+        The label for the colorbar.  Optional.
+    **kwargs
+        All other arguments are forwarded to `imshow`.
+    """
+
+    if not ax:
+        ax = plt.gca()
+
+    # Plot the heatmap
+    im = ax.imshow(data, **kwargs)
+    # im = ax.imshow(data)
+    # Create colorbar
+    cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
+    cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom",size=fontsize)
+
+    # We want to show all ticks...
+    ax.set_xticks(np.arange(data.shape[1]))
+    ax.set_yticks(np.arange(data.shape[0]))
+    # ... and label them with the respective list entries.
+    ax.set_xticklabels(col_labels,size=fontsize)
+    ax.set_yticklabels(row_labels,size=fontsize)
+
+    # Let the horizontal axes labeling appear on top.
+    # ax.tick_params(top=True, bottom=False,
+    #                 labeltop=True, labelbottom=False)
+
+    ax.tick_params(top=False, bottom=True,
+                    labeltop=False, labelbottom=True)
+
+    # Rotate the tick labels and set their alignment.
+    plt.setp(ax.get_xticklabels(), rotation=30, ha="right",
+              rotation_mode="anchor")
+
+    # Turn spines off and create white grid.
+    for edge, spine in ax.spines.items():
+        spine.set_visible(False)
+
+    ax.set_xticks(np.arange(data.shape[1]+1)-.5, minor=True)
+    ax.set_yticks(np.arange(data.shape[0]+1)-.5, minor=True)
+    ax.grid(which="minor", color="w", linestyle='-', linewidth=3)
+    ax.tick_params(which="minor", bottom=False, left=False)
+
+    return im, cbar
+
+
+def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
+                     textcolors=("black", "white"),
+                     threshold=None, **textkw):
+    """
+    A function to annotate a heatmap.
+
+    Parameters
+    ----------
+    im
+        The AxesImage to be labeled.
+    data
+        Data used to annotate.  If None, the image's data is used.  Optional.
+    valfmt
+        The format of the annotations inside the heatmap.  This should either
+        use the string format method, e.g. "$ {x:.2f}", or be a
+        `matplotlib.ticker.Formatter`.  Optional.
+    textcolors
+        A pair of colors.  The first is used for values below a threshold,
+        the second for those above.  Optional.
+    threshold
+        Value in data units according to which the colors from textcolors are
+        applied.  If None (the default) uses the middle of the colormap as
+        separation.  Optional.
+    **kwargs
+        All other arguments are forwarded to each call to `text` used to create
+        the text labels.
+    """
+
+    if not isinstance(data, (list, np.ndarray)):
+        data = im.get_array()
+
+    # Normalize the threshold to the images color range.
+    if threshold is not None:
+        threshold = im.norm(threshold)
+    else:
+        threshold = im.norm(data.max())/2.
+
+    # Set default alignment to center, but allow it to be
+    # overwritten by textkw.
+    kw = dict(horizontalalignment="center",
+              verticalalignment="center")
+    kw.update(textkw)
+
+    # Get the formatter in case a string is supplied
+    if isinstance(valfmt, str):
+        valfmt = ticker.StrMethodFormatter(valfmt)
+
+    # Loop over the data and create a `Text` for each "pixel".
+    # Change the text's color depending on the data.
+    texts = []
+    for i in range(data.shape[0]):
+        for j in range(data.shape[1]):
+            kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
+            texts.append(text)
+            # print(text)
+
+    return texts
+
+
+def imageShowWithValues(matrix,outputName='tmp.png',cbarlabel = "focal plane",fontsize=6):
+        fig, ax = plt.subplots()
+        fig.set_size_inches((10, 10))
+        cbar_kw={}
+        cbar_kw["fraction"]=0.046
+        cbar_kw["pad"]=0.04
+        Row = ["".format(x) for x in range(matrix.shape[0])]
+        
+        im, cbar = heatmap(matrix, Row,Row, ax=ax,
+                            cmap="YlGn", cbarlabel=cbarlabel,fontsize=fontsize, cbar_kw=cbar_kw)
+        texts = annotate_heatmap(im, valfmt="{x:.2f}", size=20,threshold=None,textcolors=("black", "white"),fontsize=fontsize)
+
+        fig.tight_layout()
+        plt.savefig(outputName)
+        plt.close(fig)
+    

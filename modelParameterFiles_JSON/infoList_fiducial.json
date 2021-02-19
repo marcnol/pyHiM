@@ -46,7 +46,8 @@
     "zProject": {
         "display": true,
         "folder": "zProject",
-        "mode": "full",
+        "mode": "laplacian",
+		"blockSize": 512,
         "operation": "skip",
         "saveImage": true,
         "windowSecurity": 2,
