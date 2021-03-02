@@ -35,6 +35,11 @@ from skimage.util.shape import view_as_blocks
 from skimage import measure
 from skimage.registration import phase_cross_correlation
 
+# import cv2
+
+
+# from skimage.util.shape import view_as_blocks
+# from tqdm import trange
 
 # from numba import jit
 # from scipy.ndimage import shift as shiftImage
@@ -139,15 +144,15 @@ class Image:
         if self.param.param["zProject"]["mode"] == "automatic":
             print("Calculating planes...")
             zRange = calculate_zrange(self.data, self.param)
-            
+
         elif self.param.param["zProject"]["mode"] == "full":
             (zmin, zmax) = (0, self.imageSize[0])
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
-            
-        if self.param.param["zProject"]["mode"] == "laplacian":    
+
+        if self.param.param["zProject"]["mode"] == "laplacian":
             print("Stacking using Laplacian variance...")
-            I_collapsed, self.focalPlaneMatrix, zRange, focusPlane = reinterpolatesFocalPlane(self.data,self.param.param)         
-            
+            self.data_2D, self.focalPlaneMatrix, self.zRange, self.focusPlane,self.LaplacianMatrix = reinterpolatesFocalPlane(self.data,self.param.param)
+
         else:
             # Manual: reads from parameters file
             (zmin, zmax) = (
@@ -158,22 +163,14 @@ class Image:
                 raise SystemExit('zmin is equal or larger than zmax in configuration file. Cannot proceed.')
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        self.log.report("Processing zRange:{}".format(zRange))
+
 
         if "laplacian" not in self.param.param["zProject"]["mode"]:
-            # sums images
-            I_collapsed = np.zeros((self.imageSize[1], self.imageSize[2]))
-            if self.param.param["zProject"]["zProjectOption"] == "MIP":
-                # Max projection of selected planes
-                I_collapsed = np.max(self.data[zRange[1][0] : zRange[1][-1]], axis=0)
-            else:
-                # Sums selected planes
-                for i in zRange[1]:
-                    I_collapsed += self.data[i]
+            self.data_2D = projectsImage2D(self.data,zRange,self.param.param["zProject"]["zProjectOption"])
+            self.focusPlane = zRange[0]
+            self.zRange = zRange[1]
 
-        self.data_2D = I_collapsed
-        self.zRange = zRange[1]
-        self.focusPlane = zRange[0]
+        self.log.report("Processing zRange:{}".format(self.zRange))
 
     # displays image and shows it
     def imageShow(
@@ -225,11 +222,34 @@ class Image:
         return im_bkg_substracted
 
     def imageShowWithValues(self,outputName):
-        imageShowWithValues(self.focalPlaneMatrix, outputName=outputName)
+        _, mask = findsFocusFromBlocks(self.focalPlaneMatrix,self.LaplacianMatrix)
+
+        imageShowWithValues([self.focalPlaneMatrix,\
+                             mask], \
+                             title='focal plane = '+"{:.2f}".format(self.focusPlane), \
+                             outputName=outputName)
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
+def projectsImage2D(img,zRange,mode):
+
+    # sums images
+    imageSize = img.shape
+    I_collapsed = np.zeros((imageSize[1], imageSize[2]))
+
+    if "MIP" in mode:
+        # Max projection of selected planes
+        I_collapsed = np.max(img[zRange[1][0] : zRange[1][-1]], axis=0)
+    elif "sum" in mode:
+        # Sums selected planes
+        for i in zRange[1]:
+            I_collapsed += img[i]
+    else:
+        print("ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode))
+
+    return I_collapsed
 
 # Gaussian function
 # @jit(nopython=True)
@@ -606,13 +626,6 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName='B
     fig.savefig(fileName)
 
     plt.close(fig)
-    
-
-import cv2
-import numpy as np
-
-from skimage.util.shape import view_as_blocks
-from tqdm import trange
 
 def variance_of_laplacian(image):
 	# compute the Laplacian of the image and then return the focus
@@ -626,7 +639,29 @@ def focalPlane(data):
 
     return np.argmax(LaplacianVariance),LaplacianVariance
 
-def calculatesFocusPerBlock(data,blockSizeXY=512):
+def calculatesFocusPerBlock(data,blockSizeXY=128):
+    """
+    gets the laplacian for each z-plane for each block
+    calculates the plane with highest laplacian variance as an estimate of the block focal plane
+
+    Parameters
+    ----------
+    data : TYPE
+        DESCRIPTION.
+    blockSizeXY : TYPE, optional
+        DESCRIPTION. The default is 512.
+
+    Returns
+    -------
+    focalPlaneMatrix: np array
+        matrix containing the plane with highest laplacian variance per block
+    block: np array
+        block reconstruction of matrix
+    LaplacianVariance: dict
+        each key-key combination contains the z-profile of the laplacian variance
+        for instance LaplacianVariance['1']['3'] contains the profile for block[1,3]
+
+    """
     nPlanes=data.shape[0]
 
     blockSize=(nPlanes,blockSizeXY,blockSizeXY)
@@ -634,16 +669,19 @@ def calculatesFocusPerBlock(data,blockSizeXY=512):
     block=view_as_blocks(data,blockSize).squeeze()
     focalPlaneMatrix=np.zeros(block.shape[0:2])
 
+    LaplacianVariance = dict()
+
     for i in trange(block.shape[0]):
+        LaplacianVariance[str(i)]=dict()
         for j in range(block.shape[1]):
-            focalPlaneMatrix[i,j],LaplacianVariance=focalPlane(block[i,j])
+            focalPlaneMatrix[i,j],LaplacianVariance[str(i)][str(j)]=focalPlane(block[i,j])
 
-    return focalPlaneMatrix, block
+    return focalPlaneMatrix, block, LaplacianVariance
 
-def imReassemble(focalPlaneMatrix, block):
+def imReassemble(focalPlaneMatrix, block, window=0):
     """
     Makes 2D image from 3D stack by reassembling sub-blocks
-    For each sub-block we know the optimal focal plane, which is 
+    For each sub-block we know the optimal focal plane, which is
     selected for the assembly of the while image
 
     Parameters
@@ -671,31 +709,81 @@ def imReassemble(focalPlaneMatrix, block):
     output = np.zeros((imSize,imSize))
 
     # reassembles image
-    for i, iSlice in enumerate(sliceCoordinates):
-        for j, jSlice in enumerate(sliceCoordinates):
-            output[iSlice[0]:iSlice[-1]+1,jSlice[0]:jSlice[-1]+1] = block[i,j][int(focalPlaneMatrix[i,j]),:,:]
+    if window==0:
+        # takes one plane block
+        for i, iSlice in enumerate(sliceCoordinates):
+            for j, jSlice in enumerate(sliceCoordinates):
+                output[iSlice[0]:iSlice[-1]+1,jSlice[0]:jSlice[-1]+1] = block[i,j][int(focalPlaneMatrix[i,j]),:,:]
+    else:
+        # takes neighboring planes by projecting
+        for i, iSlice in enumerate(sliceCoordinates):
+            for j, jSlice in enumerate(sliceCoordinates):
+                focus = int(focalPlaneMatrix[i,j])
+                zmin=np.max((0,focus-round(window/2)))
+                zmax=np.min((block[i,j].shape[0],focus+round(window/2)))
+                zRange = (focus, range(zmin, zmax))
+                # print("zrange for ({},{})={}".format(i,j,zRange))
+                output[iSlice[0]:iSlice[-1]+1,jSlice[0]:jSlice[-1]+1] = projectsImage2D(block[i,j][:,:,:],zRange,'MIP')
 
     return output
 
 
+from scipy.stats import sigmaclip
+
+def findsFocusFromBlocks(focalPlaneMatrix,LaplacianMeans,threshold=0.1):
+
+    # filters out region with low values of z and of laplacian variances
+    # as planes close to surface and with low variances tend to give problems
+    focalPlaneMatrixWeighted = LaplacianMeans*focalPlaneMatrix
+    mask = focalPlaneMatrixWeighted > threshold*focalPlaneMatrixWeighted.max()
+
+    # sets problematic blocks to zero
+    mask=focalPlaneMatrixWeighted
+    mask[focalPlaneMatrixWeighted<threshold*focalPlaneMatrixWeighted.max()]=0
+    mask[focalPlaneMatrix<10]=0
+
+    # calculates focus from the good blocks
+    focus=np.mean(focalPlaneMatrix[mask>0])
+
+    return focus, mask
+
 def reinterpolatesFocalPlane(data, param):
 
-   
-    # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
     if "blockSize" in param["zProject"]:
         blockSizeXY=param["zProject"]["blockSize"]
     else:
-        blockSizeXY=512
-        
-    focalPlaneMatrix, block = calculatesFocusPerBlock(data,blockSizeXY=blockSizeXY)
-    
+        blockSizeXY=128
+
+    if "zwindows" in param["zProject"]:
+        window=param["zProject"]["zwindows"]
+    else:
+        window=0
+
+    outputList = _reinterpolatesFocalPlane(data, blockSizeXY,window=window)
+
+    return outputList
+
+def _reinterpolatesFocalPlane(data, blockSizeXY, window=0):
+
+    # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
+
+    focalPlaneMatrix, block, LaplacianVariance = calculatesFocusPerBlock(data,blockSizeXY=blockSizeXY)
+
     # reassembles image
-    output = imReassemble(focalPlaneMatrix, block)
-    
-    focusPlane = 0
+    output = imReassemble(focalPlaneMatrix, block, window=window)
+
+    LaplacianMeans = np.zeros(focalPlaneMatrix.shape)
+    for i in LaplacianVariance.keys():
+        for j in LaplacianVariance[i].keys():
+            filtered,low,high=sigmaclip(LaplacianVariance[i][j],1,1)
+            LaplacianMeans [int(i),int(j)] = np.nanmean(filtered)
+
+    # interpolates focal plane by block consensus
+    focusPlane, _ = findsFocusFromBlocks(focalPlaneMatrix,LaplacianMeans)
+
     zRange=range(data.shape[0])
-    
-    return output, focalPlaneMatrix, zRange, focusPlane
+
+    return output, focalPlaneMatrix, zRange, focusPlane, LaplacianMeans
 
 
 def heatmap(data, row_labels, col_labels, ax=None,
@@ -762,7 +850,7 @@ def heatmap(data, row_labels, col_labels, ax=None,
     return im, cbar
 
 
-def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
+def annotate_heatmap(im, data=None, valfmt="{x:.1f}",
                      textcolors=("black", "white"),
                      threshold=None, **textkw):
     """
@@ -821,20 +909,28 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
 
     return texts
 
+def imageShowWithValuesSingle(ax,matrix,cbarlabel,fontsize,cbar_kw):
+    Row = ["".format(x) for x in range(matrix.shape[0])]
+    im, cbar = heatmap(matrix, Row,Row, ax=ax,
+                        cmap="YlGn", cbarlabel=cbarlabel,fontsize=fontsize, cbar_kw=cbar_kw)
+    _ = annotate_heatmap(im, valfmt="{x:.0f}", size=20,threshold=None,textcolors=("black", "white"),fontsize=fontsize)
 
-def imageShowWithValues(matrix,outputName='tmp.png',cbarlabel = "focal plane",fontsize=6):
-        fig, ax = plt.subplots()
-        fig.set_size_inches((10, 10))
-        cbar_kw={}
-        cbar_kw["fraction"]=0.046
-        cbar_kw["pad"]=0.04
-        Row = ["".format(x) for x in range(matrix.shape[0])]
-        
-        im, cbar = heatmap(matrix, Row,Row, ax=ax,
-                            cmap="YlGn", cbarlabel=cbarlabel,fontsize=fontsize, cbar_kw=cbar_kw)
-        texts = annotate_heatmap(im, valfmt="{x:.2f}", size=20,threshold=None,textcolors=("black", "white"),fontsize=fontsize)
 
-        fig.tight_layout()
-        plt.savefig(outputName)
+def imageShowWithValues(matrices,outputName='tmp.png',cbarlabel = "focalPlane",fontsize=6,verbose=False, title=''):
+
+    fig, axes = plt.subplots(1,2)
+    fig.set_size_inches((10, 5))
+    ax=axes.ravel()
+    fig.suptitle(title)
+    cbar_kw={}
+    cbar_kw["fraction"]=0.046
+    cbar_kw["pad"]=0.04
+
+    imageShowWithValuesSingle(ax[0],matrices[0],cbarlabel,fontsize,cbar_kw)
+    imageShowWithValuesSingle(ax[1],matrices[1],'filtered laplacian*focalPlane',fontsize,cbar_kw)
+
+    fig.tight_layout()
+    plt.savefig(outputName)
+
+    if not verbose:
         plt.close(fig)
-    

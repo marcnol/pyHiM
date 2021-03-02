@@ -15,17 +15,26 @@ steps:
     - check if mask available and load mask file
     - iterate over cycles <i>
     - load 3D fiducial file for fiducial barcode <i>
+    - re-align 3D fiducial image using XY alignment
     - iterate over masks <j>
+
+    (
     - Find laplacian variance for each plane in a subvolume defined by the DAPI mask
     and determine by gaussian fitting the sub-pixel z-focus position
+
+    OR
+
+    - cross=correlate blocks in the z-direction.
+    )
+
     - determine if we keep or not based on conditions to be tested
     - store in database.
-    
+
 During buildMatrix, if available, this database is loaded.
     - check database exist and load it
     - correct z-coordinate of the barcode provided the correction given in the dict
-    
-    
+
+
 
 
 """
@@ -809,12 +818,12 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
 
     # ASTROPY yz-fit
     selection_AP_3Dgaussian = np.nonzero((barcodeMapNew["xcentroid"]>xPlane-window) & (barcodeMapNew["xcentroid"]<xPlane+window))
-    
+
     if selection_AP_3Dgaussian[0].shape[0]>0:
         y_AP_3Dgaussian=barcodeMapNew["ycentroid"][selection_AP_3Dgaussian]
         z_AP_3Dgaussian=barcodeMapNew["zcentroidGauss"][selection_AP_3Dgaussian]
         flux_AP_3Dgaussian = barcodeMapNew["flux"][selection_AP_3Dgaussian]
-    
+
         fig=_showsImageSources(image3D_ZY , image3D_ZY , y_AP_3Dgaussian, z_AP_3Dgaussian, flux_AP_3Dgaussian, percent=99.5,vmin=0,vmax=flux_AP_3Dgaussian.max())
         outFileName1=outputFileName + "_segmentedSourcesYZ_Astropy_gaussian.png"
         fig.savefig(outFileName1)
