@@ -17,6 +17,7 @@
         "outputFile": "alignImages.bed",
 		"localAlignment": "overwrite",
 		"localShiftTolerance": 1,
+        "background_sigma": 3.0,		
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -50,9 +51,9 @@
     "zProject": {
         "display": true,
         "folder": "zProject",
-        "mode": "full",
+        "mode": "laplacian",
+        "blockSize": 128,
         "operation": "skip",
-		"blockSize": 512,
         "saveImage": true,
         "windowSecurity": 2,
         "zProjectOption": "MIP",

@@ -13,6 +13,7 @@
     },
     "alignImages": {
         "alignByBlock": true,
+        "background_sigma": 3.0,
         "bezel": 20,
         "folder": "alignImages",
         "higher_threshold": 0.9999999,
@@ -23,6 +24,11 @@
         "referenceFiducial": "RT18",
         "tolerance": 0.1
     },
+    "buildsPWDmatrix": {
+        "flux_min": 200,
+        "folder": "buildsPWDmatrix",
+        "toleranceDrift": 1
+    },
     "projectsBarcodes": {
         "folder": "projectsBarcodes",
         "operation": "overwrite",
@@ -30,13 +36,17 @@
     },
     "segmentedObjects": {
         "3DGaussianfitWindow": 3,
+        "3Dmethod": "zASTROPY",
+        "3dAP_brightest": 100,
+        "3dAP_distTolerance": 1,
+        "3dAP_flux_min": 2,
+        "3dAP_window": 5,
         "area_max": 500,
         "area_min": 50,
         "background_method": "inhomogeneous",
         "background_sigma": 3.0,
         "brightest": 1100,
         "centroidDifference_max": 5,
-        "flux_min": 200,
         "folder": "segmentedObjects",
         "fwhm": 3.0,
         "intensity_max": 59,
@@ -47,10 +57,11 @@
         "sigma_max": 5,
         "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
         "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-        "threshold_over_std": 1.0,
-        "toleranceDrift": 1
+        "tesselation": true,
+        "threshold_over_std": 1.0
     },
     "zProject": {
+        "blockSize": 128,
         "display": true,
         "folder": "zProject",
         "mode": "full",

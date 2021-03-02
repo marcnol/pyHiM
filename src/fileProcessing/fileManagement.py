@@ -124,34 +124,39 @@ class folders:
 
         """
         self.outputFolders["zProject"] = filesFolder + os.sep + param.param["zProject"]["folder"]
+        self.createSingleFolder(self.outputFolders["zProject"])
+
         self.outputFolders["alignImages"] = filesFolder + os.sep + param.param["alignImages"]["folder"]
-        self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
-        self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
+        self.createSingleFolder(self.outputFolders["alignImages"])
+        self.outputFiles["alignImages"] = (
+            self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        )
+        self.outputFiles["dictShifts"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+
+        if "segmentedObjects" in param.param.keys():
+            self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
+            self.createSingleFolder(self.outputFolders["segmentedObjects"])
+            self.outputFiles["segmentedObjects"] = (
+                self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
+            )
+
+        if "projectsBarcodes" in param.param.keys():
+            self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
+            self.createSingleFolder(self.outputFolders["projectsBarcodes"])
+            self.outputFiles["projectsBarcodes"] = (
+                self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
+            )
 
         # backwards compatibility
         if "buildsPWDmatrix" in param.param.keys():
             self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"]
         else:
             self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"
-
-        self.createSingleFolder(self.outputFolders["zProject"])
-        self.createSingleFolder(self.outputFolders["alignImages"])
-        self.createSingleFolder(self.outputFolders["segmentedObjects"])
         self.createSingleFolder(self.outputFolders["buildsPWDmatrix"])
-        self.createSingleFolder(self.outputFolders["projectsBarcodes"])
-
-        # self.outputFiles['zProject']=self.outputFolders['zProject']+os.sep+param.param['zProject']['outputFile']
-        self.outputFiles["alignImages"] = (
-            self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
-        )
-        self.outputFiles["dictShifts"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
-        self.outputFiles["segmentedObjects"] = (
-            self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
-        )
         self.outputFiles["buildsPWDmatrix"] = self.outputFolders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
-        self.outputFiles["projectsBarcodes"] = (
-            self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
-        )
+
+
+
 
     def createSingleFolder(self, folder):
         if not path.exists(folder):
@@ -216,7 +221,8 @@ class Parameters:
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
-                "mode": "full",  # full, manual, automatic
+                "mode": "full",  # full, manual, automatic, laplacian
+                "blockSize": 128,
                 "display": True,
                 "saveImage": True,
                 "zmin": 1,
@@ -234,6 +240,7 @@ class Parameters:
                 "tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
                 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
                 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+                "background_sigma": 3.0,  # used to remove inhom background
                 "localShiftTolerance": 1,
                 "bezel": 20,
             },
