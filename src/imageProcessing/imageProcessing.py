@@ -909,11 +909,11 @@ def annotate_heatmap(im, data=None, valfmt="{x:.1f}",
 
     return texts
 
-def imageShowWithValuesSingle(ax,matrix,cbarlabel,fontsize,cbar_kw):
+def imageShowWithValuesSingle(ax,matrix,cbarlabel,fontsize,cbar_kw,valfmt="{x:.0f}",cmap="YlGn"):
     Row = ["".format(x) for x in range(matrix.shape[0])]
     im, cbar = heatmap(matrix, Row,Row, ax=ax,
-                        cmap="YlGn", cbarlabel=cbarlabel,fontsize=fontsize, cbar_kw=cbar_kw)
-    _ = annotate_heatmap(im, valfmt="{x:.0f}", size=20,threshold=None,textcolors=("black", "white"),fontsize=fontsize)
+                        cmap=cmap, cbarlabel=cbarlabel,fontsize=fontsize, cbar_kw=cbar_kw)
+    _ = annotate_heatmap(im, valfmt=valfmt, size=20,threshold=None,textcolors=("black", "white"),fontsize=fontsize)
 
 
 def imageShowWithValues(matrices,outputName='tmp.png',cbarlabel = "focalPlane",fontsize=6,verbose=False, title=''):

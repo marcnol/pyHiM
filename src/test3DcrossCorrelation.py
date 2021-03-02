@@ -6,8 +6,12 @@ Created on Tue Mar  2 14:49:13 2021
 @author: marcnol
 """
 
+
+
+
 import numpy as np
 import matplotlib.pylab as plt
+
 
 from skimage import io
 import os
@@ -19,6 +23,7 @@ from scipy.stats import sigmaclip
 
 from skimage.registration import phase_cross_correlation
 from scipy.ndimage import shift as shiftImage
+
 
 rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
 filename1 = rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00.tif"
