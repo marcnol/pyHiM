@@ -1,6 +1,6 @@
-
-
 # Running pyHiM
+
+[TOC]
 
 ## 1- Basic run
 
@@ -81,6 +81,7 @@ a typical file (DAPI example) looks like:
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
 		"localShiftTolerance": 1,
+        "background_sigma": 3.0,  
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -157,8 +158,9 @@ Here are some options for the different parameters and a brief description
 ```
 "folder": "zProject",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic
+"mode": "full",  *Options:* full | manual | automatic | laplacian
 "display": True,
+"blockSize": 128,
 "saveImage": True,
 "zmin": 1,
 "zmax": 59,
@@ -177,6 +179,7 @@ Here are some options for the different parameters and a brief description
 "tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+"background_sigma": 3.0,  # used to remove inhom background
 "localShiftTolerance": 1,
 "bezel": 20,
 ```
@@ -232,15 +235,22 @@ This function will take 3D stacks and project them into 2D.
 
 There are many choices of how to do this:
 
-- ```manual```: indicate the planes in zmin and zmax
+- ```manual```: indicate the planes in zmin and zmax and set <mode> to <u>manual</u>.
 
-- ```automatic```: the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around ```zwindows``` of the focal plane.
+- ```automatic```:  the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around ```zwindows``` of the focal plane. Set <mode> to <u>automatic</u>.
 
-- ```full```: projects all planes into a 2D image
+- ```full```: projects all planes into a 2D image.  Set <mode> to <u>full</u>.
+
+  There are some additional options that can be provided to indicate how projections are made:
+
+- ```laplacian```: breaks the image into blocks of size ```blockSize```. Then calculates the laplacian variance in each block, and estimates the focal position per block by maximizing the laplacian variance. The overall focal plane for the image will be outputed to the terminal and to the block image (see title in image below). The 2D image is reconstructed block by block by using the optimal focal plane for each block. If the parameter ```zwindows``` is set to zero, then only the image at the focal point will be used. Otherwise we will do an MIP in the subvolume: ``` focalPlane-zwindows/2:focalPlane+zwindows/2```.Set <mode> to <u>laplacian</u>.
+
+  
 
   There are some additional options that can be provided to indicate how projections are made:
 
 - ```windowSecurity```: during automatic focal plane search, it will discard maxima located this number of planes away from the border.
+
 - ```zProjectOption```: how it converts a 3D stack into a 2D projection:
   - sum: sums all planes
   - MIP: maximum intensity projection
@@ -250,8 +260,9 @@ There are many choices of how to do this:
 ```
 "folder": "zProject",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic
+"mode": "full",  *Options:* full | manual | automatic | laplacian
 "display": True,
+"blockSize": 128,
 "saveImage": True,
 "zmin": 1,
 "zmax": 59,
@@ -259,6 +270,8 @@ There are many choices of how to do this:
 "windowSecurity": 2,
 "zProjectOption": "sum",  *Options:* **sum** | **MIP**
 ```
+
+
 
 
 
@@ -357,9 +370,17 @@ So if you see a large drop in the barcodes that are used (this can be seen by ma
 
 <u>Nice ROI</u>
 
+The right plot shows the RMS between the whole reference fiducial image and the fiducial of cycle <i> for each block. In each block, the optimal drift for that block was used for the calculation. Regions with extended blue mean that the optimal drift encountered was equally good for the whole image. Regions with high RMS indicate local block drifts not optimal for the whole image. The program will automatically select the regions with lowest RMS and use them to derive a consensus global drift.
+
+The left plots shows the relative change between the consensus global drift and the local drift. Values are in px. White region indicates blocks where the global consensus drift is very similar to the optimal local block drift.
+
 ![scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments.png)
 
+This image shows the reference fiducial and the drift-corrected cycle <i> fiducial images overlapping. Regions in yellow mean good overlap.
+
 ![scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected.png)
+
+Left image shows the reference minus the <u>uncorrected</u> cycle <i>  fiducial images (red and blue). Blue and red regions represent places where the two images do not overlap. White regions represent regions with the same pixel values in both images. The right panel shows the reference and <u>corrected</u> cycle <i>  fiducial images (red and blue). Same colormap. So, the right image should be mostly white with almost no spot (in either blue or red) if the correction worked well. 
 
 <img src="Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference.png" alt="scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference" style="zoom:200%;" />
 
