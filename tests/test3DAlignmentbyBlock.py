@@ -36,8 +36,10 @@ from tqdm import trange
 
 #%%    - load test 3D fiducial files
 
-
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+if "atlantis" in os.uname()[1]:
+    rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+else:
+    rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
 files=["scan_001_RT27_001_ROI_converted_decon_ch00.tif","scan_001_RT29_001_ROI_converted_decon_ch00.tif"]
 files=["scan_001_RT27_001_ROI_converted_decon_ch00.tif","scan_001_RT41_001_ROI_converted_decon_ch00.tif"]
 
@@ -72,7 +74,7 @@ shift3D[0],shift3D[1],shift3D[2] = 0, shift[0],shift[1]
 
 print("Shifting image ...")
 images.append(shiftImage(images[1], shift3D))
-
+print("ready")
 #%% shows images so far
 
 # XY
@@ -123,7 +125,6 @@ block_target=blocks[2]
 #%% - loop thru blocks and calculates block shift in xyz:
 
 shiftMatrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
-# zShiftMatrix, xyShiftMatrix = np.zeros(block_ref.shape[0:2]), np.zeros(block_ref.shape[0:2])
 
 for i in trange(block_ref.shape[0]):
     for j in range(block_ref.shape[1]):
@@ -161,7 +162,36 @@ for axis,title,x in zip(ax,titles,shiftMatrices):
 
 
 #%% - Validate results plotting image with aligned masks
+a=3
+Nx,Ny = block_ref.shape[0:2]
+cmap = 'RdBu'
+axis1=0
 
+fig, axes = plt.subplots(Nx,Ny)
+fig.set_size_inches((Nx*a, Ny*a))
+ax=axes.ravel()
+
+iplot = 0
+for i in trange(block_ref.shape[0]):
+    for j in range(block_ref.shape[1]):
+        axis=ax[iplot]
+        
+        # aligns block
+        img1=block_ref[i,j]
+        shift3D = np.array([x[i,j] for x in shiftMatrices])
+        img2=shiftImage(block_target[i,j], shift3D)
+        
+        axis.imshow(np.sum(img1-img2,axis=axis1),cmap=cmap)
+
+        axis.axes.xaxis.set_visible(False)
+        axis.axes.yaxis.set_visible(False)
+
+        iplot += 1
+
+plt.subplots_adjust(wspace=0.05,hspace=0.05)
+
+# fig.tight_layout()
+        
  # write this first
 
  # - make list of axis

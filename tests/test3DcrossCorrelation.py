@@ -20,7 +20,11 @@ from scipy.stats import sigmaclip
 from skimage.registration import phase_cross_correlation
 from scipy.ndimage import shift as shiftImage
 
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+if "atlantis" in os.uname()[1]:
+    rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+else:
+    rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
+
 filename1 = rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00.tif"
 filename2 = rootFolder+os.sep+"scan_001_RT29_001_ROI_converted_decon_ch00.tif"
 
@@ -39,7 +43,7 @@ shift, error, diffphase = phase_cross_correlation(img1, img2, upsample_factor=up
 
 img2_corrected = shiftImage(img2, shift)
 img2_corrected=img2_corrected/img2_corrected.max()
-
+print("ready")
 #%% plots 2d projection
 fig, axes = plt.subplots(1,2)
 fig.set_size_inches((10, 5))
