@@ -244,3 +244,18 @@ for axis in range(2):
 # - plot each block in a different axis
 # - remove axis labels
 # - repeat for xy and for xz
+
+#%%
+numberBlocks = block_ref.shape[0]
+blockSizeXY = block_ref.shape[3]
+
+shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+for _ax,m in enumerate(shiftMatrices):
+    print("size={}".format(m.shape))
+    for i in range(numberBlocks):
+        for j in range(numberBlocks):
+            shiftMatrix[_ax,range(i * blockSizeXY, (i + 1) * blockSizeXY),range(j * blockSizeXY, (j + 1) * blockSizeXY)] = m[i,j]
+
+sliceCoordinates=[range(x * blockSizeXY, (x + 1) * blockSizeXY) for x in range(numberBlocks)]
+
+

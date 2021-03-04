@@ -175,7 +175,6 @@ class drift3D:
                         images.append(appliesXYshift3Dimages(images[1], shift))
 
                         # 3D image alignment by block
-
                         shiftMatrices, block_ref, block_target = imageBlockAlignment3D(images, blockSizeXY=self.blockSizeXY, upsample_factor=self.upsample_factor)
 
                         # [plots shift matrices]
@@ -202,12 +201,21 @@ class drift3D:
                         # saves figures
                         figTitles = ['_bkgSubstracted.png','_shiftMatrices.png','_3Dalignments.png']
                         outputFileNames = ['/home/marcnol/Documents'+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
+                        outputFileNames = [self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
 
                         figs=[fig1,fig2,fig3]
                         for fig, file in zip(figs,outputFileNames):
                             fig.savefig(file)
 
                         # saves results to database in dict format and to a Table
+                        shiftMatrix=np.zeros((3,shiftMatrices[0].shape[0],shiftMatrices[0].shape[1]))
+                        for i,m in enumerate(shiftMatrices):
+                            shiftMatrix[i,:,:]=m
+                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+'_shift3DMatrix.npy',shiftMatrix)
+
+                        numberBlocks = block_ref.shape[0]
+                        blockSizeXY = block_ref.shape[3]
+                        sliceCoordinates=[range(x * blockSizeXY, (x + 1) * blockSizeXY) for x in range(numberBlocks)]
 
         print("alignFiducials3D procesing time: {}".format(datetime.now() - now))
 
