@@ -43,11 +43,11 @@ from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
 
 from imageProcessing.imageProcessing import Image, saveImage2Dcmd
-from fileProcessing.fileManagement import (
-    folders, writeString2File)
+from fileProcessing.fileManagement import folders, writeString2File
 
 # ---- stardist
 import matplotlib
+
 matplotlib.rcParams["image.interpolation"] = None
 from csbdeep.utils import normalize
 
@@ -59,47 +59,51 @@ lbl_cmap = random_label_cmap()
 
 # to remove in a future version
 import warnings
+
 warnings.filterwarnings("ignore")
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
-def _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=99.5,vmin=0,vmax=2000):
-    
+
+def _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=99.5, vmin=0, vmax=2000):
+
     fig, ax = plt.subplots()
     fig.set_size_inches((50, 50))
-    
-    norm = simple_norm(im, "sqrt", percent=percent)
-    ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)    
 
-    p1=ax.scatter(x,y,c=flux,s=50,facecolors='none',cmap='jet',marker='x',vmin=vmin,vmax=vmax)
-    fig.colorbar(p1,ax=ax,fraction=0.046, pad=0.04)
+    norm = simple_norm(im, "sqrt", percent=percent)
+    ax.imshow(im1_bkg_substracted, cmap="Greys", origin="lower", norm=norm)
+
+    p1 = ax.scatter(x, y, c=flux, s=50, facecolors="none", cmap="jet", marker="x", vmin=vmin, vmax=vmax)
+    fig.colorbar(p1, ax=ax, fraction=0.046, pad=0.04)
 
     ax.set_xlim(0, im.shape[1] - 1)
     ax.set_ylim(0, im.shape[0] - 1)
 
     return fig
-    
+
+
 def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
-    
+
     percent = 99.5
     flux = sources["flux"]
-    x=sources["xcentroid"]+0.5
-    y=sources["ycentroid"]+0.5
+    x = sources["xcentroid"] + 0.5
+    y = sources["ycentroid"] + 0.5
 
     fig = _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=percent)
     fig.savefig(outputFileName + "_segmentedSources.png")
     plt.close(fig)
-    
+
     writeString2File(
         log1.fileNameMD,
         "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"),
         "a",
     )
-    
+
+
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
-    
+
     norm = ImageNormalize(stretch=SqrtStretch())
     cmap = lbl_cmap
 
@@ -115,11 +119,8 @@ def showsImageMasks(im, log1, segm_deblend, outputFileName):
         "a",
     )
 
-def _segmentSourceInhomogBackground(im,
-                                    threshold_over_std, 
-                                    fwhm, 
-                                    brightest, 
-                                    sigma_clip):
+
+def _segmentSourceInhomogBackground(im, threshold_over_std, fwhm, brightest, sigma_clip):
     """
     Function that segments barcodes by estimating inhomogeneous background
     Parameters
@@ -167,6 +168,7 @@ def _segmentSourceInhomogBackground(im,
 
     return sources, im1_bkg_substracted
 
+
 def segmentSourceInhomogBackground(im, param):
     """
     Wrapper for function that segments barcodes by estimating inhomogeneous background
@@ -210,12 +212,8 @@ def segmentSourceInhomogBackground(im, param):
 
     # sigma_clip = SigmaClip(sigma=3.0)
     sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
-    
-    sources, im1_bkg_substracted = _segmentSourceInhomogBackground(im,
-                                                                   threshold_over_std, 
-                                                                   fwhm, 
-                                                                   brightest, 
-                                                                   sigma_clip)
+
+    sources, im1_bkg_substracted = _segmentSourceInhomogBackground(im, threshold_over_std, fwhm, brightest, sigma_clip)
     return sources, im1_bkg_substracted
 
 
@@ -269,6 +267,7 @@ def segmentSourceFlatBackground(im, param):
 
     return sources, im1_bkg_substracted
 
+
 def tessellate_DAPI_masks(segm_deblend):
     """
     * takes a DAPI mask (background 0, nuclei labeled 1, 2, ...)
@@ -289,75 +288,76 @@ def tessellate_DAPI_masks(segm_deblend):
 
     """
     start_time = time.time()
-    
+
     # get centroids
     dapi_mask = segm_deblend.data
     dapi_mask_binary = dapi_mask.copy()
-    dapi_mask_binary[dapi_mask_binary>0] = 1
-    
+    dapi_mask_binary[dapi_mask_binary > 0] = 1
+
     regions_dapi = regionprops(dapi_mask)
-    
+
     numMasks = np.max(dapi_mask)
-    centroid = np.zeros((numMasks+1, 2)) # +1 as labels run from 0 to max
+    centroid = np.zeros((numMasks + 1, 2))  # +1 as labels run from 0 to max
 
     for props in regions_dapi:
         y0, x0 = props.centroid
         label = props.label
-        centroid[label,:] = x0, y0
-    
+        centroid[label, :] = x0, y0
+
     # tesselation
     # remove first centroid (this is the background label)
-    xy = centroid[1:,:]
+    xy = centroid[1:, :]
     voronoiData = get_tessellation(xy, dapi_mask.shape)
-    
+
     # add some clipping to the tessellation
     # gaussian blur and thresholding; magic numbers!
     dapi_mask_blurred = gaussian_filter(dapi_mask_binary.astype("float64"), sigma=20)
-    dapi_mask_blurred = dapi_mask_blurred>0.01
-    
+    dapi_mask_blurred = dapi_mask_blurred > 0.01
+
     # convert tessellation to mask
-    np.random.seed(42)    
-    
+    np.random.seed(42)
+
     dapi_mask_voronoi = np.zeros(dapi_mask.shape, dtype="int64")
-    
+
     nx, ny = dapi_mask.shape
-    
+
     # Create vertex coordinates for each grid cell...
     # (<0,0> is at the top left of the grid in this system)
     x, y = np.meshgrid(np.arange(nx), np.arange(ny))
     x, y = x.flatten(), y.flatten()
-    
-    points = np.vstack((x,y)).T    
-    
+
+    points = np.vstack((x, y)).T
+
     # currently takes 1min for approx 600 polygons
-    for label in range(0, numMasks): # label is shifted by -1 now
-        maskID = label+1
-        
+    for label in range(0, numMasks):  # label is shifted by -1 now
+        maskID = label + 1
+
         idx_vor_region = voronoiData.point_region[label]
-        idx_vor_vertices = voronoiData.regions[idx_vor_region] # list of indices of the Voronoi vertices
-        
-        vertices = np.full((len(idx_vor_vertices),2), np.NaN)
+        idx_vor_vertices = voronoiData.regions[idx_vor_region]  # list of indices of the Voronoi vertices
+
+        vertices = np.full((len(idx_vor_vertices), 2), np.NaN)
         drop_vert = False
         for i in range(len(idx_vor_vertices)):
             idx = idx_vor_vertices[i]
-            if idx == -1: # this means a "virtual point" at infinity as the vertex is not closed
+            if idx == -1:  # this means a "virtual point" at infinity as the vertex is not closed
                 drop_vert = True
-                print("Detected \"virtual point\" at infinity. Skipping this mask.")
+                print('Detected "virtual point" at infinity. Skipping this mask.')
                 break
-            vertices[i,:] = voronoiData.vertices[idx]
-        
-        if drop_vert: # region is not bounded
+            vertices[i, :] = voronoiData.vertices[idx]
+
+        if drop_vert:  # region is not bounded
             continue
-        
+
         poly_path = Path(vertices)
         mask = poly_path.contains_points(points)
-        mask = mask.reshape((ny,nx))
+        mask = mask.reshape((ny, nx))
         dapi_mask_voronoi[mask & dapi_mask_blurred] = maskID
-        
+
     # print("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
     print("Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
-    
+
     return voronoiData, dapi_mask_voronoi
+
 
 def get_tessellation(xy, img_shape):
     """
@@ -387,22 +387,21 @@ def get_tessellation(xy, img_shape):
         DESCRIPTION.
 
     """
-    
-    x_center, y_center = np.array(img_shape)/2
+
+    x_center, y_center = np.array(img_shape) / 2
     x_max, y_max = np.array(img_shape)
-    
-    corner1 = [x_center-100*x_max, y_center-100*y_max]
-    corner2 = [x_center+100*x_max, y_center-100*y_max]
-    corner3 = [x_center-100*x_max, y_center+100*y_max]
-    corner4 = [x_center+100*x_max, y_center+100*y_max]
-    
+
+    corner1 = [x_center - 100 * x_max, y_center - 100 * y_max]
+    corner2 = [x_center + 100 * x_max, y_center - 100 * y_max]
+    corner3 = [x_center - 100 * x_max, y_center + 100 * y_max]
+    corner4 = [x_center + 100 * x_max, y_center + 100 * y_max]
+
     xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
-    
-    
+
     # perform Voroin tesseslation
-    voronoiData=Voronoi(xy)
-    
-    #Attributes
+    voronoiData = Voronoi(xy)
+
+    # Attributes
     #    points ndarray of double, shape (npoints, ndim)
     #        Coordinates of input points.
     #
@@ -424,8 +423,9 @@ def get_tessellation(xy, img_shape):
     #    furthest_site
     #        True if this was a furthest site triangulation and False if not.
     #        New in version 1.4.0.
-    
+
     return voronoiData
+
 
 def segmentMaskInhomogBackground(im, param):
     """
@@ -578,7 +578,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         label = param.param["acquisition"]["label"]
 
         # loading registered 2D projection
-        Im = Image(param,log1)
+        Im = Image(param, log1)
         Im.loadImage2D(
             fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
@@ -588,7 +588,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         ##########################################
         #               Segments barcodes
         ##########################################
-        
+
         if label == "barcode" and len([i for i in rootFileName.split("_") if "RT" in i]) > 0:
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentSourceFlatBackground(im, param)
@@ -643,11 +643,11 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 )
                 output = np.zeros(1)
                 return output
-            
+
             if "tesselation" in param.param["segmentedObjects"].keys():
                 if param.param["segmentedObjects"]["tesselation"]:
                     _, output = tessellate_DAPI_masks(output)
-            
+
             # show results
             if "labeled" in locals():
                 outputFileNameStarDist = (
@@ -678,7 +678,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         return []
 
 
-def segmentMasks(param, log1, session1,fileName=None):
+def segmentMasks(param, log1, session1, fileName=None):
     sessionName = "segmentMasks"
 
     # processes folders and files
@@ -705,30 +705,33 @@ def segmentMasks(param, log1, session1,fileName=None):
         # fileName2ProcessList = [x for x in param.fileList2Process if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(x))]
         label = param.param["acquisition"]["label"]
         outputFile = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-        
 
-        if param.param['parallel']:
+        if param.param["parallel"]:
             # running in parallel mode
-            client=get_client()
-            futures=list()           
-          
+            client = get_client()
+            futures = list()
+
             for fileName2Process in param.fileList2Process:
-                if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                if fileName == None or (
+                    fileName != None and os.path.basename(fileName) == os.path.basename(fileName2Process)
+                ):
                     if label != "fiducial":
                         # print("x={}".format(fileName2Process))
-                        futures.append(client.submit(makesSegmentations,fileName2Process, param, log1, session1, dataFolder))
+                        futures.append(
+                            client.submit(makesSegmentations, fileName2Process, param, log1, session1, dataFolder)
+                        )
                         session1.add(fileName2Process, sessionName)
-            
+
             log1.info("Waiting for {} results to arrive".format(len(futures)))
-            
-            results=client.gather(futures)
+
+            results = client.gather(futures)
 
             if label == "barcode":
                 # gathers results from different barcodes and ROIs
                 log1.info("Retrieving {} results from cluster".format(len(results)))
                 detectedSpots = []
                 for result in results:
-                    detectedSpots.append(len(result)) 
+                    detectedSpots.append(len(result))
                     barcodesCoordinates = vstack([barcodesCoordinates, result])
 
                     # saves results together into a single Table
@@ -738,11 +741,12 @@ def segmentMasks(param, log1, session1,fileName=None):
 
         else:
 
-
             for fileName2Process in param.fileList2Process:
-                if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(fileName2Process)):
+                if fileName == None or (
+                    fileName != None and os.path.basename(fileName) == os.path.basename(fileName2Process)
+                ):
                     if label != "fiducial":
-                        
+
                         # running in sequential mode
                         output = makesSegmentations(fileName2Process, param, log1, session1, dataFolder)
 
@@ -751,7 +755,7 @@ def segmentMasks(param, log1, session1,fileName=None):
                             barcodesCoordinates = vstack([barcodesCoordinates, output])
                             barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
                             log1.report("File {} written to file.".format(outputFile), "info")
-                            
+
                         session1.add(fileName2Process, sessionName)
-                        
+
     return 0

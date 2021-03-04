@@ -36,7 +36,7 @@ class log:
         dateTime = now.strftime("%Y%m%d_%H%M%S")
         self.fileName = rootFolder + os.sep + fileNameRoot + dateTime + ".log"
         self.fileNameMD = self.fileName.split(".")[0] + ".md"
-        self.parallel=parallel
+        self.parallel = parallel
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
 
@@ -57,7 +57,7 @@ class log:
 
     # thisfunction will output to cmd line and save in logfile
     def report(self, text, status="info"):
-        if not self.parallel or status.lower()=="error":
+        if not self.parallel or status.lower() == "error":
             print(self.getFullString(text, status))
             self.save("\n" + text, status)
         else:
@@ -131,7 +131,9 @@ class folders:
         self.outputFiles["alignImages"] = (
             self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
         )
-        self.outputFiles["dictShifts"] = self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        self.outputFiles["dictShifts"] = (
+            self.outputFolders["alignImages"] + os.sep + param.param["alignImages"]["outputFile"]
+        )
 
         if "segmentedObjects" in param.param.keys():
             self.outputFolders["segmentedObjects"] = filesFolder + os.sep + param.param["segmentedObjects"]["folder"]
@@ -154,9 +156,6 @@ class folders:
             self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + "buildsPWDmatrix"
         self.createSingleFolder(self.outputFolders["buildsPWDmatrix"])
         self.outputFiles["buildsPWDmatrix"] = self.outputFolders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
-
-
-
 
     def createSingleFolder(self, folder):
         if not path.exists(folder):
@@ -201,6 +200,7 @@ class FileHandling:
     def getROI(self):
         return os.path.basename(self.fileName).split("_")[self.positionROIinformation]
 
+
 class Parameters:
     def __init__(self, rootFolder="./", label=""):
         self.label = label
@@ -217,7 +217,7 @@ class Parameters:
                 "barcode_channel": "ch01",
                 "pixelSizeXY": 0.1,
                 "pixelSizeZ": 0.25,
-                },  # barcode, fiducial
+            },  # barcode, fiducial
             "zProject": {
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
@@ -236,10 +236,10 @@ class Parameters:
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
-                "alignByBlock": True, # alignByBlock True will perform block alignment
-                "tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
-                "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
-                "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+                "alignByBlock": True,  # alignByBlock True will perform block alignment
+                "tolerance": 0.1,  # Used in blockAlignment to determine the % of error tolerated
+                "lower_threshold": 0.999,  # lower threshold to adjust image intensity levels before xcorrelation
+                "higher_threshold": 0.9999999,  # higher threshold to adjust image intensity levels before xcorrelation
                 "background_sigma": 3.0,  # used to remove inhom background
                 "localShiftTolerance": 1,
                 "bezel": 20,
@@ -252,7 +252,7 @@ class Parameters:
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
                 "flux_min": 200,  # min flux to keeep object
-                "toleranceDrift":1, # tolerance used for block drift correction, in px
+                "toleranceDrift": 1,  # tolerance used for block drift correction, in px
             },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
@@ -270,22 +270,22 @@ class Parameters:
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
-                "3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
-                "residual_max": 2.5,  #z-profile Fit: max residuals to keeep object
-                "sigma_max": 5,  #z-profile Fit: max sigma 3D fitting to keeep object
-                "centroidDifference_max": 5,  #z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
-                "3DGaussianfitWindow": 3,  #z-profile Fit: window size to extract subVolume, px. 3 means subvolume will be 7x7.
-                "3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
-                "3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
-                "3dAP_brightest": 100, # number of sources sought in each YZ plane
-                "3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
+                "3Dmethod": "zASTROPY",  # options: zASTROPY, zProfile
+                "residual_max": 2.5,  # z-profile Fit: max residuals to keeep object
+                "sigma_max": 5,  # z-profile Fit: max sigma 3D fitting to keeep object
+                "centroidDifference_max": 5,  # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
+                "3DGaussianfitWindow": 3,  # z-profile Fit: window size to extract subVolume, px. 3 means subvolume will be 7x7.
+                "3dAP_window": 5,  # constructs a YZ image by summing from xPlane-window:xPlane+window
+                "3dAP_flux_min": 2,  # # threshold to keep a source detected in YZ
+                "3dAP_brightest": 100,  # number of sources sought in each YZ plane
+                "3dAP_distTolerance": 1,  # px dist to attribute a source localized in YZ to one localized in XY
             },
         }
         self.initializeStandardParameters()
         self.paramFile = rootFolder + os.sep + label
         self.loadParametersFile(self.paramFile)
         self.param["rootFolder"] = rootFolder
-        self.fileParts={}
+        self.fileParts = {}
 
     def get_param(self, param=False):
         if not param:
@@ -324,7 +324,10 @@ class Parameters:
 
         # finds if there is 2 or 3 channels for DAPI acquisition
         fileList2Process = [
-            file for file in filesFolder if self.decodesFileParts(path.basename(file))["channel"] == "ch02" and "DAPI" in path.basename(file).split("_")
+            file
+            for file in filesFolder
+            if self.decodesFileParts(path.basename(file))["channel"] == "ch02"
+            and "DAPI" in path.basename(file).split("_")
         ]
 
         # defines channels for RNA and DAPI-fiducial
@@ -335,7 +338,7 @@ class Parameters:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch01")
             channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch04")
 
-        if channelDAPI_fiducial and len(fileList2Process)==0:
+        if channelDAPI_fiducial and len(fileList2Process) == 0:
             warn("\n\n****You are using ch02 for channelDAPI_fiducial but there are only 2 channels for DAPI!\n\n")
 
         # selects DAPI files
@@ -343,7 +346,8 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if self.decodesFileParts(path.basename(file))["channel"] == channelDAPI and "DAPI" in path.basename(file).split("_")
+                if self.decodesFileParts(path.basename(file))["channel"] == channelDAPI
+                and "DAPI" in path.basename(file).split("_")
             ]
 
         # selects DAPIch2 files
@@ -351,7 +355,8 @@ class Parameters:
             self.fileList2Process = [
                 file
                 for file in filesFolder
-                if self.decodesFileParts(path.basename(file))["channel"]== channelDAPI_RNA and "DAPI" in path.basename(file).split("_")
+                if self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_RNA
+                and "DAPI" in path.basename(file).split("_")
             ]
 
         # selects barcode files
@@ -370,14 +375,16 @@ class Parameters:
                 for file in filesFolder
                 if (
                     len([i for i in file.split("_") if "RT" in i]) > 0
-                    and self.decodesFileParts(path.basename(file))["channel"]  == channelfiducial
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelfiducial
                 )
-                or ("DAPI" in file.split("_") and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial)
+                or (
+                    "DAPI" in file.split("_")
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial
+                )
             ]
 
-
     def decodesFileParts(self, fileName):
-        '''
+        """
         decodes variables from an input file. typically, RE takes the form:
 
         "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
@@ -400,20 +407,21 @@ class Parameters:
         -------
         Dict with fileParts.
 
-        '''
+        """
         # decodes regular expressions
-        if 'fileNameRegExp' in self.param['acquisition'].keys():
-            fileParts=re.search(self.param['acquisition']['fileNameRegExp'],fileName)
+        if "fileNameRegExp" in self.param["acquisition"].keys():
+            fileParts = re.search(self.param["acquisition"]["fileNameRegExp"], fileName)
             return fileParts
         else:
             return {}
 
+
 class daskCluster:
-    def __init__(self, requestedNumberNodes,maximumLoad=0.6,memoryPerWorker = 2000):
+    def __init__(self, requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=2000):
         self.requestedNumberNodes = requestedNumberNodes
         # self.nThreads will be created after exetution of initializeCluster()
         self.maximumLoad = maximumLoad  # max number of workers that I can take
-        self.memoryPerWorker = memoryPerWorker# in Mb
+        self.memoryPerWorker = memoryPerWorker  # in Mb
         self.initializeCluster()
 
     def initializeCluster(self):
@@ -423,19 +431,20 @@ class daskCluster:
         # we want at least 2 GB per worker
         _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
 
-        maxNumberThreads = int(np.min([numberCoresAvailable*self.maximumLoad, free_m / self.memoryPerWorker]))
+        maxNumberThreads = int(np.min([numberCoresAvailable * self.maximumLoad, free_m / self.memoryPerWorker]))
 
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
 
-        print("Cluster with {} workers started ({} requested)".format(self.nThreads,self.requestedNumberNodes))
+        print("Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
 
     def createDistributedClient(self):
-        self.cluster = LocalCluster(n_workers=self.nThreads,
-                                # processes=True,
-                                # threads_per_worker=1,
-                                # memory_limit='2GB',
-                                # ip='tcp://localhost:8787',
-                                )
+        self.cluster = LocalCluster(
+            n_workers=self.nThreads,
+            # processes=True,
+            # threads_per_worker=1,
+            # memory_limit='2GB',
+            # ip='tcp://localhost:8787',
+        )
         self.client = Client(self.cluster)
 
 
@@ -513,8 +522,8 @@ def RT2fileName(param, referenceBarcode):
         if referenceBarcode in file.split("_"):
             fileNameReferenceList.append(file)
             # ROIList[file] = os.path.basename(file).split("_")[positionROIinformation]
-            fileParts=param.decodesFileParts(os.path.basename(file))
-            ROIList[file] = fileParts['roi']
+            fileParts = param.decodesFileParts(os.path.basename(file))
+            ROIList[file] = fileParts["roi"]
     return fileNameReferenceList, ROIList
 
 
@@ -540,7 +549,7 @@ def ROI2FiducialFileName(param, file, barcodeName):
     """
     # gets rootFolder
     rootFolder = os.path.dirname(file)
-    ROI = param.decodesFileParts(os.path.basename(file))['roi']
+    ROI = param.decodesFileParts(os.path.basename(file))["roi"]
 
     channelFiducial = param.param["acquisition"]["fiducialBarcode_channel"]
 
@@ -550,14 +559,15 @@ def ROI2FiducialFileName(param, file, barcodeName):
     candidates = [
         x
         for x in listFiles
-        if (barcodeName+"_" in x)
-        and (ROI == param.decodesFileParts(os.path.basename(x))['roi'])
+        if (barcodeName + "_" in x)
+        and (ROI == param.decodesFileParts(os.path.basename(x))["roi"])
         and (channelFiducial in os.path.basename(x))
     ]
 
     return candidates
 
-def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif'):
+
+def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext="tif"):
     """
     given a directory and a Parameter object, it returns the number of unique cycles/barcodes detected
 
@@ -575,8 +585,9 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif')
         number of unique cycles.
 
     """
+
     def unique(list1):
-        ''' function to get unique values'''
+        """ function to get unique values"""
         # intilize a null list
         unique_list = []
 
@@ -588,9 +599,9 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif')
 
         return unique_list
 
-    allFilesinRootFolder=glob.glob(rootFolder+os.sep+"*"+ext)
+    allFilesinRootFolder = glob.glob(rootFolder + os.sep + "*" + ext)
 
-    param = Parameters(rootFolder, rootFolder+parameterFile)
+    param = Parameters(rootFolder, rootFolder + parameterFile)
 
     ROIs, RTs = [], []
     for x in allFilesinRootFolder:
@@ -598,6 +609,6 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext='tif')
         ROIs.append(fileParts["roi"])
         RTs.append(fileParts["cycle"])
 
-    numberUniqueCycles=len(unique(RTs))
+    numberUniqueCycles = len(unique(RTs))
 
     return numberUniqueCycles

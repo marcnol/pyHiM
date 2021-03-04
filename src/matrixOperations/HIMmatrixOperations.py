@@ -35,6 +35,7 @@ from astropy.table import Table, vstack
 from fileProcessing.fileManagement import writeString2File
 
 from fileProcessing.fileManagement import isnotebook
+
 # =============================================================================
 # CLASSES
 # =============================================================================
@@ -53,8 +54,8 @@ class analysisHiMmatrix:
         self.data = []
         self.dataFiles = []
         self.folders2Load = []
-        self.numberBarcodes=0
-        
+        self.numberBarcodes = 0
+
     def loadData(self):
         """
         loads dataset
@@ -116,7 +117,7 @@ class analysisHiMmatrix:
 
         data["uniqueBarcodes"] = loadList(outputFileName + "_uniqueBarcodes.csv")
         print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
-        self.numberBarcodes=len(data["uniqueBarcodes"])
+        self.numberBarcodes = len(data["uniqueBarcodes"])
 
         print("Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2]))
         print("Number Datasets loaded: {}".format(len(data["runName"])))
@@ -248,7 +249,6 @@ class analysisHiMmatrix:
         print("nCells selected with label: {}".format(nCells))
         return nCells
 
-
     def retrieveSCmatrix(self):
         """
         retrieves single cells that have the label requested
@@ -258,48 +258,51 @@ class analysisHiMmatrix:
         self.SCmatrixSelected
 
         """
-        nCells=self.nCellsLoaded()
-        SCmatrixSelected=np.zeros((self.numberBarcodes,self.numberBarcodes,nCells))
-        
+        nCells = self.nCellsLoaded()
+        SCmatrixSelected = np.zeros((self.numberBarcodes, self.numberBarcodes, nCells))
+
         if self.runParameters["action"] == "labeled":
             cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x > 0]
-            newCell=0
+            newCell = 0
             for iCell in cellswithLabel:
-                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
-                newCell+=1
+                SCmatrixSelected[:, :, newCell] = self.data["SCmatrixCollated"][:, :, iCell]
+                newCell += 1
         elif self.runParameters["action"] == "unlabeled":
             cellswithLabel = [idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x == 0]
-            newCell=0
+            newCell = 0
             for iCell in cellswithLabel:
-                SCmatrixSelected[:,:,newCell]=self.data["SCmatrixCollated"][:,:,iCell]
-                newCell+=1
+                SCmatrixSelected[:, :, newCell] = self.data["SCmatrixCollated"][:, :, iCell]
+                newCell += 1
         else:
             SCmatrixSelected = self.data["SCmatrixCollated"]
         print("nCells retrieved: {}".format(SCmatrixSelected.shape[2]))
-        self.SCmatrixSelected= SCmatrixSelected
-    
+        self.SCmatrixSelected = SCmatrixSelected
+
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
-def normalizeProfile(profile1, profile2, runParameters):
-    
-    print("Normalization: {}".format(runParameters["normalize"]))
-    
-    mode=runParameters["normalize"]
-    
-    if "maximum" in mode: # normalizes by maximum
-        profile1=profile1/profile1.max()/2
-        profile2=profile2/profile2.max()/2
-    elif 'none' in mode: # no normalization
-        m1_norm=1
-        m2_norm=1
-    else: # normalizes by given factor
-        normFactor=float(mode)
-        profile1=profile1/1
-        profile2=profile2/normFactor
 
-    return profile1,profile2
+def normalizeProfile(profile1, profile2, runParameters):
+
+    print("Normalization: {}".format(runParameters["normalize"]))
+
+    mode = runParameters["normalize"]
+
+    if "maximum" in mode:  # normalizes by maximum
+        profile1 = profile1 / profile1.max() / 2
+        profile2 = profile2 / profile2.max() / 2
+    elif "none" in mode:  # no normalization
+        m1_norm = 1
+        m2_norm = 1
+    else:  # normalizes by given factor
+        normFactor = float(mode)
+        profile1 = profile1 / 1
+        profile2 = profile2 / normFactor
+
+    return profile1, profile2
+
 
 def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, iFigLabel, yticks, xticks, legend=False):
 
@@ -310,8 +313,8 @@ def plot1Dprofile2Datasets(ifigure, HiMdata1, HiMdata2, runParameters, anchor, i
 
     profile1 = HiMdata1.data["ensembleContactProbability"][:, anchor - 1]
     profile2 = HiMdata2.data["ensembleContactProbability"][:, anchor - 1]
-    
-    profile1,profile2 = normalizeProfile(profile1, profile2, runParameters)
+
+    profile1, profile2 = normalizeProfile(profile1, profile2, runParameters)
 
     x = np.linspace(0, profile1.shape[0], num=profile1.shape[0], endpoint=True)
     tck1 = interpolate.splrep(x, profile1, s=0)
@@ -747,7 +750,7 @@ def plotsEnsemble3wayContactMatrix(
         # plots 3-way matrix
         plotMatrix(
             SCmatrix,
-            commonSetUniqueBarcodes, #before uniqueBarcodes 
+            commonSetUniqueBarcodes,  # before uniqueBarcodes
             p["pixelSize"],
             cm=iListData["ContactProbability_cm"],
             outputFileName=outputFileName,
@@ -1270,18 +1273,17 @@ def write_XYZ_2_pdb(fileName, XYZ):
         print("Done writing {:s} with {:d} atoms.".format(fileName, n_atoms))
 
 
-
 def plotDistanceHistograms(
-    SCmatrixCollated, 
-    pixelSize, 
-    outputFileName="test", 
-    logNameMD="log.md", 
-    mode="hist", 
+    SCmatrixCollated,
+    pixelSize,
+    outputFileName="test",
+    logNameMD="log.md",
+    mode="hist",
     limitNplots=10,
     kernelWidth=0.25,
     optimizeKernelWidth=False,
-    maxDistance=4.0
-    ):
+    maxDistance=4.0,
+):
 
     if not isnotebook():
         NplotsX = NplotsY = SCmatrixCollated.shape[0]
@@ -1306,44 +1308,41 @@ def plotDistanceHistograms(
                 if mode == "hist":
                     axs[i, j].hist(pixelSize * SCmatrixCollated[i, j, :], bins=bins)
                 else:
-                    (maxKDE, 
-                     distanceDistribution, 
-                     KDE, 
-                     x_d,) = distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
-                                                                        i,
-                                                                        j,
-                                                                        pixelSize, 
-                                                                        optimizeKernelWidth=optimizeKernelWidth, 
-                                                                        kernelWidth=kernelWidth, 
-                                                                        maxDistance=maxDistance
-                                                                        )
+                    (maxKDE, distanceDistribution, KDE, x_d,) = distributionMaximumKernelDensityEstimation(
+                        SCmatrixCollated,
+                        i,
+                        j,
+                        pixelSize,
+                        optimizeKernelWidth=optimizeKernelWidth,
+                        kernelWidth=kernelWidth,
+                        maxDistance=maxDistance,
+                    )
                     axs[i, j].fill_between(x_d, KDE, alpha=0.5)
                     axs[i, j].plot(
                         distanceDistribution, np.full_like(distanceDistribution, -0.01), "|k", markeredgewidth=1,
                     )
                     axs[i, j].vlines(maxKDE, 0, KDE.max(), colors="r")
-                
-            axs[i, j].set_xlim(0,maxDistance)
+
+            axs[i, j].set_xlim(0, maxDistance)
             axs[i, j].set_yticklabels([])
 
     plt.xlabel("distance, um")
     plt.ylabel("counts")
-    
-    fileExtension = outputFileName.split('.')[-1]
 
-    if len(fileExtension)==3:
-        fileName=outputFileName + "_PWDhistograms."+fileExtension
+    fileExtension = outputFileName.split(".")[-1]
+
+    if len(fileExtension) == 3:
+        fileName = outputFileName + "_PWDhistograms." + fileExtension
     else:
-        fileName=outputFileName + "_PWDhistograms.png"    
+        fileName = outputFileName + "_PWDhistograms.png"
 
-    print("Output figure: {}\n".format(fileName)) 
+    print("Output figure: {}\n".format(fileName))
     plt.savefig(fileName)
 
     if not isnotebook():
         plt.close()
 
     writeString2File(logNameMD, "![]({})\n".format(outputFileName + "_PWDhistograms.png"), "a")
-
 
 
 def plotMatrix(
@@ -1362,7 +1361,7 @@ def plotMatrix(
     inverseMatrix=False,
     cMin=0,
     cells2Plot=[],
-    fileNameEnding="_HiMmatrix.png"
+    fileNameEnding="_HiMmatrix.png",
 ):
 
     Nbarcodes = SCmatrixCollated.shape[0]
@@ -1370,15 +1369,15 @@ def plotMatrix(
     ######################################################
     # Calculates ensemble matrix from single cell matrices
     ######################################################
-    
+
     if len(SCmatrixCollated.shape) == 3:
 
         # matrix is 3D and needs combining SC matrices into an ensemble matrix
         if len(cells2Plot) == 0:
             cells2Plot = range(SCmatrixCollated.shape[2])
-        
-        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, cells2Plot, mode = mode)
-    
+
+        meanSCmatrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrixCollated, pixelSize, cells2Plot, mode=mode)
+
     else:
 
         # matrix is 2D and does not need further treatment
@@ -1391,7 +1390,7 @@ def plotMatrix(
 
     if keepPlotting:
         # no errors occurred
-        
+
         # Calculates the inverse distance matrix if requested in the argument.
         if inverseMatrix:
             meanSCmatrix = np.reciprocal(meanSCmatrix)
@@ -1420,25 +1419,25 @@ def plotMatrix(
 
         if len(outputFileName.split(".")) > 1:
             if outputFileName.split(".")[1] != "png":
-                if len(outputFileName.split(".")[1])==3:
+                if len(outputFileName.split(".")[1]) == 3:
                     # keeps original extension
-                    o=outputFileName
+                    o = outputFileName
                     plt.savefig(outputFileName)
                 else:
                     # most likely the full filname contains other '.' in addition to that in the extension
-                    o=outputFileName + fileNameEnding
+                    o = outputFileName + fileNameEnding
                     plt.savefig(o)
             else:
-                o=outputFileName.split(".")[0] + fileNameEnding
+                o = outputFileName.split(".")[0] + fileNameEnding
                 plt.savefig(o)
         else:
-            o=outputFileName + fileNameEnding
+            o = outputFileName + fileNameEnding
             plt.savefig(o)
 
         if not isnotebook():
             plt.close()
-        if 'png' not in o:
-            o+=".png"
+        if "png" not in o:
+            o += ".png"
         writeString2File(logNameMD, "![]({})\n".format(o), "a")
     else:
         # errors during pre-processing
@@ -1455,7 +1454,7 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
         for j in range(nY):
             if i != j:
                 distanceDistribution = pixelSize * iSCmatrixCollated[i, j, :]
-                
+
                 # normalizes # of contacts by the # of cells
                 if norm == "nCells":
                     probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
@@ -1481,9 +1480,10 @@ def findsOptimalKernelWidth(distanceDistribution):
     grid.fit(distanceDistribution[:, None])
     return grid.best_params_
 
+
 # @jit(nopython=True)
-def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False,kernelWidth=0.25):
-    '''
+def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth=False, kernelWidth=0.25):
+    """
     Gets the kernel density function and maximum from a distribution of PWD distances
 
     Parameters
@@ -1502,7 +1502,7 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
     np array
         Original distribution without NaNs
 
-    '''
+    """
 
     nan_array = np.isnan(distanceDistribution0)
 
@@ -1517,29 +1517,24 @@ def retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWid
         kernelWidth = kernelWidth
 
     kde = KernelDensity(bandwidth=kernelWidth, kernel="gaussian")
-    
+
     # makes sure the list is not full of NaNs.
-    if distanceDistribution.shape[0]>0:
+    if distanceDistribution.shape[0] > 0:
         kde.fit(distanceDistribution[:, None])
     else:
         return np.array([0]), np.array([0])
-    
+
     # score_samples returns the log of the probability density
     logprob = kde.score_samples(x_d[:, None])
 
     return logprob, distanceDistribution
 
 
-
 # @jit(nopython=True)
-def distributionMaximumKernelDensityEstimation(SCmatrixCollated, 
-                                               bin1, 
-                                               bin2, 
-                                               pixelSize, 
-                                               optimizeKernelWidth=False, 
-                                               kernelWidth=0.25,
-                                               maxDistance=4.0):
-    '''
+def distributionMaximumKernelDensityEstimation(
+    SCmatrixCollated, bin1, bin2, pixelSize, optimizeKernelWidth=False, kernelWidth=0.25, maxDistance=4.0
+):
+    """
     calculates the kernel distribution and its maximum from a set of PWD distances
 
     Parameters
@@ -1566,22 +1561,26 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated,
     x_d : np array
         x grid.
 
-    '''
-    distanceDistributionUnlimited = pixelSize * SCmatrixCollated[bin1, bin2, :] # full distribution
-    distanceDistributionUnlimited = distanceDistributionUnlimited[~np.isnan(distanceDistributionUnlimited)] # removes nans
-    
-    if bin1==bin2:
+    """
+    distanceDistributionUnlimited = pixelSize * SCmatrixCollated[bin1, bin2, :]  # full distribution
+    distanceDistributionUnlimited = distanceDistributionUnlimited[
+        ~np.isnan(distanceDistributionUnlimited)
+    ]  # removes nans
+
+    if bin1 == bin2:
         # protection agains bins in the diagonal
-        distanceDistribution0  = distanceDistributionUnlimited
+        distanceDistribution0 = distanceDistributionUnlimited
     else:
         # removes values larger than maxDistance
-        distanceDistribution0 = distanceDistributionUnlimited[np.nonzero(distanceDistributionUnlimited<maxDistance)]
+        distanceDistribution0 = distanceDistributionUnlimited[np.nonzero(distanceDistributionUnlimited < maxDistance)]
     x_d = np.linspace(0, maxDistance, 2000)
 
     # checks that distribution is not empty
     if distanceDistribution0.shape[0] > 0:
-        logprob, distanceDistribution = retrieveKernelDensityEstimator(distanceDistribution0, x_d, optimizeKernelWidth,kernelWidth)
-        if logprob.shape[0]>1:
+        logprob, distanceDistribution = retrieveKernelDensityEstimator(
+            distanceDistribution0, x_d, optimizeKernelWidth, kernelWidth
+        )
+        if logprob.shape[0] > 1:
             kernelDistribution = 10 * np.exp(logprob)
             maximumKernelDistribution = x_d[np.argmax(kernelDistribution)]
             return maximumKernelDistribution, distanceDistribution, kernelDistribution, x_d
@@ -1589,9 +1588,9 @@ def distributionMaximumKernelDensityEstimation(SCmatrixCollated,
             return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
     else:
         return np.nan, np.zeros(x_d.shape[0]), np.zeros(x_d.shape[0]), x_d
-    
-    
-def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
+
+
+def getRgFromPWD(PWDmatrix0, minNumberPWD=4, threshold=6):
     """
     Calculates the Rg from a 2D pairwise distance matrix
     while taking into account that some of the PWD might be NaN
@@ -1603,84 +1602,85 @@ def getRgFromPWD(PWDmatrix0, minNumberPWD=4,threshold=6):
     """
 
     PWDmatrix = PWDmatrix0.copy()
-    
+
     # check that PWDmatrix is of right shape
-    if (PWDmatrix.ndim != 2):
+    if PWDmatrix.ndim != 2:
         raise SystemExit("getRgFromPWD: Expected 2D input but got {}D.".format(PWDmatrix.ndim))
-    if (PWDmatrix.shape[0] != PWDmatrix.shape[1]):
+    if PWDmatrix.shape[0] != PWDmatrix.shape[1]:
         raise SystemExit("getRgFromPWD: Expected square matrix as input.")
-    
+
     # make sure the diagonal is NaN
     np.fill_diagonal(PWDmatrix, np.NaN)
-    
-    # filters out PWD 
-    PWDmatrix[PWDmatrix > threshold]=np.nan
+
+    # filters out PWD
+    PWDmatrix[PWDmatrix > threshold] = np.nan
 
     # get the number of PWDs that are not NaN
-    numPWDs = PWDmatrix.shape[0]*(PWDmatrix.shape[0]-1)/2
-    numNotNan = np.sum(~np.isnan(PWDmatrix)) / 2 # default is to compute the sum of the flattened array
+    numPWDs = PWDmatrix.shape[0] * (PWDmatrix.shape[0] - 1) / 2
+    numNotNan = np.sum(~np.isnan(PWDmatrix)) / 2  # default is to compute the sum of the flattened array
 
-    if (numNotNan < minNumberPWD):
+    if numNotNan < minNumberPWD:
         return np.NaN
-    
+
     # calculate Rg
     sq = np.square(PWDmatrix)
-    sq = np.nansum(sq) # default is to compute the sum of the flattened array
-    
-    Rg_sq = sq / (2 * (2*numNotNan + PWDmatrix.shape[0])) # replaces 1/(2*N^2)
-       
+    sq = np.nansum(sq)  # default is to compute the sum of the flattened array
+
+    Rg_sq = sq / (2 * (2 * numNotNan + PWDmatrix.shape[0]))  # replaces 1/(2*N^2)
+
     Rg = np.sqrt(Rg_sq)
-    
+
     return Rg
+
 
 def getDetectionEffBarcodes(SCmatrixCollated):
     """
     Return the detection efficiency of all barcodes.
     Assumes a barcode is detected as soon as one PWD with this barcode is detected.
     """
-    
+
     # check that PWDmatrix is of right shape
-    if (SCmatrixCollated.ndim != 3):
+    if SCmatrixCollated.ndim != 3:
         raise SystemExit("getBarcodeEff: Expected 3D input but got {}D.".format(SCmatrixCollated.ndim))
-    if (SCmatrixCollated.shape[0] != SCmatrixCollated.shape[1]):
+    if SCmatrixCollated.shape[0] != SCmatrixCollated.shape[1]:
         raise SystemExit("getBarcodeEff: Expected axis 0 and 1 to have the same length.")
-    
+
     # make sure the diagonal is NaN
     for i in range(SCmatrixCollated.shape[0]):
-        SCmatrixCollated[i,i,:] = np.NaN
-    
+        SCmatrixCollated[i, i, :] = np.NaN
+
     # calculate barcode efficiency
     nCells = SCmatrixCollated.shape[2]
-    
+
     eff = np.sum(~np.isnan(SCmatrixCollated), axis=0)
-    eff[eff>1] = 1
+    eff[eff > 1] = 1
 
-    eff0=eff.copy()
-    nCells2 = np.nonzero(np.sum(eff0,axis=0)>2)[0].shape[0]
-    
-    eff = np.sum(eff, axis=-1) # sum over all cells
-    
-    eff = eff/nCells2
+    eff0 = eff.copy()
+    nCells2 = np.nonzero(np.sum(eff0, axis=0) > 2)[0].shape[0]
 
-    print("\n\n *** nCells={} | nCells2={}".format(nCells,nCells2))
+    eff = np.sum(eff, axis=-1)  # sum over all cells
+
+    eff = eff / nCells2
+
+    print("\n\n *** nCells={} | nCells2={}".format(nCells, nCells2))
     return eff
-
 
 
 def getBarcodesPerCell(SCmatrixCollated):
     """
     Returns the number of barcodes that were detected in each cell of SCmatrixCollated.
     """
-    
+
     # make sure the diagonal is NaN
     for i in range(SCmatrixCollated.shape[0]):
-        SCmatrixCollated[i,i,:] = np.NaN
-    
+        SCmatrixCollated[i, i, :] = np.NaN
+
     numBarcodes = np.sum(~np.isnan(SCmatrixCollated), axis=0)
-    numBarcodes[numBarcodes>1] = 1
+    numBarcodes[numBarcodes > 1] = 1
     numBarcodes = np.sum(numBarcodes, axis=0)
-    
+
     return numBarcodes
+
 
 def getsCoordinatesFromPWDmatrix(matrix):
     ## multi-dimensional scaling to get coordinates from PWDs
@@ -1699,46 +1699,48 @@ def getsCoordinatesFromPWDmatrix(matrix):
         random_state=1,
         dissimilarity="precomputed",  # euclidean | precomputed
     )
-    
+
     XYZ = mds.fit(matrix).embedding_
 
     return XYZ
+
 
 def sortsCellsbyNumberPWD(HiMdata):
 
     # SCmatrix = HiMdata.data["SCmatrixCollated"]
     SCmatrix = HiMdata.SCmatrixSelected
-        
-    nCells=SCmatrix.shape[2]
+
+    nCells = SCmatrix.shape[2]
     # print("Number of cells loaded: {}".format(nCells))
 
     # finds the number of barcodes detected per cell.
     nBarcodePerCell = list()
     values = list()
-    dtype = [('cellID', int), ('nPWD', int)]
-    
+    dtype = [("cellID", int), ("nPWD", int)]
+
     for iCell in range(nCells):
-        SCmatrixCell = SCmatrix[:,:,iCell]
-        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell))/2)
+        SCmatrixCell = SCmatrix[:, :, iCell]
+        nPWD = int(np.count_nonzero(~np.isnan(SCmatrixCell)) / 2)
         nBarcodePerCell.append(nPWD)
-        values.append((iCell,nPWD))        
-        
-    valuesArray = np.array(values, dtype=dtype)       # create a structured array
-    sortedValues = np.sort(valuesArray, order='nPWD')                        
-    
+        values.append((iCell, nPWD))
+
+    valuesArray = np.array(values, dtype=dtype)  # create a structured array
+    sortedValues = np.sort(valuesArray, order="nPWD")
+
     return SCmatrix, sortedValues, nCells
 
-def kdeFit(x,x_d,bandwidth=.2, kernel='gaussian'):
-    
-    kde = KernelDensity(bandwidth=bandwidth, kernel='gaussian')
+
+def kdeFit(x, x_d, bandwidth=0.2, kernel="gaussian"):
+
+    kde = KernelDensity(bandwidth=bandwidth, kernel="gaussian")
     kde.fit(x[:, None])
 
     logprob = kde.score_samples(x_d[:, None])
-    
-    return logprob,kde
+
+    return logprob, kde
 
 
-def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode = 'median'):
+def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode="median"):
     """
     performs a KDE or median to calculate the max of the PWD distribution
 
@@ -1754,28 +1756,28 @@ def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode = 'median'
     matrix = 2D npy array.
 
     """
-    
+
     Nbarcodes = SCmatrix.shape[0]
     # cells2Plot = range(SCmatrix.shape[2])
 
     meanSCmatrix = np.zeros((Nbarcodes, Nbarcodes))
-    
-    if mode =='median':
-            # calculates the median of all values #
-            #######################################
-            if max(cells2Plot) > SCmatrix.shape[2]:
-                print(
-                    "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                        max(cells2Plot), SCmatrix.shape[2]
-                    )
+
+    if mode == "median":
+        # calculates the median of all values #
+        #######################################
+        if max(cells2Plot) > SCmatrix.shape[2]:
+            print(
+                "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
+                    max(cells2Plot), SCmatrix.shape[2]
                 )
-                keepPlotting = False
-            else:
-                meanSCmatrix = pixelSize * np.nanmedian(SCmatrix[:, :, cells2Plot], axis=2)
-                nCells = SCmatrix[:, :, cells2Plot].shape[2]
-                keepPlotting = True
-                
-    elif mode == 'KDE':
+            )
+            keepPlotting = False
+        else:
+            meanSCmatrix = pixelSize * np.nanmedian(SCmatrix[:, :, cells2Plot], axis=2)
+            nCells = SCmatrix[:, :, cells2Plot].shape[2]
+            keepPlotting = True
+
+    elif mode == "KDE":
         keepPlotting = True
 
         for bin1 in trange(Nbarcodes):
@@ -1785,5 +1787,5 @@ def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode = 'median'
                         SCmatrix[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
                     )
                     meanSCmatrix[bin1, bin2] = maximumKernelDistribution
-                
+
     return meanSCmatrix, keepPlotting

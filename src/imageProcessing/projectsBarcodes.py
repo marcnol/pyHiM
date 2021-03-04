@@ -17,7 +17,7 @@ import glob, os
 import argparse
 
 from imageProcessing.imageProcessing import Image, saveImage2Dcmd, imageAdjust
-from fileProcessing.fileManagement import (folders, session, log, Parameters,writeString2File, FileHandling)
+from fileProcessing.fileManagement import folders, session, log, Parameters, writeString2File, FileHandling
 
 # =============================================================================
 # FUNCTIONS
@@ -53,7 +53,7 @@ def gets2DcorrectedImage(fileName, param, log1, session1, dataFolder):
 
     if os.path.exists(fileName_2d_aligned):  # file exists
         # loading registered 2D projection
-        Im = Image(param,log1)
+        Im = Image(param, log1)
         Im.loadImage2D(
             fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
@@ -132,11 +132,10 @@ def projectsBarcodes(param, log1, session1):
                 imageFileNameOutput = dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".npy"
                 saveImage2Dcmd(imageStack[ROI], imageFileNameOutput, log1)
 
-                ImtoSave = Image(param,log1)
+                ImtoSave = Image(param, log1)
                 ImtoSave.data_2D = imageStack[ROI]
                 outputName = dataFolder.outputFiles["projectsBarcodes"] + "_" + ROI + ".png"
                 ImtoSave.imageShow(outputName=outputName, normalization="simple")
 
                 log1.report("Output image File {}".format(outputName), "info")
                 del ImtoSave
-

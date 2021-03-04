@@ -17,10 +17,14 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import json, csv
 from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
-    plotsEnsemble3wayContactMatrix, calculate3wayContactMatrix, getMultiContact,
-    shuffleMatrix, analysisHiMmatrix
+    plotsEnsemble3wayContactMatrix,
+    calculate3wayContactMatrix,
+    getMultiContact,
+    shuffleMatrix,
+    analysisHiMmatrix,
 )
 
 
@@ -47,10 +51,18 @@ def parseArguments():
     parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
-    parser.add_argument("--shuffle1", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
-    parser.add_argument("--shuffle2", help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!")
-    parser.add_argument("--cMinMax", help="Provide min and max value for the colormap. Comma-separated, no spaces: 0,0.5 Overwrites --cAxis.")
-
+    parser.add_argument(
+        "--shuffle1",
+        help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
+    )
+    parser.add_argument(
+        "--shuffle2",
+        help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
+    )
+    parser.add_argument(
+        "--cMinMax",
+        help="Provide min and max value for the colormap. Comma-separated, no spaces: 0,0.5 Overwrites --cAxis.",
+    )
 
     args = parser.parse_args()
 
@@ -64,15 +76,15 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters['run2Datasets']=True
+        runParameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters['run2Datasets']=False
+        runParameters["run2Datasets"] = False
 
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
+        outputFolder = "none"
 
     if args.parameters:
         runParameters["parametersFileName"] = args.parameters
@@ -115,19 +127,19 @@ def parseArguments():
         runParameters["axisTicks"] = False
 
     if args.ratio:
-        runParameters['ratio'] = args.ratio
+        runParameters["ratio"] = args.ratio
     else:
-        runParameters['ratio'] = False
+        runParameters["ratio"] = False
 
     if args.cAxis:
         runParameters["cAxis"] = float(args.cAxis)
     else:
-        runParameters["cAxis"] = .6
+        runParameters["cAxis"] = 0.6
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = '.'+args.plottingFileExtension
+        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = '.svg'
+        runParameters["plottingFileExtension"] = ".svg"
 
     if args.shuffle1:
         runParameters["shuffle1"] = args.shuffle1
@@ -143,7 +155,6 @@ def parseArguments():
         runParameters["cMinMax"] = args.cMinMax
     else:
         runParameters["cMinMax"] = 0
-
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
@@ -175,7 +186,7 @@ if __name__ == "__main__":
     # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
     # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
 
-    if outputFolder=='none':
+    if outputFolder == "none":
         outputFolder = HiMdata1.dataFolder
 
     outputFileName1 = (
@@ -216,7 +227,6 @@ if __name__ == "__main__":
         + runParameters["plottingFileExtension"]
     )
 
-
     if HiMdata1.data["ensembleContactProbability"].shape == HiMdata2.data["ensembleContactProbability"].shape:
         ### Fig1: difference or ratio of the two matrices
         fig1 = plt.figure(constrained_layout=True)
@@ -225,23 +235,23 @@ if __name__ == "__main__":
         m1 = HiMdata1.data["ensembleContactProbability"]
         m2 = HiMdata2.data["ensembleContactProbability"]
 
-        if runParameters["shuffle1"]!=0:
-            index1=[int(i) for i in runParameters["shuffle1"].split(',')]
+        if runParameters["shuffle1"] != 0:
+            index1 = [int(i) for i in runParameters["shuffle1"].split(",")]
             m1 = shuffleMatrix(m1, index1)
 
-        if runParameters["shuffle2"]!=0:
-            index2=[int(i) for i in runParameters["shuffle2"].split(',')]
+        if runParameters["shuffle2"] != 0:
+            index2 = [int(i) for i in runParameters["shuffle2"].split(",")]
             m2 = shuffleMatrix(m2, index2)
 
-        m1=m1/m1.max()
-        m2=m2/m2.max()
+        m1 = m1 / m1.max()
+        m2 = m2 / m2.max()
 
-        if runParameters['ratio']==True:
-            matrix = np.log( m1 / m2)
-            cmtitle="log(ratio)"
+        if runParameters["ratio"] == True:
+            matrix = np.log(m1 / m2)
+            cmtitle = "log(ratio)"
         else:
-            matrix = (m1 - m2)
-            cmtitle="difference"
+            matrix = m1 - m2
+            cmtitle = "difference"
 
         f1_ax1_im = HiMdata1.plot2DMatrixSimple(
             f1,
@@ -262,44 +272,48 @@ if __name__ == "__main__":
         # plt.close()
 
         ### Fig2: "mixed matrix"
-        fig2= plt.figure(constrained_layout=True)
+        fig2 = plt.figure(constrained_layout=True)
         spec2 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f2 = fig2.add_subplot(spec2[0, 0])  # 16
 
         # load data once more
-        matrix1 = HiMdata1.data['ensembleContactProbability']
-        matrix2 = HiMdata2.data['ensembleContactProbability']
+        matrix1 = HiMdata1.data["ensembleContactProbability"]
+        matrix2 = HiMdata2.data["ensembleContactProbability"]
 
-        if runParameters["shuffle1"]!=0:
-            index1=[int(i) for i in runParameters["shuffle1"].split(',')]
+        if runParameters["shuffle1"] != 0:
+            index1 = [int(i) for i in runParameters["shuffle1"].split(",")]
             matrix1 = shuffleMatrix(matrix1, index1)
 
-        if runParameters["shuffle2"]!=0:
-            index2=[int(i) for i in runParameters["shuffle2"].split(',')]
+        if runParameters["shuffle2"] != 0:
+            index2 = [int(i) for i in runParameters["shuffle2"].split(",")]
             matrix2 = shuffleMatrix(matrix2, index2)
 
         for i in range(matrix1.shape[0]):
-            for j in range(0,i):
-                matrix1[i,j] = matrix2[i,j]
+            for j in range(0, i):
+                matrix1[i, j] = matrix2[i, j]
 
-        if runParameters["cMinMax"]==0:
+        if runParameters["cMinMax"] == 0:
             cMin = 0
             cMax = runParameters["cAxis"]
         else:
-            index=[float(i) for i in runParameters["cMinMax"].split(',')]
+            index = [float(i) for i in runParameters["cMinMax"].split(",")]
             cMin = index[0]
             cMax = index[1]
 
-        HiMdata1.plot2DMatrixSimple(f2, matrix1,\
-                            list(HiMdata1.data['uniqueBarcodes']),\
-                            runParameters['axisLabel'],\
-                            runParameters['axisLabel'],\
-                            cmtitle='probability',
-                            cMin=cMin, cMax=cMax,\
-                            fontsize=runParameters['fontsize'],\
-                            colorbar=True,\
-                            axisTicks=runParameters["axisTicks"],\
-                            cm='coolwarm')
+        HiMdata1.plot2DMatrixSimple(
+            f2,
+            matrix1,
+            list(HiMdata1.data["uniqueBarcodes"]),
+            runParameters["axisLabel"],
+            runParameters["axisLabel"],
+            cmtitle="probability",
+            cMin=cMin,
+            cMax=cMax,
+            fontsize=runParameters["fontsize"],
+            colorbar=True,
+            axisTicks=runParameters["axisTicks"],
+            cm="coolwarm",
+        )
         plt.savefig(outputFileName2)
         print("Output figure: {}".format(outputFileName2))
 

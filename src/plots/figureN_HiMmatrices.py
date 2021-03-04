@@ -22,7 +22,13 @@ from matrixOperations.HIMmatrixOperations import calculateContactProbabilityMatr
 
 # import scaleogram as scg
 
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram, listsSCtoKeep
+from matrixOperations.HIMmatrixOperations import (
+    analysisHiMmatrix,
+    normalizeMatrix,
+    shuffleMatrix,
+    plotScalogram,
+    listsSCtoKeep,
+)
 
 #%% define and loads datasets
 
