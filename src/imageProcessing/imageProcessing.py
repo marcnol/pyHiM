@@ -527,7 +527,7 @@ def plots3DshiftMatrices(shiftMatrices, fontsize=8):
     cbar_kw["pad"] = 0.04
 
     fig, axes = plt.subplots(1, len(shiftMatrices))
-    fig.set_size_inches((len(shiftMatrices) * 5, 5))
+    fig.set_size_inches((len(shiftMatrices) * 10, 10))
     ax = axes.ravel()
     titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
 
