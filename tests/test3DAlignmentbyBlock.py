@@ -188,6 +188,20 @@ for axis, output, i in zip(ax, outputs, axes2Plot):
 fig.tight_layout()
 
 
+#%% makes HR shift matrix to save
+numberBlocks = block_ref.shape[0]
+blockSizeXY = block_ref.shape[3]
+
+shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+for _ax,m in enumerate(shiftMatrices):
+    print("size={}".format(m.shape))
+    for i in range(numberBlocks):
+        for j in range(numberBlocks):
+            shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+
+aaa=[shiftMatrix[0,:,:],shiftMatrix[1,:,:],shiftMatrix[2,:,:]]
+plots3DshiftMatrices(aaa, fontsize=8)
+
 #%% - Validate results plotting image with aligned masks
 
 def plotBlocks(block_ref, block_target, shiftMatrices, cmap="RdBu", axis1=0):
@@ -245,17 +259,6 @@ for axis in range(2):
 # - remove axis labels
 # - repeat for xy and for xz
 
-#%%
-numberBlocks = block_ref.shape[0]
-blockSizeXY = block_ref.shape[3]
-
-shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
-for _ax,m in enumerate(shiftMatrices):
-    print("size={}".format(m.shape))
-    for i in range(numberBlocks):
-        for j in range(numberBlocks):
-            shiftMatrix[_ax,range(i * blockSizeXY, (i + 1) * blockSizeXY),range(j * blockSizeXY, (j + 1) * blockSizeXY)] = m[i,j]
-
-sliceCoordinates=[range(x * blockSizeXY, (x + 1) * blockSizeXY) for x in range(numberBlocks)]
 
 
+# plt.imshow(shiftMatrix[0,:,:])

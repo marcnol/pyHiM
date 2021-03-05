@@ -175,7 +175,8 @@ class drift3D:
                         images.append(appliesXYshift3Dimages(images[1], shift))
 
                         # 3D image alignment by block
-                        shiftMatrices, block_ref, block_target = imageBlockAlignment3D(images, blockSizeXY=self.blockSizeXY, upsample_factor=self.upsample_factor)
+                        shiftMatrices, block_ref, block_target = imageBlockAlignment3D(images, blockSizeXY=self.blockSizeXY,\
+                                                                                       upsample_factor=self.upsample_factor)
 
                         # [plots shift matrices]
                         fig2 = plots3DshiftMatrices(shiftMatrices, fontsize=8)
@@ -207,15 +208,23 @@ class drift3D:
                         for fig, file in zip(figs,outputFileNames):
                             fig.savefig(file)
 
-                        # saves results to database in dict format and to a Table
-                        shiftMatrix=np.zeros((3,shiftMatrices[0].shape[0],shiftMatrices[0].shape[1]))
-                        for i,m in enumerate(shiftMatrices):
-                            shiftMatrix[i,:,:]=m
-                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+'_shift3DMatrix.npy',shiftMatrix)
-
+                        # assembles shiftMatrix: 0:Z, 1:X, 2: Y
+                        # containing the shift matrices in each dimension mapped to the size of the image
+                        # so that the zxy correction for any pixel in the 3D image can be readily read
                         numberBlocks = block_ref.shape[0]
                         blockSizeXY = block_ref.shape[3]
-                        sliceCoordinates=[range(x * blockSizeXY, (x + 1) * blockSizeXY) for x in range(numberBlocks)]
+                        
+                        shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+                        for _ax,m in enumerate(shiftMatrices):
+                            print("size={}".format(m.shape))
+                            for i in range(numberBlocks):
+                                for j in range(numberBlocks):
+                                    shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+
+                        # saves results to disk
+                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+\
+                                '_shift3DMatrix.npy',shiftMatrix)
+
 
         print("alignFiducials3D procesing time: {}".format(datetime.now() - now))
 
