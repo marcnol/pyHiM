@@ -1,3 +1,5 @@
+
+
 # Running pyHiM
 
 [TOC]
@@ -277,7 +279,20 @@ There are many choices of how to do this:
 
 #### Drift Correction
 
-Global drift correction will be run by default. This finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
+
+
+There are several ways of correcting for drift within pyHiM:
+
+1. **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle <i>  fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed.
+2. **Block drift correlation.** This option will also use the 2D projection  images of reference and cycle <i> fiducials, but it will first break them up into blocks and will perform a block-by-block optimization of XY drift. This means that this method is very robust and is not easily fooled by dirt in the sample. However, the method will find a consensus global drift that will be applied and therefore local drift issues are not solved. An additional advantage to method 1 is that it can estimate how much local drift is present in each block and will use this to discard blocks where the local drift is higher than a user-provided tolerance (see below). After you run this method, you will get the uncorrected and corrected images so you can evaluate whether it worked properly and whether local drift correction methods need to be applied.
+3. **2D Local drift correction.** This method will be applied after methods 1 and 2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle <i> fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
+4. **3D local drift correction.** None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle <i>. Then it will background-substract and level-normalize the reference and cycle <i> fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle <i> image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack. 
+
+##### 1- Global drift correction by cross-correlation
+
+Global drift correction will be run by default if ```"alignByBlock": false```.
+
+The method first finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
 
 This can be run by typing 
 ```sh
@@ -334,7 +349,9 @@ In this case this can be solved by using lower thresholds, for instance ```lower
 
 
 
-##### Block Alignments
+##### 2- Block drift correlation
+
+Block drift correction will be activated if ```"alignByBlock": true```.
 
 Inspired by the use of blocks to restore large images, I implemented a new registration routine that:
 
@@ -418,7 +435,11 @@ Alignment using blockAlignment:
 
 
 
-#####  LocalDriftCorrection
+#####  3- 2D LocalDriftCorrection
+
+2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
+
+To properly run this method, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .```  directly from the command line, either in the working directory or providing a full path.
 
 Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
 
@@ -428,7 +449,27 @@ Deformation of samples means a simple translation will not be enough to correct 
 
 The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
 
-To invoke local drift correction, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .``` in the working directory or provide full path.
+#####  4- 3D Local Drift Correction 
+
+<u>How to invoke: need to find how to invoke other that runAlignImages3D.py !</u>
+
+<u>Parameters: need to program in!</u> 
+
+**Output of method**
+
+The first diagnostic image shows 2D projections of the 3D reference and  cycle <i> fiducial images. Uncorrected in the top row and 3D background-subtracted and level-renormalized images. These latter will be used for the x-correlations.
+
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted.png)
+
+
+
+Matrices indicating the correction applied to each block in z, x and y. Values are in pixel units. You should look for roughly homogeneous corrections within embryos. Typically small local corrections are found in X and Y after if the global correction was successful. If the autofocus run fine, then the Z shifts should be ~ 1 px.
+
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_shiftMatrices](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_shiftMatrices-1615108552490.png)
+
+Reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Reference fiducial is in red, cycle <i> fiducial is in green.
+
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments.png)
 
 
 
