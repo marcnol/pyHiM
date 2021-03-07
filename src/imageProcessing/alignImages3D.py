@@ -210,10 +210,10 @@ class drift3D:
 
                         # assembles shiftMatrix: 0:Z, 1:X, 2: Y
                         # containing the shift matrices in each dimension mapped to the size of the image
-                        # so that the zxy correction for any pixel in the 3D image can be readily read
+                        # so that the zxy correction for any pixel in the 3D image can be readily read in buildPWdmatrix function
                         numberBlocks = block_ref.shape[0]
                         blockSizeXY = block_ref.shape[3]
-                        
+
                         shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
                         for _ax,m in enumerate(shiftMatrices):
                             print("size={}".format(m.shape))

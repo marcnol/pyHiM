@@ -5,12 +5,12 @@ Created on Fri Apr 17 09:23:36 2020
 
 @author: marcnol
 
-These scripts assign barcodes to DAPI masks, calculates the pair-wise distances 
-for each barcode set in a cell, and computes the single-cell PWD matrix and 
+These scripts assign barcodes to DAPI masks, calculates the pair-wise distances
+for each barcode set in a cell, and computes the single-cell PWD matrix and
 its ensemble (which is represented).
 
 This file contains as well some tools for representation of matrices.
-    
+
 
 """
 
@@ -109,8 +109,8 @@ class cellID:
 
     def filterLocalizations_BlockAlignment(self, i, toleranceDrift, blockSize):
         """
-        [filters barcode per blockAlignmentMask, if existing]            
-        runs only if localAligment was not run!     
+        [filters barcode per blockAlignmentMask, if existing]
+        runs only if localAligment was not run!
 
         Parameters
         ----------
@@ -253,7 +253,7 @@ class cellID:
         -------
         self.barcodesinMask # dictionnary with the identities of barcodes contained in each mask.
             Keys: 'maskID_1', 'maskID_2', and so on
-            
+
         self.NbarcodesinMask # vector containing the number of barcodes for each mask
         self.NcellsAssigned # number of cells assigned
         self.NcellsUnAssigned # number of cells unassigned
@@ -265,6 +265,7 @@ class cellID:
         else:
             flux_min = 0
             print("Flux min not found. Set to zero!")
+
         if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
             toleranceDrift = self.param.param["buildsPWDmatrix"]["toleranceDrift"]
         else:
@@ -369,7 +370,7 @@ class cellID:
     def buildsVector(self, groupKeys, x, y, z):
         """
         Builds vector from coordinates
-        
+
         Parameters
         ----------
         groupKeys : list
@@ -380,7 +381,7 @@ class cellID:
             y coordinates
         z : float
             z coordinates
-            
+
         Returns
         -------
         R : np array
@@ -410,7 +411,7 @@ class cellID:
             y coordinates uncorrected
         z_uncorrected: float
             z coordinates uncorrected
-            
+
         Returns
         -------
         Returns pairwise distance matrix between corrected barcodes
@@ -501,13 +502,13 @@ class cellID:
             The default is "mean": calculates the mean distance if there are several combinations possible.
             "min": calculates the minimum distance if there are several combinations possible.
             "last": keeps the last distance calculated
-            
+
         Returns
         -------
         self.SCmatrix the single-cell PWD matrix
         self.meanSCmatrix the ensamble PWD matrix (mean of SCmatrix without nans)
         self.uniqueBarcodes list of unique barcodes
-        
+
         """
         # [ builds SCdistanceTable ]
         self.buildsSCdistanceTable()
@@ -651,7 +652,7 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
 
 def buildsDictionaryErrorAlignmentMasks(param, dataFolder):
     """
-    Builds and returns dictionary with error alignment block masks produced during the alignment process if 
+    Builds and returns dictionary with error alignment block masks produced during the alignment process if
     the 'blockAlignment' option was used
 
     Parameters
@@ -808,7 +809,7 @@ def buildsPWDmatrix(
         loads and processes barcode localization files, local alignment file, and masks
         initializes <cellROI> class and assigns barcode localizations to masks
         then constructs the single cell PWD matrix and outputs it toghether with the contact map and the N-map.
-      
+
     Parameters
     ----------
     param : Parameters Class
@@ -966,7 +967,7 @@ def processesPWDmatrices(param, log1, session1):
     Parameters
     ----------
     param : class
-        Parameters 
+        Parameters
     log1 : class
         logging class.
     session1 : class
