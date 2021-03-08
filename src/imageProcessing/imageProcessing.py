@@ -33,6 +33,9 @@ from skimage import exposure
 from skimage.util.shape import view_as_blocks
 from skimage import measure
 from skimage.registration import phase_cross_correlation
+from skimage.metrics import structural_similarity as ssim
+
+np.seterr(divide='ignore', invalid='ignore')
 
 # import cv2
 
@@ -519,8 +522,19 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
 
     return shiftMatrices, block_ref, block_target
 
+def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
+    numberBlocks = block_ref_shape[0]
+    blockSizeXY = block_ref_shape[3]
+    
+    shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+    for _ax,m in enumerate(shiftMatrices):
+        print("size={}".format(m.shape))
+        for i in range(numberBlocks):
+            for j in range(numberBlocks):
+                shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+    return shiftMatrix
 
-def plots3DshiftMatrices(shiftMatrices, fontsize=8):
+def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
 
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
@@ -532,14 +546,47 @@ def plots3DshiftMatrices(shiftMatrices, fontsize=8):
     titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
 
     for axis, title, x in zip(ax, titles, shiftMatrices):
-        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt="{x:.1f}", cmap="YlGn")  # YlGnBu
+        if log:
+            x=np.log10(x)
+        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt=valfmt, cmap="YlGn")  # YlGnBu
         axis.set_title(title)
 
     return fig
 
+
 def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=0):
+    """
+    This routine will overlap block_ref and block_target images block by block.
+    block_ref will be used as a template.
+    - block_target will be first translated in ZXY using the corresponding values in shiftMatrices 
+    to realign each block
+    - then an RGB image will be created with block_ref in the red channel, and the reinterpolated 
+    block_target block in the green channel.
+    - the Blue channel is used for the grid to improve visualization of blocks.
+    
+
+    Parameters
+    ----------
+    block_ref : npy array
+        return of view_as_blocks()
+    block_target : npy array
+        return of view_as_blocks()
+    shiftMatrices : list of npy arrays
+        index 0 contains Z, index 1 X and index 2 Y
+    axis1 : int
+        axis used for the reprojection: The default is 0.
+        - 0 means an XY projection
+        - 1 an ZX projection
+        - 2 an ZY projection
+
+    Returns
+    -------
+    output : NPY array of size imSize x imSize x 3
+        RGB image.
+    SSIM_as_blocks = NPY array of size numberBlocks x numberBlocks 
+        Structural similarity index between ref and target blocks
+    """
     numberBlocks = block_ref.shape[0]
-    blockSizeXY = block_ref.shape[3]
     blockSizes = list(block_ref.shape[2:])
     blockSizes.pop(axis1)
     imSizes = [x * numberBlocks for x in blockSizes]
@@ -549,8 +596,9 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     for blockSize in blockSizes:
         sliceCoordinates.append([range(x * blockSize, (x + 1) * blockSize) for x in range(numberBlocks)])
 
-    # creates output image
+    # creates output images
     output = np.zeros((imSizes[0], imSizes[1], 3))
+    SSIM_as_blocks = np.zeros((numberBlocks, numberBlocks))
 
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(blockSizes)
@@ -561,22 +609,24 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     for i, iSlice in enumerate(tqdm(sliceCoordinates[0])):
         for j, jSlice in enumerate(sliceCoordinates[1]):
             imgs = list()
-            imgs.append(block_ref[i, j])
+            imgs.append(block_ref[i, j]) # appends reference image to image list
 
-            shift3D = np.array([x[i, j] for x in shiftMatrices])
-            imgs.append(shiftImage(block_target[i, j], shift3D))
+            shift3D = np.array([x[i, j] for x in shiftMatrices]) # gets 3D shift from block decomposition
+            imgs.append(shiftImage(block_target[i, j], shift3D)) # realigns and appends to image list
 
-            imgs = [np.sum(x, axis=axis1) for x in imgs]
-            imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs]
-            imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs]
+            imgs = [np.sum(x, axis=axis1) for x in imgs] # projects along axis1
+            imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs] # rescales intensity values
+            imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs] # adjusts pixel intensities
 
-            imgs.append(blue)
+            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()) 
 
-            RGB = np.dstack(imgs)
+            imgs.append(blue) # appends last channel with grid
 
-            output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1, :] = RGB
+            RGB = np.dstack(imgs) # makes block RGB image
 
-    return output
+            output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1, :] = RGB # inserts block into final RGB stack
+
+    return output, SSIM_as_blocks
 
 def align2ImagesCrossCorrelation(
     image1_uncorrected, image2_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999, upsample_factor=100
