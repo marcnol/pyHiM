@@ -12,40 +12,38 @@ Classes and functions for common image processing
 # =============================================================================
 
 import os,sys
-
-import matplotlib.pyplot as plt
-import cv2
 from tqdm import trange, tqdm
 import numpy as np
 from numpy import linalg as LA
 from matplotlib import ticker
+import matplotlib.pyplot as plt
+from tifffile import imsave
+
+import scipy.optimize as spo
+from scipy.ndimage import shift as shiftImage
+from scipy import ndimage as ndi
+
+import cv2
+
+from skimage import io
+from skimage import exposure
+from skimage import measure
+from skimage.util.shape import view_as_blocks
+from skimage.registration import phase_cross_correlation
+from skimage.metrics import structural_similarity as ssim
+from skimage.segmentation import watershed
+from skimage.feature import peak_local_max
 
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.stats import SigmaClip
+from astropy.convolution import Gaussian2DKernel
+
+from photutils import detect_sources
+from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
 
-import scipy.optimize as spo
-from scipy.ndimage import shift as shiftImage
-
-from skimage import io
-from skimage import exposure
-from skimage.util.shape import view_as_blocks
-from skimage import measure
-from skimage.registration import phase_cross_correlation
-from skimage.metrics import structural_similarity as ssim
-
 np.seterr(divide='ignore', invalid='ignore')
-
-# import cv2
-
-
-# from skimage.util.shape import view_as_blocks
-# from tqdm import trange
-
-# from numba import jit
-# from skimage.exposure import match_histograms
-# from skimage.feature import register_translation
 
 # =============================================================================
 # CLASSES
@@ -432,7 +430,7 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3)):
     return output
 
 
-def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3)):
+def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False):
 
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
@@ -440,7 +438,10 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3)):
 
     im1_bkg_substracted = im - bkg.background
 
-    return im1_bkg_substracted
+    if background:
+        return im1_bkg_substracted, bkg
+    else:
+        return im1_bkg_substracted
 
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
@@ -1175,3 +1176,96 @@ def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", 
 
     if not verbose:
         plt.close(fig)
+
+def _segments3DvolumesByThresholding(image3D,
+                                     threshold_over_std=10, 
+                                     sigma = 3, 
+                                     boxSize=(32, 32),
+                                     filter_size=(3, 3),
+                                     area_min = 3,
+                                     area_max=1000,            
+                                     nlevels=64,
+                                     contrast=0.001,
+                                     deblend3D = False):
+
+    numberPlanes = image3D.shape[0]
+    output = np.zeros(image3D.shape)
+    threshold = np.zeros(image3D.shape[1:])
+    threshold[:]=threshold_over_std*image3D.max()/100
+    
+    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
+    kernel.normalize()
+        
+    print("About to process {} planes...".format(numberPlanes))
+    for z in trange(numberPlanes):
+        image2D = image3D[z, :, :]
+
+        # estimates masks and deblends
+        
+        segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
+
+        # removes masks too close to border
+        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+        
+        segm_deblend = deblend_sources(
+            image2D,
+            segm,
+            npixels=area_min,  # watch out, this is per plane!
+            filter_kernel=kernel,
+            nlevels=nlevels,
+            contrast=contrast,
+            relabel=True,
+            mode='exponential'
+        )
+
+        # removes Masks too big or too small
+        for label in segm_deblend.labels:
+            # take regions with large enough areas
+            area = segm_deblend.get_area(label)
+            # print('label {}, with area {}'.format(label,area))
+            if area < area_min or area > area_max:
+                segm_deblend.remove_label(label=label)
+                # print('label {} removed'.format(label))
+    
+        # relabel so masks numbers are consecutive
+        segm_deblend.relabel_consecutive()
+
+        image2DSegmented = segm.data
+
+        image2DSegmented[image2DSegmented>0]=1
+        
+        output[z,:,:] = image2DSegmented
+
+    labels = measure.label(output)
+
+    if deblend3D:
+        # Now we want to separate objects in 3D using watersheding
+        binary=output>0
+        print("Constructing distance matrix from 3D binary mask...")
+        distance = ndi.distance_transform_edt(binary)
+        coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
+        mask = np.zeros(distance.shape, dtype=bool)
+        mask[tuple(coords.T)] = True
+        markers, _ = ndi.label(mask)
+        print("Deblending sources in 3D by watersheding...")
+        labels = watershed(-distance, markers, mask=binary)
+
+    return output, labels
+
+def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
+    numPlanes = img.shape[0]
+    blockSize = (numPlanes, blockSizeXY, blockSizeXY)
+    blocks = view_as_blocks(img, block_shape=blockSize).squeeze()
+    print("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
+
+    folder = fullFileName.split('.')[0]
+    fileName = os.path.basename(fullFileName).split('.')[0]
+    
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+        print("Folder created: {}".format(folder))
+
+    for i in trange(blocks.shape[0]):
+        for j in range(blocks.shape[1]):
+            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif" 
+            imsave(outfile, blocks[i, j])
