@@ -188,6 +188,8 @@ class drift3D:
                             outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=axis))
 
                         SSIM_matrices = [x[1] for x in outputs]
+                        MSE_matrices = [x[2] for x in outputs]
+                        NRMSE_matrices = [x[3] for x in outputs]
 
                         fig3 = plt.figure(constrained_layout=False)
                         fig3.set_size_inches((20 * 2, 20))
@@ -205,12 +207,20 @@ class drift3D:
                         fig4 = plots3DshiftMatrices(SSIM_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
                         fig4.suptitle("SSIM block matrices")
 
+                        fig5 = plots3DshiftMatrices(MSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+                        fig5.suptitle("mean square root block matrices")
+
+                        fig6 = plots3DshiftMatrices(NRMSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+                        fig6.suptitle("normalized root mean square root matrices")
+
                         # saves figures
-                        figTitles = ['_bkgSubstracted.png','_shiftMatrices.png','_3Dalignments.png','_SSIMblocks.png']
+                        figTitles = ['_bkgSubstracted.png','_shiftMatrices.png',
+                                     '_3Dalignments.png','_SSIMblocks.png',
+                                     '_MSEblocks.png','_NRMSEblocks.png']
                         outputFileNames = ['/home/marcnol/Documents'+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
                         outputFileNames = [self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
 
-                        figs=[fig1,fig2,fig3,fig4]
+                        figs=[fig1,fig2,fig3,fig4,fig5,fig6]
                         for fig, file in zip(figs,outputFileNames):
                             fig.savefig(file)
 

@@ -31,6 +31,7 @@ from skimage import measure
 from skimage.util.shape import view_as_blocks
 from skimage.registration import phase_cross_correlation
 from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 
@@ -600,7 +601,9 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     # creates output images
     output = np.zeros((imSizes[0], imSizes[1], 3))
     SSIM_as_blocks = np.zeros((numberBlocks, numberBlocks))
-
+    MSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
+    NRMSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
+    
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(blockSizes)
     blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
@@ -620,6 +623,8 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
             imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs] # adjusts pixel intensities
 
             SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()) 
+            MSE_as_blocks[i,j] = mean_squared_error(imgs[0], imgs[1]) 
+            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1]) 
 
             imgs.append(blue) # appends last channel with grid
 
@@ -627,7 +632,7 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
 
             output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1, :] = RGB # inserts block into final RGB stack
 
-    return output, SSIM_as_blocks
+    return output, SSIM_as_blocks, MSE_as_blocks, NRMSE_as_blocks
 
 def align2ImagesCrossCorrelation(
     image1_uncorrected, image2_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999, upsample_factor=100

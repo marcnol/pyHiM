@@ -14,7 +14,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure,color
-from imageProcessing import (
+from imageProcessing.imageProcessing  import (
     _removesInhomogeneousBackground2D,
     imageAdjust,
     _segments3DvolumesByThresholding,
@@ -63,7 +63,7 @@ def display3D(image3D = None,labels=None, z=40, rangeXY=1000, norm=True):
 #%% loads and segments a file
 
 rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index:0.tif'
+file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
 threshold_over_std,sigma ,boxSize, filter_size=1, 3, (32, 32),(3, 3)
 nlevels=64
@@ -116,9 +116,9 @@ display3D(image3D=image3D,labels=labels,z=40, rangeXY=1000)
 #%% loads and display output of a segmentation run
 
 folder = "/home/marcnol/grey/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-file_image3D=folder+os.sep+"scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index:0.tif"
+file_image3D=folder+os.sep+"scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif"
 
-file_segmented=folder+os.sep+"scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index:0_segmented.tif"
+file_segmented=folder+os.sep+"scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0_segmented.tif"
 image3D = io.imread(file_image3D).squeeze()
 labeled = io.imread(file_segmented).squeeze()
 
