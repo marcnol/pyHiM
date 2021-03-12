@@ -12,37 +12,39 @@ Classes and functions for common image processing
 # =============================================================================
 
 import os,sys
-
-import matplotlib.pyplot as plt
-import cv2
 from tqdm import trange, tqdm
 import numpy as np
 from numpy import linalg as LA
 from matplotlib import ticker
+import matplotlib.pyplot as plt
+from tifffile import imsave
+
+import scipy.optimize as spo
+from scipy.ndimage import shift as shiftImage
+from scipy import ndimage as ndi
+
+import cv2
+
+from skimage import io
+from skimage import exposure
+from skimage import measure
+from skimage.util.shape import view_as_blocks
+from skimage.registration import phase_cross_correlation
+from skimage.metrics import structural_similarity as ssim
+from skimage.metrics import mean_squared_error, normalized_root_mse
+from skimage.segmentation import watershed
+from skimage.feature import peak_local_max
 
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.stats import SigmaClip
+from astropy.convolution import Gaussian2DKernel
+
+from photutils import detect_sources
+from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
 
-import scipy.optimize as spo
-from scipy.ndimage import shift as shiftImage
-
-from skimage import io
-from skimage import exposure
-from skimage.util.shape import view_as_blocks
-from skimage import measure
-from skimage.registration import phase_cross_correlation
-
-# import cv2
-
-
-# from skimage.util.shape import view_as_blocks
-# from tqdm import trange
-
-# from numba import jit
-# from skimage.exposure import match_histograms
-# from skimage.feature import register_translation
+np.seterr(divide='ignore', invalid='ignore')
 
 # =============================================================================
 # CLASSES
@@ -429,7 +431,7 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3)):
     return output
 
 
-def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3)):
+def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False):
 
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
@@ -437,7 +439,10 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3)):
 
     im1_bkg_substracted = im - bkg.background
 
-    return im1_bkg_substracted
+    if background:
+        return im1_bkg_substracted, bkg
+    else:
+        return im1_bkg_substracted
 
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
@@ -519,8 +524,19 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
 
     return shiftMatrices, block_ref, block_target
 
+def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
+    numberBlocks = block_ref_shape[0]
+    blockSizeXY = block_ref_shape[3]
+    
+    shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+    for _ax,m in enumerate(shiftMatrices):
+        print("size={}".format(m.shape))
+        for i in range(numberBlocks):
+            for j in range(numberBlocks):
+                shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+    return shiftMatrix
 
-def plots3DshiftMatrices(shiftMatrices, fontsize=8):
+def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
 
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
@@ -532,14 +548,47 @@ def plots3DshiftMatrices(shiftMatrices, fontsize=8):
     titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
 
     for axis, title, x in zip(ax, titles, shiftMatrices):
-        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt="{x:.1f}", cmap="YlGn")  # YlGnBu
+        if log:
+            x=np.log10(x)
+        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt=valfmt, cmap="YlGn")  # YlGnBu
         axis.set_title(title)
 
     return fig
 
+
 def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=0):
+    """
+    This routine will overlap block_ref and block_target images block by block.
+    block_ref will be used as a template.
+    - block_target will be first translated in ZXY using the corresponding values in shiftMatrices 
+    to realign each block
+    - then an RGB image will be created with block_ref in the red channel, and the reinterpolated 
+    block_target block in the green channel.
+    - the Blue channel is used for the grid to improve visualization of blocks.
+    
+
+    Parameters
+    ----------
+    block_ref : npy array
+        return of view_as_blocks()
+    block_target : npy array
+        return of view_as_blocks()
+    shiftMatrices : list of npy arrays
+        index 0 contains Z, index 1 X and index 2 Y
+    axis1 : int
+        axis used for the reprojection: The default is 0.
+        - 0 means an XY projection
+        - 1 an ZX projection
+        - 2 an ZY projection
+
+    Returns
+    -------
+    output : NPY array of size imSize x imSize x 3
+        RGB image.
+    SSIM_as_blocks = NPY array of size numberBlocks x numberBlocks 
+        Structural similarity index between ref and target blocks
+    """
     numberBlocks = block_ref.shape[0]
-    blockSizeXY = block_ref.shape[3]
     blockSizes = list(block_ref.shape[2:])
     blockSizes.pop(axis1)
     imSizes = [x * numberBlocks for x in blockSizes]
@@ -549,9 +598,12 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     for blockSize in blockSizes:
         sliceCoordinates.append([range(x * blockSize, (x + 1) * blockSize) for x in range(numberBlocks)])
 
-    # creates output image
+    # creates output images
     output = np.zeros((imSizes[0], imSizes[1], 3))
-
+    SSIM_as_blocks = np.zeros((numberBlocks, numberBlocks))
+    MSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
+    NRMSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
+    
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(blockSizes)
     blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
@@ -561,22 +613,26 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     for i, iSlice in enumerate(tqdm(sliceCoordinates[0])):
         for j, jSlice in enumerate(sliceCoordinates[1]):
             imgs = list()
-            imgs.append(block_ref[i, j])
+            imgs.append(block_ref[i, j]) # appends reference image to image list
 
-            shift3D = np.array([x[i, j] for x in shiftMatrices])
-            imgs.append(shiftImage(block_target[i, j], shift3D))
+            shift3D = np.array([x[i, j] for x in shiftMatrices]) # gets 3D shift from block decomposition
+            imgs.append(shiftImage(block_target[i, j], shift3D)) # realigns and appends to image list
 
-            imgs = [np.sum(x, axis=axis1) for x in imgs]
-            imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs]
-            imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs]
+            imgs = [np.sum(x, axis=axis1) for x in imgs] # projects along axis1
+            imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs] # rescales intensity values
+            imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs] # adjusts pixel intensities
 
-            imgs.append(blue)
+            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()) 
+            MSE_as_blocks[i,j] = mean_squared_error(imgs[0], imgs[1]) 
+            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1]) 
 
-            RGB = np.dstack(imgs)
+            imgs.append(blue) # appends last channel with grid
 
-            output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1, :] = RGB
+            RGB = np.dstack(imgs) # makes block RGB image
 
-    return output
+            output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1, :] = RGB # inserts block into final RGB stack
+
+    return output, SSIM_as_blocks, MSE_as_blocks, NRMSE_as_blocks
 
 def align2ImagesCrossCorrelation(
     image1_uncorrected, image2_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999, upsample_factor=100
@@ -1125,3 +1181,96 @@ def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", 
 
     if not verbose:
         plt.close(fig)
+
+def _segments3DvolumesByThresholding(image3D,
+                                     threshold_over_std=10, 
+                                     sigma = 3, 
+                                     boxSize=(32, 32),
+                                     filter_size=(3, 3),
+                                     area_min = 3,
+                                     area_max=1000,            
+                                     nlevels=64,
+                                     contrast=0.001,
+                                     deblend3D = False):
+
+    numberPlanes = image3D.shape[0]
+    output = np.zeros(image3D.shape)
+    threshold = np.zeros(image3D.shape[1:])
+    threshold[:]=threshold_over_std*image3D.max()/100
+    
+    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
+    kernel.normalize()
+        
+    print("About to process {} planes...".format(numberPlanes))
+    for z in trange(numberPlanes):
+        image2D = image3D[z, :, :]
+
+        # estimates masks and deblends
+        
+        segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
+
+        # removes masks too close to border
+        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+        
+        segm_deblend = deblend_sources(
+            image2D,
+            segm,
+            npixels=area_min,  # watch out, this is per plane!
+            filter_kernel=kernel,
+            nlevels=nlevels,
+            contrast=contrast,
+            relabel=True,
+            mode='exponential'
+        )
+
+        # removes Masks too big or too small
+        for label in segm_deblend.labels:
+            # take regions with large enough areas
+            area = segm_deblend.get_area(label)
+            # print('label {}, with area {}'.format(label,area))
+            if area < area_min or area > area_max:
+                segm_deblend.remove_label(label=label)
+                # print('label {} removed'.format(label))
+    
+        # relabel so masks numbers are consecutive
+        segm_deblend.relabel_consecutive()
+
+        image2DSegmented = segm.data
+
+        image2DSegmented[image2DSegmented>0]=1
+        
+        output[z,:,:] = image2DSegmented
+
+    labels = measure.label(output)
+
+    if deblend3D:
+        # Now we want to separate objects in 3D using watersheding
+        binary=output>0
+        print("Constructing distance matrix from 3D binary mask...")
+        distance = ndi.distance_transform_edt(binary)
+        coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
+        mask = np.zeros(distance.shape, dtype=bool)
+        mask[tuple(coords.T)] = True
+        markers, _ = ndi.label(mask)
+        print("Deblending sources in 3D by watersheding...")
+        labels = watershed(-distance, markers, mask=binary)
+
+    return output, labels
+
+def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
+    numPlanes = img.shape[0]
+    blockSize = (numPlanes, blockSizeXY, blockSizeXY)
+    blocks = view_as_blocks(img, block_shape=blockSize).squeeze()
+    print("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
+
+    folder = fullFileName.split('.')[0]
+    fileName = os.path.basename(fullFileName).split('.')[0]
+    
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+        print("Folder created: {}".format(folder))
+
+    for i in trange(blocks.shape[0]):
+        for j in range(blocks.shape[1]):
+            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif" 
+            imsave(outfile, blocks[i, j])

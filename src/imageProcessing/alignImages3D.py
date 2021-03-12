@@ -65,6 +65,7 @@ from imageProcessing.imageProcessing import (
     plots3DshiftMatrices,
     combinesBlocksImageByReprojection,
     plots4images,
+    makesShiftMatrixHiRes,
 )
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
 from fileProcessing.fileManagement import daskCluster, RT2fileName
@@ -186,6 +187,10 @@ class drift3D:
                         for axis in self.axes2Plot:
                             outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=axis))
 
+                        SSIM_matrices = [x[1] for x in outputs]
+                        MSE_matrices = [x[2] for x in outputs]
+                        NRMSE_matrices = [x[3] for x in outputs]
+
                         fig3 = plt.figure(constrained_layout=False)
                         fig3.set_size_inches((20 * 2, 20))
                         gs = fig3.add_gridspec(2, 2)
@@ -194,36 +199,42 @@ class drift3D:
                         titles = ["Z-projection", "X-projection", "Y-projection"]
 
                         for axis, output, i in zip(ax, outputs, self.axes2Plot):
-                            axis.imshow(output)
+                            axis.imshow(output[0])
                             axis.set_title(titles[i])
 
                         fig3.tight_layout()
 
+                        fig4 = plots3DshiftMatrices(SSIM_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+                        fig4.suptitle("SSIM block matrices")
+
+                        fig5 = plots3DshiftMatrices(MSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+                        fig5.suptitle("mean square root block matrices")
+
+                        fig6 = plots3DshiftMatrices(NRMSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+                        fig6.suptitle("normalized root mean square root matrices")
+
                         # saves figures
-                        figTitles = ['_bkgSubstracted.png','_shiftMatrices.png','_3Dalignments.png']
+                        figTitles = ['_bkgSubstracted.png','_shiftMatrices.png',
+                                     '_3Dalignments.png','_SSIMblocks.png',
+                                     '_MSEblocks.png','_NRMSEblocks.png']
                         outputFileNames = ['/home/marcnol/Documents'+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
                         outputFileNames = [self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
 
-                        figs=[fig1,fig2,fig3]
+                        figs=[fig1,fig2,fig3,fig4,fig5,fig6]
                         for fig, file in zip(figs,outputFileNames):
                             fig.savefig(file)
 
-                        # assembles shiftMatrix: 0:Z, 1:X, 2: Y
-                        # containing the shift matrices in each dimension mapped to the size of the image
-                        # so that the zxy correction for any pixel in the 3D image can be readily read in buildPWdmatrix function
-                        numberBlocks = block_ref.shape[0]
-                        blockSizeXY = block_ref.shape[3]
-
-                        shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
-                        for _ax,m in enumerate(shiftMatrices):
-                            print("size={}".format(m.shape))
-                            for i in range(numberBlocks):
-                                for j in range(numberBlocks):
-                                    shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
-
+                        # assembles shiftMatrix and SSIMmatrix. Order in list: 0=Z, 1=X, 2=Y
+                        # containing the shift/SSIM matrices in each dimension mapped to the size of the image
+                        # so that the zxy correction for any pixel in the 3D image can be readily read
+                        shiftMatrix = makesShiftMatrixHiRes(shiftMatrices, block_ref.shape)
+                        SSIMmatrix = makesShiftMatrixHiRes(SSIM_matrices, block_ref.shape)
+                        
                         # saves results to disk
                         np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+\
                                 '_shift3DMatrix.npy',shiftMatrix)
+                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+\
+                                '_SSIMmatrix.npy',SSIMmatrix)
 
 
         print("alignFiducials3D procesing time: {}".format(datetime.now() - now))

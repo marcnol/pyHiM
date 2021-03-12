@@ -36,6 +36,7 @@ from imageProcessing.imageProcessing import (
     plots3DshiftMatrices,
     combinesBlocksImageByReprojection,
     plots4images,
+    makesShiftMatrixHiRes,
 )
 
 from scipy.stats import sigmaclip
@@ -174,6 +175,8 @@ outputs = []
 for axis in axes2Plot:
     outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=axis))
 
+SSIM_matrices = [x[1] for x in outputs]
+
 fig = plt.figure(constrained_layout=False)
 fig.set_size_inches((20 * 2, 20))
 gs = fig.add_gridspec(2, 2)
@@ -182,25 +185,29 @@ ax = [fig.add_subplot(gs[:, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1
 titles = ["Z-projection", "X-projection", "Y-projection"]
 
 for axis, output, i in zip(ax, outputs, axes2Plot):
-    axis.imshow(output)
+    axis.imshow(output[0])
     axis.set_title(titles[i])
 
 fig.tight_layout()
 
+newFig = plots3DshiftMatrices(SSIM_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+newFig.suptitle("SSIM block matrices")
 
 #%% makes HR shift matrix to save
-numberBlocks = block_ref.shape[0]
-blockSizeXY = block_ref.shape[3]
+# numberBlocks = block_ref.shape[0]
+# blockSizeXY = block_ref.shape[3]
 
-shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
-for _ax,m in enumerate(shiftMatrices):
-    print("size={}".format(m.shape))
-    for i in range(numberBlocks):
-        for j in range(numberBlocks):
-            shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+# shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+# for _ax,m in enumerate(shiftMatrices):
+#     print("size={}".format(m.shape))
+#     for i in range(numberBlocks):
+#         for j in range(numberBlocks):
+#             shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
 
-aaa=[shiftMatrix[0,:,:],shiftMatrix[1,:,:],shiftMatrix[2,:,:]]
-plots3DshiftMatrices(aaa, fontsize=8)
+# aaa=[shiftMatrix[0,:,:],shiftMatrix[1,:,:],shiftMatrix[2,:,:]]
+shiftMatrix = makesShiftMatrixHiRes(shiftMatrices, block_ref.shape)
+
+plots3DshiftMatrices(shiftMatrix, fontsize=8)
 
 #%% - Validate results plotting image with aligned masks
 
