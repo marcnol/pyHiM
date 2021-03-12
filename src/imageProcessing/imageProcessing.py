@@ -527,7 +527,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
 def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
     numberBlocks = block_ref_shape[0]
     blockSizeXY = block_ref_shape[3]
-    
+
     shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
     for _ax,m in enumerate(shiftMatrices):
         print("size={}".format(m.shape))
@@ -560,12 +560,12 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     """
     This routine will overlap block_ref and block_target images block by block.
     block_ref will be used as a template.
-    - block_target will be first translated in ZXY using the corresponding values in shiftMatrices 
+    - block_target will be first translated in ZXY using the corresponding values in shiftMatrices
     to realign each block
-    - then an RGB image will be created with block_ref in the red channel, and the reinterpolated 
+    - then an RGB image will be created with block_ref in the red channel, and the reinterpolated
     block_target block in the green channel.
     - the Blue channel is used for the grid to improve visualization of blocks.
-    
+
 
     Parameters
     ----------
@@ -585,7 +585,7 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     -------
     output : NPY array of size imSize x imSize x 3
         RGB image.
-    SSIM_as_blocks = NPY array of size numberBlocks x numberBlocks 
+    SSIM_as_blocks = NPY array of size numberBlocks x numberBlocks
         Structural similarity index between ref and target blocks
     """
     numberBlocks = block_ref.shape[0]
@@ -603,7 +603,7 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
     SSIM_as_blocks = np.zeros((numberBlocks, numberBlocks))
     MSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
     NRMSE_as_blocks = np.zeros((numberBlocks, numberBlocks))
-    
+
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(blockSizes)
     blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
@@ -622,9 +622,9 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
             imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs] # rescales intensity values
             imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs] # adjusts pixel intensities
 
-            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()) 
-            MSE_as_blocks[i,j] = mean_squared_error(imgs[0], imgs[1]) 
-            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1]) 
+            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min())
+            MSE_as_blocks[i,j] = mean_squared_error(imgs[0], imgs[1])
+            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1])
 
             imgs.append(blue) # appends last channel with grid
 
@@ -923,6 +923,10 @@ def calculatesFocusPerBlock(data, blockSizeXY=128):
 
     return focalPlaneMatrix, block, LaplacianVariance
 
+# Program to find most frequent
+# element in a list
+def most_frequent(List):
+    return max(set(List), key = List.count)
 
 def imReassemble(focalPlaneMatrix, block, window=0):
     """
@@ -954,19 +958,29 @@ def imReassemble(focalPlaneMatrix, block, window=0):
     # creates output image
     output = np.zeros((imSize, imSize))
 
+    # gets more common plane
+    focalPlanes = list()
+    for i, iSlice in enumerate(sliceCoordinates):
+        for j, jSlice in enumerate(sliceCoordinates):
+            focalPlanes.append(int(focalPlaneMatrix[i, j]))
+    mostCommonFocalPlane = most_frequent(focalPlanes)
+
     # reassembles image
     if window == 0:
         # takes one plane block
         for i, iSlice in enumerate(sliceCoordinates):
             for j, jSlice in enumerate(sliceCoordinates):
-                output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1] = block[i, j][
-                    int(focalPlaneMatrix[i, j]), :, :
-                ]
+                focus = int(focalPlaneMatrix[i, j])
+                if np.abs(focus-mostCommonFocalPlane)>1:
+                    focus = int(mostCommonFocalPlane)
+                output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1] = block[i, j][focus, :, :]
     else:
         # takes neighboring planes by projecting
         for i, iSlice in enumerate(sliceCoordinates):
             for j, jSlice in enumerate(sliceCoordinates):
                 focus = int(focalPlaneMatrix[i, j])
+                if np.abs(focus-mostCommonFocalPlane)>1:
+                    focus = int(mostCommonFocalPlane)
                 zmin = np.max((0, focus - round(window / 2)))
                 zmax = np.min((block[i, j].shape[0], focus + round(window / 2)))
                 zRange = (focus, range(zmin, zmax))
@@ -1183,12 +1197,12 @@ def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", 
         plt.close(fig)
 
 def _segments3DvolumesByThresholding(image3D,
-                                     threshold_over_std=10, 
-                                     sigma = 3, 
+                                     threshold_over_std=10,
+                                     sigma = 3,
                                      boxSize=(32, 32),
                                      filter_size=(3, 3),
                                      area_min = 3,
-                                     area_max=1000,            
+                                     area_max=1000,
                                      nlevels=64,
                                      contrast=0.001,
                                      deblend3D = False):
@@ -1197,21 +1211,21 @@ def _segments3DvolumesByThresholding(image3D,
     output = np.zeros(image3D.shape)
     threshold = np.zeros(image3D.shape[1:])
     threshold[:]=threshold_over_std*image3D.max()/100
-    
+
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
-        
+
     print("About to process {} planes...".format(numberPlanes))
     for z in trange(numberPlanes):
         image2D = image3D[z, :, :]
 
         # estimates masks and deblends
-        
+
         segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
 
         # removes masks too close to border
         segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-        
+
         segm_deblend = deblend_sources(
             image2D,
             segm,
@@ -1231,14 +1245,14 @@ def _segments3DvolumesByThresholding(image3D,
             if area < area_min or area > area_max:
                 segm_deblend.remove_label(label=label)
                 # print('label {} removed'.format(label))
-    
+
         # relabel so masks numbers are consecutive
         segm_deblend.relabel_consecutive()
 
         image2DSegmented = segm.data
 
         image2DSegmented[image2DSegmented>0]=1
-        
+
         output[z,:,:] = image2DSegmented
 
     labels = measure.label(output)
@@ -1265,12 +1279,12 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
 
     folder = fullFileName.split('.')[0]
     fileName = os.path.basename(fullFileName).split('.')[0]
-    
+
     if not os.path.exists(folder):
         os.mkdir(folder)
         print("Folder created: {}".format(folder))
 
     for i in trange(blocks.shape[0]):
         for j in range(blocks.shape[1]):
-            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif" 
+            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif"
             imsave(outfile, blocks[i, j])
