@@ -20,7 +20,7 @@
         "background_sigma": 3.0,        
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
-		"localAlignment": "overwrite",
+		"localAlignment": "block3D",
 		"localShiftTolerance": 3,
         "bezel": 20,               
         "referenceFiducial": "RT27"
@@ -60,7 +60,7 @@
     "zProject": {
         "display": true,
         "folder": "zProject",
-        "mode": "laplacian",
+        "mode": "full",
         "blockSize": 128,
         "operation": "skip",
         "saveImage": true,

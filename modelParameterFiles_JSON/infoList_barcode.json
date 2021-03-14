@@ -15,7 +15,7 @@
         "folder": "alignImages",
         "operation": "overwrite",
         "outputFile": "alignImages.bed",
-		"localAlignment": "overwrite",
+		"localAlignment": "block3D",
 		"localShiftTolerance": 1,
         "background_sigma": 3.0,		
         "bezel": 20,               
@@ -51,7 +51,7 @@
     "zProject": {
         "display": true,
         "folder": "zProject",
-        "mode": "laplacian",
+        "mode": "full",
         "blockSize": 128,
         "operation": "skip",
         "saveImage": true,

@@ -17,6 +17,7 @@
         "bezel": 20,
         "folder": "alignImages",
         "higher_threshold": 0.9999999,
+        "localAlignment": "None",
         "localShiftTolerance": 1,
         "lower_threshold": 0.999,
         "operation": "overwrite",
