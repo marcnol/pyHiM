@@ -85,7 +85,6 @@ from skimage.registration import phase_cross_correlation
 # CLASSES
 # =============================================================================
 
-
 class drift3D:
     def __init__(self, param, log1, session1, parallel=False):
         self.param = param
@@ -103,8 +102,6 @@ class drift3D:
         imageFile = [x for x in filesFolder if ROI in x and Barcode in x and channelbarcode in x]
 
         return imageFile
-
-
 
     def alignFiducials3DinFolder(self):
         """
@@ -127,6 +124,38 @@ class drift3D:
         numberROIs = len(ROIList)
         self.log1.info("\nDetected {} ROIs".format(numberROIs))
 
+        # loads dicShifts with shifts for all ROIs and all labels
+        dictFileName = os.path.splitext(self.dataFolder.outputFiles["dictShifts"])[0] + ".json"
+
+        # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+        dictShifts = loadJSON(dictFileName)
+        if len(dictShifts) == 0:
+            self.log1.report("File with dictionary not found!: {}".format(dictFileName))
+            dictShiftsAvailable = False
+        else:
+            self.log1.report("Dictionary File loaded: {}".format(dictFileName))
+            dictShiftsAvailable = True
+
+        # creates Table that will hold results
+        alignmentResultsTable = Table(
+                names=(
+                    "reference file",
+                    "aligned file",
+                    "blockXY",
+                    "ROI #",
+                    "label",
+                    "block_i",
+                    "block_j",
+                    "shift_z",
+                    "shift_x",
+                    "shift_y",
+                    "quality_xy",
+                    "quality_zy",
+                    "quality_zx",
+                ),
+                dtype=("S2", "S2", "int", "int", "S2", "int", "int","f4", "f4", "f4", "f4", "f4", "f4"),
+            )
+
         if numberROIs > 0:
 
             # loops over ROIs
@@ -148,12 +177,12 @@ class drift3D:
                 for fileName2Process in self.param.fileList2Process:
                     # excludes the reference fiducial and processes files in the same ROI
                     roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
+                    label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
 
                     if (fileName2Process not in fileNameReference) and roi == ROI:
 
-
                         # - load  and preprocesses 3D fiducial file
-                        print("Processing cycle {}".format(os.path.basename(fileName2Process)))
+                        print("\n\nProcessing cycle {}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
                         image3D = preProcess3DImage(image3D0, self.lower_threshold, self.higher_threshold)
 
@@ -163,14 +192,31 @@ class drift3D:
                         allimages = images0 + images
                         fig1 = plots4images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
 
-                        # calculates XY shift  and applies it
-                        images_2D = [np.sum(x, axis=0) for x in images]
+                        # drifts 3D stack in XY
+                        if dictShiftsAvailable:
+                            # uses existing shift calculated by alignImages
+                            try:
+                                shift = dictShifts["ROI:" + roi][label]
+                                print("Applying existing XY shift...")
+                            except KeyError:
+                                shift = None
+                                self.log1.report(
+                                    "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                                        "ROI:" + ROI, label
+                                    ),
+                                    "ERROR",
+                                )
+                        if not dictShiftsAvailable or shift == None:
+                            # if dictionary of shift or key for this cycle was not found, then it will recalculate XY shift
+                            images_2D = [np.sum(x, axis=0) for x in images]
 
-                        print("Calculating shifts...")
-                        shift, error, diffphase = phase_cross_correlation(images_2D[0], images_2D[1], upsample_factor=self.upsample_factor)
+                            print("Calculating XY shift...")
+                            shift, error, diffphase = phase_cross_correlation(images_2D[0], images_2D[1], upsample_factor=self.upsample_factor)
+
+                        # applies XY shift to 3D stack
                         print("shifts XY = {}".format(shift))
 
-                        images_2D.append(shiftImage(images_2D[1], shift))
+                        # images_2D.append(shiftImage(images_2D[1], shift))
 
                         # reinterpolate second file in XY using dictionnary to get rough alignment
                         images.append(appliesXYshift3Dimages(images[1], shift))
@@ -211,7 +257,7 @@ class drift3D:
                         fig5.suptitle("mean square root block matrices")
 
                         fig6 = plots3DshiftMatrices(NRMSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
-                        fig6.suptitle("normalized root mean square root matrices")
+                        fig6.suptitle("normalized root mean square block matrices")
 
                         # saves figures
                         figTitles = ['_bkgSubstracted.png','_shiftMatrices.png',
@@ -224,18 +270,34 @@ class drift3D:
                         for fig, file in zip(figs,outputFileNames):
                             fig.savefig(file)
 
-                        # assembles shiftMatrix and SSIMmatrix. Order in list: 0=Z, 1=X, 2=Y
-                        # containing the shift/SSIM matrices in each dimension mapped to the size of the image
-                        # so that the zxy correction for any pixel in the 3D image can be readily read
-                        shiftMatrix = makesShiftMatrixHiRes(shiftMatrices, block_ref.shape)
-                        SSIMmatrix = makesShiftMatrixHiRes(SSIM_matrices, block_ref.shape)
-                        
-                        # saves results to disk
-                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+\
-                                '_shift3DMatrix.npy',shiftMatrix)
-                        np.save(self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process).split('.')[0]+\
-                                '_SSIMmatrix.npy',SSIMmatrix)
+                        # dict with shiftMatrix and NRMSEmatrix: https://en.wikipedia.org/wiki/Root-mean-square_deviation
+                        # These matrices can be used to apply and assess zxy corrections for any pixel in the 3D image
+                        # reference file,aligned file,ROI,label,block_i,block_j,shift_z,shift_x,shift_y,quality_xy,quality_zy,quality_zx
+                        numBlocks,blockXY = block_ref.shape[0], block_ref.shape[-1]
+                        for i in range(numBlocks):
+                            for j in range(numBlocks):
+                                Table_entry = [os.path.basename(fileNameReference),
+                                               os.path.basename(fileName2Process),
+                                               int(blockXY),
+                                               int(roi),
+                                               label,
+                                               i,
+                                               j,
+                                               shiftMatrices[0][i,j],
+                                               shiftMatrices[1][i,j],
+                                               shiftMatrices[2][i,j],
+                                               NRMSE_matrices[0][i,j],
+                                               NRMSE_matrices[1][i,j],
+                                               NRMSE_matrices[2][i,j],
+                                               ]
+                                alignmentResultsTable.add_row(Table_entry)
 
+        # saves Table with all shifts
+        alignmentResultsTable.write(
+            self.dataFolder.outputFiles["alignImages"].split(".")[0] + "_block3D.dat",
+            format="ascii.ecsv",
+            overwrite=True,
+        )
 
         print("alignFiducials3D procesing time: {}".format(datetime.now() - now))
 
