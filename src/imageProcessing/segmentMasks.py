@@ -8,7 +8,7 @@ Created on Sat Apr 11 14:59:43 2020
 File containing all functions responsible for segmentation of masks for Hi-M,
 including DNA masks, barcodes, and fiducials
 
-At the moment, fittings of the 2D positions of barcodes is also performed just 
+At the moment, fittings of the 2D positions of barcodes is also performed just
 after image segmentation.
 
 """
@@ -132,7 +132,7 @@ def _segmentSourceInhomogBackground(im, threshold_over_std, fwhm, brightest, sig
     -------
     table : `astropy.table.Table` or `None`
     A table of found stars with the following parameters:
-    
+
     * ``id``: unique object identification number.
     * ``xcentroid, ycentroid``: object centroid.
     * ``sharpness``: object sharpness.
@@ -149,9 +149,9 @@ def _segmentSourceInhomogBackground(im, threshold_over_std, fwhm, brightest, sig
     * ``mag``: the object instrumental magnitude calculated as
       ``-2.5 * log10(flux)``.  The derivation matches that of
       `DAOFIND`_ if ``sky`` is 0.0.
-    
+
     `None` is returned if no stars are found.
-    
+
     img_bkc_substracted: 2D NPY array with background substracted image
     """
 
@@ -183,7 +183,7 @@ def segmentSourceInhomogBackground(im, param):
     -------
     table : `astropy.table.Table` or `None`
     A table of found stars with the following parameters:
-    
+
     * ``id``: unique object identification number.
     * ``xcentroid, ycentroid``: object centroid.
     * ``sharpness``: object sharpness.
@@ -200,9 +200,9 @@ def segmentSourceInhomogBackground(im, param):
     * ``mag``: the object instrumental magnitude calculated as
       ``-2.5 * log10(flux)``.  The derivation matches that of
       `DAOFIND`_ if ``sky`` is 0.0.
-    
+
     `None` is returned if no stars are found.
-    
+
     img_bkc_substracted: 2D NPY array with background substracted image
     """
 
@@ -231,7 +231,7 @@ def segmentSourceFlatBackground(im, param):
     -------
     table : `~astropy.table.Table` or `None`
     A table of found stars with the following parameters:
-    
+
     * ``id``: unique object identification number.
     * ``xcentroid, ycentroid``: object centroid.
     * ``sharpness``: object sharpness.
@@ -248,7 +248,7 @@ def segmentSourceFlatBackground(im, param):
     * ``mag``: the object instrumental magnitude calculated as
       ``-2.5 * log10(flux)``.  The derivation matches that of
       `DAOFIND`_ if ``sky`` is 0.0.
-    
+
     `None` is returned if no stars are found.
 
     img_bkc_substracted: 2D NPY array with background substracted image
@@ -429,7 +429,7 @@ def get_tessellation(xy, img_shape):
 
 def segmentMaskInhomogBackground(im, param):
     """
-    Function used for segmenting DAPI masks with the ASTROPY library that uses image processing    
+    Function used for segmenting DAPI masks with the ASTROPY library that uses image processing
 
     Parameters
     ----------
@@ -616,12 +616,14 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             colROI = Column(int(ROI) * np.ones(len(output)), name="ROI #", dtype=int)
             colBarcode = Column(int(barcodeID) * np.ones(len(output)), name="Barcode #", dtype=int)
             colCellID = Column(np.zeros(len(output)), name="CellID #", dtype=int)
+            zcoord = Column(np.nan*np.zeros(len(output)), name="zcentroid", dtype=float)
 
             # adds to table
             output.add_column(colBarcode, index=0)
             output.add_column(colROI, index=0)
             output.add_column(colBuid, index=0)
             output.add_column(colCellID, index=2)
+            output.add_column(zcoord, index=5)
 
             # changes format of table
             # for col in output.colnames:

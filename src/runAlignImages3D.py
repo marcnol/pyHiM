@@ -33,7 +33,7 @@ if __name__ == "__main__":
         param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
         param.param['parallel']=HiM.parallel
 
-        # [refits spots in 3D]
+        # [aligns fiducials in 3D]
         HiM.alignImages3D(param, ilabel)
 
         print("\n")

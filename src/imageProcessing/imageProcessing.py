@@ -444,21 +444,45 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
     else:
         return im1_bkg_substracted
 
+from dask.distributed import get_client
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
+
+    try:
+        client = get_client()
+        client.restart()
+    except ValueError:
+        client=None
 
     numberPlanes = image3D.shape[0]
     output = np.zeros(image3D.shape)
 
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
+    if client is not None:
+        imageList = [image3D[z, :, :] for z in range(numberPlanes)]
+        imageListScattered = client.scatter(imageList)
 
-    for z in trange(numberPlanes):
-        image2D = image3D[z, :, :]
-        bkg = Background2D(
-            image2D, boxSize, filter_size=filter_size, sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,
-        )
-        output[z, :, :] = image2D - bkg.background
+        futures = [client.submit(Background2D,img,boxSize,
+                                    filter_size=filter_size, sigma_clip=sigma_clip,
+                                    bkg_estimator=bkg_estimator) for img in imageListScattered]
+
+        print("Waiting for {} results to arrive".format(len(futures)))
+        results = client.gather(futures)
+        print("Retrieving {} results from cluster".format(len(results)))
+
+        for z, img, bkg in zip(range(numberPlanes),imageList,results):
+            output[z, :, :] = img - bkg.background
+        del results, futures
+
+    else:
+
+        for z in trange(numberPlanes):
+            image2D = image3D[z, :, :]
+            bkg = Background2D(
+                image2D, boxSize, filter_size=filter_size, sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,
+            )
+            output[z, :, :] = image2D - bkg.background
 
     return output
 
@@ -530,7 +554,7 @@ def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
 
     shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
     for _ax,m in enumerate(shiftMatrices):
-        print("size={}".format(m.shape))
+        # print("size={}".format(m.shape))
         for i in range(numberBlocks):
             for j in range(numberBlocks):
                 shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
@@ -622,9 +646,9 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
             imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs] # rescales intensity values
             imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs] # adjusts pixel intensities
 
-            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min())
+            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1],normalization = 'euclidean')
             MSE_as_blocks[i,j] = mean_squared_error(imgs[0], imgs[1])
-            NRMSE_as_blocks[i,j] = normalized_root_mse(imgs[0], imgs[1])
+            SSIM_as_blocks[i,j] = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min())
 
             imgs.append(blue) # appends last channel with grid
 

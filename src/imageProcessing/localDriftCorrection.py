@@ -8,12 +8,12 @@ Created on Tue Aug  4 15:45:32 2020
 
 Purpose: Loads masks and performs a local drift correction in the region surrounding the mask.
 
-steps for each ROI: 
+steps for each ROI:
     - load reference fiducial 2D projection
     - iterate over cycles
     - load fiducial for cycle <i>
     - check if masks are available
-    - load mask file 
+    - load mask file
     - iterate over masks <j>
     - obtain subvolume from reference and cycle <i> fiducial images for mask <j>
     - cross-correlate and obtain a second-order correction value
@@ -613,8 +613,8 @@ def localDriftCorrection(param, log1, session1):
 
     alignmentResultsTable = Table(
         names=(
-            "aligned file",
             "reference file",
+            "aligned file",
             "ROI #",
             "Barcode #",
             "CellID #",

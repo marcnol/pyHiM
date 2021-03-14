@@ -65,8 +65,11 @@ class cellID:
         self.numberMasks = self.SegmentationMask.nlabels
         self.ROI = ROI
         self.alignmentResultsTable = Table()
+        self.alignmentResultsTableRead = False
         self.barcodesinMask = dict()
         self.logNameMD = ""
+        self.foundMatch = []
+
         for mask in range(self.numberMasks + 1):
             self.barcodesinMask["maskID_" + str(mask)] = []
 
@@ -130,7 +133,7 @@ class cellID:
         y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
         x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
         keepAlignment = True
-        if not self.alignmentResultsTableRead:
+        if not self.alignmentResultsTableRead: # only proceeds if localAlignment was not performed
             barcodeID = "barcode:" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
             barcodeROI = "ROI:" + str(self.barcodeMapROI.groups[0]["ROI #"][i])
 
@@ -149,6 +152,8 @@ class cellID:
                 in self.param.param["alignImages"]["referenceFiducial"]
             ):
                 keepAlignment = True
+
+
         return keepAlignment
 
     def plots_distributionFluxes(self):
@@ -247,7 +252,7 @@ class cellID:
     def alignByMasking(self):
         """
         Assigns barcodes to masks and creates <NbarcodesinMask>
-
+        This routine will only select which barcodes go to each cell mask
 
         Returns
         -------
@@ -272,7 +277,8 @@ class cellID:
             toleranceDrift = 1
             print("toleranceDrift not found. Set to 1!")
 
-        print("Flux min = {} | ToleranceDrift = {} px".format(flux_min, toleranceDrift))
+
+        print("Flux min = {} \nToleranceDrift = {} px\nReference barcode = {}".format(flux_min, toleranceDrift,self.param.param["alignImages"]["referenceFiducial"]))
 
         blockSize = 256
 
@@ -282,7 +288,9 @@ class cellID:
 
         keepAll, keepAlignmentAll, NbarcodesROI = [], [], 0
         # loops over barcode Table rows in a given ROI
-        for i in trange(len(self.barcodeMapROI.groups[0])):
+        for i in trange(len(self.barcodeMapROI.groups[0])): # i is the index of the barcode in barcodeMapROI
+            barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
+            ROI = self.barcodeMapROI.groups[0]["ROI #"][i]
 
             # [filters barcode localizations either by]
             keep = self.filterLocalizations_Quality(i, flux_min)
@@ -292,12 +300,36 @@ class cellID:
 
             # applies all filters
             if keep and keepAlignment:
+
                 # keeps the particle if the test passed
-                y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-                x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
+                x_uncorrected = self.barcodeMapROI.groups[0]["ycentroid"][i] # control inversion between x-y
+                y_uncorrected = self.barcodeMapROI.groups[0]["xcentroid"][i]
+                # print("z={}".format(self.barcodeMapROI.groups[0]["zcentroid"][i]))
+                if np.isnan(self.barcodeMapROI.groups[0]["zcentroid"][i]):
+                    z_uncorrected = 0.0
+                else:
+                    z_uncorrected = self.barcodeMapROI.groups[0]["zcentroid"][i]
+
+                y_int = int(y_uncorrected)
+                x_int = int(x_uncorrected)
 
                 # finds what mask label this barcode is sitting on
                 maskID = self.Masks[x_int][y_int]
+
+                # Corrects XYZ coordinate of barcode if localDriftCorrection is available
+                zxy_uncorrected = [z_uncorrected, x_uncorrected , y_uncorrected]
+                RTbarcode = "RT" + str(barcode)
+                if  RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
+                    zxy_corrected = self.searchLocalShift(ROI, maskID, barcode, zxy_uncorrected)
+                else:
+                    # if it is the reference cycle, then it does not correct coordinates
+                    zxy_corrected = zxy_uncorrected
+
+                # rewrites corrected XYZ values to Table
+                self.barcodeMapROI.groups[0]["ycentroid"][i] = zxy_corrected[1]
+                self.barcodeMapROI.groups[0]["xcentroid"][i] = zxy_corrected[2]
+                if ~np.isnan(self.barcodeMapROI.groups[0]["zcentroid"][i]):
+                    self.barcodeMapROI.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
                 # attributes CellID to a barcode
                 self.barcodeMapROI["CellID #"][i] = maskID
@@ -327,7 +359,65 @@ class cellID:
 
         print("Number cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
 
-    def searchLocalShift(self, ROI, CellID, x_uncorrected, y_uncorrected):
+    def searchLocalShift(self, ROI, CellID, barcode, zxy_uncorrected):
+
+        if "mask2D" in self.param.param["alignImages"]["localAlignment"]:
+            return self.searchLocalShift_mask2D(ROI, CellID, zxy_uncorrected)
+        elif "block3D" in self.param.param["alignImages"]["localAlignment"]:
+            return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected)
+
+    def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected):
+        """
+        Searches for local drift for a specific barcode in a given ROI.
+        If it exists then it adds to the uncorrected coordinates
+
+        Parameters
+        ----------
+        ROI : string
+            ROI used
+        CellID: string
+            ID of the cell
+        x_uncorrected : float
+            x coordinate.
+        y_uncorrected : float
+            y coordinate.
+
+        Returns
+        -------
+        x_corrected : float
+            corrected x coordinate.
+        y_corrected : float
+            corrected y coordinate.
+
+        """
+        _foundMatch = False
+
+        # gets blockSize
+        blockSizeXY = self.alignmentResultsTable[0]["blockXY"]
+
+        # zxy coord in block reference coord system
+        zxyBlock = [np.floor(a/blockSizeXY).astype(int) for a in zxy_uncorrected]
+
+        for row in self.alignmentResultsTable:
+
+            # I need to check that the XY coordinates from localization are the same as the ij indices from the block decomposition!
+
+            if row["ROI #"] == ROI and row["label"] == "RT" + str(barcode) and row["block_i"] == zxyBlock[1] and row["block_j"] == zxyBlock[2]:
+                _foundMatch = True
+                shifts = [row["shift_z"],row["shift_x"],row["shift_y"]]
+                zxy_corrected = [a+shift for a,shift in zip(zxy_uncorrected,shifts)]
+
+        # keeps uncorrected values if no match is found
+        if not _foundMatch:
+            print("Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
+            zxy_corrected = zxy_uncorrected
+            self.foundMatch.append(False)
+        else:
+            self.foundMatch.append(True)
+
+        return zxy_corrected
+
+    def searchLocalShift_mask2D(self, ROI, CellID, zxy_uncorrected):
         """
         Searches for local drift for current mask. If it exists then id adds it to the uncorrected coordinates
 
@@ -350,22 +440,23 @@ class cellID:
             corrected y coordinate.
 
         """
+
         _foundMatch = False
-        x_corrected, y_corrected = [], []
         for row in self.alignmentResultsTable:
             if row["ROI #"] == ROI and row["CellID #"] == CellID:
                 _foundMatch = True
-                x_corrected, y_corrected = x_uncorrected + row["shift_x"], y_uncorrected + row["shift_y"]
+                shifts=[0,row["shift_x"],row["shift_y"]]
+                zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected,shifts)]
 
         # keeps uncorrected values if no match is found
         if not _foundMatch:
             print("Did not find match for CellID #{} in ROI #{}".format(CellID, ROI))
-            x_corrected, y_corrected = x_uncorrected, y_uncorrected
+            zxy_corrected = zxy_uncorrected
             self.foundMatch.append(False)
         else:
             self.foundMatch.append(True)
 
-        return x_corrected, y_corrected
+        return zxy_corrected
 
     def buildsVector(self, groupKeys, x, y, z):
         """
@@ -421,10 +512,11 @@ class cellID:
         if len(self.alignmentResultsTable) > 0:
 
             # searches for local alignment shift for this mask in this ROI
-            x_corrected, y_corrected = self.searchLocalShift(ROI, CellID, x_uncorrected, y_uncorrected)
+            # x_corrected, y_corrected = self.searchLocalShift(ROI, CellID, x_uncorrected, y_uncorrected)
 
             # applies local drift correction
-            R = self.buildsVector(groupKeys, x_corrected, y_corrected, z_uncorrected)
+            # R = self.buildsVector(groupKeys, x_corrected, y_corrected, z_uncorrected)
+            R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
         else:
             # does not apply local drift correction
@@ -448,10 +540,10 @@ class cellID:
         self.initializeLists()
 
         # iterates over all cell masks in an ROI
-        self.foundMatch = []
         for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
 
+                # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
                 x_uncorrected, y_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
                 groupKeys, CellID, ROI = group.keys(), key["CellID #"], group["ROI #"].data[0]
 
@@ -460,6 +552,7 @@ class cellID:
                 else:
                     z_uncorrected = []
 
+                # calculates the PWD between barcodes in CellID
                 PWD = self.calculatesPWDsingleMask(ROI, CellID, groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
                 self.ROIs.append(group["ROI #"].data[0])
@@ -584,32 +677,24 @@ def calculatesNmatrix(SCmatrix):
 
     return Nmatrix
 
+def loadsLocalAlignment(param,dataFolder):
 
-def loadsLocalAlignment(dataFolder):
-    """
-    reads and returns localAlignmentTable, if it exists
+    if "None" in param.param["alignImages"]["localAlignment"]:
+        print("\n\n*** localAlignment option set to {}".format(param.param["alignImages"]["localAlignment"]))
+        return False, Table()
+    else:
+        return _loadsLocalAlignment(dataFolder,param.param["alignImages"]["localAlignment"])
 
-    Parameters
-    ----------
-    dataFolder : folder()
-        DESCRIPTION.
+def _loadsLocalAlignment(dataFolder,mode):
 
-    Returns
-    -------
-    alignmentResultsTable : Table()
-        DESCRIPTION.
-    alignmentResultsTableRead : Boolean
-        DESCRIPTION.
-
-    """
-    localAlignmentFileName = dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat"
+    localAlignmentFileName = dataFolder.outputFiles["alignImages"].split(".")[0] + "_" + mode + ".dat"
     if os.path.exists(localAlignmentFileName):
         alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
         alignmentResultsTableRead = True
-        print("LocalAlignment file loaded")
+        print("LocalAlignment file loaded !\nWill correct coordinates using {} alignment".format(mode))
+        print("Number of records: {}".format(len(alignmentResultsTable)))
     else:
-        print(
-            "\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
+        print("\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
                 localAlignmentFileName
             )
         )
@@ -617,6 +702,39 @@ def loadsLocalAlignment(dataFolder):
         alignmentResultsTable = Table()
 
     return alignmentResultsTable, alignmentResultsTableRead
+
+# def loadsLocalAlignment(dataFolder):
+#     """
+#     reads and returns localAlignmentTable, if it exists
+
+#     Parameters
+#     ----------
+#     dataFolder : folder()
+#         DESCRIPTION.
+
+#     Returns
+#     -------
+#     alignmentResultsTable : Table()
+#         DESCRIPTION.
+#     alignmentResultsTableRead : Boolean
+#         DESCRIPTION.
+
+#     """
+#     localAlignmentFileName = dataFolder.outputFiles["alignImages"].split(".")[0] + "_localAlignment.dat"
+#     if os.path.exists(localAlignmentFileName):
+#         alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
+#         alignmentResultsTableRead = True
+#         print("LocalAlignment file loaded !\nWill correct coordinates in XY")
+#     else:
+#         print(
+#             "\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
+#                 localAlignmentFileName
+#             )
+#         )
+#         alignmentResultsTableRead = False
+#         alignmentResultsTable = Table()
+
+#     return alignmentResultsTable, alignmentResultsTableRead
 
 
 def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
@@ -831,7 +949,7 @@ def buildsPWDmatrix(
 
     """
     # Loads localAlignment if it exists
-    alignmentResultsTable, alignmentResultsTableRead = loadsLocalAlignment(dataFolder)
+    alignmentResultsTable, alignmentResultsTableRead = loadsLocalAlignment(param,dataFolder)
 
     # Loads coordinate Tables
     barcodeMap, localizationDimension = loadsBarcodeMap(fileNameBarcodeCoordinates, ndims)
