@@ -236,6 +236,7 @@ class Parameters:
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
                 "referenceFiducial": "RT18",
+                "localAlignment": "None", # options: None, mask2D, block3D
                 "alignByBlock": True,  # alignByBlock True will perform block alignment
                 "tolerance": 0.1,  # Used in blockAlignment to determine the % of error tolerated
                 "lower_threshold": 0.999,  # lower threshold to adjust image intensity levels before xcorrelation
@@ -434,6 +435,7 @@ class daskCluster:
         maxNumberThreads = int(np.min([numberCoresAvailable * self.maximumLoad, free_m / self.memoryPerWorker]))
 
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
+        self.nThreads = 4
 
         print("Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
 

@@ -19,7 +19,11 @@
         "bezel": 20,               
         "outputFile": "alignImages.bed",
         "background_sigma": 3.0,        
-        "referenceFiducial": "RT27"
+        "referenceFiducial": "RT27",
+        "alignByBlock": true,
+        "higher_threshold": 0.9999999,
+        "lower_threshold": 0.999,
+        "tolerance": 0.1
     },
     "zProject": {
         "display": true,

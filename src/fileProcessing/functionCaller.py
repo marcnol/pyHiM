@@ -106,7 +106,7 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
     def alignImages3D(self, param, ilabel):
-        if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
+        if self.getLabel(ilabel) == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
             self.log1.report(
                 "Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
@@ -116,7 +116,6 @@ class HiMfunctionCaller:
             else:
                 result = self.client.submit(_drift3D.alignFiducials3D)
                 _ = self.client.gather(result)
-
 
     def appliesRegistrations(self, param, ilabel):
         if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
@@ -161,7 +160,9 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
     def localDriftCorrection(self, param, ilabel):
-        if self.getLabel(ilabel) == "DAPI" and self.runParameters["localAlignment"]:
+
+        # runs mask 2D aligment
+        if self.getLabel(ilabel) == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
 
             if not self.parallel:
                 errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
