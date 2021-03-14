@@ -351,7 +351,7 @@ In this case this can be solved by using lower thresholds, for instance ```lower
 
 ##### 2- Block drift correlation
 
-Block drift correction will be activated if ```"alignByBlock": true```.
+To properly run this method use ```"alignByBlock": true```
 
 Inspired by the use of blocks to restore large images, I implemented a new registration routine that:
 
@@ -439,7 +439,9 @@ Alignment using blockAlignment:
 
 2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
 
-To properly run this method, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .```  directly from the command line, either in the working directory or providing a full path.
+To properly run this method use ```"localAlignment": "mask2D"```
+
+Otherwise, call by running ```runLocalAlignment.py -F .```  directly from the command line, either in the working directory or providing a full path.
 
 Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
 
@@ -451,7 +453,7 @@ The ```localDriftCorrection``` function will iterate over the DAPI masks, retrie
 
 #####  4- 3D Local Drift Correction 
 
-<u>How to invoke: need to find how to invoke other that runAlignImages3D.py !</u>
+To properly run this method use ```"localAlignment": "block3D"```
 
 <u>Parameters: need to program in!</u> 
 
@@ -472,6 +474,27 @@ Reassembled image made of XY, XZ and YZ projections is outputted to evaluate per
 ![scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments.png)
 
 
+
+
+
+**Validation**
+
+- I used the fiducials for 3D alignement. 
+- Segmented barcodes in fiducial files for reference (RT27) and a cycle (RT31)
+- Plotted the barcode localizations of barcode RT31 on top of the image of RT27 (reference): yellow crosses. They most agree which mean global shift correction is correct, but there are small relative shifts far from the center of the FOV. This reflects the inability of global shift correction to correct deformations.
+- Then plotted also the barcode localizations of barcode RT31 corrected by 3D alignment on top of the image of RT27: **red circles**. In this case, the localizations overlap even better. This confirms that the relative local corrections improved the local deformations.
+
+
+
+![image-20210313091506853](Running_pyHiM.assets/image-20210313091506853.png)
+
+
+
+This is now the comparison of the min distances between localizations in the reference and cycle <i> fiducials. Top plot is for global shift corrected, bottom for global + align3D
+
+
+
+![image-20210313094418814](Running_pyHiM.assets/image-20210313094418814.png)
 
 #### Segmenting masks
 
