@@ -173,7 +173,7 @@ plots3DshiftMatrices(shiftMatrices, fontsize=8)
 
 outputs = []
 for axis in axes2Plot:
-    outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=axis))
+    outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=shiftMatrices, axis1=axis))
 
 SSIM_matrices = [x[1] for x in outputs]
 

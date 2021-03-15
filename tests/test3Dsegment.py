@@ -18,12 +18,14 @@ from skimage import io
 import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
-from skimage import exposure,color
+from skimage import exposure
 from imageProcessing  import (
     _removesInhomogeneousBackground2D,
     imageAdjust,
     _segments3DvolumesByThresholding,
     savesImageAsBlocks,
+    display3D,
+    combinesBlocksImageByReprojection,
     )
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
@@ -31,48 +33,7 @@ from skimage import measure
 from astropy.visualization import SqrtStretch, simple_norm
 from skimage.util.shape import view_as_blocks
 
-def display3D(image3D = None,labels=None, localizations = None,z=40, rangeXY=1000, norm=True):
-
-
-    if image3D is not None:
-        images = list()        
-        images.append(image3D[z,:,:])
-        images.append(image3D[:,rangeXY,:])
-        images.append(image3D[:,:,rangeXY])
-    else:
-        images=[1,1,1]
-        
-    if labels is not None:
-        segmented = list()        
-        segmented.append(labels[z,:,:])
-        segmented.append(labels[:,rangeXY,:])
-        segmented.append(labels[:,:,rangeXY])
-    else:
-        segmented=[1,1,1]
-
-    if localizations is not None:
-        localized = list()
-        localized.append(localizations[:,0:2])
-        localized.append(localizations[:,1:3])        
-        localized.append(localizations[:,[0,2]])        
-
-    percent=99.5
-    
-    fig, axes = plt.subplots(1, len(images))
-    fig.set_size_inches(len(images) * 50, 50)
-    ax = axes.ravel()
-        
-    for image,segm,locs, axis in zip(images,segmented,localized, ax):
-        if image3D is not None:
-            if norm:
-                norm = simple_norm(image, "sqrt", percent=percent)
-                axis.imshow(image, cmap="Greys", origin="lower", norm=norm)
-            else:
-                axis.imshow(image, cmap="Greys", origin="lower")
-        if labels is not None:
-            axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
-        if localizations is not None:
-            axis.plot(locs[:,0],locs[:,1],'o',alpha=.7)            
+          
     
 #%% loads and segments a file
 
@@ -147,6 +108,8 @@ display3D(image3D=image3D,z=40, rangeXY=1000,norm=False)
 from skimage import data, feature, exposure
 from skimage import io
 
+z = 40
+
 rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
 file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
@@ -158,8 +121,97 @@ image3D = exposure.equalize_hist(image3D)  # improves detection
 
 print("Calling blob_log to detect in 3D")
 # localizationTable = feature.blob_log(image3D, threshold = .3)
-localizationTable = feature.blob_dog(image3D, threshold = .3)
-
-#%%
+localizationTable = feature.blob_dog(image3D[z-1:z+2,:,:], threshold = .3)
 
 display3D(image3D=image3D,localizations = localizationTable, z=40, rangeXY=1000,norm=False)
+
+#%% big-FISH
+
+from bigfish.detection.spot_modeling import fit_subpixel
+from skimage.measure import regionprops
+
+z = 40
+
+rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+threshold_over_std,sigma ,boxSize, filter_size=1, 3, (32, 32),(3, 3)
+nlevels=64
+contrast=0.001
+
+
+print("loading image {}".format(os.path.basename(file)))
+
+image3D = io.imread(file).squeeze()
+
+image3D_test=image3D[z-5:z+5,:,:]
+
+# segments in 3D using ASTROPY
+binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_test,
+                                                       threshold_over_std=threshold_over_std, 
+                                                       sigma = 3, 
+                                                       boxSize=(32, 32),
+                                                       filter_size=(3, 3),
+                                                       nlevels=nlevels,
+                                                       contrast=contrast,
+                                                       deblend3D=True)
+
+#%%
+# finds first estimate of centroids from 3D masks
+
+properties = regionprops(segmentedImage3D, intensity_image=image3D_test, )
+centroids=[x.weighted_centroid for x in properties]
+
+z=[x[0] for x in centroids]
+y=[x[1] for x in centroids]
+x=[x[2] for x in centroids]
+
+localizationTable = np.zeros((len(z),3))
+localizationTable[:,0]=x
+localizationTable[:,1]=y
+localizationTable[:,2]=z
+
+# fits 3D gaussians using BIGFISH
+spots = np.zeros((len(z),3))
+spots[:,0]=z
+spots[:,1]=y
+spots[:,2]=x
+spots=spots.astype('int64')
+print("Running bigfish...")
+spots_subpixel = fit_subpixel(image3D_test, spots, voxel_size_z=250, voxel_size_yx=100,psf_z=500, psf_yx=200)
+
+# Plots results 
+spots_subpixel2 = spots_subpixel.copy()
+# spots_subpixel2 = spots_subpixel2[:, [2, 1, 0]]
+
+spots2 = spots.copy()
+# spots2=spots2[:,[2,1,0]]
+
+display3D(image3D=image3D_test,localizationsList = [spots2,spots_subpixel2],labels=segmentedImage3D,z=5, rangeXY=1000, norm=True,cmap='Greys')
+
+
+#%%
+blockSizeXY=128
+numPlanes = image3D_test.shape[0]
+blockSize = (numPlanes, blockSizeXY, blockSizeXY)
+images = [image3D_test,segmentedImage3D]
+blocks = [view_as_blocks(x, block_shape=blockSize).squeeze() for x in images]
+
+fig_output = []
+for axis in range(3):
+    fig_output.append(combinesBlocksImageByReprojection(blocks[0], blocks[1],axis1=axis))
+
+#%%
+fig3 = plt.figure(constrained_layout=False)
+ncols,nrows=5,5
+widths = [1]*5
+heights = [1]*5
+gs = fig3.add_gridspec(ncols=ncols, nrows=nrows, width_ratios=widths,
+                          height_ratios=heights)
+
+fig3.set_size_inches((20, 20))
+ax = [fig3.add_subplot(gs[0:-1,0:-1]), fig3.add_subplot(gs[4, 1:-1]), fig3.add_subplot(gs[1:-1,4])]
+
+titles = ["Z-projection", "X-projection", "Y-projection"]
+for axis, output, i in zip(ax, fig_output, range(3)):
+    axis.imshow(output[0])
+    axis.set_title(titles[i])

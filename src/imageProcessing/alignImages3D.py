@@ -66,9 +66,10 @@ from imageProcessing.imageProcessing import (
     combinesBlocksImageByReprojection,
     plots4images,
     makesShiftMatrixHiRes,
+    preProcess3DImage,
 )
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
-from fileProcessing.fileManagement import daskCluster, RT2fileName
+from fileProcessing.fileManagement import daskCluster, RT2fileName, loadsAlignmentDictionary
 
 from photutils import Background2D, MedianBackground
 from photutils import DAOStarFinder
@@ -103,6 +104,25 @@ class drift3D:
 
         return imageFile
 
+    def createsOutputTable(self):
+        return Table(
+                names=(
+                    "reference file",
+                    "aligned file",
+                    "blockXY",
+                    "ROI #",
+                    "label",
+                    "block_i",
+                    "block_j",
+                    "shift_z",
+                    "shift_x",
+                    "shift_y",
+                    "quality_xy",
+                    "quality_zy",
+                    "quality_zx",
+                ),
+                dtype=("S2", "S2", "int", "int", "S2", "int", "int","f4", "f4", "f4", "f4", "f4", "f4"),
+            )
     def alignFiducials3DinFolder(self):
         """
         Refits all the barcode files found in rootFolder
@@ -125,36 +145,20 @@ class drift3D:
         self.log1.info("\nDetected {} ROIs".format(numberROIs))
 
         # loads dicShifts with shifts for all ROIs and all labels
-        dictFileName = os.path.splitext(self.dataFolder.outputFiles["dictShifts"])[0] + ".json"
+        dictShifts, dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
+        # dictFileName = os.path.splitext(self.dataFolder.outputFiles["dictShifts"])[0] + ".json"
 
-        # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
-        dictShifts = loadJSON(dictFileName)
-        if len(dictShifts) == 0:
-            self.log1.report("File with dictionary not found!: {}".format(dictFileName))
-            dictShiftsAvailable = False
-        else:
-            self.log1.report("Dictionary File loaded: {}".format(dictFileName))
-            dictShiftsAvailable = True
+        # # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+        # dictShifts = loadJSON(dictFileName)
+        # if len(dictShifts) == 0:
+        #     self.log1.report("File with dictionary not found!: {}".format(dictFileName))
+        #     dictShiftsAvailable = False
+        # else:
+        #     self.log1.report("Dictionary File loaded: {}".format(dictFileName))
+        #     dictShiftsAvailable = True
 
         # creates Table that will hold results
-        alignmentResultsTable = Table(
-                names=(
-                    "reference file",
-                    "aligned file",
-                    "blockXY",
-                    "ROI #",
-                    "label",
-                    "block_i",
-                    "block_j",
-                    "shift_z",
-                    "shift_x",
-                    "shift_y",
-                    "quality_xy",
-                    "quality_zy",
-                    "quality_zx",
-                ),
-                dtype=("S2", "S2", "int", "int", "S2", "int", "int","f4", "f4", "f4", "f4", "f4", "f4"),
-            )
+        alignmentResultsTable=self.createsOutputTable()
 
         if numberROIs > 0:
 
@@ -231,7 +235,7 @@ class drift3D:
                         # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
                         outputs = []
                         for axis in self.axes2Plot:
-                            outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=axis))
+                            outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=shiftMatrices, axis1=axis))
 
                         SSIM_matrices = [x[1] for x in outputs]
                         MSE_matrices = [x[2] for x in outputs]
@@ -346,15 +350,4 @@ class drift3D:
 # =============================================================================
 #   FUNCTIONS
 # =============================================================================
-def preProcess3DImage(x,lower_threshold, higher_threshold):
 
-    # images0= [x/x.max() for x in images0]
-    image = exposure.rescale_intensity(x, out_range=(0, 1))
-
-    print("Removing inhomogeneous background...")
-    image = _removesInhomogeneousBackground(image)
-
-    print("Rescaling grey levels...")
-    image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
-
-    return image

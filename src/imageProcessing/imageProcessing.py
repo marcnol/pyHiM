@@ -19,6 +19,7 @@ from matplotlib import ticker
 import matplotlib.pyplot as plt
 from tifffile import imsave
 
+
 import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
@@ -26,8 +27,9 @@ from scipy import ndimage as ndi
 import cv2
 
 from skimage import io
-from skimage import exposure
 from skimage import measure
+from skimage import exposure,color
+
 from skimage.util.shape import view_as_blocks
 from skimage.registration import phase_cross_correlation
 from skimage.metrics import structural_similarity as ssim
@@ -580,7 +582,7 @@ def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
     return fig
 
 
-def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, axis1=0):
+def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=None, axis1=0):
     """
     This routine will overlap block_ref and block_target images block by block.
     block_ref will be used as a template.
@@ -639,8 +641,11 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices, ax
             imgs = list()
             imgs.append(block_ref[i, j]) # appends reference image to image list
 
-            shift3D = np.array([x[i, j] for x in shiftMatrices]) # gets 3D shift from block decomposition
-            imgs.append(shiftImage(block_target[i, j], shift3D)) # realigns and appends to image list
+            if shiftMatrices is not None:
+                shift3D = np.array([x[i, j] for x in shiftMatrices]) # gets 3D shift from block decomposition
+                imgs.append(shiftImage(block_target[i, j], shift3D)) # realigns and appends to image list
+            else:
+                imgs.append(block_target[i, j]) # appends original target with no re-alignment
 
             imgs = [np.sum(x, axis=axis1) for x in imgs] # projects along axis1
             imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs] # rescales intensity values
@@ -1312,3 +1317,133 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
         for j in range(blocks.shape[1]):
             outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif"
             imsave(outfile, blocks[i, j])
+
+def preProcess3DImage(x,lower_threshold, higher_threshold):
+
+    # images0= [x/x.max() for x in images0]
+    image = exposure.rescale_intensity(x, out_range=(0, 1))
+
+    print("Removing inhomogeneous background...")
+    image = _removesInhomogeneousBackground(image)
+
+    print("Rescaling grey levels...")
+    image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
+
+    return image
+
+
+# def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
+
+
+#     if image3D is not None:
+#         images = list()        
+#         images.append(image3D[z,:,:])
+#         images.append(image3D[:,rangeXY,:])
+#         images.append(image3D[:,:,rangeXY])
+#     else:
+#         images=[1,1,1]
+        
+#     if labels is not None:
+#         segmented = list()        
+#         segmented.append(labels[z,:,:])
+#         segmented.append(labels[:,rangeXY,:])
+#         segmented.append(labels[:,:,rangeXY])
+#     else:
+#         segmented=[1,1,1]
+
+#     if localizationsList is not None:
+#         localizedList = list()
+
+#         for localizations in localizationsList:
+#             localized = list()
+#             localized.append(localizations[:,[2,1]])
+#             localized.append(localizations[:,[2,0]])        
+#             localized.append(localizations[:,[1,0]])        
+#             localizedList.append(localized)
+            
+#     else:
+#         localizedList=[1,1,1]
+
+#     percent=99.5
+#     symbols=['+','o','*','^']
+#     colors=['r','b','g','y']
+    
+#     fig, axes = plt.subplots(1, len(images))
+#     fig.set_size_inches(len(images) * 50, 50)
+#     ax = axes.ravel()
+        
+#     for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
+#         if image3D is not None:
+#             if norm:
+#                 norm = simple_norm(image, "sqrt", percent=percent)
+#                 axis.imshow(image, cmap=cmap, origin="lower", norm=norm)
+#             else:
+#                 axis.imshow(image, cmap=cmap, origin="lower")
+#         if labels is not None:
+#             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
+#         if localizations is not None:
+            
+#             for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
+#                 locs =  localizedList[iLocList][iPlane]
+#                 axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)  
+                
+#     return fig
+
+
+
+def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
+
+
+    if image3D is not None:
+        images = list()        
+        images.append(image3D[z,:,:])
+        images.append(image3D[:,rangeXY,:])
+        images.append(image3D[:,:,rangeXY])
+    else:
+        images=[1,1,1]
+        
+    if labels is not None:
+        segmented = list()        
+        segmented.append(labels[z,:,:])
+        segmented.append(labels[:,rangeXY,:])
+        segmented.append(labels[:,:,rangeXY])
+    else:
+        segmented=[1,1,1]
+
+    if localizationsList is not None:
+        localizedList = list()
+
+        for localizations in localizationsList:
+            localized = list()
+            localized.append(localizations[:,[2,1]])
+            localized.append(localizations[:,[2,0]])        
+            localized.append(localizations[:,[1,0]])        
+            localizedList.append(localized)
+            
+    else:
+        localizedList=[1,1,1]
+
+    percent=99.5
+    symbols=['+','o','*','^']
+    colors=['r','b','g','y']
+    
+    fig, axes = plt.subplots(1, len(images))
+    fig.set_size_inches(len(images) * 50, 50)
+    ax = axes.ravel()
+        
+    for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
+        if image3D is not None:
+            if norm:
+                norm = simple_norm(image, "sqrt", percent=percent)
+                axis.imshow(image, cmap=cmap, origin="lower", norm=norm)
+            else:
+                axis.imshow(image, cmap=cmap, origin="lower")
+        if labels is not None:
+            axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
+        if localizations is not None:
+            
+            for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
+                locs =  localizedList[iLocList][iPlane]
+                axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)  
+                
+    return fig

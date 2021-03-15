@@ -131,9 +131,9 @@ class HiMfunctionCaller:
 
     def segmentMasks(self, param, ilabel):
         if (
-            self.getLabel(ilabel) != "fiducial"
-            and param.param["acquisition"]["label"] != "fiducial"
-            and self.getLabel(ilabel) != "RNA"
+            # self.getLabel(ilabel) != "fiducial"
+            # and param.param["acquisition"]["label"] != "fiducial"
+            self.getLabel(ilabel) != "RNA"
             and param.param["acquisition"]["label"] != "RNA"
         ):
             if not self.parallel:

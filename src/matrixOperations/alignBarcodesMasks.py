@@ -320,7 +320,7 @@ class cellID:
                 zxy_uncorrected = [z_uncorrected, x_uncorrected , y_uncorrected]
                 RTbarcode = "RT" + str(barcode)
                 if  RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
-                    zxy_corrected = self.searchLocalShift(ROI, maskID, barcode, zxy_uncorrected)
+                    zxy_corrected = self.searchLocalShift(ROI, maskID, barcode, zxy_uncorrected,toleranceDrift)
                 else:
                     # if it is the reference cycle, then it does not correct coordinates
                     zxy_corrected = zxy_uncorrected
@@ -359,14 +359,14 @@ class cellID:
 
         print("Number cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
 
-    def searchLocalShift(self, ROI, CellID, barcode, zxy_uncorrected):
+    def searchLocalShift(self, ROI, CellID, barcode, zxy_uncorrected,toleranceDrift=1):
 
         if "mask2D" in self.param.param["alignImages"]["localAlignment"]:
             return self.searchLocalShift_mask2D(ROI, CellID, zxy_uncorrected)
         elif "block3D" in self.param.param["alignImages"]["localAlignment"]:
-            return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected)
+            return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected,toleranceDrift)
 
-    def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected):
+    def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected, toleranceDrift=1):
         """
         Searches for local drift for a specific barcode in a given ROI.
         If it exists then it adds to the uncorrected coordinates
@@ -405,8 +405,13 @@ class cellID:
             if row["ROI #"] == ROI and row["label"] == "RT" + str(barcode) and row["block_i"] == zxyBlock[1] and row["block_j"] == zxyBlock[2]:
                 _foundMatch = True
                 shifts = [row["shift_z"],row["shift_x"],row["shift_y"]]
-                zxy_corrected = [a+shift for a,shift in zip(zxy_uncorrected,shifts)]
-
+                
+                # checks that drifts > toleranceDrift are not applied
+                if max(shifts)<toleranceDrift:
+                    zxy_corrected = [a+shift for a,shift in zip(zxy_uncorrected,shifts)]
+                else:
+                    zxy_corrected = zxy_uncorrected
+                    
         # keeps uncorrected values if no match is found
         if not _foundMatch:
             print("Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
@@ -1103,13 +1108,14 @@ def processesPWDmatrices(param, log1, session1):
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     log1.report("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(log1.fileNameMD, "## {}\n".format(sessionName), "a")
+    label = 'barcode'
 
     for currentFolder in dataFolder.listFolders:
         # filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
         dataFolder.createsFolders(currentFolder, param)
         log1.report("-------> Processing Folder: {}".format(currentFolder))
 
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
+        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
 
         # 2D
         outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]

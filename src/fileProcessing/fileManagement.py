@@ -614,3 +614,20 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext="tif")
     numberUniqueCycles = len(unique(RTs))
 
     return numberUniqueCycles
+
+
+def loadsAlignmentDictionary(dataFolder, log1):
+
+    dictFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
+
+    # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
+    dictShifts = loadJSON(dictFileName)
+    if len(dictShifts) == 0:
+        log1.report("File with dictionary not found!: {}".format(dictFileName))
+        dictShiftsAvailable = False
+    else:
+        log1.report("Dictionary File loaded: {}".format(dictFileName))
+        dictShiftsAvailable = True
+
+    return dictShifts, dictShiftsAvailable 
+  
