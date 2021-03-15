@@ -4,6 +4,11 @@
 Created on Tue Mar  9 15:05:02 2021
 
 @author: marcnol
+
+- tests several algorithms for 3D segmentation:
+    - based on ASTROPY (plane by plane object-based segmentation and deblending)
+    - blob_log from skimage
+
 """
 
 import os, argparse, sys, glob
@@ -14,7 +19,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure,color
-from imageProcessing.imageProcessing  import (
+from imageProcessing  import (
     _removesInhomogeneousBackground2D,
     imageAdjust,
     _segments3DvolumesByThresholding,
@@ -26,7 +31,7 @@ from skimage import measure
 from astropy.visualization import SqrtStretch, simple_norm
 from skimage.util.shape import view_as_blocks
 
-def display3D(image3D = None,labels=None, z=40, rangeXY=1000, norm=True):
+def display3D(image3D = None,labels=None, localizations = None,z=40, rangeXY=1000, norm=True):
 
 
     if image3D is not None:
@@ -44,13 +49,20 @@ def display3D(image3D = None,labels=None, z=40, rangeXY=1000, norm=True):
         segmented.append(labels[:,:,rangeXY])
     else:
         segmented=[1,1,1]
+
+    if localizations is not None:
+        localized = list()
+        localized.append(localizations[:,0:2])
+        localized.append(localizations[:,1:3])        
+        localized.append(localizations[:,[0,2]])        
+
     percent=99.5
     
     fig, axes = plt.subplots(1, len(images))
     fig.set_size_inches(len(images) * 50, 50)
     ax = axes.ravel()
         
-    for image,segm,axis in zip(images,segmented,ax):
+    for image,segm,locs, axis in zip(images,segmented,localized, ax):
         if image3D is not None:
             if norm:
                 norm = simple_norm(image, "sqrt", percent=percent)
@@ -59,6 +71,8 @@ def display3D(image3D = None,labels=None, z=40, rangeXY=1000, norm=True):
                 axis.imshow(image, cmap="Greys", origin="lower")
         if labels is not None:
             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
+        if localizations is not None:
+            axis.plot(locs[:,0],locs[:,1],'o',alpha=.7)            
     
 #%% loads and segments a file
 
@@ -127,3 +141,25 @@ display3D(image3D=image3D,labels=labeled,z=40, rangeXY=1000)
 #%%
 
 display3D(image3D=image3D,z=40, rangeXY=1000,norm=False)
+
+#%% skimage
+
+from skimage import data, feature, exposure
+from skimage import io
+
+rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+
+print("loading image {}".format(os.path.basename(file)))
+image3D = io.imread(file).squeeze()
+
+print("Normalizing exposures")
+image3D = exposure.equalize_hist(image3D)  # improves detection
+
+print("Calling blob_log to detect in 3D")
+# localizationTable = feature.blob_log(image3D, threshold = .3)
+localizationTable = feature.blob_dog(image3D, threshold = .3)
+
+#%%
+
+display3D(image3D=image3D,localizations = localizationTable, z=40, rangeXY=1000,norm=False)
