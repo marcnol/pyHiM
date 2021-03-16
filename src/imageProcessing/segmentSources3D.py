@@ -236,12 +236,12 @@ class segmentSources3D:
                 ROI = ROIList[fileNameReference]
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
-
-                print("Found {} files in ROI [{}]".format(len(fileName2ProcessList), ROI))
+                Nfiles2Process=len(fileName2ProcessList)
+                print("Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 print("[roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
                                 + ":" + str(self.param.decodesFileParts(os.path.basename(x))["cycle"]) for x in fileName2ProcessList])))
 
-                for fileName2Process in self.param.fileList2Process:
+                for fileIndex, fileName2Process in enumerate(self.param.fileList2Process):
                     # excludes the reference fiducial and processes files in the same ROI
                     roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
                     # label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
@@ -250,7 +250,7 @@ class segmentSources3D:
                     if roi == ROI:
 
                         # - load  and preprocesses 3D fiducial file
-                        print("\n\nProcessing roi:[{}] cycle:[{}]".format(roi,label))
+                        print("\n\nProcessing roi:[{}] cycle:[{}] {}/{}".format(roi,label,fileIndex,Nfiles2Process))
                         print("File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
                         image3D = preProcess3DImage(image3D0, self.p["lower_threshold"], self.p["higher_threshold"])
