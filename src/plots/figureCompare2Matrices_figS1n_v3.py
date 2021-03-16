@@ -14,6 +14,7 @@ import os
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+
 # from matrixOperations.alignBarcodesMasks import plotMatrix
 
 
@@ -40,10 +41,9 @@ def parseArguments():
     if args.outputFolder:
         outputFolder = args.outputFolder
     else:
-        outputFolder = 'none'
+        outputFolder = "none"
 
     return rootFolder1, rootFolder2, outputFolder
-
 
 
 # =============================================================================
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     p = {}
     p["pixelSize"] = 0.1
 
-    rootFolder1, rootFolder2, outputFolder = parseArguments() #F1 all, F2 brightest
+    rootFolder1, rootFolder2, outputFolder = parseArguments()  # F1 all, F2 brightest
 
     # %% define paths
     barcodeFile = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_uniqueBarcodes.csv"
@@ -66,7 +66,6 @@ if __name__ == "__main__":
 
     SClabeled1 = "scHiMmatrices/wt_docTAD_nc14_label:doc_action:labeled_SClabeledCollated.npy"
     SClabeled2 = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_SClabeledCollated.npy"
-
 
     # %% load the data
 
@@ -91,33 +90,29 @@ if __name__ == "__main__":
     fnBarcodes = os.path.join(rootFolder2, barcodeFile)
     commonSetUniqueBarcodes = np.loadtxt(fnBarcodes).astype(int)
 
-
     # %% mix it
 
     contactMap_mix = contactMap1.copy()
-    sel = np.tril(np.full(contactMap1.shape, True), -1) # -1 to exclude the diagonal
+    sel = np.tril(np.full(contactMap1.shape, True), -1)  # -1 to exclude the diagonal
     contactMap_mix[sel] = contactMap2[sel]
-
 
     contactMap1_lin = contactMap1[sel]
     contactMap2_lin = contactMap2[sel]
 
     corrcoef_matrix = np.corrcoef(contactMap1_lin, contactMap2_lin)
-    print("Pearson correlation coefficient = {}".format(corrcoef_matrix[0,1]))
-
+    print("Pearson correlation coefficient = {}".format(corrcoef_matrix[0, 1]))
 
     # %% plots results
-    mode, clim, cMin = "counts", 0.6, 0.0 # mode = counts -> just use matrix as is, no scaling
+    mode, clim, cMin = "counts", 0.6, 0.0  # mode = counts -> just use matrix as is, no scaling
     minVal = np.nanmin(contactMap_mix)
     maxVal = np.nanmax(contactMap_mix)
     print("Matrix to be plotted: min {}, max {}".format(minVal, maxVal))
 
-
-    figtitle="Contact probability map"
-    nCells="{}\{}".format(numCells2, numCells1)
-    numberROIs=0
-    uniqueBarcodes = range(1, contactMap_mix.shape[0]+1)
-    cmtitle="Contact probability"
+    figtitle = "Contact probability map"
+    nCells = "{}\{}".format(numCells2, numCells1)
+    numberROIs = 0
+    uniqueBarcodes = range(1, contactMap_mix.shape[0] + 1)
+    cmtitle = "Contact probability"
     matrixPlot = contactMap_mix
 
     fig = plt.figure(figsize=(6, 6))
@@ -125,24 +120,17 @@ if __name__ == "__main__":
     plt.xlabel("Barcode #")
     plt.ylabel("Barcode #")
     plt.title(
-        figtitle
-        + " | "
-        + str(matrixPlot.shape[0])
-        + " barcodes | n="
-        + str(nCells)
-        + " | ROIs="
-        + str(numberROIs)
+        figtitle + " | " + str(matrixPlot.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs)
     )
     plt.xticks(np.arange(matrixPlot.shape[0]), uniqueBarcodes)
     plt.yticks(np.arange(matrixPlot.shape[0]), uniqueBarcodes)
     cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-    #cbar.minorticks_on()
+    # cbar.minorticks_on()
     cbar.set_label(cmtitle)
     plt.clim(cMin, clim)
 
-
     # save to PNG
-    saveExt = "png" # png, svg, jpg
+    saveExt = "png"  # png, svg, jpg
     fnSave = os.path.join(outputFolder, "label:doc_action:labeled_label:docHigh_action:labeled." + saveExt)
     fig.savefig(fnSave)
 
@@ -150,10 +138,8 @@ if __name__ == "__main__":
     fnSave2 = os.path.join(outputFolder, "label:doc_action:labeled_label:docHigh_action:labeled." + "npy")
     np.save(fnSave2, matrixPlot)
 
-
-
     # %% plot 4M profiles
-    anchors = [17] # 1-based counting, bin number, not RT
+    anchors = [17]  # 1-based counting, bin number, not RT
 
     prop_cycle = plt.rcParams["axes.prop_cycle"]
     colors = prop_cycle.by_key()["color"]
@@ -161,21 +147,21 @@ if __name__ == "__main__":
     thin, thick = lwbase / 2, lwbase * 8
 
     for anchor in anchors:
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5,5))
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(5, 5))
 
-        profile1 = contactMap1[:,anchor-1]
-        profile2 = contactMap2[:,anchor-1]
+        profile1 = contactMap1[:, anchor - 1]
+        profile2 = contactMap2[:, anchor - 1]
 
         ax.plot(profile1, ls="-", color="magenta")
         ax.plot(profile2, ls="--", color="darkmagenta")
 
         ax.axvline(x=anchor - 1, color=colors[4], lw=thick, alpha=0.5)
         ax.set_ylim(0, 1)
-        ax.set_xlim(0, profile1.shape[0]-1)
+        ax.set_xlim(0, profile1.shape[0] - 1)
 
         ax.set_xticks(np.arange(profile1.shape[0]))
         # ax.set_xticklabels(commonSetUniqueBarcodes)
-        ax.set_xticklabels(np.arange(profile1.shape[0])+1)
+        ax.set_xticklabels(np.arange(profile1.shape[0]) + 1)
 
         # ax.set_yticks([0, 0.5, 1])
 
@@ -184,6 +170,6 @@ if __name__ == "__main__":
 
         ax.legend(("Dorsal ectoderm", "Subset transcription\nhotspots"))
 
-        saveExt = "png" # png, svg, jpg
+        saveExt = "png"  # png, svg, jpg
         outputFileName = os.path.join(outputFolder, "4M_doc_subset_anchor_{}.{}".format(anchor, saveExt))
         fig.savefig(outputFileName)

@@ -20,8 +20,14 @@ import json, csv
 
 # import scaleogram as scg
 
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix,listsSCtoKeep
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, normalizeMatrix, shuffleMatrix, plotScalogram, calculatesEnsemblePWDmatrix
+from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix, listsSCtoKeep
+from matrixOperations.HIMmatrixOperations import (
+    analysisHiMmatrix,
+    normalizeMatrix,
+    shuffleMatrix,
+    plotScalogram,
+    calculatesEnsemblePWDmatrix,
+)
 
 #%% define and loads datasets
 
@@ -41,7 +47,9 @@ def parseArguments():
     parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
     parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
-    parser.add_argument("--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter")
+    parser.add_argument(
+        "--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter"
+    )
     parser.add_argument("--cScale", help="Colormap absolute scale")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument(
@@ -52,8 +60,10 @@ def parseArguments():
     parser.add_argument("--inputMatrix", help="contact, PWD, or iPWD. Default is contact")
     parser.add_argument("--pixelSize", help="pixel size in um")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
-    parser.add_argument("--PWDmode", help="Mode used to calculate the mean distance. Can be either 'median' or KDE. Default: median")
-    
+    parser.add_argument(
+        "--PWDmode", help="Mode used to calculate the mean distance. Can be either 'median' or KDE. Default: median"
+    )
+
     args = parser.parse_args()
 
     runParameters = {}
@@ -113,7 +123,7 @@ def parseArguments():
         runParameters["cScale"] = float(args.cScale)
     else:
         runParameters["cScale"] = 0.0
-        
+
     if args.plottingFileExtension:
         runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
@@ -132,8 +142,8 @@ def parseArguments():
     if args.inputMatrix:
         runParameters["inputMatrix"] = args.inputMatrix
     else:
-        runParameters["inputMatrix"] = 'contact'
-        
+        runParameters["inputMatrix"] = "contact"
+
     if args.pixelSize:
         runParameters["pixelSize"] = args.pixelSize
     else:
@@ -143,17 +153,17 @@ def parseArguments():
         runParameters["cmap"] = args.cmap
     else:
         runParameters["cmap"] = "coolwarm"
-    
+
     if args.PWDmode:
         runParameters["PWDmode"] = args.PWDmode
     else:
         runParameters["PWDmode"] = "median"
-                
+
     return rootFolder, outputFolder, runParameters
 
 
 #%%
-    
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -171,31 +181,35 @@ if __name__ == "__main__":
 
     HiMdata.retrieveSCmatrix()
 
-    if runParameters["inputMatrix"] == 'contact':
+    if runParameters["inputMatrix"] == "contact":
         # contact probability matrix
         matrix = HiMdata.data["ensembleContactProbability"]
         cScale = matrix.max() / runParameters["scalingParameter"]
-    elif runParameters["inputMatrix"] == 'PWD':
+    elif runParameters["inputMatrix"] == "PWD":
         # PWD matrix
         # SCmatrix = HiMdata.SCmatrixSelected
         # print("SC matrix size: {}".format(SCmatrix.shape))
         # matrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrix, runParameters["pixelSize"],mode=runParameters["PWDmode"])
         SCmatrix = HiMdata.SCmatrixSelected
         cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
-        print("N cells to plot: {}/{}".format(len(cells2Plot),SCmatrix.shape[2]))
-        matrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"])
-        if runParameters["cScale"]==0:
-            cScale = matrix[~np.isnan(matrix)].max()/runParameters["scalingParameter"]        
+        print("N cells to plot: {}/{}".format(len(cells2Plot), SCmatrix.shape[2]))
+        matrix, keepPlotting = calculatesEnsemblePWDmatrix(
+            SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"]
+        )
+        if runParameters["cScale"] == 0:
+            cScale = matrix[~np.isnan(matrix)].max() / runParameters["scalingParameter"]
         else:
             cScale = runParameters["cScale"]
-    elif runParameters["inputMatrix"] == 'iPWD':
+    elif runParameters["inputMatrix"] == "iPWD":
         SCmatrix = HiMdata.SCmatrixSelected
         cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
-        print("N cells to plot: {}/{}".format(len(cells2Plot),SCmatrix.shape[2]))
-        matrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"])
-        matrix=np.reciprocal(matrix)
+        print("N cells to plot: {}/{}".format(len(cells2Plot), SCmatrix.shape[2]))
+        matrix, keepPlotting = calculatesEnsemblePWDmatrix(
+            SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"]
+        )
+        matrix = np.reciprocal(matrix)
         cScale = runParameters["cScale"]
-        
+
     print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"], cScale))
 
     nCells = HiMdata.nCellsLoaded()
@@ -291,7 +305,7 @@ if __name__ == "__main__":
     # HiMdata.update_clims(0, cScale, f1)
     print("Output written to {}".format(outputFileName))
     plt.savefig(outputFileName)
-    np.save(outputFileName+ ".npy",matrix)
+    np.save(outputFileName + ".npy", matrix)
     titleText = "N = {} | n = {}".format(nCells, nDatasets)
     print("Title: {}".format(titleText))
     print("Output figure: {}".format(outputFileName))

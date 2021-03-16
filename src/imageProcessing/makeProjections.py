@@ -11,7 +11,7 @@ Operation will be defined in the parameters file. Options are:
     - user-defined range
     - all z range
     - optimal range based on detection of focal plane and use of user defined window around it
-    
+
 
 """
 # =============================================================================
@@ -24,18 +24,18 @@ from dask.distributed import get_client, wait
 
 from imageProcessing.imageProcessing import Image
 
-from fileProcessing.fileManagement import (
-    folders,writeString2File)
+from fileProcessing.fileManagement import folders, writeString2File
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
+
 def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
     if fileName in session1.data and param.param["zProject"]["operation"] != "overwrite":
         # creates image object
-        Im = Image(param,log1)
+        Im = Image(param, log1)
         Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])
         if param.param["zProject"]["display"]:
             Im.imageShow()
@@ -45,7 +45,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         log1.report("Analysing file: {}".format(os.path.basename(fileName)))
 
         # creates image object
-        Im = Image(param,log1)
+        Im = Image(param, log1)
 
         # loads image
         Im.loadImage(fileName)
@@ -65,13 +65,20 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
                 log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
             )  # initialises MD file
 
+            if param.param["zProject"]["mode"] == "laplacian":
+                outputName = Im.getImageFileName(dataFolder.outputFolders["zProject"], "_focalPlaneMatrix.png")
+                Im.imageShowWithValues(outputName)
+
+                writeString2File(
+                    log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), outputName), "a",
+                )  # initialises MD file
         # saves output 2d zProjection as matrix
         Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])
 
         del Im
 
 
-def makeProjections(param, log1, session1,fileName=None):
+def makeProjections(param, log1, session1, fileName=None):
     sessionName = "makesProjections"
 
     # processes folders and files
@@ -82,7 +89,6 @@ def makeProjections(param, log1, session1,fileName=None):
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
 
-        
     for currentFolder in dataFolder.listFolders:
         filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
         dataFolder.createsFolders(currentFolder, param)
@@ -92,29 +98,35 @@ def makeProjections(param, log1, session1,fileName=None):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
         log1.info("About to read {} files\n".format(len(param.fileList2Process)))
 
-        if param.param['parallel']:
-            threads=list()
-            files2ProcessFiltered = [x for x in param.fileList2Process if \
-                                     (fileName==None) \
-                                     or (fileName!=None \
-                                     and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))]
+        if param.param["parallel"]:
+            threads = list()
+            files2ProcessFiltered = [
+                x
+                for x in param.fileList2Process
+                if (fileName == None)
+                or (fileName != None and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))
+            ]
 
-            if len(files2ProcessFiltered)>0:
+            if len(files2ProcessFiltered) > 0:
                 # dask
-                client=get_client()
-                threads=[client.submit(makes2DProjectionsFile,x, param, log1, session1, dataFolder) for x in files2ProcessFiltered]            
-                    
+                client = get_client()
+                threads = [
+                    client.submit(makes2DProjectionsFile, x, param, log1, session1, dataFolder)
+                    for x in files2ProcessFiltered
+                ]
+
                 print("Waiting for {} threads to complete ".format(len(threads)))
                 for index, thread in enumerate(threads):
-                    wait(threads)        
-                        
+                    wait(threads)
+
         else:
-            
+
             for index, fileName2Process in enumerate(param.fileList2Process):
-    
-                if (fileName==None) or (fileName!=None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])):
-                    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)                    
+
+                if (fileName == None) or (
+                    fileName != None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])
+                ):
+                    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
                     session1.add(fileName2Process, sessionName)
                 else:
                     pass
-

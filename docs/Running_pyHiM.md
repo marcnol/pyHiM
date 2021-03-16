@@ -2,6 +2,8 @@
 
 # Running pyHiM
 
+[TOC]
+
 ## 1- Basic run
 
 ### Run pyHiM
@@ -81,6 +83,7 @@ a typical file (DAPI example) looks like:
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
 		"localShiftTolerance": 1,
+        "background_sigma": 3.0,  
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -157,8 +160,9 @@ Here are some options for the different parameters and a brief description
 ```
 "folder": "zProject",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic
+"mode": "full",  *Options:* full | manual | automatic | laplacian
 "display": True,
+"blockSize": 128,
 "saveImage": True,
 "zmin": 1,
 "zmax": 59,
@@ -177,6 +181,7 @@ Here are some options for the different parameters and a brief description
 "tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
 "lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+"background_sigma": 3.0,  # used to remove inhom background
 "localShiftTolerance": 1,
 "bezel": 20,
 ```
@@ -232,15 +237,22 @@ This function will take 3D stacks and project them into 2D.
 
 There are many choices of how to do this:
 
-- ```manual```: indicate the planes in zmin and zmax
+- ```manual```: indicate the planes in zmin and zmax and set <mode> to <u>manual</u>.
 
-- ```automatic```: the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around ```zwindows``` of the focal plane.
+- ```automatic```:  the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around ```zwindows``` of the focal plane. Set <mode> to <u>automatic</u>.
 
-- ```full```: projects all planes into a 2D image
+- ```full```: projects all planes into a 2D image.  Set <mode> to <u>full</u>.
+
+  There are some additional options that can be provided to indicate how projections are made:
+
+- ```laplacian```: breaks the image into blocks of size ```blockSize```. Then calculates the laplacian variance in each block, and estimates the focal position per block by maximizing the laplacian variance. The overall focal plane for the image will be outputed to the terminal and to the block image (see title in image below). The 2D image is reconstructed block by block by using the optimal focal plane for each block. If the parameter ```zwindows``` is set to zero, then only the image at the focal point will be used. Otherwise we will do an MIP in the subvolume: ``` focalPlane-zwindows/2:focalPlane+zwindows/2```.Set <mode> to <u>laplacian</u>.
+
+  
 
   There are some additional options that can be provided to indicate how projections are made:
 
 - ```windowSecurity```: during automatic focal plane search, it will discard maxima located this number of planes away from the border.
+
 - ```zProjectOption```: how it converts a 3D stack into a 2D projection:
   - sum: sums all planes
   - MIP: maximum intensity projection
@@ -250,8 +262,9 @@ There are many choices of how to do this:
 ```
 "folder": "zProject",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic
+"mode": "full",  *Options:* full | manual | automatic | laplacian
 "display": True,
+"blockSize": 128,
 "saveImage": True,
 "zmin": 1,
 "zmax": 59,
@@ -262,9 +275,24 @@ There are many choices of how to do this:
 
 
 
+
+
 #### Drift Correction
 
-Global drift correction will be run by default. This finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
+
+
+There are several ways of correcting for drift within pyHiM:
+
+1. **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle <i>  fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed.
+2. **Block drift correlation.** This option will also use the 2D projection  images of reference and cycle <i> fiducials, but it will first break them up into blocks and will perform a block-by-block optimization of XY drift. This means that this method is very robust and is not easily fooled by dirt in the sample. However, the method will find a consensus global drift that will be applied and therefore local drift issues are not solved. An additional advantage to method 1 is that it can estimate how much local drift is present in each block and will use this to discard blocks where the local drift is higher than a user-provided tolerance (see below). After you run this method, you will get the uncorrected and corrected images so you can evaluate whether it worked properly and whether local drift correction methods need to be applied.
+3. **2D Local drift correction.** This method will be applied after methods 1 and 2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle <i> fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
+4. **3D local drift correction.** None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle <i>. Then it will background-substract and level-normalize the reference and cycle <i> fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle <i> image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack. 
+
+##### 1- Global drift correction by cross-correlation
+
+Global drift correction will be run by default if ```"alignByBlock": false```.
+
+The method first finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
 
 This can be run by typing 
 ```sh
@@ -321,7 +349,9 @@ In this case this can be solved by using lower thresholds, for instance ```lower
 
 
 
-##### Block Alignments
+##### 2- Block drift correlation
+
+To properly run this method use ```"alignByBlock": true```
 
 Inspired by the use of blocks to restore large images, I implemented a new registration routine that:
 
@@ -357,9 +387,17 @@ So if you see a large drop in the barcodes that are used (this can be seen by ma
 
 <u>Nice ROI</u>
 
+The right plot shows the RMS between the whole reference fiducial image and the fiducial of cycle <i> for each block. In each block, the optimal drift for that block was used for the calculation. Regions with extended blue mean that the optimal drift encountered was equally good for the whole image. Regions with high RMS indicate local block drifts not optimal for the whole image. The program will automatically select the regions with lowest RMS and use them to derive a consensus global drift.
+
+The left plots shows the relative change between the consensus global drift and the local drift. Values are in px. White region indicates blocks where the global consensus drift is very similar to the optimal local block drift.
+
 ![scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_block_alignments.png)
 
+This image shows the reference fiducial and the drift-corrected cycle <i> fiducial images overlapping. Regions in yellow mean good overlap.
+
 ![scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_overlay_corrected.png)
+
+Left image shows the reference minus the <u>uncorrected</u> cycle <i>  fiducial images (red and blue). Blue and red regions represent places where the two images do not overlap. White regions represent regions with the same pixel values in both images. The right panel shows the reference and <u>corrected</u> cycle <i>  fiducial images (red and blue). Same colormap. So, the right image should be mostly white with almost no spot (in either blue or red) if the correction worked well. 
 
 <img src="Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference.png" alt="scan_001_RT29_001_ROI_converted_decon_ch00_referenceDifference" style="zoom:200%;" />
 
@@ -397,7 +435,13 @@ Alignment using blockAlignment:
 
 
 
-#####  LocalDriftCorrection
+#####  3- 2D LocalDriftCorrection
+
+2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
+
+To properly run this method use ```"localAlignment": "mask2D"```
+
+Otherwise, call by running ```runLocalAlignment.py -F .```  directly from the command line, either in the working directory or providing a full path.
 
 Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
 
@@ -407,13 +451,58 @@ Deformation of samples means a simple translation will not be enough to correct 
 
 The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
 
-To invoke local drift correction, use the ```--localAlignment``` flag when you call pyHiM.py. Otherwise, run ```runLocalAlignment.py -F .``` in the working directory or provide full path.
+#####  4- 3D Local Drift Correction 
+
+To properly run this method use ```"localAlignment": "block3D"```
+
+<u>Parameters: need to program in!</u> 
+
+**Output of method**
+
+The first diagnostic image shows 2D projections of the 3D reference and  cycle <i> fiducial images. Uncorrected in the top row and 3D background-subtracted and level-renormalized images. These latter will be used for the x-correlations.
+
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted.png)
 
 
 
-#### Segmenting masks
+Matrices indicating the correction applied to each block in z, x and y. Values are in pixel units. You should look for roughly homogeneous corrections within embryos. Typically small local corrections are found in X and Y after if the global correction was successful. If the autofocus run fine, then the Z shifts should be ~ 1 px.
 
-To manually segment masks, run
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_shiftMatrices](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_shiftMatrices-1615108552490.png)
+
+Reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Reference fiducial is in red, cycle <i> fiducial is in green.
+
+![scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments.png)
+
+
+
+
+
+**Validation**
+
+- I used the fiducials for 3D alignement. 
+- Segmented barcodes in fiducial files for reference (RT27) and a cycle (RT31)
+- Plotted the barcode localizations of barcode RT31 on top of the image of RT27 (reference): yellow crosses. They most agree which mean global shift correction is correct, but there are small relative shifts far from the center of the FOV. This reflects the inability of global shift correction to correct deformations.
+- Then plotted also the barcode localizations of barcode RT31 corrected by 3D alignment on top of the image of RT27: **red circles**. In this case, the localizations overlap even better. This confirms that the relative local corrections improved the local deformations.
+
+
+
+![image-20210313091506853](Running_pyHiM.assets/image-20210313091506853.png)
+
+
+
+This is now the comparison of the min distances between localizations in the reference and cycle <i> fiducials. Top plot is for global shift corrected, bottom for global + align3D
+
+
+
+![image-20210313094418814](Running_pyHiM.assets/image-20210313094418814.png)
+
+
+
+#### Segmenting sources in 2D, followed by 3D refitting
+
+**Invoke**
+
+This function can be invoked directly from the command line using ```runSegmentMasks.py```
 
 ```sh
 runSegmentMasks.py -F .
@@ -434,7 +523,40 @@ optional arguments:
 
 
 
+Otherwise, from pyHiM use parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```.
 
+
+
+**Output**
+
+*segmentedObjects_barcode.dat*
+
+ASTROPY Table() with the following headers:
+
+```sh
+# - {name: Buid, datatype: string}
+# - {name: 'ROI #', datatype: int64}
+# - {name: 'CellID #', datatype: int64}
+# - {name: 'Barcode #', datatype: int64}
+# - {name: id, datatype: int64}
+# - {name: zcentroid, datatype: float64}
+# - {name: xcentroid, datatype: float64}
+# - {name: ycentroid, datatype: float64}
+# - {name: sharpness, datatype: float64}
+# - {name: roundness1, datatype: float64}
+# - {name: roundness2, datatype: float64}
+# - {name: npix, datatype: int64}
+# - {name: sky, datatype: float64}
+# - {name: peak, datatype: float64}
+# - {name: flux, datatype: float64}
+# - {name: mag, datatype: float64}
+d95b375c-5f4e-4adf-962e-66744e2b3110 1 0 31 1 nan 15.746314184707545 100.98211033024285 0.4351748388279322 0.3402780083269775 0.13715948731052757 25 0.0 130.33237090495697 6.02785952022439 -1.9504078062273058
+5faccf0d-7aaa-4255-924f-7195c85a30d2 1 0 31 2 nan 19.979799590668215 111.59998507797428 0.46747747995327016 0.8238481578473384 0.26674082653832065 25 0.0 545.7168493780091 23.02179555390307 -3.405347982068227
+```
+
+
+
+**Examples**
 
 An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
 
@@ -451,6 +573,8 @@ An example of a barcode where localization signals are far from optimal: note th
 ##### 3D fits of barcode positions using zProfiling
 
 ```"3Dmethod":"zProfile"```
+
+**Operation**
 
 Barcode 3D positions are now calculated as follows.
 
@@ -508,6 +632,121 @@ Output examples:
 
 
 ![image-20201228111209001](Running_pyHiM.assets/image-20201228111209001.png)
+
+
+
+#### Direct segmentation of sources in 3D
+
+
+
+**Operation**
+
+This routine performs a direct 3D gaussian fit of sources, instead of segmenting sources in 2D and then reinterpolating their 3D position.
+
+The function does the following:
+
+1. Reads dictionary of 2D alignments
+2. Loads 3D image for cycle <i> and realigns in 2D using the dictionary
+3. Pre-processes 3D volume by:
+   1. rescales exposures
+   2. removes non-uniform background in 3D
+   3. readjusts levels to top pixel intensities
+4. The pre-processed 3D volume is then used to segment masks in 2D for each plane using DAOfind()
+5. Deblends masks for each plane
+6. Merges 2D masks into 3D masks
+7. Re-labels and reblends 3D masks
+8. Calls regionprops() to get properties for each segmented object, including weighted centroids
+9. Calls bigfish to perform 3D gaussian fits using the pre-processed 3D image and the centroids of segmented objects
+10. Displays results. A typical example is shown below.
+
+
+
+**Output**
+
+*segmentedObjects_3D_barcode.dat*
+
+ASTROPY Table() with the following headers:
+
+```sh
+# - {name: Buid, datatype: string}
+# - {name: 'ROI #', datatype: int64}
+# - {name: 'CellID #', datatype: int64}
+# - {name: 'Barcode #', datatype: int64}
+# - {name: id, datatype: int64}
+# - {name: zcentroid, datatype: float32}
+# - {name: xcentroid, datatype: float32}
+# - {name: ycentroid, datatype: float32}
+# - {name: sharpness, datatype: float32}
+# - {name: roundness1, datatype: float32}
+# - {name: roundness2, datatype: float32}
+# - {name: npix, datatype: int64}
+# - {name: sky, datatype: float32}
+# - {name: peak, datatype: float32}
+# - {name: flux, datatype: float32}
+# - {name: mag, datatype: float32}
+1802fd10-ae0e-46a7-8fd7-36b0d48f0e85 1 0 31 0 7.0566196 422.5931 604.47565 0.5555556 6.4423327 0.5555556 140 0.0 0.14779617 0.14779617 2.0758421
+cfb668f7-6ead-4ac1-a4a6-88896eca7f04 1 0 31 1 9.506243 1242.8794 216.33797 0.27649653 16.121767 0.27649653 2194 0.0 0.13838167 0.13838167 2.1473036
+```
+
+
+
+**Invoke**
+
+This function can be invoked directly from the command line using ```runSegmentSources3D.py```
+
+```sh
+usage: runSegmentSources3D.py [-h] [-F ROOTFOLDER] [--parallel]
+                              [--localAlignment] [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting
+                        function.
+```
+
+
+
+Otherwise, from pyHiM use parameter ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both, then just use:  ```"operation": "2D,3D"```.
+
+
+
+**Examples**
+
+Typical example of XY-XZ-YZ projections. Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+
+
+![image-20210316130133148](Running_pyHiM.assets/image-20210316130133148.png)
+
+
+
+**Zoom in of previous image in XY**.  Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+![image-20210316130215527](Running_pyHiM.assets/image-20210316130215527.png)
+
+
+
+**Zoom in of previous image in ZX**.  Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+![image-20210316130314377](Running_pyHiM.assets/image-20210316130314377.png)
+
+
+
+Even more magnified:
+
+![image-20210316130353075](Running_pyHiM.assets/image-20210316130353075.png)
+
+
+
+Typical XY projection of the central plane with weighted centroids color coded by **flux** (jet colormap). 
+
+![image-20210316125217262](Running_pyHiM.assets/image-20210316125217262.png)
+
+
 
 #### Align DAPI masks and barcodes
 

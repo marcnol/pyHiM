@@ -24,7 +24,7 @@ from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
-               
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -32,12 +32,12 @@ warnings.filterwarnings("ignore")
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=HiM_parseArguments()    
+    runParameters=HiM_parseArguments()
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
     session1, log1=HiM.session1, HiM.log1
-    
+
     HiM.lauchDaskScheduler()
 
     for ilabel in range(len(HiM.labels2Process)):
@@ -52,19 +52,25 @@ if __name__ == "__main__":
 
         # [registers fiducials using a barcode as reference]
         HiM.alignImages(param, ilabel)
-        
+
+        # [aligns fiducials in 3D]
+        HiM.alignImages3D(param, ilabel)
+
         # [applies registration to DAPI and barcodes]
         HiM.appliesRegistrations(param, ilabel)
-        
-        # [segments DAPI and spot masks]
+
+        # [segments DAPI and sources in 2D]
         HiM.segmentMasks(param, ilabel)
+
+        # [segments sources in 3D]
+        HiM.segmentSources3D(param, ilabel)
 
         # [2D projects all barcodes in an ROI]
         HiM.projectsBarcodes(param, ilabel)
-            
+
         # [refits spots in 3D]
         HiM.refitBarcodes(param, ilabel)
-           
+
         # [local drift correction]
         HiM.localDriftCorrection(param, ilabel)
 
@@ -79,9 +85,9 @@ if __name__ == "__main__":
     HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
 
     if runParameters["parallel"]:
-        HiM.cluster.close()   
+        HiM.cluster.close()
         HiM.client.close()
 
     del HiM
-    
+
     print("Elapsed time: {}".format(datetime.now() - begin_time))

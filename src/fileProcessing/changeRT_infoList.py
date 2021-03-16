@@ -12,6 +12,7 @@ Example changeRT_infolist.py RT33 RT95
 import os
 import sys
 import re
+
 # import argparse
 
 
@@ -25,7 +26,7 @@ labels2Process = [
 pattern = r"(.*)\"(?P<RT>RT\d{1,3})\""
 
 
-nArgs = len(sys.argv) - 1 # sys.argv[0] is base name
+nArgs = len(sys.argv) - 1  # sys.argv[0] is base name
 print("Total arguments passed: {}".format(nArgs))
 
 if nArgs != 1:
@@ -42,7 +43,7 @@ for ilabel in range(len(labels2Process)):
     labelParameterFile = labels2Process[ilabel]["parameterFile"]
     print("**Modifying label {}: {}**".format(label, labelParameterFile))
 
-    with open(labelParameterFile, 'r') as f:
+    with open(labelParameterFile, "r") as f:
         oldRT = ""
         for line in f.readlines():
             match = re.search(pattern, line)
