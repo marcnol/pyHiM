@@ -48,7 +48,7 @@
         "brightest": 1100, 
         "intensity_max": 59,
         "intensity_min": 0,
-        "operation": "overwrite",
+        "operation": "2D",
         "outputFile": "segmentedObjects",
         "Segment3D": "overwrite",
         "residual_max": 2.5,

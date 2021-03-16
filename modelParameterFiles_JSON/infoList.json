@@ -52,7 +52,7 @@
         "fwhm": 3.0,
         "intensity_max": 59,
         "intensity_min": 0,
-        "operation": "overwrite",
+        "operation": "2D",
         "outputFile": "segmentedObjects",
         "residual_max": 2.5,
         "sigma_max": 5,
