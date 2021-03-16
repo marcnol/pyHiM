@@ -496,9 +496,13 @@ This is now the comparison of the min distances between localizations in the ref
 
 ![image-20210313094418814](Running_pyHiM.assets/image-20210313094418814.png)
 
-#### Segmenting masks
 
-To manually segment masks, run
+
+#### Segmenting sources in 2D, followed by 3D refitting
+
+**Invoke**
+
+This function can be invoked directly from the command line using ```runSegmentMasks.py```
 
 ```sh
 runSegmentMasks.py -F .
@@ -519,7 +523,40 @@ optional arguments:
 
 
 
+Otherwise, from pyHiM use parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```.
 
+
+
+**Output**
+
+*segmentedObjects_barcode.dat*
+
+ASTROPY Table() with the following headers:
+
+```sh
+# - {name: Buid, datatype: string}
+# - {name: 'ROI #', datatype: int64}
+# - {name: 'CellID #', datatype: int64}
+# - {name: 'Barcode #', datatype: int64}
+# - {name: id, datatype: int64}
+# - {name: zcentroid, datatype: float64}
+# - {name: xcentroid, datatype: float64}
+# - {name: ycentroid, datatype: float64}
+# - {name: sharpness, datatype: float64}
+# - {name: roundness1, datatype: float64}
+# - {name: roundness2, datatype: float64}
+# - {name: npix, datatype: int64}
+# - {name: sky, datatype: float64}
+# - {name: peak, datatype: float64}
+# - {name: flux, datatype: float64}
+# - {name: mag, datatype: float64}
+d95b375c-5f4e-4adf-962e-66744e2b3110 1 0 31 1 nan 15.746314184707545 100.98211033024285 0.4351748388279322 0.3402780083269775 0.13715948731052757 25 0.0 130.33237090495697 6.02785952022439 -1.9504078062273058
+5faccf0d-7aaa-4255-924f-7195c85a30d2 1 0 31 2 nan 19.979799590668215 111.59998507797428 0.46747747995327016 0.8238481578473384 0.26674082653832065 25 0.0 545.7168493780091 23.02179555390307 -3.405347982068227
+```
+
+
+
+**Examples**
 
 An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
 
@@ -536,6 +573,8 @@ An example of a barcode where localization signals are far from optimal: note th
 ##### 3D fits of barcode positions using zProfiling
 
 ```"3Dmethod":"zProfile"```
+
+**Operation**
 
 Barcode 3D positions are now calculated as follows.
 
@@ -593,6 +632,121 @@ Output examples:
 
 
 ![image-20201228111209001](Running_pyHiM.assets/image-20201228111209001.png)
+
+
+
+#### Direct segmentation of sources in 3D
+
+
+
+**Operation**
+
+This routine performs a direct 3D gaussian fit of sources, instead of segmenting sources in 2D and then reinterpolating their 3D position.
+
+The function does the following:
+
+1. Reads dictionary of 2D alignments
+2. Loads 3D image for cycle <i> and realigns in 2D using the dictionary
+3. Pre-processes 3D volume by:
+   1. rescales exposures
+   2. removes non-uniform background in 3D
+   3. readjusts levels to top pixel intensities
+4. The pre-processed 3D volume is then used to segment masks in 2D for each plane using DAOfind()
+5. Deblends masks for each plane
+6. Merges 2D masks into 3D masks
+7. Re-labels and reblends 3D masks
+8. Calls regionprops() to get properties for each segmented object, including weighted centroids
+9. Calls bigfish to perform 3D gaussian fits using the pre-processed 3D image and the centroids of segmented objects
+10. Displays results. A typical example is shown below.
+
+
+
+**Output**
+
+*segmentedObjects_3D_barcode.dat*
+
+ASTROPY Table() with the following headers:
+
+```sh
+# - {name: Buid, datatype: string}
+# - {name: 'ROI #', datatype: int64}
+# - {name: 'CellID #', datatype: int64}
+# - {name: 'Barcode #', datatype: int64}
+# - {name: id, datatype: int64}
+# - {name: zcentroid, datatype: float32}
+# - {name: xcentroid, datatype: float32}
+# - {name: ycentroid, datatype: float32}
+# - {name: sharpness, datatype: float32}
+# - {name: roundness1, datatype: float32}
+# - {name: roundness2, datatype: float32}
+# - {name: npix, datatype: int64}
+# - {name: sky, datatype: float32}
+# - {name: peak, datatype: float32}
+# - {name: flux, datatype: float32}
+# - {name: mag, datatype: float32}
+1802fd10-ae0e-46a7-8fd7-36b0d48f0e85 1 0 31 0 7.0566196 422.5931 604.47565 0.5555556 6.4423327 0.5555556 140 0.0 0.14779617 0.14779617 2.0758421
+cfb668f7-6ead-4ac1-a4a6-88896eca7f04 1 0 31 1 9.506243 1242.8794 216.33797 0.27649653 16.121767 0.27649653 2194 0.0 0.13838167 0.13838167 2.1473036
+```
+
+
+
+**Invoke**
+
+This function can be invoked directly from the command line using ```runSegmentSources3D.py```
+
+```sh
+usage: runSegmentSources3D.py [-h] [-F ROOTFOLDER] [--parallel]
+                              [--localAlignment] [--refit]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --parallel            Runs in parallel mode
+  --localAlignment      Runs localAlignment function
+  --refit               Refits barcode spots using a Gaussian axial fitting
+                        function.
+```
+
+
+
+Otherwise, from pyHiM use parameter ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both, then just use:  ```"operation": "2D,3D"```.
+
+
+
+**Examples**
+
+Typical example of XY-XZ-YZ projections. Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+
+
+![image-20210316130133148](Running_pyHiM.assets/image-20210316130133148.png)
+
+
+
+**Zoom in of previous image in XY**.  Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+![image-20210316130215527](Running_pyHiM.assets/image-20210316130215527.png)
+
+
+
+**Zoom in of previous image in ZX**.  Localizations: weighted centroids (green); 3D gaussian fits (red).
+
+![image-20210316130314377](Running_pyHiM.assets/image-20210316130314377.png)
+
+
+
+Even more magnified:
+
+![image-20210316130353075](Running_pyHiM.assets/image-20210316130353075.png)
+
+
+
+Typical XY projection of the central plane with weighted centroids color coded by **flux** (jet colormap). 
+
+![image-20210316125217262](Running_pyHiM.assets/image-20210316125217262.png)
+
+
 
 #### Align DAPI masks and barcodes
 
