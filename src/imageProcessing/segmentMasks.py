@@ -570,8 +570,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
     log1.report("searching for {}".format(fileName_2d_aligned))
     if (
         # (fileName in session1.data)
-        param.param["segmentedObjects"]["operation"] == "overwrite"
-        and os.path.exists(fileName_2d_aligned)
+        os.path.exists(fileName_2d_aligned)
     ):  # file exists
 
         ROI = os.path.basename(fileName).split("_")[param.param["acquisition"]["positionROIinformation"]]
@@ -669,10 +668,9 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         return output
     else:
         log1.report(
-            "2D aligned file does not exist:{}\n{}\n{}\n{}".format(
+            "2D aligned file does not exist:{}\n{}\n{}".format(
                 fileName_2d_aligned,
                 fileName in session1.data.keys(),
-                param.param["segmentedObjects"]["operation"] == "overwrite",
                 os.path.exists(fileName_2d_aligned),
             ),
             "Error",

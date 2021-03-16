@@ -33,7 +33,7 @@ from fileProcessing.fileManagement import folders, writeString2File
 
 def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
 
-    if fileName in session1.data and param.param["zProject"]["operation"] != "overwrite":
+    if fileName in session1.data:
         # creates image object
         Im = Image(param, log1)
         Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])

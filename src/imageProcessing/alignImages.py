@@ -461,29 +461,28 @@ def alignImages(param, log1, session1, fileName=None):
     """
     sessionName = "registersImages"
 
-    if param.param["alignImages"]["operation"] == "overwrite":
 
-        # processes folders and adds information to log files
-        dataFolder = folders(param.param["rootFolder"])
-        dataFolder.setsFolders()
-        log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-        log1.report("folders read: {}".format(len(dataFolder.listFolders)))
-        writeString2File(
-            log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+    # processes folders and adds information to log files
+    dataFolder = folders(param.param["rootFolder"])
+    dataFolder.setsFolders()
+    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
+    writeString2File(
+        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+    )
+
+    # loops over folders
+    for currentFolder in dataFolder.listFolders:
+        alignmentResultsTable = alignImagesInCurrentFolder(
+            currentFolder, param, dataFolder, log1, session1, fileName
         )
 
-        # loops over folders
-        for currentFolder in dataFolder.listFolders:
-            alignmentResultsTable = alignImagesInCurrentFolder(
-                currentFolder, param, dataFolder, log1, session1, fileName
-            )
+    # saves Table with all shifts
+    alignmentResultsTable.write(
+        dataFolder.outputFiles["alignImages"].split(".")[0] + ".table", format="ascii.ecsv", overwrite=True,
+    )
 
-        # saves Table with all shifts
-        alignmentResultsTable.write(
-            dataFolder.outputFiles["alignImages"].split(".")[0] + ".table", format="ascii.ecsv", overwrite=True,
-        )
-
-        del dataFolder
+    del dataFolder
 
 
 def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, session1, dictShifts):
@@ -619,15 +618,14 @@ def appliesRegistrations(param, log1, session1, fileName=None):
     sessionName = "registersImages"
 
     # verbose=False
-    if param.param["alignImages"]["operation"] == "overwrite":
 
-        # processes folders and files
-        dataFolder = folders(param.param["rootFolder"])
-        dataFolder.setsFolders()
-        log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-        log1.report("folders read: {}".format(len(dataFolder.listFolders)))
+    # processes folders and files
+    dataFolder = folders(param.param["rootFolder"])
+    dataFolder.setsFolders()
+    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
 
-        for currentFolder in dataFolder.listFolders:
-            appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName)
+    for currentFolder in dataFolder.listFolders:
+        appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName)
 
-        del dataFolder
+    del dataFolder
