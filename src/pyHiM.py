@@ -53,11 +53,11 @@ if __name__ == "__main__":
         # [registers fiducials using a barcode as reference]
         HiM.alignImages(param, ilabel)
 
-        # [aligns fiducials in 3D]
-        HiM.alignImages3D(param, ilabel)
-
         # [applies registration to DAPI and barcodes]
         HiM.appliesRegistrations(param, ilabel)
+
+        # [aligns fiducials in 3D]
+        HiM.alignImages3D(param, ilabel)
 
         # [segments DAPI and sources in 2D]
         HiM.segmentMasks(param, ilabel)
