@@ -19,7 +19,7 @@ steps:
     - re-align 3D image using XY alignment
     - segment objects to get labeled masks
     - Get weighted moments and gaussian fits
-    
+
     - display results:
         - overlap XY, XZ, YZ image projections with moment and gaussian fits
     - output results in a Table() using same formatting as that used in segmentMasks.py
@@ -31,52 +31,25 @@ steps:
 # =============================================================================
 
 import glob, os
-import matplotlib.pylab as plt
 import numpy as np
 from datetime import datetime
-from scipy.ndimage import shift as shiftImage
-from scipy.optimize import curve_fit
-from shutil import copyfile
 from skimage import io
 import uuid
 
 from tqdm import trange, tqdm
-from astropy.visualization import simple_norm
-from astropy.table import Table, Column
-from photutils import CircularAperture
-from dask.distributed import Client, LocalCluster, get_client, as_completed
+from astropy.table import Table
+from dask.distributed import Client, get_client
 
-from numba import jit
-
-from imageProcessing.imageProcessing import Image
 from imageProcessing.imageProcessing import (
-    _reinterpolatesFocalPlane,
-    imageShowWithValues,
-    imageShowWithValuesSingle,
-    imageAdjust,
-    _removesInhomogeneousBackground,
     appliesXYshift3Dimages,
-    imageBlockAlignment3D,
-    plots3DshiftMatrices,
-    combinesBlocksImageByReprojection,
-    plots4images,
-    makesShiftMatrixHiRes,
     preProcess3DImage,
     _segments3DvolumesByThresholding,
-    display3D,
+    display3D_assembled,
 )
-from fileProcessing.fileManagement import folders, writeString2File, loadJSON
-from fileProcessing.fileManagement import daskCluster, RT2fileName, loadsAlignmentDictionary
+from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
 
-from photutils import Background2D, MedianBackground
-from photutils import DAOStarFinder
-from astropy.stats import sigma_clipped_stats
-
-from astropy.stats import SigmaClip
-from imageProcessing.segmentMasks import _showsImageSources
-from tqdm import trange, tqdm
 from skimage import exposure
-from skimage.registration import phase_cross_correlation
 
 from bigfish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
@@ -91,8 +64,35 @@ class segmentSources3D:
         self.param = param
         self.session1 = session1
         self.log1 = log1
-        self.window = 3
+        # self.window = 3
         self.parallel = parallel
+
+        self.p=dict()
+
+        # parameters used for 3D segmentation and deblending
+        self.p["threshold_over_std"]=1
+        self.p["sigma"]=3
+        self.p["boxSize"]=(32, 32)
+        self.p["filter_size"]=(3, 3)
+        self.p["area_min"]=3
+        self.p["area_max"]=1000
+        self.p["nlevels"]=64
+        self.p["contrast"]=0.001
+
+        # parameters used for 3D gaussian fitting
+        self.p["voxel_size_z"] = 250
+        self.p["voxel_size_yx"] = 100
+        self.p["psf_z"] = 500
+        self.p["psf_yx"] = 200
+
+        # range used for adjusting image levels during pre-precessing
+        self.p["lower_threshold"] = 0.9
+        self.p["higher_threshold"] = 0.9999
+
+        # parameters used for plotting 3D image
+
+        # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
+        self.p["windowDisplay"]= 10
 
     def createsOutputTable(self):
         output = Table(
@@ -104,7 +104,7 @@ class segmentSources3D:
                     "id",
                     "zcentroid",
                     "xcentroid",
-                    "ycentroid",                    
+                    "ycentroid",
                     "sharpness",
                     "roundness1",
                     "roundness2",
@@ -114,26 +114,26 @@ class segmentSources3D:
                     "flux",
                     "mag",
                 ),
-                dtype=("S2", 
-                       "int", 
-                       "int", 
-                       "int", 
+                dtype=("S2",
                        "int",
-                       "f4", 
-                       "f4", 
-                       "f4", 
-                       "f4", 
-                       "f4", 
-                       "f4", 
-                       "int", 
+                       "int",
+                       "int",
+                       "int",
+                       "f4",
+                       "f4",
+                       "f4",
+                       "f4",
+                       "f4",
+                       "f4",
+                       "int",
                        "f4",
                        "f4",
                        "f4",
                        "f4",
                        ),
             )
-        return output 
-    
+        return output
+
     def getMaskProperties(self, segmentedImage3D, image3D_aligned, threshold=10):
         """
         get object properties from labeled image and formats
@@ -153,10 +153,11 @@ class segmentSources3D:
 
         """
         properties = regionprops(segmentedImage3D, intensity_image=image3D_aligned)
+
         centroids=[x.weighted_centroid for x in properties]
-        sharpness=[x.weighted_centroid for x in properties]
-        roundness1=[x.eccentricity for x in properties]
-        roundness2=[x.solidity for x in properties]
+        sharpness=[float(x.filled_area/x.bbox_area) for x in properties]
+        roundness1=[x.equivalent_diameter for x in properties]
+        roundness2=[x.extent for x in properties]
         npix=[x.area for x in properties]
         sky=[0.0 for x in properties]
         peak=[x.max_intensity for x in properties]
@@ -166,6 +167,7 @@ class segmentSources3D:
         z=[x[0] for x in centroids]
         y=[x[1] for x in centroids]
         x=[x[2] for x in centroids]
+
         spots = np.zeros((len(z),3))
         spots[:,0]=z
         spots[:,1]=y
@@ -182,8 +184,21 @@ class segmentSources3D:
                 peak,
                 flux,
                 mag,
-                ) 
-    
+                )
+    def plotsImage3D(self,image3D,localizations=None):
+        img = image3D
+        center = int(img.shape[1]/2)
+        window = self.p["windowDisplay"]
+
+        images = list()
+        images.append(np.sum(img,axis=0))
+        images.append(np.sum(img[:,:,center-window:center+window],axis=2))
+        images.append(np.sum(img[:,center-window:center+window,:],axis=1))
+
+        fig1 = display3D_assembled(images, localizations = localizations, plottingRange = [center,window])
+
+        return fig1
+
     def segmentSources3DinFolder(self):
         """
         Fits sources in all files in rootFolder
@@ -196,13 +211,11 @@ class segmentSources3D:
         now = datetime.now()
 
         referenceBarcode = self.param.param["alignImages"]["referenceFiducial"]
-        self.log1.info("\nReference Barcode: {}".format(referenceBarcode))
+        self.log1.info("\nReference Barcode: [{}]".format(referenceBarcode))
         filesFolder = glob.glob(self.currentFolder + os.sep + "*.tif")
         self.param.files2Process(filesFolder)
 
-        threshold_over_std,sigma ,boxSize, filter_size=1, 3, (32, 32),(3, 3)
-        area_min, area_max, nlevels, contrast = 3, 1000, 64, 0.001
-        voxel_size_z, voxel_size_yx,psf_z, psf_yx = 250, 100, 500, 200 
+        p=self.p
 
         fileNameReferenceList, ROIList = RT2fileName(self.param, referenceBarcode)
 
@@ -210,11 +223,10 @@ class segmentSources3D:
         self.log1.info("\nDetected {} ROIs".format(numberROIs))
 
         # loads dicShifts with shifts for all ROIs and all labels
-        
         dictShifts, dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
 
         # creates Table that will hold results
-        output = self.createsOutputTable()
+        outputTable = self.createsOutputTable()
 
         if numberROIs > 0:
 
@@ -225,24 +237,26 @@ class segmentSources3D:
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
 
-                print("Found {} files in ROI: {}".format(len(fileName2ProcessList), ROI))
-                print("[roi:cycle] {}".format("|".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
+                print("Found {} files in ROI [{}]".format(len(fileName2ProcessList), ROI))
+                print("[roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
                                 + ":" + str(self.param.decodesFileParts(os.path.basename(x))["cycle"]) for x in fileName2ProcessList])))
 
                 for fileName2Process in self.param.fileList2Process:
                     # excludes the reference fiducial and processes files in the same ROI
                     roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
-                    label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
+                    # label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
+                    label = str(self.param.decodesFileParts(os.path.basename(fileName2Process))["cycle"])
 
                     if roi == ROI:
 
                         # - load  and preprocesses 3D fiducial file
-                        print("\n\nProcessing cycle {}".format(os.path.basename(fileName2Process)))
+                        print("\n\nProcessing roi:[{}] cycle:[{}]".format(roi,label))
+                        print("File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
-                        image3D = preProcess3DImage(image3D0, self.lower_threshold, self.higher_threshold)
+                        image3D = preProcess3DImage(image3D0, self.p["lower_threshold"], self.p["higher_threshold"])
 
                         # drifts 3D stack in XY
-                        if dictShiftsAvailable:
+                        if dictShiftsAvailable and  label != referenceBarcode:
                             # uses existing shift calculated by alignImages
                             try:
                                 shift = dictShifts["ROI:" + roi][label]
@@ -252,21 +266,26 @@ class segmentSources3D:
                                 raise SystemExit(
                                     "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                                         "ROI:" + ROI, label))
-                                
+
                         # applies XY shift to 3D stack
-                        print("shifts XY = {}".format(shift))
-                        image3D_aligned = appliesXYshift3Dimages(image3D, shift)
-                        
+                        if label != referenceBarcode:
+                            print("Applies shift = {}".format(shift))
+                            image3D_aligned = appliesXYshift3Dimages(image3D, shift)
+                        else:
+                            print("Running reference fiducial cycle: no shift applied!")
+                            shift = np.array([0.,0.])
+                            image3D_aligned = image3D
+
                         # segments 3D volumes
                         binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_aligned,
-                                                                                    threshold_over_std=threshold_over_std,
-                                                                                    sigma = sigma,
-                                                                                    boxSize=boxSize,
-                                                                                    filter_size=filter_size,
-                                                                                    area_min = area_min,
-                                                                                    area_max=area_max,
-                                                                                    nlevels=nlevels,
-                                                                                    contrast=contrast,
+                                                                                    threshold_over_std=p["threshold_over_std"],
+                                                                                    sigma = p["sigma"],
+                                                                                    boxSize=p["boxSize"],
+                                                                                    filter_size=p["filter_size"],
+                                                                                    area_min = p["area_min"],
+                                                                                    area_max=p["area_max"],
+                                                                                    nlevels=p["nlevels"],
+                                                                                    contrast=p["contrast"],
                                                                                     deblend3D = True)
                         # gets centroids and converts to spot int64 NPY array
                         (
@@ -279,18 +298,21 @@ class segmentSources3D:
                             peak,
                             flux,
                             mag,
-                            ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = threshold_over_std)
+                            ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"])
+
+                        print("Rescales image values after reinterpolation")
+                        image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
                         # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-                        spots_subpixel = fit_subpixel(image3D_aligned, 
-                                                      spots, 
-                                                      voxel_size_z=voxel_size_z, 
-                                                      voxel_size_yx=voxel_size_yx,
-                                                      psf_z=psf_z, 
-                                                      psf_yx=psf_yx)
+                        spots_subpixel = fit_subpixel(image3D_aligned,
+                                                      spots,
+                                                      voxel_size_z=p["voxel_size_z"],
+                                                      voxel_size_yx=p["voxel_size_yx"],
+                                                      psf_z=p["psf_z"],
+                                                      psf_yx=p["psf_yx"])
 
                         # updates table
-                        for i in range(spots_subpixel.shape[0]):   
+                        for i in range(spots_subpixel.shape[0]):
                             z,x,y = spots_subpixel[i,:]
                             Table_entry = [str(uuid.uuid4()),
                                            roi,
@@ -309,66 +331,38 @@ class segmentSources3D:
                                            flux[i],
                                            mag[i],
                                            ]
-                            output.add_row(Table_entry)
+                            outputTable.add_row(Table_entry)
 
-                        # fig3 = plt.figure(constrained_layout=False)
-                        # fig3.set_size_inches((20 * 2, 20))
-                        # gs = fig3.add_gridspec(2, 2)
-                        # ax = [fig3.add_subplot(gs[:, 0]), fig3.add_subplot(gs[0, 1]), fig3.add_subplot(gs[1, 1])]
+                        # represents image in 3D with localizations
+                        figures=list()
+                        figures.append([self.plotsImage3D(image3D_aligned,localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
 
-                        # titles = ["Z-projection", "X-projection", "Y-projection"]
+                        # saves figures
+                        outputFileNames = [self.dataFolder.outputFolders["segmentedObjects"]+os.sep+os.path.basename(fileName2Process)+x[1] for x in figures]
 
-                        # for axis, output, i in zip(ax, outputs, self.axes2Plot):
-                        #     axis.imshow(output[0])
-                        #     axis.set_title(titles[i])
-
-                        # fig3.tight_layout()
-
-                        # fig4 = plots3DshiftMatrices(SSIM_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
-                        # fig4.suptitle("SSIM block matrices")
-
-                        # fig5 = plots3DshiftMatrices(MSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
-                        # fig5.suptitle("mean square root block matrices")
-
-                        # fig6 = plots3DshiftMatrices(NRMSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
-                        # fig6.suptitle("normalized root mean square block matrices")
-
-                        # # saves figures
-                        # figTitles = ['_bkgSubstracted.png','_shiftMatrices.png',
-                        #              '_3Dalignments.png','_SSIMblocks.png',
-                        #              '_MSEblocks.png','_NRMSEblocks.png']
-                        # outputFileNames = ['/home/marcnol/Documents'+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
-                        # outputFileNames = [self.dataFolder.outputFolders["alignImages"]+os.sep+os.path.basename(fileName2Process)+x for x in figTitles]
-
-                        # figs=[fig1,fig2,fig3,fig4,fig5,fig6]
-                        # for fig, file in zip(figs,outputFileNames):
-                        #     fig.savefig(file)
-
-                        # dict with shiftMatrix and NRMSEmatrix: https://en.wikipedia.org/wiki/Root-mean-square_deviation
-                        # These matrices can be used to apply and assess zxy corrections for any pixel in the 3D image
-                        # reference file,aligned file,ROI,label,block_i,block_j,shift_z,shift_x,shift_y,quality_xy,quality_zy,quality_zx
-
+                        for fig, file in zip(figures,outputFileNames):
+                            fig[0].savefig(file)
 
         # saves Table with all shifts
-        alignmentResultsTable.write(
-            self.dataFolder.outputFiles["alignImages"].split(".")[0] + "_block3D.dat",
+        outputTable.write(
+            self.outputFileName,
             format="ascii.ecsv",
             overwrite=True,
         )
 
-        print("alignFiducials3D procesing time: {}".format(datetime.now() - now))
+        print("segmentSources3D procesing time: {}".format(datetime.now() - now))
 
 
-    def alignFiducials3D(self):
+    def segmentSources3D(self):
         """
-        runs refitting routine in rootFolder
+        runs 3D fitting routine in rootFolder
 
         Returns
         -------
         None.
 
         """
-        sessionName = "alignFiducials3D"
+        sessionName = "segmentSources3D"
 
         # processes folders and files
         self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
@@ -380,23 +374,17 @@ class segmentSources3D:
         self.currentFolder = self.dataFolder.listFolders[0]
 
         self.dataFolder.createsFolders(self.currentFolder, self.param)
-        self.outputFileName = self.dataFolder.outputFiles["alignImages"]
+        self.label = self.param.param["acquisition"]["label"]
+        self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"] + "_3D_" + self.label + ".dat"
 
         self.log1.report("-------> Processing Folder: {}".format(self.currentFolder))
         self.log1.parallel = self.parallel
 
-        self.blockSizeXY = 128
-        self.upsample_factor=100
-        self.lower_threshold = 0.9
-        self.higher_threshold=0.9999
-        self.axes2Plot = range(3)
-
-        self.alignFiducials3DinFolder()
+        self.segmentSources3DinFolder()
 
         self.session1.add(self.currentFolder, sessionName)
 
-        self.log1.report("HiM matrix in {} processed".format(self.currentFolder), "info")
+        self.log1.report("segmentedObjects run in {} finished".format(self.currentFolder), "info")
 
         return 0
 
-    
