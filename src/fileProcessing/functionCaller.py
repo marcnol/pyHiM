@@ -29,7 +29,7 @@ from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
-
+from imageProcessing.segmentSources3D import segmentSources3D
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -135,12 +135,30 @@ class HiMfunctionCaller:
             # and param.param["acquisition"]["label"] != "fiducial"
             self.getLabel(ilabel) != "RNA"
             and param.param["acquisition"]["label"] != "RNA"
+            and "2D" in param.param["segmentedObjects"]["operation"]
         ):
             if not self.parallel:
                 segmentMasks(param, self.log1, self.session1)
             else:
                 result = self.client.submit(segmentMasks, param, self.log1, self.session1)
                 _ = self.client.gather(result)
+
+
+    def segmentSources3D(self, param, ilabel):
+        if (
+            self.getLabel(ilabel) == "barcode"
+            and "3D" in param.param["segmentedObjects"]["operation"]
+        ):
+            self.log1.report(
+                "Making 3D image segmentations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
+            )
+            _segmentSources3D = segmentSources3D(param, self.log1, self.session1, parallel=self.parallel)
+            if not self.parallel:
+                _segmentSources3D.segmentSources3D()
+            else:
+                result = self.client.submit(_segmentSources3D.segmentSources3D)
+                _ = self.client.gather(result)
+
 
     def projectsBarcodes(self, param, ilabel):
         if self.getLabel(ilabel) == "barcode":

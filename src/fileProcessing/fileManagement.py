@@ -257,7 +257,7 @@ class Parameters:
             },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
-                "operation": "overwrite",  # overwrite, skip
+                "operation": "2D",  # options: 2D or 3D
                 "outputFile": "segmentedObjects",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
                 "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
@@ -629,5 +629,4 @@ def loadsAlignmentDictionary(dataFolder, log1):
         log1.report("Dictionary File loaded: {}".format(dictFileName))
         dictShiftsAvailable = True
 
-    return dictShifts, dictShiftsAvailable 
-  
+    return dictShifts, dictShiftsAvailable

@@ -59,8 +59,11 @@ if __name__ == "__main__":
         # [applies registration to DAPI and barcodes]
         HiM.appliesRegistrations(param, ilabel)
 
-        # [segments DAPI and spot masks]
+        # [segments DAPI and sources in 2D]
         HiM.segmentMasks(param, ilabel)
+
+        # [segments sources in 3D]
+        HiM.segmentSources3D(param, ilabel)
 
         # [2D projects all barcodes in an ROI]
         HiM.projectsBarcodes(param, ilabel)

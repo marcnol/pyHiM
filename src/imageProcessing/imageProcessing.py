@@ -1263,7 +1263,7 @@ def _segments3DvolumesByThresholding(image3D,
             nlevels=nlevels,
             contrast=contrast,
             relabel=True,
-            mode='exponential'
+            mode='exponential',
         )
 
         # removes Masks too big or too small
@@ -1336,15 +1336,15 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
 
 
 #     if image3D is not None:
-#         images = list()        
+#         images = list()
 #         images.append(image3D[z,:,:])
 #         images.append(image3D[:,rangeXY,:])
 #         images.append(image3D[:,:,rangeXY])
 #     else:
 #         images=[1,1,1]
-        
+
 #     if labels is not None:
-#         segmented = list()        
+#         segmented = list()
 #         segmented.append(labels[z,:,:])
 #         segmented.append(labels[:,rangeXY,:])
 #         segmented.append(labels[:,:,rangeXY])
@@ -1357,21 +1357,21 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
 #         for localizations in localizationsList:
 #             localized = list()
 #             localized.append(localizations[:,[2,1]])
-#             localized.append(localizations[:,[2,0]])        
-#             localized.append(localizations[:,[1,0]])        
+#             localized.append(localizations[:,[2,0]])
+#             localized.append(localizations[:,[1,0]])
 #             localizedList.append(localized)
-            
+
 #     else:
 #         localizedList=[1,1,1]
 
 #     percent=99.5
 #     symbols=['+','o','*','^']
 #     colors=['r','b','g','y']
-    
+
 #     fig, axes = plt.subplots(1, len(images))
 #     fig.set_size_inches(len(images) * 50, 50)
 #     ax = axes.ravel()
-        
+
 #     for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
 #         if image3D is not None:
 #             if norm:
@@ -1382,11 +1382,11 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
 #         if labels is not None:
 #             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
 #         if localizations is not None:
-            
+
 #             for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
 #                 locs =  localizedList[iLocList][iPlane]
-#                 axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)  
-                
+#                 axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
+
 #     return fig
 
 
@@ -1395,15 +1395,15 @@ def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY
 
 
     if image3D is not None:
-        images = list()        
+        images = list()
         images.append(image3D[z,:,:])
         images.append(image3D[:,rangeXY,:])
         images.append(image3D[:,:,rangeXY])
     else:
         images=[1,1,1]
-        
+
     if labels is not None:
-        segmented = list()        
+        segmented = list()
         segmented.append(labels[z,:,:])
         segmented.append(labels[:,rangeXY,:])
         segmented.append(labels[:,:,rangeXY])
@@ -1416,21 +1416,21 @@ def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY
         for localizations in localizationsList:
             localized = list()
             localized.append(localizations[:,[2,1]])
-            localized.append(localizations[:,[2,0]])        
-            localized.append(localizations[:,[1,0]])        
+            localized.append(localizations[:,[2,0]])
+            localized.append(localizations[:,[1,0]])
             localizedList.append(localized)
-            
+
     else:
         localizedList=[1,1,1]
 
     percent=99.5
     symbols=['+','o','*','^']
     colors=['r','b','g','y']
-    
+
     fig, axes = plt.subplots(1, len(images))
     fig.set_size_inches(len(images) * 50, 50)
     ax = axes.ravel()
-        
+
     for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
         if image3D is not None:
             if norm:
@@ -1441,9 +1441,46 @@ def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY
         if labels is not None:
             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
         if localizations is not None:
-            
+
             for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
                 locs =  localizedList[iLocList][iPlane]
-                axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)  
-                
+                axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
+
+    return fig
+
+def display3D_assembled(images, localizations = None, plottingRange = None):
+    wspace=25
+
+    rows_XY, cols_XY = images[0].shape[1], images[0].shape[0]
+    rows_YZ, cols_ZX = images[2].shape[0], images[1].shape[0]
+    rows = rows_XY + rows_YZ + wspace
+    cols = cols_XY + cols_ZX + wspace
+
+    fig = plt.figure(figsize=(50,50), tight_layout=True)
+    axis = fig.add_axes([0.1, 0.1, .8, .8])
+
+    displayImage = np.zeros((rows,cols))
+    displayImage[0:rows_XY,0:cols_XY] = images[0]
+    displayImage[rows_XY+wspace:rows_XY+rows_YZ+wspace,0:cols_XY] = images[2]
+    displayImage[0:rows_XY,cols_XY+wspace:cols_XY+cols_ZX+wspace] = images[1].transpose()
+
+    norm = simple_norm(displayImage[:,:], "sqrt", percent=99)
+    axis.imshow(displayImage[:,:],cmap='Greys',alpha=1, norm=norm)
+
+    colors = ['r','g','b','y']
+    markersizes = [2,1,1,1,1]
+    if localizations is not None:
+        for i,loc in enumerate(localizations):
+            axis.plot(loc[:,2],loc[:,1],'+',color=colors[i],markersize=1)
+            if plottingRange is not None:
+                selections = [np.abs(loc[:,a]-plottingRange[0])<plottingRange[1] for a in [2,1]]
+                axis.plot(loc[selections[0],0]+cols_XY+wspace,loc[selections[0],1],'+',color=colors[i],markersize=markersizes[i],alpha=.9)
+                axis.plot(loc[selections[1],2],loc[selections[1],0]+rows_XY+wspace,'+',color=colors[i],markersize=markersizes[i],alpha=.9)
+            else:
+                axis.plot(loc[:,0]+cols_XY,loc[:,1],'+',color=colors[i],markersize=1)
+
+    axis.axes.yaxis.set_visible(False)
+    axis.axes.xaxis.set_visible(False)
+    axis.axis("off")
+
     return fig
