@@ -111,11 +111,11 @@ class HiMfunctionCaller:
                 "Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
             _drift3D = drift3D(param, self.log1, self.session1, parallel=self.parallel)
-            if not self.parallel:
-                _drift3D.alignFiducials3D()
-            else:
-                result = self.client.submit(_drift3D.alignFiducials3D)
-                _ = self.client.gather(result)
+            # if not self.parallel:
+            _drift3D.alignFiducials3D()
+            # else:
+            #     result = self.client.submit(_drift3D.alignFiducials3D)
+            #     _ = self.client.gather(result)
 
     def appliesRegistrations(self, param, ilabel):
         if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":

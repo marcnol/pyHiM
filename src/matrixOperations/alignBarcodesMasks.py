@@ -412,6 +412,10 @@ class cellID:
                 else:
                     zxy_corrected = zxy_uncorrected
                     
+                    
+                # check for quality of shift correction before applying it !!
+                #!TODO 
+                
         # keeps uncorrected values if no match is found
         if not _foundMatch:
             print("Did not find match for ROI #{} barcode #{}".format(ROI, barcode))

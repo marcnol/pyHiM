@@ -1327,66 +1327,6 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
 
     return image
 
-
-# def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
-
-
-#     if image3D is not None:
-#         images = list()
-#         images.append(image3D[z,:,:])
-#         images.append(image3D[:,rangeXY,:])
-#         images.append(image3D[:,:,rangeXY])
-#     else:
-#         images=[1,1,1]
-
-#     if labels is not None:
-#         segmented = list()
-#         segmented.append(labels[z,:,:])
-#         segmented.append(labels[:,rangeXY,:])
-#         segmented.append(labels[:,:,rangeXY])
-#     else:
-#         segmented=[1,1,1]
-
-#     if localizationsList is not None:
-#         localizedList = list()
-
-#         for localizations in localizationsList:
-#             localized = list()
-#             localized.append(localizations[:,[2,1]])
-#             localized.append(localizations[:,[2,0]])
-#             localized.append(localizations[:,[1,0]])
-#             localizedList.append(localized)
-
-#     else:
-#         localizedList=[1,1,1]
-
-#     percent=99.5
-#     symbols=['+','o','*','^']
-#     colors=['r','b','g','y']
-
-#     fig, axes = plt.subplots(1, len(images))
-#     fig.set_size_inches(len(images) * 50, 50)
-#     ax = axes.ravel()
-
-#     for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
-#         if image3D is not None:
-#             if norm:
-#                 norm = simple_norm(image, "sqrt", percent=percent)
-#                 axis.imshow(image, cmap=cmap, origin="lower", norm=norm)
-#             else:
-#                 axis.imshow(image, cmap=cmap, origin="lower")
-#         if labels is not None:
-#             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
-#         if localizations is not None:
-
-#             for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
-#                 locs =  localizedList[iLocList][iPlane]
-#                 axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
-
-#     return fig
-
-
-
 def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
 
 

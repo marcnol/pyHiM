@@ -37,7 +37,8 @@ setup(
               'tensorflow',
               'dask',
               'scikit-learn',
-              'numba'
+              'numba',
+              'mrc'
               ],
     python_requires='>=3.6.0',
     install_requires=[''],
@@ -76,13 +77,19 @@ setup(
 ######################################################
 ############# conventional installation ##############
 ######################################################
-# conda install pandas numpy matplotlib astropy
-# conda install photutils -c astropy scikit-learn
+# conda install pandas numpy matplotlib astropy mrc scikit-learn
+# conda install photutils -c astropy 
 
 # pip install roipoly opencv-python tqdm stardist csbdeep numba dask
 # pip install --upgrade tensorflow
 
 # pip install --upgrade scikit-image
+
+# +++ bigfish +++
+# cd ~/Repositories
+# git clone https://github.com/fish-quant/big-fish.git
+# cd big-fish && git checkout develop
+# ln -s /home/marcnol/Repositories/big-fish /home/marcnol/anaconda3/lib/python3.7/bigfish
 
 ######################################################
 ############# upgrades                  ##############
