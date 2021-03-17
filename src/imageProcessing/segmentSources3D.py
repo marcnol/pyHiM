@@ -343,12 +343,13 @@ class segmentSources3D:
                         for fig, file in zip(figures,outputFileNames):
                             fig[0].savefig(file)
 
-        # saves Table with all shifts
-        outputTable.write(
-            self.outputFileName,
-            format="ascii.ecsv",
-            overwrite=True,
-        )
+
+                        # saves Table with all shifts in every iteration to avoid loosing computed data
+                        outputTable.write(
+                            self.outputFileName,
+                            format="ascii.ecsv",
+                            overwrite=True,
+                        )
 
         print("segmentSources3D procesing time: {}".format(datetime.now() - now))
 
