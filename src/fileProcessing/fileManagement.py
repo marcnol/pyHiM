@@ -436,7 +436,7 @@ class daskCluster:
         maxNumberThreads = int(np.min([numberCoresAvailable * self.maximumLoad, free_m / self.memoryPerWorker]))
 
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
-        self.nThreads = 4
+        # self.nThreads = 4
 
         print("Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
 
