@@ -153,11 +153,11 @@ class HiMfunctionCaller:
                 "Making 3D image segmentations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
             _segmentSources3D = segmentSources3D(param, self.log1, self.session1, parallel=self.parallel)
-            if not self.parallel:
-                _segmentSources3D.segmentSources3D()
-            else:
-                result = self.client.submit(_segmentSources3D.segmentSources3D)
-                _ = self.client.gather(result)
+            # if not self.parallel:
+            _segmentSources3D.segmentSources3D()
+            # else:
+            #     result = self.client.submit(_segmentSources3D.segmentSources3D)
+            #     _ = self.client.gather(result)
 
 
     def projectsBarcodes(self, param, ilabel):
