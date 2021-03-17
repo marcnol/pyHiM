@@ -19,7 +19,6 @@ from matplotlib import ticker
 import matplotlib.pyplot as plt
 from tifffile import imsave
 
-
 import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
@@ -45,6 +44,8 @@ from astropy.convolution import Gaussian2DKernel
 from photutils import detect_sources
 from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
+
+from dask.distributed import get_client
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -446,7 +447,6 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
     else:
         return im1_bkg_substracted
 
-from dask.distributed import get_client
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
 

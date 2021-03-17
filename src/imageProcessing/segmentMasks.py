@@ -25,19 +25,19 @@ import glob, os, time
 import matplotlib.pylab as plt
 from matplotlib.path import Path
 from scipy.ndimage import gaussian_filter
-from scipy.spatial import Voronoi, voronoi_plot_2d
+from scipy.spatial import Voronoi
 from skimage.measure import regionprops
 
 import numpy as np
 import uuid
-from dask.distributed import Client, get_client
+from dask.distributed import get_client
 
 from astropy.stats import sigma_clipped_stats, SigmaClip, gaussian_fwhm_to_sigma
 from astropy.convolution import Gaussian2DKernel
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.table import Table, vstack, Column
-from photutils import DAOStarFinder, CircularAperture, detect_sources
+from photutils import DAOStarFinder, detect_sources
 from photutils import detect_threshold, deblend_sources
 from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
@@ -49,13 +49,6 @@ from fileProcessing.fileManagement import folders, writeString2File
 import matplotlib
 
 matplotlib.rcParams["image.interpolation"] = None
-from csbdeep.utils import normalize
-
-from stardist import random_label_cmap
-from stardist.models import StarDist2D
-
-np.random.seed(6)
-lbl_cmap = random_label_cmap()
 
 # to remove in a future version
 import warnings
@@ -103,6 +96,8 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
 
 
 def showsImageMasks(im, log1, segm_deblend, outputFileName):
+    from stardist import random_label_cmap
+    lbl_cmap = random_label_cmap()
 
     norm = ImageNormalize(stretch=SqrtStretch())
     cmap = lbl_cmap
@@ -504,6 +499,11 @@ def segmentMaskStardist(im, param):
     segm_deblend: 2D np array where each pixel contains the label of the mask segmented. Background: 0
 
     """
+
+    from csbdeep.utils import normalize
+    from stardist.models import StarDist2D
+    np.random.seed(6)
+
     # removes background
     # threshold = detect_threshold(im, nsigma=2.0)
     # sigma_clip = SigmaClip(sigma=param.param["segmentedObjects"]["background_sigma"])
