@@ -74,8 +74,15 @@ class HiMfunctionCaller:
         if self.parallel:
             parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
             numberUniqueCycles = retrieveNumberUniqueBarcodesRootFolder(self.rootFolder, parametersFile)
+            
             print("Found {} unique cycles in rootFolder".format(numberUniqueCycles))
+
+            numberUniqueCycles=25
+
+            print("Wil request {} threads".format(numberUniqueCycles))
+            
             self.daskClusterInstance = daskCluster(numberUniqueCycles)
+            
             print("Go to http://localhost:8787/status for information on progress...")
 
             self.cluster = LocalCluster(
