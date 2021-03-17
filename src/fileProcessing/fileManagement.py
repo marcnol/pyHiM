@@ -639,3 +639,5 @@ def try_get_client():
         client.restart()
     except ValueError:
         client=None
+
+    return client
