@@ -1221,6 +1221,59 @@ def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", 
     if not verbose:
         plt.close(fig)
 
+def _segments2DimageByThresholding(image2D,
+                             threshold_over_std=10,
+                             sigma = 3,
+                             boxSize=(32, 32),
+                             filter_size=(3, 3),
+                             area_min = 3,
+                             area_max=1000,
+                             nlevels=64,
+                             contrast=0.001,
+                             deblend3D = False,
+                             kernel = []):
+
+    # makes threshold matrix
+    threshold = np.zeros(image2D.shape)
+    threshold[:]=threshold_over_std*image2D.max()/100
+    
+    # estimates masks and deblends
+
+    segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
+
+    # removes masks too close to border
+    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+
+    segm_deblend = deblend_sources(
+        image2D,
+        segm,
+        npixels=area_min,  # watch out, this is per plane!
+        filter_kernel=kernel,
+        nlevels=nlevels,
+        contrast=contrast,
+        relabel=True,
+        mode='exponential',
+    )
+
+    # removes Masks too big or too small
+    for label in segm_deblend.labels:
+        # take regions with large enough areas
+        area = segm_deblend.get_area(label)
+        # print('label {}, with area {}'.format(label,area))
+        if area < area_min or area > area_max:
+            segm_deblend.remove_label(label=label)
+            # print('label {} removed'.format(label))
+
+    # relabel so masks numbers are consecutive
+    segm_deblend.relabel_consecutive()
+
+    # image2DSegmented = segm.data % changed during recoding function
+    image2DSegmented = segm_deblend.data
+
+    image2DSegmented[image2DSegmented>0]=1
+   
+    return image2DSegmented
+
 def _segments3DvolumesByThresholding(image3D,
                                      threshold_over_std=10,
                                      sigma = 3,
@@ -1231,55 +1284,59 @@ def _segments3DvolumesByThresholding(image3D,
                                      nlevels=64,
                                      contrast=0.001,
                                      deblend3D = False):
+    client = try_get_client()
 
     numberPlanes = image3D.shape[0]
     output = np.zeros(image3D.shape)
-    threshold = np.zeros(image3D.shape[1:])
-    threshold[:]=threshold_over_std*image3D.max()/100
+    # threshold = np.zeros(image3D.shape[1:])
+    # threshold[:]=threshold_over_std*image3D.max()/100
 
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
 
     print("About to process {} planes...".format(numberPlanes))
-    for z in trange(numberPlanes):
-        image2D = image3D[z, :, :]
+    
+    if client is None:
+        for z in trange(numberPlanes):
+            image2D = image3D[z, :, :]
+            image2DSegmented = _segments2DimageByThresholding(image2D,
+                                         threshold_over_std=threshold_over_std,
+                                         sigma = sigma,
+                                         boxSize=boxSize,
+                                         filter_size=filter_size,
+                                         area_min = area_min,
+                                         area_max=area_max,
+                                         nlevels=nlevels,
+                                         contrast=contrast,
+                                         deblend3D = deblend3D,
+                                         kernel=kernel)
+            output[z,:,:] = image2DSegmented
 
-        # estimates masks and deblends
+    else:
+        imageList = [image3D[z, :, :] for z in range(numberPlanes)]
+        imageListScattered = client.scatter(imageList)
+        futures = [client.submit(_segments2DimageByThresholding,
+                                         image2D,
+                                         threshold_over_std=threshold_over_std,
+                                         sigma = sigma,
+                                         boxSize=boxSize,
+                                         filter_size=filter_size,
+                                         area_min = area_min,
+                                         area_max=area_max,
+                                         nlevels=nlevels,
+                                         contrast=contrast,
+                                         deblend3D = deblend3D,
+                                         kernel=kernel) for img in imageListScattered]
+        
+        print("Waiting for {} results to arrive".format(len(futures)))
+        results = client.gather(futures)
+        print("Retrieving {} results from cluster".format(len(results)))
 
-        segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
-
-        # removes masks too close to border
-        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-
-        segm_deblend = deblend_sources(
-            image2D,
-            segm,
-            npixels=area_min,  # watch out, this is per plane!
-            filter_kernel=kernel,
-            nlevels=nlevels,
-            contrast=contrast,
-            relabel=True,
-            mode='exponential',
-        )
-
-        # removes Masks too big or too small
-        for label in segm_deblend.labels:
-            # take regions with large enough areas
-            area = segm_deblend.get_area(label)
-            # print('label {}, with area {}'.format(label,area))
-            if area < area_min or area > area_max:
-                segm_deblend.remove_label(label=label)
-                # print('label {} removed'.format(label))
-
-        # relabel so masks numbers are consecutive
-        segm_deblend.relabel_consecutive()
-
-        image2DSegmented = segm.data
-
-        image2DSegmented[image2DSegmented>0]=1
-
-        output[z,:,:] = image2DSegmented
-
+        for z, output2D in zip(range(numberPlanes),results):
+            output[z, :, :] = output2D
+            
+        del results, futures
+        
     labels = measure.label(output)
 
     if deblend3D:
@@ -1316,7 +1373,6 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
 
 def preProcess3DImage(x,lower_threshold, higher_threshold):
 
-    # images0= [x/x.max() for x in images0]
     image = exposure.rescale_intensity(x, out_range=(0, 1))
 
     print("Removing inhomogeneous background...")

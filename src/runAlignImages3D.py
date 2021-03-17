@@ -20,7 +20,7 @@ if __name__ == "__main__":
     runParameters=HiM_parseArguments()
     runParameters["refit"]=True
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="refitBarcodes3D")
+    HiM = HiMfunctionCaller(runParameters, sessionName="aligns images in 3D")
     HiM.initialize()
     session1, log1=HiM.session1, HiM.log1
 
