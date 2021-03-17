@@ -23,6 +23,7 @@ import multiprocessing
 import numpy as np
 
 from dask.distributed import Client, LocalCluster
+from dask.distributed import get_client
 
 
 # =============================================================================
@@ -630,3 +631,11 @@ def loadsAlignmentDictionary(dataFolder, log1):
         dictShiftsAvailable = True
 
     return dictShifts, dictShiftsAvailable
+
+
+def try_get_client():
+    try:
+        client = get_client()
+        client.restart()
+    except ValueError:
+        client=None

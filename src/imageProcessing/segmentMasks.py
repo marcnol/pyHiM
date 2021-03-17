@@ -43,7 +43,7 @@ from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
 
 from imageProcessing.imageProcessing import Image, saveImage2Dcmd
-from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import folders, writeString2File, try_get_client
 
 # ---- stardist
 import matplotlib

@@ -42,10 +42,10 @@ from astropy.stats import SigmaClip
 from astropy.convolution import Gaussian2DKernel
 
 from photutils import detect_sources
-from photutils import detect_threshold, deblend_sources
+from photutils import deblend_sources
 from photutils import Background2D, MedianBackground
 
-from dask.distributed import get_client
+from fileProcessing.fileManagement import try_get_client
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -450,11 +450,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
 
-    try:
-        client = get_client()
-        client.restart()
-    except ValueError:
-        client=None
+    client = try_get_client()
 
     numberPlanes = image3D.shape[0]
     output = np.zeros(image3D.shape)
