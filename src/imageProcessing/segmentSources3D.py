@@ -53,6 +53,7 @@ from skimage import exposure
 
 from bigfish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
+from skimage.util.apply_parallel import apply_parallel
 
 
 # =============================================================================
@@ -300,9 +301,10 @@ class segmentSources3D:
                             mag,
                             ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"])
 
-                        print("Rescales image values after reinterpolation")
+                        print(">Rescales image values after reinterpolation")
                         image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
+                        print(">Refits spots using gaussian 3D fittings...")
                         # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
                         spots_subpixel = fit_subpixel(image3D_aligned,
                                                       spots,
@@ -343,13 +345,14 @@ class segmentSources3D:
                         for fig, file in zip(figures,outputFileNames):
                             fig[0].savefig(file)
 
-
                         # saves Table with all shifts in every iteration to avoid loosing computed data
                         outputTable.write(
                             self.outputFileName,
                             format="ascii.ecsv",
                             overwrite=True,
                         )
+
+                        del image3D_aligned, image3D
 
         print("segmentSources3D procesing time: {}".format(datetime.now() - now))
 

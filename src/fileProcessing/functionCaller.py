@@ -70,19 +70,15 @@ class HiMfunctionCaller:
             self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
 
-    def lauchDaskScheduler(self):
+    def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
-            parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
-            numberUniqueCycles = retrieveNumberUniqueBarcodesRootFolder(self.rootFolder, parametersFile)
-            
-            print("Found {} unique cycles in rootFolder".format(numberUniqueCycles))
+            # parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
+            # numberUniqueCycles = retrieveNumberUniqueBarcodesRootFolder(self.rootFolder, parametersFile)
 
-            numberUniqueCycles=25
+            print("Requested {} threads".format(threadsRequested))
 
-            print("Wil request {} threads".format(numberUniqueCycles))
-            
-            self.daskClusterInstance = daskCluster(numberUniqueCycles)
-            
+            self.daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
+
             print("Go to http://localhost:8787/status for information on progress...")
 
             self.cluster = LocalCluster(

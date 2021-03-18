@@ -9,6 +9,8 @@ Created on Tue Mar 16 12:00:15 2021
 from datetime import datetime
 from fileProcessing.fileManagement import Parameters
 from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+import warnings
+warnings.filterwarnings("ignore")
 
 # =============================================================================
 # MAIN

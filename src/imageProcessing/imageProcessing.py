@@ -46,6 +46,8 @@ from photutils import deblend_sources
 from photutils import Background2D, MedianBackground
 
 from fileProcessing.fileManagement import try_get_client
+import warnings
+warnings.filterwarnings("ignore")
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -333,6 +335,9 @@ def calculate_zrange(idata, parameters):
 
 
 def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
+
+    print(">Rescaling grey levels...")
+
     # rescales image to [0,1]
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
 
@@ -425,16 +430,17 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     plt.close(fig)
 
 
-def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3)):
+def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True):
     if len(im.shape) == 2:
-        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3))
+        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
     elif len(im.shape) == 3:
-        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3))
+        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
 
     return output
 
+def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False, verbose=True):
 
-def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False):
+    print("Removing inhomogeneous background from 2D image...")
 
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
@@ -448,7 +454,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
         return im1_bkg_substracted
 
 
-def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3)):
+def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True):
 
     client = try_get_client()
 
@@ -458,24 +464,26 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
     if client is not None:
+        print(">Removing inhomogeneous background from {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
         imageList = [image3D[z, :, :] for z in range(numberPlanes)]
-        imageListScattered = client.scatter(imageList)
+        # imageListScattered = client.scatter(imageList)
 
         futures = [client.submit(Background2D,img,boxSize,
                                     filter_size=filter_size, sigma_clip=sigma_clip,
-                                    bkg_estimator=bkg_estimator) for img in imageListScattered]
+                                    bkg_estimator=bkg_estimator) for img in imageList]
 
-        print("Waiting for {} results to arrive".format(len(futures)))
         results = client.gather(futures)
         print("Retrieving {} results from cluster".format(len(results)))
 
         for z, img, bkg in zip(range(numberPlanes),imageList,results):
             output[z, :, :] = img - bkg.background
-        del results, futures
+        del results, futures, imageList
+        # del imageListScattered
 
     else:
-
-        for z in trange(numberPlanes):
+        print(">Removing inhomogeneous background from {} planes using 1 worker...".format(numberPlanes))
+        Zrange=trange(numberPlanes)
+        for z in Zrange:
             image2D = image3D[z, :, :]
             bkg = Background2D(
                 image2D, boxSize, filter_size=filter_size, sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,
@@ -494,6 +502,8 @@ def saveImage2Dcmd(image, fileName, log):
         log.report("Warning, image is empty", "Warning")
 
 
+from skimage.util.apply_parallel import apply_parallel
+
 def appliesXYshift3Dimages(image, shift):
     """
     Applies XY shift to a 3D stack
@@ -508,13 +518,81 @@ def appliesXYshift3Dimages(image, shift):
     shifted 3D image.
 
     """
+    client = try_get_client()
+    numberPlanes = image.shape[0]
 
-    shift3D = np.zeros((3))
-    shift3D[0], shift3D[1], shift3D[2] = 0, shift[0], shift[1]
+    if client is None:
+        print(">Shifting {} planes with 1 thread...".format(numberPlanes))
+        shift3D = np.zeros((3))
+        shift3D[0], shift3D[1], shift3D[2] = 0, shift[0], shift[1]
+        output = shiftImage(image, shift3D)
+    else:
+        print(">Shifting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
-    print("Shifting 3D image...")
-    output = shiftImage(image, shift3D)
+        imageListScattered = scatters3Dimage(client,image)
 
+        futures = [client.submit(shiftImage,img, shift) for img in imageListScattered]
+
+        output = reassembles3Dimage(client,futures,image.shape)
+
+        del futures
+        del imageListScattered
+
+    print("Done shifting 3D image.")
+
+    return output
+
+def scatters3Dimage(client,image):
+    """
+    splits 3D image plane by plane and scatteres them to a cluster
+
+    Parameters
+    ----------
+    client : dask CLient()
+        result of get_client()
+    image : numpy array
+        3D image.
+
+    Returns
+    -------
+    imageListScattered :  List, dict, iterator, or queue of futures matching the type of input.
+        scattered image.
+
+    """
+    numberPlanes = image.shape[0]
+    imageListScattered = [image[z, :, :] for z in range(numberPlanes)]
+    # imageListScattered = client.scatter(imageListScattered)
+    return imageListScattered
+
+def reassembles3Dimage(client,futures,output_shape):
+    """
+    waits for futures to arrive
+    collects them into a results list
+    reassembles 3D image plane by plane
+
+    Parameters
+    ----------
+    client : dask CLient()
+        result of get_client()
+    futures : list()
+        list of futures
+    output_shape : tuple
+        result of image.shape
+
+    Returns
+    -------
+    output : numpy array
+        contains reassembled 3D image.
+
+    """
+    results = client.gather(futures)
+    print(">>Retrieving {} results from cluster".format(len(results)))
+
+    output = np.zeros(output_shape)
+    for z, result in enumerate(results):
+        output[z, :, :] = result
+
+    del results
     return output
 
 def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
@@ -1236,7 +1314,7 @@ def _segments2DimageByThresholding(image2D,
     # makes threshold matrix
     threshold = np.zeros(image2D.shape)
     threshold[:]=threshold_over_std*image2D.max()/100
-    
+
     # estimates masks and deblends
 
     segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
@@ -1271,7 +1349,7 @@ def _segments2DimageByThresholding(image2D,
     image2DSegmented = segm_deblend.data
 
     image2DSegmented[image2DSegmented>0]=1
-   
+
     return image2DSegmented
 
 def _segments3DvolumesByThresholding(image3D,
@@ -1287,16 +1365,15 @@ def _segments3DvolumesByThresholding(image3D,
     client = try_get_client()
 
     numberPlanes = image3D.shape[0]
-    output = np.zeros(image3D.shape)
-    # threshold = np.zeros(image3D.shape[1:])
-    # threshold[:]=threshold_over_std*image3D.max()/100
 
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
 
-    print("About to process {} planes...".format(numberPlanes))
-    
     if client is None:
+        print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
+
+        output = np.zeros(image3D.shape)
+
         for z in trange(numberPlanes):
             image2D = image3D[z, :, :]
             image2DSegmented = _segments2DimageByThresholding(image2D,
@@ -1313,10 +1390,12 @@ def _segments3DvolumesByThresholding(image3D,
             output[z,:,:] = image2DSegmented
 
     else:
-        imageList = [image3D[z, :, :] for z in range(numberPlanes)]
-        imageListScattered = client.scatter(imageList)
+        print(">Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+
+        imageListScattered = scatters3Dimage(client,image3D)
+
         futures = [client.submit(_segments2DimageByThresholding,
-                                         image2D,
+                                         img,
                                          threshold_over_std=threshold_over_std,
                                          sigma = sigma,
                                          boxSize=boxSize,
@@ -1327,23 +1406,22 @@ def _segments3DvolumesByThresholding(image3D,
                                          contrast=contrast,
                                          deblend3D = deblend3D,
                                          kernel=kernel) for img in imageListScattered]
-        
-        print("Waiting for {} results to arrive".format(len(futures)))
-        results = client.gather(futures)
-        print("Retrieving {} results from cluster".format(len(results)))
 
-        for z, output2D in zip(range(numberPlanes),results):
-            output[z, :, :] = output2D
-            
-        del results, futures
-        
+        output = reassembles3Dimage(client,futures,image3D.shape)
+
+        del futures, imageListScattered
+
     labels = measure.label(output)
 
     if deblend3D:
         # Now we want to separate objects in 3D using watersheding
         binary=output>0
         print("Constructing distance matrix from 3D binary mask...")
-        distance = ndi.distance_transform_edt(binary)
+
+        distance = apply_parallel(ndi.distance_transform_edt, binary)
+
+        # distance = ndi.distance_transform_edt(binary)
+
         coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
         mask = np.zeros(distance.shape, dtype=bool)
         mask[tuple(coords.T)] = True
@@ -1375,10 +1453,8 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
 
     image = exposure.rescale_intensity(x, out_range=(0, 1))
 
-    print("Removing inhomogeneous background...")
     image = _removesInhomogeneousBackground(image)
 
-    print("Rescaling grey levels...")
     image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
 
     return image
