@@ -1419,14 +1419,15 @@ def _segments3DvolumesByThresholding(image3D,
         print("Constructing distance matrix from 3D binary mask...")
 
         distance = apply_parallel(ndi.distance_transform_edt, binary)
-
         # distance = ndi.distance_transform_edt(binary)
 
+        print("Deblending sources in 3D by watersheding...")
         coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
         mask = np.zeros(distance.shape, dtype=bool)
         mask[tuple(coords.T)] = True
         markers, _ = ndi.label(mask)
-        print("Deblending sources in 3D by watersheding...")
+
+        # labels = apply_parallel(watershed, -distance, extra_arguments=(markers,), extra_keywords={'mask': binary})
         labels = watershed(-distance, markers, mask=binary)
 
     return output, labels
