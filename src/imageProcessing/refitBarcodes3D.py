@@ -81,8 +81,8 @@ class refitBarcodesClass:
 
         # Adds columns to Table to hold the results
         BarcodeMapLength = len(barcodeMap)
-        if "zcentroidGauss" not in barcodeMap.keys():
-            colzPositionGaussian = Column(np.zeros((BarcodeMapLength)), name="zcentroidGauss", dtype=float)
+        if "zcentroid" not in barcodeMap.keys():
+            colzPositionGaussian = Column(np.zeros((BarcodeMapLength)), name="zcentroid", dtype=float)
             barcodeMap.add_column(colzPositionGaussian, index=7)
         if "zcentroidMoment" not in barcodeMap.keys():
             colzPositionMoment = Column(np.zeros((BarcodeMapLength)), name="zcentroidMoment", dtype=float)
@@ -370,7 +370,7 @@ class refitBarcodesClass:
             listfitSuccess.append(fitSuccess)
 
         self.log1.report("Unfailed fittings: {} out of {} ".format(sum(listfitSuccess), numberSpots))
-        barcodeMapSinglebarcode["zcentroidGauss"] = listZpositionsGaussian
+        barcodeMapSinglebarcode["zcentroid"] = listZpositionsGaussian
         barcodeMapSinglebarcode["zcentroidMoment"] = listZpositionsMoment
         barcodeMapSinglebarcode["sigmaGaussFit"] = listSigma
         barcodeMapSinglebarcode["residualGaussFit"] = listResiduals
@@ -396,14 +396,14 @@ class refitBarcodesClass:
         for item in barcodeMapSinglebarcode:
             if item["3DfitKeep"] and item["flux"] > fluxThreshold:
                 filteredCentroidMoment.append(item["zcentroidMoment"])
-                filteredCentroidGauss.append(item["zcentroidGauss"])
+                filteredCentroidGauss.append(item["zcentroid"])
                 filteredResidual.append(item["residualGaussFit"])
                 filteredSigma.append(item["sigmaGaussFit"])
 
         # plots first subpanel with centroid vs residuals
         fig, (ax2, ax1) = plt.subplots(2, 1)
         cs1a = ax2.scatter(
-            barcodeMapSinglebarcode["zcentroidGauss"],
+            barcodeMapSinglebarcode["zcentroid"],
             barcodeMapSinglebarcode["residualGaussFit"],
             s=barcodeMapSinglebarcode["sigmaGaussFit"],
             c=barcodeMapSinglebarcode["sigmaGaussFit"],
@@ -420,7 +420,7 @@ class refitBarcodesClass:
 
         # plots second subpanel with zCentroid from moment and from Gaussian fits
         cs2 = ax1.scatter(
-            barcodeMapSinglebarcode["zcentroidGauss"],
+            barcodeMapSinglebarcode["zcentroid"],
             barcodeMapSinglebarcode["zcentroidMoment"],
             s=(barcodeMapSinglebarcode["sigmaGaussFit"]),
             c=barcodeMapSinglebarcode["residualGaussFit"],
@@ -539,10 +539,10 @@ class refitBarcodesClass:
             barcodeMap.loc[result["Buid"][iSpot]] = result[iSpot]
 
     def rewritesBarcodeMap(self, barcodeMap):
-        fileNameBarcodeCoordinates = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
-        fileNameBarcodeCoordinatesOld = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode2D.dat"
+        fileNameBarcodeCoordinates = self.dataFolder.outputFiles["segmentedObjects"] + '_3D_'+ 'barcode'+'.dat'
+        # fileNameBarcodeCoordinatesOld = self.dataFolder.outputFiles["segmentedObjects"] + "_barcode.dat"
 
-        copyfile(fileNameBarcodeCoordinates, fileNameBarcodeCoordinatesOld)
+        # copyfile(fileNameBarcodeCoordinates, fileNameBarcodeCoordinatesOld)
 
         barcodeMap.write(fileNameBarcodeCoordinates, format="ascii.ecsv", overwrite=True)
 
@@ -767,9 +767,9 @@ def addsMissingColumns(barcodeMapSinglebarcode):
 
     barcodeMapNew = barcodeMapSinglebarcode.copy()
 
-    if "zcentroidGauss" not in barcodeMapSinglebarcode.keys():
+    if "zcentroid" not in barcodeMapSinglebarcode.keys():
         col_zcentroidASTROPY = Column(
-            np.nan * np.ones(len(barcodeMapSinglebarcode)), name="zcentroidGauss", dtype=float
+            np.nan * np.ones(len(barcodeMapSinglebarcode)), name="zcentroid", dtype=float
         )
         barcodeMapNew.add_column(col_zcentroidASTROPY, index=-1)
 
@@ -815,7 +815,7 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
 
     if selection_AP_3Dgaussian[0].shape[0] > 0:
         y_AP_3Dgaussian = barcodeMapNew["ycentroid"][selection_AP_3Dgaussian]
-        z_AP_3Dgaussian = barcodeMapNew["zcentroidGauss"][selection_AP_3Dgaussian]
+        z_AP_3Dgaussian = barcodeMapNew["zcentroid"][selection_AP_3Dgaussian]
         flux_AP_3Dgaussian = barcodeMapNew["flux"][selection_AP_3Dgaussian]
 
         fig = _showsImageSources(
@@ -838,7 +838,7 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
         image2D,
         barcodeMapNew["xcentroid"],
         barcodeMapNew["ycentroid"],
-        barcodeMapNew["zcentroidGauss"],
+        barcodeMapNew["zcentroid"],
         percent=99.5,
         vmin=0,
         vmax=image3D.shape[0],
@@ -852,7 +852,7 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
     fig.set_size_inches((8, 8))
 
     ax.scatter(
-        barcodeMapNew["zcentroidGauss"], barcodeMapNew["flux"], c=barcodeMapNew["roundness2"], cmap="terrain", alpha=0.5
+        barcodeMapNew["zcentroid"], barcodeMapNew["flux"], c=barcodeMapNew["roundness2"], cmap="terrain", alpha=0.5
     )
     ax.set_title("total/refitted: " + str(nSources) + "/" + str(nSourcesRefitted) + " | color: roundness2")
     ax.set_xlabel("z-position, px")
@@ -884,7 +884,7 @@ def shows3DfittingResults(image3D, image2D, barcodeMapNew, window, addSources, f
             image2D,
             barcodeMapNew["xcentroid"][select_refitted],
             barcodeMapNew["ycentroid"][select_refitted],
-            barcodeMapNew["zcentroidGauss"][select_refitted],
+            barcodeMapNew["zcentroid"][select_refitted],
             percent=99.5,
             vmin=0,
             vmax=image3D.shape[0],
@@ -909,7 +909,7 @@ def addNewSources(barcodeMapNew, newSource, sourcesYZ_fitting, xPlane, window, d
                 barcodeMapNew.add_row(barcodeMapNew[-1])
                 barcodeMapNew["id"][-1] = len(barcodeMapNew)
                 barcodeMapNew["ycentroid"][-1] = newSource["xcentroid"]
-                barcodeMapNew["zcentroidGauss"][-1] = newSource["ycentroid"]
+                barcodeMapNew["zcentroid"][-1] = newSource["ycentroid"]
                 barcodeMapNew["flux"][-1] = newSource["flux"]
                 barcodeMapNew["peak"][-1] = newSource["peak"]
                 barcodeMapNew["mag"][-1] = newSource["mag"]
@@ -922,7 +922,7 @@ def addNewSources(barcodeMapNew, newSource, sourcesYZ_fitting, xPlane, window, d
 
                 # updates source if necessary
                 if barcodeMapNew["flux"][index_barcodeMapSinglebarcode1] < newSource["flux"]:
-                    barcodeMapNew["zcentroidGauss"][index_barcodeMapSinglebarcode1] = newSource["ycentroid"]
+                    barcodeMapNew["zcentroid"][index_barcodeMapSinglebarcode1] = newSource["ycentroid"]
                     barcodeMapNew["xcentroid"][index_barcodeMapSinglebarcode1] = xPlane
                     barcodeMapNew["zcentroidStatus"][index_barcodeMapSinglebarcode1] += 1
 
@@ -950,7 +950,7 @@ def refits_3D_ASTROPY(
 
     # Adds columns to table
     barcodeMapNew = addsMissingColumns(barcodeMapSinglebarcode)
-    barcodeMapNew["zcentroidGauss"] = np.nan
+    barcodeMapNew["zcentroid"] = np.nan
 
     stats = dict()
     stats["available"] = []
@@ -994,9 +994,9 @@ def refits_3D_ASTROPY(
                     index_barcodeMapSinglebarcode = sources_in_xPlane[0][sortedList[targets][0]]
 
                     # adds z-position to existing source
-                    if np.isnan(barcodeMapNew["zcentroidGauss"][index_barcodeMapSinglebarcode]):
+                    if np.isnan(barcodeMapNew["zcentroid"][index_barcodeMapSinglebarcode]):
 
-                        barcodeMapNew["zcentroidGauss"][index_barcodeMapSinglebarcode] = newSource["ycentroid"]
+                        barcodeMapNew["zcentroid"][index_barcodeMapSinglebarcode] = newSource["ycentroid"]
                         barcodeMapNew["3DfitKeep"][index_barcodeMapSinglebarcode] = 1
 
                         if barcodeMapNew["flux"][index_barcodeMapSinglebarcode] < newSource["flux"]:
@@ -1007,7 +1007,7 @@ def refits_3D_ASTROPY(
                     # replaces a new z-position if this has already been attributed
                     elif barcodeMapNew["flux"][index_barcodeMapSinglebarcode] < newSource["flux"]:
 
-                        barcodeMapNew["zcentroidGauss"][index_barcodeMapSinglebarcode] = newSource["ycentroid"]
+                        barcodeMapNew["zcentroid"][index_barcodeMapSinglebarcode] = newSource["ycentroid"]
                         barcodeMapNew["3DfitKeep"][index_barcodeMapSinglebarcode] = 1
                         newSource["id"] += -1  # this indicates the number of times a source was replaced
 

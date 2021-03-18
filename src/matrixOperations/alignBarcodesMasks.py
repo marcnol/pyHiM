@@ -304,7 +304,6 @@ class cellID:
                 # keeps the particle if the test passed
                 x_uncorrected = self.barcodeMapROI.groups[0]["ycentroid"][i] # control inversion between x-y
                 y_uncorrected = self.barcodeMapROI.groups[0]["xcentroid"][i]
-                # print("z={}".format(self.barcodeMapROI.groups[0]["zcentroid"][i]))
                 if np.isnan(self.barcodeMapROI.groups[0]["zcentroid"][i]):
                     z_uncorrected = 0.0
                 else:
@@ -405,17 +404,16 @@ class cellID:
             if row["ROI #"] == ROI and row["label"] == "RT" + str(barcode) and row["block_i"] == zxyBlock[1] and row["block_j"] == zxyBlock[2]:
                 _foundMatch = True
                 shifts = [row["shift_z"],row["shift_x"],row["shift_y"]]
-                
+
                 # checks that drifts > toleranceDrift are not applied
                 if max(shifts)<toleranceDrift:
                     zxy_corrected = [a+shift for a,shift in zip(zxy_uncorrected,shifts)]
                 else:
                     zxy_corrected = zxy_uncorrected
-                    
-                    
+
                 # check for quality of shift correction before applying it !!
-                #!TODO 
-                
+                #!TODO
+
         # keeps uncorrected values if no match is found
         if not _foundMatch:
             print("Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
@@ -488,10 +486,13 @@ class cellID:
             vector with coordinates.
 
         """
-        if self.ndims == 3 and "zcentroidGauss" in groupKeys:
-            R = np.column_stack((x, y, z,))
-        else:
-            R = np.column_stack((x, y,))
+
+        R = np.column_stack((x, y, z,))
+
+        # if self.ndims == 3 and "zcentroidGauss" in groupKeys:
+        #     R = np.column_stack((x, y, z,))
+        # else:
+        #     R = np.column_stack((x, y,))
 
         return R
 
@@ -517,19 +518,20 @@ class cellID:
         Returns pairwise distance matrix between corrected barcodes
 
         """
+        R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
-        if len(self.alignmentResultsTable) > 0:
+        # if len(self.alignmentResultsTable) > 0:
 
-            # searches for local alignment shift for this mask in this ROI
-            # x_corrected, y_corrected = self.searchLocalShift(ROI, CellID, x_uncorrected, y_uncorrected)
+        #     # searches for local alignment shift for this mask in this ROI
+        #     # x_corrected, y_corrected = self.searchLocalShift(ROI, CellID, x_uncorrected, y_uncorrected)
 
-            # applies local drift correction
-            # R = self.buildsVector(groupKeys, x_corrected, y_corrected, z_uncorrected)
-            R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
+        #     # applies local drift correction
+        #     # R = self.buildsVector(groupKeys, x_corrected, y_corrected, z_uncorrected)
+        #     R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
-        else:
-            # does not apply local drift correction
-            R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
+        # else:
+        #     # does not apply local drift correction
+        #     R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
         return pairwise_distances(R)
 
@@ -552,14 +554,15 @@ class cellID:
         for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
 
-                # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
-                x_uncorrected, y_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data)
                 groupKeys, CellID, ROI = group.keys(), key["CellID #"], group["ROI #"].data[0]
 
-                if self.ndims == 3 and "zcentroidGauss" in group.keys():
-                    z_uncorrected = np.array(group["zcentroidGauss"].data)
-                else:
-                    z_uncorrected = []
+                # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
+                x_uncorrected, y_uncorrected, z_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data), np.array(group["zcentroid"].data)
+
+                # if self.ndims == 3 and "zcentroidGauss" in group.keys():
+                #     z_uncorrected = np.array(group["zcentroidGauss"].data)
+                # else:
+                #     z_uncorrected = []
 
                 # calculates the PWD between barcodes in CellID
                 PWD = self.calculatesPWDsingleMask(ROI, CellID, groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
@@ -578,10 +581,13 @@ class cellID:
                 np.nonzero(self.foundMatch)[0].shape[0], len(self.foundMatch), group["ROI #"].data[0]
             )
         )
-        if self.ndims == 3 and "zcentroidGauss" in group.keys():
-            print("Coordinates dimensions: 3")
-        else:
-            print("Coordinates dimensions: 2")
+
+
+        print("Coordinates dimensions: {}".format(self.ndims))
+        # if self.ndims == 3 and "zcentroidGauss" in group.keys():
+        #     print("Coordinates dimensions: 3")
+        # else:
+        #     print("Coordinates dimensions: 2")
 
         SCdistanceTable = Table()
         SCdistanceTable["Cuid"] = self.cuid
@@ -617,7 +623,6 @@ class cellID:
         print("Cells with barcodes found: {}".format(len(self.SCdistanceTable)))
 
         # [ builds SCmatrix ]
-
         numberMatrices = len(self.SCdistanceTable)  # z dimensions of SCmatrix
         uniqueBarcodes = np.unique(self.barcodeMapROI["Barcode #"].data)
         # number of unique Barcodes for xy dimensions of SCmatrix
@@ -665,16 +670,6 @@ class cellID:
 
 
 def calculatesNmatrix(SCmatrix):
-
-    # print("SCmatrix type:{}".format(type(SCmatrix)))
-    # if type(SCmatrix) is list:
-    #     print("len(SCmatrix): {}".format(len(SCmatrix)))
-    #     if len(SCmatrix)>0:
-    #         numberCells=SCmatrix[0].shape[2]
-    #     else:
-    #         numberCells=0
-    #         return np.zeros((1,1))
-    # else:
 
     numberCells = SCmatrix.shape[2]
 
@@ -766,15 +761,15 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
     """
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
-        if ndims == 3 and "zcentroidGauss" in barcodeMap.keys():
-            localizationDimension = 3
-        else:
-            localizationDimension = 2
+        # if ndims == 3:# and "zcentroidGauss" in barcodeMap.keys():
+        #     localizationDimension = 3
+        # else:
+        #     localizationDimension = 2
     else:
         print("\n\n*** ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
         sys.exit()
 
-    return barcodeMap, localizationDimension
+    return barcodeMap, ndims
 
 
 def buildsDictionaryErrorAlignmentMasks(param, dataFolder):
@@ -1120,44 +1115,46 @@ def processesPWDmatrices(param, log1, session1):
         log1.report("-------> Processing Folder: {}".format(currentFolder))
 
         fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
+        if os.path.exists(fileNameBarcodeCoordinates):
+            # 2D
+            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
+            log1.report("-------> 2D processing: {}".format(outputFileName))
 
-        # 2D
-        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-        log1.report("-------> 2D processing: {}".format(outputFileName))
+            if "pixelSizeXY" in param.param["acquisition"].keys():
+                pixelSize = param.param["acquisition"]["pixelSizeXY"]
+            else:
+                pixelSize = 0.1
 
-        if "pixelSizeXY" in param.param["acquisition"].keys():
-            pixelSize = param.param["acquisition"]["pixelSizeXY"]
-        else:
-            pixelSize = 0.1
-
-        buildsPWDmatrix(
-            param, currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
-        )
+            buildsPWDmatrix(
+                param, currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
+            )
 
         # 3D
-        outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
-        log1.report("-------> 3D processing: {}".format(outputFileName))
+        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
+        if os.path.exists(fileNameBarcodeCoordinates):
+            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
+            log1.report("-------> 3D processing: {}".format(outputFileName))
 
-        if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
-            pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-            pixelSizeZ = param.param["acquisition"]["pixelSizeZ"]
+            if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
+                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+                pixelSizeZ = param.param["acquisition"]["pixelSizeZ"]
 
-            # need to solve the issue of voxelsize...
-            # pixelSize = [pixelSizeXY,pixelSizeXY,pixelSizeZ]
-            pixelSize = pixelSizeXY
-        else:
-            pixelSize = 0.1
+                # need to solve the issue of voxelsize...
+                # pixelSize = [pixelSizeXY,pixelSizeXY,pixelSizeZ]
+                pixelSize = pixelSizeXY
+            else:
+                pixelSize = 0.1
 
-        buildsPWDmatrix(
-            param,
-            currentFolder,
-            fileNameBarcodeCoordinates,
-            outputFileName,
-            dataFolder,
-            pixelSize,
-            log1.fileNameMD,
-            ndims=3,
-        )
+            buildsPWDmatrix(
+                param,
+                currentFolder,
+                fileNameBarcodeCoordinates,
+                outputFileName,
+                dataFolder,
+                pixelSize,
+                log1.fileNameMD,
+                ndims=3,
+            )
 
         # loose ends
         session1.add(currentFolder, sessionName)
