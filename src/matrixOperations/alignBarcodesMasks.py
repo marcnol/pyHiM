@@ -220,7 +220,7 @@ class cellID:
         fig.set_size_inches((20, 20))
 
         accuracy, x, y = [], [], []
-
+        print("Plotting barcode alignments...")
         for i in trange(len(self.barcodeMapROI.groups[0])):
             barcodeID = "barcode:" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
             barcodeROI = "ROI:" + str(self.barcodeMapROI.groups[0]["ROI #"][i])
@@ -288,6 +288,7 @@ class cellID:
 
         keepAll, keepAlignmentAll, NbarcodesROI = [], [], 0
         # loops over barcode Table rows in a given ROI
+        print("Aligning by masking...")
         for i in trange(len(self.barcodeMapROI.groups[0])): # i is the index of the barcode in barcodeMapROI
             barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
             ROI = self.barcodeMapROI.groups[0]["ROI #"][i]
@@ -551,6 +552,7 @@ class cellID:
         self.initializeLists()
 
         # iterates over all cell masks in an ROI
+        print("Building SC distance Tables")
         for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
 
@@ -761,6 +763,7 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
     """
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+        print("Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
         # if ndims == 3:# and "zcentroidGauss" in barcodeMap.keys():
         #     localizationDimension = 3
         # else:
