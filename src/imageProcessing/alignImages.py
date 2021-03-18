@@ -190,6 +190,11 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     else:
         tolerance = 0.1
 
+    if "blockSize" in param.param["alignImages"].keys():
+        blockSize = param.param["alignImages"]["blockSize"]
+    else:
+        blockSize = 256
+
     if not alignByBlock:
         # [calculates unique translation for the entire image using cross-correlation]
         (
@@ -219,7 +224,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
         # calculates block shifts and polls for most favourable shift
         upsample_factor = 100
-        blockSize = (256, 256)
+        blockSize = (blockSize, blockSize)
 
         (shift, error, relativeShifts, rmsImage, contour,) = alignImagesByBlocks(
             image1_uncorrected,

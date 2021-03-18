@@ -162,7 +162,7 @@ class segmentSources3D:
         npix=[x.area for x in properties]
         sky=[0.0 for x in properties]
         peak=[x.max_intensity for x in properties]
-        flux=[x.max_intensity/threshold for x in properties] # peak intensity over the detection threshold
+        flux=[100*x.max_intensity/threshold for x in properties] # peak intensity over the detection threshold
         mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
         z=[x[0] for x in centroids]
@@ -322,8 +322,8 @@ class segmentSources3D:
                                            int(label.split('RT')[1]),
                                            i,
                                            z,
-                                           x,
                                            y,
+                                           x,
                                            sharpness[i],
                                            roundness1[i],
                                            roundness2[i],

@@ -244,6 +244,7 @@ class Parameters:
                 "higher_threshold": 0.9999999,  # higher threshold to adjust image intensity levels before xcorrelation
                 "background_sigma": 3.0,  # used to remove inhom background
                 "localShiftTolerance": 1,
+                "blockSize": 256,
                 "bezel": 20,
             },
             "projectsBarcodes": {

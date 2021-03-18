@@ -269,24 +269,30 @@ class cellID:
             flux_min = self.param.param["buildsPWDmatrix"]["flux_min"]
         else:
             flux_min = 0
-            print("Flux min not found. Set to zero!")
+            print("Flux min not found. Set to {}!".format(flux_min))
 
         if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
             toleranceDrift = self.param.param["buildsPWDmatrix"]["toleranceDrift"]
         else:
             toleranceDrift = 1
-            print("toleranceDrift not found. Set to 1!")
+            print("toleranceDrift not found. Set to {}!".format(toleranceDrift))
 
+        if "blockSize" in self.param.param["zProject"]:
+            blockSize = self.param.param["zProject"]["blockSize"]
+        else:
+            blockSize = 256
+            print("blockSize not found. Set to {}!".format(blockSize))
 
-        print("Flux min = {} \nToleranceDrift = {} px\nReference barcode = {}".format(flux_min, toleranceDrift,self.param.param["alignImages"]["referenceFiducial"]))
-
-        blockSize = 256
+        print("\nndims = {}\nFlux min = {} \nToleranceDrift = {} px\nReference barcode = {}".format(self.ndims,
+                                                                                                    flux_min,
+                                                                                                    toleranceDrift,
+                                                                                                    self.param.param["alignImages"]["referenceFiducial"]))
 
         # Produces images of distribution of fluxes.
         self.plots_distributionFluxes()
         self.plots_barcodesAlignment(blockSize)
 
-        keepAll, keepAlignmentAll, NbarcodesROI = [], [], 0
+        keepQualityAll, keepAlignmentAll, NbarcodesROI = [], [], 0
         # loops over barcode Table rows in a given ROI
         print("Aligning by masking...")
         for i in trange(len(self.barcodeMapROI.groups[0])): # i is the index of the barcode in barcodeMapROI
@@ -294,19 +300,20 @@ class cellID:
             ROI = self.barcodeMapROI.groups[0]["ROI #"][i]
 
             # [filters barcode localizations either by]
-            keep = self.filterLocalizations_Quality(i, flux_min)
+            keepQuality = self.filterLocalizations_Quality(i, flux_min)
 
             # [filters barcode per blockAlignmentMask, if existing]
             keepAlignment = self.filterLocalizations_BlockAlignment(i, toleranceDrift, blockSize)
 
             # applies all filters
-            if keep and keepAlignment:
+            if keepQuality and keepAlignment:
 
                 # keeps the particle if the test passed
                 x_uncorrected = self.barcodeMapROI.groups[0]["ycentroid"][i] # control inversion between x-y
                 y_uncorrected = self.barcodeMapROI.groups[0]["xcentroid"][i]
-                if np.isnan(self.barcodeMapROI.groups[0]["zcentroid"][i]):
-                    z_uncorrected = 0.0
+
+                if self.ndims==2:
+                    z_uncorrected = self.barcodeMapROI.groups[0]["zcentroid"][i] = 0.0
                 else:
                     z_uncorrected = self.barcodeMapROI.groups[0]["zcentroid"][i]
 
@@ -328,7 +335,7 @@ class cellID:
                 # rewrites corrected XYZ values to Table
                 self.barcodeMapROI.groups[0]["ycentroid"][i] = zxy_corrected[1]
                 self.barcodeMapROI.groups[0]["xcentroid"][i] = zxy_corrected[2]
-                if ~np.isnan(self.barcodeMapROI.groups[0]["zcentroid"][i]):
+                if self.ndims>2:
                     self.barcodeMapROI.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
                 # attributes CellID to a barcode
@@ -344,7 +351,7 @@ class cellID:
 
             # keeps statistics
             if int(self.barcodeMapROI.groups[0]["ROI #"][i]) == int(self.nROI):
-                keepAll.append(keep)
+                keepQualityAll.append(keepQuality)
                 keepAlignmentAll.append(keepAlignment)
                 NbarcodesROI += 1
 
@@ -355,7 +362,7 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
 
-        print("KeepQuality: {}| keepAlignment: {}| Total: {}".format(sum(keepAll), sum(keepAlignmentAll), NbarcodesROI))
+        print("KeepQuality: {}| keepAlignment: {}| Total: {}".format(sum(keepQualityAll), sum(keepAlignmentAll), NbarcodesROI))
 
         print("Number cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
 
@@ -487,13 +494,11 @@ class cellID:
             vector with coordinates.
 
         """
+        # nanZ = np.isnan(z)
+        # z[nanZ]=0.0
+        # print(">>>Found #{} nans".format(np.nonzero(nanZ)[0].shape[0]))
 
         R = np.column_stack((x, y, z,))
-
-        # if self.ndims == 3 and "zcentroidGauss" in groupKeys:
-        #     R = np.column_stack((x, y, z,))
-        # else:
-        #     R = np.column_stack((x, y,))
 
         return R
 
@@ -764,10 +769,6 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
         print("Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
-        # if ndims == 3:# and "zcentroidGauss" in barcodeMap.keys():
-        #     localizationDimension = 3
-        # else:
-        #     localizationDimension = 2
     else:
         print("\n\n*** ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
         sys.exit()
