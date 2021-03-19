@@ -26,7 +26,7 @@ if __name__ == "__main__":
     HiM.initialize()
     session1, log1=HiM.session1, HiM.log1
 
-    HiM.lauchDaskScheduler()
+    HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
 
     for ilabel in range(len(HiM.labels2Process)):
         HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))

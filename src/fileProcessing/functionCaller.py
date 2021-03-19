@@ -206,7 +206,7 @@ class HiMfunctionCaller:
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
+    parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
     parser.add_argument(
         "--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true"
@@ -227,9 +227,11 @@ def HiM_parseArguments():
             print("\n\n HiMdata: NOT FOUND")
             runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
+    if args.threads:
+        runParameters["threads"] = args.threads
+        runParameters["parallel"] = True
     else:
+        runParameters["threads"] = 1
         runParameters["parallel"] = False
 
     if args.localAlignment:
