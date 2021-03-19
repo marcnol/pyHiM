@@ -277,8 +277,8 @@ class cellID:
             toleranceDrift = 1
             print("toleranceDrift not found. Set to {}!".format(toleranceDrift))
 
-        if "blockSize" in self.param.param["zProject"]:
-            blockSize = self.param.param["zProject"]["blockSize"]
+        if "blockSize" in self.param.param["alignImages"]:
+            blockSize = self.param.param["alignImages"]["blockSize"]
         else:
             blockSize = 256
             print("blockSize not found. Set to {}!".format(blockSize))
