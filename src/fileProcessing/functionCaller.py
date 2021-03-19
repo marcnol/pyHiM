@@ -244,4 +244,5 @@ def HiM_parseArguments():
     else:
         runParameters["refit"] = False
 
+    print("\nParameters loaded: {}".format(runParameters))
     return runParameters
