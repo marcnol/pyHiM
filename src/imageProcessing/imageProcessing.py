@@ -35,6 +35,8 @@ from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
+from scipy.stats import sigmaclip
+from skimage.util.apply_parallel import apply_parallel
 
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization import SqrtStretch, simple_norm
@@ -241,8 +243,38 @@ class Image:
 
 
 # =============================================================================
-# FUNCTIONS
+# GENERAL FUNCTIONS
 # =============================================================================
+def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
+    """
+    Reinterpolates a block matrix to the full size of a larger image
+
+    Parameters
+    ----------
+    shiftMatrices : list of numpy arrays
+        list containing block matrices.
+    block_ref_shape : tuple
+        shape of block matrix.
+
+    Returns
+    -------
+    shiftMatrix : numpy array
+        Reinterpolated (larger) image.
+        Size will be N x n x n
+        where n is block_ref_shape[3]
+        and N is len(shiftMatrices)
+
+    """
+    numberBlocks = block_ref_shape[0]
+    blockSizeXY = block_ref_shape[3]
+
+    shiftMatrix=np.zeros((len(shiftMatrices),blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
+    for _ax,m in enumerate(shiftMatrices):
+        # print("size={}".format(m.shape))
+        for i in range(numberBlocks):
+            for j in range(numberBlocks):
+                shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
+    return shiftMatrix
 
 
 def projectsImage2D(img, zRange, mode):
@@ -333,6 +365,90 @@ def calculate_zrange(idata, parameters):
 
     return focusPlane, zrange
 
+def find_transform(im_src, im_dst):
+    warp = np.eye(3, dtype=np.float32)
+    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.001)
+    try:
+        _, warp = cv2.findTransformECC(im_src, im_dst, warp, cv2.MOTION_HOMOGRAPHY, criteria)
+    except:
+        print("Warning: find transform failed. Set warp as identity")
+    return warp
+
+
+def variance_of_laplacian(image):
+    # compute the Laplacian of the image and then return the focus
+    # measure, which is simply the variance of the Laplacian
+    return cv2.Laplacian(image, cv2.CV_64F).var()
+
+def scatters3Dimage(client,image):
+    """
+    splits 3D image plane by plane and scatteres them to a cluster
+
+    Parameters
+    ----------
+    client : dask CLient()
+        result of get_client()
+    image : numpy array
+        3D image.
+
+    Returns
+    -------
+    imageListScattered :  List, dict, iterator, or queue of futures matching the type of input.
+        scattered image.
+
+    """
+    numberPlanes = image.shape[0]
+    imageListScattered = [image[z, :, :] for z in range(numberPlanes)]
+    # imageListScattered = client.scatter(imageListScattered)
+    return imageListScattered
+
+def reassembles3Dimage(client,futures,output_shape):
+    """
+    waits for futures to arrive
+    collects them into a results list
+    reassembles 3D image plane by plane
+
+    Parameters
+    ----------
+    client : dask CLient()
+        result of get_client()
+    futures : list()
+        list of futures
+    output_shape : tuple
+        result of image.shape
+
+    Returns
+    -------
+    output : numpy array
+        contains reassembled 3D image.
+
+    """
+    results = client.gather(futures)
+    print(">>Retrieving {} results from cluster".format(len(results)))
+
+    output = np.zeros(output_shape)
+    for z, result in enumerate(results):
+        output[z, :, :] = result
+
+    del results
+    return output
+
+# =============================================================================
+# CONTRAST and PIXEL INTENSITY NORMALIZATION, INHOMOGENEOUS BACKGROUND
+# =============================================================================
+
+def preProcess3DImage(x,lower_threshold, higher_threshold):
+
+    # images0= [x/x.max() for x in images0]
+    image = exposure.rescale_intensity(x, out_range=(0, 1))
+
+    print("Removing inhomogeneous background...")
+    image = _removesInhomogeneousBackground(image)
+
+    print("Rescaling grey levels...")
+    image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
+
+    return image
 
 def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
 
@@ -359,45 +475,6 @@ def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
     hist1 = exposure.histogram(image1)
 
     return image1, hist1_before, hist1, lower_cutoff, higher_cutoff
-
-
-def save2imagesRGB(I1, I2, outputFileName):
-    """
-    Overlays two images as R and B and saves them to output file
-    """
-
-    sz = I1.shape
-    I1, I2 = I1 / I1.max(), I2 / I2.max()
-
-    I1, _, _, _, _ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
-    I2, _, _, _, _ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
-
-    fig, ax1 = plt.subplots()
-    fig.set_size_inches((30, 30))
-
-    nullImage = np.zeros(sz)
-
-    RGB = np.dstack([I1, I2, nullImage])
-    ax1.imshow(RGB)
-    ax1.axis("off")
-
-    fig.savefig(outputFileName)
-
-    plt.close(fig)
-
-def plots4images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>']):
-
-    fig, axes = plt.subplots(2,2)
-    fig.set_size_inches((10, 10))
-    ax = axes.ravel()
-
-    for axis, img, title in zip(ax, allimages,titles):
-        im = np.sum(img, axis=0)
-        axis.imshow(im, cmap="Greys")
-        axis.set_title(title)
-    fig.tight_layout()
-
-    return fig
 
 def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     """
@@ -492,17 +569,9 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
 
     return output
 
-
-def saveImage2Dcmd(image, fileName, log):
-    if image.shape > (1, 1):
-        np.save(fileName, image)
-        # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        log.report("Image saved to disk: {}".format(fileName + ".npy"), "info")
-    else:
-        log.report("Warning, image is empty", "Warning")
-
-
-from skimage.util.apply_parallel import apply_parallel
+# =============================================================================
+# IMAGE ALIGNMENT
+# =============================================================================
 
 def appliesXYshift3Dimages(image, shift):
     """
@@ -542,59 +611,6 @@ def appliesXYshift3Dimages(image, shift):
 
     return output
 
-def scatters3Dimage(client,image):
-    """
-    splits 3D image plane by plane and scatteres them to a cluster
-
-    Parameters
-    ----------
-    client : dask CLient()
-        result of get_client()
-    image : numpy array
-        3D image.
-
-    Returns
-    -------
-    imageListScattered :  List, dict, iterator, or queue of futures matching the type of input.
-        scattered image.
-
-    """
-    numberPlanes = image.shape[0]
-    imageListScattered = [image[z, :, :] for z in range(numberPlanes)]
-    # imageListScattered = client.scatter(imageListScattered)
-    return imageListScattered
-
-def reassembles3Dimage(client,futures,output_shape):
-    """
-    waits for futures to arrive
-    collects them into a results list
-    reassembles 3D image plane by plane
-
-    Parameters
-    ----------
-    client : dask CLient()
-        result of get_client()
-    futures : list()
-        list of futures
-    output_shape : tuple
-        result of image.shape
-
-    Returns
-    -------
-    output : numpy array
-        contains reassembled 3D image.
-
-    """
-    results = client.gather(futures)
-    print(">>Retrieving {} results from cluster".format(len(results)))
-
-    output = np.zeros(output_shape)
-    for z, result in enumerate(results):
-        output[z, :, :] = result
-
-    del results
-    return output
-
 def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
 
     # sanity checks
@@ -623,38 +639,6 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
                 matrix[i, j] = _shift
 
     return shiftMatrices, block_ref, block_target
-
-def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
-    numberBlocks = block_ref_shape[0]
-    blockSizeXY = block_ref_shape[3]
-
-    shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
-    for _ax,m in enumerate(shiftMatrices):
-        # print("size={}".format(m.shape))
-        for i in range(numberBlocks):
-            for j in range(numberBlocks):
-                shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
-    return shiftMatrix
-
-def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
-
-    cbar_kw = {}
-    cbar_kw["fraction"] = 0.046
-    cbar_kw["pad"] = 0.04
-
-    fig, axes = plt.subplots(1, len(shiftMatrices))
-    fig.set_size_inches((len(shiftMatrices) * 10, 10))
-    ax = axes.ravel()
-    titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
-
-    for axis, title, x in zip(ax, titles, shiftMatrices):
-        if log:
-            x=np.log10(x)
-        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt=valfmt, cmap="YlGn")  # YlGnBu
-        axis.set_title(title)
-
-    return fig
-
 
 def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=None, axis1=0):
     """
@@ -737,6 +721,7 @@ def combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=Non
 
     return output, SSIM_as_blocks, MSE_as_blocks, NRMSE_as_blocks
 
+
 def align2ImagesCrossCorrelation(
     image1_uncorrected, image2_uncorrected, lower_threshold=0.999, higher_threshold=0.9999999, upsample_factor=100
 ):
@@ -808,17 +793,6 @@ def align2ImagesCrossCorrelation(
     )
 
     return results
-
-
-def find_transform(im_src, im_dst):
-    warp = np.eye(3, dtype=np.float32)
-    criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, 0.001)
-    try:
-        _, warp = cv2.findTransformECC(im_src, im_dst, warp, cv2.MOTION_HOMOGRAPHY, criteria)
-    except:
-        print("Warning: find transform failed. Set warp as identity")
-    return warp
-
 
 def alignCV2(im1, im2, warp_mode):
 
@@ -946,38 +920,9 @@ def alignImagesByBlocks(
 
     return np.array(meanShifts), meanError, relativeShifts, rmsImage, contour
 
-
-def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName="BlockALignmentResults.png"):
-
-    # plotting
-    fig, axes = plt.subplots(1, 2)
-    ax = axes.ravel()
-    fig.set_size_inches((10, 5))
-
-    cbwindow = 3
-    p1 = ax[0].imshow(relativeShifts, cmap="terrain", vmin=0, vmax=cbwindow)
-    ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
-    ax[0].set_title("abs(global-block) shifts, px")
-    fig.colorbar(p1, ax=ax[0], fraction=0.046, pad=0.04)
-
-    p2 = ax[1].imshow(rmsImage, cmap="terrain", vmin=np.min(rmsImage), vmax=np.max(rmsImage))
-    ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
-    ax[1].set_title("RMS")
-    fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
-
-    for x in range(len(ax)):
-        ax[x].axis("off")
-
-    fig.savefig(fileName)
-
-    plt.close(fig)
-
-
-def variance_of_laplacian(image):
-    # compute the Laplacian of the image and then return the focus
-    # measure, which is simply the variance of the Laplacian
-    return cv2.Laplacian(image, cv2.CV_64F).var()
-
+# =============================================================================
+# FOCAL PLANE INTERPOLATION
+# =============================================================================
 
 def focalPlane(data):
     nPlanes = data.shape[0]
@@ -1094,10 +1039,6 @@ def imReassemble(focalPlaneMatrix, block, window=0):
 
     return output
 
-
-from scipy.stats import sigmaclip
-
-
 def findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans, threshold=0.1):
 
     # filters out region with low values of z and of laplacian variances
@@ -1114,7 +1055,6 @@ def findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans, threshold=0.1):
     focus = np.mean(focalPlaneMatrix[mask > 0])
 
     return focus, mask
-
 
 def reinterpolatesFocalPlane(data, param):
 
@@ -1155,6 +1095,382 @@ def _reinterpolatesFocalPlane(data, blockSizeXY, window=0):
 
     return output, focalPlaneMatrix, zRange, focusPlane, LaplacianMeans
 
+# =============================================================================
+# SEGMENTATION FUNCTIONS
+# =============================================================================
+
+def _segments2DimageByThresholding(image2D,
+                             threshold_over_std=10,
+                             sigma = 3,
+                             boxSize=(32, 32),
+                             filter_size=(3, 3),
+                             area_min = 3,
+                             area_max=1000,
+                             nlevels=64,
+                             contrast=0.001,
+                             deblend3D = False,
+                             kernel = []):
+
+    # makes threshold matrix
+    threshold = np.zeros(image2D.shape)
+    threshold[:]=threshold_over_std*image2D.max()/100
+
+    # segments objects
+    segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
+    
+    if segm.nlabels>0:
+        # removes masks too close to border
+        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+    
+        segm_deblend = deblend_sources(
+            image2D,
+            segm,
+            npixels=area_min,  # watch out, this is per plane!
+            filter_kernel=kernel,
+            nlevels=nlevels,
+            contrast=contrast,
+            relabel=True,
+            mode='exponential',
+        )
+    
+        # removes Masks too big or too small
+        for label in segm_deblend.labels:
+            # take regions with large enough areas
+            area = segm_deblend.get_area(label)
+            # print('label {}, with area {}'.format(label,area))
+            if area < area_min or area > area_max:
+                segm_deblend.remove_label(label=label)
+                # print('label {} removed'.format(label))
+    
+        # relabel so masks numbers are consecutive
+        segm_deblend.relabel_consecutive()
+    
+        # image2DSegmented = segm.data % changed during recoding function
+        image2DSegmented = segm_deblend.data
+    
+        image2DSegmented[image2DSegmented>0]=1
+        
+        return image2DSegmented
+    else:
+        
+        # returns empty image as no objects were detected
+        return segm.data
+
+def _segments3DvolumesByThresholding(image3D,
+                                     threshold_over_std=10,
+                                     sigma = 3,
+                                     boxSize=(32, 32),
+                                     filter_size=(3, 3),
+                                     area_min = 3,
+                                     area_max=1000,
+                                     nlevels=64,
+                                     contrast=0.001,
+                                     deblend3D = False):
+    client = try_get_client()
+
+    numberPlanes = image3D.shape[0]
+
+    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
+    kernel.normalize()
+
+    if client is None:
+        print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
+
+        output = np.zeros(image3D.shape)
+
+        for z in trange(numberPlanes):
+            image2D = image3D[z, :, :]
+            image2DSegmented = _segments2DimageByThresholding(image2D,
+                                         threshold_over_std=threshold_over_std,
+                                         sigma = sigma,
+                                         boxSize=boxSize,
+                                         filter_size=filter_size,
+                                         area_min = area_min,
+                                         area_max=area_max,
+                                         nlevels=nlevels,
+                                         contrast=contrast,
+                                         deblend3D = deblend3D,
+                                         kernel=kernel)
+            output[z,:,:] = image2DSegmented
+
+    else:
+        print(">Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+
+        imageListScattered = scatters3Dimage(client,image3D)
+
+        futures = [client.submit(_segments2DimageByThresholding,
+                                         img,
+                                         threshold_over_std=threshold_over_std,
+                                         sigma = sigma,
+                                         boxSize=boxSize,
+                                         filter_size=filter_size,
+                                         area_min = area_min,
+                                         area_max=area_max,
+                                         nlevels=nlevels,
+                                         contrast=contrast,
+                                         deblend3D = deblend3D,
+                                         kernel=kernel) for img in imageListScattered]
+
+        output = reassembles3Dimage(client,futures,image3D.shape)
+
+        del futures, imageListScattered
+
+    labels = measure.label(output)
+
+    if deblend3D:
+        # Now we want to separate objects in 3D using watersheding
+        binary=output>0
+        print("Constructing distance matrix from 3D binary mask...")
+
+        distance = apply_parallel(ndi.distance_transform_edt, binary)
+        # distance = ndi.distance_transform_edt(binary)
+
+        print("Deblending sources in 3D by watersheding...")
+        coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
+        mask = np.zeros(distance.shape, dtype=bool)
+        mask[tuple(coords.T)] = True
+        markers, _ = ndi.label(mask)
+
+        # labels = apply_parallel(watershed, -distance, extra_arguments=(markers,), extra_keywords={'mask': binary})
+        labels = watershed(-distance, markers, mask=binary)
+
+    return output, labels
+
+
+########################################################
+# SAVING ROUTINES
+########################################################
+
+def save2imagesRGB(I1, I2, outputFileName):
+    """
+    Overlays two images as R and B and saves them to output file
+    """
+
+    sz = I1.shape
+    I1, I2 = I1 / I1.max(), I2 / I2.max()
+
+    I1, _, _, _, _ = imageAdjust(I1, lower_threshold=0.5, higher_threshold=0.9999)
+    I2, _, _, _, _ = imageAdjust(I2, lower_threshold=0.5, higher_threshold=0.9999)
+
+    fig, ax1 = plt.subplots()
+    fig.set_size_inches((30, 30))
+
+    nullImage = np.zeros(sz)
+
+    RGB = np.dstack([I1, I2, nullImage])
+    ax1.imshow(RGB)
+    ax1.axis("off")
+
+    fig.savefig(outputFileName)
+
+    plt.close(fig)
+    
+def saveImage2Dcmd(image, fileName, log):
+    if image.shape > (1, 1):
+        np.save(fileName, image)
+        # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
+        log.report("Image saved to disk: {}".format(fileName + ".npy"), "info")
+    else:
+        log.report("Warning, image is empty", "Warning")
+        
+def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
+    numPlanes = img.shape[0]
+    blockSize = (numPlanes, blockSizeXY, blockSizeXY)
+    blocks = view_as_blocks(img, block_shape=blockSize).squeeze()
+    print("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
+
+    folder = fullFileName.split('.')[0]
+    fileName = os.path.basename(fullFileName).split('.')[0]
+
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+        print("Folder created: {}".format(folder))
+
+    for i in trange(blocks.shape[0]):
+        for j in range(blocks.shape[1]):
+            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif"
+            imsave(outfile, blocks[i, j])
+
+    # cmap = "seismic"
+
+def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"):
+    Row = ["".format(x) for x in range(matrix.shape[0])]
+    im, cbar = heatmap(matrix, Row, Row, ax=ax, cmap=cmap, cbarlabel=cbarlabel, fontsize=fontsize, cbar_kw=cbar_kw)
+    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white"), fontsize=fontsize)
+
+
+def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", fontsize=6, verbose=False, title=""):
+
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches((10, 5))
+    ax = axes.ravel()
+    fig.suptitle(title)
+    cbar_kw = {}
+    cbar_kw["fraction"] = 0.046
+    cbar_kw["pad"] = 0.04
+
+    imageShowWithValuesSingle(ax[0], matrices[0], cbarlabel, fontsize, cbar_kw)
+    imageShowWithValuesSingle(ax[1], matrices[1], "filtered laplacian*focalPlane", fontsize, cbar_kw)
+
+    fig.tight_layout()
+    plt.savefig(outputName)
+
+    if not verbose:
+        plt.close(fig)
+
+
+def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
+
+
+    if image3D is not None:
+        images = list()
+        images.append(image3D[z,:,:])
+        images.append(image3D[:,rangeXY,:])
+        images.append(image3D[:,:,rangeXY])
+    else:
+        images=[1,1,1]
+
+    if labels is not None:
+        segmented = list()
+        segmented.append(labels[z,:,:])
+        segmented.append(labels[:,rangeXY,:])
+        segmented.append(labels[:,:,rangeXY])
+    else:
+        segmented=[1,1,1]
+
+    if localizationsList is not None:
+        localizedList = list()
+
+        for localizations in localizationsList:
+            localized = list()
+            localized.append(localizations[:,[2,1]])
+            localized.append(localizations[:,[2,0]])
+            localized.append(localizations[:,[1,0]])
+            localizedList.append(localized)
+
+    else:
+        localizedList=[1,1,1]
+
+    percent=99.5
+    symbols=['+','o','*','^']
+    colors=['r','b','g','y']
+
+    fig, axes = plt.subplots(1, len(images))
+    fig.set_size_inches(len(images) * 50, 50)
+    ax = axes.ravel()
+
+    for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
+        if image3D is not None:
+            if norm:
+                norm = simple_norm(image, "sqrt", percent=percent)
+                axis.imshow(image, cmap=cmap, origin="lower", norm=norm)
+            else:
+                axis.imshow(image, cmap=cmap, origin="lower")
+        if labels is not None:
+            axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
+        if localizations is not None:
+
+            for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
+                locs =  localizedList[iLocList][iPlane]
+                axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
+
+    return fig
+
+def display3D_assembled(images, localizations = None, plottingRange = None):
+    wspace=25
+
+    rows_XY, cols_XY = images[0].shape[1], images[0].shape[0]
+    rows_YZ, cols_ZX = images[2].shape[0], images[1].shape[0]
+    rows = rows_XY + rows_YZ + wspace
+    cols = cols_XY + cols_ZX + wspace
+
+    fig = plt.figure(figsize=(50,50), tight_layout=True)
+    axis = fig.add_axes([0.1, 0.1, .8, .8])
+
+    displayImage = np.zeros((rows,cols))
+    displayImage[0:rows_XY,0:cols_XY] = images[0]
+    displayImage[rows_XY+wspace:rows_XY+rows_YZ+wspace,0:cols_XY] = images[2]
+    displayImage[0:rows_XY,cols_XY+wspace:cols_XY+cols_ZX+wspace] = images[1].transpose()
+
+    norm = simple_norm(displayImage[:,:], "sqrt", percent=99)
+    axis.imshow(displayImage[:,:],cmap='Greys',alpha=1, norm=norm)
+
+    colors = ['r','g','b','y']
+    markersizes = [2,1,1,1,1]
+    if localizations is not None:
+        for i,loc in enumerate(localizations):
+            axis.plot(loc[:,2],loc[:,1],'+',color=colors[i],markersize=1)
+            if plottingRange is not None:
+                selections = [np.abs(loc[:,a]-plottingRange[0])<plottingRange[1] for a in [2,1]]
+                axis.plot(loc[selections[0],0]+cols_XY+wspace,loc[selections[0],1],'+',color=colors[i],markersize=markersizes[i],alpha=.9)
+                axis.plot(loc[selections[1],2],loc[selections[1],0]+rows_XY+wspace,'+',color=colors[i],markersize=markersizes[i],alpha=.9)
+            else:
+                axis.plot(loc[:,0]+cols_XY,loc[:,1],'+',color=colors[i],markersize=1)
+
+    axis.axes.yaxis.set_visible(False)
+    axis.axes.xaxis.set_visible(False)
+    axis.axis("off")
+
+    return fig
+
+def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
+
+    cbar_kw = {}
+    cbar_kw["fraction"] = 0.046
+    cbar_kw["pad"] = 0.04
+
+    fig, axes = plt.subplots(1, len(shiftMatrices))
+    fig.set_size_inches((len(shiftMatrices) * 10, 10))
+    ax = axes.ravel()
+    titles = ["z shift matrix", "x shift matrix", "y shift matrix"]
+
+    for axis, title, x in zip(ax, titles, shiftMatrices):
+        if log:
+            x=np.log10(x)
+        imageShowWithValuesSingle(axis, x, title, fontsize, cbar_kw, valfmt=valfmt, cmap="YlGn")  # YlGnBu
+        axis.set_title(title)
+
+    return fig
+
+
+def plots4images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>']):
+
+    fig, axes = plt.subplots(2,2)
+    fig.set_size_inches((10, 10))
+    ax = axes.ravel()
+
+    for axis, img, title in zip(ax, allimages,titles):
+        im = np.sum(img, axis=0)
+        axis.imshow(im, cmap="Greys")
+        axis.set_title(title)
+    fig.tight_layout()
+
+    return fig
+
+def plottingBlockALignmentResults(relativeShifts, rmsImage, contour, fileName="BlockALignmentResults.png"):
+
+    # plotting
+    fig, axes = plt.subplots(1, 2)
+    ax = axes.ravel()
+    fig.set_size_inches((10, 5))
+
+    cbwindow = 3
+    p1 = ax[0].imshow(relativeShifts, cmap="terrain", vmin=0, vmax=cbwindow)
+    ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
+    ax[0].set_title("abs(global-block) shifts, px")
+    fig.colorbar(p1, ax=ax[0], fraction=0.046, pad=0.04)
+
+    p2 = ax[1].imshow(rmsImage, cmap="terrain", vmin=np.min(rmsImage), vmax=np.max(rmsImage))
+    ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
+    ax[1].set_title("RMS")
+    fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
+
+    for x in range(len(ax)):
+        ax[x].axis("off")
+
+    fig.savefig(fileName)
+
+    plt.close(fig)
 
 def heatmap(data, row_labels, col_labels, ax=None, cbar_kw={}, cbarlabel="", fontsize=12, **kwargs):
     """
@@ -1272,284 +1588,3 @@ def annotate_heatmap(im, data=None, valfmt="{x:.1f}", textcolors=("black", "whit
             # print(text)
 
     return texts
-
-
-def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"):
-    Row = ["".format(x) for x in range(matrix.shape[0])]
-    im, cbar = heatmap(matrix, Row, Row, ax=ax, cmap=cmap, cbarlabel=cbarlabel, fontsize=fontsize, cbar_kw=cbar_kw)
-    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white"), fontsize=fontsize)
-
-
-def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", fontsize=6, verbose=False, title=""):
-
-    fig, axes = plt.subplots(1, 2)
-    fig.set_size_inches((10, 5))
-    ax = axes.ravel()
-    fig.suptitle(title)
-    cbar_kw = {}
-    cbar_kw["fraction"] = 0.046
-    cbar_kw["pad"] = 0.04
-
-    imageShowWithValuesSingle(ax[0], matrices[0], cbarlabel, fontsize, cbar_kw)
-    imageShowWithValuesSingle(ax[1], matrices[1], "filtered laplacian*focalPlane", fontsize, cbar_kw)
-
-    fig.tight_layout()
-    plt.savefig(outputName)
-
-    if not verbose:
-        plt.close(fig)
-
-def _segments2DimageByThresholding(image2D,
-                             threshold_over_std=10,
-                             sigma = 3,
-                             boxSize=(32, 32),
-                             filter_size=(3, 3),
-                             area_min = 3,
-                             area_max=1000,
-                             nlevels=64,
-                             contrast=0.001,
-                             deblend3D = False,
-                             kernel = []):
-
-    # makes threshold matrix
-    threshold = np.zeros(image2D.shape)
-    threshold[:]=threshold_over_std*image2D.max()/100
-
-    # estimates masks and deblends
-
-    segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
-
-    # removes masks too close to border
-    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-
-    segm_deblend = deblend_sources(
-        image2D,
-        segm,
-        npixels=area_min,  # watch out, this is per plane!
-        filter_kernel=kernel,
-        nlevels=nlevels,
-        contrast=contrast,
-        relabel=True,
-        mode='exponential',
-    )
-
-    # removes Masks too big or too small
-    for label in segm_deblend.labels:
-        # take regions with large enough areas
-        area = segm_deblend.get_area(label)
-        # print('label {}, with area {}'.format(label,area))
-        if area < area_min or area > area_max:
-            segm_deblend.remove_label(label=label)
-            # print('label {} removed'.format(label))
-
-    # relabel so masks numbers are consecutive
-    segm_deblend.relabel_consecutive()
-
-    # image2DSegmented = segm.data % changed during recoding function
-    image2DSegmented = segm_deblend.data
-
-    image2DSegmented[image2DSegmented>0]=1
-
-    return image2DSegmented
-
-def _segments3DvolumesByThresholding(image3D,
-                                     threshold_over_std=10,
-                                     sigma = 3,
-                                     boxSize=(32, 32),
-                                     filter_size=(3, 3),
-                                     area_min = 3,
-                                     area_max=1000,
-                                     nlevels=64,
-                                     contrast=0.001,
-                                     deblend3D = False):
-    client = try_get_client()
-
-    numberPlanes = image3D.shape[0]
-
-    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
-    kernel.normalize()
-
-    if client is None:
-        print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
-
-        output = np.zeros(image3D.shape)
-
-        for z in trange(numberPlanes):
-            image2D = image3D[z, :, :]
-            image2DSegmented = _segments2DimageByThresholding(image2D,
-                                         threshold_over_std=threshold_over_std,
-                                         sigma = sigma,
-                                         boxSize=boxSize,
-                                         filter_size=filter_size,
-                                         area_min = area_min,
-                                         area_max=area_max,
-                                         nlevels=nlevels,
-                                         contrast=contrast,
-                                         deblend3D = deblend3D,
-                                         kernel=kernel)
-            output[z,:,:] = image2DSegmented
-
-    else:
-        print(">Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
-
-        imageListScattered = scatters3Dimage(client,image3D)
-
-        futures = [client.submit(_segments2DimageByThresholding,
-                                         img,
-                                         threshold_over_std=threshold_over_std,
-                                         sigma = sigma,
-                                         boxSize=boxSize,
-                                         filter_size=filter_size,
-                                         area_min = area_min,
-                                         area_max=area_max,
-                                         nlevels=nlevels,
-                                         contrast=contrast,
-                                         deblend3D = deblend3D,
-                                         kernel=kernel) for img in imageListScattered]
-
-        output = reassembles3Dimage(client,futures,image3D.shape)
-
-        del futures, imageListScattered
-
-    labels = measure.label(output)
-
-    if deblend3D:
-        # Now we want to separate objects in 3D using watersheding
-        binary=output>0
-        print("Constructing distance matrix from 3D binary mask...")
-
-        distance = apply_parallel(ndi.distance_transform_edt, binary)
-        # distance = ndi.distance_transform_edt(binary)
-
-        print("Deblending sources in 3D by watersheding...")
-        coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
-        mask = np.zeros(distance.shape, dtype=bool)
-        mask[tuple(coords.T)] = True
-        markers, _ = ndi.label(mask)
-
-        # labels = apply_parallel(watershed, -distance, extra_arguments=(markers,), extra_keywords={'mask': binary})
-        labels = watershed(-distance, markers, mask=binary)
-
-    return output, labels
-
-def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
-    numPlanes = img.shape[0]
-    blockSize = (numPlanes, blockSizeXY, blockSizeXY)
-    blocks = view_as_blocks(img, block_shape=blockSize).squeeze()
-    print("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
-
-    folder = fullFileName.split('.')[0]
-    fileName = os.path.basename(fullFileName).split('.')[0]
-
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-        print("Folder created: {}".format(folder))
-
-    for i in trange(blocks.shape[0]):
-        for j in range(blocks.shape[1]):
-            outfile = folder + os.sep+ fileName + "_" + label + "_block_" + str(i) + "_" + str(j) + ".tif"
-            imsave(outfile, blocks[i, j])
-
-def preProcess3DImage(x,lower_threshold, higher_threshold):
-
-    image = exposure.rescale_intensity(x, out_range=(0, 1))
-
-    image = _removesInhomogeneousBackground(image)
-
-    image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
-
-    return image
-
-def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY=1000, norm=True, cmap='Greys'):
-
-
-    if image3D is not None:
-        images = list()
-        images.append(image3D[z,:,:])
-        images.append(image3D[:,rangeXY,:])
-        images.append(image3D[:,:,rangeXY])
-    else:
-        images=[1,1,1]
-
-    if labels is not None:
-        segmented = list()
-        segmented.append(labels[z,:,:])
-        segmented.append(labels[:,rangeXY,:])
-        segmented.append(labels[:,:,rangeXY])
-    else:
-        segmented=[1,1,1]
-
-    if localizationsList is not None:
-        localizedList = list()
-
-        for localizations in localizationsList:
-            localized = list()
-            localized.append(localizations[:,[2,1]])
-            localized.append(localizations[:,[2,0]])
-            localized.append(localizations[:,[1,0]])
-            localizedList.append(localized)
-
-    else:
-        localizedList=[1,1,1]
-
-    percent=99.5
-    symbols=['+','o','*','^']
-    colors=['r','b','g','y']
-
-    fig, axes = plt.subplots(1, len(images))
-    fig.set_size_inches(len(images) * 50, 50)
-    ax = axes.ravel()
-
-    for image,segm,axis, iPlane in zip(images,segmented, ax, range(len(ax))):
-        if image3D is not None:
-            if norm:
-                norm = simple_norm(image, "sqrt", percent=percent)
-                axis.imshow(image, cmap=cmap, origin="lower", norm=norm)
-            else:
-                axis.imshow(image, cmap=cmap, origin="lower")
-        if labels is not None:
-            axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
-        if localizations is not None:
-
-            for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
-                locs =  localizedList[iLocList][iPlane]
-                axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
-
-    return fig
-
-def display3D_assembled(images, localizations = None, plottingRange = None):
-    wspace=25
-
-    rows_XY, cols_XY = images[0].shape[1], images[0].shape[0]
-    rows_YZ, cols_ZX = images[2].shape[0], images[1].shape[0]
-    rows = rows_XY + rows_YZ + wspace
-    cols = cols_XY + cols_ZX + wspace
-
-    fig = plt.figure(figsize=(50,50), tight_layout=True)
-    axis = fig.add_axes([0.1, 0.1, .8, .8])
-
-    displayImage = np.zeros((rows,cols))
-    displayImage[0:rows_XY,0:cols_XY] = images[0]
-    displayImage[rows_XY+wspace:rows_XY+rows_YZ+wspace,0:cols_XY] = images[2]
-    displayImage[0:rows_XY,cols_XY+wspace:cols_XY+cols_ZX+wspace] = images[1].transpose()
-
-    norm = simple_norm(displayImage[:,:], "sqrt", percent=99)
-    axis.imshow(displayImage[:,:],cmap='Greys',alpha=1, norm=norm)
-
-    colors = ['r','g','b','y']
-    markersizes = [2,1,1,1,1]
-    if localizations is not None:
-        for i,loc in enumerate(localizations):
-            axis.plot(loc[:,2],loc[:,1],'+',color=colors[i],markersize=1)
-            if plottingRange is not None:
-                selections = [np.abs(loc[:,a]-plottingRange[0])<plottingRange[1] for a in [2,1]]
-                axis.plot(loc[selections[0],0]+cols_XY+wspace,loc[selections[0],1],'+',color=colors[i],markersize=markersizes[i],alpha=.9)
-                axis.plot(loc[selections[1],2],loc[selections[1],0]+rows_XY+wspace,'+',color=colors[i],markersize=markersizes[i],alpha=.9)
-            else:
-                axis.plot(loc[:,0]+cols_XY,loc[:,1],'+',color=colors[i],markersize=1)
-
-    axis.axes.yaxis.set_visible(False)
-    axis.axes.xaxis.set_visible(False)
-    axis.axis("off")
-
-    return fig
