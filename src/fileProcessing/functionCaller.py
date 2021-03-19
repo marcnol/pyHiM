@@ -228,7 +228,7 @@ def HiM_parseArguments():
             runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
     if args.threads:
-        runParameters["threads"] = args.threads
+        runParameters["threads"] = int(args.threads)
         runParameters["parallel"] = True
     else:
         runParameters["threads"] = 1
