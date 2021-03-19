@@ -1122,16 +1122,16 @@ def _segments2DimageByThresholding(image2D,
         # removes masks too close to border
         segm.remove_border_labels(border_width=10)  # parameter to add to infoList
     
-        segm_deblend = deblend_sources(
-            image2D,
-            segm,
-            npixels=area_min,  # watch out, this is per plane!
-            filter_kernel=kernel,
-            nlevels=nlevels,
-            contrast=contrast,
-            relabel=True,
-            mode='exponential',
-        )
+        if segm.nlabels>0:
+            segm_deblend = deblend_sources(image2D,
+                                            segm,
+                                            npixels=area_min,  # watch out, this is per plane!
+                                            filter_kernel=kernel,
+                                            nlevels=nlevels,
+                                            contrast=contrast,
+                                            relabel=True,
+                                            mode='exponential',
+                                        )
     
         # removes Masks too big or too small
         for label in segm_deblend.labels:
@@ -1142,8 +1142,9 @@ def _segments2DimageByThresholding(image2D,
                 segm_deblend.remove_label(label=label)
                 # print('label {} removed'.format(label))
     
-        # relabel so masks numbers are consecutive
-        segm_deblend.relabel_consecutive()
+        if segm_deblend.nlabels>0:
+            # relabel so masks numbers are consecutive
+            segm_deblend.relabel_consecutive()
     
         # image2DSegmented = segm.data % changed during recoding function
         image2DSegmented = segm_deblend.data
