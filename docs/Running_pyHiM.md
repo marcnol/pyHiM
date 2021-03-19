@@ -31,15 +31,15 @@ This assumes that you are running it from the ```destination_directory```. If it
 The arguments are
 
 ```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [--parallel] [--localAlignment] [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [--threads] [--localAlignment] [--refit]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --parallel            Runs in parallel mode
-  --localAlignment      Runs localAlignment function
-  --refit               Refits barcode spots using a Gaussian axial fitting function.
+  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
+  --localAlignment     Runs localAlignment function
+  --refit              Refits barcode spots using a Gaussian axial fitting function.
 
 ```
 
@@ -47,7 +47,7 @@ optional arguments:
 
 ```-F ``` indicates the rootFolder where pyHiM expects to find the dataset.
 
-```--parallel``` flag will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
+```--threads``` argument will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
 
 ```---localAlignment``` will run the local alignment function. See below
 
@@ -315,18 +315,17 @@ You can apply registrations by running:
 ```sh
 runAppliesRegistrations.py -F .
 
-usage: runAppliesRegistrations.py [-h] [-F ROOTFOLDER] [--parallel]
+usage: runAppliesRegistrations.py [-h] [-F ROOTFOLDER] [--threads]
                                   [--localAlignment] [--refit]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --parallel            Runs in parallel mode
+  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
   --localAlignment      Runs localAlignment function
   --refit               Refits barcode spots using a Gaussian axial fitting
                         function.
-
 ```
 
 
@@ -507,18 +506,17 @@ This function can be invoked directly from the command line using ```runSegmentM
 ```sh
 runSegmentMasks.py -F .
 
-usage: runSegmentMasks.py [-h] [-F ROOTFOLDER] [--parallel] [--localAlignment]
+usage: runSegmentMasks.py [-h] [-F ROOTFOLDER] [--threads] [--localAlignment]
                           [--refit]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --parallel            Runs in parallel mode
+  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
   --localAlignment      Runs localAlignment function
   --refit               Refits barcode spots using a Gaussian axial fitting
                         function.
-
 ```
 
 
@@ -695,14 +693,14 @@ cfb668f7-6ead-4ac1-a4a6-88896eca7f04 1 0 31 1 9.506243 1242.8794 216.33797 0.276
 This function can be invoked directly from the command line using ```runSegmentSources3D.py```
 
 ```sh
-usage: runSegmentSources3D.py [-h] [-F ROOTFOLDER] [--parallel]
+usage: runSegmentSources3D.py [-h] [-F ROOTFOLDER] [--threads]
                               [--localAlignment] [--refit]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --parallel            Runs in parallel mode
+  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
   --localAlignment      Runs localAlignment function
   --refit               Refits barcode spots using a Gaussian axial fitting
                         function.
@@ -755,14 +753,14 @@ This last function will align DAPI masks and barcodes and construct the single c
 ```sh
 runAlignBarcodesMasks.py -F .
 
-usage: runAlignBarcodesMasks.py [-h] [-F ROOTFOLDER] [--parallel]
+usage: runAlignBarcodesMasks.py [-h] [-F ROOTFOLDER] [--threads]
                                 [--localAlignment] [--refit]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --parallel            Runs in parallel mode
+  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
   --localAlignment      Runs localAlignment function
   --refit               Refits barcode spots using a Gaussian axial fitting
                         function.
@@ -922,9 +920,9 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 Several routines are now fitted with the possibility of performing parallel computations using the Dask package.
 
-The use of parallel computations can be invoked using the ```--parallel``` flag in the command line or for any individual functions (e.g. ```runMakeProjections```) or for ```pyHiM.py```.
+The use of parallel computations can be invoked using the ```--threads``` argument in the command line or for any individual functions (e.g. ```runMakeProjections```) or for ```pyHiM.py```. You need to provide the number of threads that you want to use. If the argument is not called, the program will run using a single processor and will not invoke dask. If you call the routine with ```--threads n```, dask will be invoked and ```n``` threads will be requested (note: ```n``` can be 1).
 
-The gain is roughly two fold currently, but it can be up to 10 fold for some functions.
+The gain is roughly 2-5 fold currently, but it can be up to 10 fold for some functions.
 
 To monitor parralel computations, SSH into the cluster using
 
@@ -932,9 +930,13 @@ To monitor parralel computations, SSH into the cluster using
 ssh -L 8787:localhost:8787 marcnol@lopevi
 ```
 
-Invoke using the ```--parallel``` flag in ```pyHiM.py```.
-
 Go to your browser and open ```http://localhost:8787``` to see the progress.
+
+To redirect the port to another port on your local machine (e.g. 8789), connect using:
+
+```sh
+ssh -L 8789:localhost:8787 marcnol@lopevi
+```
 
 
 
