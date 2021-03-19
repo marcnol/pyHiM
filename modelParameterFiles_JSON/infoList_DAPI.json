@@ -17,11 +17,12 @@
         "outputFile": "alignImages",
         "alignByBlock": true,
         "tolerance": 0.1,
+        "blockSize": 256,
         "background_sigma": 3.0,        
         "lower_threshold": 0.999, 
         "higher_threshold": 0.9999999, 
-		"localAlignment": "block3D",
-		"localShiftTolerance": 3,
+	"localAlignment": "block3D",
+	"localShiftTolerance": 3,
         "bezel": 20,               
         "referenceFiducial": "RT27"
     },
@@ -32,7 +33,7 @@
     },
     "buildsPWDmatrix": {
         "folder": "buildsPWDmatrix",
-        "flux_min": 200,
+        "flux_min": 2,
         "toleranceDrift":1
     },    
     "segmentedObjects": {
