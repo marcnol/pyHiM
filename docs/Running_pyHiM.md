@@ -55,6 +55,45 @@ optional arguments:
 
 
 
+#### Pipeline diagram
+
+This summarizes the simplest possibilities for running the **pyHiM** pipeline:
+
+```mermaid
+graph TD
+	Z[Setup infoList files] -->A[Start]
+	A[Start] --> B[1. Make 2D projections]
+	B --> C1[2.1 2.2 align fiducials in 2D] --> D1[3. Applies Registrations 2D]
+	D1 --> E1[4.1 Segment Sources and Masks in 2D] --> F[5. Build Matrix]
+	
+	E1 --> G1[4.2 4.3 Refit 3D] --> H1[2.3 localDriftCorrection Mask] --> F
+        
+	E1 --> D2[2.4 Align fiducials in 3D]
+	D2 --> E[4.4 Segment Sources 3D] --> F
+	F --> G(HiM matrix) & G2(single cell PWD matrices) & G3(ASTROPY table with results for all cells)
+```
+
+More complex scenarios also exist, of course, but this provides three alternative pathways to get a Hi-M matrix 
+
+**Strict dependencies.** This lists the strict dependencies between modules.
+
+```mermaid
+graph TD
+	B[1. Make 2D projections] --> C[Align 2D]--> D[Applies registrations] --> E(Segment 2D) --> F(Build Matrix)
+	
+	B1[1. Make 2D projections] --> C1[Align 2D]--> D1[Applies registrations 2D] --> E1[Segments masks 2D] --> C2[Aligns 3d] --> E12(Segment 3D) --> F1(Build Matrix)
+	
+	B3[1. Make 2D projections] --> C3[Align 2D]--> D3[Applies registrations] --> E3[Segments masks 2D]--> C32[local drift correction Mask] 
+	
+	B4[1. Make 2D projections] --> C4[Align 2D]--> D4[Applies registrations] --> E4(Segment Sources 2D) --> E41[Refit Sources 3D] 
+	
+
+```
+
+
+
+
+
 #### infoList parameters files
 
 a typical file (DAPI example) looks like:
@@ -142,6 +181,7 @@ a typical file (DAPI example) looks like:
 Here are some options for the different parameters and a brief description
 
 "acquisition"
+
 ```
 "DAPI_channel": "ch00",
 "RNA_channel": "ch01",
@@ -172,6 +212,7 @@ Here are some options for the different parameters and a brief description
 ```
 
 "alignImages"
+
 ```
 "folder": "alignImages",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
@@ -187,6 +228,7 @@ Here are some options for the different parameters and a brief description
 ```
 
 "projectsBarcodes"
+
 ```
 "folder": "projectsBarcodes",  *Description:* output folder
 "operation": "overwrite",  *Options:* overwrite | skip
@@ -231,7 +273,7 @@ Here are some options for the different parameters and a brief description
 
 
 
-#### MakeProjections
+####  1. MakeProjections
 
 This function will take 3D stacks and project them into 2D.
 
@@ -275,18 +317,15 @@ There are many choices of how to do this:
 
 
 
-
-
-#### Drift Correction
-
-
+#### 2. Drift Correction
 
 There are several ways of correcting for drift within pyHiM:
 
-1. **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle <i>  fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed.
-2. **Block drift correlation.** This option will also use the 2D projection  images of reference and cycle <i> fiducials, but it will first break them up into blocks and will perform a block-by-block optimization of XY drift. This means that this method is very robust and is not easily fooled by dirt in the sample. However, the method will find a consensus global drift that will be applied and therefore local drift issues are not solved. An additional advantage to method 1 is that it can estimate how much local drift is present in each block and will use this to discard blocks where the local drift is higher than a user-provided tolerance (see below). After you run this method, you will get the uncorrected and corrected images so you can evaluate whether it worked properly and whether local drift correction methods need to be applied.
-3. **2D Local drift correction.** This method will be applied after methods 1 and 2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle <i> fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
-4. **3D local drift correction.** None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle <i>. Then it will background-substract and level-normalize the reference and cycle <i> fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle <i> image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack. 
+2.1 **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle <i>  fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed.
+
+2.2 **Block drift correlation.** This option will also use the 2D projection  images of reference and cycle <i> fiducials, but it will first break them up into blocks and will perform a block-by-block optimization of XY drift. This means that this method is very robust and is not easily fooled by dirt in the sample. However, the method will find a consensus global drift that will be applied and therefore local drift issues are not solved. An additional advantage to method 1 is that it can estimate how much local drift is present in each block and will use this to discard blocks where the local drift is higher than a user-provided tolerance (see below). After you run this method, you will get the uncorrected and corrected images so you can evaluate whether it worked properly and whether local drift correction methods need to be applied.
+2.3 **2D Local drift correction.** This method will be applied after methods 1 and 2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle <i> fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
+2.4 **3D local drift correction.** None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle <i>. Then it will background-substract and level-normalize the reference and cycle <i> fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle <i> image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack. 
 
 ##### 1- Global drift correction by cross-correlation
 
@@ -497,7 +536,11 @@ This is now the comparison of the min distances between localizations in the ref
 
 
 
-#### Segmenting sources in 2D, followed by 3D refitting
+#### 3. Applies registrations
+
+   
+
+#### 4.1 Segmenting sources in 2D
 
 **Invoke**
 
@@ -568,7 +611,7 @@ An example of a barcode where localization signals are far from optimal: note th
 
 
 
-##### 3D fits of barcode positions using zProfiling
+##### 4.2 3D fits of barcode positions using zProfiling
 
 ```"3Dmethod":"zProfile"```
 
@@ -591,7 +634,7 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 
 
-##### 3D fits of barcode positions using ASTROPY
+##### 4.3 3D fits of barcode positions using ASTROPY
 
 ```"3Dmethod":"zASTROPY"```
 
@@ -633,7 +676,7 @@ Output examples:
 
 
 
-#### Direct segmentation of sources in 3D
+#### 4.4 Direct segmentation of sources in 3D
 
 
 
@@ -746,7 +789,7 @@ Typical XY projection of the central plane with weighted centroids color coded b
 
 
 
-#### Align DAPI masks and barcodes
+#### 5. Align DAPI masks and barcodes
 
 This last function will align DAPI masks and barcodes and construct the single cell contact matrix.
 
@@ -1494,4 +1537,8 @@ The two outputs are:
 A thorough description of the work in displaying single cells will be maintained in the following MD file within the */doc* directory of pyHiM:
 
 [Single Cell MD tutorial](SingleCellsAnalysis.md)
+
+
+
+
 
