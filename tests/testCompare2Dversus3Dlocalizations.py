@@ -23,4 +23,4 @@ zyx3D = [barcodeMap3D[x] for x in names]
 
 
 plt.plot(zyx2D[1],zyx2D[2],'or')
-plt.plot(zyx3D[2],zyx3D[1],'+b')
+plt.plot(zyx3D[1],zyx3D[2],'+b')

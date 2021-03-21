@@ -237,8 +237,8 @@ outputFileNames = [rootFolder+os.path.basename(file)+x[1] for x in figures]
 for fig, file in zip(figures,outputFileNames):
     fig[0].savefig(file)
 
-# gets object properties
-def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10):
+#%% gets object properties
+def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10,nTolerance=1000):
     """
     get object properties from labeled image and formats
     centroids in NPY array
@@ -257,14 +257,25 @@ def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10):
 
     """
     properties = regionprops(segmentedImage3D, intensity_image=image3D_aligned)
-    centroids=[x.weighted_centroid for x in properties]
-    sharpness=[float(x.filled_area/x.bbox_area) for x in properties]
-    roundness1=[x.equivalent_diameter for x in properties]
-    roundness2=[x.extent for x in properties]
-    npix=[x.area for x in properties]
-    sky=[0.0 for x in properties]
-    peak=[x.max_intensity for x in properties]
-    flux=[x.max_intensity/threshold for x in properties] # peak intensity over the detection threshold
+
+    peak0=[x.max_intensity for x in properties]
+
+    peakList = peak0.copy()
+    peakList.sort()
+    last2keep=np.min([nTolerance,len(peakList)])
+    highestPeakValue  = peakList[-last2keep]
+    selection = list(np.nonzero(peak0>highestPeakValue)[0])
+
+    peak=[properties[x].max_intensity for x in selection]
+
+    centroids=[properties[x].weighted_centroid for x in selection]
+    sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
+    roundness1=[properties[x].equivalent_diameter for x in selection]
+    roundness2=[properties[x].extent for x in selection]
+    npix=[properties[x].area for x in selection]
+    sky=[0.0 for x in selection]
+    peak=[properties[x].max_intensity for x in selection]
+    flux=[properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
     mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
     z=[x[0] for x in centroids]
@@ -298,13 +309,21 @@ def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10):
     peak,
     flux,
     mag,
-    ) = getMaskProperties(segmentedImage3D, image3D,threshold = threshold_over_std)
+    ) = getMaskProperties(segmentedImage3D, image3D,threshold = threshold_over_std,nTolerance=2000)
 
 z,window=40,5
 plt.imshow(np.sum(image3D[z-window:z+window,:,:],axis=0),cmap='Greys',vmax=.8)
 selection=np.abs(spots[:,0]-z)<window
 color=np.array(flux)
 plt.scatter(spots[selection,2],spots[selection,1],c=color[selection],marker='+',alpha=.7,cmap='jet')
+
+# plt.plot(peak,'+')
+# kesps only brightest localizations
+
+# plt.plot(peakSelection,'+')
+
+
+
 
 #%% LEFTOVERS
 
