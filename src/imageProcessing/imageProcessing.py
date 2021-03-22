@@ -509,7 +509,8 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
     xCoord = range(len(LaplacianVariance))
     fitResult,fig2 = fit1DGaussian(xCoord,LaplacianVariance,title='z-profile',verbose=True)
     focalPlane = fitResult['gauss1d.pos']
-    print("Focal plane found: {}".format(focalPlane))
+    fwhm= fitResult['gauss1d.fwhm']
+    print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
 
     # images0= [x/x.max() for x in images0]
     image = exposure.rescale_intensity(x, out_range=(0, 1))
