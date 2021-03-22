@@ -506,8 +506,8 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
     LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
     
-    x = range(len(LaplacianVariance))
-    fitResult,fig2 = fit1DGaussian(x,LaplacianVariance,title='z-profile',verbose=True)
+    xCoord = range(len(LaplacianVariance))
+    fitResult,fig2 = fit1DGaussian(xCoord,LaplacianVariance,title='z-profile',verbose=True)
     focalPlane = fitResult['gauss1d.pos']
     print("Focal plane found: {}".format(focalPlane))
 
@@ -584,7 +584,8 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),ver
         output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
     elif len(im.shape) == 3:
         output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
-
+    else:
+        return None
     return output
 
 def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False, verbose=True):
