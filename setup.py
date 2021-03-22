@@ -79,6 +79,7 @@ setup(
 ######################################################
 # conda install pandas numpy matplotlib astropy mrc scikit-learn
 # conda install photutils -c astropy 
+# conda install -c sherpa sherpa
 
 # pip install roipoly opencv-python tqdm stardist csbdeep numba dask
 # pip install --upgrade tensorflow

@@ -245,6 +245,68 @@ class Image:
 # =============================================================================
 # GENERAL FUNCTIONS
 # =============================================================================
+
+def fit1DGaussian(x,y,title='',verbose=True):
+    """
+    Fits a function using a 1D Gaussian and returns parameters if successfull.
+    Otherwise will return an empty dict
+
+    Parameters
+    ----------
+    x : numpy 1D array
+        x data.
+    y : numpy 1D array
+        y data.
+    title : str, optional
+        figure title. The default is ''.
+    verbose : Boolean, optional
+        whether fig and results will be shown. The default is True.
+
+    Returns
+    -------
+    dict()
+        dictionary with fitting parameters.
+    fig
+        matplotlib figure for saving
+
+    """
+    from sherpa.data import Data1D
+    from sherpa.plot import DataPlot
+    from sherpa.models.basic import Gauss1D
+    from sherpa.stats import LeastSq
+    from sherpa.optmethods import LevMar
+    from sherpa.fit import Fit
+
+    d=Data1D('laplacianProfile',x,y)
+    
+    dplot=DataPlot()
+    dplot.prepare(d)
+    dplot.plot()
+    
+    Gauss1Dmodel = Gauss1D()
+    opt = LevMar()
+    stat = LeastSq()
+    
+    gFit = Fit(d,Gauss1Dmodel,stat=stat, method=opt)
+    fitResult = gFit.fit()
+
+    fig=plt.figure()    
+    ax = fig.add_subplot(1,1,1)
+    
+    if fitResult.succeeded:
+        if verbose:
+            print("<<Fitting successful>>")
+            # print(fitResult.format())
+            
+            ax.plot(d.x,d.y,'ko',label='data')
+            ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
+            ax.legend(loc=2)
+            ax.set_title(title)
+            
+        return dict(zip(fitResult.parnames,fitResult.parvals)), fig
+    else:
+        return dict()
+
 def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
     """
     Reinterpolates a block matrix to the full size of a larger image
@@ -438,6 +500,16 @@ def reassembles3Dimage(client,futures,output_shape):
 # =============================================================================
 
 def preProcess3DImage(x,lower_threshold, higher_threshold):
+
+    # finds focal plane
+    rawImages=[x[i,:,:] for i in range(x.shape[0])]
+    LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
+    LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
+    
+    x = range(len(LaplacianVariance))
+    fitResult,fig2 = fit1DGaussian(x,LaplacianVariance,title='z-profile',verbose=True)
+    focalPlane = fitResult['gauss1d.pos']
+    print("Focal plane found: {}".format(focalPlane))
 
     # images0= [x/x.max() for x in images0]
     image = exposure.rescale_intensity(x, out_range=(0, 1))
