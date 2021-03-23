@@ -154,61 +154,57 @@ class segmentSources3D:
             list of spots with the format: zyx
 
         """
+
         # gets object properties
         properties = regionprops(segmentedImage3D, intensity_image=image3D_aligned)
 
-        # selects nTolerance brightest spots and keeps only these for further processing
-        peak0=[x.max_intensity for x in properties]
-        peakList = peak0.copy()
-        peakList.sort()
-        last2keep=np.min([nTolerance,len(peakList)])
-        highestPeakValue  = peakList[-last2keep]
-        selection = list(np.nonzero(peak0>highestPeakValue)[0])
+        if len(properties)>0:
+            # selects nTolerance brightest spots and keeps only these for further processing
+            peak0=[x.max_intensity for x in properties]
+            peakList = peak0.copy()
+            peakList.sort()
+            last2keep=np.min([nTolerance,len(peakList)])
+            highestPeakValue  = peakList[-last2keep]
+            selection = list(np.nonzero(peak0>highestPeakValue)[0])
 
-        # attributes properties using the brightests spots selected
-        peak=[properties[x].max_intensity for x in selection]
-        centroids=[properties[x].weighted_centroid for x in selection]
-        sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
-        roundness1=[properties[x].equivalent_diameter for x in selection]
-        roundness2=[properties[x].extent for x in selection]
-        npix=[properties[x].area for x in selection]
-        sky=[0.0 for x in selection]
-        peak=[properties[x].max_intensity for x in selection]
-        flux=[properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
-        mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
+            # attributes properties using the brightests spots selected
+            peak=[properties[x].max_intensity for x in selection]
+            centroids=[properties[x].weighted_centroid for x in selection]
+            sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
+            roundness1=[properties[x].equivalent_diameter for x in selection]
+            roundness2=[properties[x].extent for x in selection]
+            npix=[properties[x].area for x in selection]
+            sky=[0.0 for x in selection]
+            peak=[properties[x].max_intensity for x in selection]
+            flux=[properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
+            mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
-        # centroids=[x.weighted_centroid for x in properties]
-        # sharpness=[float(x.filled_area/x.bbox_area) for x in properties]
-        # roundness1=[x.equivalent_diameter for x in properties]
-        # roundness2=[x.extent for x in properties]
-        # npix=[x.area for x in properties]
-        # sky=[0.0 for x in properties]
-        # peak=[x.max_intensity for x in properties]
-        # flux=[100*x.max_intensity/threshold for x in properties] # peak intensity over the detection threshold
-        # mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
+            # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
+            z=[x[0] for x in centroids]
+            y=[x[1] for x in centroids]
+            x=[x[2] for x in centroids]
 
-        # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
-        z=[x[0] for x in centroids]
-        y=[x[1] for x in centroids]
-        x=[x[2] for x in centroids]
+            spots = np.zeros((len(z),3))
+            spots[:,0]=z
+            spots[:,1]=y
+            spots[:,2]=x
+            spots=spots.astype('int64')
 
-        spots = np.zeros((len(z),3))
-        spots[:,0]=z
-        spots[:,1]=y
-        spots[:,2]=x
-        spots=spots.astype('int64')
+            return (
+                    spots,
+                    sharpness,
+                    roundness1,
+                    roundness2,
+                    npix,
+                    sky,
+                    peak,
+                    flux,
+                    mag,
+                    )
+        else:
+            # creates output lists to return
+            return [],[],[],[],[],[],[],[],[]
 
-        return (
-                spots,
-                sharpness,
-                roundness1,
-                roundness2,
-                npix,
-                sky,
-                peak,
-                flux,
-                mag,
-                )
     def plotsImage3D(self,image3D,localizations=None):
         '''
         makes list with XY, XZ and ZY projections and sends for plotting
@@ -298,8 +294,8 @@ class segmentSources3D:
                     if roi == ROI:
 
                         # - load  and preprocesses 3D fiducial file
-                        print("\n\nProcessing roi:[{}] cycle:[{}] {}/{}".format(roi,label,fileIndex,Nfiles2Process))
-                        print("File:{}".format(os.path.basename(fileName2Process)))
+                        print("\n\n>>>Processing roi:[{}] cycle:[{}] {}/{}<<<".format(roi,label,fileIndex,Nfiles2Process))
+                        print("$ File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
 
                         # restricts analysis to a sub volume containing sources
@@ -307,7 +303,7 @@ class segmentSources3D:
                         # zRange = (40,range(30,50))
                         image3D = image3D0[zRange[1],:,:].copy()
                         zOffset = zRange[1][0]
-                        print("Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+                        print("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
                         # preprocesses image by background substraction and level normalization
                         image3D = preProcess3DImage(image3D, self.p["lower_threshold"], self.p["higher_threshold"])
@@ -317,19 +313,19 @@ class segmentSources3D:
                             # uses existing shift calculated by alignImages
                             try:
                                 shift = dictShifts["ROI:" + roi][label]
-                                print("Applying existing XY shift...")
+                                print("$ Applying existing XY shift...")
                             except KeyError:
                                 shift = None
                                 raise SystemExit(
-                                    "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                                    "# Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                                         "ROI:" + ROI, label))
 
                         # applies XY shift to 3D stack
                         if label != referenceBarcode:
-                            print("Applies shift = {}".format(shift))
+                            print("$ Applies shift = {}".format(shift))
                             image3D_aligned = appliesXYshift3Dimages(image3D, shift)
                         else:
-                            print("Running reference fiducial cycle: no shift applied!")
+                            print("$ Running reference fiducial cycle: no shift applied!")
                             shift = np.array([0.,0.])
                             image3D_aligned = image3D
 
@@ -358,58 +354,61 @@ class segmentSources3D:
                             mag,
                             ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"],nTolerance=brightest)
 
-                        print(">Recovered {} localizations".format(len(peak)))
+                        numberSources = len(peak)
 
-                        print(">Rescales image values after reinterpolation")
-                        image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
+                        if numberSources >0:
+                            print(">Recovered {} localizations".format(len(peak)))
 
-                        print(">Refits spots using gaussian 3D fittings...")
-                        # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-                        spots_subpixel = fit_subpixel(image3D_aligned,
-                                                      spots,
-                                                      voxel_size_z=p["voxel_size_z"],
-                                                      voxel_size_yx=p["voxel_size_yx"],
-                                                      psf_z=p["psf_z"],
-                                                      psf_yx=p["psf_yx"])
+                            print(">Rescales image values after reinterpolation")
+                            image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
-                        # updates table
-                        for i in range(spots_subpixel.shape[0]):
-                            z,x,y = spots_subpixel[i,:]
-                            Table_entry = [str(uuid.uuid4()),
-                                           roi,
-                                           0,
-                                           int(label.split('RT')[1]),
-                                           i,
-                                           z+zOffset,
-                                           y,
-                                           x,
-                                           sharpness[i],
-                                           roundness1[i],
-                                           roundness2[i],
-                                           npix[i],
-                                           sky[i],
-                                           peak[i],
-                                           flux[i],
-                                           mag[i],
-                                           ]
-                            outputTable.add_row(Table_entry)
+                            print(">Refits spots using gaussian 3D fittings...")
+                            # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
+                            spots_subpixel = fit_subpixel(image3D_aligned,
+                                                          spots,
+                                                          voxel_size_z=p["voxel_size_z"],
+                                                          voxel_size_yx=p["voxel_size_yx"],
+                                                          psf_z=p["psf_z"],
+                                                          psf_yx=p["psf_yx"])
 
-                        # represents image in 3D with localizations
-                        figures=list()
-                        figures.append([self.plotsImage3D(image3D_aligned,localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
+                            # updates table
+                            for i in range(spots_subpixel.shape[0]):
+                                z,x,y = spots_subpixel[i,:]
+                                Table_entry = [str(uuid.uuid4()),
+                                               roi,
+                                               0,
+                                               int(label.split('RT')[1]),
+                                               i,
+                                               z+zOffset,
+                                               y,
+                                               x,
+                                               sharpness[i],
+                                               roundness1[i],
+                                               roundness2[i],
+                                               npix[i],
+                                               sky[i],
+                                               peak[i],
+                                               flux[i],
+                                               mag[i],
+                                               ]
+                                outputTable.add_row(Table_entry)
 
-                        # saves figures
-                        outputFileNames = [self.dataFolder.outputFolders["segmentedObjects"]+os.sep+os.path.basename(fileName2Process)+x[1] for x in figures]
+                            # represents image in 3D with localizations
+                            figures=list()
+                            figures.append([self.plotsImage3D(image3D_aligned,localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
 
-                        for fig, file in zip(figures,outputFileNames):
-                            fig[0].savefig(file)
+                            # saves figures
+                            outputFileNames = [self.dataFolder.outputFolders["segmentedObjects"]+os.sep+os.path.basename(fileName2Process)+x[1] for x in figures]
 
-                        # saves Table with all shifts in every iteration to avoid loosing computed data
-                        outputTable.write(
-                            self.outputFileName,
-                            format="ascii.ecsv",
-                            overwrite=True,
-                        )
+                            for fig, file in zip(figures,outputFileNames):
+                                fig[0].savefig(file)
+
+                            # saves Table with all shifts in every iteration to avoid loosing computed data
+                            outputTable.write(
+                                self.outputFileName,
+                                format="ascii.ecsv",
+                                overwrite=True,
+                            )
 
                         del image3D_aligned, image3D, image3D0
 
