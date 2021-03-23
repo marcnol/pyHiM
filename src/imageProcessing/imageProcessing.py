@@ -1412,7 +1412,14 @@ def _segments3DvolumesByThresholding(image3D,
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
 
+    parallel = True
     if client is None:
+        parallel=True
+    else:
+        if len(client.scheduler_info()['workers'])<1:
+            parallel = False
+
+    if parallel:
         print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
 
         output = np.zeros(image3D.shape)
