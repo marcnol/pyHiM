@@ -273,7 +273,7 @@ class segmentSources3D:
         # creates Table that will hold results
         outputTable = self.createsOutputTable()
 
-        restart_client()
+        # restart_client()
 
         if numberROIs > 0:
 
