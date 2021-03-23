@@ -1414,7 +1414,7 @@ def _segments3DvolumesByThresholding(image3D,
 
     parallel = True
     if client is None:
-        parallel=True
+        parallel=False
     else:
         if len(client.scheduler_info()['workers'])<1:
             parallel = False
