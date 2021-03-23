@@ -1368,30 +1368,29 @@ def _segments2DimageByThresholding(image2D,
                                             nlevels=nlevels,
                                             contrast=contrast,
                                             relabel=True,
-                                            mode='exponential',
-                                        )
+                                            mode='exponential')
+            if segm_deblend.nlabels>0:
+                # removes Masks too big or too small
+                for label in segm_deblend.labels:
+                    # take regions with large enough areas
+                    area = segm_deblend.get_area(label)
+                    if area < area_min or area > area_max:
+                        segm_deblend.remove_label(label=label)
 
-        # removes Masks too big or too small
-        for label in segm_deblend.labels:
-            # take regions with large enough areas
-            area = segm_deblend.get_area(label)
-            # print('label {}, with area {}'.format(label,area))
-            if area < area_min or area > area_max:
-                segm_deblend.remove_label(label=label)
-                # print('label {} removed'.format(label))
+                # relabel so masks numbers are consecutive
+                segm_deblend.relabel_consecutive()
 
-        if segm_deblend.nlabels>0:
-            # relabel so masks numbers are consecutive
-            segm_deblend.relabel_consecutive()
+            # image2DSegmented = segm.data % changed during recoding function
+            image2DSegmented = segm_deblend.data
 
-        # image2DSegmented = segm.data % changed during recoding function
-        image2DSegmented = segm_deblend.data
+            image2DSegmented[image2DSegmented>0]=1
+            return image2DSegmented
 
-        image2DSegmented[image2DSegmented>0]=1
+        else:
+            # returns empty image as no objects were detected
+            return segm.data
 
-        return image2DSegmented
     else:
-
         # returns empty image as no objects were detected
         return segm.data
 
