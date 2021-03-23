@@ -63,7 +63,7 @@
         "threshold_over_std": 1.0
     },
     "zProject": {
-        "blockSize": 128,
+        "blockSize": 256,
         "display": true,
         "folder": "zProject",
         "mode": "full",

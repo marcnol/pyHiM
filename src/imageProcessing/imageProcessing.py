@@ -17,25 +17,29 @@ import numpy as np
 from numpy import linalg as LA
 from matplotlib import ticker
 import matplotlib.pyplot as plt
-from tifffile import imsave
 
 import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
+from scipy.stats import sigmaclip
+from sherpa.data import Data1D
+from sherpa.models.basic import Gauss1D
+from sherpa.stats import LeastSq
+from sherpa.optmethods import LevMar
+from sherpa.fit import Fit as sherpaFit
 
 import cv2
+from tifffile import imsave
 
 from skimage import io
 from skimage import measure
 from skimage import exposure,color
-
 from skimage.util.shape import view_as_blocks
 from skimage.registration import phase_cross_correlation
 from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
-from scipy.stats import sigmaclip
 from skimage.util.apply_parallel import apply_parallel
 
 from astropy.visualization.mpl_normalize import ImageNormalize
@@ -49,6 +53,7 @@ from photutils import Background2D, MedianBackground
 
 from fileProcessing.fileManagement import try_get_client
 import warnings
+
 warnings.filterwarnings("ignore")
 
 np.seterr(divide='ignore', invalid='ignore')
@@ -268,19 +273,13 @@ def fit1DGaussian(x,y,title='',verbose=True):
         matplotlib figure for saving
 
     """
-    from sherpa.data import Data1D
-    from sherpa.plot import DataPlot
-    from sherpa.models.basic import Gauss1D
-    from sherpa.stats import LeastSq
-    from sherpa.optmethods import LevMar
-    from sherpa.fit import Fit
 
     d=Data1D('laplacianProfile',x,y)
     Gauss1Dmodel = Gauss1D()
     opt = LevMar()
     stat = LeastSq()
 
-    gFit = Fit(d,Gauss1Dmodel,stat=stat, method=opt)
+    gFit = sherpaFit(d,Gauss1Dmodel,stat=stat, method=opt)
     fitResult = gFit.fit()
 
     if fitResult.succeeded:
@@ -378,12 +377,7 @@ def calculate_zrange(idata, parameters):
     maxStd = np.max(stdMatrix)
     ifocusPlane = np.where(stdMatrix == maxStd)[0][0]
     # Select a window to avoid being on the edges of the stack
-    """
-    zmin = max(ifocusPlane - parameters.param['process']['windowSecurity'],
-                          parameters.param['process']['zmin'])
-    zmax = min(ifocusPlane + parameters.param['process']['windowSecurity'],
-                          parameters.param['process']['zmax'])
-    """
+
     if ifocusPlane < parameters.param["zProject"]["windowSecurity"] or (
         ifocusPlane > numPlanes - parameters.param["zProject"]["windowSecurity"]
     ):
