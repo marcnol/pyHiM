@@ -473,7 +473,7 @@ def reassembles3Dimage(client,futures,output_shape):
 
     """
     results = client.gather(futures)
-    print(">>Retrieving {} results from cluster".format(len(results)))
+    print(" > Retrieving {} results from cluster".format(len(results)))
 
     output = np.zeros(output_shape)
     for z, result in enumerate(results):
@@ -548,7 +548,7 @@ def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
         higher cutoff used for thresholding.
 
     """
-    print(">Rescaling grey levels...")
+    print("> Rescaling grey levels...")
 
     # rescales image to [0,1]
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
@@ -702,7 +702,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
     if client is not None:
-        print(">Removing inhomogeneous background from {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        print("> Removing inhomogeneous background from {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
         imageList = [image3D[z, :, :] for z in range(numberPlanes)]
         # imageListScattered = client.scatter(imageList)
 
@@ -711,7 +711,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
                                     bkg_estimator=bkg_estimator) for img in imageList]
 
         results = client.gather(futures)
-        print("Retrieving {} results from cluster".format(len(results)))
+        print(" > Retrieving {} results from cluster".format(len(results)))
 
         for z, img, bkg in zip(range(numberPlanes),imageList,results):
             output[z, :, :] = img - bkg.background
@@ -719,7 +719,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
         # del imageListScattered
 
     else:
-        print(">Removing inhomogeneous background from {} planes using 1 worker...".format(numberPlanes))
+        print("> Removing inhomogeneous background from {} planes using 1 worker...".format(numberPlanes))
         Zrange=trange(numberPlanes)
         for z in Zrange:
             image2D = image3D[z, :, :]
@@ -752,12 +752,12 @@ def appliesXYshift3Dimages(image, shift):
     numberPlanes = image.shape[0]
 
     if client is None:
-        print(">Shifting {} planes with 1 thread...".format(numberPlanes))
+        print("> Shifting {} planes with 1 thread...".format(numberPlanes))
         shift3D = np.zeros((3))
         shift3D[0], shift3D[1], shift3D[2] = 0, shift[0], shift[1]
         output = shiftImage(image, shift3D)
     else:
-        print(">Shifting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        print("> Shifting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
         imageListScattered = scatters3Dimage(client,image)
 
@@ -768,7 +768,7 @@ def appliesXYshift3Dimages(image, shift):
         del futures
         del imageListScattered
 
-    print("Done shifting 3D image.")
+    print("$ Done shifting 3D image.")
 
     return output
 
@@ -776,7 +776,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
 
     # sanity checks
     if len(images) < 2:
-        sys.exit("Error, number of images must be 2, not {}".format(len(images)))
+        sys.exit("# Error, number of images must be 2, not {}".format(len(images)))
 
     # - break in blocks
     numPlanes = images[0].shape[0]
@@ -1413,12 +1413,12 @@ def _segments3DvolumesByThresholding(image3D,
     else:
         if len(client.scheduler_info()['workers'])<1:
             parallel = False
-            print("Failed getting workers. Report of scheduler:")
+            print("# Failed getting workers. Report of scheduler:")
             for key in client.scheduler_info().keys():
                 print("{}:{}".format(key, client.scheduler_info()[key]))
 
     if not parallel:
-        print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
+        print("> Segmenting {} planes using 1 worker...".format(numberPlanes))
 
         output = np.zeros(image3D.shape)
 
@@ -1442,7 +1442,7 @@ def _segments3DvolumesByThresholding(image3D,
         # for key in client.scheduler_info().keys():
         #     print("{}:{}".format(key, client.scheduler_info()[key]))
 
-        print(">Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        print("> Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
         imageListScattered = scatters3Dimage(client,image3D)
 
@@ -1468,12 +1468,12 @@ def _segments3DvolumesByThresholding(image3D,
     if deblend3D:
         # Now we want to separate objects in 3D using watersheding
         binary=output>0
-        print("Constructing distance matrix from 3D binary mask...")
+        print(" > Constructing distance matrix from 3D binary mask...")
 
         # distance = apply_parallel(ndi.distance_transform_edt, binary)
         distance = ndi.distance_transform_edt(binary)
 
-        print("Deblending sources in 3D by watersheding...")
+        print(" > Deblending sources in 3D by watersheding...")
         coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
         mask = np.zeros(distance.shape, dtype=bool)
         mask[tuple(coords.T)] = True

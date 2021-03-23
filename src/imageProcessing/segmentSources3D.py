@@ -251,7 +251,7 @@ class segmentSources3D:
         zWindow = self.param.param["zProject"]["zwindows"]
         # get blocksize & window from infoList !!!!!!!
 
-        self.log1.info("\nReference Barcode: [{}]".format(referenceBarcode))
+        self.log1.info("$ Reference Barcode: [{}]".format(referenceBarcode))
 
         filesFolder = glob.glob(self.currentFolder + os.sep + "*.tif")
         self.param.files2Process(filesFolder)
@@ -261,7 +261,7 @@ class segmentSources3D:
         fileNameReferenceList, ROIList = RT2fileName(self.param, referenceBarcode)
 
         numberROIs = len(ROIList)
-        self.log1.info("\nDetected {} ROIs".format(numberROIs))
+        self.log1.info("$ Detected {} ROIs".format(numberROIs))
 
         # loads dicShifts with shifts for all ROIs and all labels
         dictShifts, dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
@@ -280,8 +280,8 @@ class segmentSources3D:
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
                 Nfiles2Process=len(fileName2ProcessList)
-                print("Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
-                print("[roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
+                print("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
+                print("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
                                 + ":" + str(self.param.decodesFileParts(os.path.basename(x))["cycle"]) for x in fileName2ProcessList])))
 
                 for fileIndex, fileName2Process in enumerate(self.param.fileList2Process):
@@ -313,7 +313,7 @@ class segmentSources3D:
                             # uses existing shift calculated by alignImages
                             try:
                                 shift = dictShifts["ROI:" + roi][label]
-                                print("$ Applying existing XY shift...")
+                                print("> Applying existing XY shift...")
                             except KeyError:
                                 shift = None
                                 raise SystemExit(
@@ -322,7 +322,8 @@ class segmentSources3D:
 
                         # applies XY shift to 3D stack
                         if label != referenceBarcode:
-                            print("$ Applies shift = {}".format(shift))
+                            # print("$ Applies shift = {:.2f}".format(shift))
+                            print("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
                             image3D_aligned = appliesXYshift3Dimages(image3D, shift)
                         else:
                             print("$ Running reference fiducial cycle: no shift applied!")
@@ -358,10 +359,12 @@ class segmentSources3D:
                         print("$ Number of sources detected by image segmentation: {}".format(numberSources))
 
                         if numberSources >0:
-                            print(">Rescales image values after reinterpolation")
+                            print("> Refits spots using gaussian 3D fittings...")
+
+                            print(" > Rescales image values after reinterpolation")
                             image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
-                            print(">Refits spots using gaussian 3D fittings...")
+
                             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
                             spots_subpixel = fit_subpixel(image3D_aligned,
                                                           spots,
@@ -370,6 +373,7 @@ class segmentSources3D:
                                                           psf_z=p["psf_z"],
                                                           psf_yx=p["psf_yx"])
 
+                            print(" > Updating table and saving results")
                             # updates table
                             for i in range(spots_subpixel.shape[0]):
                                 z,x,y = spots_subpixel[i,:]
@@ -411,7 +415,7 @@ class segmentSources3D:
 
                         del image3D_aligned, image3D, image3D0
 
-        print("segmentSources3D procesing time: {}".format(datetime.now() - now))
+        print("$ segmentSources3D procesing time: {}".format(datetime.now() - now))
 
 
     def segmentSources3D(self):
@@ -428,7 +432,7 @@ class segmentSources3D:
         # processes folders and files
         self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
         self.dataFolder = folders(self.param.param["rootFolder"])
-        self.log1.report("folders read: {}".format(len(self.dataFolder.listFolders)))
+        self.log1.addSimpleText("$ folders read: {}".format(len(self.dataFolder.listFolders)))
         writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
 
         # creates output folders and filenames
@@ -438,14 +442,14 @@ class segmentSources3D:
         self.label = self.param.param["acquisition"]["label"]
         self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"] + "_3D_" + self.label + ".dat"
 
-        self.log1.report("-------> Processing Folder: {}".format(self.currentFolder))
+        self.log1.addSimpleText("> Processing Folder: {}".format(self.currentFolder))
         self.log1.parallel = self.parallel
 
         self.segmentSources3DinFolder()
 
         self.session1.add(self.currentFolder, sessionName)
 
-        self.log1.report("segmentedObjects run in {} finished".format(self.currentFolder), "info")
+        self.log1.report("$ segmentedObjects run in {} finished".format(self.currentFolder), "info")
 
         return 0
 
