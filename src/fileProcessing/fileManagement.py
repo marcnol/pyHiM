@@ -223,7 +223,7 @@ class Parameters:
                 "folder": "zProject",  # output folder
                 "operation": "skip",  # overwrite, skip
                 "mode": "full",  # full, manual, automatic, laplacian
-                "blockSize": 128,
+                "blockSize": 256,
                 "display": True,
                 "saveImage": True,
                 "zmin": 1,

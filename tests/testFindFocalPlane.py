@@ -26,6 +26,8 @@ from imageProcessing.imageProcessing  import (
     combinesBlocksImageByReprojection,
     display3D_assembled,
     appliesXYshift3Dimages,
+    calculatesFocusPerBlock,
+    _reinterpolatesFocalPlane,
     )
 import cv2
 
@@ -39,10 +41,8 @@ else:
     file = rootFolder+'scan_001_RT41_001_ROI_converted_decon_ch01.tif'
 imageRaw = io.imread(file).squeeze()
 
-# autoscales exposures
-# image3D = exposure.rescale_intensity(imageRaw, out_range=(0, 1))
 
-#%%
+#%% testing several measures that can be useful to determine focal plane
 rawImages=[imageRaw[i,:,:] for i in range(imageRaw.shape[0])]
 
 std= [np.std(img) for img in rawImages]
@@ -53,12 +53,14 @@ LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
 std=(std-min(std))/max(std)
 signal=signal/max(signal)
 LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
-    
+
+# the laplacian variance seems to be the best
 plt.plot(signal,'o-b')
 plt.plot(std,'o-g')
 plt.plot(LaplacianVariance,'o-r')
 
-#%%
+
+#%% implement function to fit the laplacian variance in 1D to get best estimate of focal plane and range
 
 def fit1DGaussian(x,y,title='',verbose=True):
     from sherpa.data import Data1D
@@ -68,39 +70,64 @@ def fit1DGaussian(x,y,title='',verbose=True):
     from sherpa.optmethods import LevMar
     from sherpa.fit import Fit
 
-   
+
     d=Data1D('laplacianProfile',x,y)
     # print(d)
-    
-    dplot=DataPlot()
-    dplot.prepare(d)
-    dplot.plot()
-    
+
+    # dplot=DataPlot()
+    # dplot.prepare(d)
+    # dplot.plot()
+
     Gauss1Dmodel = Gauss1D()
     opt = LevMar()
     stat = LeastSq()
-    
+
     gFit = Fit(d,Gauss1Dmodel,stat=stat, method=opt)
     fitResult = gFit.fit()
 
-    fig=plt.figure()    
+    fig=plt.figure()
     ax = fig.add_subplot(1,1,1)
-    
+
     if fitResult.succeeded:
         if verbose:
             print("<<Fitting successful>>")
             print(fitResult.format())
-            
+
             ax.plot(d.x,d.y,'ko',label='data')
             ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
             ax.legend(loc=2)
             ax.set_title(title)
-            
+
         return dict(zip(fitResult.parnames,fitResult.parvals)), fig
     else:
         return dict()
-    
+
 y = LaplacianVariance
 x = range(len(LaplacianVariance))
 fitResult,fig2 = fit1DGaussian(x,y,title='z-profile',verbose=True)
 focalPlane = fitResult['gauss1d.pos']
+
+#%% Partial recoding using block decomposition using existing functions from imageProcessing.py
+from scipy.stats import sigmaclip
+
+focalPlaneMatrix, fwhm, block = calculatesFocusPerBlock(imageRaw, blockSizeXY=256)
+focalPlanes2Process = focalPlaneMatrix[~np.isnan(focalPlaneMatrix)]
+
+focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
+
+fig=plt.figure()
+ax1 = fig.add_subplot(2,1,1)
+ax1.imshow(focalPlaneMatrix ,cmap='coolwarm',vmax=60,vmin=0)
+ax2 = fig.add_subplot(2,1,2)
+ax2.hist(focalPlane)
+
+# NEED TO DO A GAUSSIAN FIT TO RECOVER BEST FIT
+# ALSO GET ESTIMATE FOR FWHM !
+print("Focal plane: {}".format(np.mean(focalPlane)))
+
+#%% Final coding into a reused function from imageProcessing.py
+
+focalPlaneMatrix, zRange, block = _reinterpolatesFocalPlane(imageRaw,blockSizeXY = 256, window=10)
+fig=plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+ax1.imshow(focalPlaneMatrix ,cmap='coolwarm',vmax=60,vmin=0)

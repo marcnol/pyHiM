@@ -162,9 +162,8 @@ class Image:
                 self.data_2D,
                 self.focalPlaneMatrix,
                 self.zRange,
-                self.focusPlane,
-                self.LaplacianMatrix,
             ) = reinterpolatesFocalPlane(self.data, self.param.param)
+            self.focusPlane = self.zRange[0]
 
         else:
             # Manual: reads from parameters file
@@ -233,14 +232,13 @@ class Image:
         return im_bkg_substracted
 
     def imageShowWithValues(self, outputName):
-        _, mask = findsFocusFromBlocks(self.focalPlaneMatrix, self.LaplacianMatrix)
+        # _, mask = findsFocusFromBlocks(self.focalPlaneMatrix, self.LaplacianMatrix)
 
         imageShowWithValues(
-            [self.focalPlaneMatrix, mask],
+            [self.focalPlaneMatrix],
             title="focal plane = " + "{:.2f}".format(self.focusPlane),
             outputName=outputName,
         )
-
 
 # =============================================================================
 # GENERAL FUNCTIONS
@@ -278,31 +276,27 @@ def fit1DGaussian(x,y,title='',verbose=True):
     from sherpa.fit import Fit
 
     d=Data1D('laplacianProfile',x,y)
-    
-    dplot=DataPlot()
-    dplot.prepare(d)
-    dplot.plot()
-    
     Gauss1Dmodel = Gauss1D()
     opt = LevMar()
     stat = LeastSq()
-    
+
     gFit = Fit(d,Gauss1Dmodel,stat=stat, method=opt)
     fitResult = gFit.fit()
 
-    fig=plt.figure()    
-    ax = fig.add_subplot(1,1,1)
-    
     if fitResult.succeeded:
         if verbose:
             print("<<Fitting successful>>")
             # print(fitResult.format())
-            
+
+            fig=plt.figure()
+            ax = fig.add_subplot(1,1,1)
             ax.plot(d.x,d.y,'ko',label='data')
             ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
             ax.legend(loc=2)
             ax.set_title(title)
-            
+        else:
+            fig=None
+
         return dict(zip(fitResult.parnames,fitResult.parvals)), fig
     else:
         return dict()
@@ -436,7 +430,6 @@ def find_transform(im_src, im_dst):
         print("Warning: find transform failed. Set warp as identity")
     return warp
 
-
 def variance_of_laplacian(image):
     # compute the Laplacian of the image and then return the focus
     # measure, which is simply the variance of the Laplacian
@@ -500,31 +493,67 @@ def reassembles3Dimage(client,futures,output_shape):
 # =============================================================================
 
 def preProcess3DImage(x,lower_threshold, higher_threshold):
+    """
+    3D stack pre-procesing:
+        - rescales intensities to 0->1
+        - removes inhomogeneous background plane by plane
+        - adjusts image levels by thresholding
 
-    # finds focal plane
-    rawImages=[x[i,:,:] for i in range(x.shape[0])]
-    LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
-    LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
-    
-    xCoord = range(len(LaplacianVariance))
-    fitResult,fig2 = fit1DGaussian(xCoord,LaplacianVariance,title='z-profile',verbose=True)
-    focalPlane = fitResult['gauss1d.pos']
-    fwhm= fitResult['gauss1d.fwhm']
-    print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
+    Parameters
+    ----------
+    x : numpy array
+        3D image.
+    lower_threshold : float
+        lower threshold for adjusting image levels.
+    higher_threshold : float
+        higher threshold for adjusting image levels..
 
-    # images0= [x/x.max() for x in images0]
+    Returns
+    -------
+    image : numpy array
+        pre-processed 3D image.
+
+    """
     image = exposure.rescale_intensity(x, out_range=(0, 1))
 
-    print("Removing inhomogeneous background...")
+    # print("Removing inhomogeneous background...")
     image = _removesInhomogeneousBackground(image)
 
-    print("Rescaling grey levels...")
+    # print("Rescaling grey levels...")
     image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
 
     return image
 
 def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
+    """
+    Adjust intensity levels:
+        - rescales exposures
+        - gets histogram of pixel intensities to define cutoffs
+        - applies thresholds
 
+    Parameters
+    ----------
+    image : numpy array
+        input 3D image.
+    lower_threshold : float, optional
+        lower threshold for adjusting image levels. The default is 0.3.
+    higher_threshold : float, optional
+        higher threshold for adjusting image levels.. The default is 0.9999.
+
+    Returns
+    -------
+    image1 : numpy array
+        adjusted 3D image.
+    hist1_before : numpy array
+        histogram of pixel intensities before adjusting levels.
+    hist1 : numpy array
+        histogram of pixel intensities after adjusting levels.
+    lower_cutoff : float
+        lower cutoff used for thresholding.
+    higher_cutoff : float
+        higher cutoff used for thresholding.
+
+    """
     print(">Rescaling grey levels...")
 
     # rescales image to [0,1]
@@ -581,6 +610,26 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
 
 
 def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True):
+    """
+    wrapper to remove inhomogeneous backgrounds for 2D and 3D images
+
+    Parameters
+    ----------
+    im : numpy array
+        input image.
+    boxSize : tuple of ints, optional
+        size of boxSize used for block decomposition. The default is (32, 32).
+    filter_size : tuple of ints, optional
+        Size of gaussian filter used for smoothing results. The default is (3, 3).
+    verbose : boolean, optional
+        The default is True.
+
+    Returns
+    -------
+    output : TYPE
+        DESCRIPTION.
+
+    """
     if len(im.shape) == 2:
         output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
     elif len(im.shape) == 3:
@@ -590,7 +639,29 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),ver
     return output
 
 def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), background = False, verbose=True):
+    """
+    Calls Background2D() from ASTROPY to perform background substraction in a 2D image
 
+    Parameters
+    ----------
+    im : numpy array
+        2D input image.
+    boxSize : tuple of ints, optional
+        size of boxSize used for block decomposition. The default is (32, 32).
+    filter_size : tuple of ints, optional
+        Size of gaussian filter used for smoothing results. The default is (3, 3).
+    background : boolean, optional
+        if True returs the substracted image and the background
+        otherwise only the former. The default is False.
+    verbose : boolean, optional
+        The default is True.
+
+    Returns
+    -------
+    numpy array
+        background substracted 2D image.
+
+    """
     print("Removing inhomogeneous background from 2D image...")
 
     sigma_clip = SigmaClip(sigma=3)
@@ -606,7 +677,29 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
 
 
 def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True):
+    """
+    Wrapper to remove inhomogeneous background in a 3D image by recursively calling _removesInhomogeneousBackground2D():
+        - addresses output
+        - iterates over planes and calls _removesInhomogeneousBackground2D in each plane
+        - reassembles results into a 3D image
 
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    boxSize : tuple of ints, optional
+        size of boxSize used for block decomposition. The default is (32, 32).
+    filter_size : tuple of ints, optional
+        Size of gaussian filter used for smoothing results. The default is (3, 3).
+    verbose : boolean, optional
+        The default is True.
+
+    Returns
+    -------
+    output : numpy array
+        processed 3D image.
+
+    """
     client = try_get_client()
 
     numberPlanes = image3D.shape[0]
@@ -998,18 +1091,57 @@ def alignImagesByBlocks(
 # FOCAL PLANE INTERPOLATION
 # =============================================================================
 
-def focalPlane(data):
-    nPlanes = data.shape[0]
+def focalPlane(data,threshold_fwhm=20, verbose=False):
+    """
+    This function will find the focal plane of a 3D image
+    - calculates the laplacian variance of the image for each z plane
+    - fits 1D gaussian profile on the laplacian variance
+    - to get the maximum (focal plane) and the full width at half maximum
+    - it returns nan if the fwhm > threshold_fwhm (means fit did not converge)
+    - threshold_fwhm should represend the width of the laplacian variance curve
+    - which is often 5-10 planes depending on sample.
 
-    LaplacianVariance = [variance_of_laplacian(data[z, :, :].squeeze()) for z in range(nPlanes)]
+    Parameters
+    ----------
+    data : numpy array
+        input 3D image ZYX.
+    threshold_fwhm : float, optional
+        threshold fwhm used to remove outliers. The default is 20.
 
-    return np.argmax(LaplacianVariance), LaplacianVariance
+    Returns
+    -------
+    focalPlane : float
+        focal plane: max of fitted z-profile.
+    fwhm : float
+        full width hald maximum of fitted z-profile.
 
+    """
+    # finds focal plane
+    rawImages=[data[i,:,:] for i in range(data.shape[0])]
+    LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
+    LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
+
+    xCoord = range(len(LaplacianVariance))
+    fitResult,fig2 = fit1DGaussian(xCoord,LaplacianVariance,title='z-profile',verbose=False)
+    focalPlane = fitResult['gauss1d.pos']
+    fwhm= fitResult['gauss1d.fwhm']
+
+    if fwhm>threshold_fwhm:
+        fwhm=np.nan
+        focalPlane=np.nan
+
+    if verbose:
+        print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
+
+    return focalPlane, fwhm
 
 def calculatesFocusPerBlock(data, blockSizeXY=128):
     """
-    gets the laplacian for each z-plane for each block
-    calculates the plane with highest laplacian variance as an estimate of the block focal plane
+    Calculates the most likely focal plane of an image by breaking into blocks and calculating
+    the focal plane in each block
+
+    - breaks image into blocks
+    - returns the focal plane + fwhm for each block
 
     Parameters
     ----------
@@ -1021,12 +1153,11 @@ def calculatesFocusPerBlock(data, blockSizeXY=128):
     Returns
     -------
     focalPlaneMatrix: np array
-        matrix containing the plane with highest laplacian variance per block
+        matrix containing the maximum of the laplacian variance per block
+    fwhm: np array
+        matrix containing the fwhm of the laplacian variance per block
     block: np array
-        block reconstruction of matrix
-    LaplacianVariance: dict
-        each key-key combination contains the z-profile of the laplacian variance
-        for instance LaplacianVariance['1']['3'] contains the profile for block[1,3]
+        3D block reconstruction of matrix
 
     """
     nPlanes = data.shape[0]
@@ -1035,15 +1166,16 @@ def calculatesFocusPerBlock(data, blockSizeXY=128):
 
     block = view_as_blocks(data, blockSize).squeeze()
     focalPlaneMatrix = np.zeros(block.shape[0:2])
+    fwhm= np.zeros(block.shape[0:2])
 
-    LaplacianVariance = dict()
+    fwhm = dict()
 
     for i in trange(block.shape[0]):
-        LaplacianVariance[str(i)] = dict()
+        # fwhm[str(i)] = dict()
         for j in range(block.shape[1]):
-            focalPlaneMatrix[i, j], LaplacianVariance[str(i)][str(j)] = focalPlane(block[i, j])
+            focalPlaneMatrix[i, j], fwhm[i,j] = focalPlane(block[i, j])
 
-    return focalPlaneMatrix, block, LaplacianVariance
+    return focalPlaneMatrix, fwhm, block
 
 # Program to find most frequent
 # element in a list
@@ -1113,22 +1245,22 @@ def imReassemble(focalPlaneMatrix, block, window=0):
 
     return output
 
-def findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans, threshold=0.1):
+# def findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans, threshold=0.1):
 
-    # filters out region with low values of z and of laplacian variances
-    # as planes close to surface and with low variances tend to give problems
-    focalPlaneMatrixWeighted = LaplacianMeans * focalPlaneMatrix
-    mask = focalPlaneMatrixWeighted > threshold * focalPlaneMatrixWeighted.max()
+#     # filters out region with low values of z and of laplacian variances
+#     # as planes close to surface and with low variances tend to give problems
+#     focalPlaneMatrixWeighted = LaplacianMeans * focalPlaneMatrix
+#     mask = focalPlaneMatrixWeighted > threshold * focalPlaneMatrixWeighted.max()
 
-    # sets problematic blocks to zero
-    mask = focalPlaneMatrixWeighted
-    mask[focalPlaneMatrixWeighted < threshold * focalPlaneMatrixWeighted.max()] = 0
-    mask[focalPlaneMatrix < 10] = 0
+#     # sets problematic blocks to zero
+#     mask = focalPlaneMatrixWeighted
+#     mask[focalPlaneMatrixWeighted < threshold * focalPlaneMatrixWeighted.max()] = 0
+#     mask[focalPlaneMatrix < 10] = 0
 
-    # calculates focus from the good blocks
-    focus = np.mean(focalPlaneMatrix[mask > 0])
+#     # calculates focus from the good blocks
+#     focus = np.mean(focalPlaneMatrix[mask > 0])
 
-    return focus, mask
+#     return focus, mask
 
 def reinterpolatesFocalPlane(data, param):
 
@@ -1142,32 +1274,64 @@ def reinterpolatesFocalPlane(data, param):
     else:
         window = 0
 
-    outputList = _reinterpolatesFocalPlane(data, blockSizeXY, window=window)
-
-    return outputList
-
-
-def _reinterpolatesFocalPlane(data, blockSizeXY, window=0):
-
-    # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
-
-    focalPlaneMatrix, block, LaplacianVariance = calculatesFocusPerBlock(data, blockSizeXY=blockSizeXY)
+    focalPlaneMatrix, zRange, block = _reinterpolatesFocalPlane(data, blockSizeXY=blockSizeXY, window=window)
 
     # reassembles image
     output = imReassemble(focalPlaneMatrix, block, window=window)
 
-    LaplacianMeans = np.zeros(focalPlaneMatrix.shape)
-    for i in LaplacianVariance.keys():
-        for j in LaplacianVariance[i].keys():
-            filtered, low, high = sigmaclip(LaplacianVariance[i][j], 1, 1)
-            LaplacianMeans[int(i), int(j)] = np.nanmean(filtered)
+    return output,focalPlaneMatrix, zRange
+
+
+def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
+    """
+    Reinterpolates the focal plane of a 3D image by breking it into blocks
+    - Calculates the focalPlane and fwhm matrices by block
+    - removes outliers
+    - calculates the focal plane for each block using sigmaClip statistics
+    - returns a tuple with focal plane and the range to use
+
+    Parameters
+    ----------
+    data : numpy array
+        input 3D image.
+    blockSizeXY : int
+        size of blocks in XY, typically 256.
+    window : int, optional
+        number of planes before and after the focal plane to construct the zRange. The default is 0.
+
+    Returns
+    -------
+    focalPlaneMatrix : numpy array
+        focal plane matrix.
+    zRange : tuple
+        focusPlane, zRange.
+    block : numpy array
+        block representation of 3D image.
+
+    """
+    print("> Reducing 3D image size by slicing around focal plane".format())
+    # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
+
+    focalPlaneMatrix, fwhm, block= calculatesFocusPerBlock(data, blockSizeXY=blockSizeXY)
+
+    focalPlanes2Process = focalPlaneMatrix[~np.isnan(focalPlaneMatrix)]
+
+    focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
+    focusPlane = np.mean(focalPlane).astype('int64')
+    zmin = np.max([focusPlane-window, 0])
+    zmax = np.min([focusPlane+window, data.shape[0]])
+    zRange = focusPlane, range(zmin,zmax)
+
+    # LaplacianMeans = np.zeros(focalPlaneMatrix.shape)
+    # for i in LaplacianVariance.keys():
+    #     for j in LaplacianVariance[i].keys():
+    #         filtered, low, high = sigmaclip(LaplacianVariance[i][j], 1, 1)
+    #         LaplacianMeans[int(i), int(j)] = np.nanmean(filtered)
 
     # interpolates focal plane by block consensus
-    focusPlane, _ = findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans)
+    # focusPlane, _ = findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans)
 
-    zRange = range(data.shape[0])
-
-    return output, focalPlaneMatrix, zRange, focusPlane, LaplacianMeans
+    return focalPlaneMatrix, zRange, block
 
 # =============================================================================
 # SEGMENTATION FUNCTIONS
@@ -1191,11 +1355,11 @@ def _segments2DimageByThresholding(image2D,
 
     # segments objects
     segm = detect_sources(image2D, threshold, npixels=area_min, filter_kernel=kernel,)
-    
+
     if segm.nlabels>0:
         # removes masks too close to border
         segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-    
+
         if segm.nlabels>0:
             segm_deblend = deblend_sources(image2D,
                                             segm,
@@ -1206,7 +1370,7 @@ def _segments2DimageByThresholding(image2D,
                                             relabel=True,
                                             mode='exponential',
                                         )
-    
+
         # removes Masks too big or too small
         for label in segm_deblend.labels:
             # take regions with large enough areas
@@ -1215,19 +1379,19 @@ def _segments2DimageByThresholding(image2D,
             if area < area_min or area > area_max:
                 segm_deblend.remove_label(label=label)
                 # print('label {} removed'.format(label))
-    
+
         if segm_deblend.nlabels>0:
             # relabel so masks numbers are consecutive
             segm_deblend.relabel_consecutive()
-    
+
         # image2DSegmented = segm.data % changed during recoding function
         image2DSegmented = segm_deblend.data
-    
+
         image2DSegmented[image2DSegmented>0]=1
-        
+
         return image2DSegmented
     else:
-        
+
         # returns empty image as no objects were detected
         return segm.data
 
@@ -1339,7 +1503,7 @@ def save2imagesRGB(I1, I2, outputFileName):
     fig.savefig(outputFileName)
 
     plt.close(fig)
-    
+
 def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
         np.save(fileName, image)
@@ -1347,7 +1511,7 @@ def saveImage2Dcmd(image, fileName, log):
         log.report("Image saved to disk: {}".format(fileName + ".npy"), "info")
     else:
         log.report("Warning, image is empty", "Warning")
-        
+
 def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
     numPlanes = img.shape[0]
     blockSize = (numPlanes, blockSizeXY, blockSizeXY)
@@ -1374,18 +1538,46 @@ def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="
     _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white"), fontsize=fontsize)
 
 
-def imageShowWithValues(matrices, outputName="tmp.png", cbarlabel="focalPlane", fontsize=6, verbose=False, title=""):
+def imageShowWithValues(matrices, outputName="tmp.png", cbarlabels=["focalPlane"], fontsize=6, verbose=False, title=""):
+    """
+    Plots a list of matrices with their values in each pixel.
 
-    fig, axes = plt.subplots(1, 2)
-    fig.set_size_inches((10, 5))
+    Parameters
+    ----------
+    matrices : list
+        matrices to plot. Should be 2D numpy arrays
+    outputName : TYPE, optional
+        DESCRIPTION. The default is "tmp.png".
+    cbarlabels : list, optional
+        titles of subplots. The default is ["focalPlane"].
+    fontsize : float, optional
+        fontsize. The default is 6.
+    verbose : Boolean, optional
+        self explanatory. The default is False.
+    title : str, optional
+        figure title. The default is "".
+
+    Returns
+    -------
+    None.
+
+    """
+    numberImages = len(matrices)
+    fig, axes = plt.subplots(1, numberImages)
+    fig.set_size_inches((numberImages*2, 5))
     ax = axes.ravel()
     fig.suptitle(title)
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
     cbar_kw["pad"] = 0.04
 
-    imageShowWithValuesSingle(ax[0], matrices[0], cbarlabel, fontsize, cbar_kw)
-    imageShowWithValuesSingle(ax[1], matrices[1], "filtered laplacian*focalPlane", fontsize, cbar_kw)
+    if len(cbarlabels)!=numberImages:
+        cbarlabels=cbarlabels[0]*numberImages
+
+    for matrix,axis,cbarlabel in zip(matrices,ax,cbarlabels):
+        imageShowWithValuesSingle(axis, matrix, cbarlabel, fontsize, cbar_kw)
+
+        # imageShowWithValuesSingle(ax[1], matrices[1], "filtered laplacian*focalPlane", fontsize, cbar_kw)
 
     fig.tight_layout()
     plt.savefig(outputName)

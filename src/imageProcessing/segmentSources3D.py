@@ -45,6 +45,7 @@ from imageProcessing.imageProcessing import (
     preProcess3DImage,
     _segments3DvolumesByThresholding,
     display3D_assembled,
+    _reinterpolatesFocalPlane,
 )
 from fileProcessing.fileManagement import folders, writeString2File
 from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
@@ -250,6 +251,9 @@ class segmentSources3D:
 
         referenceBarcode = self.param.param["alignImages"]["referenceFiducial"]
         brightest = self.param.param["segmentedObjects"]["brightest"]
+        blockSizeXY = self.param.param["zProject"]["blockSize"]
+        zWindow = self.param.param["zProject"]["zwindows"]
+        # get blocksize & window from infoList !!!!!!!
 
         self.log1.info("\nReference Barcode: [{}]".format(referenceBarcode))
 
@@ -295,7 +299,15 @@ class segmentSources3D:
                         print("\n\nProcessing roi:[{}] cycle:[{}] {}/{}".format(roi,label,fileIndex,Nfiles2Process))
                         print("File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
-                        image3D = preProcess3DImage(image3D0, self.p["lower_threshold"], self.p["higher_threshold"])
+
+                        # restricts analysis to a sub volume containing sources
+                        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
+                        image3D = image3D0[zRange[1],:,:].copy()
+                        zOffset = zRange[1][0]
+                        print("Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+
+                        # preprocesses image by background substraction and level normalization
+                        image3D = preProcess3DImage(image3D, self.p["lower_threshold"], self.p["higher_threshold"])
 
                         # drifts 3D stack in XY
                         if dictShiftsAvailable and  label != referenceBarcode:
@@ -364,7 +376,7 @@ class segmentSources3D:
                                            0,
                                            int(label.split('RT')[1]),
                                            i,
-                                           z,
+                                           z+zOffset,
                                            y,
                                            x,
                                            sharpness[i],
