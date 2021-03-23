@@ -355,10 +355,9 @@ class segmentSources3D:
                             ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"],nTolerance=brightest)
 
                         numberSources = len(peak)
+                        print("$ Number of sources detected by image segmentation: {}".format(numberSources))
 
                         if numberSources >0:
-                            print(">Recovered {} localizations".format(len(peak)))
-
                             print(">Rescales image values after reinterpolation")
                             image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
