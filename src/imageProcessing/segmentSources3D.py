@@ -299,11 +299,14 @@ class segmentSources3D:
                         image3D0 = io.imread(fileName2Process).squeeze()
 
                         # restricts analysis to a sub volume containing sources
-                        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
-                        # zRange = (40,range(30,50))
-                        image3D = image3D0[zRange[1],:,:].copy()
-                        zOffset = zRange[1][0]
-                        print("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+                        # focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
+                        ## zRange = (40,range(30,50))
+                        # zOffset = zRange[1][0]
+                        zOffset = 0
+                        # image3D = image3D0[zRange[1],:,:].copy()
+                        image3D = image3D0.copy()
+
+                        # print("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
                         # preprocesses image by background substraction and level normalization
                         image3D = preProcess3DImage(image3D, self.p["lower_threshold"], self.p["higher_threshold"])
