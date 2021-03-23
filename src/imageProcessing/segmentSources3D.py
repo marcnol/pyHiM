@@ -47,7 +47,7 @@ from imageProcessing.imageProcessing import (
     display3D_assembled,
     _reinterpolatesFocalPlane,
 )
-from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import folders, writeString2File, try_get_client
 from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
 
 from skimage import exposure
@@ -273,6 +273,11 @@ class segmentSources3D:
         # creates Table that will hold results
         outputTable = self.createsOutputTable()
 
+        # restarts client
+        client = try_get_client()
+        if client is not None:
+            client.restart()
+
         if numberROIs > 0:
 
             # loops over ROIs
@@ -303,7 +308,7 @@ class segmentSources3D:
                         # restricts analysis to a sub volume containing sources
                         # focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
                         zRange = (40,range(30,50))
-                        image3D = image3D0[zRange[1],:,:]
+                        image3D = image3D0[zRange[1],:,:].copy()
                         zOffset = zRange[1][0]
                         print("Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
