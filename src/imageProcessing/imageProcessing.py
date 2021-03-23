@@ -1412,14 +1412,19 @@ def _segments3DvolumesByThresholding(image3D,
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
 
+    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
     parallel = True
     if client is None:
         parallel=False
     else:
         if len(client.scheduler_info()['workers'])<1:
             parallel = False
+            print("Failed getting workers. Report of scheduler:")
+            for key in client.scheduler_info().keys():
+                print("{}:{}".format(key, client.scheduler_info()[key]))
 
-    if parallel:
+    if not parallel:
         print(">Segmenting {} planes using 1 worker...".format(numberPlanes))
 
         output = np.zeros(image3D.shape)
@@ -1440,6 +1445,10 @@ def _segments3DvolumesByThresholding(image3D,
             output[z,:,:] = image2DSegmented
 
     else:
+        # print("Failed getting workers. Report of scheduler:")
+        # for key in client.scheduler_info().keys():
+        #     print("{}:{}".format(key, client.scheduler_info()[key]))
+
         print(">Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
         imageListScattered = scatters3Dimage(client,image3D)

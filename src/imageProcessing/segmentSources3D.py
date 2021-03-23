@@ -47,7 +47,7 @@ from imageProcessing.imageProcessing import (
     display3D_assembled,
     _reinterpolatesFocalPlane,
 )
-from fileProcessing.fileManagement import folders, writeString2File, try_get_client
+from fileProcessing.fileManagement import folders, writeString2File, try_get_client, restart_client
 from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
 
 from skimage import exposure
@@ -273,10 +273,7 @@ class segmentSources3D:
         # creates Table that will hold results
         outputTable = self.createsOutputTable()
 
-        # restarts client
-        client = try_get_client()
-        if client is not None:
-            client.restart()
+        restart_client()
 
         if numberROIs > 0:
 
@@ -306,7 +303,7 @@ class segmentSources3D:
                         image3D0 = io.imread(fileName2Process).squeeze()
 
                         # restricts analysis to a sub volume containing sources
-                        # focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
+                        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
                         zRange = (40,range(30,50))
                         image3D = image3D0[zRange[1],:,:].copy()
                         zOffset = zRange[1][0]
@@ -337,6 +334,7 @@ class segmentSources3D:
                             image3D_aligned = image3D
 
                         # segments 3D volumes
+                        # restart_client()
                         binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_aligned,
                                                                                     threshold_over_std=p["threshold_over_std"],
                                                                                     sigma = p["sigma"],

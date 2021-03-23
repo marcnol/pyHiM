@@ -642,3 +642,10 @@ def try_get_client():
         client=None
 
     return client
+
+def restart_client():
+    # restarts client
+    client = try_get_client()
+    if client is not None:
+        client.restart()
+        print("Distributed network restarted")
