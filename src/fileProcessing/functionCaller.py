@@ -72,24 +72,13 @@ class HiMfunctionCaller:
 
     def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
-            # parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
-            # numberUniqueCycles = retrieveNumberUniqueBarcodesRootFolder(self.rootFolder, parametersFile)
-
             print("Requested {} threads".format(threadsRequested))
 
-            self.daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
+            daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
 
-            print("Go to http://localhost:8787/status for information on progress...")
-
-            self.cluster = LocalCluster(
-                n_workers=self.daskClusterInstance.nThreads,
-                protocol='tcp', # chech if it works!
-                # processes=True,
-                # threads_per_worker=1,
-                # memory_limit='2GB',
-                # ip='tcp://localhost:8787',
-            )
-            self.client = Client(self.cluster)
+            daskClusterInstance.createDistributedClient()
+            self.client = daskClusterInstance.client
+            self.cluster = daskClusterInstance.cluster
 
     def makeProjections(self, param):
         if not self.runParameters["parallel"]:

@@ -437,13 +437,27 @@ class daskCluster:
         maxNumberThreads = int(np.min([numberCoresAvailable * self.maximumLoad, free_m / self.memoryPerWorker]))
 
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
-        # self.nThreads = 4
 
         print("Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
 
     def createDistributedClient(self):
+        # self.cluster = LocalCluster(
+        #     n_workers=self.nThreads,
+        #     # processes=True,
+        #     # threads_per_worker=1,
+        #     # memory_limit='2GB',
+        #     # ip='tcp://localhost:8787',
+        # )
+        client = try_get_client()
+        if client is not None:
+            print(">>> Shutting down existing cluster! ")
+            client.shutdown()
+        else:
+            print(">>> No running cluster detected. Will start one.")
+
         self.cluster = LocalCluster(
             n_workers=self.nThreads,
+            protocol='tcp', # chech if it works!
             # processes=True,
             # threads_per_worker=1,
             # memory_limit='2GB',
@@ -451,6 +465,7 @@ class daskCluster:
         )
         self.client = Client(self.cluster)
 
+        print("Go to http://localhost:8787/status for information on progress...")
 
 # =============================================================================
 # FUNCTIONS
@@ -649,3 +664,4 @@ def restart_client():
     if client is not None:
         client.restart()
         print("Distributed network restarted")
+

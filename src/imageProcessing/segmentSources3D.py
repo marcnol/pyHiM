@@ -304,7 +304,7 @@ class segmentSources3D:
 
                         # restricts analysis to a sub volume containing sources
                         focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
-                        zRange = (40,range(30,50))
+                        # zRange = (40,range(30,50))
                         image3D = image3D0[zRange[1],:,:].copy()
                         zOffset = zRange[1][0]
                         print("Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
