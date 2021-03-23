@@ -123,12 +123,18 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
     def segmentMasks(self, param, ilabel):
+
+        if "segmentedObjects" in param.param.keys():
+            operation = param.param["segmentedObjects"]["operation"]
+        else:
+            operation = [""]
+
         if (
             # self.getLabel(ilabel) != "fiducial"
             # and param.param["acquisition"]["label"] != "fiducial"
             self.getLabel(ilabel) != "RNA"
             and param.param["acquisition"]["label"] != "RNA"
-            and "2D" in param.param["segmentedObjects"]["operation"]
+            and "2D" in operation
         ):
             if not self.parallel:
                 segmentMasks(param, self.log1, self.session1)

@@ -75,13 +75,13 @@ graph TD
 
 More complex scenarios also exist, of course, but this provides three alternative pathways to get a Hi-M matrix 
 
-**Strict dependencies.** This lists the strict dependencies between modules.
+**Strict dependencies.** This lists the strict dependencies between modules. [*: optional]
 
 ```mermaid
 graph TD
 	B[1. Make 2D projections] --> C[Align 2D]--> D[Applies registrations] --> E(Segment 2D) --> F(Build Matrix)
 	
-	B1[1. Make 2D projections] --> C1[Align 2D]--> D1[Applies registrations 2D] --> E1[Segments masks 2D] --> C2[Aligns 3d] --> E12(Segment 3D) --> F1(Build Matrix)
+	B1[1. Make 2D projections] --> C1[Align 2D]--> D1[Applies registrations 2D] --> E1[Segments masks 2D] --> C2[Aligns 3d*] --> E12(Segment 3D) --> F1(Build Matrix)
 	
 	B3[1. Make 2D projections] --> C3[Align 2D]--> D3[Applies registrations] --> E3[Segments masks 2D]--> C32[local drift correction Mask] 
 	
