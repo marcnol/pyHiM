@@ -294,7 +294,7 @@ class segmentSources3D:
                     if roi == ROI:
 
                         # - load  and preprocesses 3D fiducial file
-                        print("\n\n>>>Processing roi:[{}] cycle:[{}] {}/{}<<<".format(roi,label,fileIndex,Nfiles2Process))
+                        print("\n\n>>>Processing roi:[{}] cycle:[{}] {}/{}<<<".format(roi,label,fileIndex,len(self.param.fileList2Process)))
                         print("$ File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
 
