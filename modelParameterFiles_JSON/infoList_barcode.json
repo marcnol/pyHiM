@@ -52,13 +52,13 @@
         "display": true,
         "folder": "zProject",
         "mode": "full",
-        "blockSize": 128,
+        "blockSize": 256,
         "operation": "skip",
         "saveImage": true,
         "windowSecurity": 2,
         "zProjectOption": "MIP",
         "zmax": 59,
         "zmin": 1,
-        "zwindows": 10
+        "zwindows": 15
     }
 }
