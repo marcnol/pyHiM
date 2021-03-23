@@ -457,7 +457,7 @@ class daskCluster:
 
         self.cluster = LocalCluster(
             n_workers=self.nThreads,
-            protocol='tcp', # chech if it works!
+            # protocol='tcp', # chech if it works!
             # processes=True,
             # threads_per_worker=1,
             # memory_limit='2GB',
