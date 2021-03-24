@@ -183,7 +183,7 @@ A typical file (DAPI example) looks like:
 
 
 
-Here are some options for the different parameters and a brief description
+These is the dictionary that provides information common to all routines.
 
 "acquisition"
 
@@ -199,6 +199,8 @@ Here are some options for the different parameters and a brief description
 "pixelSizeZ": 0.25 *axial pixel size in nm*
 "positionROIinformation": 3 *position for the ROI in the filename: will be removed in future versions!*
 ```
+
+
 
 ####  1. MakeProjections
 
@@ -225,24 +227,6 @@ There are many choices of how to do this:
 - ```zProjectOption```: how it converts a 3D stack into a 2D projection:
   - sum: sums all planes
   - MIP: maximum intensity projection
-
-"zProject"
-
-```
-"folder": "zProject",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic | laplacian
-"display": True,
-"blockSize": 128,
-"saveImage": True,
-"zmin": 1,
-"zmax": 59,
-"zwindows": 10,
-"windowSecurity": 2,
-"zProjectOption": "sum",  *Options:* **sum** | **MIP**
-```
-
-
 
 **Invoke**
 
@@ -290,7 +274,7 @@ optional arguments:
 
 #### 2. Drift Correction
 
-**Operation**
+**Operation overview** of available drift correction methods.
 
 There are several ways of correcting for drift within pyHiM:
 
@@ -300,7 +284,7 @@ There are several ways of correcting for drift within pyHiM:
 2.3 **2D Local drift correction.** This method will be applied after methods 1 and 2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle <i> fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
 2.4 **3D local drift correction.** None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle <i>. Then it will background-substract and level-normalize the reference and cycle <i> fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle <i> image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack. 
 
-##### 1- Global drift correction by cross-correlation
+##### 2.1 Global drift correction by cross-correlation
 
 **Operation**
 
@@ -374,7 +358,7 @@ In this case this can be solved by using lower thresholds, for instance ```lower
 
 
 
-##### 2- Block drift correlation
+##### 2.2 Block drift correlation
 
 To properly run this method use ```"alignByBlock": true```
 
@@ -456,7 +440,7 @@ Alignment using blockAlignment:
 
 
 
-#####  3- LocalDriftCorrection in 2D
+#####  2.3 LocalDriftCorrection in 2D
 
 **Operation**
 
@@ -494,7 +478,7 @@ optional arguments:
 
 
 
-#####  3- Local Drift Correction in 3D
+#####  2.4 Local Drift Correction in 3D
 
 **Operation**
 
@@ -617,7 +601,20 @@ optional arguments:
 
 
 
-#### 4.1 Segmenting sources in 2D
+#### 4. Segmenting sources
+
+**Overall options** for source segmentation
+
+- 4.1 Segmentation in 2D
+- 4.2 Estimation of z-position post 2D segmentation using z-profile
+- 4.3 Estimation of z-position post 2D segmentation using ASTROPY
+- 4.4 DIrect segmentation in 3D
+
+
+
+##### 4.2 Segmentation in 2D
+
+
 
 **Operation**
 
@@ -1081,8 +1078,6 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 ```
 
 
-
-####  
 
 ### 7. Process second channel (i.e RNA, segments, etc)
 
