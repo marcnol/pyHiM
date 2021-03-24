@@ -26,32 +26,33 @@ pyHiM.py
 
 This assumes that you are running it from the ```destination_directory```. If it is not the case, use the ``-F`` flag with the directory with your data.
 
-
+**Invoke pyHiM**
 
 The arguments are
 
 ```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [--threads] [--localAlignment] [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
-  --localAlignment     Runs localAlignment function
-  --refit              Refits barcode spots using a Gaussian axial fitting function.
-
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
 ```
 
 
 
-```-F ``` indicates the rootFolder where pyHiM expects to find the dataset.
+```-F ``` or ```--rootFolder``` indicates the rootFolder where pyHiM expects to find the dataset.
 
 ```--threads``` argument will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
 
-```---localAlignment``` will run the local alignment function. See below
-
-```---refit```  will refit barcode spots using a Gaussian axial fitting function.
+```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a comma separated list. If you don't provide this argument, the full list of functions will be run and the mode of action will be determined from the ```infoList.json``` file (see below)
 
 
 
@@ -98,7 +99,9 @@ graph TD
 
 #### infoList parameters files
 
-a typical file (DAPI example) looks like:
+All the model infoList files can be found in: ```pyHiM/modelParameterFiles_JSON```
+
+A typical file (DAPI example) looks like:
 
 ```bash
 {
@@ -197,85 +200,9 @@ Here are some options for the different parameters and a brief description
 "positionROIinformation": 3 *position for the ROI in the filename: will be removed in future versions!*
 ```
 
-"zProject"
-
-```
-"folder": "zProject",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"mode": "full",  *Options:* full | manual | automatic | laplacian
-"display": True,
-"blockSize": 128,
-"saveImage": True,
-"zmin": 1,
-"zmax": 59,
-"zwindows": 10,
-"windowSecurity": 2,
-"zProjectOption": "sum",  *Options:* **sum** | **MIP**
-```
-
-"alignImages"
-
-```
-"folder": "alignImages",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"outputFile": "alignImages",
-"referenceFiducial": "RT18"
-"alignByBlock": True, # alignByBlock True will perform block alignment
-"tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
-"lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
-"higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
-"background_sigma": 3.0,  # used to remove inhom background
-"localShiftTolerance": 1,
-"bezel": 20,
-```
-
-"projectsBarcodes"
-
-```
-"folder": "projectsBarcodes",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"outputFile": "projectsBarcodes",
-```
-
-"buildsPWDmatrix"
-
-```
-"folder": "buildsPWDmatrix",  # output folder
-"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
-"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
-```
-
-"segmentedObjects"
-
-```
-"folder": "segmentedObjects",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"outputFile": "segmentedObjects",
-"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
-"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
-"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
-"background_sigma": 3.0,  *Description:* used to remove inhomogenous background
-"threshold_over_std": 1.0,  *Description:* threshold used to detect sources
-"fwhm": 3.0,  *Description:* source size in pixels
-"brightest": 1100,  *Description:* max number of objects segmented per FOV (only for barcodes!)
-"intensity_min": 0,  *Description:* min intensity to keep object
-"intensity_max": 59,  *Description:* max intensity to keep object
-"area_min": 50,  *Description:* min area to keep object
-"area_max": 500,  *Description:* max area to keep object
-"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
-"3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
-"sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
-"centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
-"3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
-"3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
-"3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
-"3dAP_brightest": 100, # number of sources sought in each YZ plane
-"3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
-```
-
-
-
 ####  1. MakeProjections
+
+**Operation**
 
 This function will take 3D stacks and project them into 2D.
 
@@ -290,8 +217,6 @@ There are many choices of how to do this:
   There are some additional options that can be provided to indicate how projections are made:
 
 - ```laplacian```: breaks the image into blocks of size ```blockSize```. Then calculates the laplacian variance in each block, and estimates the focal position per block by maximizing the laplacian variance. The overall focal plane for the image will be outputed to the terminal and to the block image (see title in image below). The 2D image is reconstructed block by block by using the optimal focal plane for each block. If the parameter ```zwindows``` is set to zero, then only the image at the focal point will be used. Otherwise we will do an MIP in the subvolume: ``` focalPlane-zwindows/2:focalPlane+zwindows/2```.Set <mode> to <u>laplacian</u>.
-
-  
 
   There are some additional options that can be provided to indicate how projections are made:
 
@@ -319,7 +244,53 @@ There are many choices of how to do this:
 
 
 
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C makeProjections``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+```-F ``` or ```--rootFolder``` indicates the rootFolder where pyHiM expects to find the dataset.
+
+```--threads``` argument will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
+
+**Options**
+
+"zProject"
+
+```
+"folder": "zProject",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"mode": "full",  *Options:* full | manual | automatic | laplacian
+"display": True,
+"blockSize": 128,
+"saveImage": True,
+"zmin": 1,
+"zmax": 59,
+"zwindows": 10,
+"windowSecurity": 2,
+"zProjectOption": "sum",  *Options:* **sum** | **MIP**
+```
+
+
+
 #### 2. Drift Correction
+
+**Operation**
 
 There are several ways of correcting for drift within pyHiM:
 
@@ -331,43 +302,57 @@ There are several ways of correcting for drift within pyHiM:
 
 ##### 1- Global drift correction by cross-correlation
 
+**Operation**
+
 Global drift correction will be run by default if ```"alignByBlock": false```.
 
 The method first finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
 
-This can be run by typing 
-```sh
-runAlignImages -F .
-```
-in the working directory. Otherwise provide full path.
-
-In most cases, this works very well. A good example is:
-
-<img src="Running_pyHiM.assets/image-20200929135403059.png" alt="image-20200929135403059" style="zoom:150%;" />
-
-
-
-##### Applying drift corrections
-
-
-
-You can apply registrations by running:
+**Invoke**
 
 ```sh
-runAppliesRegistrations.py -F .
-
-usage: runAppliesRegistrations.py [-h] [-F ROOTFOLDER] [--threads]
-                                  [--localAlignment] [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
-  --localAlignment      Runs localAlignment function
-  --refit               Refits barcode spots using a Gaussian axial fitting
-                        function.
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
 ```
+
+```-F ``` or ```--rootFolder``` indicates the rootFolder where pyHiM expects to find the dataset.
+
+```--threads``` argument will make it run in parallel mode. Be ready to open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 marcnol@lopevi```. Change your username and server of course...
+
+**Options**
+
+"alignImages". These options are shared by all alignment routines.
+
+```
+"folder": "alignImages",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "alignImages",
+"referenceFiducial": "RT18"
+"alignByBlock": True, # alignByBlock True will perform block alignment
+"tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
+"lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
+"higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+"background_sigma": 3.0,  # used to remove inhom background
+"localShiftTolerance": 1,
+"bezel": 20,
+```
+
+
+
+In most cases, this works very well. A good example is:
+
+<img src="Running_pyHiM.assets/image-20200929135403059.png" alt="image-20200929135403059" style="zoom:150%;" />
 
 
 
@@ -471,17 +456,11 @@ Alignment using blockAlignment:
 
 
 
+#####  3- LocalDriftCorrection in 2D
 
+**Operation**
 
-
-
-#####  3- 2D LocalDriftCorrection
-
-2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
-
-To properly run this method use ```"localAlignment": "mask2D"```
-
-Otherwise, call by running ```runLocalAlignment.py -F .```  directly from the command line, either in the working directory or providing a full path.
+The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
 
 Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
 
@@ -489,13 +468,83 @@ Deformation of samples means a simple translation will not be enough to correct 
 
 
 
-The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
+**Invoke**
 
-#####  4- 3D Local Drift Correction 
+To activate this method use ```"localAlignment": "mask2D"``` in the ```infoList_DAPI.json``` file when you run *pyHiM*.
 
-To properly run this method use ```"localAlignment": "block3D"```
+2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
 
-<u>Parameters: need to program in!</u> 
+Otherwise, if you just want to call this method, call *pyHiM* with the ```-C localDriftCorrection``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+
+
+#####  3- Local Drift Correction in 3D
+
+**Operation**
+
+
+
+**Invoke**
+
+To activate this method use ```"localAlignment": "block3D"``` in the ``` alignImages``` key of the ```infoList_fiducial.json``` file when you run *pyHiM*.
+
+This method requires that you first run global drift correction either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag in the  ``` alignImages``` key of the ```infoList_fiducial.json``` file.
+
+Otherwise, if you just want to call this method, call *pyHiM* with the ```-C alignImages3D``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+#####  
+
+**Options**
+
+"alignImages". These options are shared by all alignment routines.
+
+```
+"folder": "alignImages",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "alignImages",
+"referenceFiducial": "RT18"
+"alignByBlock": True, # alignByBlock True will perform block alignment
+"tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
+"lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
+"higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
+"background_sigma": 3.0,  # used to remove inhom background
+"localShiftTolerance": 1,
+"bezel": 20,
+```
+
+
 
 **Output of method**
 
@@ -540,33 +589,93 @@ This is now the comparison of the min distances between localizations in the ref
 
 #### 3. Applies registrations
 
-   
+**Operation**
 
-#### 4.1 Segmenting sources in 2D
+
 
 **Invoke**
 
-This function can be invoked directly from the command line using ```runSegmentMasks.py```
+This function will automatically be applied when you run *pyHiM*.
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C appliesRegistrations``` argument.
 
 ```sh
-runSegmentMasks.py -F .
-
-usage: runSegmentMasks.py [-h] [-F ROOTFOLDER] [--threads] [--localAlignment]
-                          [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
-  --localAlignment      Runs localAlignment function
-  --refit               Refits barcode spots using a Gaussian axial fitting
-                        function.
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
 ```
 
 
 
-Otherwise, from pyHiM use parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```.
+#### 4.1 Segmenting sources in 2D
+
+**Operation**
+
+
+
+**Invoke**
+
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```..
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+
+
+**Options**
+
+"segmentedObjects" contain options for all segmentation functions: 2D and 3D.
+
+```
+"folder": "segmentedObjects",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "segmentedObjects",
+"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
+"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
+"background_sigma": 3.0,  *Description:* used to remove inhomogenous background
+"threshold_over_std": 1.0,  *Description:* threshold used to detect sources
+"fwhm": 3.0,  *Description:* source size in pixels
+"brightest": 1100,  *Description:* max number of objects segmented per FOV (only for barcodes!)
+"intensity_min": 0,  *Description:* min intensity to keep object
+"intensity_max": 59,  *Description:* max intensity to keep object
+"area_min": 50,  *Description:* min area to keep object
+"area_max": 500,  *Description:* max area to keep object
+"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+"3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
+"sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
+"centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
+"3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
+"3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
+"3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
+"3dAP_brightest": 100, # number of sources sought in each YZ plane
+"3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
+```
 
 
 
@@ -615,8 +724,6 @@ An example of a barcode where localization signals are far from optimal: note th
 
 ##### 4.2 3D fits of barcode positions using zProfiling
 
-```"3Dmethod":"zProfile"```
-
 **Operation**
 
 Barcode 3D positions are now calculated as follows.
@@ -636,9 +743,33 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 
 
+**Invoke**
+
+Use ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file when you run *pyHiM*.
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+
+
 ##### 4.3 3D fits of barcode positions using ASTROPY
 
-```"3Dmethod":"zASTROPY"```
+**Operation**
 
 In this case, the 2D XY source positions calculated using projected images are loaded from disk.
 
@@ -651,6 +782,32 @@ Then the ```fittingSession.refitFolders``` will
 - Then, it will iterate over the sources in that YZ plane and match them to a source in the original 2D XY source list. For this, it will find the sources within a Y-distance of  ```3dAP_distTolerance```, and match to the closest source found. If no source is found closer than this threshold, it will not match it to anything. *There is an experimental setting ```addSources``` that can be used to add the sources as new sources if no match was found in the original 2D XY list of sources. By default this is set to ```False```.* 
 - If the flux of the 2D XY source is smaller than that of the ZY source, the flux will be updated accordingly.
 - This process is repeated for all xPlanes using ```range(3dAP_window, imageSizeX,3dAP_window)``` (i.e. the x-range of the image will be split into ```imageSizeX/3dAP_window``` equally-spaced planes). Typically ```3dAP_window=5``` works fine.
+
+**Invoke**
+
+Use ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file when you run *pyHiM*.
+
+To run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+
+
+**Outputs**
 
 The results for any given ROI and barcode appear with three figures representing:
 
@@ -680,8 +837,6 @@ Output examples:
 
 #### 4.4 Direct segmentation of sources in 3D
 
-
-
 **Operation**
 
 This routine performs a direct 3D gaussian fit of sources, instead of segmenting sources in 2D and then reinterpolating their 3D position.
@@ -704,7 +859,7 @@ The function does the following:
 
 
 
-**Output**
+**Output Localization Table**
 
 *segmentedObjects_3D_barcode.dat*
 
@@ -735,29 +890,59 @@ cfb668f7-6ead-4ac1-a4a6-88896eca7f04 1 0 31 1 9.506243 1242.8794 216.33797 0.276
 
 **Invoke**
 
-This function can be invoked directly from the command line using ```runSegmentSources3D.py```
+Use  ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList_barcode.json``` when you run *pyHiM*. To run both 2D and 3D barcode segmentations, then just use: ```"operation": "2D,3D"```.
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C segmentSources3D``` argument and ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json*.
 
 ```sh
-usage: runSegmentSources3D.py [-h] [-F ROOTFOLDER] [--threads]
-                              [--localAlignment] [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
-  --localAlignment      Runs localAlignment function
-  --refit               Refits barcode spots using a Gaussian axial fitting
-                        function.
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+**Options**
+
+"segmentedObjects" contain options for all segmentation functions: 2D and 3D.
+
+```
+"folder": "segmentedObjects",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "segmentedObjects",
+"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
+"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
+"background_sigma": 3.0,  *Description:* used to remove inhomogenous background
+"threshold_over_std": 1.0,  *Description:* threshold used to detect sources
+"fwhm": 3.0,  *Description:* source size in pixels
+"brightest": 1100,  *Description:* max number of objects segmented per FOV (only for barcodes!)
+"intensity_min": 0,  *Description:* min intensity to keep object
+"intensity_max": 59,  *Description:* max intensity to keep object
+"area_min": 50,  *Description:* min area to keep object
+"area_max": 500,  *Description:* max area to keep object
+"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+"3Dmethod":"zASTROPY", # options: zASTROPY, zProfile
+"sigma_max": 5,*Description:* maximum gaussian fit sigma allowed (axial spot intensity)
+"centroidDifference_max": 5,  *Description:* max difference between z centroid position determined by moment and by gaussian fitting       
+"3DGaussianfitWindow": 3,*Description:* size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.
+"3dAP_window": 5, # constructs a YZ image by summing from xPlane-window:xPlane+window
+"3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
+"3dAP_brightest": 100, # number of sources sought in each YZ plane
+"3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
 ```
 
 
 
-Otherwise, from pyHiM use parameter ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both, then just use:  ```"operation": "2D,3D"```.
-
-
-
-**Examples**
+**Graphical outputs**
 
 Typical example of XY-XZ-YZ projections. Localizations: weighted centroids (green); 3D gaussian fits (red).
 
@@ -793,27 +978,43 @@ Typical XY projection of the central plane with weighted centroids color coded b
 
 #### 5. Align DAPI masks and barcodes
 
-This last function will align DAPI masks and barcodes and construct the single cell contact matrix.
+**Invoke**
+
+Options to run this function will be read from ```infoList_DAPI.json``` when you run *pyHiM*.
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C buildHiMmatrix``` argument.
 
 ```sh
-runAlignBarcodesMasks.py -F .
-
-usage: runAlignBarcodesMasks.py [-h] [-F ROOTFOLDER] [--threads]
-                                [--localAlignment] [--refit]
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  --threads            Number of threads to run in parallel mode. If none, then it will run with one thread.
-  --localAlignment      Runs localAlignment function
-  --refit               Refits barcode spots using a Gaussian axial fitting
-                        function.
-
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  						makeProjections, appliesRegistrations,
+                        alignImages,alignImages3D, segmentMasks,
+                        segmentSources3D,refitBarcodes3D,
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
 ```
 
 
-<u>Example outputs:</u>
+
+**Options**
+
+"buildsPWDmatrix"
+
+```
+"folder": "buildsPWDmatrix",  # output folder
+"flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
+"toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
+```
+
+
+
+**Outputs**
 
 Mean pairwise distance matrix. By default means are calculated using Kernel Density Estimators of the PWD distributions.
 
@@ -849,7 +1050,7 @@ There are several filters:
 
 
 
-##### Outputs
+##### Other outputs
 
 In addition to the PWD matrix, we now also have a map of the alignment accuracy  and scatter plots showing the flux of each barcode, its sharpness, magnitude and roundness. These are used in order to validate the segmentation process and help with the selection of the ```flux``` threshold used in this filtering step.
 
@@ -865,9 +1066,25 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 
 <img src="Running_pyHiM.assets/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
 
+### 6. Projects barcodes
 
 
-### Process second channel (i.e RNA, segments, etc)
+
+**Options**
+
+"projectsBarcodes"
+
+```
+"folder": "projectsBarcodes",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "projectsBarcodes",
+```
+
+
+
+####  
+
+### 7. Process second channel (i.e RNA, segments, etc)
 
 ```pyHiM.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```
 

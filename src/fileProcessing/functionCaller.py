@@ -199,14 +199,23 @@ class HiMfunctionCaller:
         return self.labels2Process[ilabel]["label"]
 
 
+def makeListCommands():
+    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
+                "segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
+
+    available_commands = makeListCommands()
+
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections, appliesRegistrations,\
+                        alignImages,alignImages3D, segmentMasks,\
+                        segmentSources3D,refitBarcodes3D,\
+                        localDriftCorrection,projectBarcodes,buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
-    parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
-    parser.add_argument(
-        "--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true"
-    )
+    # parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
+    # parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
 
     args = parser.parse_args()
 
@@ -230,15 +239,25 @@ def HiM_parseArguments():
         runParameters["threads"] = 1
         runParameters["parallel"] = False
 
-    if args.localAlignment:
-        runParameters["localAlignment"] = args.localAlignment
+    if args.cmd:
+        runParameters["cmd"] = args.cmd.split(",")
     else:
-        runParameters["localAlignment"] = False
+        runParameters["cmd"] = available_commands
 
-    if args.refit:
-        runParameters["refit"] = args.refit
-    else:
-        runParameters["refit"] = False
+    for cmd in runParameters["cmd"]:
+        if cmd not in available_commands:
+            print("\n\nERROR: {} not found in list of available commands: {}\n".format(cmd,available_commands))
+            raise SystemExit
+
+    # if args.localAlignment:
+    #     runParameters["localAlignment"] = args.localAlignment
+    # else:
+    #     runParameters["localAlignment"] = False
+
+    # if args.refit:
+    #     runParameters["refit"] = args.refit
+    # else:
+    #     runParameters["refit"] = False
 
     print("\nParameters loaded: {}".format(runParameters))
     return runParameters

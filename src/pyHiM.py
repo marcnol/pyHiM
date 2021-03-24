@@ -19,7 +19,7 @@ The main() will search for parameter files within the folder provided. All ope-e
 from datetime import datetime
 
 from fileProcessing.fileManagement import Parameters
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments, makeListCommands
 
 # to remove in a future version
 import warnings
@@ -33,6 +33,7 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     runParameters=HiM_parseArguments()
+    available_commands = makeListCommands()
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
@@ -48,34 +49,44 @@ if __name__ == "__main__":
         param.param['parallel']=HiM.parallel
 
         # [projects 3D images in 2d]
-        HiM.makeProjections(param)
+        if "makeProjections" in runParameters["cmd"]:
+            HiM.makeProjections(param)
 
         # [registers fiducials using a barcode as reference]
-        HiM.alignImages(param, ilabel)
+        if "alignImages" in runParameters["cmd"]:
+            HiM.alignImages(param, ilabel)
 
         # [applies registration to DAPI and barcodes]
-        HiM.appliesRegistrations(param, ilabel)
+        if "appliesRegistrations" in runParameters["cmd"]:
+            HiM.appliesRegistrations(param, ilabel)
 
         # [aligns fiducials in 3D]
-        HiM.alignImages3D(param, ilabel)
+        if "alignImages3D" in runParameters["cmd"]:
+            HiM.alignImages3D(param, ilabel)
 
         # [segments DAPI and sources in 2D]
-        HiM.segmentMasks(param, ilabel)
+        if "segmentMasks" in runParameters["cmd"]:
+            HiM.segmentMasks(param, ilabel)
 
         # [segments sources in 3D]
-        HiM.segmentSources3D(param, ilabel)
+        if "segmentSources3D" in runParameters["cmd"]:
+            HiM.segmentSources3D(param, ilabel)
 
         # [2D projects all barcodes in an ROI]
-        HiM.projectsBarcodes(param, ilabel)
+        if "projectBarcodes" in runParameters["cmd"]:
+            HiM.projectsBarcodes(param, ilabel)
 
         # [refits spots in 3D]
-        HiM.refitBarcodes(param, ilabel)
+        if "refitBarcodes3D" in runParameters["cmd"]:
+            HiM.refitBarcodes(param, ilabel)
 
         # [local drift correction]
-        HiM.localDriftCorrection(param, ilabel)
+        if "localDriftCorrection" in runParameters["cmd"]:
+            HiM.localDriftCorrection(param, ilabel)
 
         # [builds PWD matrix for all folders with images]
-        HiM.processesPWDmatrices(param, ilabel)
+        if "buildHiMmatrix" in runParameters["cmd"]:
+            HiM.processesPWDmatrices(param, ilabel)
 
         print("\n")
         del param
