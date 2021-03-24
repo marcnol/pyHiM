@@ -282,7 +282,7 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.ampl"] = fitgauss[0][0]
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
-        print("# Warning, too many iterations trying to fit 1D gaussian function")
+        # print("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
         
     if verbose:
@@ -599,7 +599,7 @@ def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
         higher cutoff used for thresholding.
 
     """
-    print("> Rescaling grey levels...")
+    # print("> Rescaling grey levels...")
 
     # rescales image to [0,1]
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
