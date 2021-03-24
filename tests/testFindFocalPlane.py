@@ -28,6 +28,7 @@ from imageProcessing.imageProcessing  import (
     appliesXYshift3Dimages,
     calculatesFocusPerBlock,
     _reinterpolatesFocalPlane,
+    gaussian,
     )
 import cv2
 
@@ -38,7 +39,7 @@ if "atlantis" in os.uname()[1]:
 else:
     rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0/"
     file = rootFolder+'scan_001_RT27_001_ROI_converted_decon_ch01.tif'
-    file = rootFolder+'scan_001_RT41_001_ROI_converted_decon_ch01.tif'
+    # file = rootFolder+'scan_001_RT41_001_ROI_converted_decon_ch01.tif'
 imageRaw = io.imread(file).squeeze()
 
 
@@ -102,10 +103,43 @@ def fit1DGaussian(x,y,title='',verbose=True):
     else:
         return dict()
 
+
+import scipy.optimize as spo
+
+def fit1DGaussian_scipy(x,y,title='',verbose=True):
+
+    fitResult=dict()
+
+    try:
+        fitgauss = spo.curve_fit(gaussian, x, y)
+        # print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
+        fitResult["gauss1d.pos"] = fitgauss[0][1]
+        fitResult["gauss1d.ampl"] = fitgauss[0][0]
+        fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
+    except RuntimeError:
+        print("Warning, too many iterations")
+        return dict()
+        
+    if verbose:
+        fig=plt.figure()
+        ax = fig.add_subplot(1,1,1)
+
+        print("<<Fitting successful>>")
+
+        ax.plot(x,y,'ko',label='data')
+        ax.plot(x,gaussian(x,fitgauss[0][0],fitgauss[0][1],fitgauss[0][2]),linewidth=2, label='gaussian fit')
+        ax.legend(loc=2)
+        ax.set_title(title)
+
+    return fitResult, fig
+    
+    
 y = LaplacianVariance
 x = range(len(LaplacianVariance))
-fitResult,fig2 = fit1DGaussian(x,y,title='z-profile',verbose=True)
+fitResult,fig2 = fit1DGaussian(x,y,title='z-profile sherpa',verbose=True)
 focalPlane = fitResult['gauss1d.pos']
+
+fitResult2,fig3 = fit1DGaussian_scipy(x,y,title='z-profile scipy',verbose=True)
 
 #%% Partial recoding using block decomposition using existing functions from imageProcessing.py
 from scipy.stats import sigmaclip

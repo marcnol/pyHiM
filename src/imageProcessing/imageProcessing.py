@@ -249,10 +249,60 @@ class Image:
 # GENERAL FUNCTIONS
 # =============================================================================
 
-def fit1DGaussian(x,y,title='',verbose=True):
+def fit1DGaussian_scipy(x,y,title='',verbose=False):
     """
     Fits a function using a 1D Gaussian and returns parameters if successfull.
     Otherwise will return an empty dict
+    Uses scipy spo package
+
+    Parameters
+    ----------
+    x : numpy 1D array
+        x data.
+    y : numpy 1D array
+        y data.
+    title : str, optional
+        figure title. The default is ''.
+    verbose : Boolean, optional
+        whether fig and results will be shown. The default is True.
+
+    Returns
+    -------
+    dict()
+        dictionary with fitting parameters.
+    fig
+        matplotlib figure for saving
+
+    """
+    fitResult=dict()
+
+    try:
+        fitgauss = spo.curve_fit(gaussian, x, y)
+        fitResult["gauss1d.pos"] = fitgauss[0][1]
+        fitResult["gauss1d.ampl"] = fitgauss[0][0]
+        fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
+    except RuntimeError:
+        print("# Warning, too many iterations trying to fit 1D gaussian function")
+        return dict()
+        
+    if verbose:
+        fig=plt.figure()
+        ax = fig.add_subplot(1,1,1)
+
+        print("<<Fitting successful>>")
+
+        ax.plot(x,y,'ko',label='data')
+        ax.plot(x,gaussian(x,fitgauss[0][0],fitgauss[0][1],fitgauss[0][2]),linewidth=2, label='gaussian fit')
+        ax.legend(loc=2)
+        ax.set_title(title)
+
+    return fitResult, fig
+
+def fit1DGaussian_sherpa(x,y,title='',verbose=True):
+    """
+    Fits a function using a 1D Gaussian and returns parameters if successfull.
+    Otherwise will return an empty dict
+    Uses sherpa package
 
     Parameters
     ----------
@@ -1116,7 +1166,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
 
     xCoord = range(len(LaplacianVariance))
-    fitResult,fig2 = fit1DGaussian(xCoord,LaplacianVariance,title='z-profile',verbose=False)
+    fitResult,fig2 = fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=False)
     focalPlane = fitResult['gauss1d.pos']
     fwhm= fitResult['gauss1d.fwhm']
 
@@ -1470,8 +1520,8 @@ def _segments3DvolumesByThresholding(image3D,
         binary=output>0
         print(" > Constructing distance matrix from 3D binary mask...")
 
-        # distance = apply_parallel(ndi.distance_transform_edt, binary)
-        distance = ndi.distance_transform_edt(binary)
+        distance = apply_parallel(ndi.distance_transform_edt, binary)
+        # distance = ndi.distance_transform_edt(binary)
 
         print(" > Deblending sources in 3D by watersheding...")
         coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
