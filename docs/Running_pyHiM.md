@@ -73,6 +73,8 @@ graph TD
 	F --> G(HiM matrix) & G2(single cell PWD matrices) & G3(ASTROPY table with results for all cells)
 ```
 
+
+
 More complex scenarios also exist, of course, but this provides three alternative pathways to get a Hi-M matrix 
 
 **Strict dependencies.** This lists the strict dependencies between modules. [*: optional]
