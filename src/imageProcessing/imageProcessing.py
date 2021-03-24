@@ -22,11 +22,11 @@ import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
 from scipy.stats import sigmaclip
-from sherpa.data import Data1D
-from sherpa.models.basic import Gauss1D
-from sherpa.stats import LeastSq
-from sherpa.optmethods import LevMar
-from sherpa.fit import Fit as sherpaFit
+# from sherpa.data import Data1D
+# from sherpa.models.basic import Gauss1D
+# from sherpa.stats import LeastSq
+# from sherpa.optmethods import LevMar
+# from sherpa.fit import Fit as sherpaFit
 
 import cv2
 from tifffile import imsave
@@ -299,57 +299,57 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
 
     return fitResult, []
 
-def fit1DGaussian_sherpa(x,y,title='',verbose=True):
-    """
-    Fits a function using a 1D Gaussian and returns parameters if successfull.
-    Otherwise will return an empty dict
-    Uses sherpa package
+# def fit1DGaussian_sherpa(x,y,title='',verbose=True):
+#     """
+#     Fits a function using a 1D Gaussian and returns parameters if successfull.
+#     Otherwise will return an empty dict
+#     Uses sherpa package
 
-    Parameters
-    ----------
-    x : numpy 1D array
-        x data.
-    y : numpy 1D array
-        y data.
-    title : str, optional
-        figure title. The default is ''.
-    verbose : Boolean, optional
-        whether fig and results will be shown. The default is True.
+#     Parameters
+#     ----------
+#     x : numpy 1D array
+#         x data.
+#     y : numpy 1D array
+#         y data.
+#     title : str, optional
+#         figure title. The default is ''.
+#     verbose : Boolean, optional
+#         whether fig and results will be shown. The default is True.
 
-    Returns
-    -------
-    dict()
-        dictionary with fitting parameters.
-    fig
-        matplotlib figure for saving
+#     Returns
+#     -------
+#     dict()
+#         dictionary with fitting parameters.
+#     fig
+#         matplotlib figure for saving
 
-    """
+#     """
 
-    d=Data1D('laplacianProfile',x,y)
-    Gauss1Dmodel = Gauss1D()
-    opt = LevMar()
-    stat = LeastSq()
+#     d=Data1D('laplacianProfile',x,y)
+#     Gauss1Dmodel = Gauss1D()
+#     opt = LevMar()
+#     stat = LeastSq()
 
-    gFit = sherpaFit(d,Gauss1Dmodel,stat=stat, method=opt)
-    fitResult = gFit.fit()
+#     gFit = sherpaFit(d,Gauss1Dmodel,stat=stat, method=opt)
+#     fitResult = gFit.fit()
 
-    if fitResult.succeeded:
-        if verbose:
-            print("<<Fitting successful>>")
-            # print(fitResult.format())
+#     if fitResult.succeeded:
+#         if verbose:
+#             print("<<Fitting successful>>")
+#             # print(fitResult.format())
 
-            fig=plt.figure()
-            ax = fig.add_subplot(1,1,1)
-            ax.plot(d.x,d.y,'ko',label='data')
-            ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
-            ax.legend(loc=2)
-            ax.set_title(title)
-        else:
-            fig=None
+#             fig=plt.figure()
+#             ax = fig.add_subplot(1,1,1)
+#             ax.plot(d.x,d.y,'ko',label='data')
+#             ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
+#             ax.legend(loc=2)
+#             ax.set_title(title)
+#         else:
+#             fig=None
 
-        return dict(zip(fitResult.parnames,fitResult.parvals)), fig
-    else:
-        return dict()
+#         return dict(zip(fitResult.parnames,fitResult.parvals)), fig
+#     else:
+#         return dict()
 
 def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
     """
