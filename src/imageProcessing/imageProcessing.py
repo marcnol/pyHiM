@@ -283,7 +283,7 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
         print("# Warning, too many iterations trying to fit 1D gaussian function")
-        return dict()
+        return dict(), []
         
     if verbose:
         fig=plt.figure()
