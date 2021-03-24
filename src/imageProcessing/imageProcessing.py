@@ -297,7 +297,7 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         ax.set_title(title)
         return fitResult, fig
 
-    return fitResult
+    return fitResult, []
 
 def fit1DGaussian_sherpa(x,y,title='',verbose=True):
     """
@@ -1167,7 +1167,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
 
     xCoord = range(len(LaplacianVariance))
-    fitResult,fig2 = fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
+    fitResult, _= fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
     
     if len(fitResult)>0:
         focalPlane = fitResult['gauss1d.pos']
