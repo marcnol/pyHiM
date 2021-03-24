@@ -295,8 +295,9 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         ax.plot(x,gaussian(x,fitgauss[0][0],fitgauss[0][1],fitgauss[0][2]),linewidth=2, label='gaussian fit')
         ax.legend(loc=2)
         ax.set_title(title)
+        return fitResult, fig
 
-    return fitResult, fig
+    return fitResult
 
 def fit1DGaussian_sherpa(x,y,title='',verbose=True):
     """
@@ -1166,14 +1167,17 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
 
     xCoord = range(len(LaplacianVariance))
-    fitResult,fig2 = fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=False)
-    focalPlane = fitResult['gauss1d.pos']
-    fwhm= fitResult['gauss1d.fwhm']
+    fitResult,fig2 = fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
+    
+    if len(fitResult)>0:
+        focalPlane = fitResult['gauss1d.pos']
+        fwhm = fitResult['gauss1d.fwhm']
 
-    if fwhm>threshold_fwhm:
-        fwhm=np.nan
-        focalPlane=np.nan
-
+        if fwhm>threshold_fwhm:
+            fwhm, focalPlane = np.nan, np.nan
+    else:
+        fwhm, focalPlane = np.nan, np.nan
+    
     if verbose:
         print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
 
