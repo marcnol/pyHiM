@@ -42,7 +42,7 @@ if __name__ == "__main__":
     HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
 
     for ilabel in range(len(HiM.labels2Process)):
-        HiM.log1.addSimpleText("**Analyzing label: {}**".format(HiM.labels2Process[ilabel]["label"]))
+        HiM.log1.addSimpleText("> Analyzing label: {}".format(HiM.labels2Process[ilabel]["label"]))
 
         # sets parameters
         param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])

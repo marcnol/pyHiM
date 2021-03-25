@@ -176,7 +176,7 @@ class segmentSources3D:
             npix=[properties[x].area for x in selection]
             sky=[0.0 for x in selection]
             peak=[properties[x].max_intensity for x in selection]
-            flux=[properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
+            flux=[100*properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
             mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
             # converts centroids to spot coordinates for bigfish to run 3D gaussian fits

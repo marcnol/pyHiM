@@ -1006,6 +1006,7 @@ optional arguments:
 ```
 "folder": "buildsPWDmatrix",  # output folder
 "flux_min": 1000, *Description:* minimum flux per spot. If flux is smaller, localization will be discarded
+"flux_min_3D": 0.1, *Description:* minimum flux per spot for 3D localizations. If flux is smaller, localization will be discarded
 "toleranceDrift":1, *Description*: tolerance used for block drift correction, in px
 ```
 

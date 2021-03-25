@@ -254,7 +254,8 @@ class Parameters:
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
-                "flux_min": 200,  # min flux to keeep object
+                "flux_min": 10,  # min flux to keeep object
+                "flux_min_3D": 0.1,  # min flux to keeep object
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
             },
             "segmentedObjects": {
@@ -300,14 +301,14 @@ class Parameters:
         with open(self.paramFile, "w") as f:
             # json.dump(json.dumps(self.param), f, ensure_ascii=False, indent=4)
             json.dump(self.param, f, ensure_ascii=False, sort_keys=True, indent=4)
-        print("Model parameters file saved to: {}".format(os.getcwd() + os.sep + self.paramFile))
+        print("$ Model parameters file saved to: {}".format(os.getcwd() + os.sep + self.paramFile))
 
     def loadParametersFile(self, fileName):
         if path.exists(fileName):
             with open(fileName) as json_file:
                 self.param = json.load(json_file)
 
-            print("Parameters file read: {}".format(fileName))
+            print("$ Parameters file read: {}".format(fileName))
 
     def setsChannel(self, key, default):
         if key in self.param["acquisition"].keys():

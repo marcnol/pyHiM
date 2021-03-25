@@ -34,6 +34,7 @@
     "buildsPWDmatrix": {
         "folder": "buildsPWDmatrix",
         "flux_min": 2,
+        "flux_min_3D": 0.1,
         "toleranceDrift":1
     },    
     "segmentedObjects": {

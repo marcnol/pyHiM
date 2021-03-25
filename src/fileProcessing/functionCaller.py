@@ -53,7 +53,7 @@ class HiMfunctionCaller:
 
         print("\n--------------------------------------------------------------------------")
 
-        print("parameters> rootFolder: {}".format(self.rootFolder))
+        print("$ rootFolder: {}".format(self.rootFolder))
 
         begin_time = datetime.now()
 
@@ -65,14 +65,14 @@ class HiMfunctionCaller:
         if self.log1.fileNameMD == ".md":
             self.log1.fileNameMD = "HiM_report.md"
 
-        self.log1.report("Hi-M analysis MD: {}".format(self.log1.fileNameMD))
+        self.log1.addSimpleText("$ Hi-M analysis will be written tos: {}".format(self.log1.fileNameMD))
         writeString2File(
             self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
 
     def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
-            print("Requested {} threads".format(threadsRequested))
+            print("$ Requested {} threads".format(threadsRequested))
 
             daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
 
@@ -89,8 +89,8 @@ class HiMfunctionCaller:
 
     def alignImages(self, param, ilabel):
         if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            self.log1.report(
-                "Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
+            self.log1.addSimpleText(
+                "> Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
             if not self.parallel:
                 alignImages(param, self.log1, self.session1)
@@ -100,8 +100,8 @@ class HiMfunctionCaller:
 
     def alignImages3D(self, param, ilabel):
         if self.getLabel(ilabel) == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
-            self.log1.report(
-                "Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
+            self.log1.addSimpleText(
+                "> Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
             _drift3D = drift3D(param, self.log1, self.session1, parallel=self.parallel)
             # if not self.parallel:
@@ -112,8 +112,8 @@ class HiMfunctionCaller:
 
     def appliesRegistrations(self, param, ilabel):
         if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            self.log1.report(
-                "Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
+            self.log1.addSimpleText(
+                "> Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
             )
 
             if not self.parallel:
@@ -210,9 +210,9 @@ def HiM_parseArguments():
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections, appliesRegistrations,\
-                        alignImages,alignImages3D, segmentMasks,\
-                        segmentSources3D,refitBarcodes3D,\
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix")
+                        alignImages, alignImages3D,  segmentMasks,\
+                        segmentSources3D, refitBarcodes3D,\
+                        localDriftCorrection, projectBarcodes, buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     # parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
     # parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
@@ -227,9 +227,9 @@ def HiM_parseArguments():
         if "docker" in os.environ.keys():
             # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
             runParameters["rootFolder"] = "/data"
-            print("\n\n Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
+            print("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
         else:
-            print("\n\n HiMdata: NOT FOUND")
+            print("\n\n# HiMdata: NOT FOUND")
             runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
     if args.threads:
@@ -246,7 +246,7 @@ def HiM_parseArguments():
 
     for cmd in runParameters["cmd"]:
         if cmd not in available_commands:
-            print("\n\nERROR: {} not found in list of available commands: {}\n".format(cmd,available_commands))
+            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,available_commands))
             raise SystemExit
 
     # if args.localAlignment:
@@ -259,5 +259,12 @@ def HiM_parseArguments():
     # else:
     #     runParameters["refit"] = False
 
-    print("\nParameters loaded: {}".format(runParameters))
+    print("\n$ Parameters loaded:")
+    for key in runParameters.keys():
+        if len(key)>7:
+            print("\t{}\t{}".format(key,runParameters[key]))
+        else:
+            print("\t{}\t\t{}".format(key,runParameters[key]))
+    print("\n")
+    
     return runParameters
