@@ -257,7 +257,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
     error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw), axis=1))
 
-    log1.report(f"Detected subpixel offset (y, x): {shift} px")
+    log1.addSimpleText(f"$ Detected subpixel offset (y, x): {shift} px")
 
     # [displays and saves results]
 
@@ -327,8 +327,8 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
 
     # generates lists of files to process for currentFolder
     param.files2Process(filesFolder)
-    log1.report("-------> Processing Folder: {}".format(currentFolder))
-    log1.info("About to process {} files\n".format(len(param.fileList2Process)))
+    log1.addSimpleText("> Processing Folder: {}".format(currentFolder))
+    log1.info("> About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
         dataFolder.outputFiles["alignImages"],
         "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
@@ -351,7 +351,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
             ROI = ROIList[fileNameReference]
             imReference = Image(param, log1)
             imReference.loadImage2D(fileNameReference, log1, dataFolder.outputFolders["zProject"])
-            log1.report("Loading reference Image {}".format(fileNameReference))
+            log1.addSimpleText("> Loading reference Image {}".format(fileNameReference))
 
             # saves reference 2D image of fiducial
             if not os.path.exists(
@@ -397,11 +397,11 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                         )
                     )
 
-                log1.info("Waiting for {} results to arrive".format(len(futures)))
+                log1.addSimpleText("$ Waiting for {} results to arrive".format(len(futures)))
 
                 results = client.gather(futures)
 
-                log1.info("Retrieving {} results from cluster".format(len(results)))
+                log1.info("$ Retrieving {} results from cluster".format(len(results)))
 
                 for result, label in zip(results, labels):
                     shift, tableEntry = result
@@ -436,12 +436,11 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
         # saves dicShifts dictionary with shift results
         dictionaryFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
         saveJSON(dictionaryFileName, dictShifts)
-        log1.info("Saved alignment dictionary to {}".format(dictionaryFileName))
+        log1.info("$ Saved alignment dictionary to {}".format(dictionaryFileName))
 
     else:
-        log1.report(
-            "Reference Barcode file does not exist: {}", format(referenceBarcode),
-        )
+        log1.info(
+            "# Reference Barcode file does not exist: {}", format(referenceBarcode))
 
     return alignmentResultsTable
 
@@ -471,7 +470,7 @@ def alignImages(param, log1, session1, fileName=None):
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
+    log1.addSimpleText("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )
@@ -523,12 +522,8 @@ def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, ses
         shiftArray = dictShifts["ROI:" + ROI][label]
     except KeyError:
         shiftArray = None
-        log1.report(
-            "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                "ROI:" + ROI, label
-            ),
-            "ERROR",
-        )
+        log1.addSimpleText("$ Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                "ROI:" + ROI, label))
 
     if shiftArray != None:
 
@@ -537,9 +532,7 @@ def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, ses
         Im = Image(param, log1)
         Im.loadImage2D(fileName2Process, log1, dataFolder.outputFolders["zProject"])
         Im.data_2D = shiftImage(Im.data_2D, shift)
-        log1.report(
-            "Image registered using ROI:{}, label:{}, shift={}".format(ROI, label, shift), "info",
-        )
+        log1.addSimpleText("$ Image registered using ROI:{}, label:{}, shift={}".format(ROI, label, shift))
 
         # saves registered 2D image
         Im.saveImage2D(
@@ -554,14 +547,12 @@ def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, ses
         Im.saveImage2D(
             log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
-        log1.report(
-            "Saving image for referenceRT ROI:{}, label:{}".format(ROI, label), "Warning",
-        )
+        log1.addSimpleText(
+            "$ Saving image for referenceRT ROI:{}, label:{}".format(ROI, label))
 
     else:
-        log1.report(
-            "No shift found in dictionary for ROI:{}, label:{}".format(ROI, label), "Warning",
-        )
+        log1.addSimpleText(
+            "# No shift found in dictionary for ROI:{}, label:{}".format(ROI, label))
 
 
 def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName=None):
@@ -588,7 +579,7 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
     # currentFolder=dataFolder.listFolders[0] # only one folder processed so far...
     filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
     dataFolder.createsFolders(currentFolder, param)
-    log1.report("-------> Processing Folder: {}".format(currentFolder))
+    log1.info("> Processing Folder: {}".format(currentFolder))
 
     # loads dicShifts with shifts for all ROIs and all labels
     dictFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
@@ -596,13 +587,13 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
     # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
     dictShifts = loadJSON(dictFileName)
     if len(dictShifts) == 0:
-        log1.report("File with dictionary not found!: {}".format(dictFileName))
+        log1.addSimpleText("# File with dictionary not found!: {}".format(dictFileName))
     else:
-        log1.report("Dictionary File loaded: {}".format(dictFileName))
+        log1.addSimpleText("$ Dictionary File loaded: {}".format(dictFileName))
 
     # generates lists of files to process
     param.files2Process(filesFolder)
-    log1.report("About to process {} files\n".format(len(param.fileList2Process)))
+    log1.addSimpleText("$ About to process {} files\n".format(len(param.fileList2Process)))
 
     if len(param.fileList2Process) > 0:
         # loops over files in file list
@@ -628,7 +619,7 @@ def appliesRegistrations(param, log1, session1, fileName=None):
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.setsFolders()
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
+    log1.addSimpleText("$ folders read: {}".format(len(dataFolder.listFolders)))
 
     for currentFolder in dataFolder.listFolders:
         appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName)

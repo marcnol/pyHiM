@@ -90,8 +90,7 @@ class HiMfunctionCaller:
     def alignImages(self, param, ilabel):
         if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
             self.log1.addSimpleText(
-                "> Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
-            )
+                "> Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
             if not self.parallel:
                 alignImages(param, self.log1, self.session1)
             else:
@@ -101,8 +100,7 @@ class HiMfunctionCaller:
     def alignImages3D(self, param, ilabel):
         if self.getLabel(ilabel) == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
             self.log1.addSimpleText(
-                "> Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
-            )
+                "> Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
             _drift3D = drift3D(param, self.log1, self.session1, parallel=self.parallel)
             # if not self.parallel:
             _drift3D.alignFiducials3D()
@@ -113,8 +111,7 @@ class HiMfunctionCaller:
     def appliesRegistrations(self, param, ilabel):
         if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
             self.log1.addSimpleText(
-                "> Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
-            )
+                "> Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
 
             if not self.parallel:
                 appliesRegistrations(param, self.log1, self.session1)
@@ -266,5 +263,5 @@ def HiM_parseArguments():
         else:
             print("\t{}\t\t{}".format(key,runParameters[key]))
     print("\n")
-    
+
     return runParameters

@@ -48,7 +48,7 @@ class log:
 
     # cmd line output only
     def info(self, text):
-        print("INFO:{}".format(text))
+        print(">{}".format(text))
 
     # saves to logfile, no display to cmd line
     def save(self, text="", status="info"):
@@ -67,7 +67,8 @@ class log:
     # returns formatted line to be outputed
     def getFullString(self, text="", status="info"):
         now = datetime.now()
-        return "{}> {}".format(now.strftime("%d/%m/%Y %H:%M:%S"), text)
+        # return "{}> {}".format(now.strftime("%d/%m/%Y %H:%M:%S"), text)
+        return "{}".format(text)
 
     def addSimpleText(self, title):
         print("{}".format(title))

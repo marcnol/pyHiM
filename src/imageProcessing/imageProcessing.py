@@ -98,7 +98,7 @@ class Image:
 
         self.data_2D = np.load(fileName)
         log.report(
-            "\nLoading from disk:{}".format(os.path.basename(fileName)), "info",
+            "\n> Loading from disk:{}".format(os.path.basename(fileName)), "info",
         )
 
     # max intensity projection using all z planes
@@ -140,9 +140,9 @@ class Image:
     # Outputs image properties to command line
     def printImageProperties(self):
         # print("Image Name={}".format(self.fileName))
-        self.log.report("Image Size={}".format(self.imageSize))
+        self.log.report("$ Image Size={}".format(self.imageSize))
         # self.log.report("Stage position={}".format(self.stageCoordinates))
-        self.log.report("Focal plane={}".format(self.focusPlane))
+        self.log.report("$ Focal plane={}".format(self.focusPlane))
 
     # processes sum image in axial direction given range
     # @jit(nopython=True)
@@ -150,11 +150,11 @@ class Image:
 
         # find the correct range for the projection
         if self.param.param["zProject"]["zmax"] > self.imageSize[0]:
-            self.log.report("Setting z max to the last plane")
+            self.log.report("$ Setting z max to the last plane")
             self.param.param["zProject"]["zmax"] = self.imageSize[0]
 
         if self.param.param["zProject"]["mode"] == "automatic":
-            print("Calculating planes...")
+            print("> Calculating planes...")
             zRange = calculate_zrange(self.data, self.param)
 
         elif self.param.param["zProject"]["mode"] == "full":
@@ -185,7 +185,7 @@ class Image:
             self.focusPlane = zRange[0]
             self.zRange = zRange[1]
 
-        self.log.report("Processing zRange:{}".format(self.zRange))
+        self.log.report("> Processing zRange:{}".format(self.zRange))
 
     # displays image and shows it
     def imageShow(
@@ -284,7 +284,7 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
     except RuntimeError:
         # print("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
-        
+
     if verbose:
         fig=plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -1168,7 +1168,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
 
     xCoord = range(len(LaplacianVariance))
     fitResult, _= fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
-    
+
     if len(fitResult)>0:
         focalPlane = fitResult['gauss1d.pos']
         fwhm = fitResult['gauss1d.fwhm']
@@ -1177,7 +1177,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
             fwhm, focalPlane = np.nan, np.nan
     else:
         fwhm, focalPlane = np.nan, np.nan
-    
+
     if verbose:
         print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
 
@@ -1571,9 +1571,9 @@ def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
         np.save(fileName, image)
         # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        log.report("Image saved to disk: {}".format(fileName + ".npy"), "info")
+        log.report("$ Image saved to disk: {}".format(fileName + ".npy"), "info")
     else:
-        log.report("Warning, image is empty", "Warning")
+        log.report("# Warning, image is empty", "Warning")
 
 def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
     numPlanes = img.shape[0]
