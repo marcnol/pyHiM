@@ -67,9 +67,13 @@ def segmentSource_Stardist3D(im,axis=(0,1,2)):
     
 rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
 file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+output = rootFolder+"segmentedStardist3D.npy"
 im= io.imread(file).squeeze()
 
+axis_norm = (0,1,2)
+
 mask = segmentSource_Stardist3D(im,axis=axis_norm)
+np.save(output,mask)
 
 #%%
 display3D(image3D=im,labels=mask,z=40, rangeXY=1000, norm=True,cmap='Greys')
