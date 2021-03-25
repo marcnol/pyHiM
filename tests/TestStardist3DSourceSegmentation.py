@@ -63,6 +63,16 @@ def segmentSource_Stardist3D(im,axis=(0,1,2)):
     
     return mask
 
+# selects GPU
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+# Load the model
+# --------------
+model_dir = '/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/'
+model_name = 'stardist_18032021_single_loci'
+model = StarDist3D(None, name=model_name, basedir=model_dir)
+limit_gpu_memory(None, allow_growth=True)
+
 #%% analyze a 60x2048x2048 image
     
 rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
@@ -84,15 +94,7 @@ display3D(image3D=im,labels=mask,z=40, rangeXY=1000, norm=True,cmap='Greys')
 # Define the folders where the trained model and the test data are saved
 # ----------------------------------------------------------------------
 
-model_dir = '/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/'
 data_dir = '/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Data_test_small/'
-model_name = 'stardist_18032021_single_loci'
-
-# Load the model
-# --------------
-
-model = StarDist3D(None, name=model_name, basedir=model_dir)
-limit_gpu_memory(None, allow_growth=True)
 
 # Look for the data. Depending whether the images are large (>1000x1000pix) or 
 # small, the procedure for the image reconstruction is not the same. 
