@@ -1698,8 +1698,7 @@ def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY
                 axis.imshow(image, cmap=cmap, origin="lower")
         if labels is not None:
             axis.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
-        if localizations is not None:
-
+        if localizationsList is not None:
             for iLocList, symbol, Color in zip(range(len(localizedList)),symbols,colors):
                 locs =  localizedList[iLocList][iPlane]
                 axis.plot(locs[:,0],locs[:,1],symbol,color=Color, alpha=.7)
