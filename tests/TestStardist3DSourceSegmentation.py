@@ -63,6 +63,7 @@ def segmentSource_Stardist3D(im,axis=(0,1,2)):
     
     return mask
 
+
 # selects GPU
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 
@@ -77,17 +78,58 @@ limit_gpu_memory(None, allow_growth=True)
     
 rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
 file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
-output = rootFolder+"segmentedStardist3D.npy"
+output = rootFolder+"segmentedStardist3D_rebinned.npy"
 im= io.imread(file).squeeze()
 
-axis_norm = (0,1,2)
+import matplotlib.pyplot as plt
 
-mask = segmentSource_Stardist3D(im,axis=axis_norm)
+def imageSparse(im,Zrange):
+
+    numberPlanes = len(Zrange)
+
+    img = np.zeros((numberPlanes, im.shape[1],im.shape[2]))
+
+    for i,index in enumerate(Zrange):
+        img[i,:,:] = im[index,:,:]
+    
+    return img
+
+
+# def imageZbin(im,Zrange):
+
+#     numberPlanes = len(Zrange)
+
+#     img = np.zeros((numberPlanes, im.shape[1],im.shape[2]))
+
+#     for i,index in enumerate(Zrange):
+#         img[i,:,:] = im[index,:,:]
+    
+#     return img
+
+img = imageSparse(im,range(0,im.shape[0],2))
+
+RGB=np.zeros((im.shape[1],im.shape[2],3))
+RGB[:,:,0] = np.sum(im,axis=0)
+RGB[:,:,1] = np.sum(img,axis=0)
+RGB[:,:,2] = np.zeros((im.shape[1],im.shape[2]))
+plt.imshow(RGB)
+
+axis_norm = (0,1,2)
+begin_time = datetime.now()
+
+mask = segmentSource_Stardist3D(img,axis=axis_norm)
+
+print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+
 np.save(output,mask)
+mask=np.load(output)
 
 #%%
-display3D(image3D=im,labels=mask,z=40, rangeXY=1000, norm=True,cmap='Greys')
-
+center = int(1000)
+window = 20
+# display3D_assembled(image3D=im,labels=mask,z=40, rangeXY=1000, norm=True,cmap='Greys')
+display3D_assembled([im,mask],plottingRange = [center,window])
 
 #%% processes small files in a directory
 
