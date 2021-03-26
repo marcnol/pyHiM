@@ -165,7 +165,7 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
     def refitBarcodes(self, param, ilabel):
-        if self.getLabel(ilabel) == "barcode" and self.runParameters["refit"]:
+        if self.getLabel(ilabel) == "barcode":# and self.runParameters["refit"]:
             fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
             if not self.parallel:
                 fittingSession.refitFolders()
