@@ -593,14 +593,16 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
 
     # generates lists of files to process
     param.files2Process(filesFolder)
-    log1.addSimpleText("$ About to process {} files\n".format(len(param.fileList2Process)))
+    nFiles=len(param.fileList2Process)
+    log1.addSimpleText("\n$ About to process {} files\n".format(nFiles))
 
     if len(param.fileList2Process) > 0:
         # loops over files in file list
-        for fileName2Process in param.fileList2Process:
+        for i, fileName2Process in enumerate(param.fileList2Process):
             if fileName == None or (
                 fileName != None and os.path.basename(fileName) == os.path.basename(fileName2Process)
             ):
+                log1.addSimpleText("\n$ About to process file {} \ {}".format(i,nFiles))
                 appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, session1, dictShifts)
 
 
