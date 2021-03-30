@@ -1364,20 +1364,24 @@ def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
 
     focalPlanes2Process = focalPlaneMatrix[~np.isnan(focalPlaneMatrix)]
 
+    # focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
+    # focusPlane = np.mean(focalPlane).astype('int64')
+    # zmin = np.max([focusPlane-window, 0])
+    # zmax = np.min([focusPlane+window, data.shape[0]])
+    # zRange = focusPlane, range(zmin,zmax)
+
+
     focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
-    focusPlane = np.mean(focalPlane).astype('int64')
-    zmin = np.max([focusPlane-window, 0])
-    zmax = np.min([focusPlane+window, data.shape[0]])
-    zRange = focusPlane, range(zmin,zmax)
-
-    # LaplacianMeans = np.zeros(focalPlaneMatrix.shape)
-    # for i in LaplacianVariance.keys():
-    #     for j in LaplacianVariance[i].keys():
-    #         filtered, low, high = sigmaclip(LaplacianVariance[i][j], 1, 1)
-    #         LaplacianMeans[int(i), int(j)] = np.nanmean(filtered)
-
-    # interpolates focal plane by block consensus
-    # focusPlane, _ = findsFocusFromBlocks(focalPlaneMatrix, LaplacianMeans)
+    focusPlane = np.mean(focalPlane)
+    if np.isnan(focusPlane):
+        print("# focusPlane detection failed. Using full stack.")
+        focusPlane = data.shape[0]//2
+        zRange = focusPlane, range(0, data.shape[0])
+    else:
+        focusPlane = np.mean(focalPlane).astype('int64')
+        zmin = np.max([focusPlane-window, 0])
+        zmax = np.min([focusPlane+window, data.shape[0]])
+        zRange = focusPlane, range(zmin,zmax)
 
     return focalPlaneMatrix, zRange, block
 
