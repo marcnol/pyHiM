@@ -9,7 +9,8 @@
         "label": "DAPI",
         "pixelSizeXY": 0.1,
         "pixelSizeZ": 0.25,
-        "positionROIinformation": 3
+        "positionROIinformation": 3,
+        "zBinning": 2
     },
     "alignImages": {
         "alignByBlock": true,
@@ -27,7 +28,8 @@
         "tolerance": 0.1
     },
     "buildsPWDmatrix": {
-        "flux_min": 200,
+        "flux_min": 10,
+        "flux_min_3D": 0.1,
         "folder": "buildsPWDmatrix",
         "toleranceDrift": 1
     },

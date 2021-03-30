@@ -67,6 +67,7 @@ from imageProcessing.imageProcessing import (
     plots4images,
     makesShiftMatrixHiRes,
     preProcess3DImage,
+    reinterpolateZ,
 )
 from fileProcessing.fileManagement import folders, writeString2File, loadJSON
 from fileProcessing.fileManagement import daskCluster, RT2fileName, loadsAlignmentDictionary
@@ -139,6 +140,11 @@ class drift3D:
         filesFolder = glob.glob(self.currentFolder + os.sep + "*.tif")
         self.param.files2Process(filesFolder)
 
+        if 'zBinning' in self.param.param['acquisition']:
+            zBinning = self.param.param['acquisition']['zBinning']
+        else:
+            zBinning = 1
+
         fileNameReferenceList, ROIList = RT2fileName(self.param, referenceBarcode)
 
         numberROIs = len(ROIList)
@@ -146,16 +152,6 @@ class drift3D:
 
         # loads dicShifts with shifts for all ROIs and all labels
         dictShifts, dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
-        # dictFileName = os.path.splitext(self.dataFolder.outputFiles["dictShifts"])[0] + ".json"
-
-        # # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
-        # dictShifts = loadJSON(dictFileName)
-        # if len(dictShifts) == 0:
-        #     self.log1.report("File with dictionary not found!: {}".format(dictFileName))
-        #     dictShiftsAvailable = False
-        # else:
-        #     self.log1.report("Dictionary File loaded: {}".format(dictFileName))
-        #     dictShiftsAvailable = True
 
         # creates Table that will hold results
         alignmentResultsTable=self.createsOutputTable()
@@ -169,6 +165,10 @@ class drift3D:
                 ROI = ROIList[fileNameReference]
                 self.log1.report("Loading reference 3D image: {}".format(fileNameReference))
                 imageRef0 = io.imread(fileNameReference).squeeze()
+
+                # reinterpolates image in z if necessary
+                imageRef0 = reinterpolateZ(imageRef0, range(0,imageRef0.shape[0],zBinning),mode='remove')
+
                 imageRef = preProcess3DImage(imageRef0, self.lower_threshold, self.higher_threshold)
 
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
@@ -188,6 +188,10 @@ class drift3D:
                         # - load  and preprocesses 3D fiducial file
                         print("\n\nProcessing cycle {}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
+
+                        # reinterpolates image in z if necessary
+                        image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],zBinning),mode='remove')
+
                         image3D = preProcess3DImage(image3D0, self.lower_threshold, self.higher_threshold)
 
                         # shows original images and background substracted
@@ -219,8 +223,6 @@ class drift3D:
 
                         # applies XY shift to 3D stack
                         print("shifts XY = {}".format(shift))
-
-                        # images_2D.append(shiftImage(images_2D[1], shift))
 
                         # reinterpolate second file in XY using dictionnary to get rough alignment
                         images.append(appliesXYshift3Dimages(images[1], shift))

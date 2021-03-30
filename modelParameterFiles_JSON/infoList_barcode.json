@@ -8,7 +8,8 @@
         "fiducialDAPI_channel": "ch02",
         "label": "barcode",
         "pixelSizeXY": 0.1,
-        "pixelSizeZ": 0.25,        
+        "pixelSizeZ": 0.25,    
+        "zBinning":2,    
         "positionROIinformation": 3
     },
     "alignImages": {

@@ -1364,13 +1364,6 @@ def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
 
     focalPlanes2Process = focalPlaneMatrix[~np.isnan(focalPlaneMatrix)]
 
-    # focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
-    # focusPlane = np.mean(focalPlane).astype('int64')
-    # zmin = np.max([focusPlane-window, 0])
-    # zmax = np.min([focusPlane+window, data.shape[0]])
-    # zRange = focusPlane, range(zmin,zmax)
-
-
     focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
     focusPlane = np.mean(focalPlane)
     if np.isnan(focusPlane):
@@ -1384,6 +1377,97 @@ def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
         zRange = focusPlane, range(zmin,zmax)
 
     return focalPlaneMatrix, zRange, block
+
+def _removesZplanes(image3D, Zrange):
+    """
+    Removes planes in input image.
+    For instance, if you provide a Zrange = range(0,image3D.shape[0],2)
+
+    then the routine will remove any other plane. Number of planes skipped
+    can be programmed by tuning zRange.
+
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    Zrange : range
+        range of planes for the output image.
+    mode : str, optional
+        'remove' will remove planes
+        'interpolate' will perform an interpolation
+        The default is 'remove'.
+
+    Returns
+    -------
+    output: numpy array
+
+    """
+    output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
+    for i,index in enumerate(Zrange):
+        output[i,:,:] = image3D[index,:,:]
+
+    return output
+
+def _interpolatesZplanes(image3D, Zrange):
+    """
+    Removes z planes by reinterpolation
+
+    TO BE CODED!
+
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    Zrange : range
+        range of planes for the output image.
+    mode : str, optional
+        'remove' will remove planes
+        'interpolate' will perform an interpolation
+        The default is 'remove'.
+
+    Returns
+    -------
+    output: numpy array
+
+    """
+    from scipy.interpolate import interpn
+
+    output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
+
+    # need to code using interpn
+    output = image3D
+
+    return output
+
+def reinterpolateZ(image3D, Zrange,mode='remove'):
+    """
+    wrapper function for any kind of z-interpolation
+    to reduce the number of planes in an image
+
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    Zrange : range
+        range of planes for the output image.
+    mode : str, optional
+        'remove' will remove planes
+        'interpolate' will perform an interpolation
+        The default is 'remove'.
+
+    Returns
+    -------
+    output: numpy array
+
+    """
+    if 'interpolate' in mode:
+        output = _interpolatesZplanes(image3D, Zrange)
+    elif 'remove' in mode:
+        output = _removesZplanes(image3D, Zrange)
+
+    print("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
+
+    return output
 
 # =============================================================================
 # SEGMENTATION FUNCTIONS

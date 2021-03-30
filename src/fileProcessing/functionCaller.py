@@ -18,6 +18,7 @@ from fileProcessing.fileManagement import (
     writeString2File,
     log,
     session,
+    printDict,
     retrieveNumberUniqueBarcodesRootFolder,
 )
 
@@ -256,12 +257,6 @@ def HiM_parseArguments():
     # else:
     #     runParameters["refit"] = False
 
-    print("\n$ Parameters loaded:")
-    for key in runParameters.keys():
-        if len(key)>7:
-            print("\t{}\t{}".format(key,runParameters[key]))
-        else:
-            print("\t{}\t\t{}".format(key,runParameters[key]))
-    print("\n")
+    printDict(runParameters)
 
     return runParameters

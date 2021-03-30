@@ -218,6 +218,7 @@ class Parameters:
                 "fiducialBarcode_channel": "ch00",
                 "barcode_channel": "ch01",
                 "pixelSizeXY": 0.1,
+                "zBinning":2,
                 "pixelSizeZ": 0.25,
             },  # barcode, fiducial
             "zProject": {
@@ -319,7 +320,7 @@ class Parameters:
 
         return channel
 
-    # method returns label specific filenames from filename list
+    # method returns label-specific filenames from filename list
     def files2Process(self, filesFolder):
 
         # defines channel for DAPI, fiducials and barcodes
@@ -413,6 +414,7 @@ class Parameters:
         Dict with fileParts.
 
         """
+
         # decodes regular expressions
         if "fileNameRegExp" in self.param["acquisition"].keys():
             fileParts = re.search(self.param["acquisition"]["fileNameRegExp"], fileName)
@@ -588,6 +590,19 @@ def ROI2FiducialFileName(param, file, barcodeName):
     return candidates
 
 
+def unique(list1):
+    """ function to get unique values"""
+    # intilize a null list
+    unique_list = []
+
+    # traverse for all elements
+    for x in list1:
+        # check if exists in unique_list or not
+        if x not in unique_list:
+            unique_list.append(x)
+
+    return unique_list
+
 def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext="tif"):
     """
     given a directory and a Parameter object, it returns the number of unique cycles/barcodes detected
@@ -607,19 +622,6 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext="tif")
 
     """
 
-    def unique(list1):
-        """ function to get unique values"""
-        # intilize a null list
-        unique_list = []
-
-        # traverse for all elements
-        for x in list1:
-            # check if exists in unique_list or not
-            if x not in unique_list:
-                unique_list.append(x)
-
-        return unique_list
-
     allFilesinRootFolder = glob.glob(rootFolder + os.sep + "*" + ext)
 
     param = Parameters(rootFolder, rootFolder + parameterFile)
@@ -633,6 +635,37 @@ def retrieveNumberUniqueBarcodesRootFolder(rootFolder, parameterFile, ext="tif")
     numberUniqueCycles = len(unique(RTs))
 
     return numberUniqueCycles
+
+
+def retrieveNumberROIsFolder(rootFolder, regExp, ext="tif"):
+    """
+    given a directory and a Parameter object, it returns the number of unique ROIs detected
+
+    Parameters
+    ----------
+    rootFolder : string
+    param : string
+        parameterFile
+    ext : string, optional
+        File extension. The default is 'tif'.
+
+    Returns
+    -------
+    list
+        list of unique ROIs.
+
+    """
+
+    files = glob.glob(rootFolder + os.sep + "*" + ext)
+
+    ROIs = [re.search(regExp, x)['roi'] for x in files]
+    # ROIs= list()
+    # for x in files:
+    #     fileParts = re.search(regExp, x)
+    #     ROIs.append(fileParts["roi"])
+
+    return unique(ROIs)
+
 
 
 def loadsAlignmentDictionary(dataFolder, log1):
@@ -667,3 +700,9 @@ def restart_client():
         client.restart()
         print("Distributed network restarted")
 
+def printDict(dictionary):
+    print("\n$ Parameters loaded:")
+    for key in dictionary.keys():
+        spacer= "\t"*(3-int(len(key)/8))
+        print("\t{}{}{}".format(key,spacer,dictionary[key]))
+    print("\n")

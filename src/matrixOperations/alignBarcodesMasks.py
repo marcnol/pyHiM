@@ -1144,7 +1144,13 @@ def processesPWDmatrices(param, log1, session1):
 
             if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
                 pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-                pixelSizeZ = param.param["acquisition"]["pixelSizeZ"]
+
+                if 'zBinning' in param.param['acquisition']:
+                    zBinning = param.param['acquisition']['zBinning']
+                else:
+                    zBinning = 1
+
+                pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
 
                 # need to solve the issue of voxelsize...
                 # pixelSize = [pixelSizeXY,pixelSizeXY,pixelSizeZ]

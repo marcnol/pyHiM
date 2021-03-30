@@ -36,9 +36,7 @@ from datetime import datetime
 from skimage import io
 import uuid
 
-from tqdm import trange, tqdm
 from astropy.table import Table
-from dask.distributed import Client, get_client
 
 from imageProcessing.imageProcessing import (
     appliesXYshift3Dimages,
@@ -46,15 +44,15 @@ from imageProcessing.imageProcessing import (
     _segments3DvolumesByThresholding,
     display3D_assembled,
     _reinterpolatesFocalPlane,
+    reinterpolateZ,
 )
-from fileProcessing.fileManagement import folders, writeString2File, try_get_client, restart_client
-from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
+from fileProcessing.fileManagement import folders, writeString2File, printDict
+from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder
 
 from skimage import exposure
 
 from bigfish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
-from skimage.util.apply_parallel import apply_parallel
 
 
 # =============================================================================
@@ -71,6 +69,19 @@ class segmentSources3D:
 
         self.p=dict()
 
+        # parameters from infoList.json
+        self.p["referenceBarcode"] = self.param.param["alignImages"]["referenceFiducial"]
+        self.p["brightest"] = self.param.param["segmentedObjects"]["brightest"]
+        self.p["blockSizeXY"] = self.param.param["zProject"]["blockSize"]
+        self.p["regExp"] =self.param.param["acquisition"]["fileNameRegExp"]
+        if 'zBinning' in self.param.param['acquisition']:
+            self.p["zBinning"] = int(self.param.param['acquisition']['zBinning'])
+        else:
+            self.p["zBinning"] = 1
+        self.p["zWindow"] = int(self.param.param["zProject"]["zwindows"]/self.p["zBinning"])
+        self.p["pixelSizeXY"] = self.param.param["acquisition"]["pixelSizeXY"]
+        self.p["pixelSizeZ"] = self.param.param["acquisition"]["pixelSizeZ"]
+
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=1
         self.p["sigma"]=3
@@ -82,8 +93,8 @@ class segmentSources3D:
         self.p["contrast"]=0.001
 
         # parameters used for 3D gaussian fitting
-        self.p["voxel_size_z"] = 250
-        self.p["voxel_size_yx"] = 100
+        self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
+        self.p["voxel_size_yx"] = float(1000*self.p["pixelSizeXY"])
         self.p["psf_z"] = 500
         self.p["psf_yx"] = 200
 
@@ -245,23 +256,17 @@ class segmentSources3D:
         """
         now = datetime.now()
 
-        referenceBarcode = self.param.param["alignImages"]["referenceFiducial"]
-        brightest = self.param.param["segmentedObjects"]["brightest"]
-        blockSizeXY = self.param.param["zProject"]["blockSize"]
-        zWindow = self.param.param["zProject"]["zwindows"]
-        # get blocksize & window from infoList !!!!!!!
+        # Reads list of parameters assigned upon Class initialization
+        p=self.p
+        printDict(p)
 
-        self.log1.info("$ Reference Barcode: [{}]".format(referenceBarcode))
-
+        # Finds images to process
         filesFolder = glob.glob(self.currentFolder + os.sep + "*.tif")
         self.param.files2Process(filesFolder)
-
-        p=self.p
-
-        fileNameReferenceList, ROIList = RT2fileName(self.param, referenceBarcode)
-
+        ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         numberROIs = len(ROIList)
         self.log1.info("$ Detected {} ROIs".format(numberROIs))
+        self.log1.info("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
         dictShifts, dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
@@ -269,14 +274,12 @@ class segmentSources3D:
         # creates Table that will hold results
         outputTable = self.createsOutputTable()
 
-        # restart_client()
-
         if numberROIs > 0:
 
             # loops over ROIs
-            for fileNameReference in fileNameReferenceList:
+            for ROI in ROIList:
                 # loads reference fiducial image for this ROI
-                ROI = ROIList[fileNameReference]
+                # ROI = ROIList[fileNameReference]
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
                 Nfiles2Process=len(fileName2ProcessList)
@@ -288,7 +291,6 @@ class segmentSources3D:
 
                     # excludes the reference fiducial and processes files in the same ROI
                     roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
-                    # label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
                     label = str(self.param.decodesFileParts(os.path.basename(fileName2Process))["cycle"])
 
                     if roi == ROI:
@@ -298,21 +300,21 @@ class segmentSources3D:
                         print("$ File:{}".format(os.path.basename(fileName2Process)))
                         image3D0 = io.imread(fileName2Process).squeeze()
 
+                        # reinterpolates image in z if necessary
+                        image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],p["zBinning"]),mode='remove')
+
                         # restricts analysis to a sub volume containing sources
-                        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = blockSizeXY, window=zWindow)
+                        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
                         zOffset = zRange[1][0]
                         image3D = image3D0[zRange[1],:,:].copy()
-                        # zRange = (40,range(30,50))
-                        # zOffset = 0
-                        # image3D = image3D0.copy()
 
                         print("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
                         # preprocesses image by background substraction and level normalization
-                        image3D = preProcess3DImage(image3D, self.p["lower_threshold"], self.p["higher_threshold"])
+                        image3D = preProcess3DImage(image3D, p["lower_threshold"], p["higher_threshold"])
 
                         # drifts 3D stack in XY
-                        if dictShiftsAvailable and  label != referenceBarcode:
+                        if dictShiftsAvailable and  label != p["referenceBarcode"]:
                             # uses existing shift calculated by alignImages
                             try:
                                 shift = dictShifts["ROI:" + roi][label]
@@ -324,7 +326,7 @@ class segmentSources3D:
                                         "ROI:" + ROI, label))
 
                         # applies XY shift to 3D stack
-                        if label != referenceBarcode:
+                        if label != p["referenceBarcode"]:
                             # print("$ Applies shift = {:.2f}".format(shift))
                             print("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
                             image3D_aligned = appliesXYshift3Dimages(image3D, shift)
@@ -334,7 +336,6 @@ class segmentSources3D:
                             image3D_aligned = image3D
 
                         # segments 3D volumes
-                        # restart_client()
                         binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_aligned,
                                                                                     threshold_over_std=p["threshold_over_std"],
                                                                                     sigma = p["sigma"],
@@ -356,7 +357,7 @@ class segmentSources3D:
                             peak,
                             flux,
                             mag,
-                            ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"],nTolerance=brightest)
+                            ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"],nTolerance=p["brightest"])
 
                         numberSources = len(peak)
                         print("$ Number of sources detected by image segmentation: {}".format(numberSources))
