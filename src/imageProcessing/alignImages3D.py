@@ -40,46 +40,22 @@ import glob, os
 import matplotlib.pylab as plt
 import numpy as np
 from datetime import datetime
-from scipy.ndimage import shift as shiftImage
-from scipy.optimize import curve_fit
-from shutil import copyfile
 from skimage import io
 
-from tqdm import trange, tqdm
-from astropy.visualization import simple_norm
-from astropy.table import Table, Column
-from photutils import CircularAperture
-from dask.distributed import Client, LocalCluster, get_client, as_completed
+from astropy.table import Table
 
-from numba import jit
-
-from imageProcessing.imageProcessing import Image
 from imageProcessing.imageProcessing import (
-    _reinterpolatesFocalPlane,
-    imageShowWithValues,
-    imageShowWithValuesSingle,
-    imageAdjust,
-    _removesInhomogeneousBackground,
     appliesXYshift3Dimages,
     imageBlockAlignment3D,
     plots3DshiftMatrices,
     combinesBlocksImageByReprojection,
     plots4images,
-    makesShiftMatrixHiRes,
     preProcess3DImage,
     reinterpolateZ,
 )
-from fileProcessing.fileManagement import folders, writeString2File, loadJSON
-from fileProcessing.fileManagement import daskCluster, RT2fileName, loadsAlignmentDictionary
+from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
 
-from photutils import Background2D, MedianBackground
-from photutils import DAOStarFinder
-from astropy.stats import sigma_clipped_stats
-
-from astropy.stats import SigmaClip
-from imageProcessing.segmentMasks import _showsImageSources
-from tqdm import trange, tqdm
-from skimage import exposure
 from skimage.registration import phase_cross_correlation
 
 
@@ -174,11 +150,11 @@ class drift3D:
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if (x not in fileNameReference) and self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
 
-                print("Found {} files in ROI: {}".format(len(fileName2ProcessList), ROI))
-                print("[roi:cycle] {}".format("|".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
+                print("$ Found {} files in ROI: {}".format(len(fileName2ProcessList), ROI))
+                print("$ [roi:cycle] {}".format("|".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
                                 + ":" + str(self.param.decodesFileParts(os.path.basename(x))["cycle"]) for x in fileName2ProcessList])))
 
-                for fileName2Process in self.param.fileList2Process:
+                for fileIndex, fileName2Process in enumerate(self.param.fileList2Process):
                     # excludes the reference fiducial and processes files in the same ROI
                     roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
                     label = os.path.basename(fileName2Process).split("_")[2]  # to FIX
@@ -186,7 +162,9 @@ class drift3D:
                     if (fileName2Process not in fileNameReference) and roi == ROI:
 
                         # - load  and preprocesses 3D fiducial file
-                        print("\n\nProcessing cycle {}".format(os.path.basename(fileName2Process)))
+                        print("\n\n>>>Processing roi:[{}] cycle:[{}] {}/{}<<<".format(roi,label,fileIndex,len(self.param.fileList2Process)))
+                        print("$ File:{}".format(os.path.basename(fileName2Process)))
+
                         image3D0 = io.imread(fileName2Process).squeeze()
 
                         # reinterpolates image in z if necessary
@@ -205,7 +183,7 @@ class drift3D:
                             # uses existing shift calculated by alignImages
                             try:
                                 shift = dictShifts["ROI:" + roi][label]
-                                print("Applying existing XY shift...")
+                                print("> Applying existing XY shift...")
                             except KeyError:
                                 shift = None
                                 self.log1.report(
@@ -218,11 +196,11 @@ class drift3D:
                             # if dictionary of shift or key for this cycle was not found, then it will recalculate XY shift
                             images_2D = [np.sum(x, axis=0) for x in images]
 
-                            print("Calculating XY shift...")
+                            print("> Calculating XY shift...")
                             shift, error, diffphase = phase_cross_correlation(images_2D[0], images_2D[1], upsample_factor=self.upsample_factor)
 
                         # applies XY shift to 3D stack
-                        print("shifts XY = {}".format(shift))
+                        print("$ shifts XY = {}".format(shift))
 
                         # reinterpolate second file in XY using dictionnary to get rough alignment
                         images.append(appliesXYshift3Dimages(images[1], shift))
@@ -305,7 +283,7 @@ class drift3D:
             overwrite=True,
         )
 
-        print("alignFiducials3D procesing time: {}".format(datetime.now() - now))
+        print("$ alignFiducials3D procesing time: {}".format(datetime.now() - now))
 
 
     def alignFiducials3D(self):
