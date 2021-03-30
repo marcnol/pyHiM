@@ -106,7 +106,7 @@ class folders:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
 
-        print("\n> SetsFolders> Detected {} folders with images".format(len(self.listFolders)))
+        print("\n $ Detected {} folders with images".format(len(self.listFolders)))
 
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
@@ -162,7 +162,7 @@ class folders:
     def createSingleFolder(self, folder):
         if not path.exists(folder):
             os.mkdir(folder)
-            print("Folder created: {}".format(folder))
+            print("$ Folder created: {}".format(folder))
 
 
 class session:
@@ -442,7 +442,7 @@ class daskCluster:
 
         self.nThreads = int(np.min([maxNumberThreads, self.requestedNumberNodes]))
 
-        print("Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
+        print("$ Cluster with {} workers started ({} requested)".format(self.nThreads, self.requestedNumberNodes))
 
     def createDistributedClient(self):
         # self.cluster = LocalCluster(
@@ -454,10 +454,10 @@ class daskCluster:
         # )
         client = try_get_client()
         if client is not None:
-            print(">>> Shutting down existing cluster! ")
+            print("# Shutting down existing cluster! ")
             client.shutdown()
         else:
-            print(">>> No running cluster detected. Will start one.")
+            print("$ No running cluster detected. Will start one.")
 
         self.cluster = LocalCluster(
             n_workers=self.nThreads,
@@ -469,7 +469,7 @@ class daskCluster:
         )
         self.client = Client(self.cluster)
 
-        print("Go to http://localhost:8787/status for information on progress...")
+        print("$ Go to http://localhost:8787/status for information on progress...")
 
 # =============================================================================
 # FUNCTIONS
@@ -698,7 +698,7 @@ def restart_client():
     client = try_get_client()
     if client is not None:
         client.restart()
-        print("Distributed network restarted")
+        print("$ Distributed network restarted")
 
 def printDict(dictionary):
     print("\n$ Parameters loaded:")
