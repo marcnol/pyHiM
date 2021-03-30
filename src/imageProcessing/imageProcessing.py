@@ -101,6 +101,8 @@ class Image:
             "$ Loading from disk:{}".format(os.path.basename(fileName)), "info",
         )
 
+
+
     # max intensity projection using all z planes
     def maxIntensityProjection(self):
         self.data_2D = np.max(self.data, axis=0)
