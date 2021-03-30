@@ -98,7 +98,7 @@ class Image:
 
         self.data_2D = np.load(fileName)
         log.report(
-            "\n> Loading from disk:{}".format(os.path.basename(fileName)), "info",
+            "$ Loading from disk:{}".format(os.path.basename(fileName)), "info",
         )
 
     # max intensity projection using all z planes
