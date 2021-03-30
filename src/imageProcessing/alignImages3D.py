@@ -140,12 +140,8 @@ class drift3D:
                 # loads reference fiducial image for this ROI
                 ROI = ROIList[fileNameReference]
                 self.log1.report("Loading reference 3D image: {}".format(fileNameReference))
-                imageRef0 = io.imread(fileNameReference).squeeze()
 
-                # reinterpolates image in z if necessary
-                imageRef0 = reinterpolateZ(imageRef0, range(0,imageRef0.shape[0],zBinning),mode='remove')
-
-                imageRef = preProcess3DImage(imageRef0, self.lower_threshold, self.higher_threshold)
+                imageRef0, imageRef= loadNpreprocessImage(fileNameReference,zBinning, self.lower_threshold, self.higher_threshold)
 
                 fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if (x not in fileNameReference) and self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
@@ -163,20 +159,12 @@ class drift3D:
 
                         # - load  and preprocesses 3D fiducial file
                         print("\n\n>>>Processing roi:[{}] cycle:[{}] {}/{}<<<".format(roi,label,fileIndex,len(self.param.fileList2Process)))
-                        print("$ File:{}".format(os.path.basename(fileName2Process)))
-
-                        image3D0 = io.imread(fileName2Process).squeeze()
-
-                        # reinterpolates image in z if necessary
-                        image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],zBinning),mode='remove')
-
-                        image3D = preProcess3DImage(image3D0, self.lower_threshold, self.higher_threshold)
+                        image3D0, image3D = loadNpreprocessImage(fileName2Process,zBinning, self.lower_threshold, self.higher_threshold)
 
                         # shows original images and background substracted
-                        images0 = [imageRef0,image3D0] # list with unprocessed 3D stacks
-                        images = [imageRef,image3D] # list with processed 3D stacks
-                        allimages = images0 + images
-                        fig1 = plots4images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
+                        images=[imageRef,image3D]
+                        fig1 = plots4images([imageRef0,image3D0]+images, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
+
 
                         # drifts 3D stack in XY
                         if dictShiftsAvailable:
@@ -188,7 +176,7 @@ class drift3D:
                                 shift = None
                                 self.log1.report(
                                     "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                                        "ROI:" + ROI, label
+                                        "ROI:" + roi, label
                                     ),
                                     "ERROR",
                                 )
@@ -331,3 +319,15 @@ class drift3D:
 #   FUNCTIONS
 # =============================================================================
 
+def loadNpreprocessImage(fileName2Process, zBinning, lower_threshold, higher_threshold):
+
+    print("$ File:{}".format(os.path.basename(fileName2Process)))
+
+    image3D0 = io.imread(fileName2Process).squeeze()
+
+    # reinterpolates image in z if necessary
+    image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],zBinning),mode='remove')
+
+    image3D = preProcess3DImage(image3D0, lower_threshold, higher_threshold)
+
+    return image3D0, image3D
