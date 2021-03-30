@@ -411,11 +411,13 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                     # print("Processed: {}".format(label))
             else:
                 # running in sequential mode
+                nFiles=len(param.fileList2Process)
 
-                for fileName2Process in param.fileList2Process:
+                for iFile, fileName2Process in enumerate(param.fileList2Process):
                     # excludes the reference fiducial and processes files in the same ROI
                     label = os.path.basename(fileName2Process).split("_")[2]
                     roi = param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
+                    print("\n$ About to process file {} \ {}".format(iFile,nFiles))
 
                     if (fileName2Process not in fileNameReference) and roi == ROI:
                         if fileName == None or (
