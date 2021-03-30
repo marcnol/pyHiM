@@ -16,6 +16,10 @@ processSNDchannel
 # =============================================================================q
 
 import os, glob
+try:
+    del os.environ["MPLBACKEND"] # unset before importing matplotlib
+except:
+    print("No environment variable MPLBACKEND found. Continuing anyway.")
 import argparse
 from datetime import datetime
 from matplotlib import pyplot as plt
@@ -25,7 +29,7 @@ from astropy.table import Table, Column, vstack
 
 from imageProcessing.imageProcessing import Image
 
-from fileProcessing.fileManagement import ( Parameters, log, session, 
+from fileProcessing.fileManagement import ( Parameters, log, session,
                                            folders, writeString2File)
 
 """
