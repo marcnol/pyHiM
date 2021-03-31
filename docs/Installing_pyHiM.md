@@ -45,7 +45,7 @@ and add the following line to the end
 
 ```sh
 export PATH="$PATH:/home/rata/Repositories/pyHiM/src:/home/rata/Repositories/pyHiM/src/fileProcessing"
-export PYTHONPATH="/home/rata/Repositories/pyHiM"
+export PYTHONPATH="/home/rata/Repositories/pyHiM/src"
 
 export MPLBACKEND=agg
 
@@ -68,7 +68,18 @@ pip install --upgrade tensorflow
 
 pip install --upgrade scikit-image
 
-pip install mayavi
+pip install mayavi mrc
+```
+
+
+
+### Installing bigfish
+
+```bash
+cd ~/Repositories
+git clone https://github.com/fish-quant/big-fish.git
+cd big-fish && git checkout develop
+ln -s ~/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
 ```
 
 
