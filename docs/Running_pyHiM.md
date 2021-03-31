@@ -12,7 +12,7 @@ Ensure you followed the steps described previously during installation when you 
 
 1. Identify a ```destination_directory``` where your data are stored. The raw deconvolved files can be in your ```destination_directory``` or within a sub-folder.
 2. Be aware of not putting more than ONE sub-folder with TIFF files in the ```destination_directory```. If your ```destination_directory``` already has the raw deconvolved TIFFs then remvove any other directory with TIFFs from ```destination_directory```
-3. copy files to your ```destination_directory```  (names are self-explanatory)
+3. copy *infoList* files to your ```destination_directory``` . For a description of *infoList* files, see section below.
    1. infoList_DAPI.json
    2. infoList_RNA.json
    3. infoList_fiducial.json
@@ -71,7 +71,9 @@ graph TD
         
 	E1 --> D2[2.4 Align fiducials in 3D]
 	D2 --> E[4.4 Segment Sources 3D] --> F
-	F --> G(HiM matrix) & G2(single cell PWD matrices) & G3(ASTROPY table with results for all cells)
+	F --> G(HiM matrix) 
+	F --> G2(single cell PWD matrices) 
+	F --> G3(ASTROPY table with results for all cells)
 ```
 
 
@@ -84,7 +86,7 @@ More complex scenarios also exist, of course, but this provides three alternativ
 graph TD
 	B[1. Make 2D projections] --> C[Align 2D]--> D[Applies registrations] --> E(Segment 2D) --> F(Build Matrix)
 	
-	B1[1. Make 2D projections] --> C1[Align 2D]--> D1[Applies registrations 2D] --> E1[Segments masks 2D] --> C2[Aligns 3d*] --> E12(Segment 3D) --> F1(Build Matrix)
+	B1[1. Make 2D projections] --> C1[Align 2D]--> D1[Applies registrations 2D] --> E1[Segments DAPI masks 2D] --> C2[Aligns 3d*] --> E12(Segment 3D) --> F1(Build Matrix)
 	
 	B3[1. Make 2D projections] --> C3[Align 2D]--> D3[Applies registrations] --> E3[Segments masks 2D]--> C32[local drift correction Mask] 
 	
@@ -99,106 +101,56 @@ graph TD
 
 #### infoList parameters files
 
-All the model infoList files can be found in: ```pyHiM/modelParameterFiles_JSON```
+The infoList.json file contains all the parameters that will be used to executing the pipeline on a specific label. Labels can be:
 
-A typical file (DAPI example) looks like:
+1. *fiducial*: fiducial marks used for aligning the different cycles.
+2. *DAPI*: nuclear masks.
+3. *barcode*: DNA-FISH spot labeling a specific locus in each cycle.
+4. *RNA*: pattern of the same that displays a specific activation state.
 
-```bash
-{
-    "acquisition": {
-        "DAPI_channel": "ch00",
-        "RNA_channel": "ch01",
-        "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-		"barcode_channel": "ch01",
-        "fiducialBarcode_channel": "ch00",
-        "fiducialDAPI_channel": "ch02",
-        "label": "DAPI",
-        "pixelSizeXY": 0.1,
-        "pixelSizeZ": 0.25,        
-        "positionROIinformation": 3
-    },
-    "alignImages": {
-        "folder": "alignImages",
-        "operation": "overwrite",
-        "outputFile": "alignImages.bed",
-        "alignByBlock": true,
-        "tolerance": 0.1,
-        "localAlignment": "overwrite",
-        "lower_threshold": 0.999, 
-        "higher_threshold": 0.9999999, 
-		"localShiftTolerance": 1,
-        "background_sigma": 3.0,  
-        "bezel": 20,               
-        "referenceFiducial": "RT27"
-    },
-    "projectsBarcodes": {
-        "folder": "projectsBarcodes",
-        "operation": "overwrite",
-        "outputFile": "projectsBarcodes"
-    },
-    "buildsPWDmatrix": {
-        "folder": "buildsPWDmatrix",  # output folder
-        "flux_min": 200  # min flux to keeep object                
-        "toleranceDrift":1,
-    },    
-    "segmentedObjects": {
-        "area_max": 3000,
-        "area_min": 150,
-        "background_method": "stardist",
-        "stardist_network": "stardist_nc14_nrays:128_epochs:400_grid:2",
-        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-        "background_sigma": 3.0,
-        "folder": "segmentedObjects",
-        "fwhm": 3.0,
-        "brightest": 1100,
-        "intensity_max": 59,
-        "intensity_min": 0,
-        "operation": "overwrite",
-        "outputFile": "segmentedObjects",
-        "residual_max": 2.5,
-        "sigma_max": 5,
-        "centroidDifference_max": 5,       
-        "3Dmethod":"zASTROPY",
-        "3DGaussianfitWindow": 3,
-        "threshold_over_std": 1.0,
-        "3dAP_window": 5,
-        "3dAP_flux_min": 2,
-        "3dAP_brightest": 100,
-        "3dAP_distTolerance": 1
-    },
-    "zProject": {
-        "display": true,
-        "folder": "zProject",
-        "mode": "full",
-        "operation": "skip",
-        "saveImage": true,
-        "windowSecurity": 2,
-        "zProjectOption": "sum",
-        "zmax": 59,
-        "zmin": 1,
-        "zwindows": 10
-    }
-}
-```
+The corresponding infoList files are named:
+
+ ```infoList_fiducial.json```  ```infoList_DAPI.json```  ```infoList_barcode.json```  ```infoList_RNA.json```
+
+Each of these infoList files will contain different dictionaries, some will be common to all, some will be specific to the *label*. These dictionaries will define the parameters specific to each function in pyHiM.
+
+1. ```acquisition```: common to all labels. The parameters defined here are used by most functions.
+2. ```alignImages```: common to all labels. Parameters specific to the ```alignImages```, ```alignImages3D``` and ```appliesRegistrations``` functions.
+3. ```projectsBarcodes```: only for *barcode*. 
+4. ```segmentedObjects```: only for *barcode* and *DAPI*. Parameters specific to the ```segmentMasks``` and ```segmentSources3D``` functions.
+5. ```zProject```: common to all labels. Parameters specific to the ```makeProjections``` function.
+6. ```buildsPWDMatrix```: only for *DAPI*. Parameters specific to the ```buildHiMmatrix``` function.
 
 
+
+The description of parameters encoded in these dictionaries will be described with each function below.
+
+
+
+Model ```infoList.json``` files can be found in: ```pyHiM/modelParameterFiles_JSON```
+
+
+
+##### common Parameters
 
 These is the dictionary that provides information common to all routines.
 
 "acquisition"
 
-```
-"DAPI_channel": "ch00",
-"RNA_channel": "ch01",
-"fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\>. This regular expression encodes our filename format
-"barcode_channel": "ch01",
-"fiducialBarcode_channel": "ch00",
-"fiducialDAPI_channel": "ch02",
-"label": "DAPI", *Options: DAPI, fiducial, barcode, RNA
-"pixelSizeXY": 0.1, *lateral pixel size in nm*
-"pixelSizeZ": 0.25 *axial pixel size in nm*
-"positionROIinformation": 3 *position for the ROI in the filename: will be removed in future versions!*
-```
+| Parameters | Default | Description |
+| --- | --- | --- |
+|"DAPI_channel": |"ch00",|
+|"RNA_channel": |"ch01",|
+|"fileNameRegExp":| "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\>. This regular expression encodes our filename format|
+|"barcode_channel": | "ch01",||
+|"fiducialBarcode_channel":| "ch00",|
+|"fiducialDAPI_channel": |"ch02",||
+|"label": |"DAPI",| *Options: DAPI, fiducial, barcode, RNA|
+|"pixelSizeXY": |0.1,| *lateral pixel size in nm*|
+|"pixelSizeZ": |0.25, |*axial pixel size in nm*|
+|"zBinning": |2, |*binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.*|
+|"positionROIinformation": |3 |*position for the ROI in the filename: will be removed in future versions!*|
+
 
 
 
