@@ -46,7 +46,6 @@ def segmentSource_Stardist3D(im,axis=(0,1,2)):
     im = normalize(im,1,99.8,axis=axis_norm)
     Lx = im.shape[1]
 
-   
     if Lx<1000:
         labels, details = model.predict_instances(im)
         
@@ -58,7 +57,6 @@ def segmentSource_Stardist3D(im,axis=(0,1,2)):
         labels, polys = model.predict_instances(im, n_tiles=(1,8,8))
         labels = resizer.after(labels, axes)
         
-       
     mask = np.array(labels>0, dtype=int)
     
     return mask
@@ -123,13 +121,23 @@ print("Elapsed time: {}".format(datetime.now() - begin_time))
 
 
 np.save(output,mask)
+
+#%%
 mask=np.load(output)
 
 #%%
-center = int(1000)
-window = 20
-# display3D_assembled(image3D=im,labels=mask,z=40, rangeXY=1000, norm=True,cmap='Greys')
-display3D_assembled([im,mask],plottingRange = [center,window])
+from skimage import measure
+from skimage import exposure,color
+
+labels = measure.label(mask)
+
+# fig = display3D(image3D=img,labels=labels,z=20, rangeXY=1000, norm=True,cmap='Reds')
+
+plt.imshow(np.sum(img,axis=0),cmap='Greys',vmax=.5, alpha=.5)
+# segm=labels[20,:,:]
+segm=np.max(labels,axis=0)
+plt.imshow(color.label2rgb(segm, bg_label=0),alpha=.3)
+
 
 #%% processes small files in a directory
 
