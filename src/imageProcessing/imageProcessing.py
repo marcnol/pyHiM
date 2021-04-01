@@ -1548,8 +1548,12 @@ def _segments3DvolumesByThresholding(image3D,
                                      area_max=1000,
                                      nlevels=64,
                                      contrast=0.001,
-                                     deblend3D = False):
-    client = try_get_client()
+                                     deblend3D = False,
+                                     parallelExecution=True):
+    if parallelExecution:
+        client = try_get_client()
+    else:
+        client = None
 
     numberPlanes = image3D.shape[0]
 

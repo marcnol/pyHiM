@@ -374,10 +374,9 @@ class drift3D:
                     print(" > Retrieving {} results from cluster".format(len(alignmentResultsTables)))
 
                     # del futures
-                # Merges tables
-                alignmentResultsTableGlobal = vstack(alignmentResultsTables)
 
-
+                # Merges Tables for different cycles and appends results Table to that of previous ROI
+                alignmentResultsTableGlobal = vstack([alignmentResultsTableGlobal]+alignmentResultsTables)
 
         # saves Table with all shifts
         alignmentResultsTableGlobal.write(
