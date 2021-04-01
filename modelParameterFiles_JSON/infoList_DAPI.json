@@ -9,7 +9,8 @@
         "label": "DAPI",
         "pixelSizeXY": 0.1,
         "pixelSizeZ": 0.25,        
-        "zBinning":2,            
+        "zBinning":2,    
+        "parallelizePlanes": false,                
         "positionROIinformation": 3
     },
     "alignImages": {

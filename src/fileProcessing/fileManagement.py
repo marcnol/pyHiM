@@ -219,6 +219,7 @@ class Parameters:
                 "barcode_channel": "ch01",
                 "pixelSizeXY": 0.1,
                 "zBinning":2,
+                "parallelizePlanes": False, # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
                 "pixelSizeZ": 0.25,
             },  # barcode, fiducial
             "zProject": {
@@ -463,8 +464,9 @@ class daskCluster:
             n_workers=self.nThreads,
             # protocol='tcp', # chech if it works!
             # processes=True,
-            # threads_per_worker=1,
-            # memory_limit='2GB',
+            threads_per_worker=1,
+            memory_limit='64GB',
+            # asynchronous = True,
             # ip='tcp://localhost:8787',
         )
         self.client = Client(self.cluster)

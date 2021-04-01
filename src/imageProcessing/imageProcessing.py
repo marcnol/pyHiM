@@ -539,7 +539,7 @@ def reassembles3Dimage(client,futures,output_shape):
 # CONTRAST and PIXEL INTENSITY NORMALIZATION, INHOMOGENEOUS BACKGROUND
 # =============================================================================
 
-def preProcess3DImage(x,lower_threshold, higher_threshold):
+def preProcess3DImage(x,lower_threshold, higher_threshold, parallelExecution=True):
     """
     3D stack pre-procesing:
         - rescales intensities to 0->1
@@ -564,7 +564,7 @@ def preProcess3DImage(x,lower_threshold, higher_threshold):
     image = exposure.rescale_intensity(x, out_range=(0, 1))
 
     # print("Removing inhomogeneous background...")
-    image = _removesInhomogeneousBackground(image)
+    image = _removesInhomogeneousBackground(image,parallelExecution=parallelExecution)
 
     # print("Rescaling grey levels...")
     image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
@@ -656,7 +656,7 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     plt.close(fig)
 
 
-def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True):
+def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True,parallelExecution=True):
     """
     wrapper to remove inhomogeneous backgrounds for 2D and 3D images
 
@@ -680,7 +680,7 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),ver
     if len(im.shape) == 2:
         output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
     elif len(im.shape) == 3:
-        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
+        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose,parallelExecution=parallelExecution)
     else:
         return None
     return output
@@ -723,7 +723,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
         return im1_bkg_substracted
 
 
-def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True):
+def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True, parallelExecution=True):
     """
     Wrapper to remove inhomogeneous background in a 3D image by recursively calling _removesInhomogeneousBackground2D():
         - addresses output
@@ -747,7 +747,10 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
         processed 3D image.
 
     """
-    client = try_get_client()
+    if parallelExecution:
+        client = try_get_client()
+    else:
+        client = None
 
     numberPlanes = image3D.shape[0]
     output = np.zeros(image3D.shape)
@@ -787,7 +790,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
 # IMAGE ALIGNMENT
 # =============================================================================
 
-def appliesXYshift3Dimages(image, shift):
+def appliesXYshift3Dimages(image, shift,parallelExecution=True):
     """
     Applies XY shift to a 3D stack
 
@@ -801,7 +804,11 @@ def appliesXYshift3Dimages(image, shift):
     shifted 3D image.
 
     """
-    client = try_get_client()
+    if parallelExecution:
+        client = try_get_client()
+    else:
+        client = None
+
     numberPlanes = image.shape[0]
 
     if client is None:
@@ -838,7 +845,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
     blocks = [view_as_blocks(x, block_shape=blockSize).squeeze() for x in images]
 
     block_ref = blocks[0]
-    block_target = blocks[2]
+    block_target = blocks[1]
 
     # - loop thru blocks and calculates block shift in xyz:
     shiftMatrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
@@ -1582,9 +1589,6 @@ def _segments3DvolumesByThresholding(image3D,
             output[z,:,:] = image2DSegmented
 
     else:
-        # print("Failed getting workers. Report of scheduler:")
-        # for key in client.scheduler_info().keys():
-        #     print("{}:{}".format(key, client.scheduler_info()[key]))
 
         print("> Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
@@ -1859,8 +1863,8 @@ def plots4images(allimages, titles=['reference','cycle <i>','processed reference
     ax = axes.ravel()
 
     for axis, img, title in zip(ax, allimages,titles):
-        im = np.sum(img, axis=0)
-        axis.imshow(im, cmap="Greys")
+        # im = np.sum(img, axis=0)
+        axis.imshow(img, cmap="Greys")
         axis.set_title(title)
     fig.tight_layout()
 
