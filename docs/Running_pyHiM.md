@@ -150,6 +150,7 @@ These is the dictionary that provides information common to all routines.
 |"pixelSizeZ": |0.25, |*axial pixel size in nm*|
 |"zBinning": |2, |*binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.*|
 |"positionROIinformation": |3 |*position for the ROI in the filename: will be removed in future versions!*|
+|"parallelizePlanes": |false |* if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)*|
 
 
 
@@ -434,7 +435,22 @@ optional arguments:
 
 **Operation**
 
+The following steps were implemented:
 
+- iterate over reference fiducials available for each ROI
+  - Iterate over all cycles for a given ROI
+    - load 3D reference fiducial image the current imaging cycle
+    - re-align 3D fiducial image using XY alignment resulting from the XY alignment produced while running ```alignImages```. If this is not available, it will XY project the 3D stack of reference and cycle <i> fiducial to get an XY realignment. Beware, this will be global and will not use blockAlignment.
+    - Breaks 3D images for both reference and cycle <i> fiducials in blocks (defined by ```blockSizeXY```) 
+    - Cross-correlates each block to get an XYZ shift. This provides a 3D local drift correction for each block
+    - store shifts in output Table that contains values for each block (columns *shift_z, shift_x and shift_y*).
+    - store quality of image superposition based on the normalized root mean square matrix for each block in output Table (columns *quality_xy, quality_zy, quality_zx*).
+  - displayed results:
+      - shift block maps for X, Y and Z.
+      - corrected blocks in XY, ZX, ZY
+      - quality matrices.
+
+In **buildMatrix**, if available, the Table of local alignments is loaded, and is used to correct the xyz-coordinates of the barcode provided the correction is found in the Table and is lower than the tolerance indicated in the ```buildPWDMatrix``` key within ```infoList_DAPI.json```.
 
 **Invoke**
 
@@ -464,21 +480,30 @@ optional arguments:
 
 **Options**
 
-"alignImages". These options are shared by all alignment routines.
+Need to take special care in selecting the following parameters in "**acquisition**":
 
-```
-"folder": "alignImages",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"outputFile": "alignImages",
-"referenceFiducial": "RT18"
-"alignByBlock": True, # alignByBlock True will perform block alignment
-"tolerance": 0.1, #Used in blockAlignment to determine the % of error tolerated
-"lower_threshold": 0.999, # lower threshold to adjust image intensity levels before xcorrelation
-"higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
-"background_sigma": 3.0,  # used to remove inhom background
-"localShiftTolerance": 1,
-"bezel": 20,
-```
+| Parameters           | Default | Description                                                  |
+| -------------------- | ------- | ------------------------------------------------------------ |
+| "zBinning":          | 2       | *binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.* |
+| "parallelizePlanes": | false   | *if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)* |
+
+
+
+These options are shared by all alignment routines: "**alignImages**". 
+| Parameters           | Default | Description                                                  |
+| -------------------- | ------- | ------------------------------------------------------------ |
+|"folder" |"alignImages"| Name of output folder |
+|"operation"| "overwrite"| *to be removed in future release* |
+|"outputFile"| "alignImages"|Name of output file|
+|"referenceFiducial"| "RT18"|Name of the reference fiducial cycle|
+|"alignByBlock"| True| True will perform block alignment. False will do global alignement. |
+|"tolerance"| 0.1| Used in blockAlignment to determine the % of error tolerated |
+|"lower_threshold"| 0.999| lower threshold to adjust image intensity levels before xcorrelation |
+|"higher_threshold"| 0.9999999| higher threshold to adjust image intensity levels before xcorrelation |
+|"background_sigma"| 3.0 |used to remove inhomogeneous background|
+|"localShiftTolerance"| 1|Number of pixels tolerated to apply local drift correction|
+|"bezel"|20|number of pixels to use around a box made around each DAPI mask. Used for localDriftCorrection|
+
 
 
 
