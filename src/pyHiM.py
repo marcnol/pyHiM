@@ -19,7 +19,7 @@ The main() will search for parameter files within the folder provided. All ope-e
 from datetime import datetime
 
 from fileProcessing.fileManagement import Parameters
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments, makeListCommands
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 # to remove in a future version
 import warnings
@@ -33,7 +33,6 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     runParameters=HiM_parseArguments()
-    available_commands = makeListCommands()
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
