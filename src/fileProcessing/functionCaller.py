@@ -197,14 +197,19 @@ class HiMfunctionCaller:
         return self.labels2Process[ilabel]["label"]
 
 
-def makeListCommands():
+def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+
+
+def defaultListCommands():
+    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
+                "segmentSources3D","buildHiMmatrix"]
 
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
 
-    available_commands = makeListCommands()
+    availableListCommands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
@@ -240,11 +245,11 @@ def HiM_parseArguments():
     if args.cmd:
         runParameters["cmd"] = args.cmd.split(",")
     else:
-        runParameters["cmd"] = available_commands
+        runParameters["cmd"] = defaultListCommands
 
     for cmd in runParameters["cmd"]:
-        if cmd not in available_commands:
-            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,available_commands))
+        if cmd not in availableListCommands():
+            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableListCommands()))
             raise SystemExit
 
     # if args.localAlignment:
