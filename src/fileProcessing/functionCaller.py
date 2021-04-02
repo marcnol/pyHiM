@@ -209,7 +209,8 @@ def defaultListCommands():
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
 
-    availableListCommands()
+    availableCommands=availableListCommands()
+    defaultCommands=defaultListCommands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
@@ -245,11 +246,11 @@ def HiM_parseArguments():
     if args.cmd:
         runParameters["cmd"] = args.cmd.split(",")
     else:
-        runParameters["cmd"] = defaultListCommands
+        runParameters["cmd"] = defaultCommands
 
     for cmd in runParameters["cmd"]:
-        if cmd not in availableListCommands():
-            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableListCommands()))
+        if cmd not in availableCommands:
+            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableCommands))
             raise SystemExit
 
     # if args.localAlignment:
