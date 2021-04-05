@@ -338,6 +338,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
     # Finds and loads Reference fiducial information
     # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
+    log1.info("$ Reference fiducial {}".format(referenceBarcode))
 
     # retrieves the list of fiducial image files to be aligned
     fileNameReferenceList, ROIList = RT2fileName(param, referenceBarcode)
@@ -430,7 +431,8 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                             dictShiftROI[label] = shift.tolist()
                             alignmentResultsTable.add_row(tableEntry)
                             session1.add(fileName2Process, sessionName)
-
+                    elif (fileName2Process in fileNameReference):
+                        print("\n$ Skipping reference file: {} ".format(os.path.basename(fileName2Process)))
             # accumulates shifst for this ROI into global dictionary
             dictShifts["ROI:" + ROI] = dictShiftROI
             del imReference
@@ -441,8 +443,9 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
         log1.info("$ Saved alignment dictionary to {}".format(dictionaryFileName))
 
     else:
-        log1.info(
-            "# Reference Barcode file does not exist: {}", format(referenceBarcode))
+        print(
+            "# Reference Barcode file does not exist: {}".format(referenceBarcode))
+        raise ValueError
 
     return alignmentResultsTable
 

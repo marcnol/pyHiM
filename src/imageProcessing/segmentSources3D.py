@@ -423,9 +423,10 @@ class segmentSources3D:
             # loops over ROIs
             for ROI in self.ROIList:
                 # loads reference fiducial image for this ROI
-                # ROI = ROIList[fileNameReference]
+
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
+                # print(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
                 Nfiles2Process=len(self.fileName2ProcessList)
                 print("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 print("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\

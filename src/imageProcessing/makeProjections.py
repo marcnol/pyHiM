@@ -42,7 +42,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         log1.info("# File already projected: {}".format(os.path.basename(fileName)))
     else:
 
-        log1.info("> Analysing file: {}".format(os.path.basename(fileName)))
+        log1.info("\n> Analysing file: {}".format(os.path.basename(fileName)))
 
         # creates image object
         Im = Image(param, log1)
@@ -84,7 +84,7 @@ def makeProjections(param, log1, session1, fileName=None):
     # processes folders and files
     log1.addSimpleText("\n===================={}====================\n".format(sessionName))
     dataFolder = folders(param.param["rootFolder"])
-    log1.info("> folders read: {}".format(len(dataFolder.listFolders)))
+    log1.info("> Folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
@@ -96,7 +96,7 @@ def makeProjections(param, log1, session1, fileName=None):
         # generates lists of files to process
         param.files2Process(filesFolder)
         log1.info("> Processing Folder: {}".format(currentFolder))
-        log1.info("> About to read {} files\n".format(len(param.fileList2Process)))
+        log1.info("> About to process {} files\n".format(len(param.fileList2Process)))
 
         if param.param["parallel"]:
             threads = list()

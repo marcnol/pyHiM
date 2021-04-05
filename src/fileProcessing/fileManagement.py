@@ -106,7 +106,7 @@ class folders:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
 
-        print("\n $ Detected {} folders with images".format(len(self.listFolders)))
+        # print("\n $ Detected {} folders with images".format(len(self.listFolders)))
 
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
@@ -204,12 +204,13 @@ class FileHandling:
 
 
 class Parameters:
-    def __init__(self, rootFolder="./", label=""):
+    def __init__(self, rootFolder="./", label="", fileName='infoList.json'):
+        self.fileName= fileName
         self.label = label
-        self.paramFile = "infoList.json"
+        self.paramFile = "infoList_model.json"
         self.param = {
+            "common":{
             "acquisition": {
-                "label": "DAPI",
                 "positionROIinformation": 3,
                 "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
                 "DAPI_channel": "ch00",
@@ -231,16 +232,16 @@ class Parameters:
                 "saveImage": True,
                 "zmin": 1,
                 "zmax": 59,
-                "zwindows": 10,
+                "zwindows": 15,
                 "windowSecurity": 2,
-                "zProjectOption": "sum",  # sum or MIP
+                "zProjectOption": "MIP",  # sum or MIP
             },
             "alignImages": {
                 "folder": "alignImages",  # output folder
                 "operation": "overwrite",  # overwrite, skip
                 "outputFile": "alignImages",
-                "referenceFiducial": "RT18",
-                "localAlignment": "None", # options: None, mask2D, block3D
+                "referenceFiducial": "RT27",
+                "localAlignment": "block3D", # options: None, mask2D, block3D
                 "alignByBlock": True,  # alignByBlock True will perform block alignment
                 "tolerance": 0.1,  # Used in blockAlignment to determine the % of error tolerated
                 "lower_threshold": 0.999,  # lower threshold to adjust image intensity levels before xcorrelation
@@ -263,8 +264,9 @@ class Parameters:
             },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
-                "operation": "2D",  # options: 2D or 3D
+                "operation": "2D,3D",  # options: 2D or 3D
                 "outputFile": "segmentedObjects",
+                "Segment3D":"overwrite",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
                 "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
                 "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
@@ -287,10 +289,27 @@ class Parameters:
                 "3dAP_brightest": 100,  # number of sources sought in each YZ plane
                 "3dAP_distTolerance": 1,  # px dist to attribute a source localized in YZ to one localized in XY
             },
+            },
+            "labels":{
+                "fiducial":{
+                    "order":1
+                    },
+                "barcode":{
+                    "order":2
+                    },
+                "DAPI":{
+                    "order":3
+                    },
+                "RNA":{
+                    "order":4
+                    },
+            },
+
         }
         self.initializeStandardParameters()
-        self.paramFile = rootFolder + os.sep + label
-        self.loadParametersFile(self.paramFile)
+        self.paramFile = rootFolder + os.sep + fileName
+        # self.param = self.loadParametersFile(self.paramFile)
+        self.convertsParameterFile(self.paramFile,self.label)
         self.param["rootFolder"] = rootFolder
         self.fileParts = {}
 
@@ -309,9 +328,31 @@ class Parameters:
     def loadParametersFile(self, fileName):
         if path.exists(fileName):
             with open(fileName) as json_file:
-                self.param = json.load(json_file)
+                param = json.load(json_file)
 
             print("$ Parameters file read: {}".format(fileName))
+            return param
+
+    def convertsParameterFile(self,paramFile,labelSelected):
+        param0 = self.loadParametersFile(paramFile)
+
+        param=param0["common"]
+
+        labels=param0["labels"]
+
+        orderedList = [" "]*len(labels.keys())
+        for i,label in enumerate(labels.keys()):
+            order = labels[label]["order"]
+            # print('order={}'.format(order))
+            orderedList[order-1]=label
+
+        param["labels"] = orderedList
+
+        # need to add keys not present in common dict
+
+        # need to replace default keys by those in 'label' key
+        param['acquisition']['label']=labelSelected
+        self.param=param
 
     def setsChannel(self, key, default):
         if key in self.param["acquisition"].keys():
@@ -323,6 +364,8 @@ class Parameters:
 
     # method returns label-specific filenames from filename list
     def files2Process(self, filesFolder):
+
+        # print(">>>>>> label to find fileList= {}".format(self.param["acquisition"]["label"]))
 
         # defines channel for DAPI, fiducials and barcodes
         channelDAPI = self.setsChannel("DAPI_channel", "ch00")
@@ -358,7 +401,7 @@ class Parameters:
             ]
 
         # selects DAPIch2 files
-        if self.param["acquisition"]["label"] == "RNA":
+        elif self.param["acquisition"]["label"] == "RNA":
             self.fileList2Process = [
                 file
                 for file in filesFolder
