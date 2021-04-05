@@ -41,12 +41,12 @@ class HiMfunctionCaller:
 
         self.log1 = log(rootFolder=self.rootFolder, parallel=self.parallel)
 
-        self.labels2Process = [
-            {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-            {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-            {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-            {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-        ]
+        # self.labels2Process = [
+        #     {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        #     {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        #     {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        #     {"label": "RNA", "parameterFile": "infoList_RNA.json"},
+        # ]
 
         self.session1 = session(self.rootFolder, self.sessionName)
 
@@ -61,7 +61,7 @@ class HiMfunctionCaller:
         # setup logs
         # log1 = log(rootFolder = self.rootFolder,parallel=self.parallel)
         self.log1.addSimpleText(
-            "\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(self.sessionName)
+            "\n======================{}======================\n".format(self.sessionName)
         )
         if self.log1.fileNameMD == ".md":
             self.log1.fileNameMD = "HiM_report.md"
@@ -88,20 +88,20 @@ class HiMfunctionCaller:
             result = self.client.submit(makeProjections, param, self.log1, self.session1)
             _ = self.client.gather(result)
 
-    def alignImages(self, param, ilabel):
-        if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
+    def alignImages(self, param, label):
+        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
             self.log1.addSimpleText(
-                "> Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
+                "> Making image registrations for label: {}".format(label))
             if not self.parallel:
                 alignImages(param, self.log1, self.session1)
             else:
                 result = self.client.submit(alignImages, param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
-    def alignImages3D(self, param, ilabel):
-        if self.getLabel(ilabel) == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
+    def alignImages3D(self, param, label):
+        if label == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
             self.log1.addSimpleText(
-                "> Making 3D image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
+                "> Making 3D image registrations label: {}".format(label))
             _drift3D = drift3D(param, self.log1, self.session1, parallel=self.parallel)
             # if not self.parallel:
             _drift3D.alignFiducials3D()
@@ -109,10 +109,10 @@ class HiMfunctionCaller:
             #     result = self.client.submit(_drift3D.alignFiducials3D)
             #     _ = self.client.gather(result)
 
-    def appliesRegistrations(self, param, ilabel):
-        if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
+    def appliesRegistrations(self, param, label):
+        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
             self.log1.addSimpleText(
-                "> Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)))
+                "> Applying image registrations for label: {}".format(label))
 
             if not self.parallel:
                 appliesRegistrations(param, self.log1, self.session1)
@@ -120,7 +120,7 @@ class HiMfunctionCaller:
                 result = self.client.submit(appliesRegistrations, param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
-    def segmentMasks(self, param, ilabel):
+    def segmentMasks(self, param, label):
 
         if "segmentedObjects" in param.param.keys():
             operation = param.param["segmentedObjects"]["operation"]
@@ -130,7 +130,7 @@ class HiMfunctionCaller:
         if (
             # self.getLabel(ilabel) != "fiducial"
             # and param.param["acquisition"]["label"] != "fiducial"
-            self.getLabel(ilabel) != "RNA"
+            label != "RNA"
             and param.param["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
@@ -141,14 +141,16 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
 
-    def segmentSources3D(self, param, ilabel):
+    def segmentSources3D(self, param, label):
         if (
-            self.getLabel(ilabel) == "barcode"
+            label == "barcode"
             and "3D" in param.param["segmentedObjects"]["operation"]
         ):
             self.log1.report(
-                "Making 3D image segmentations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info"
+                "Making 3D image segmentations for label: {}".format(label), "info"
             )
+            print(">>>>>>Label in functionCaller:{}".format(label))
+
             _segmentSources3D = segmentSources3D(param, self.log1, self.session1, parallel=self.parallel)
             # if not self.parallel:
             _segmentSources3D.segmentSources3D()
@@ -157,16 +159,16 @@ class HiMfunctionCaller:
             #     _ = self.client.gather(result)
 
 
-    def projectsBarcodes(self, param, ilabel):
-        if self.getLabel(ilabel) == "barcode":
+    def projectsBarcodes(self, param, label):
+        if label == "barcode":
             if not self.parallel:
                 projectsBarcodes(param, self.log1, self.session1)
             else:
                 result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
-    def refitBarcodes(self, param, ilabel):
-        if self.getLabel(ilabel) == "barcode":# and self.runParameters["refit"]:
+    def refitBarcodes(self, param, label):
+        if label == "barcode":# and self.runParameters["refit"]:
             fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
             if not self.parallel:
                 fittingSession.refitFolders()
@@ -174,10 +176,10 @@ class HiMfunctionCaller:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
 
-    def localDriftCorrection(self, param, ilabel):
+    def localDriftCorrection(self, param, label):
 
         # runs mask 2D aligment
-        if self.getLabel(ilabel) == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
+        if label == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
 
             if not self.parallel:
                 errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
@@ -185,8 +187,8 @@ class HiMfunctionCaller:
                 result = self.client.submit(localDriftCorrection, param, self.log1, self.session1)
                 errorCode, _, _ = self.client.gather(result)
 
-    def processesPWDmatrices(self, param, ilabel):
-        if self.getLabel(ilabel) == "DAPI":
+    def processesPWDmatrices(self, param, label):
+        if label == "DAPI":
             if not self.parallel:
                 processesPWDmatrices(param, self.log1, self.session1)
             else:

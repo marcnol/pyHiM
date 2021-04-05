@@ -7,12 +7,12 @@ Created on Sat May  2 17:16:07 2020
 
 cleans directory structure
 
-In the command line, run as 
-$ cleanHiM_run.py 
+In the command line, run as
+$ cleanHiM_run.py
 
 to erase all the directories produced recursively
 
-and 
+and
 
 $ cleanHiM_run.py --all
 

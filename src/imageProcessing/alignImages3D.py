@@ -154,7 +154,7 @@ class drift3D:
         fig1 = plots4images([self.imageRef0,image3D0]+images2D, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
 
         del image3D0
-        print("$ Memory 1: {}".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
+        # print("$ Memory 1: {}".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
 
         # drifts 3D stack in XY
         # ---------------------
@@ -186,7 +186,7 @@ class drift3D:
         images.append(appliesXYshift3Dimages(image3D, shift,parallelExecution=self.innerParallelLoop))
 
         del images[1], image3D # removes unshifted image to save memory
-        print("$ Memory 2: {}".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
+        # print("$ Memory 2: {}".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
 
         # 3D image alignment by block
         # ---------------------------
@@ -228,7 +228,7 @@ class drift3D:
         fig6 = plots3DshiftMatrices(NRMSE_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
         fig6.suptitle("normalized root mean square block matrices")
 
-        print("$ Memory 3: {}".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
+        print("$ delta memory used: {} Mb".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
 
         # saves figures
         # -------------
