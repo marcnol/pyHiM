@@ -99,20 +99,24 @@ graph TD
 
 
 
-#### infoList parameters files
+#### infoList parameter file
 
-The infoList.json file contains all the parameters that will be used to executing the pipeline on a specific label. Labels can be:
+The ```infoList.json``` file contains all the parameters that will be used to executing the pipeline. Parameters are encoded into a dictionary in JSON format. The first key ```labels``` contains the names of labels to be used and their order of processing:
 
 1. *fiducial*: fiducial marks used for aligning the different cycles.
 2. *DAPI*: nuclear masks.
 3. *barcode*: DNA-FISH spot labeling a specific locus in each cycle.
 4. *RNA*: pattern of the same that displays a specific activation state.
 
-The corresponding infoList files are named:
+The order in which these labels are processed is very important, please do not change if you don't know what you are doing!
 
- ```infoList_fiducial.json```  ```infoList_DAPI.json```  ```infoList_barcode.json```  ```infoList_RNA.json```
 
-Each of these infoList files will contain different dictionaries, some will be common to all, some will be specific to the *label*. These dictionaries will define the parameters specific to each function in pyHiM.
+
+The model ```infoList.json``` file can be found [here](../modelParameterFiles_JSON/infoList.json).
+
+
+
+The second key ```common``` contains the common parameters for each of the modules that ```pyHiM``` can run:
 
 1. ```acquisition```: common to all labels. The parameters defined here are used by most functions.
 2. ```alignImages```: common to all labels. Parameters specific to the ```alignImages```, ```alignImages3D``` and ```appliesRegistrations``` functions.
@@ -121,36 +125,42 @@ Each of these infoList files will contain different dictionaries, some will be c
 5. ```zProject```: common to all labels. Parameters specific to the ```makeProjections``` function.
 6. ```buildsPWDMatrix```: only for *DAPI*. Parameters specific to the ```buildHiMmatrix``` function.
 
-
-
 The description of parameters encoded in these dictionaries will be described with each function below.
 
 
 
-Model ```infoList.json``` files can be found in: ```pyHiM/modelParameterFiles_JSON```
+Parameters specific to a label can be added to the ```labels``` key by adding a dictionary with the module name and the parameter to be changed for each label that you want to modify. In the example  below we will replace ```zProjectionOption``` in ```zProject```:
+
+```sh
+    "labels": {
+        "DAPI": {
+            "order": 3,
+		    "zProject": {
+		        "zProjectOption": "sum",
+		    }            
+```
 
 
 
-##### common Parameters
+##### ```Acquisition``` Parameters
 
-These is the dictionary that provides information common to all routines.
+This ```key``` provides information common to all routines.
 
 "acquisition"
 
 | Parameters | Default | Description |
 | --- | --- | --- |
-|"DAPI_channel": |"ch00",|
-|"RNA_channel": |"ch01",|
+|"DAPI_channel": |"ch00",|Label of DAPI channel|
+|"RNA_channel": |"ch01",|Label of RNA channel|
 |"fileNameRegExp":| "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\>. This regular expression encodes our filename format|
-|"barcode_channel": | "ch01",||
-|"fiducialBarcode_channel":| "ch00",|
-|"fiducialDAPI_channel": |"ch02",||
-|"label": |"DAPI",| *Options: DAPI, fiducial, barcode, RNA|
-|"pixelSizeXY": |0.1,| *lateral pixel size in nm*|
-|"pixelSizeZ": |0.25, |*axial pixel size in nm*|
-|"zBinning": |2, |*binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.*|
-|"positionROIinformation": |3 |*position for the ROI in the filename: will be removed in future versions!*|
-|"parallelizePlanes": |false |* if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)*|
+|"barcode_channel": | "ch01",|Label of barcode channel|
+|"fiducialBarcode_channel":| "ch00",|Label of fiducial channel for barcode cycles|
+|"fiducialDAPI_channel": |"ch02",|Label of fiducial  channel for the DAPI/RNA cycles|
+|"pixelSizeXY": |0.1,| lateral pixel size in nm |
+|"pixelSizeZ": |0.25, |axial pixel size in nm|
+|"zBinning": |2, |binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.|
+|"positionROIinformation": |3 |position for the ROI in the filename: will be removed in future versions!|
+|"parallelizePlanes": |false |if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file). Use of parallelization is activated by an argument to ```pyHiM``` (see below).|
 
 
 
@@ -504,16 +514,11 @@ These options are shared by all alignment routines: "**alignImages**".
 |"localShiftTolerance"| 1|Number of pixels tolerated to apply local drift correction|
 |"bezel"|20|number of pixels to use around a box made around each DAPI mask. Used for localDriftCorrection|
 
-
-
-
 **Output of method**
 
 The first diagnostic image shows 2D projections of the 3D reference and  cycle <i> fiducial images. Uncorrected in the top row and 3D background-subtracted and level-renormalized images. These latter will be used for the x-correlations.
 
 ![scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_bkgSubstracted.png)
-
-
 
 Matrices indicating the correction applied to each block in z, x and y. Values are in pixel units. You should look for roughly homogeneous corrections within embryos. Typically small local corrections are found in X and Y after if the global correction was successful. If the autofocus run fine, then the Z shifts should be ~ 1 px.
 
@@ -523,10 +528,6 @@ Reassembled image made of XY, XZ and YZ projections is outputted to evaluate per
 
 ![scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch00.tif_3Dalignments.png)
 
-
-
-
-
 **Validation**
 
 - I used the fiducials for 3D alignement. 
@@ -534,19 +535,13 @@ Reassembled image made of XY, XZ and YZ projections is outputted to evaluate per
 - Plotted the barcode localizations of barcode RT31 on top of the image of RT27 (reference): yellow crosses. They most agree which mean global shift correction is correct, but there are small relative shifts far from the center of the FOV. This reflects the inability of global shift correction to correct deformations.
 - Then plotted also the barcode localizations of barcode RT31 corrected by 3D alignment on top of the image of RT27: **red circles**. In this case, the localizations overlap even better. This confirms that the relative local corrections improved the local deformations.
 
-
-
 ![image-20210313091506853](Running_pyHiM.assets/image-20210313091506853.png)
-
-
 
 This is now the comparison of the min distances between localizations in the reference and cycle <i> fiducials. Top plot is for global shift corrected, bottom for global + align3D
 
 
 
 ![image-20210313094418814](Running_pyHiM.assets/image-20210313094418814.png)
-
-
 
 #### 3. Applies registrations
 

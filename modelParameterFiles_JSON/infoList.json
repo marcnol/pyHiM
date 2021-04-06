@@ -83,7 +83,10 @@
     },
     "labels": {
         "DAPI": {
-            "order": 3
+            "order": 3,
+		    "zProject": {
+		        "zProjectOption": "sum",
+		    }            
         },
         "RNA": {
             "order": 4
