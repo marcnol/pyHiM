@@ -492,14 +492,11 @@ class cellID:
         Returns
         -------
         R : np array
-            vector with coordinates.
+            vector with coordinates in nanometers.
 
         """
-        # nanZ = np.isnan(z)
-        # z[nanZ]=0.0
-        # print(">>>Found #{} nans".format(np.nonzero(nanZ)[0].shape[0]))
 
-        R = np.column_stack((x, y, z,))
+        R = np.column_stack((x*self.pixelSize["x"], y*self.pixelSize["y"], z*self.pixelSize["z"]))
 
         return R
 
@@ -525,22 +522,14 @@ class cellID:
         Returns pairwise distance matrix between corrected barcodes
 
         """
-        R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
+        R_nm = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
 
-        # if len(self.alignmentResultsTable) > 0:
-
-        #     # searches for local alignment shift for this mask in this ROI
-        #     # x_corrected, y_corrected = self.searchLocalShift(ROI, CellID, x_uncorrected, y_uncorrected)
-
-        #     # applies local drift correction
-        #     # R = self.buildsVector(groupKeys, x_corrected, y_corrected, z_uncorrected)
-        #     R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
-
-        # else:
-        #     # does not apply local drift correction
-        #     R = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
-
-        return pairwise_distances(R)
+        P = pairwise_distances(R_nm)    
+        
+        P = P/self.pixelSize["x"]
+        
+        return P
+    
 
     def buildsSCdistanceTable(self):
         """
@@ -927,7 +916,7 @@ def buildsPWDmatrix(
     fileNameBarcodeCoordinates,
     outputFileName,
     dataFolder,
-    pixelSize=0.1,
+    pixelSize={'x':0.1,'y':0.1,'z':0.0},
     logNameMD="log.md",
     ndims=2,
 ):
@@ -945,8 +934,13 @@ def buildsPWDmatrix(
     outputFileName : string
     dataFolder : Folder Class
         information to find barcode localizations, local drift corrections and masks
-    pixelSize : npy array, optional
-        DESCRIPTION. The default is 0.1. Pixelsize in um
+
+    pixelSize : dict, optional
+        pixelSize = {'x': pixelSizeXY,
+                    'y': pixelSizeXY,
+                    'z': pixelSizeZ}
+        The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
+        
     logNameMD : str, optional
         Filename of Markdown output. The default is "log.md".
     ndims : int, optional
@@ -1001,7 +995,7 @@ def buildsPWDmatrix(
 
                 # Assigns barcodes to Masks for a given ROI
                 cellROI = cellID(param, dataFolder, barcodeMapSingleROI, Masks, ROI, ndims=localizationDimension)
-                cellROI.ndims, cellROI.nROI, cellROI.logNameMD = ndims, nROI, logNameMD
+                cellROI.ndims, cellROI.nROI, cellROI.logNameMD, cellROI.pixelSize = ndims, nROI, logNameMD, pixelSize
 
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
@@ -1071,7 +1065,8 @@ def buildsPWDmatrix(
         np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
         np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
         np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
-
+        pixelSizeXY = pixelSize['x']
+        
         if SCmatrixCollated.shape[2]>0:
             #################################
             # makes and saves outputs plots #
@@ -1080,7 +1075,7 @@ def buildsPWDmatrix(
                 SCmatrixCollated,
                 Nmatrix,
                 uniqueBarcodes,
-                pixelSize,
+                pixelSizeXY,
                 numberROIs,
                 outputFileName,
                 logNameMD,
@@ -1128,9 +1123,15 @@ def processesPWDmatrices(param, log1, session1):
             log1.addSimpleText("> 2D processing: {}".format(outputFileName))
 
             if "pixelSizeXY" in param.param["acquisition"].keys():
-                pixelSize = param.param["acquisition"]["pixelSizeXY"]
+                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+                pixelSize = {'x': pixelSizeXY,
+                             'y': pixelSizeXY,
+                             'z': 0.0}
             else:
-                pixelSize = 0.1
+                pixelSize = {'x': 0.1,
+                             'y': 0.1,
+                             'z': 0.0}
+
 
             buildsPWDmatrix(
                 param, currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
@@ -1152,11 +1153,13 @@ def processesPWDmatrices(param, log1, session1):
 
                 pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
 
-                # need to solve the issue of voxelsize...
-                # pixelSize = [pixelSizeXY,pixelSizeXY,pixelSizeZ]
-                pixelSize = pixelSizeXY
+                pixelSize = {'x': pixelSizeXY,
+                             'y': pixelSizeXY,
+                             'z': pixelSizeZ*zBinning}
             else:
-                pixelSize = 0.1
+                pixelSize = {'x': 0.1,
+                             'y': 0.1,
+                             'z': 0.25}
 
             buildsPWDmatrix(
                 param,
