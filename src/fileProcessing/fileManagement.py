@@ -332,9 +332,14 @@ class Parameters:
 
             print("$ Parameters file read: {}".format(fileName))
             return param
+        else:
+            return None
 
     def convertsParameterFile(self,paramFile,labelSelected):
         param0 = self.loadParametersFile(paramFile)
+
+        if param0 is None:
+            raise ValueError("No infoList.json file found")
 
         param=param0["common"]
 
