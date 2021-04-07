@@ -12,11 +12,7 @@ Ensure you followed the steps described previously during installation when you 
 
 1. Identify a ```destination_directory``` where your data are stored. The raw deconvolved files can be in your ```destination_directory``` or within a sub-folder.
 2. Be aware of not putting more than ONE sub-folder with TIFF files in the ```destination_directory```. If your ```destination_directory``` already has the raw deconvolved TIFFs then remvove any other directory with TIFFs from ```destination_directory```
-3. copy *infoList* files to your ```destination_directory``` . For a description of *infoList* files, see section below.
-   1. infoList_DAPI.json
-   2. infoList_RNA.json
-   3. infoList_fiducial.json
-   4. infoList_barcode.json
+3. copy ```infoList.json``` to your ```destination_directory``` . For a description of ```infoList.json```, see section below.
 4. Change the fiducial RT by running ```changeRT_infoList.py``` at the command line in the ```destination_directory```. The input arguments are the RT currently present in the infoList files and the RT that you want to change it for. For instance: ```changeRT_infoList.py RT33 RT95```changes RT33 to RT95 in all the infoList files.
 5. Run pyHiM by the following command at the command line:
 
@@ -253,9 +249,11 @@ There are several ways of correcting for drift within pyHiM:
 
 Global drift correction will be run by default if ```"alignByBlock": false```.
 
-The method first finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList_fiducial.json``` (see above)
+The method first finds the optimal x-y translation from fiducial images and and applies them to DAPI, barcodes and RNA images. The reference fiducial to be used needs to be indicated in ```infoList.json``` (see above)
 
 **Invoke**
+
+Parameters to run this script will be read from the ```alignImages``` field of ```infoList.json```.
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
@@ -349,7 +347,7 @@ To turn the routing on, just set ```alignByBlock``` to True.
 
 **Important note**: When you use blockAlignment, pyHiM will produce 8x8 output matrices with the abs(shift-global_shift) maps. These will be stored in ```alignImages``` folder with names such as ```scan_006_DAPI_003_ROI_converted_decon_ch02_errorAlignmentBlockMap.npy```.
 
-When alignBarcodesMasks() runs, it will search for this files. If it finds them it will filter out barcode localizations that displayed an absolute drift larger than the ```toleranceDrift``` parameter in the ```segmentedObjects``` segment of the ```infoList_DAPI.json``` file.
+When alignBarcodesMasks() runs, it will search for this files. If it finds them it will filter out barcode localizations that displayed an absolute drift larger than the ```toleranceDrift``` parameter in the ```segmentedObjects``` segment of the ```infoList.json``` file.
 
 So if you see a large drop in the barcodes that are used (this can be seen by matrices with empty rows/columns) it may be that your inaccurate barcode localizations are being dropped. Check for this the ```Assigned: 266 | discarded: 285``` outputted by alignBarcodesMasks(), and change ```toleranceDrift``` if needed.
 
@@ -417,7 +415,9 @@ Deformation of samples means a simple translation will not be enough to correct 
 
 **Invoke**
 
-To activate this method use ```"localAlignment": "mask2D"``` in the ```infoList_DAPI.json``` file when you run *pyHiM*.
+Parameters to run this script will be read from the ```alignImages``` field of ```infoList.json```.
+
+To activate this method use ```"localAlignment": "mask2D"``` in the ```infoList.json``` file when you run *pyHiM*.
 
 2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
 
@@ -460,13 +460,15 @@ The following steps were implemented:
       - corrected blocks in XY, ZX, ZY
       - quality matrices.
 
-In **buildMatrix**, if available, the Table of local alignments is loaded, and is used to correct the xyz-coordinates of the barcode provided the correction is found in the Table and is lower than the tolerance indicated in the ```buildPWDMatrix``` key within ```infoList_DAPI.json```.
+In **buildMatrix**, if available, the Table of local alignments is loaded, and is used to correct the xyz-coordinates of the barcode provided the correction is found in the Table and is lower than the tolerance indicated in the ```buildPWDMatrix``` key within ```infoList.json```.
 
 **Invoke**
 
-To activate this method use ```"localAlignment": "block3D"``` in the ``` alignImages``` key of the ```infoList_fiducial.json``` file when you run *pyHiM*.
+Parameters to run this script will be read from the ```alignImages``` field of ```infoList.json```.
 
-This method requires that you first run global drift correction either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag in the  ``` alignImages``` key of the ```infoList_fiducial.json``` file.
+To activate this method use ```"localAlignment": "block3D"``` in the ``` alignImages``` key of the ```infoList.json``` file when you run *pyHiM*.
+
+This method requires that you first run global drift correction either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag in the  ``` alignImages``` key of the ```infoList.json``` file.
 
 Otherwise, if you just want to call this method, call *pyHiM* with the ```-C alignImages3D``` argument.
 
@@ -551,6 +553,8 @@ This is now the comparison of the min distances between localizations in the ref
 
 **Invoke**
 
+Parameters to run this script will be read from the ```alignImages``` field of ```infoList.json```.
+
 This function will automatically be applied when you run *pyHiM*.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C appliesRegistrations``` argument.
@@ -582,19 +586,13 @@ optional arguments:
 - 4.3 Estimation of z-position post 2D segmentation using ASTROPY
 - 4.4 DIrect segmentation in 3D
 
-
-
 ##### 4.2 Segmentation in 2D
-
-
 
 **Operation**
 
-
-
 **Invoke**
 
-This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList_barcode.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```..
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```..
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
 
@@ -714,9 +712,9 @@ The results for any given ROI and barcode appear as a figure with two subplots w
 
 **Invoke**
 
-Use ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file when you run *pyHiM*.
+Use ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json* file when you run *pyHiM*.
 
-If you want to run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file
+If you want to run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json* file
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
@@ -754,9 +752,9 @@ Then the ```fittingSession.refitFolders``` will
 
 **Invoke**
 
-Use ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file when you run *pyHiM*.
+Use ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList.json* file when you run *pyHiM*.
 
-To run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList_barcodes.json* file
+To run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList.json* file
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
@@ -784,7 +782,7 @@ The results for any given ROI and barcode appear with three figures representing
 - the 2D-projected image with sources represented as crosses. Color-code represents z-position. Colormap is from ```0``` to the max number of z-planes in the image.
 - Finally, a scatter plot displaying the z-position and the flux of every source detected is displayed. 
 
-Important: Sources are not flux-filtered at this stage. The original or updated flux values will be outputted in the Table, and used in the ```alignBarcodesMasks``` module to filter the localization using the value of ```flux_min``` provided in the ```infoList_DAPI.json``` file.
+Important: Sources are not flux-filtered at this stage. The original or updated flux values will be outputted in the Table, and used in the ```alignBarcodesMasks``` module to filter the localization using the value of ```flux_min``` provided in the ```infoList.json``` file.
 
 Output examples:
 
@@ -859,9 +857,11 @@ cfb668f7-6ead-4ac1-a4a6-88896eca7f04 1 0 31 1 9.506243 1242.8794 216.33797 0.276
 
 **Invoke**
 
-Use  ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList_barcode.json``` when you run *pyHiM*. To run both 2D and 3D barcode segmentations, then just use: ```"operation": "2D,3D"```.
+Parameters to run this script will be read from the ```segmentedObjects``` field of ```infoList.json```.
 
-If you want to run this function exclusively, run *pyHiM* using the ```-C segmentSources3D``` argument and ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList_barcodes.json*.
+Use  ```"operation": "3D"``` to activate. To run both 2D and 3D barcode segmentations, then just use: ```"operation": "2D,3D"```.
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C segmentSources3D``` argument and ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json*.
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
@@ -947,9 +947,32 @@ Typical XY projection of the central plane with weighted centroids color coded b
 
 #### 5. Align DAPI masks and barcodes
 
+**Operation**
+
+The ```processesPWDmatrices``` script:
+
+- iterates over ROIs
+  - assigns barcode localizations to DAPI masks
+  - applies local drift correction, if available
+  - removes localizations using flux and driftTolerance
+  - calculates the pair-wise distances for each single-cell mask
+  - outputs are:
+    - Table with #cell #PWD #coordinates (e.g. ```buildsPWDmatrix_3D_order:0_ROI:1.ecsv```)
+    - NPY array with single cell PWD single cell matrices (e.g. ```buildsPWDmatrix_3D_HiMscMatrix.npy```)
+    - NPY array with barcode identities (e.g. ```buildsPWDmatrix_3D_uniqueBarcodes.ecsv```)
+    - the files with no ```3D``` tag contain data analyzed using 2D localizations.
+- Single-cell results are combined together to calculate:
+     - Distribution of pairwise distance for each barcode combination
+     - Ensemble mean pairwise distance matrix using mean of distribution
+     - Ensemble mean pairwise distance matrix using Kernel density estimation
+     - Ensemble Hi-M matrix using a predefined threshold
+          - For each of these files, there is an image in ```PNG``` format saved. Images containing ```3D``` are for 3D other are for 2D.
+
+
+
 **Invoke**
 
-Options to run this function will be read from ```infoList_DAPI.json``` when you run *pyHiM*.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C buildHiMmatrix``` argument.
 
