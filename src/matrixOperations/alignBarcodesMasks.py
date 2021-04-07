@@ -5,11 +5,24 @@ Created on Fri Apr 17 09:23:36 2020
 
 @author: marcnol
 
-These scripts assign barcodes to DAPI masks, calculates the pair-wise distances
-for each barcode set in a cell, and computes the single-cell PWD matrix and
-its ensemble (which is represented).
+This script:
+    - iterates over ROIs
+        - assigns barcode localizations to DAPI masks
+        - applies local drift correction, if available
+        - removes localizations using flux and driftTolerance
+        - calculates the pair-wise distances for each single-cell mask
+        - outputs are:
+            - Table with #cell #PWD #coordinates (e.g. buildsPWDmatrix_3D_order:0_ROI:1.ecsv)
+            - NPY array with single cell PWD single cell matrices (e.g. buildsPWDmatrix_3D_HiMscMatrix.npy)
+            - NPY array with barcode identities (e.g. buildsPWDmatrix_3D_uniqueBarcodes.ecsv)
+            - the files with no "3D" tag contain data analyzed using 2D localizations.
 
-This file contains as well some tools for representation of matrices.
+    - Single-cell results are combined together to calculate:
+        - Distribution of pairwise distance for each barcode combination
+        - Ensemble mean pairwise distance matrix using mean of distribution
+        - Ensemble mean pairwise distance matrix using Kernel density estimation
+        - Ensemble Hi-M matrix using a predefined threshold
+        - For each of these files, there is an image in PNG format saved. Images containing "3D" are for 3D other are for 2D.
 
 
 """
@@ -74,7 +87,8 @@ class cellID:
             self.barcodesinMask["maskID_" + str(mask)] = []
 
     def initializeLists(self):
-        self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.p, self.cuid, self.buid = (
+        self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.p, self.cuid, self.buid, self.barcodeCoordinates = (
+            [],
             [],
             [],
             [],
@@ -363,9 +377,11 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
 
-        print("$ KeepQuality: {}| keepAlignment: {}| Total: {}".format(sum(keepQualityAll), sum(keepAlignmentAll), NbarcodesROI))
+        print("$ Number of localizations passing quality test: {} / {}".format(sum(keepQualityAll), NbarcodesROI))
 
-        print("$ Number cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
+        print("$ Number of localizations passing alignment test: {} / {}".format(sum(keepAlignmentAll), NbarcodesROI))
+
+        print("$ Number of cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
 
     def searchLocalShift(self, ROI, CellID, barcode, zxy_uncorrected,toleranceDrift=1):
 
@@ -500,9 +516,12 @@ class cellID:
 
         return R
 
-    def calculatesPWDsingleMask(self, ROI, CellID, groupKeys, x_uncorrected, y_uncorrected, z_uncorrected):
+    def calculatesPWDsingleMask(self, ROI, CellID, groupKeys, x, y, z):
         """
-        Calculates PWD between barcodes detected in a given mask
+        Calculates PWD between barcodes detected in a given mask. For this:
+            - converts xyz pixel coordinates into nm using self.pixelSize dictionary
+            - calculates pair-wise distance matrix in nm
+            - converts it into pixel units using self.pixelSize['x'] as an isotropic pixelsize.
 
         Parameters
         ----------
@@ -519,17 +538,17 @@ class cellID:
 
         Returns
         -------
-        Returns pairwise distance matrix between corrected barcodes
+        Returns pairwise distance matrix between corrected barcodes in isotropic pixel units
 
         """
-        R_nm = self.buildsVector(groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
+        R_nm = self.buildsVector(groupKeys, x, y, z)
 
-        P = pairwise_distances(R_nm)    
-        
+        P = pairwise_distances(R_nm)
+
         P = P/self.pixelSize["x"]
-        
+
         return P
-    
+
 
     def buildsSCdistanceTable(self):
         """
@@ -554,15 +573,11 @@ class cellID:
                 groupKeys, CellID, ROI = group.keys(), key["CellID #"], group["ROI #"].data[0]
 
                 # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
-                x_uncorrected, y_uncorrected, z_uncorrected = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data), np.array(group["zcentroid"].data)
-
-                # if self.ndims == 3 and "zcentroidGauss" in group.keys():
-                #     z_uncorrected = np.array(group["zcentroidGauss"].data)
-                # else:
-                #     z_uncorrected = []
+                x, y, z = np.array(group["xcentroid"].data), np.array(group["ycentroid"].data), np.array(group["zcentroid"].data)
 
                 # calculates the PWD between barcodes in CellID
-                PWD = self.calculatesPWDsingleMask(ROI, CellID, groupKeys, x_uncorrected, y_uncorrected, z_uncorrected)
+                PWD = self.calculatesPWDsingleMask(ROI, CellID, groupKeys, x, y, z)
+                R_nm = self.buildsVector(groupKeys, x, y, z)
 
                 self.ROIs.append(group["ROI #"].data[0])
                 self.cellID.append(key["CellID #"])
@@ -570,8 +585,8 @@ class cellID:
                 self.barcodeIDs.append(group["Barcode #"].data)
                 self.buid.append(group["Buid"].data)
                 self.p.append(PWD)
+                self.barcodeCoordinates.append(R_nm)
                 self.cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
-                # print("CellID #={}, nBarcodes={}".format(key['CellID #'],len(group)))
 
         print(
             "$ Local correction applied to {}/{} barcodes in ROI {}".format(
@@ -579,12 +594,7 @@ class cellID:
             )
         )
 
-
         print("$ Coordinates dimensions: {}".format(self.ndims))
-        # if self.ndims == 3 and "zcentroidGauss" in group.keys():
-        #     print("Coordinates dimensions: 3")
-        # else:
-        #     print("Coordinates dimensions: 2")
 
         SCdistanceTable = Table()
         SCdistanceTable["Cuid"] = self.cuid
@@ -594,6 +604,7 @@ class cellID:
         SCdistanceTable["Barcode #"] = self.barcodeIDs
         SCdistanceTable["Buid"] = self.buid
         SCdistanceTable["PWDmatrix"] = self.p
+        SCdistanceTable["barcode xyz, nm"] = self.barcodeCoordinates
 
         self.SCdistanceTable = SCdistanceTable
 
@@ -940,7 +951,7 @@ def buildsPWDmatrix(
                     'y': pixelSizeXY,
                     'z': pixelSizeZ}
         The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
-        
+
     logNameMD : str, optional
         Filename of Markdown output. The default is "log.md".
     ndims : int, optional
@@ -972,7 +983,9 @@ def buildsPWDmatrix(
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
+        print("--------------------------------------------------------")
         print("> Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
+        print("--------------------------------------------------------")
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
@@ -1066,7 +1079,7 @@ def buildsPWDmatrix(
         np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
         np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
         pixelSizeXY = pixelSize['x']
-        
+
         if SCmatrixCollated.shape[2]>0:
             #################################
             # makes and saves outputs plots #
