@@ -43,7 +43,7 @@ from photutils import Background2D, MedianBackground
 from photutils.segmentation.core import SegmentationImage
 
 from imageProcessing.imageProcessing import Image, saveImage2Dcmd
-from fileProcessing.fileManagement import folders, writeString2File, try_get_client
+from fileProcessing.fileManagement import folders, writeString2File, try_get_client, printLog
 
 # ---- stardist
 import matplotlib
@@ -336,7 +336,7 @@ def tessellate_DAPI_masks(segm_deblend):
             idx = idx_vor_vertices[i]
             if idx == -1:  # this means a "virtual point" at infinity as the vertex is not closed
                 drop_vert = True
-                print('$ Detected "virtual point" at infinity. Skipping this mask.')
+                printLog('$ Detected "virtual point" at infinity. Skipping this mask.')
                 break
             vertices[i, :] = voronoiData.vertices[idx]
 
@@ -348,8 +348,8 @@ def tessellate_DAPI_masks(segm_deblend):
         mask = mask.reshape((ny, nx))
         dapi_mask_voronoi[mask & dapi_mask_blurred] = maskID
 
-    # print("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
-    print("$ Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
+    # printLog("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
+    printLog("$ Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
 
     return voronoiData, dapi_mask_voronoi
 
@@ -472,10 +472,10 @@ def segmentMaskInhomogBackground(im, param):
     for label in segm_deblend.labels:
         # take regions with large enough areas
         area = segm_deblend.get_area(label)
-        # print('label {}, with area {}'.format(label,area))
+        # printLog('label {}, with area {}'.format(label,area))
         if area < param.param["segmentedObjects"]["area_min"] or area > param.param["segmentedObjects"]["area_max"]:
             segm_deblend.remove_label(label=label)
-            # print('label {} removed'.format(label))
+            # printLog('label {} removed'.format(label))
 
     # relabel so masks numbers are consecutive
     segm_deblend.relabel_consecutive()
@@ -522,7 +522,7 @@ def segmentMaskStardist(im, param):
     axis_norm = (0, 1)  # normalize channels independently
 
     if n_channel > 1:
-        print(
+        printLog(
             "> Normalizing image channels %s." % ("jointly" if axis_norm is None or 2 in axis_norm else "independently")
         )
 
@@ -567,11 +567,8 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
     fileName_2d_aligned = dataFolder.outputFolders["alignImages"] + os.sep + rootFileName + "_2d_registered.npy"
 
-    log1.info("> searching for {}".format(fileName_2d_aligned))
-    if (
-        # (fileName in session1.data)
-        os.path.exists(fileName_2d_aligned)
-    ):  # file exists
+    printLog("> searching for {}".format(fileName_2d_aligned))
+    if os.path.exists(fileName_2d_aligned):  # file exists
 
         ROI = os.path.basename(fileName).split("_")[param.param["acquisition"]["positionROIinformation"]]
         label = param.param["acquisition"]["label"]
@@ -582,7 +579,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
         im = Im.data_2D
-        log1.info("> [{}] Loaded 2D registered file: {}".format(label, os.path.basename(fileName)))
+        printLog("> [{}] Loaded 2D registered file: {}".format(label, os.path.basename(fileName)))
 
         ##########################################
         #               Segments barcodes
@@ -594,7 +591,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
                 output, im1_bkg_substracted = segmentSourceInhomogBackground(im, param)
             else:
-                log1.info(
+                printLog(
                     "# segmentedObjects/background_method not specified in json file")
                 return Table()
 
@@ -638,7 +635,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
             elif param.param["segmentedObjects"]["background_method"] == "stardist":
                 output, labeled = segmentMaskStardist(im, param)
             else:
-                log1.info(
+                printLog(
                     "# segmentedObjects/background_method not specified in json file")
                 output = np.zeros(1)
                 return output
@@ -665,7 +662,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
 
         return output
     else:
-        log1.info(
+        printLog(
             "# 2D aligned file does not exist:{}\n{}\n{}".format(
                 fileName_2d_aligned,
                 fileName in session1.data.keys(),
@@ -682,7 +679,7 @@ def segmentMasks(param, log1, session1, fileName=None):
         "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
     )
     dataFolder = folders(param.param["rootFolder"])
-    log1.info("> folders read: {}".format(len(dataFolder.listFolders)))
+    printLog("> folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )
@@ -695,8 +692,8 @@ def segmentMasks(param, log1, session1, fileName=None):
 
         # generates lists of files to process
         param.files2Process(filesFolder)
-        log1.info("> Processing Folder: {}".format(currentFolder))
-        log1.info("> Files to Segment: {} \n".format(len(param.fileList2Process)))
+        printLog("> Processing Folder: {}".format(currentFolder))
+        printLog("> Files to Segment: {} \n".format(len(param.fileList2Process)))
 
         # fileName2ProcessList = [x for x in param.fileList2Process if fileName==None or (fileName!=None and os.path.basename(fileName)==os.path.basename(x))]
         label = param.param["acquisition"]["label"]
@@ -712,19 +709,18 @@ def segmentMasks(param, log1, session1, fileName=None):
                     fileName != None and os.path.basename(fileName) == os.path.basename(fileName2Process)
                 ):
                     if label != "fiducial":
-                        # print("x={}".format(fileName2Process))
                         futures.append(
                             client.submit(makesSegmentations, fileName2Process, param, log1, session1, dataFolder)
                         )
                         session1.add(fileName2Process, sessionName)
 
-            log1.info("Waiting for {} results to arrive".format(len(futures)))
+            printLog("Waiting for {} results to arrive".format(len(futures)))
 
             results = client.gather(futures)
 
             if label == "barcode":
                 # gathers results from different barcodes and ROIs
-                log1.info("Retrieving {} results from cluster".format(len(results)))
+                printLog("Retrieving {} results from cluster".format(len(results)))
                 detectedSpots = []
                 for result in results:
                     detectedSpots.append(len(result))
@@ -732,8 +728,8 @@ def segmentMasks(param, log1, session1, fileName=None):
 
                     # saves results together into a single Table
                     barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
-                print("$ File {} written to file.".format(outputFile))
-                print("$ Detected spots: {}".format(",".join([str(x) for x in detectedSpots])))
+                printLog("$ File {} written to file.".format(outputFile))
+                printLog("$ Detected spots: {}".format(",".join([str(x) for x in detectedSpots])))
 
         else:
 
@@ -750,7 +746,7 @@ def segmentMasks(param, log1, session1, fileName=None):
                         if label == "barcode":
                             barcodesCoordinates = vstack([barcodesCoordinates, output])
                             barcodesCoordinates.write(outputFile, format="ascii.ecsv", overwrite=True)
-                            log1.info("$ File {} written to file.".format(outputFile))
+                            printLog("$ File {} written to file.".format(outputFile))
 
                         session1.add(fileName2Process, sessionName)
 

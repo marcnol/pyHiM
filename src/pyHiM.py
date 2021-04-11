@@ -18,8 +18,9 @@ The main() will search for parameter files within the folder provided. All ope-e
 
 from datetime import datetime
 
-from fileProcessing.fileManagement import Parameters
+from fileProcessing.fileManagement import Parameters, printLog
 from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+import logging
 
 # to remove in a future version
 import warnings
@@ -41,15 +42,18 @@ if __name__ == "__main__":
     HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
     param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
     labels=param.param['labels']
-    print("$ labels to process: {}\n".format(labels))
+
+    printLog('$ Started logging to: {}'.format(HiM.log1.logFile))
+    printLog("$ labels to process: {}\n".format(labels))
 
     for label in labels:#range(len(HiM.labels2Process)):
 
         # sets parameters
         param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
-        HiM.log1.addSimpleText("--------------------------------------------------------------------------")
-        HiM.log1.addSimpleText(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
-        HiM.log1.addSimpleText("--------------------------------------------------------------------------")
+
+        printLog("--------------------------------------------------------------------------")
+        printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
+        printLog("--------------------------------------------------------------------------")
 
         param.param['parallel']=HiM.parallel
 
@@ -98,7 +102,7 @@ if __name__ == "__main__":
 
     # exits
     HiM.session1.save(HiM.log1)
-    HiM.log1.addSimpleText("\n===================={}====================\n".format("Normal termination"))
+    printLog("\n===================={}====================\n".format("Normal termination"))
 
     if runParameters["parallel"]:
         HiM.cluster.close()
@@ -106,4 +110,4 @@ if __name__ == "__main__":
 
     del HiM
 
-    print("Elapsed time: {}".format(datetime.now() - begin_time))
+    printLog("Elapsed time: {}".format(datetime.now() - begin_time))

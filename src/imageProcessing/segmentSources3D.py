@@ -47,7 +47,7 @@ from imageProcessing.imageProcessing import (
     reinterpolateZ,
 )
 from fileProcessing.fileManagement import folders, writeString2File, printDict,try_get_client
-from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder
+from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder, printLog
 
 from skimage import exposure
 
@@ -261,8 +261,8 @@ class segmentSources3D:
         outputTable = self.createsOutputTable()
 
         # - load  and preprocesses 3D fiducial file
-        print("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi,label))
-        print("$ File:{}".format(os.path.basename(fileName2Process)))
+        printLog("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi,label))
+        printLog("$ File:{}".format(os.path.basename(fileName2Process)))
         image3D0 = io.imread(fileName2Process).squeeze()
 
         # reinterpolates image in z if necessary
@@ -273,7 +273,7 @@ class segmentSources3D:
         zOffset = zRange[1][0]
         image3D = image3D0[zRange[1],:,:].copy()
 
-        print("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
         # preprocesses image by background substraction and level normalization
         image3D = preProcess3DImage(image3D,
@@ -286,7 +286,7 @@ class segmentSources3D:
             # uses existing shift calculated by alignImages
             try:
                 shift = self.dictShifts["ROI:" + roi][label]
-                print("> Applying existing XY shift...")
+                printLog("> Applying existing XY shift...")
             except KeyError:
                 shift = None
                 raise SystemExit(
@@ -295,11 +295,11 @@ class segmentSources3D:
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
-            # print("$ Applies shift = {:.2f}".format(shift))
-            print("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
+            # printLog("$ Applies shift = {:.2f}".format(shift))
+            printLog("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
             image3D_aligned = appliesXYshift3Dimages(image3D, shift,parallelExecution=self.innerParallelLoop)
         else:
-            print("$ Running reference fiducial cycle: no shift applied!")
+            printLog("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.,0.])
             image3D_aligned = image3D
 
@@ -329,12 +329,12 @@ class segmentSources3D:
             ) = self.getMaskProperties(segmentedImage3D, image3D_aligned,threshold = p["threshold_over_std"],nTolerance=p["brightest"])
 
         numberSources = len(peak)
-        print("$ Number of sources detected by image segmentation: {}".format(numberSources))
+        printLog("$ Number of sources detected by image segmentation: {}".format(numberSources))
 
         if numberSources >0:
-            print("> Refits spots using gaussian 3D fittings...")
+            printLog("> Refits spots using gaussian 3D fittings...")
 
-            print(" > Rescales image values after reinterpolation")
+            printLog(" > Rescales image values after reinterpolation")
             image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
 
 
@@ -346,7 +346,7 @@ class segmentSources3D:
                                           psf_z=p["psf_z"],
                                           psf_yx=p["psf_yx"])
 
-            print(" > Updating table and saving results")
+            printLog(" > Updating table and saving results")
             # updates table
             for i in range(spots_subpixel.shape[0]):
                 z,x,y = spots_subpixel[i,:]
@@ -426,33 +426,33 @@ class segmentSources3D:
 
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI]
-                # print(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
+                # printLog(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
                 Nfiles2Process=len(self.fileName2ProcessList)
-                print("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
-                print("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
+                printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
+                printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
                                 + ":" + str(self.param.decodesFileParts(os.path.basename(x))["cycle"]) for x in self.fileName2ProcessList])))
 
                 if client is None:
                     self.innerParallelLoop = True
 
                     for fileIndex, fileName2Process in enumerate(self.fileName2ProcessList): #self.param.fileList2Process):
-                        print("\n\n>>>Iteration: {}/{}<<<".format(fileIndex,Nfiles2Process))
+                        printLog("\n\n>>>Iteration: {}/{}<<<".format(fileIndex,Nfiles2Process))
 
                         outputTables.append(self.segmentSources3D_file(fileName2Process))
                 else:
                     self.innerParallelLoop = False
-                    print("> Aligning {} files using {} workers...".format(Nfiles2Process,len(client.scheduler_info()['workers'])))
+                    printLog("> Aligning {} files using {} workers...".format(Nfiles2Process,len(client.scheduler_info()['workers'])))
 
                     futures = [client.submit(self.segmentSources3D_file,
                                                      x) for x in self.fileName2ProcessList]
 
                     outputTables = client.gather(futures)
-                    print(" > Retrieving {} results from cluster".format(len(outputTables)))
+                    printLog(" > Retrieving {} results from cluster".format(len(outputTables)))
 
                 # Merges Tables for different cycles and appends results Table to that of previous ROI
                 outputTableGlobal = vstack([outputTableGlobal]+outputTables)
 
-        print("$ segmentSources3D procesing time: {}".format(datetime.now() - now))
+        printLog("$ segmentSources3D procesing time: {}".format(datetime.now() - now))
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
         outputTableGlobal.write(

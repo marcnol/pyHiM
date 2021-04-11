@@ -21,6 +21,7 @@ import re
 from warnings import warn
 import multiprocessing
 import numpy as np
+import logging
 
 from dask.distributed import Client, LocalCluster
 from dask.distributed import get_client
@@ -40,6 +41,30 @@ class log:
         self.parallel = parallel
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
+
+        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
+        formatter2 = logging.Formatter("%(message)s")
+
+        self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
+
+        logger = logging.getLogger()  # root logger - Good to get it only once.
+        logger.handlers = []
+        for hdlr in logger.handlers[:]:  # remove the existing file handlers
+            if isinstance(hdlr,logging.FileHandler):
+                logger.removeHandler(hdlr)
+
+        filehandler = logging.FileHandler(self.logFile, 'w')
+        ch = logging.StreamHandler()
+
+        filehandler.setLevel(logging.INFO)
+        # ch.setLevel(logging.WARNING)
+        logger.setLevel(logging.INFO)
+
+        logger.addHandler(ch)
+        logger.addHandler(filehandler)
+
+        filehandler.setFormatter(formatter1)
+        ch.setFormatter(formatter2)
 
     def eraseFile(self):
         # with open(self.fileName, 'w') as file:
@@ -73,6 +98,31 @@ class log:
     def addSimpleText(self, title):
         print("{}".format(title))
         writeString2File(self.fileName, title, "a")
+
+def printLog(message,status='INFO'):
+    """
+    Shows message to terminal and logs it to file
+
+    Parameters
+    ----------
+    message : str
+        message.
+    status : str, optional
+        either DEBUG, INFO or WARN. The default is 'INFO'.
+
+    Returns
+    -------
+    None.
+
+    """
+    # print(message)
+
+    if status=="INFO":
+        logging.info(message)
+    elif status=="WARN":
+        logging.warning(message)
+    elif status=="DEBUG":
+        logging.debug(message)
 
 
 class folders:

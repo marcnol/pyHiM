@@ -48,6 +48,7 @@ from photutils.segmentation import SegmentationImage
 from fileProcessing.fileManagement import (
     folders,
     writeString2File,
+    printLog,
 )
 
 from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms, calculateContactProbabilityMatrix
@@ -234,7 +235,7 @@ class cellID:
         fig.set_size_inches((20, 20))
 
         accuracy, x, y = [], [], []
-        print("> Plotting barcode alignments...")
+        printLog("> Plotting barcode alignments...")
         for i in trange(len(self.barcodeMapROI.groups[0])):
             barcodeID = "barcode:" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
             barcodeROI = "ROI:" + str(self.barcodeMapROI.groups[0]["ROI #"][i])
@@ -284,21 +285,21 @@ class cellID:
             flux_min = self.param.param["buildsPWDmatrix"][flux_key]
         else:
             flux_min = 0
-            print("# Flux min not found. Set to {}!".format(flux_min))
+            printLog("# Flux min not found. Set to {}!".format(flux_min))
 
         if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
             toleranceDrift = self.param.param["buildsPWDmatrix"]["toleranceDrift"]
         else:
             toleranceDrift = 1
-            print("# toleranceDrift not found. Set to {}!".format(toleranceDrift))
+            printLog("# toleranceDrift not found. Set to {}!".format(toleranceDrift))
 
         if "blockSize" in self.param.param["alignImages"]:
             blockSize = self.param.param["alignImages"]["blockSize"]
         else:
             blockSize = 256
-            print("# blockSize not found. Set to {}!".format(blockSize))
+            printLog("# blockSize not found. Set to {}!".format(blockSize))
 
-        print("\n$ ndims = {}\n$ Flux min = {} \n$ ToleranceDrift = {} px\n$ Reference barcode = {}".format(self.ndims,
+        printLog("\n$ ndims = {}\n$ Flux min = {} \n$ ToleranceDrift = {} px\n$ Reference barcode = {}".format(self.ndims,
                                                                                                     flux_min,
                                                                                                     toleranceDrift,
                                                                                                     self.param.param["alignImages"]["referenceFiducial"]))
@@ -309,7 +310,7 @@ class cellID:
 
         keepQualityAll, keepAlignmentAll, NbarcodesROI = [], [], 0
         # loops over barcode Table rows in a given ROI
-        print("> Aligning by masking...")
+        printLog("> Aligning by masking...")
         for i in trange(len(self.barcodeMapROI.groups[0])): # i is the index of the barcode in barcodeMapROI
             barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
             ROI = self.barcodeMapROI.groups[0]["ROI #"][i]
@@ -377,11 +378,11 @@ class cellID:
         # this list contains which barcodes are allocated to which masks
         self.NbarcodesinMask = NbarcodesinMask
 
-        print("$ Number of localizations passing quality test: {} / {}".format(sum(keepQualityAll), NbarcodesROI))
+        printLog("$ Number of localizations passing quality test: {} / {}".format(sum(keepQualityAll), NbarcodesROI))
 
-        print("$ Number of localizations passing alignment test: {} / {}".format(sum(keepAlignmentAll), NbarcodesROI))
+        printLog("$ Number of localizations passing alignment test: {} / {}".format(sum(keepAlignmentAll), NbarcodesROI))
 
-        print("$ Number of cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
+        printLog("$ Number of cells assigned: {} | discarded: {}".format(self.NcellsAssigned, self.NcellsUnAssigned))
 
     def searchLocalShift(self, ROI, CellID, barcode, zxy_uncorrected,toleranceDrift=1):
 
@@ -441,7 +442,7 @@ class cellID:
 
         # keeps uncorrected values if no match is found
         if not _foundMatch:
-            print("# Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
+            printLog("# Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
             zxy_corrected = zxy_uncorrected
             self.foundMatch.append(False)
         else:
@@ -482,7 +483,7 @@ class cellID:
 
         # keeps uncorrected values if no match is found
         if not _foundMatch:
-            print("# Did not find match for CellID #{} in ROI #{}".format(CellID, ROI))
+            printLog("# Did not find match for CellID #{} in ROI #{}".format(CellID, ROI))
             zxy_corrected = zxy_uncorrected
             self.foundMatch.append(False)
         else:
@@ -566,7 +567,7 @@ class cellID:
         self.initializeLists()
 
         # iterates over all cell masks in an ROI
-        print("> Building SC distance Tables")
+        printLog("> Building SC distance Tables")
         for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
 
@@ -588,13 +589,13 @@ class cellID:
                 self.barcodeCoordinates.append(R_nm)
                 self.cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
 
-        print(
+        printLog(
             "$ Local correction applied to {}/{} barcodes in ROI {}".format(
                 np.nonzero(self.foundMatch)[0].shape[0], len(self.foundMatch), group["ROI #"].data[0]
             )
         )
 
-        print("$ Coordinates dimensions: {}".format(self.ndims))
+        printLog("$ Coordinates dimensions: {}".format(self.ndims))
 
         SCdistanceTable = Table()
         SCdistanceTable["Cuid"] = self.cuid
@@ -628,7 +629,7 @@ class cellID:
         """
         # [ builds SCdistanceTable ]
         self.buildsSCdistanceTable()
-        print("$ Cells with barcodes found: {}".format(len(self.SCdistanceTable)))
+        printLog("$ Cells with barcodes found: {}".format(len(self.SCdistanceTable)))
 
         # [ builds SCmatrix ]
         numberMatrices = len(self.SCdistanceTable)  # z dimensions of SCmatrix
@@ -692,7 +693,7 @@ def calculatesNmatrix(SCmatrix):
 def loadsLocalAlignment(param,dataFolder):
 
     if "None" in param.param["alignImages"]["localAlignment"]:
-        print("\n\n$ localAlignment option set to {}".format(param.param["alignImages"]["localAlignment"]))
+        printLog("\n\n$ localAlignment option set to {}".format(param.param["alignImages"]["localAlignment"]))
         return False, Table()
     else:
         return _loadsLocalAlignment(dataFolder,param.param["alignImages"]["localAlignment"])
@@ -703,10 +704,10 @@ def _loadsLocalAlignment(dataFolder,mode):
     if os.path.exists(localAlignmentFileName):
         alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
         alignmentResultsTableRead = True
-        print("$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(localAlignmentFileName,mode))
-        print("$ Number of records: {}".format(len(alignmentResultsTable)))
+        printLog("$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(localAlignmentFileName,mode))
+        printLog("$ Number of records: {}".format(len(alignmentResultsTable)))
     else:
-        print("\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
+        printLog("\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
                 localAlignmentFileName
             )
         )
@@ -736,9 +737,9 @@ def _loadsLocalAlignment(dataFolder,mode):
 #     if os.path.exists(localAlignmentFileName):
 #         alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
 #         alignmentResultsTableRead = True
-#         print("LocalAlignment file loaded !\nWill correct coordinates in XY")
+#         printLog("LocalAlignment file loaded !\nWill correct coordinates in XY")
 #     else:
-#         print(
+#         printLog(
 #             "\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
 #                 localAlignmentFileName
 #             )
@@ -769,9 +770,9 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
     """
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
-        print("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
+        printLog("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
     else:
-        print("\n\n# ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
+        printLog("\n\n# ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
         sys.exit()
 
     return barcodeMap, ndims
@@ -974,7 +975,7 @@ def buildsPWDmatrix(
     # processes tables
     barcodeMapROI = barcodeMap.group_by("ROI #")
     numberROIs = len(barcodeMapROI.groups.keys)
-    print("\n$ ROIs detected: {}".format(numberROIs))
+    printLog("\n$ ROIs detected: {}".format(numberROIs))
 
     # loops over ROIs
     filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
@@ -983,9 +984,9 @@ def buildsPWDmatrix(
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
-        print("--------------------------------------------------------")
-        print("> Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
-        print("--------------------------------------------------------")
+        printLog("--------------------------------------------------------")
+        printLog("> Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
+        printLog("--------------------------------------------------------")
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
@@ -1022,7 +1023,7 @@ def buildsPWDmatrix(
                 # builds the single cell distance Matrix
                 cellROI.buildsdistanceMatrix("min")  # mean min last
 
-                print(
+                printLog(
                     "$ ROI: {}, N cells assigned: {} out of {}\n".format(
                         ROI, cellROI.NcellsAssigned - 1, cellROI.numberMasks
                     )
@@ -1048,21 +1049,21 @@ def buildsPWDmatrix(
             # Could not find a file with masks to assign. Report and continue with next ROI
             ###############################################################################
             else:
-                print(
+                printLog(
                     "# Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
                         nROI, fileNameBarcodeCoordinates
                     )
                 )
-                print("# File I was searching for: {}".format(fullFileNameROImasks))
-                print("# Debug: ")
+                printLog("# File I was searching for: {}".format(fullFileNameROImasks))
+                printLog("# Debug: ")
                 for file in filesinFolder:
                     if (
                         file.split("_")[-1].split(".")[0] == "ch00"
                         and "DAPI" in file.split("_")
                         and int(os.path.basename(file).split("_")[3]) == nROI
                     ):
-                        print("$ Hit found!")
-                    print(
+                        printLog("$ Hit found!")
+                    printLog(
                         "fileSplit:{}, DAPI in filename: {}, ROI: {}".format(
                             file.split("_")[-1].split(".")[0],
                             "DAPI" in os.path.basename(file).split("_"),
@@ -1095,7 +1096,7 @@ def buildsPWDmatrix(
                 localizationDimension,
             )
         else:
-            print("# Nothing to plot. Single cell matrix is empty. Number of cells: {}".format(SCmatrixCollated.shape[2]))
+            printLog("# Nothing to plot. Single cell matrix is empty. Number of cells: {}".format(SCmatrixCollated.shape[2]))
 
 def processesPWDmatrices(param, log1, session1):
     """
@@ -1119,21 +1120,21 @@ def processesPWDmatrices(param, log1, session1):
 
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
-    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.addSimpleText("$ folders read: {}".format(len(dataFolder.listFolders)))
+    printLog("\n===================={}====================\n".format(sessionName))
+    printLog("$ folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(log1.fileNameMD, "## {}\n".format(sessionName), "a")
     label = 'barcode'
 
     for currentFolder in dataFolder.listFolders:
         # filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
         dataFolder.createsFolders(currentFolder, param)
-        log1.addSimpleText("> Processing Folder: {}".format(currentFolder))
+        printLog("> Processing Folder: {}".format(currentFolder))
 
         fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
         if os.path.exists(fileNameBarcodeCoordinates):
             # 2D
             outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-            log1.addSimpleText("> 2D processing: {}".format(outputFileName))
+            printLog("> 2D processing: {}".format(outputFileName))
 
             if "pixelSizeXY" in param.param["acquisition"].keys():
                 pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
@@ -1154,7 +1155,7 @@ def processesPWDmatrices(param, log1, session1):
         fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
         if os.path.exists(fileNameBarcodeCoordinates):
             outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
-            log1.addSimpleText("> 3D processing: {}".format(outputFileName))
+            printLog("> 3D processing: {}".format(outputFileName))
 
             if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
                 pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]

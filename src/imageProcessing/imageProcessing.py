@@ -51,7 +51,7 @@ from photutils import detect_sources
 from photutils import deblend_sources
 from photutils import Background2D, MedianBackground
 
-from fileProcessing.fileManagement import try_get_client
+from fileProcessing.fileManagement import try_get_client, printLog
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -97,11 +97,7 @@ class Image:
         fileName = self.getImageFileName(masterFolder, tag) + ".npy"
 
         self.data_2D = np.load(fileName)
-        log.report(
-            "$ Loading from disk:{}".format(os.path.basename(fileName)), "info",
-        )
-
-
+        printLog("$ Loading from disk:{}".format(os.path.basename(fileName)))
 
     # max intensity projection using all z planes
     def maxIntensityProjection(self):
@@ -141,10 +137,10 @@ class Image:
 
     # Outputs image properties to command line
     def printImageProperties(self):
-        # print("Image Name={}".format(self.fileName))
-        self.log.report("$ Image Size={}".format(self.imageSize))
+        # printLog("Image Name={}".format(self.fileName))
+        printLog("$ Image Size={}".format(self.imageSize))
         # self.log.report("Stage position={}".format(self.stageCoordinates))
-        self.log.report("$ Focal plane={}".format(self.focusPlane))
+        printLog("$ Focal plane={}".format(self.focusPlane))
 
     # processes sum image in axial direction given range
     # @jit(nopython=True)
@@ -152,11 +148,11 @@ class Image:
 
         # find the correct range for the projection
         if self.param.param["zProject"]["zmax"] > self.imageSize[0]:
-            self.log.report("$ Setting z max to the last plane")
+            printLog("$ Setting z max to the last plane")
             self.param.param["zProject"]["zmax"] = self.imageSize[0]
 
         if self.param.param["zProject"]["mode"] == "automatic":
-            print("> Calculating planes...")
+            printLog("> Calculating planes...")
             zRange = calculate_zrange(self.data, self.param)
 
         elif self.param.param["zProject"]["mode"] == "full":
@@ -164,7 +160,7 @@ class Image:
             zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
 
         if self.param.param["zProject"]["mode"] == "laplacian":
-            print("Stacking using Laplacian variance...")
+            printLog("Stacking using Laplacian variance...")
             (
                 self.data_2D,
                 self.focalPlaneMatrix,
@@ -187,7 +183,7 @@ class Image:
             self.focusPlane = zRange[0]
             self.zRange = zRange[1]
 
-        self.log.report("> Processing zRange:{}".format(self.zRange))
+        printLog("> Processing zRange:{}".format(self.zRange))
 
     # displays image and shows it
     def imageShow(
@@ -284,14 +280,14 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.ampl"] = fitgauss[0][0]
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
-        # print("# Warning, too many iterations trying to fit 1D gaussian function")
+        # printLog("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
 
     if verbose:
         fig=plt.figure()
         ax = fig.add_subplot(1,1,1)
 
-        print("<<Fitting successful>>")
+        printLog("<<Fitting successful>>")
 
         ax.plot(x,y,'ko',label='data')
         ax.plot(x,gaussian(x,fitgauss[0][0],fitgauss[0][1],fitgauss[0][2]),linewidth=2, label='gaussian fit')
@@ -337,8 +333,8 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
 
 #     if fitResult.succeeded:
 #         if verbose:
-#             print("<<Fitting successful>>")
-#             # print(fitResult.format())
+#             printLog("<<Fitting successful>>")
+#             # printLog(fitResult.format())
 
 #             fig=plt.figure()
 #             ax = fig.add_subplot(1,1,1)
@@ -378,7 +374,7 @@ def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
 
     shiftMatrix=np.zeros((len(shiftMatrices),blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
     for _ax,m in enumerate(shiftMatrices):
-        # print("size={}".format(m.shape))
+        # printLog("size={}".format(m.shape))
         for i in range(numberBlocks):
             for j in range(numberBlocks):
                 shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
@@ -399,7 +395,7 @@ def projectsImage2D(img, zRange, mode):
         for i in zRange[1]:
             I_collapsed += img[i]
     else:
-        print("ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode))
+        printLog("ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode))
 
     return I_collapsed
 
@@ -452,10 +448,10 @@ def calculate_zrange(idata, parameters):
 
         try:
             fitgauss = spo.curve_fit(gaussian, axisZ, stdMatrix[axisZ[0] : axisZ[-1] + 1])
-            # print("Estimation of focal plane (px): ", int(fitgauss[0][1]))
+            # printLog("Estimation of focal plane (px): ", int(fitgauss[0][1]))
             focusPlane = int(fitgauss[0][1])
         except RuntimeError:
-            print("Warning, too many iterations")
+            printLog("Warning, too many iterations")
             focusPlane = ifocusPlane
 
     zmin = max(parameters.param["zProject"]["windowSecurity"], focusPlane - parameters.param["zProject"]["zwindows"],)
@@ -474,7 +470,7 @@ def find_transform(im_src, im_dst):
     try:
         _, warp = cv2.findTransformECC(im_src, im_dst, warp, cv2.MOTION_HOMOGRAPHY, criteria)
     except:
-        print("Warning: find transform failed. Set warp as identity")
+        printLog("Warning: find transform failed. Set warp as identity")
     return warp
 
 def variance_of_laplacian(image):
@@ -526,7 +522,7 @@ def reassembles3Dimage(client,futures,output_shape):
 
     """
     results = client.gather(futures)
-    print(" > Retrieving {} results from cluster".format(len(results)))
+    printLog(" > Retrieving {} results from cluster".format(len(results)))
 
     output = np.zeros(output_shape)
     for z, result in enumerate(results):
@@ -563,10 +559,10 @@ def preProcess3DImage(x,lower_threshold, higher_threshold, parallelExecution=Tru
     """
     image = exposure.rescale_intensity(x, out_range=(0, 1))
 
-    # print("Removing inhomogeneous background...")
+    # printLog("Removing inhomogeneous background...")
     image = _removesInhomogeneousBackground(image,parallelExecution=parallelExecution)
 
-    # print("Rescaling grey levels...")
+    # printLog("Rescaling grey levels...")
     image = imageAdjust(image, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0]
 
     return image
@@ -601,7 +597,7 @@ def imageAdjust(image, lower_threshold=0.3, higher_threshold=0.9999):
         higher cutoff used for thresholding.
 
     """
-    # print("> Rescaling grey levels...")
+    # printLog("> Rescaling grey levels...")
 
     # rescales image to [0,1]
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
@@ -709,7 +705,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
         background substracted 2D image.
 
     """
-    print("Removing inhomogeneous background from 2D image...")
+    printLog("Removing inhomogeneous background from 2D image...")
 
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
@@ -758,7 +754,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
     sigma_clip = SigmaClip(sigma=3)
     bkg_estimator = MedianBackground()
     if client is not None:
-        print("> Removing inhomogeneous background from {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        printLog("> Removing inhomogeneous background from {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
         imageList = [image3D[z, :, :] for z in range(numberPlanes)]
         # imageListScattered = client.scatter(imageList)
 
@@ -767,7 +763,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
                                     bkg_estimator=bkg_estimator) for img in imageList]
 
         results = client.gather(futures)
-        print(" > Retrieving {} results from cluster".format(len(results)))
+        printLog(" > Retrieving {} results from cluster".format(len(results)))
 
         for z, img, bkg in zip(range(numberPlanes),imageList,results):
             output[z, :, :] = img - bkg.background
@@ -775,7 +771,7 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
         # del imageListScattered
 
     else:
-        print("> Removing inhomogeneous background from {} planes using 1 worker...".format(numberPlanes))
+        printLog("> Removing inhomogeneous background from {} planes using 1 worker...".format(numberPlanes))
         Zrange=trange(numberPlanes)
         for z in Zrange:
             image2D = image3D[z, :, :]
@@ -812,12 +808,12 @@ def appliesXYshift3Dimages(image, shift,parallelExecution=True):
     numberPlanes = image.shape[0]
 
     if client is None:
-        print("> Shifting {} planes with 1 thread...".format(numberPlanes))
+        printLog("> Shifting {} planes with 1 thread...".format(numberPlanes))
         shift3D = np.zeros((3))
         shift3D[0], shift3D[1], shift3D[2] = 0, shift[0], shift[1]
         output = shiftImage(image, shift3D)
     else:
-        print("> Shifting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        printLog("> Shifting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
         imageListScattered = scatters3Dimage(client,image)
 
@@ -828,7 +824,7 @@ def appliesXYshift3Dimages(image, shift,parallelExecution=True):
         del futures
         del imageListScattered
 
-    print("$ Done shifting 3D image.")
+    printLog("$ Done shifting 3D image.")
 
     return output
 
@@ -1042,7 +1038,7 @@ def alignCV2(im1, im2, warp_mode):
         cc, warp_matrix = cv2.findTransformECC(im1, im2, warp_matrix, warp_mode, criteria)
     except cv2.error:
         cc = 0
-        # print('Warning: find transform failed. Set warp as identity')
+        # printLog('Warning: find transform failed. Set warp as identity')
 
     return cc, warp_matrix
 
@@ -1125,15 +1121,15 @@ def alignImagesByBlocks(
     I2_aligned_global = shiftImage(I2, shift)
     meanError_global = np.sum(np.sum(np.abs(I1 - I2_aligned_global), axis=1))
 
-    log1.info("Block alignment error: {}, global alignment error: {}".format(meanError, meanError_global))
+    printLog("Block alignment error: {}, global alignment error: {}".format(meanError, meanError_global))
 
     if np.sum(mask) < minNumberPollsters or meanError_global < meanError or np.max(stdShifts) > shiftErrorTolerance:
         meanShifts = meanShifts_global
         meanError = meanError_global
-        log1.info("Falling back to global registration")
+        printLog("Falling back to global registration")
 
-    log1.info("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))
-    log1.info(
+    printLog("*** Global XY shifts: {:.2f} px | {:.2f} px".format(meanShifts_global[0], meanShifts_global[1]))
+    printLog(
         "*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(
             meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]
         )
@@ -1188,7 +1184,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
         fwhm, focalPlane = np.nan, np.nan
 
     if verbose:
-        print("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
+        printLog("Focal plane found: {} with fwhm: {}".format(focalPlane,fwhm))
 
     return focalPlane, fwhm
 
@@ -1295,7 +1291,7 @@ def imReassemble(focalPlaneMatrix, block, window=0):
                 zmin = np.max((0, focus - round(window / 2)))
                 zmax = np.min((block[i, j].shape[0], focus + round(window / 2)))
                 zRange = (focus, range(zmin, zmax))
-                # print("zrange for ({},{})={}".format(i,j,zRange))
+                # printLog("zrange for ({},{})={}".format(i,j,zRange))
                 output[iSlice[0] : iSlice[-1] + 1, jSlice[0] : jSlice[-1] + 1] = projectsImage2D(
                     block[i, j][:, :, :], zRange, "MIP"
                 )
@@ -1366,7 +1362,7 @@ def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
         block representation of 3D image.
 
     """
-    print("> Reducing 3D image size by slicing around focal plane".format())
+    printLog("> Reducing 3D image size by slicing around focal plane".format())
     # breaks into subplanes, iterates over them and calculates the focalPlane in each subplane.
 
     focalPlaneMatrix, fwhm, block= calculatesFocusPerBlock(data, blockSizeXY=blockSizeXY)
@@ -1376,7 +1372,7 @@ def _reinterpolatesFocalPlane(data, blockSizeXY=256, window=10):
     focalPlane,_,_ = sigmaclip(focalPlanes2Process,high = 3, low=3)
     focusPlane = np.mean(focalPlane)
     if np.isnan(focusPlane):
-        print("# focusPlane detection failed. Using full stack.")
+        printLog("# focusPlane detection failed. Using full stack.")
         focusPlane = data.shape[0]//2
         zRange = focusPlane, range(0, data.shape[0])
     else:
@@ -1474,7 +1470,7 @@ def reinterpolateZ(image3D, Zrange,mode='remove'):
     elif 'remove' in mode:
         output = _removesZplanes(image3D, Zrange)
 
-    print("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
+    printLog("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
 
     return output
 
@@ -1560,7 +1556,7 @@ def _segments3DvolumesByThresholding(image3D,
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
     kernel.normalize()
 
-    print("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    printLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
     parallel = True
     if client is None:
@@ -1568,12 +1564,12 @@ def _segments3DvolumesByThresholding(image3D,
     else:
         if len(client.scheduler_info()['workers'])<1:
             parallel = False
-            print("# Failed getting workers. Report of scheduler:")
+            printLog("# Failed getting workers. Report of scheduler:")
             for key in client.scheduler_info().keys():
-                print("{}:{}".format(key, client.scheduler_info()[key]))
+                printLog("{}:{}".format(key, client.scheduler_info()[key]))
 
     if not parallel:
-        print("> Segmenting {} planes using 1 worker...".format(numberPlanes))
+        printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
 
         output = np.zeros(image3D.shape)
 
@@ -1594,7 +1590,7 @@ def _segments3DvolumesByThresholding(image3D,
 
     else:
 
-        print("> Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
+        printLog("> Segmenting {} planes using {} workers...".format(numberPlanes,len(client.scheduler_info()['workers'])))
 
         imageListScattered = scatters3Dimage(client,image3D)
 
@@ -1620,12 +1616,12 @@ def _segments3DvolumesByThresholding(image3D,
     if deblend3D:
         # Now we want to separate objects in 3D using watersheding
         binary=output>0
-        print(" > Constructing distance matrix from 3D binary mask...")
+        printLog(" > Constructing distance matrix from 3D binary mask...")
 
         distance = apply_parallel(ndi.distance_transform_edt, binary)
         # distance = ndi.distance_transform_edt(binary)
 
-        print(" > Deblending sources in 3D by watersheding...")
+        printLog(" > Deblending sources in 3D by watersheding...")
         coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
         mask = np.zeros(distance.shape, dtype=bool)
         mask[tuple(coords.T)] = True
@@ -1669,22 +1665,22 @@ def saveImage2Dcmd(image, fileName, log):
     if image.shape > (1, 1):
         np.save(fileName, image)
         # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')
-        log.report("$ Image saved to disk: {}".format(fileName + ".npy"), "info")
+        printLog("$ Image saved to disk: {}".format(fileName + ".npy"), "info")
     else:
-        log.report("# Warning, image is empty", "Warning")
+        printLog("# Warning, image is empty", "Warning")
 
 def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
     numPlanes = img.shape[0]
     blockSize = (numPlanes, blockSizeXY, blockSizeXY)
     blocks = view_as_blocks(img, block_shape=blockSize).squeeze()
-    print("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
+    printLog("\nDecomposing image into {} blocks".format(blocks.shape[0]*blocks.shape[1]))
 
     folder = fullFileName.split('.')[0]
     fileName = os.path.basename(fullFileName).split('.')[0]
 
     if not os.path.exists(folder):
         os.mkdir(folder)
-        print("Folder created: {}".format(folder))
+        printLog("Folder created: {}".format(folder))
 
     for i in trange(blocks.shape[0]):
         for j in range(blocks.shape[1]):
@@ -2012,6 +2008,6 @@ def annotate_heatmap(im, data=None, valfmt="{x:.1f}", textcolors=("black", "whit
             kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
-            # print(text)
+            # printLog(text)
 
     return texts

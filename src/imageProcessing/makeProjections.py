@@ -24,7 +24,7 @@ from dask.distributed import get_client, wait
 
 from imageProcessing.imageProcessing import Image
 
-from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import folders, writeString2File, printLog
 
 # =============================================================================
 # FUNCTIONS
@@ -39,10 +39,10 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])
         if param.param["zProject"]["display"]:
             Im.imageShow()
-        log1.info("# File already projected: {}".format(os.path.basename(fileName)))
+        printLog("# File already projected: {}".format(os.path.basename(fileName)))
     else:
 
-        log1.info("\n> Analysing file: {}".format(os.path.basename(fileName)))
+        printLog("\n> Analysing file: {}".format(os.path.basename(fileName)))
 
         # creates image object
         Im = Image(param, log1)
@@ -82,9 +82,9 @@ def makeProjections(param, log1, session1, fileName=None):
     sessionName = "makesProjections"
 
     # processes folders and files
-    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+    printLog("\n===================={}====================\n".format(sessionName))
     dataFolder = folders(param.param["rootFolder"])
-    log1.info("> Folders read: {}".format(len(dataFolder.listFolders)))
+    printLog("> Folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
         log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
@@ -95,8 +95,8 @@ def makeProjections(param, log1, session1, fileName=None):
 
         # generates lists of files to process
         param.files2Process(filesFolder)
-        log1.info("> Processing Folder: {}".format(currentFolder))
-        log1.info("> About to process {} files\n".format(len(param.fileList2Process)))
+        printLog("> Processing Folder: {}".format(currentFolder))
+        printLog("> About to process {} files\n".format(len(param.fileList2Process)))
 
         if param.param["parallel"]:
             threads = list()
@@ -115,7 +115,7 @@ def makeProjections(param, log1, session1, fileName=None):
                     for x in files2ProcessFiltered
                 ]
 
-                print("$ Waiting for {} threads to complete ".format(len(threads)))
+                printLog("$ Waiting for {} threads to complete ".format(len(threads)))
                 for index, thread in enumerate(threads):
                     wait(threads)
 

@@ -45,6 +45,7 @@ from fileProcessing.fileManagement import (
     saveJSON,
     loadJSON,
     RT2fileName,
+    printLog,
 )
 
 from astropy.table import Table
@@ -257,7 +258,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
     error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw), axis=1))
 
-    log1.addSimpleText(f"$ Detected subpixel offset (y, x): {shift} px")
+    printLog(f"$ Detected subpixel offset (y, x): {shift} px")
 
     # [displays and saves results]
 
@@ -328,7 +329,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
     # generates lists of files to process for currentFolder
     param.files2Process(filesFolder)
     log1.addSimpleText("> Processing Folder: {}".format(currentFolder))
-    log1.info("> About to process {} files\n".format(len(param.fileList2Process)))
+    printLog("> About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
         dataFolder.outputFiles["alignImages"],
         "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
@@ -338,7 +339,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
     # Finds and loads Reference fiducial information
     # positionROIinformation = param.param["acquisition"]["positionROIinformation"]
     referenceBarcode = param.param["alignImages"]["referenceFiducial"]
-    log1.info("$ Reference fiducial {}".format(referenceBarcode))
+    printLog("$ Reference fiducial {}".format(referenceBarcode))
 
     # retrieves the list of fiducial image files to be aligned
     fileNameReferenceList, ROIList = RT2fileName(param, referenceBarcode)
@@ -369,8 +370,8 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                 for x in param.fileList2Process
                 if (x not in fileNameReference) and param.decodesFileParts(os.path.basename(x))["roi"] == ROI
             ]
-            print("Found {} files in ROI: {}".format(len(fileName2ProcessList), ROI))
-            print(
+            printLog("Found {} files in ROI: {}".format(len(fileName2ProcessList), ROI))
+            printLog(
                 "[roi:cycle] {}".format(
                     "|".join(
                         [
@@ -402,14 +403,14 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
 
                 results = client.gather(futures)
 
-                log1.info("$ Retrieving {} results from cluster".format(len(results)))
+                printLog("$ Retrieving {} results from cluster".format(len(results)))
 
                 for result, label in zip(results, labels):
                     shift, tableEntry = result
                     dictShiftROI[label] = shift.tolist()
                     alignmentResultsTable.add_row(tableEntry)
                     session1.add(fileName2Process, sessionName)
-                    # print("Processed: {}".format(label))
+                    # printLog("Processed: {}".format(label))
             else:
                 # running in sequential mode
                 nFiles=len(param.fileList2Process)
@@ -418,7 +419,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                     # excludes the reference fiducial and processes files in the same ROI
                     label = os.path.basename(fileName2Process).split("_")[2]
                     roi = param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
-                    print("\n$ About to process file {} \ {}".format(iFile,nFiles))
+                    printLog("\n$ About to process file {} \ {}".format(iFile,nFiles))
 
                     if (fileName2Process not in fileNameReference) and roi == ROI:
                         if fileName == None or (
@@ -432,7 +433,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                             alignmentResultsTable.add_row(tableEntry)
                             session1.add(fileName2Process, sessionName)
                     elif (fileName2Process in fileNameReference):
-                        print("\n$ Skipping reference file: {} ".format(os.path.basename(fileName2Process)))
+                        printLog("\n$ Skipping reference file: {} ".format(os.path.basename(fileName2Process)))
             # accumulates shifst for this ROI into global dictionary
             dictShifts["ROI:" + ROI] = dictShiftROI
             del imReference
@@ -440,10 +441,10 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
         # saves dicShifts dictionary with shift results
         dictionaryFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
         saveJSON(dictionaryFileName, dictShifts)
-        log1.info("$ Saved alignment dictionary to {}".format(dictionaryFileName))
+        printLog("$ Saved alignment dictionary to {}".format(dictionaryFileName))
 
     else:
-        print(
+        printLog(
             "# Reference Barcode file does not exist: {}".format(referenceBarcode))
         raise ValueError
 
@@ -584,7 +585,7 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
     # currentFolder=dataFolder.listFolders[0] # only one folder processed so far...
     filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
     dataFolder.createsFolders(currentFolder, param)
-    log1.info("> Processing Folder: {}".format(currentFolder))
+    printLog("> Processing Folder: {}".format(currentFolder))
 
     # loads dicShifts with shifts for all ROIs and all labels
     dictFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"

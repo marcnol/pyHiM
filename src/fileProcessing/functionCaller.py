@@ -11,6 +11,8 @@ import os
 import argparse
 from datetime import datetime
 
+# import logging as log
+
 from dask.distributed import Client, LocalCluster, get_client, as_completed, fire_and_forget
 
 from fileProcessing.fileManagement import (
@@ -20,6 +22,7 @@ from fileProcessing.fileManagement import (
     session,
     printDict,
     retrieveNumberUniqueBarcodesRootFolder,
+    printLog,
 )
 
 from imageProcessing.alignImages import alignImages, appliesRegistrations
@@ -41,39 +44,29 @@ class HiMfunctionCaller:
 
         self.log1 = log(rootFolder=self.rootFolder, parallel=self.parallel)
 
-        # self.labels2Process = [
-        #     {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-        #     {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-        #     {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-        #     {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-        # ]
-
         self.session1 = session(self.rootFolder, self.sessionName)
 
     def initialize(self):
 
-        print("\n--------------------------------------------------------------------------")
+        printLog("\n--------------------------------------------------------------------------")
 
-        print("$ rootFolder: {}".format(self.rootFolder))
+        printLog("$ rootFolder: {}".format(self.rootFolder))
 
         begin_time = datetime.now()
 
         # setup logs
-        # log1 = log(rootFolder = self.rootFolder,parallel=self.parallel)
-        self.log1.addSimpleText(
-            "\n======================{}======================\n".format(self.sessionName)
-        )
+        printLog("\n======================{}======================\n".format(self.sessionName))
         if self.log1.fileNameMD == ".md":
             self.log1.fileNameMD = "HiM_report.md"
 
-        self.log1.addSimpleText("$ Hi-M analysis will be written tos: {}".format(self.log1.fileNameMD))
+        printLog("$ Hi-M analysis will be written tos: {}".format(self.log1.fileNameMD))
         writeString2File(
             self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
 
     def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
-            print("$ Requested {} threads".format(threadsRequested))
+            printLog("$ Requested {} threads".format(threadsRequested))
 
             daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
 
@@ -149,7 +142,7 @@ class HiMfunctionCaller:
             self.log1.report(
                 "Making 3D image segmentations for label: {}".format(label), "info"
             )
-            print(">>>>>>Label in functionCaller:{}".format(label))
+            printLog(">>>>>>Label in functionCaller:{}".format(label))
 
             _segmentSources3D = segmentSources3D(param, self.log1, self.session1, parallel=self.parallel)
             # if not self.parallel:
@@ -220,12 +213,9 @@ def HiM_parseArguments():
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
-    # parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
-    # parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
-
     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
+    printLog("\n--------------------------------------------------------------------------")
     runParameters = {}
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
@@ -233,9 +223,9 @@ def HiM_parseArguments():
         if "docker" in os.environ.keys():
             # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
             runParameters["rootFolder"] = "/data"
-            print("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
+            printLog("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
         else:
-            print("\n\n# HiMdata: NOT FOUND")
+            printLog("\n\n# HiMdata: NOT FOUND")
             runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
     if args.threads:
@@ -252,18 +242,8 @@ def HiM_parseArguments():
 
     for cmd in runParameters["cmd"]:
         if cmd not in availableCommands:
-            print("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableCommands))
+            printLog("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableCommands),status='WARN')
             raise SystemExit
-
-    # if args.localAlignment:
-    #     runParameters["localAlignment"] = args.localAlignment
-    # else:
-    #     runParameters["localAlignment"] = False
-
-    # if args.refit:
-    #     runParameters["refit"] = args.refit
-    # else:
-    #     runParameters["refit"] = False
 
     printDict(runParameters)
 
