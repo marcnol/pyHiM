@@ -1098,7 +1098,7 @@ def buildsPWDmatrix(
         else:
             printLog("# Nothing to plot. Single cell matrix is empty. Number of cells: {}".format(SCmatrixCollated.shape[2]))
 
-def processesPWDmatrices(param, log1, session1):
+def processesPWDmatrices(param, session1):
     """
     Function that assigns barcode localizations to DAPI masks and constructs single cell cummulative PWD matrix.
 
@@ -1122,7 +1122,7 @@ def processesPWDmatrices(param, log1, session1):
     dataFolder = folders(param.param["rootFolder"])
     printLog("\n===================={}====================\n".format(sessionName))
     printLog("$ folders read: {}".format(len(dataFolder.listFolders)))
-    writeString2File(log1.fileNameMD, "## {}\n".format(sessionName), "a")
+    writeString2File(param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
     label = 'barcode'
 
     for currentFolder in dataFolder.listFolders:
@@ -1148,7 +1148,13 @@ def processesPWDmatrices(param, log1, session1):
 
 
             buildsPWDmatrix(
-                param, currentFolder, fileNameBarcodeCoordinates, outputFileName, dataFolder, pixelSize, log1.fileNameMD,
+                param,
+                currentFolder,
+                fileNameBarcodeCoordinates,
+                outputFileName,
+                dataFolder,
+                pixelSize,
+                param.param["fileNameMD"],
             )
 
         # 3D
@@ -1182,11 +1188,11 @@ def processesPWDmatrices(param, log1, session1):
                 outputFileName,
                 dataFolder,
                 pixelSize,
-                log1.fileNameMD,
+                param.param["fileNameMD"],
                 ndims=3,
             )
 
         # loose ends
         session1.add(currentFolder, sessionName)
 
-        log1.report("HiM matrix in {} processed".format(currentFolder), "info")
+        printLog("HiM matrix in {} processed".format(currentFolder), "info")

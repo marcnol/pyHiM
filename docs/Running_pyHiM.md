@@ -861,7 +861,7 @@ Parameters to run this script will be read from the ```segmentedObjects``` field
 
 Use  ```"operation": "3D"``` to activate. To run both 2D and 3D barcode segmentations, then just use: ```"operation": "2D,3D"```.
 
-If you want to run this function exclusively, run *pyHiM* using the ```-C segmentSources3D``` argument and ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json*.
+If you want to exclusively run this function, run *pyHiM* using the ```-C segmentSources3D``` argument. The ```operation``` key has to be set as described in the previous paragraph.
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]

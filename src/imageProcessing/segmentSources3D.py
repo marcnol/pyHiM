@@ -60,11 +60,9 @@ from skimage.measure import regionprops
 # =============================================================================
 
 class segmentSources3D:
-    def __init__(self, param, log1, session1, parallel=False):
+    def __init__(self, param, session1, parallel=False):
         self.param = param
         self.session1 = session1
-        self.log1 = log1
-        # self.window = 3
         self.parallel = parallel
 
         self.p=dict()
@@ -403,11 +401,11 @@ class segmentSources3D:
         self.param.files2Process(filesFolder)
         self.ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         self.numberROIs = len(self.ROIList)
-        self.log1.info("$ Detected {} ROIs".format(self.numberROIs))
-        self.log1.info("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
+        printLog("$ Detected {} ROIs".format(self.numberROIs))
+        printLog("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
-        self.dictShifts, self.dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
+        self.dictShifts, self.dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder)
 
         # creates Table that will hold results
         outputTableGlobal = self.createsOutputTable()
@@ -474,10 +472,10 @@ class segmentSources3D:
         sessionName = "segmentSources3D"
 
         # processes folders and files
-        self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+        printLog("\n===================={}====================\n".format(sessionName))
         self.dataFolder = folders(self.param.param["rootFolder"])
-        self.log1.addSimpleText("$ folders read: {}".format(len(self.dataFolder.listFolders)))
-        writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
+        printLog("$ folders read: {}".format(len(self.dataFolder.listFolders)))
+        writeString2File(self.param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
 
         # creates output folders and filenames
         self.currentFolder = self.dataFolder.listFolders[0]
@@ -486,14 +484,13 @@ class segmentSources3D:
         self.label = self.param.param["acquisition"]["label"]
         self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"] + "_3D_" + self.label + ".dat"
 
-        self.log1.addSimpleText("> Processing Folder: {}".format(self.currentFolder))
-        self.log1.parallel = self.parallel
+        printLog("> Processing Folder: {}".format(self.currentFolder))
 
         self.segmentSources3DinFolder()
 
         self.session1.add(self.currentFolder, sessionName)
 
-        self.log1.report("$ segmentedObjects run in {} finished".format(self.currentFolder), "info")
+        printLog("$ segmentedObjects run in {} finished".format(self.currentFolder))
 
         return 0
 

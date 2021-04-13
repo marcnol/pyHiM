@@ -42,29 +42,29 @@ class log:
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
 
-        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
-        formatter2 = logging.Formatter("%(message)s")
+        # formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
+        # formatter2 = logging.Formatter("%(message)s")
 
-        self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
+        # self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
 
-        logger = logging.getLogger()  # root logger - Good to get it only once.
-        logger.handlers = []
-        for hdlr in logger.handlers[:]:  # remove the existing file handlers
-            if isinstance(hdlr,logging.FileHandler):
-                logger.removeHandler(hdlr)
+        # logger = logging.getLogger()  # root logger - Good to get it only once.
+        # logger.handlers = []
+        # for hdlr in logger.handlers[:]:  # remove the existing file handlers
+        #     if isinstance(hdlr,logging.FileHandler):
+        #         logger.removeHandler(hdlr)
 
-        filehandler = logging.FileHandler(self.logFile, 'w')
-        ch = logging.StreamHandler()
+        # filehandler = logging.FileHandler(self.logFile, 'w')
+        # ch = logging.StreamHandler()
 
-        filehandler.setLevel(logging.INFO)
-        # ch.setLevel(logging.WARNING)
-        logger.setLevel(logging.INFO)
+        # filehandler.setLevel(logging.INFO)
+        # # ch.setLevel(logging.WARNING)
+        # logger.setLevel(logging.INFO)
 
-        logger.addHandler(ch)
-        logger.addHandler(filehandler)
+        # logger.addHandler(ch)
+        # logger.addHandler(filehandler)
 
-        filehandler.setFormatter(formatter1)
-        ch.setFormatter(formatter2)
+        # filehandler.setFormatter(formatter1)
+        # ch.setFormatter(formatter2)
 
     def eraseFile(self):
         # with open(self.fileName, 'w') as file:
@@ -91,8 +91,6 @@ class log:
 
     # returns formatted line to be outputed
     def getFullString(self, text="", status="info"):
-        now = datetime.now()
-        # return "{}> {}".format(now.strftime("%d/%m/%Y %H:%M:%S"), text)
         return "{}".format(text)
 
     def addSimpleText(self, title):
@@ -766,23 +764,20 @@ def retrieveNumberROIsFolder(rootFolder, regExp, ext="tif"):
 
     return unique(ROIs)
 
-
-
-def loadsAlignmentDictionary(dataFolder, log1):
+def loadsAlignmentDictionary(dataFolder):
 
     dictFileName = os.path.splitext(dataFolder.outputFiles["dictShifts"])[0] + ".json"
 
     # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
     dictShifts = loadJSON(dictFileName)
     if len(dictShifts) == 0:
-        log1.report("File with dictionary not found!: {}".format(dictFileName))
+        printLog("File with dictionary not found!: {}".format(dictFileName))
         dictShiftsAvailable = False
     else:
-        log1.report("Dictionary File loaded: {}".format(dictFileName))
+        printLog("Dictionary File loaded: {}".format(dictFileName))
         dictShiftsAvailable = True
 
     return dictShifts, dictShiftsAvailable
-
 
 def try_get_client():
     try:

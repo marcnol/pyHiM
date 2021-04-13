@@ -10,8 +10,7 @@ Created on Tue Sep 22 15:26:00 2020
 import os
 import argparse
 from datetime import datetime
-
-# import logging as log
+import logging
 
 from dask.distributed import Client, LocalCluster, get_client, as_completed, fire_and_forget
 
@@ -56,13 +55,44 @@ class HiMfunctionCaller:
 
         # setup logs
         printLog("\n======================{}======================\n".format(self.sessionName))
-        if self.log1.fileNameMD == ".md":
-            self.log1.fileNameMD = "HiM_report.md"
+        now = datetime.now()
+        dateTime = now.strftime("%Y%m%d_%H%M%S")
+        fileNameRoot="HiM_analysis"
+        self.logFile = self.rootFolder + os.sep + fileNameRoot + dateTime + ".log"
+        self.fileNameMD = self.logFile.split(".")[0] + ".md"
 
-        printLog("$ Hi-M analysis will be written tos: {}".format(self.log1.fileNameMD))
+        # if self.fileNameMD == ".md":
+        #     self.fileNameMD = "HiM_report.md"
+
+        printLog("$ Hi-M analysis will be written tos: {}".format(self.fileNameMD))
         writeString2File(
-            self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
+            self.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
+
+        # setupLogger
+        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
+        formatter2 = logging.Formatter("%(message)s")
+
+        # self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
+
+        logger = logging.getLogger()  # root logger - Good to get it only once.
+        logger.handlers = []
+        for hdlr in logger.handlers[:]:  # remove the existing file handlers
+            if isinstance(hdlr,logging.FileHandler):
+                logger.removeHandler(hdlr)
+
+        filehandler = logging.FileHandler(self.logFile, 'w')
+        ch = logging.StreamHandler()
+
+        filehandler.setLevel(logging.INFO)
+        # ch.setLevel(logging.WARNING)
+        logger.setLevel(logging.INFO)
+
+        logger.addHandler(ch)
+        logger.addHandler(filehandler)
+
+        filehandler.setFormatter(formatter1)
+        ch.setFormatter(formatter2)
 
     def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
@@ -76,45 +106,40 @@ class HiMfunctionCaller:
 
     def makeProjections(self, param):
         if not self.runParameters["parallel"]:
-            makeProjections(param, self.log1, self.session1)
+            makeProjections(param, self.session1)
         else:
-            result = self.client.submit(makeProjections, param, self.log1, self.session1)
+            result = self.client.submit(makeProjections, param, self.session1)
             _ = self.client.gather(result)
 
     def alignImages(self, param, label):
         if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            self.log1.addSimpleText(
+            printLog(
                 "> Making image registrations for label: {}".format(label))
             if not self.parallel:
-                alignImages(param, self.log1, self.session1)
+                alignImages(param, self.session1)
             else:
-                result = self.client.submit(alignImages, param, self.log1, self.session1)
+                result = self.client.submit(alignImages, param, self.session1)
                 _ = self.client.gather(result)
 
     def alignImages3D(self, param, label):
         if label == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
-            self.log1.addSimpleText(
+            printLog(
                 "> Making 3D image registrations label: {}".format(label))
-            _drift3D = drift3D(param, self.log1, self.session1, parallel=self.parallel)
-            # if not self.parallel:
+            _drift3D = drift3D(param, self.session1, parallel=self.parallel)
             _drift3D.alignFiducials3D()
-            # else:
-            #     result = self.client.submit(_drift3D.alignFiducials3D)
-            #     _ = self.client.gather(result)
 
     def appliesRegistrations(self, param, label):
         if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            self.log1.addSimpleText(
+            printLog(
                 "> Applying image registrations for label: {}".format(label))
 
             if not self.parallel:
-                appliesRegistrations(param, self.log1, self.session1)
+                appliesRegistrations(param, self.session1)
             else:
-                result = self.client.submit(appliesRegistrations, param, self.log1, self.session1)
+                result = self.client.submit(appliesRegistrations, param, self.session1)
                 _ = self.client.gather(result)
 
     def segmentMasks(self, param, label):
-
         if "segmentedObjects" in param.param.keys():
             operation = param.param["segmentedObjects"]["operation"]
         else:
@@ -128,28 +153,21 @@ class HiMfunctionCaller:
             and "2D" in operation
         ):
             if not self.parallel:
-                segmentMasks(param, self.log1, self.session1)
+                segmentMasks(param, self.session1)
             else:
-                result = self.client.submit(segmentMasks, param, self.log1, self.session1)
+                result = self.client.submit(segmentMasks, param, self.session1)
                 _ = self.client.gather(result)
-
 
     def segmentSources3D(self, param, label):
         if (
             label == "barcode"
             and "3D" in param.param["segmentedObjects"]["operation"]
         ):
-            self.log1.report(
-                "Making 3D image segmentations for label: {}".format(label), "info"
-            )
+            printLog("Making 3D image segmentations for label: {}".format(label))
             printLog(">>>>>>Label in functionCaller:{}".format(label))
 
-            _segmentSources3D = segmentSources3D(param, self.log1, self.session1, parallel=self.parallel)
-            # if not self.parallel:
+            _segmentSources3D = segmentSources3D(param, self.session1, parallel=self.parallel)
             _segmentSources3D.segmentSources3D()
-            # else:
-            #     result = self.client.submit(_segmentSources3D.segmentSources3D)
-            #     _ = self.client.gather(result)
 
 
     def projectsBarcodes(self, param, label):
@@ -183,9 +201,9 @@ class HiMfunctionCaller:
     def processesPWDmatrices(self, param, label):
         if label == "DAPI":
             if not self.parallel:
-                processesPWDmatrices(param, self.log1, self.session1)
+                processesPWDmatrices(param, self.session1)
             else:
-                result = self.client.submit(processesPWDmatrices, param, self.log1, self.session1)
+                result = self.client.submit(processesPWDmatrices, param, self.session1)
                 a = self.client.gather(result)
 
     def getLabel(self, ilabel):

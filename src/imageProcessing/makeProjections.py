@@ -31,12 +31,12 @@ from fileProcessing.fileManagement import folders, writeString2File, printLog
 # =============================================================================
 
 
-def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
+def makes2DProjectionsFile(fileName, param, session1, dataFolder):
 
     if fileName in session1.data:
         # creates image object
-        Im = Image(param, log1)
-        Im.loadImage2D(fileName, log1, dataFolder.outputFolders["zProject"])
+        Im = Image(param)
+        Im.loadImage2D(fileName, dataFolder.outputFolders["zProject"])
         if param.param["zProject"]["display"]:
             Im.imageShow()
         printLog("# File already projected: {}".format(os.path.basename(fileName)))
@@ -45,7 +45,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
         printLog("\n> Analysing file: {}".format(os.path.basename(fileName)))
 
         # creates image object
-        Im = Image(param, log1)
+        Im = Image(param)
 
         # loads image
         Im.loadImage(fileName)
@@ -62,7 +62,7 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
             pngFileName = dataFolder.outputFolders["zProject"] + os.sep + os.path.basename(fileName) + "_2d.png"
             Im.imageShow(save=param.param["zProject"]["saveImage"], outputName=pngFileName)
             writeString2File(
-                log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
+                param.param['fileNameMD'], "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
             )  # initialises MD file
 
             if param.param["zProject"]["mode"] == "laplacian":
@@ -70,15 +70,15 @@ def makes2DProjectionsFile(fileName, param, log1, session1, dataFolder):
                 Im.imageShowWithValues(outputName)
 
                 writeString2File(
-                    log1.fileNameMD, "{}\n ![]({})\n".format(os.path.basename(fileName), outputName), "a",
+                    param.param['fileNameMD'], "{}\n ![]({})\n".format(os.path.basename(fileName), outputName), "a",
                 )  # initialises MD file
         # saves output 2d zProjection as matrix
-        Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])
+        Im.saveImage2D(dataFolder.outputFolders["zProject"])
 
         del Im
 
 
-def makeProjections(param, log1, session1, fileName=None):
+def makeProjections(param, session1, fileName=None):
     sessionName = "makesProjections"
 
     # processes folders and files
@@ -86,7 +86,7 @@ def makeProjections(param, log1, session1, fileName=None):
     dataFolder = folders(param.param["rootFolder"])
     printLog("> Folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
-        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+        param.param['fileNameMD'], "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )  # initialises MD file
 
     for currentFolder in dataFolder.listFolders:
@@ -111,7 +111,7 @@ def makeProjections(param, log1, session1, fileName=None):
                 # dask
                 client = get_client()
                 threads = [
-                    client.submit(makes2DProjectionsFile, x, param, log1, session1, dataFolder)
+                    client.submit(makes2DProjectionsFile, x, param, session1, dataFolder)
                     for x in files2ProcessFiltered
                 ]
 
@@ -126,7 +126,7 @@ def makeProjections(param, log1, session1, fileName=None):
                 if (fileName == None) or (
                     fileName != None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])
                 ):
-                    makes2DProjectionsFile(fileName2Process, param, log1, session1, dataFolder)
+                    makes2DProjectionsFile(fileName2Process, param, session1, dataFolder)
                     session1.add(fileName2Process, sessionName)
                 else:
                     pass

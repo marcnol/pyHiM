@@ -20,7 +20,7 @@ image cross correlation
 import numpy as np
 import matplotlib.pyplot as plt
 import os, glob
-from dask.distributed import Client, get_client
+from dask.distributed import get_client
 
 from skimage.registration._phase_cross_correlation import _upsampled_dft
 from skimage.exposure import match_histograms
@@ -36,7 +36,6 @@ from imageProcessing.imageProcessing import (
     align2ImagesCrossCorrelation,
     alignImagesByBlocks,
     plottingBlockALignmentResults,
-    applyCorrection,
 )
 
 from fileProcessing.fileManagement import (
@@ -60,7 +59,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 
 
-def displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose=False):
+def displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, fileNameMD, verbose=False):
     # hist1_before, hist1_after,hist2_before, hist2_after, , vebose=False, fileName='test'):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
     # fig= plt.figure(figsize=(6, 3))
@@ -75,7 +74,7 @@ def displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName,
     ax2.vlines(lower_threshold["Im2"], 0, I_histogram["Im2"][0][0].max(), colors="r")
     plt.savefig(outputFileName + "_intensityHist.png")
     writeString2File(
-        log1.fileNameMD,
+        fileNameMD,
         "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_intensityHist.png"),
         "a",
     )
@@ -125,7 +124,7 @@ def removesInhomogeneousBackground(im, param):
     return im1_bkg_substracted
 
 
-def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbose):
+def align2Files(fileName, imReference, param, session1, dataFolder, verbose):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
@@ -137,8 +136,6 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         Object type <Image> with image reference
     param : Parameters Class
         Running parameters
-    log1 : Log Class
-        Logging object
     session1 : session Class
         info for session update
     dataFolder : folders Class
@@ -160,8 +157,8 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     outputFileName = dataFolder.outputFolders["alignImages"] + os.sep + os.path.basename(fileName2).split(".")[0]
 
     # loads image
-    Im2 = Image(param, log1)
-    Im2.loadImage2D(fileName2, log1, dataFolder.outputFolders["zProject"])
+    Im2 = Image(param)
+    Im2.loadImage2D(fileName2, dataFolder.outputFolders["zProject"])
 
     # Normalises images
     image1_uncorrected = imReference.data_2D / imReference.data_2D.max()
@@ -212,7 +209,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         )
 
         # displays intensity histograms
-        displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, log1, verbose)
+        displaysEqualizationHistograms(I_histogram, lower_threshold, outputFileName, param.param["fileNameMD"],verbose)
 
     else:
         # [calculates block translations by cross-correlation and gets overall shift by polling]
@@ -231,7 +228,6 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
             image1_uncorrected,
             image2_uncorrected,
             blockSize,
-            log1,
             upsample_factor=upsample_factor,
             minNumberPollsters=4,
             tolerance=tolerance,
@@ -243,14 +239,14 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
         )
 
         writeString2File(
-            log1.fileNameMD,
+            param.param["fileNameMD"],
             "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_block_alignments.png"),
             "a",
         )
 
         # saves mask of valid regions with a correction within the tolerance
-        saveImage2Dcmd(rmsImage, outputFileName + "_rmsBlockMap", log1)
-        saveImage2Dcmd(relativeShifts, outputFileName + "_errorAlignmentBlockMap", log1)
+        saveImage2Dcmd(rmsImage, outputFileName + "_rmsBlockMap")
+        saveImage2Dcmd(relativeShifts, outputFileName + "_errorAlignmentBlockMap")
 
     image2_corrected_raw = shiftImage(image2_uncorrected, shift)
 
@@ -278,7 +274,7 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
 
     # reports image in MD file
     writeString2File(
-        log1.fileNameMD,
+        param.param["fileNameMD"],
         "{}\n ![]({})\n ![]({})\n".format(
             os.path.basename(outputFileName),
             outputFileName + "_overlay_corrected.png",
@@ -305,13 +301,13 @@ def align2Files(fileName, imReference, param, log1, session1, dataFolder, verbos
     ]
 
     # saves registered fiducial image
-    saveImage2Dcmd(image2_corrected_raw, outputFileName + "_2d_registered", log1)
+    saveImage2Dcmd(image2_corrected_raw, outputFileName + "_2d_registered")
 
     del Im2
     return shift, tableEntry
 
 
-def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1, fileName=None):
+def alignImagesInCurrentFolder(currentFolder, param, dataFolder, session1, fileName=None):
     # session
     sessionName = "alignImages"
     verbose = False
@@ -328,7 +324,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
 
     # generates lists of files to process for currentFolder
     param.files2Process(filesFolder)
-    log1.addSimpleText("> Processing Folder: {}".format(currentFolder))
+    printLog("> Processing Folder: {}".format(currentFolder))
     printLog("> About to process {} files\n".format(len(param.fileList2Process)))
     writeString2File(
         dataFolder.outputFiles["alignImages"],
@@ -351,16 +347,16 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
 
             # loads reference fiducial image for this ROI
             ROI = ROIList[fileNameReference]
-            imReference = Image(param, log1)
-            imReference.loadImage2D(fileNameReference, log1, dataFolder.outputFolders["zProject"])
-            log1.addSimpleText("> Loading reference Image {}".format(fileNameReference))
+            imReference = Image(param)
+            imReference.loadImage2D(fileNameReference, dataFolder.outputFolders["zProject"])
+            printLog("> Loading reference Image {}".format(fileNameReference))
 
             # saves reference 2D image of fiducial
             if not os.path.exists(
                 imReference.getImageFileName(dataFolder.outputFolders["alignImages"], tag="_2d_registered")
             ):
                 imReference.saveImage2D(
-                    log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
+                    dataFolder.outputFolders["alignImages"], tag="_2d_registered",
                 )
 
             dictShiftROI = {}
@@ -395,11 +391,11 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                     labels.append(os.path.basename(fileName2Process).split("_")[2])
                     futures.append(
                         client.submit(
-                            align2Files, fileName2Process, imReference, param, log1, session1, dataFolder, verbose
+                            align2Files, fileName2Process, imReference, param, session1, dataFolder, verbose
                         )
                     )
 
-                log1.addSimpleText("$ Waiting for {} results to arrive".format(len(futures)))
+                printLog("$ Waiting for {} results to arrive".format(len(futures)))
 
                 results = client.gather(futures)
 
@@ -427,7 +423,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
                         ):
                             # aligns files and saves results to database in dict format and to a Table
                             shift, tableEntry = align2Files(
-                                fileName2Process, imReference, param, log1, session1, dataFolder, verbose,
+                                fileName2Process, imReference, param, session1, dataFolder, verbose,
                             )
                             dictShiftROI[label] = shift.tolist()
                             alignmentResultsTable.add_row(tableEntry)
@@ -451,7 +447,7 @@ def alignImagesInCurrentFolder(currentFolder, param, dataFolder, log1, session1,
     return alignmentResultsTable
 
 
-def alignImages(param, log1, session1, fileName=None):
+def alignImages(param, session1, fileName=None):
     """
     From a given parameters class it aligns all the fiducial images
 
@@ -459,8 +455,6 @@ def alignImages(param, log1, session1, fileName=None):
     ----------
     param : Parameters class
         running parameters
-    log1 : log class
-        logs info to log file
     session1 : Session Class
         logs session information.
 
@@ -475,16 +469,16 @@ def alignImages(param, log1, session1, fileName=None):
     # processes folders and adds information to log files
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.setsFolders()
-    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.addSimpleText("folders read: {}".format(len(dataFolder.listFolders)))
+    printLog("\n===================={}====================\n".format(sessionName))
+    printLog("folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
-        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+        param.param["fileNameMD"], "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )
 
     # loops over folders
     for currentFolder in dataFolder.listFolders:
         alignmentResultsTable = alignImagesInCurrentFolder(
-            currentFolder, param, dataFolder, log1, session1, fileName
+            currentFolder, param, dataFolder, session1, fileName
         )
 
     # saves Table with all shifts
@@ -495,7 +489,7 @@ def alignImages(param, log1, session1, fileName=None):
     del dataFolder
 
 
-def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, session1, dictShifts):
+def appliesRegistrations2fileName(fileName2Process, param, dataFolder, session1, dictShifts):
     """
     Applies registration of fileName2Process
 
@@ -505,7 +499,6 @@ def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, ses
         file to apply registration to
     param : Parameters class
     dataFolder : dataFolder class
-    log1 : log class
     session1 : Session class
     dictShifts : Dictionnary
         contains the shifts to be applied to all ROIs
@@ -528,40 +521,40 @@ def appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, ses
         shiftArray = dictShifts["ROI:" + ROI][label]
     except KeyError:
         shiftArray = None
-        log1.addSimpleText("$ Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+        printLog("$ Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                 "ROI:" + ROI, label))
 
     if shiftArray != None:
 
         shift = np.asarray(shiftArray)
         # loads 2D image and applies registration
-        Im = Image(param, log1)
-        Im.loadImage2D(fileName2Process, log1, dataFolder.outputFolders["zProject"])
+        Im = Image(param)
+        Im.loadImage2D(fileName2Process, dataFolder.outputFolders["zProject"])
         Im.data_2D = shiftImage(Im.data_2D, shift)
-        log1.addSimpleText("$ Image registered using ROI:{}, label:{}, shift={}".format(ROI, label, shift))
+        printLog("$ Image registered using ROI:{}, label:{}, shift={}".format(ROI, label, shift))
 
         # saves registered 2D image
         Im.saveImage2D(
-            log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
+            dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
 
         # logs output
         session1.add(fileName2Process, sessionName)
     elif shiftArray == None and label == param.param["alignImages"]["referenceFiducial"]:
-        Im = Image(param, log1)
-        Im.loadImage2D(fileName2Process, log1, dataFolder.outputFolders["zProject"])
+        Im = Image(param)
+        Im.loadImage2D(fileName2Process, dataFolder.outputFolders["zProject"])
         Im.saveImage2D(
-            log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
+            dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
-        log1.addSimpleText(
+        printLog(
             "$ Saving image for referenceRT ROI:{}, label:{}".format(ROI, label))
 
     else:
-        log1.addSimpleText(
-            "# No shift found in dictionary for ROI:{}, label:{}".format(ROI, label))
+        printLog(
+            "# No shift found in dictionary for ROI:{}, label:{}".format(ROI, label),status='WARN')
 
 
-def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName=None):
+def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, session1, fileName=None):
     """
     applies registrations to all files in currentFolder
 
@@ -571,7 +564,6 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
         DESCRIPTION.
     param : Parameters class
     dataFolder : dataFolder class
-    log1 : log class
     session1 : Session class
     fileName : string, optional
         File to process. The default is None.
@@ -593,14 +585,14 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
     # dictFileName = dataFolder.outputFiles["dictShifts"] + ".json"
     dictShifts = loadJSON(dictFileName)
     if len(dictShifts) == 0:
-        log1.addSimpleText("# File with dictionary not found!: {}".format(dictFileName))
+        printLog("# File with dictionary not found!: {}".format(dictFileName))
     else:
-        log1.addSimpleText("$ Dictionary File loaded: {}".format(dictFileName))
+        printLog("$ Dictionary File loaded: {}".format(dictFileName))
 
     # generates lists of files to process
     param.files2Process(filesFolder)
     nFiles=len(param.fileList2Process)
-    log1.addSimpleText("\n$ About to process {} files\n".format(nFiles))
+    printLog("\n$ About to process {} files\n".format(nFiles))
 
     if len(param.fileList2Process) > 0:
         # loops over files in file list
@@ -608,11 +600,11 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, s
             if fileName == None or (
                 fileName != None and os.path.basename(fileName) == os.path.basename(fileName2Process)
             ):
-                log1.addSimpleText("\n$ About to process file {} \ {}".format(i,nFiles))
-                appliesRegistrations2fileName(fileName2Process, param, dataFolder, log1, session1, dictShifts)
+                printLog("\n$ About to process file {} \ {}".format(i,nFiles))
+                appliesRegistrations2fileName(fileName2Process, param, dataFolder, session1, dictShifts)
 
 
-def appliesRegistrations(param, log1, session1, fileName=None):
+def appliesRegistrations(param, session1, fileName=None):
     """This function will
     - load DAPI, RNA and barcode 2D projected images,
     - apply registrations
@@ -626,10 +618,10 @@ def appliesRegistrations(param, log1, session1, fileName=None):
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
     dataFolder.setsFolders()
-    log1.addSimpleText("\n===================={}====================\n".format(sessionName))
-    log1.addSimpleText("$ folders read: {}".format(len(dataFolder.listFolders)))
+    printLog("\n===================={}====================\n".format(sessionName))
+    printLog("$ folders read: {}".format(len(dataFolder.listFolders)))
 
     for currentFolder in dataFolder.listFolders:
-        appliesRegistrations2currentFolder(currentFolder, param, dataFolder, log1, session1, fileName)
+        appliesRegistrations2currentFolder(currentFolder, param, dataFolder, session1, fileName)
 
     del dataFolder

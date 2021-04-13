@@ -83,16 +83,16 @@ class Image:
         self.extension = fileName.split(".")[-1]
 
     # save 2D projection as numpy array
-    def saveImage2D(self, log, rootFolder, tag="_2d"):
+    def saveImage2D(self, rootFolder, tag="_2d"):
         fileName = self.getImageFileName(rootFolder, tag)
-        saveImage2Dcmd(self.data_2D, fileName, log)
+        saveImage2Dcmd(self.data_2D, fileName)
 
     def getImageFileName(self, rootFolder, tag):
         fileName = rootFolder + os.sep + os.path.basename(self.fileName).split(".")[0] + tag
         return fileName
 
     # read an image as a numpy array
-    def loadImage2D(self, fileName, log, masterFolder, tag="_2d"):
+    def loadImage2D(self, fileName, masterFolder, tag="_2d"):
         self.fileName = fileName
         fileName = self.getImageFileName(masterFolder, tag) + ".npy"
 
@@ -1057,7 +1057,6 @@ def alignImagesByBlocks(
     I1,
     I2,
     blockSize,
-    log1,
     upsample_factor=100,
     minNumberPollsters=4,
     tolerance=0.1,
@@ -1661,7 +1660,7 @@ def save2imagesRGB(I1, I2, outputFileName):
 
     plt.close(fig)
 
-def saveImage2Dcmd(image, fileName, log):
+def saveImage2Dcmd(image, fileName):
     if image.shape > (1, 1):
         np.save(fileName, image)
         # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(fileName)),'info')

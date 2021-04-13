@@ -77,7 +77,7 @@ def _showsImageSources(im, im1_bkg_substracted, x, y, flux, percent=99.5, vmin=0
     return fig
 
 
-def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
+def showsImageSources(im, im1_bkg_substracted, sources, fileNameMD,outputFileName):
 
     percent = 99.5
     flux = sources["flux"]
@@ -89,13 +89,13 @@ def showsImageSources(im, im1_bkg_substracted, log1, sources, outputFileName):
     plt.close(fig)
 
     writeString2File(
-        log1.fileNameMD,
+        fileNameMD,
         "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedSources.png"),
         "a",
     )
 
 
-def showsImageMasks(im, log1, segm_deblend, outputFileName):
+def showsImageMasks(im, segm_deblend, fileNameMD, outputFileName):
     from stardist import random_label_cmap
     lbl_cmap = random_label_cmap()
 
@@ -109,7 +109,7 @@ def showsImageMasks(im, log1, segm_deblend, outputFileName):
     plt.savefig(outputFileName + "_segmentedMasks.png")
     plt.close()
     writeString2File(
-        log1.fileNameMD,
+        fileNameMD,
         "{}\n ![]({})\n".format(os.path.basename(outputFileName), outputFileName + "_segmentedMasks.png"),
         "a",
     )
@@ -535,12 +535,6 @@ def segmentMaskStardist(im, param):
     img = normalize(im, 1, 99.8, axis=axis_norm)
     labeled, details = model.predict_instances(img)
 
-    # if True:
-    #     plt.figure(figsize=(8, 8))
-    #     plt.imshow(img, clim=(0, 1), cmap="gray")
-    #     plt.imshow(labeled, cmap=lbl_cmap, alpha=0.5)
-    #     plt.axis("off")
-
     # estimates masks and deblends
     segm = SegmentationImage(labeled)
 
@@ -561,7 +555,7 @@ def segmentMaskStardist(im, param):
     return segm_deblend, labeled
 
 
-def makesSegmentations(fileName, param, log1, session1, dataFolder):
+def makesSegmentations(fileName, param, session1, dataFolder):
 
     rootFileName = os.path.basename(fileName).split(".")[0]
     outputFileName = dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName
@@ -574,9 +568,9 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         label = param.param["acquisition"]["label"]
 
         # loading registered 2D projection
-        Im = Image(param, log1)
+        Im = Image(param)
         Im.loadImage2D(
-            fileName, log1, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
+            fileName, dataFolder.outputFolders["alignImages"], tag="_2d_registered",
         )
         im = Im.data_2D
         printLog("> [{}] Loaded 2D registered file: {}".format(label, os.path.basename(fileName)))
@@ -596,7 +590,7 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 return Table()
 
             # show results
-            showsImageSources(im, im1_bkg_substracted, log1, output, outputFileName)
+            showsImageSources(im, im1_bkg_substracted, output, param.param["fileNameMD"], outputFileName)
 
             # [ formats results Table for output by adding buid, barcodeID, CellID and ROI]
 
@@ -649,13 +643,13 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
                 outputFileNameStarDist = (
                     dataFolder.outputFolders["segmentedObjects"] + os.sep + rootFileName + "_stardist"
                 )
-                showsImageMasks(im, log1, labeled, outputFileNameStarDist)
+                showsImageMasks(im, labeled, param.param["fileNameMD"], outputFileNameStarDist)
 
-            showsImageMasks(im, log1, output, outputFileName)
+            showsImageMasks(im, output, param.param["fileNameMD"], outputFileName)
 
             # saves output 2d zProjection as matrix
-            Im.saveImage2D(log1, dataFolder.outputFolders["zProject"])
-            saveImage2Dcmd(output, outputFileName + "_Masks", log1)
+            Im.saveImage2D(dataFolder.outputFolders["zProject"])
+            saveImage2Dcmd(output, outputFileName + "_Masks")
         else:
             output = []
         del Im
@@ -671,17 +665,17 @@ def makesSegmentations(fileName, param, log1, session1, dataFolder):
         return []
 
 
-def segmentMasks(param, log1, session1, fileName=None):
+def segmentMasks(param, session1, fileName=None):
     sessionName = "segmentMasks"
 
     # processes folders and files
-    log1.addSimpleText(
+    printLog(
         "\n===================={}:{}====================\n".format(sessionName, param.param["acquisition"]["label"])
     )
     dataFolder = folders(param.param["rootFolder"])
     printLog("> folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(
-        log1.fileNameMD, "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+        param.param["fileNameMD"], "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
     )
     barcodesCoordinates = Table()
 
@@ -710,7 +704,7 @@ def segmentMasks(param, log1, session1, fileName=None):
                 ):
                     if label != "fiducial":
                         futures.append(
-                            client.submit(makesSegmentations, fileName2Process, param, log1, session1, dataFolder)
+                            client.submit(makesSegmentations, fileName2Process, param, session1, dataFolder)
                         )
                         session1.add(fileName2Process, sessionName)
 
@@ -740,7 +734,7 @@ def segmentMasks(param, log1, session1, fileName=None):
                     if label != "fiducial":
 
                         # running in sequential mode
-                        output = makesSegmentations(fileName2Process, param, log1, session1, dataFolder)
+                        output = makesSegmentations(fileName2Process, param, session1, dataFolder)
 
                         # gathers results from different barcodes and ROIs
                         if label == "barcode":

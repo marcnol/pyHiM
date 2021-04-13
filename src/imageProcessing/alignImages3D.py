@@ -56,7 +56,7 @@ from imageProcessing.imageProcessing import (
 )
 from fileProcessing.fileManagement import folders, writeString2File
 from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
-from fileProcessing.fileManagement import try_get_client, printDict
+from fileProcessing.fileManagement import try_get_client, printDict, printLog
 
 from skimage.registration import phase_cross_correlation
 
@@ -66,10 +66,9 @@ from skimage.registration import phase_cross_correlation
 # =============================================================================
 
 class drift3D:
-    def __init__(self, param, log1, session1, parallel=False):
+    def __init__(self, param, session1, parallel=False):
         self.param = param
         self.session1 = session1
-        self.log1 = log1
         self.window = 3
         self.parallel = parallel
         self.p = dict()
@@ -165,11 +164,11 @@ class drift3D:
                 print("> Applying existing XY shift...")
             except KeyError:
                 shift = None
-                self.log1.report(
+                printLog(
                     "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                         "ROI:" + roi, label
                     ),
-                    "ERROR",
+                    status = "WARN",
                 )
         if not self.dictShiftsAvailable or shift == None:
             # if dictionary of shift or key for this cycle was not found, then it will recalculate XY shift
@@ -279,7 +278,7 @@ class drift3D:
 
         self.p["fileNameReference"] = fileNameReference
         self.p["ROI"]= self.ROIList[fileNameReference]
-        self.log1.report("Loading reference 3D image: {}".format(fileNameReference))
+        printLog("Loading reference 3D image: {}".format(fileNameReference))
 
         self.imageRef0, self.imageRef= loadNpreprocessImage(fileNameReference,
                                                             self.p["zBinning"],
@@ -308,14 +307,14 @@ class drift3D:
         None.
 
         """
-        self.log1.info("\nReference Barcode: {}".format(self.p["referenceBarcode"]))
+        printLog("\nReference Barcode: {}".format(self.p["referenceBarcode"]))
         self.fileNameReferenceList, self.ROIList = RT2fileName(self.param, self.p["referenceBarcode"])
 
         self.numberROIs = len(self.ROIList)
-        self.log1.info("\nDetected {} ROIs".format(self.numberROIs))
+        printLog("\nDetected {} ROIs".format(self.numberROIs))
 
         # loads dicShifts with shifts for all ROIs and all labels
-        self.dictShifts, self.dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder, self.log1)
+        self.dictShifts, self.dictShiftsAvailable  = loadsAlignmentDictionary(self.dataFolder)
 
 
     def alignFiducials3DinFolder(self):
@@ -399,10 +398,10 @@ class drift3D:
         sessionName = "alignFiducials3D"
 
         # processes folders and files
-        self.log1.addSimpleText("\n===================={}====================\n".format(sessionName))
+        printLog("\n===================={}====================\n".format(sessionName))
         self.dataFolder = folders(self.param.param["rootFolder"])
-        self.log1.report("folders read: {}".format(len(self.dataFolder.listFolders)))
-        writeString2File(self.log1.fileNameMD, "## {}\n".format(sessionName), "a")
+        printLog("folders read: {}".format(len(self.dataFolder.listFolders)))
+        writeString2File(self.param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
 
         # creates output folders and filenames
         self.currentFolder = self.dataFolder.listFolders[0]
@@ -410,14 +409,14 @@ class drift3D:
         self.dataFolder.createsFolders(self.currentFolder, self.param)
         self.outputFileName = self.dataFolder.outputFiles["alignImages"]
 
-        self.log1.report("-------> Processing Folder: {}".format(self.currentFolder))
-        self.log1.parallel = self.parallel
+        printLog("-------> Processing Folder: {}".format(self.currentFolder))
+        # self.log1.parallel = self.parallel
 
         self.alignFiducials3DinFolder()
 
         self.session1.add(self.currentFolder, sessionName)
 
-        self.log1.report("HiM matrix in {} processed".format(self.currentFolder), "info")
+        printLog("HiM matrix in {} processed".format(self.currentFolder))
 
         return 0
 

@@ -43,7 +43,8 @@ if __name__ == "__main__":
     param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
     labels=param.param['labels']
 
-    printLog('$ Started logging to: {}'.format(HiM.log1.logFile))
+
+    printLog('$ Started logging to: {}'.format(HiM.logFile))
     printLog("$ labels to process: {}\n".format(labels))
 
     for label in labels:#range(len(HiM.labels2Process)):
@@ -56,6 +57,7 @@ if __name__ == "__main__":
         printLog("--------------------------------------------------------------------------")
 
         param.param['parallel']=HiM.parallel
+        param.param['fileNameMD']=HiM.fileNameMD
 
         # [projects 3D images in 2d]
         if "makeProjections" in runParameters["cmd"]:
