@@ -53,27 +53,27 @@ class HiMfunctionCaller:
 
         begin_time = datetime.now()
 
-        # setup logs
+        ##############
+        # setup markdown file
+        ##############
         printLog("\n======================{}======================\n".format(self.sessionName))
         now = datetime.now()
         dateTime = now.strftime("%Y%m%d_%H%M%S")
+
         fileNameRoot="HiM_analysis"
         self.logFile = self.rootFolder + os.sep + fileNameRoot + dateTime + ".log"
         self.fileNameMD = self.logFile.split(".")[0] + ".md"
-
-        # if self.fileNameMD == ".md":
-        #     self.fileNameMD = "HiM_report.md"
 
         printLog("$ Hi-M analysis will be written tos: {}".format(self.fileNameMD))
         writeString2File(
             self.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
 
+        ##############
         # setupLogger
+        ##############
         formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
         formatter2 = logging.Formatter("%(message)s")
-
-        # self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
 
         logger = logging.getLogger()  # root logger - Good to get it only once.
         logger.handlers = []
@@ -85,8 +85,8 @@ class HiMfunctionCaller:
         ch = logging.StreamHandler()
 
         filehandler.setLevel(logging.INFO)
-        # ch.setLevel(logging.WARNING)
         logger.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
 
         logger.addHandler(ch)
         logger.addHandler(filehandler)

@@ -284,7 +284,7 @@ class drift3D:
                                                             self.p["zBinning"],
                                                             self.p["lower_threshold"],
                                                             self.p["higher_threshold"],
-                                                            parallelExecution=True)
+                                                            parallelExecution=False)
 
         self.imageRef0 = np.sum(self.imageRef0, axis=0) # replaces 3D with a 2D projection
 

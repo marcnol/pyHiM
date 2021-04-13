@@ -113,7 +113,7 @@ def printLog(message,status='INFO'):
     None.
 
     """
-    # print(message)
+    print(message)
 
     if status=="INFO":
         logging.info(message)
