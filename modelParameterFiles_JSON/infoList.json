@@ -81,7 +81,14 @@
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
-		    }
+	    },
+            "zProject": {
+		        "mode": "full",
+		        "zProjectOption": "sum",
+		        "zmax": 59,
+		        "zmin": 1,
+		        "zwindows": 15
+        }
         },
         "RNA": {
             "order": 4
@@ -101,7 +108,14 @@
 		        "3dAP_flux_min": 2,
 		        "3dAP_window": 5,
 		        "threshold_over_std": 1.0
-		    }
+		    },
+            "zProject": {
+		        "mode": "full",
+		        "zProjectOption": "MIP",
+		        "zmax": 59,
+		        "zmin": 1,
+		        "zwindows": 15
+        }
         },
         "fiducial": {
             "order": 1
