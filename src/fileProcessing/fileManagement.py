@@ -42,33 +42,7 @@ class log:
         self.eraseFile()
         self.report("Starting to log to: {}".format(self.fileName))
 
-        # formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
-        # formatter2 = logging.Formatter("%(message)s")
-
-        # self.logFile= rootFolder + os.sep + fileNameRoot + "_report_" + dateTime + ".log"
-
-        # logger = logging.getLogger()  # root logger - Good to get it only once.
-        # logger.handlers = []
-        # for hdlr in logger.handlers[:]:  # remove the existing file handlers
-        #     if isinstance(hdlr,logging.FileHandler):
-        #         logger.removeHandler(hdlr)
-
-        # filehandler = logging.FileHandler(self.logFile, 'w')
-        # ch = logging.StreamHandler()
-
-        # filehandler.setLevel(logging.INFO)
-        # # ch.setLevel(logging.WARNING)
-        # logger.setLevel(logging.INFO)
-
-        # logger.addHandler(ch)
-        # logger.addHandler(filehandler)
-
-        # filehandler.setFormatter(formatter1)
-        # ch.setFormatter(formatter2)
-
     def eraseFile(self):
-        # with open(self.fileName, 'w') as file:
-        #    file.write("")
         writeString2File(self.fileName, "", "w")
 
     # cmd line output only
@@ -77,8 +51,6 @@ class log:
 
     # saves to logfile, no display to cmd line
     def save(self, text="", status="info"):
-        # with open(self.fileName, 'a') as file:
-        #    file.write(self.getFullString(text,status)+'\n')
         writeString2File(self.fileName, self.getFullString(text, status), "a")
 
     # thisfunction will output to cmd line and save in logfile
@@ -153,8 +125,6 @@ class folders:
         if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder + os.sep + "*." + extension)) > 0:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
-
-        # print("\n $ Detected {} folders with images".format(len(self.listFolders)))
 
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
@@ -757,10 +727,6 @@ def retrieveNumberROIsFolder(rootFolder, regExp, ext="tif"):
     files = glob.glob(rootFolder + os.sep + "*" + ext)
 
     ROIs = [re.search(regExp, x)['roi'] for x in files]
-    # ROIs= list()
-    # for x in files:
-    #     fileParts = re.search(regExp, x)
-    #     ROIs.append(fileParts["roi"])
 
     return unique(ROIs)
 
