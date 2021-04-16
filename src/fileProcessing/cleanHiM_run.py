@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    parser.add_argument("-P", "--fileParameters", help="parameters file, default: infoList_barcode.json")
+    parser.add_argument("-P", "--fileParameters", help="parameters file, default: infoList.json")
     parser.add_argument("-A", "--all", help="Deletes folders, MD files, LOG files", action="store_true")
 
     args = parser.parse_args()
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                 print("Error: {} : {}".format(f, e.strerror))
 
     # Removes directories produced during previous runs
-    param = Parameters(rootFolder, fileParameters)
+    param = Parameters(rootFolder=rootFolder, label='', fileName = fileParameters)
 
     dataFolder = folders(param.param["rootFolder"])
 
