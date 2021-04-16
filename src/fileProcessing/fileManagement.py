@@ -372,6 +372,19 @@ class Parameters:
         param["labels"] = orderedList
 
         # need to add keys not present in common dict
+        if len(labelSelected)>0:
+            printLog("Amending parameters for {}".format(labelSelected))
+            for key in param0["labels"][labelSelected].keys():
+                if key == 'order':
+                    pass
+                else:
+                    for key2 in param0["labels"][labelSelected][key]:
+                        # checks that key2 is in common
+                        if key in param0["common"].keys():
+                            param0["common"][key][key2] = param0["labels"][labelSelected][key][key2]
+                            printLog("Replaced <{}> in common dictionary".format(key2))
+                        else:
+                            printLog("Did not find key <{}> in common dictionary".format(key), status='WARN')
 
         # need to replace default keys by those in 'label' key
         param['acquisition']['label']=labelSelected

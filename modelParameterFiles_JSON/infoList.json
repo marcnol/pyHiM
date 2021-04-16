@@ -7,7 +7,6 @@
             "fiducialBarcode_channel": "ch00",
             "fiducialDAPI_channel": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-            "label": "DAPI",
             "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
             "pixelSizeZ": 0.25,
@@ -41,16 +40,7 @@
             "outputFile": "projectsBarcodes"
         },
         "segmentedObjects": {
-            "3DGaussianfitWindow": 3,
-            "3Dmethod": "zASTROPY",
-            "3dAP_brightest": 100,
-            "3dAP_distTolerance": 1,
-            "3dAP_flux_min": 2,
-            "3dAP_window": 5,
             "Segment3D": "overwrite",
-            "area_max": 500,
-            "area_min": 50,
-            "background_method": "inhomogeneous",
             "background_sigma": 3.0,
             "brightest": 1100,
             "centroidDifference_max": 5,
@@ -58,12 +48,9 @@
             "fwhm": 3.0,
             "intensity_max": 59,
             "intensity_min": 0,
-            "operation": "2D,3D",
             "outputFile": "segmentedObjects",
             "residual_max": 2.5,
             "sigma_max": 5,
-            "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-            "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
             "tesselation": true,
             "threshold_over_std": 1.0
         },
@@ -83,13 +70,38 @@
     },
     "labels": {
         "DAPI": {
-            "order": 3
+            "order": 3, 
+		    "segmentedObjects": {
+		        "area_max": 3000,
+		        "area_min": 150,
+		        "background_method": "inhomogeneous",
+		        "centroidDifference_max": 5,
+		        "operation": "2D,3D",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "tesselation": true,
+		        "threshold_over_std": 1.0
+		    }
         },
         "RNA": {
             "order": 4
         },
         "barcode": {
-            "order": 2
+            "order": 2,
+		    "segmentedObjects": {
+		        "area_max": 500,
+		        "area_min": 50,
+		        "background_method": "inhomogeneous",
+		        "centroidDifference_max": 5,
+		        "operation": "2D,3D",
+		        "3DGaussianfitWindow": 3,
+		        "3Dmethod": "zASTROPY",
+		        "3dAP_brightest": 100,
+		        "3dAP_distTolerance": 1,
+		        "3dAP_flux_min": 2,
+		        "3dAP_window": 5,
+		        "threshold_over_std": 1.0
+		    }
         },
         "fiducial": {
             "order": 1

@@ -43,7 +43,6 @@ if __name__ == "__main__":
     param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
     labels=param.param['labels']
 
-
     printLog('$ Started logging to: {}'.format(HiM.logFile))
     printLog("$ labels to process: {}\n".format(labels))
 
