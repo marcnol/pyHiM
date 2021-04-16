@@ -227,7 +227,7 @@ def HiM_parseArguments():
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
-                        appliesRegistrations alignImages3D segmentMasks,\
+                        appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
