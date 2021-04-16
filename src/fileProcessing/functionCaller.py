@@ -53,9 +53,9 @@ class HiMfunctionCaller:
 
         begin_time = datetime.now()
 
-        ##############
+        #####################
         # setup markdown file
-        ##############
+        #####################
         printLog("\n======================{}======================\n".format(self.sessionName))
         now = datetime.now()
         dateTime = now.strftime("%Y%m%d_%H%M%S")
@@ -72,15 +72,19 @@ class HiMfunctionCaller:
         ##############
         # setupLogger
         ##############
+
+        # creates output formats for terminal and log file
         formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
         formatter2 = logging.Formatter("%(message)s")
 
-        logger = logging.getLogger()  # root logger - Good to get it only once.
+        # clears up any existing logger
+        logger = logging.getLogger()
         logger.handlers = []
-        for hdlr in logger.handlers[:]:  # remove the existing file handlers
+        for hdlr in logger.handlers[:]:
             if isinstance(hdlr,logging.FileHandler):
                 logger.removeHandler(hdlr)
 
+        # initializes handlers for terminal and file
         filehandler = logging.FileHandler(self.logFile, 'w')
         ch = logging.StreamHandler()
 
@@ -146,8 +150,6 @@ class HiMfunctionCaller:
             operation = [""]
 
         if (
-            # self.getLabel(ilabel) != "fiducial"
-            # and param.param["acquisition"]["label"] != "fiducial"
             label != "RNA"
             and param.param["acquisition"]["label"] != "RNA"
             and "2D" in operation
@@ -179,7 +181,7 @@ class HiMfunctionCaller:
                 _ = self.client.gather(result)
 
     def refitBarcodes(self, param, label):
-        if label == "barcode":# and self.runParameters["refit"]:
+        if label == "barcode":
             fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
             if not self.parallel:
                 fittingSession.refitFolders()

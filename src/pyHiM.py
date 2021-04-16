@@ -7,10 +7,6 @@ Created on Sat Apr  4 09:11:01 2020
 
 This file contains routines to process Hi-M datasets
 
-The user needs to provide either a folder by argument or in the source code.
-The main() will search for parameter files within the folder provided. All ope-export PATH="$PATH:/home/marcnol/Repositories/pyHiM/"
--ration of the code will be defined in the parameters file.
-
 """
 # =============================================================================
 # IMPORTS
@@ -40,7 +36,7 @@ if __name__ == "__main__":
     session1, log1=HiM.session1, HiM.log1
 
     HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
-    param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
+    param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json')
     labels=param.param['labels']
 
     printLog('$ Started logging to: {}'.format(HiM.logFile))
@@ -49,7 +45,7 @@ if __name__ == "__main__":
     for label in labels:#range(len(HiM.labels2Process)):
 
         # sets parameters
-        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json') #HiM.labels2Process[ilabel]["parameterFile"])
+        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json')
 
         printLog("--------------------------------------------------------------------------")
         printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
