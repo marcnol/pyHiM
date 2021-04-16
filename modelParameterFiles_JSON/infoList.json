@@ -41,6 +41,7 @@
         },
         "segmentedObjects": {
             "Segment3D": "overwrite",
+	        "operation": "2D",
             "background_sigma": 3.0,
             "brightest": 1100,
             "centroidDifference_max": 5,
