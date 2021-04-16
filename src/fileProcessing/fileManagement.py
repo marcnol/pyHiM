@@ -373,7 +373,7 @@ class Parameters:
 
         # need to add keys not present in common dict
         if len(labelSelected)>0:
-            printLog("Amending parameters for {}".format(labelSelected))
+            numberKeysAmmended = 0
             for key in param0["labels"][labelSelected].keys():
                 if key == 'order':
                     pass
@@ -382,9 +382,11 @@ class Parameters:
                         # checks that key2 is in common
                         if key in param0["common"].keys():
                             param0["common"][key][key2] = param0["labels"][labelSelected][key][key2]
-                            printLog("Replaced <{}> in common dictionary".format(key2))
+                            # printLog("Replaced <{}> in common dictionary".format(key2))
+                            numberKeysAmmended+=1
                         else:
                             printLog("Did not find key <{}> in common dictionary".format(key), status='WARN')
+            printLog("Amended {} keys for {}".format(numberKeysAmmended, labelSelected))
 
         # need to replace default keys by those in 'label' key
         param['acquisition']['label']=labelSelected
