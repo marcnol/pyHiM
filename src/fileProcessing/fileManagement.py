@@ -306,6 +306,18 @@ class Parameters:
                 "3dAP_flux_min": 2,  # # threshold to keep a source detected in YZ
                 "3dAP_brightest": 100,  # number of sources sought in each YZ plane
                 "3dAP_distTolerance": 1,  # px dist to attribute a source localized in YZ to one localized in XY
+                "3D_threshold_over_std":5,
+                "3D_sigma":3,
+                "3D_boxSize":32,
+                "3D_filter_size":3,
+                "3D_area_min":10,
+                "3D_area_max":250,
+                "3D_nlevels":64,
+                "3D_contrast":0.001,
+                "3D_psf_z":500,
+                "3D_psf_yx":200,
+                "3D_lower_threshold":0.99,
+                "3D_higher_threshold":0.9999,
             },
             },
             "labels":{

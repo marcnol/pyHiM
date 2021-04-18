@@ -108,7 +108,19 @@
 		        "3dAP_distTolerance": 1,
 		        "3dAP_flux_min": 2,
 		        "3dAP_window": 5,
-		        "threshold_over_std": 1.0
+		        "threshold_over_std": 1.0,
+                "3D_threshold_over_std":5,
+                "3D_sigma":3,
+                "3D_boxSize":32,
+                "3D_filter_size":3,
+                "3D_area_min":10,
+                "3D_area_max":250,
+                "3D_nlevels":64,
+                "3D_contrast":0.001,
+                "3D_psf_z":500,
+                "3D_psf_yx":200,
+                "3D_lower_threshold":0.99,
+                "3D_higher_threshold":0.9999		        
 		    },
             "zProject": {
 		        "mode": "full",

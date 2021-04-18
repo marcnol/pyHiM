@@ -1518,7 +1518,7 @@ def _segments2DimageByThresholding(image2D,
                         segm_deblend.remove_label(label=label)
 
                 # relabel so masks numbers are consecutive
-                segm_deblend.relabel_consecutive()
+                # segm_deblend.relabel_consecutive()
 
             # image2DSegmented = segm.data % changed during recoding function
             image2DSegmented = segm_deblend.data

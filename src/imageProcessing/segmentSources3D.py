@@ -58,6 +58,14 @@ from skimage.measure import regionprops
 # =============================================================================
 # CLASSES
 # =============================================================================
+def getDictionaryValue(dictionary, key, default=""):
+
+    if key in dictionary.keys():
+        value = dictionary[key]
+    else:
+        value = default
+
+    return value
 
 class segmentSources3D:
     def __init__(self, param, session1, parallel=False):
@@ -72,41 +80,44 @@ class segmentSources3D:
         self.p["brightest"] = self.param.param["segmentedObjects"]["brightest"]
         self.p["blockSizeXY"] = self.param.param["zProject"]["blockSize"]
         self.p["regExp"] =self.param.param["acquisition"]["fileNameRegExp"]
-        if 'zBinning' in self.param.param['acquisition']:
-            self.p["zBinning"] = int(self.param.param['acquisition']['zBinning'])
-        else:
-            self.p["zBinning"] = 1
+        self.p["zBinning"] = getDictionaryValue(self.param.param['acquisition'], "zBinning", default=1)
+        # if 'zBinning' in self.param.param['acquisition']:
+        #     self.p["zBinning"] = int(self.param.param['acquisition']['zBinning'])
+        # else:
+            # self.p["zBinning"] = 1
         self.p["zWindow"] = int(self.param.param["zProject"]["zwindows"]/self.p["zBinning"])
         self.p["pixelSizeXY"] = self.param.param["acquisition"]["pixelSizeXY"]
         self.p["pixelSizeZ"] = self.param.param["acquisition"]["pixelSizeZ"]
 
-        if 'parallelizePlanes' in self.param.param['acquisition']:
-            self.p["parallelizePlanes"] = self.param.param['acquisition']['parallelizePlanes']
-        else:
-            self.p["parallelizePlanes"]= 1
+        self.p["parallelizePlanes"] = getDictionaryValue(self.param.param['acquisition'], "parallelizePlanes", default=1)
+        # if 'parallelizePlanes' in self.param.param['acquisition']:
+        #     self.p["parallelizePlanes"] = self.param.param['acquisition']['parallelizePlanes']
+        # else:
+        #     self.p["parallelizePlanes"]= 1
 
         # parameters used for 3D segmentation and deblending
-        self.p["threshold_over_std"]=1
-        self.p["sigma"]=3
-        self.p["boxSize"]=(32, 32)
-        self.p["filter_size"]=(3, 3)
-        self.p["area_min"]=3
-        self.p["area_max"]=1000
-        self.p["nlevels"]=64
-        self.p["contrast"]=0.001
+        self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
+        self.p["sigma"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_sigma", default=3)
+        boxSize=getDictionaryValue(self.param.param["segmentedObjects"], "3D_boxSize", default=32)
+        self.p["boxSize"] = (boxSize,boxSize)
+        filter_size = getDictionaryValue(self.param.param["segmentedObjects"], "3D_filter_size", default=3)
+        self.p["filter_size"]=(filter_size,filter_size)
+        self.p["area_min"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_area_min", default=3)
+        self.p["area_max"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_area_max", default=1000)
+        self.p["nlevels"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_nlevels", default=64)
+        self.p["contrast"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_contrast", default=0.001)
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
         self.p["voxel_size_yx"] = float(1000*self.p["pixelSizeXY"])
-        self.p["psf_z"] = 500
-        self.p["psf_yx"] = 200
+        self.p["psf_z"] = getDictionaryValue(self.param.param["segmentedObjects"], "3D_psf_z", default=500)
+        self.p["psf_yx"] = getDictionaryValue(self.param.param["segmentedObjects"], "3D_psf_yx", default=200)
 
         # range used for adjusting image levels during pre-precessing
-        self.p["lower_threshold"] = 0.9
-        self.p["higher_threshold"] = 0.9999
+        self.p["lower_threshold"] = getDictionaryValue(self.param.param["segmentedObjects"], "3D_lower_threshold", default=0.9)
+        self.p["higher_threshold"] = getDictionaryValue(self.param.param["segmentedObjects"], "3D_higher_threshold", default=0.9999)
 
         # parameters used for plotting 3D image
-
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
         self.p["windowDisplay"]= 10
 
