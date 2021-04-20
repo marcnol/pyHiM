@@ -47,6 +47,7 @@ from imageProcessing.imageProcessing import (
     reinterpolateZ,
     _plotsImage3D,
     _segments3Dvolumes_StarDist,
+    imageAdjust,
 )
 from fileProcessing.fileManagement import folders, writeString2File, printDict,try_get_client
 from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder, printLog
@@ -406,6 +407,9 @@ class segmentSources3D:
 
             # represents image in 3D with localizations
             figures=list()
+            if 'stardist' in p["3Dmethod"]:
+                image3D_aligned= imageAdjust(image3D_aligned, lower_threshold=p["lower_threshold"], higher_threshold=p["higher_threshold"])[0]
+
             figures.append([self.plotsImage3D(image3D_aligned,
                                               masks=segmentedImage3D,
                                               localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
