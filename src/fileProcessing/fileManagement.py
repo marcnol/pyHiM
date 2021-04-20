@@ -297,7 +297,7 @@ class Parameters:
                 "intensity_max": 59,  # max int to keeep object
                 "area_min": 50,  # min area to keeep object
                 "area_max": 500,  # max area to keeep object
-                "3Dmethod": "zASTROPY",  # options: zASTROPY, zProfile
+                "3Dmethod": "thresholding",  # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
                 "residual_max": 2.5,  # z-profile Fit: max residuals to keeep object
                 "sigma_max": 5,  # z-profile Fit: max sigma 3D fitting to keeep object
                 "centroidDifference_max": 5,  # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object

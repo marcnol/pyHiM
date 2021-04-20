@@ -51,6 +51,11 @@ from photutils import detect_sources
 from photutils import deblend_sources
 from photutils import Background2D, MedianBackground
 
+from csbdeep.utils import normalize
+from stardist.models import StarDist3D
+from csbdeep.utils.tf import limit_gpu_memory
+from csbdeep.data import PadAndCropResizer
+
 from fileProcessing.fileManagement import try_get_client, printLog
 import warnings
 
@@ -1534,6 +1539,46 @@ def _segments2DimageByThresholding(image2D,
         # returns empty image as no objects were detected
         return segm.data
 
+
+
+def _segments3Dvolumes_StarDist(image3D,
+                                area_min = 3,
+                                area_max=1000,
+                                nlevels=64,
+                                contrast=0.001,
+                                deblend3D = False,
+                                axis_norm=(0,1,2),
+                                model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/',
+                                model_name='stardist_18032021_single_loci'):
+
+    numberPlanes = image3D.shape[0]
+
+    printLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
+    printLog("> Loading model {} from {}...".format(model_name,model_dir))
+    os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
+    model = StarDist3D(None, name=model_name, basedir=model_dir)
+    limit_gpu_memory(None, allow_growth=True)
+
+    im = normalize(image3D,1,99.8,axis=axis_norm)
+    Lx = im.shape[1]
+
+    if Lx<1000:
+        labels, details = model.predict_instances(im)
+
+    else:
+        resizer = PadAndCropResizer()
+        axes = 'ZYX'
+
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, polys = model.predict_instances(im, n_tiles=(1,8,8))
+        labels = resizer.after(labels, axes)
+
+    mask = np.array(labels>0, dtype=int)
+
+    return mask, labels
+
 def _segments3DvolumesByThresholding(image3D,
                                      threshold_over_std=10,
                                      sigma = 3,
@@ -1798,7 +1843,7 @@ def display3D(image3D = None,labels=None, localizationsList = None,z=40, rangeXY
 
     return fig
 
-def display3D_assembled(images, localizations = None, plottingRange = None):
+def display3D_assembled(images, localizations = None, plottingRange = None, normalize=True, masks= None):
     wspace=25
 
     rows_XY, cols_XY = images[0].shape[1], images[0].shape[0]
@@ -1814,8 +1859,20 @@ def display3D_assembled(images, localizations = None, plottingRange = None):
     displayImage[rows_XY+wspace:rows_XY+rows_YZ+wspace,0:cols_XY] = images[2]
     displayImage[0:rows_XY,cols_XY+wspace:cols_XY+cols_ZX+wspace] = images[1].transpose()
 
-    norm = simple_norm(displayImage[:,:], "sqrt", percent=99)
-    axis.imshow(displayImage[:,:],cmap='Greys',alpha=1, norm=norm)
+    if normalize:
+        norm = simple_norm(displayImage[:,:], "sqrt", percent=99)
+        axis.imshow(displayImage[:,:],cmap='Greys',alpha=1, norm=norm)
+    else:
+        axis.imshow(displayImage[:,:],cmap='Greys',alpha=1
+                    )
+
+    if masks is not None:
+        displayMask = np.zeros((rows,cols))
+        displayMask[0:rows_XY,0:cols_XY] = masks[0]
+        displayMask[rows_XY+wspace:rows_XY+rows_YZ+wspace,0:cols_XY] = masks[2]
+        displayMask[0:rows_XY,cols_XY+wspace:cols_XY+cols_ZX+wspace] = masks[1].transpose()
+
+        axis.imshow(color.label2rgb(displayMask[:,:], bg_label=0),alpha=.3)
 
     colors = ['r','g','b','y']
     markersizes = [2,1,1,1,1]
@@ -1834,6 +1891,44 @@ def display3D_assembled(images, localizations = None, plottingRange = None):
     axis.axis("off")
 
     return fig
+
+
+def _plotsImage3D(image3D,localizations=None,masks=None,normalize=True,window = 3):
+    '''
+    makes list with XY, XZ and ZY projections and sends for plotting
+
+    Parameters
+    ----------
+    image3D : numpy array
+        image in 3D.
+    localizations : list
+        list of localizations to overlay onto 3D image. The default is None.
+
+    Returns
+    -------
+    figure handle
+
+    '''
+    img = image3D
+    center = int(img.shape[1]/2)
+
+    images = list()
+    images.append(np.sum(img,axis=0))
+    images.append(np.sum(img[:,:,center-window:center+window],axis=2))
+    images.append(np.sum(img[:,center-window:center+window,:],axis=1))
+
+    if masks is not None:
+        labels = list()
+        labels.append(np.max(masks,axis=0))
+        labels.append(np.max(masks[:,:,center-window:center+window],axis=2))
+        labels.append(np.max(masks[:,center-window:center+window,:],axis=1))
+    else:
+        labels=None
+
+    fig1 = display3D_assembled(images, localizations = localizations, masks = labels, plottingRange = [center,window],normalize=normalize)
+
+    return fig1
+
 
 def plots3DshiftMatrices(shiftMatrices, fontsize=8, log=False,valfmt="{x:.1f}"):
 

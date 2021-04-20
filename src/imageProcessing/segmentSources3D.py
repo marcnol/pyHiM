@@ -45,6 +45,8 @@ from imageProcessing.imageProcessing import (
     display3D_assembled,
     _reinterpolatesFocalPlane,
     reinterpolateZ,
+    _plotsImage3D,
+    _segments3Dvolumes_StarDist,
 )
 from fileProcessing.fileManagement import folders, writeString2File, printDict,try_get_client
 from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder, printLog
@@ -81,19 +83,15 @@ class segmentSources3D:
         self.p["blockSizeXY"] = self.param.param["zProject"]["blockSize"]
         self.p["regExp"] =self.param.param["acquisition"]["fileNameRegExp"]
         self.p["zBinning"] = getDictionaryValue(self.param.param['acquisition'], "zBinning", default=1)
-        # if 'zBinning' in self.param.param['acquisition']:
-        #     self.p["zBinning"] = int(self.param.param['acquisition']['zBinning'])
-        # else:
-            # self.p["zBinning"] = 1
+
         self.p["zWindow"] = int(self.param.param["zProject"]["zwindows"]/self.p["zBinning"])
         self.p["pixelSizeXY"] = self.param.param["acquisition"]["pixelSizeXY"]
         self.p["pixelSizeZ"] = self.param.param["acquisition"]["pixelSizeZ"]
 
         self.p["parallelizePlanes"] = getDictionaryValue(self.param.param['acquisition'], "parallelizePlanes", default=1)
-        # if 'parallelizePlanes' in self.param.param['acquisition']:
-        #     self.p["parallelizePlanes"] = self.param.param['acquisition']['parallelizePlanes']
-        # else:
-        #     self.p["parallelizePlanes"]= 1
+
+        # decides what segmentation method to use
+        self.p["3Dmethod"]=getDictionaryValue(self.param.param["segmentedObjects"], "3Dmethod", default='thresholding')
 
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
@@ -106,6 +104,10 @@ class segmentSources3D:
         self.p["area_max"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_area_max", default=1000)
         self.p["nlevels"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_nlevels", default=64)
         self.p["contrast"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_contrast", default=0.001)
+
+        # parameters for stardist
+        self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
+        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
@@ -230,7 +232,7 @@ class segmentSources3D:
             # creates output lists to return
             return [],[],[],[],[],[],[],[],[]
 
-    def plotsImage3D(self,image3D,localizations=None):
+    def plotsImage3D(self,image3D,localizations=None,masks=None,normalize=None):
         '''
         makes list with XY, XZ and ZY projections and sends for plotting
 
@@ -246,18 +248,48 @@ class segmentSources3D:
         figure handle
 
         '''
-        img = image3D
-        center = int(img.shape[1]/2)
         window = self.p["windowDisplay"]
+        fig1 = _plotsImage3D(image3D,localizations=localizations,masks=masks,normalize=normalize,window = window)
 
-        images = list()
-        images.append(np.sum(img,axis=0))
-        images.append(np.sum(img[:,:,center-window:center+window],axis=2))
-        images.append(np.sum(img[:,center-window:center+window,:],axis=1))
+        # img = image3D
+        # center = int(img.shape[1]/2)
 
-        fig1 = display3D_assembled(images, localizations = localizations, plottingRange = [center,window])
+        # images = list()
+        # images.append(np.sum(img,axis=0))
+        # images.append(np.sum(img[:,:,center-window:center+window],axis=2))
+        # images.append(np.sum(img[:,center-window:center+window,:],axis=1))
+
+        # fig1 = display3D_assembled(images, localizations = localizations, plottingRange = [center,window])
 
         return fig1
+
+    def _segments3Dvolumes(self,image3D_aligned):
+        p=self.p
+
+        if 'stardist' in p["3Dmethod"]:
+            binary, segmentedImage3D  = _segments3Dvolumes_StarDist(image3D_aligned,
+                                        area_min = p["area_min"],
+                                        area_max=p["area_max"],
+                                        nlevels=p["nlevels"],
+                                        contrast=p["contrast"],
+                                        deblend3D = True,
+                                        axis_norm=(0,1,2),
+                                        model_dir=p["stardist_basename"],
+                                        model_name=p["stardist_network"])
+        else:
+            binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_aligned,
+                                        threshold_over_std=p["threshold_over_std"],
+                                        sigma = p["sigma"],
+                                        boxSize=p["boxSize"],
+                                        filter_size=p["filter_size"],
+                                        area_min = p["area_min"],
+                                        area_max=p["area_max"],
+                                        nlevels=p["nlevels"],
+                                        contrast=p["contrast"],
+                                        deblend3D = True,
+                                        parallelExecution=self.innerParallelLoop)
+
+        return binary, segmentedImage3D
 
     def segmentSources3D_file(self,fileName2Process):
 
@@ -285,10 +317,11 @@ class segmentSources3D:
         printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
 
         # preprocesses image by background substraction and level normalization
-        image3D = preProcess3DImage(image3D,
-                                    p["lower_threshold"],
-                                    p["higher_threshold"],
-                                    parallelExecution=self.innerParallelLoop)
+        if 'stardist' not in p["3Dmethod"]:
+            image3D = preProcess3DImage(image3D,
+                                        p["lower_threshold"],
+                                        p["higher_threshold"],
+                                        parallelExecution=self.innerParallelLoop)
 
         # drifts 3D stack in XY
         if self.dictShiftsAvailable and  label != p["referenceBarcode"]:
@@ -307,25 +340,16 @@ class segmentSources3D:
             # printLog("$ Applies shift = {:.2f}".format(shift))
             printLog("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
             image3D_aligned = appliesXYshift3Dimages(image3D, shift,parallelExecution=self.innerParallelLoop)
-            image3D_raw_aligned = appliesXYshift3Dimages(image3D0, shift,parallelExecution=self.innerParallelLoop)
+            # image3D_raw_aligned = appliesXYshift3Dimages(image3D0, shift,parallelExecution=self.innerParallelLoop)
         else:
             printLog("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.,0.])
             image3D_aligned = image3D
-            image3D_raw_aligned  = image3D0
+            # image3D_raw_aligned  = image3D0
 
         # segments 3D volumes
-        binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_aligned,
-                                                                    threshold_over_std=p["threshold_over_std"],
-                                                                    sigma = p["sigma"],
-                                                                    boxSize=p["boxSize"],
-                                                                    filter_size=p["filter_size"],
-                                                                    area_min = p["area_min"],
-                                                                    area_max=p["area_max"],
-                                                                    nlevels=p["nlevels"],
-                                                                    contrast=p["contrast"],
-                                                                    deblend3D = True,
-                                                                    parallelExecution=self.innerParallelLoop)
+        binary, segmentedImage3D  = self._segments3Dvolumes(image3D_aligned)
+
         # gets centroids and converts to spot int64 NPY array
         (
             spots,
@@ -346,24 +370,15 @@ class segmentSources3D:
             printLog("> Refits spots using gaussian 3D fittings...")
 
             printLog(" > Rescales image values after reinterpolation")
-            image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative backgrounds
-
+            image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative intensity levels
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-
-            spots_subpixel = fit_subpixel(image3D_raw_aligned,
+            spots_subpixel = fit_subpixel(image3D_aligned,
                                           spots,
                                           voxel_size_z=p["voxel_size_z"],
                                           voxel_size_yx=p["voxel_size_yx"],
                                           psf_z=p["psf_z"],
                                           psf_yx=p["psf_yx"])
-
-            # spots_subpixel = fit_subpixel(image3D_aligned,
-            #                               spots,
-            #                               voxel_size_z=p["voxel_size_z"],
-            #                               voxel_size_yx=p["voxel_size_yx"],
-            #                               psf_z=p["psf_z"],
-            #                               psf_yx=p["psf_yx"])
 
 
             printLog(" > Updating table and saving results")
@@ -391,7 +406,9 @@ class segmentSources3D:
 
             # represents image in 3D with localizations
             figures=list()
-            figures.append([self.plotsImage3D(image3D_aligned,localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
+            figures.append([self.plotsImage3D(image3D_aligned,
+                                              masks=segmentedImage3D,
+                                              localizations=[spots_subpixel,spots]),'_3DimageNlocalizations.png'])
 
             # saves figures
             outputFileNames = [self.dataFolder.outputFolders["segmentedObjects"]+os.sep+os.path.basename(fileName2Process)+x[1] for x in figures]
@@ -516,3 +533,6 @@ class segmentSources3D:
 
         return 0
 
+##########################################
+# FUNCTIONS
+##########################################

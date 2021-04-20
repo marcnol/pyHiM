@@ -54,6 +54,7 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
     return SCmatrix, nCells
 
 fileName="/home/marcnol/data/Embryo_debug_dataset/run_markus/buildsPWDmatrix_3D_HiMscMatrix.npy"
+fileName="/home/marcnol/data/Embryo_debug_dataset/run_markus_raw_3D/buildsPWDmatrix/buildsPWDmatrix_3D_HiMscMatrix.npy"
 
 shuffle = [0, 7, 1, 8, 2, 9, 10, 17, 11, 18, 12, 19, 13, 3, 14, 4, 15, 5, 16, 6]
 
