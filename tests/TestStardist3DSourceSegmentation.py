@@ -82,7 +82,7 @@ np.save(output,mask)
 labels = measure.label(mask)
 
 img2distplay=img.copy()
-img2distplay= imageAdjust(img2distplay, lower_threshold=0.99, higher_threshold=0.99999)[0]
+img2distplay= imageAdjust(img2distplay, lower_threshold=0.999, higher_threshold=0.99999)[0]
 
 fig = _plotsImage3D(img2distplay,normalize=True, masks=labels)
 
