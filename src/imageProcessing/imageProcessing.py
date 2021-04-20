@@ -1577,7 +1577,13 @@ def _segments3Dvolumes_StarDist(image3D,
 
     mask = np.array(labels>0, dtype=int)
 
-    return mask, labels
+    # Now we want to separate objects in 3D using watersheding
+    if deblend3D:
+        labeledImage = _deblend3Dsegmentation(mask)
+    else:
+        labeledImage = labels
+
+    return mask, labeledImage
 
 def _segments3DvolumesByThresholding(image3D,
                                      threshold_over_std=10,
@@ -1657,25 +1663,41 @@ def _segments3DvolumesByThresholding(image3D,
 
     labels = measure.label(output)
 
+    # Now we want to separate objects in 3D using watersheding
     if deblend3D:
-        # Now we want to separate objects in 3D using watersheding
-        binary=output>0
-        printLog(" > Constructing distance matrix from 3D binary mask...")
-
-        distance = apply_parallel(ndi.distance_transform_edt, binary)
-        # distance = ndi.distance_transform_edt(binary)
-
-        printLog(" > Deblending sources in 3D by watersheding...")
-        coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
-        mask = np.zeros(distance.shape, dtype=bool)
-        mask[tuple(coords.T)] = True
-        markers, _ = ndi.label(mask)
-
-        # labels = apply_parallel(watershed, -distance, extra_arguments=(markers,), extra_keywords={'mask': binary})
-        labels = watershed(-distance, markers, mask=binary)
+        labels = _deblend3Dsegmentation(output)
 
     return output, labels
 
+
+def _deblend3Dsegmentation(binary):
+    '''
+    Deblends objects in 3D using watersheding
+
+    Parameters
+    ----------
+    binary : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    '''
+
+    binary=binary>0
+    printLog(" > Constructing distance matrix from 3D binary mask...")
+
+    distance = apply_parallel(ndi.distance_transform_edt, binary)
+
+    printLog(" > Deblending sources in 3D by watersheding...")
+    coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers, _ = ndi.label(mask)
+
+    labels = watershed(-distance, markers, mask=binary)
+    return labels
 
 ########################################################
 # SAVING ROUTINES
