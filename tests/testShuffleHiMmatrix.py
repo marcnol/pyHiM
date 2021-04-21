@@ -54,15 +54,21 @@ def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelS
     return SCmatrix, nCells
 
 fileName="/home/marcnol/data/Embryo_debug_dataset/run_markus/buildsPWDmatrix_3D_HiMscMatrix.npy"
+<<<<<<< Updated upstream
 # fileName="/home/marcnol/data/Embryo_debug_dataset/run_markus_raw_3D/buildsPWDmatrix/buildsPWDmatrix_3D_HiMscMatrix.npy"
 fileName = '/home/marcnol/data/Embryo_debug_dataset/run_markus_raw_3D/buildsPWDmatrix/buildsPWDmatrix_3D_HiMscMatrix.npy'
+=======
+fileName="/home/marcnol/grey/users/marcnol/test_HiM/run_markus/buildsPWDmatrix/buildsPWDmatrix_3D_HiMscMatrix.npy"
+>>>>>>> Stashed changes
 
 shuffle = [0, 7, 1, 8, 2, 9, 10, 17, 11, 18, 12, 19, 13, 3, 14, 4, 15, 5, 16, 6]
 
 matrixSC =np.load(fileName)
 pixelSize = 0.1
-matrix,_ = calculateContactProbabilityMatrix(matrixSC, shuffle, pixelSize, threshold=0.25, norm="nCells")
+matrix,_ = calculateContactProbabilityMatrix(matrixSC, shuffle, pixelSize, threshold=0.35, norm="nCells")
+matrix= shuffleMatrix(matrix, shuffle)
+plt.imshow(matrix,cmap='coolwarm',vmax=.02)
 
-# matrix = np.nanmean(matrixSC,axis=2)
-matrix_shuffled = shuffleMatrix(matrix, shuffle)
-plt.imshow(matrix_shuffled,cmap='coolwarm',vmax=.01)
+matrixPWD = np.nanmean(matrixSC,axis=2)
+matrixPWD_shuffled= shuffleMatrix(matrixPWD, shuffle)
+# plt.imshow(matrixPWD_shuffled,cmap='coolwarm',vmax=2)
