@@ -633,7 +633,10 @@ class cellID:
 
         # [ builds SCmatrix ]
         numberMatrices = len(self.SCdistanceTable)  # z dimensions of SCmatrix
-        uniqueBarcodes = np.unique(self.barcodeMapROI["Barcode #"].data)
+
+        # uniqueBarcodes = np.unique(self.barcodeMapROI["Barcode #"].data)
+        uniqueBarcodes = self.uniqueBarcodes
+
         # number of unique Barcodes for xy dimensions of SCmatrix
         numberUniqueBarcodes = uniqueBarcodes.shape[0]
         SCmatrix = np.zeros((numberUniqueBarcodes, numberUniqueBarcodes, numberMatrices))
@@ -670,7 +673,7 @@ class cellID:
 
         self.SCmatrix = SCmatrix
         self.meanSCmatrix = np.nanmean(SCmatrix, axis=2)
-        self.uniqueBarcodes = uniqueBarcodes
+        # self.uniqueBarcodes = uniqueBarcodes
 
 
 # =============================================================================
@@ -766,16 +769,24 @@ def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
     barcodeMap : Table()
     localizationDimension : int
         either 2 or 3.
+    uniqueBarcodes: list
+        lis of unique barcodes read from barcodeMap
 
     """
     if os.path.exists(fileNameBarcodeCoordinates):
         barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
         printLog("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
+
+        uniqueBarcodes = np.unique(barcodeMap["Barcode #"].data)
+        numberUniqueBarcodes = uniqueBarcodes.shape[0]
+
+        printLog("Number Barcodes read from barcodeMap: {}".format(numberUniqueBarcodes))
+        printLog("Unique Barcodes detected: {}".format(uniqueBarcodes))
     else:
         printLog("\n\n# ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
         sys.exit()
 
-    return barcodeMap, ndims
+    return barcodeMap, ndims, uniqueBarcodes
 
 
 def buildsDictionaryErrorAlignmentMasks(param, dataFolder):
@@ -967,7 +978,7 @@ def buildsPWDmatrix(
     alignmentResultsTable, alignmentResultsTableRead = loadsLocalAlignment(param,dataFolder)
 
     # Loads coordinate Tables
-    barcodeMap, localizationDimension = loadsBarcodeMap(fileNameBarcodeCoordinates, ndims)
+    barcodeMap, localizationDimension, uniqueBarcodes = loadsBarcodeMap(fileNameBarcodeCoordinates, ndims)
 
     # Builds dictionnary with filenames of errorAlignmentBlockMasks for each ROI and each barcode
     dictErrorBlockMasks = buildsDictionaryErrorAlignmentMasks(param, dataFolder)
@@ -979,7 +990,8 @@ def buildsPWDmatrix(
 
     # loops over ROIs
     filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
-    SCmatrixCollated, uniqueBarcodes, processingOrder = [], [], 0
+    # SCmatrixCollated, uniqueBarcodes, processingOrder = [], [], 0
+    SCmatrixCollated, processingOrder = [], 0
 
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
@@ -1010,6 +1022,7 @@ def buildsPWDmatrix(
                 # Assigns barcodes to Masks for a given ROI
                 cellROI = cellID(param, dataFolder, barcodeMapSingleROI, Masks, ROI, ndims=localizationDimension)
                 cellROI.ndims, cellROI.nROI, cellROI.logNameMD, cellROI.pixelSize = ndims, nROI, logNameMD, pixelSize
+                cellROI.uniqueBarcodes = uniqueBarcodes
 
                 if alignmentResultsTableRead:
                     cellROI.alignmentResultsTable = alignmentResultsTable
@@ -1029,7 +1042,7 @@ def buildsPWDmatrix(
                     )
                 )
 
-                uniqueBarcodes = cellROI.uniqueBarcodes
+                # uniqueBarcodes = cellROI.uniqueBarcodes
 
                 # saves Table with results per ROI
                 cellROI.SCdistanceTable.write(
