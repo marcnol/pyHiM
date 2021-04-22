@@ -121,7 +121,7 @@
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
-		        "stardist_basename": "/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
 		        "stardist_network": "stardist_18032021_single_loci"
 		    },
             "zProject": {
