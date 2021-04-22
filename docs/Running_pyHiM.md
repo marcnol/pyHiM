@@ -861,7 +861,16 @@ Parameters to run this script will be read from the ```segmentedObjects``` field
 
 Use  ```"operation": "3D"``` to activate. To run both 2D and 3D barcode segmentations, then just use: ```"operation": "2D,3D"```.
 
-If you want to exclusively run this function, run *pyHiM* using the ```-C segmentSources3D``` argument. The ```operation``` key has to be set as described in the previous paragraph.
+To run using **image analysis processing**, set ```3Dmethod``` to ```thresholding```. Then make sure to revise parameters starting with ```3D_``` to fine tune detection. 
+
+To run using **stardist-3D**, set ```3Dmethod``` to ```stardist```. Remember to make sure the name of the neural network and its location are correct. The defaults are: 
+
+```sh
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
+"stardist_network": "stardist_18032021_single_loci"
+```
+
+If you want to exclusively run this function, run *pyHiM* using the ```-C segmentSources3D``` argument. The ```operation``` key has to be set as described above.
 
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
@@ -888,8 +897,6 @@ optional arguments:
 "operation": "overwrite",  *Options:* overwrite | skip
 "outputFile": "segmentedObjects",
 "background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
-"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
-"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
 "background_sigma": 3.0,  *Description:* used to remove inhomogenous background
 "threshold_over_std": 1.0,  *Description:* threshold used to detect sources
 "fwhm": 3.0,  *Description:* source size in pixels
@@ -907,6 +914,21 @@ optional arguments:
 "3dAP_flux_min": 2, # # threshold to keep a source detected in YZ
 "3dAP_brightest": 100, # number of sources sought in each YZ plane
 "3dAP_distTolerance": 1, # px dist to attribute a source localized in YZ to one localized in XY
+"3D_threshold_over_std":5,
+"3D_sigma":3,
+"3D_boxSize":32,
+"3D_filter_size":3,
+"3D_area_min":10,
+"3D_area_max":250,
+"3D_nlevels":64,
+"3D_contrast":0.001,
+"3D_psf_z":500,
+"3D_psf_yx":200,
+"3D_lower_threshold":0.99,
+"3D_higher_threshold":0.9999,
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
+"stardist_network": "stardist_18032021_single_loci"
+
 ```
 
 
@@ -942,6 +964,28 @@ Even more magnified:
 Typical XY projection of the central plane with weighted centroids color coded by **flux** (jet colormap). 
 
 ![image-20210316125217262](Running_pyHiM.assets/image-20210316125217262.png)
+
+**Examples using stardist-3D**
+
+Segmentations
+
+![scan_001_RT29_001_ROI_converted_decon_ch01.tif_3DimageNlocalizations](Running_pyHiM.assets/scan_001_RT29_001_ROI_converted_decon_ch01.tif_3DimageNlocalizations.png)
+
+zoom: xy
+
+![image-20210422152604574](Running_pyHiM.assets/image-20210422152604574.png)
+
+zoom: zx
+
+![image-20210422152645779](Running_pyHiM.assets/image-20210422152645779.png)
+
+**Final matrix**
+
+| image analysis 3D                                            | stardist 3D                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![buildsPWDmatrix_3D_HiMmatrix](Running_pyHiM.assets/buildsPWDmatrix_3D_HiMmatrix-1619098302939.png) | ![buildsPWDmatrix_3D_HiMmatrix](Running_pyHiM.assets/buildsPWDmatrix_3D_HiMmatrix.png) |
+
+
 
 
 
