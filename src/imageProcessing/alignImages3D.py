@@ -54,7 +54,7 @@ from imageProcessing.imageProcessing import (
     preProcess3DImage,
     reinterpolateZ,
 )
-from fileProcessing.fileManagement import folders, writeString2File
+from fileProcessing.fileManagement import folders, writeString2File, getDictionaryValue
 from fileProcessing.fileManagement import RT2fileName, loadsAlignmentDictionary
 from fileProcessing.fileManagement import try_get_client, printDict, printLog
 
@@ -72,10 +72,16 @@ class drift3D:
         self.window = 3
         self.parallel = parallel
         self.p = dict()
+        
         self.p["blockSizeXY"] = 128
         self.p["upsample_factor"]=100
         self.p["lower_threshold"] = 0.9
         self.p["higher_threshold"]=0.9999
+
+        self.p["blockSizeXY"]=getDictionaryValue(self.param.param["alignImages"], "blockSizeXY", default=128)
+        self.p["lower_threshold"]=getDictionaryValue(self.param.param["alignImages"], "3D_lower_threshold", default=0.9)
+        self.p["higher_threshold"]=getDictionaryValue(self.param.param["alignImages"], "3D_higher_threshold", default=0.9999)
+        
         self.p["axes2Plot"] = range(3)
         self.p["referenceBarcode"] = self.param.param["alignImages"]["referenceFiducial"]
 
