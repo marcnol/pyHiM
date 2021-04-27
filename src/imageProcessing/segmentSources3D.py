@@ -49,7 +49,7 @@ from imageProcessing.imageProcessing import (
     _segments3Dvolumes_StarDist,
     imageAdjust,
 )
-from fileProcessing.fileManagement import folders, writeString2File, printDict,try_get_client
+from fileProcessing.fileManagement import folders, writeString2File, printDict,try_get_client, getDictionaryValue
 from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumberROIsFolder, printLog
 
 from skimage import exposure
@@ -61,14 +61,6 @@ from skimage.measure import regionprops
 # =============================================================================
 # CLASSES
 # =============================================================================
-def getDictionaryValue(dictionary, key, default=""):
-
-    if key in dictionary.keys():
-        value = dictionary[key]
-    else:
-        value = default
-
-    return value
 
 class segmentSources3D:
     def __init__(self, param, session1, parallel=False):
