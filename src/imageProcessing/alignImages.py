@@ -45,6 +45,7 @@ from fileProcessing.fileManagement import (
     loadJSON,
     RT2fileName,
     printLog,
+    getDictionaryValue,
 )
 
 from astropy.table import Table
@@ -168,30 +169,36 @@ def align2Files(fileName, imReference, param, session1, dataFolder, verbose):
     image1_uncorrected = removesInhomogeneousBackground(image1_uncorrected, param)
     image2_uncorrected = removesInhomogeneousBackground(image2_uncorrected, param)
 
-    if "lower_threshold" in param.param["alignImages"].keys():
-        lower_threshold = param.param["alignImages"]["lower_threshold"]
-    else:
-        lower_threshold = 0.999
+    lower_threshold = getDictionaryValue(param.param["alignImages"], "lower_threshold", default=0.999)
+    higher_threshold = getDictionaryValue(param.param["alignImages"], "higher_threshold", default=0.9999999)
+    alignByBlock = getDictionaryValue(param.param["alignImages"], "alignByBlock", default=False)
+    tolerance = getDictionaryValue(param.param["alignImages"], "tolerance", default=0.1)
+    blockSize = getDictionaryValue(param.param["alignImages"], "blockSize", default=256)
 
-    if "higher_threshold" in param.param["alignImages"].keys():
-        higher_threshold = param.param["alignImages"]["higher_threshold"]
-    else:
-        higher_threshold = 0.9999999
+    # if "lower_threshold" in param.param["alignImages"].keys():
+    #     lower_threshold = param.param["alignImages"]["lower_threshold"]
+    # else:
+    #     lower_threshold = 0.999
 
-    if "alignByBlock" in param.param["alignImages"].keys():
-        alignByBlock = param.param["alignImages"]["alignByBlock"]
-    else:
-        alignByBlock = False
+    # if "higher_threshold" in param.param["alignImages"].keys():
+    #     higher_threshold = param.param["alignImages"]["higher_threshold"]
+    # else:
+    #     higher_threshold = 0.9999999
 
-    if "tolerance" in param.param["alignImages"].keys():
-        tolerance = param.param["alignImages"]["tolerance"]
-    else:
-        tolerance = 0.1
+    # if "alignByBlock" in param.param["alignImages"].keys():
+    #     alignByBlock = param.param["alignImages"]["alignByBlock"]
+    # else:
+    #     alignByBlock = False
 
-    if "blockSize" in param.param["alignImages"].keys():
-        blockSize = param.param["alignImages"]["blockSize"]
-    else:
-        blockSize = 256
+    # if "tolerance" in param.param["alignImages"].keys():
+    #     tolerance = param.param["alignImages"]["tolerance"]
+    # else:
+    #     tolerance = 0.1
+
+    # if "blockSize" in param.param["alignImages"].keys():
+    #     blockSize = param.param["alignImages"]["blockSize"]
+    # else:
+    #     blockSize = 256
 
     if not alignByBlock:
         # [calculates unique translation for the entire image using cross-correlation]
