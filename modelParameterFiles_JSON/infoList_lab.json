@@ -20,6 +20,8 @@
             "blockSize": 256,
             "folder": "alignImages",
             "higher_threshold": 0.9999999,
+            "3D_lower_threshold": 0.9,
+            "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
             "localShiftTolerance": 1,
             "lower_threshold": 0.999,

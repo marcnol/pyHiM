@@ -262,8 +262,10 @@ class Parameters:
                 "localAlignment": "block3D", # options: None, mask2D, block3D
                 "alignByBlock": True,  # alignByBlock True will perform block alignment
                 "tolerance": 0.1,  # Used in blockAlignment to determine the % of error tolerated
-                "lower_threshold": 0.999,  # lower threshold to adjust image intensity levels before xcorrelation
-                "higher_threshold": 0.9999999,  # higher threshold to adjust image intensity levels before xcorrelation
+                "lower_threshold": 0.999,  # lower threshold to adjust image intensity levels before xcorrelation for alignment in 2D
+                "higher_threshold": 0.9999999,  # higher threshold to adjust image intensity levels before xcorrelation for alignment in 2D
+                "3D_lower_threshold": 0.9, # lower threshold to adjust image intensity levels before xcorrelation for Alignment3D
+                "3D_higher_threshold": 0.9999,# higher threshold to adjust image intensity levels before xcorrelation for Alignment3D
                 "background_sigma": 3.0,  # used to remove inhom background
                 "localShiftTolerance": 1,
                 "blockSize": 256,
@@ -794,3 +796,12 @@ def printDict(dictionary):
         spacer= "\t"*(3-int(len(key)/8))
         print("\t{}{}{}".format(key,spacer,dictionary[key]))
     print("\n")
+    
+def getDictionaryValue(dictionary, key, default=""):
+
+    if key in dictionary.keys():
+        value = dictionary[key]
+    else:
+        value = default
+
+    return value
