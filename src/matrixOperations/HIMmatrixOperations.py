@@ -43,7 +43,7 @@ from fileProcessing.fileManagement import isnotebook
 
 class analysisHiMmatrix:
     """
-    this class is used for loading data processed by processHiMmatrix.py 
+    this class is used for loading data processed by processHiMmatrix.py
     Main use is to produce paper quality figures of HiM matrices, 3-way interaction matrices and HiM matrix ratios
     """
 
@@ -62,7 +62,7 @@ class analysisHiMmatrix:
 
         Returns
         -------
-        self.foldes2Load contains the parameters used for the processing of HiM matrices. 
+        self.foldes2Load contains the parameters used for the processing of HiM matrices.
         self.dataFiles dictionary containing the extensions needed to load data files
         self.data dictionary containing the datasets loaded
         """
@@ -464,7 +464,7 @@ def loadsSCdata(ListData, datasetName, p):
     -------
     SCmatrixCollated : list of np arrays nBarcodes x nBarcodes x nCells
         Cummulative SC PWD matrix.
-    uniqueBarcodes : list of np arrays 
+    uniqueBarcodes : list of np arrays
         containing the barcode identities for each matrix.
     buildsPWDmatrixCollated : list of Tables
         Tables with all the data for cells and barcodes used to produce SCmatrixCollated.
@@ -472,6 +472,11 @@ def loadsSCdata(ListData, datasetName, p):
     """
     # tags2process = list(ListData.keys())
     print("Dataset to load: {}\n\n".format(list(ListData.keys())[0]))
+
+    dimTag=""
+    if "d3" in p.keys():
+        if p["d3"]:
+            dimTag="_3D"
 
     SCmatrixCollated, uniqueBarcodes = [], []
     buildsPWDmatrixCollated, runName, SClabeledCollated = [], [], []
@@ -482,10 +487,10 @@ def loadsSCdata(ListData, datasetName, p):
 
         # [makes list of files with Tables to load]
         # tries to load files from newer version of proceesingPipeline.py
-        files2Process = glob.glob(rootFolder + "/buildsPWDmatrix_order*ROI*.ecsv")
+        files2Process = glob.glob(rootFolder + "/buildsPWDmatrix" + dimTag + "_order*ROI*.ecsv")
         if len(files2Process) == 0:
             # it resorts to old format
-            files2Process = glob.glob(rootFolder + "/buildsPWDmatrix_*ROI*.ecsv")
+            files2Process = glob.glob(rootFolder + "/buildsPWDmatrix" + dimTag + "_*ROI*.ecsv")
         else:
             print("Found {} ECSV files in {}".format(len(files2Process), rootFolder))
 
@@ -566,8 +571,8 @@ def loadsSCdata(ListData, datasetName, p):
             SClabeledCollated.append(SClabeled)
 
             # [loads and accumulates barcodes and scHiM matrix]
-            fileNamMatrix = rootFolder + os.sep + "buildsPWDmatrix_HiMscMatrix.npy"
-            fileNameBarcodes = rootFolder + os.sep + "buildsPWDmatrix_uniqueBarcodes.ecsv"
+            fileNamMatrix = rootFolder + os.sep + "buildsPWDmatrix" + dimTag + "_HiMscMatrix.npy"
+            fileNameBarcodes = rootFolder + os.sep + "buildsPWDmatrix" + dimTag + "_uniqueBarcodes.ecsv"
 
             if os.path.exists(fileNamMatrix):
                 SCmatrix1 = np.load(fileNamMatrix)
@@ -892,6 +897,12 @@ def plotsSingleContactProbabilityMatrix(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
 ):
     # Plots contact probability matrices for each dataset
+    if "minNumberContacts" in iListData.keys():
+        minNumberContacts = iListData["minNumberContacts"]
+    else:
+        minNumberContacts = 0
+
+    print("$ Min number contacts: {}".format(minNumberContacts))
 
     for iSCmatrixCollated, iuniqueBarcodes, iTag, mask in zip(
         SCmatrixCollated, uniqueBarcodes, runName, p["SClabeledCollated"]
@@ -914,6 +925,7 @@ def plotsSingleContactProbabilityMatrix(
                 iuniqueBarcodes,
                 p["pixelSize"],
                 threshold=iListData["ContactProbability_distanceThreshold"],
+                minNumberContacts = minNumberContacts,
                 norm="nonNANs",
             )  # norm: nCells (default), nonNANs
             outputFileName = (
@@ -1047,6 +1059,11 @@ def plotsEnsembleContactProbabilityMatrix(
     SCmatrixCollated, uniqueBarcodes, runName, iListData, p, fileNameMD="tmp.md", datasetName="",
 ):
 
+    if "minNumberContacts" in iListData.keys():
+        minNumberContacts = iListData["minNumberContacts"]
+    else:
+        minNumberContacts = 0
+
     # combines matrices from different samples/datasers and calculates integrated contact probability matrix
     SCmatrixAllDatasets, commonSetUniqueBarcodes, cells2Plot, NcellsTotal = fusesSCmatrixCollatedFromDatasets(
         SCmatrixCollated, uniqueBarcodes, p, runName, iListData
@@ -1060,6 +1077,7 @@ def plotsEnsembleContactProbabilityMatrix(
         commonSetUniqueBarcodes,
         p["pixelSize"],
         threshold=iListData["ContactProbability_distanceThreshold"],
+        minNumberContacts = minNumberContacts,
         norm=p["HiMnormalization"],
     )  # norm: nCells (default), nonNANs
 
@@ -1444,30 +1462,37 @@ def plotMatrix(
         print("Error plotting figure. Not executing script to avoid crash.")
 
 
-def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells"):
+def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells", minNumberContacts = 0):
 
     nX = nY = iSCmatrixCollated.shape[0]
     nCells = iSCmatrixCollated.shape[2]
     SCmatrix = np.zeros((nX, nY))
+
+
 
     for i in range(nX):
         for j in range(nY):
             if i != j:
                 distanceDistribution = pixelSize * iSCmatrixCollated[i, j, :]
 
-                # normalizes # of contacts by the # of cells
-                if norm == "nCells":
-                    probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
-                    # print('Using nCells normalisation')
+                numberContacts = distanceDistribution.squeeze().shape[0]-len(np.nonzero(np.isnan(distanceDistribution))[0])
 
-                # normalizes # of contacts by the # of PWD detected in each bin
-                elif norm == "nonNANs":
-                    numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
-                    if nCells == numberNANs:
-                        probability = 1
-                    else:
-                        probability = len(np.nonzero(distanceDistribution < threshold)[0]) / (nCells - numberNANs)
-                    # print('Using NonNANs normalisation {}'.format(nCells-numberNANs))
+                if numberContacts < minNumberContacts:
+                     print("$ Rejected {}-{} because number contacts: {} < {}".format(i,j,numberContacts,minNumberContacts))
+                     probability = 0.0
+                else:
+                    # normalizes # of contacts by the # of cells
+                    if norm == "nCells":
+                        probability = len(np.nonzero(distanceDistribution < threshold)[0]) / nCells
+
+                    # normalizes # of contacts by the # of PWD detected in each bin
+                    elif norm == "nonNANs":
+                        numberNANs = len(np.nonzero(np.isnan(distanceDistribution))[0])
+                        if nCells == numberNANs:
+                            probability = np.nan
+                        else:
+                            probability = len(np.nonzero(distanceDistribution < threshold)[0]) / (nCells - numberNANs)
+
                 SCmatrix[i, j] = probability
 
     return SCmatrix, nCells
@@ -1594,10 +1619,10 @@ def getRgFromPWD(PWDmatrix0, minNumberPWD=4, threshold=6):
     """
     Calculates the Rg from a 2D pairwise distance matrix
     while taking into account that some of the PWD might be NaN
-    
+
     PWDmatrix:       numpy array, NxN
     minFracNotNaN:   require a minimal fraction of PWDs to be not NaN, return NaN otherwise
-    
+
     for the math, see https://en.wikipedia.org/wiki/Radius_of_gyration#Molecular_applications
     """
 
