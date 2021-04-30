@@ -51,12 +51,18 @@ setup(
 ######################################################
 # python3 setup.py sdist bdist_wheel
 #
-# using docker
+
+# Pack using docker:
 # sudo docker build -t py_him .
 #
 # sudo docker save py_him >dist/docker_pyHiM.tar
-# sudo docker load < dist/docker_pyHiM.tar.gz
-# 
+# gzip dist/docker_pyHiM.tar
+
+# Deploy docker container
+# copy docker_pyHiM.tar.gz into server, then run
+# sudo docker load < docker_pyHiM.tar.gz
+# then run by :
+# docker run py_him
 
 ######################################################
 #################### to install ######################
@@ -78,7 +84,7 @@ setup(
 ############# conventional installation ##############
 ######################################################
 # conda install pandas numpy matplotlib astropy mrc scikit-learn
-# conda install photutils -c astropy 
+# conda install photutils -c astropy
 # conda install -c sherpa sherpa
 
 # pip install roipoly opencv-python tqdm stardist csbdeep numba dask
