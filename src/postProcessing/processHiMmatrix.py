@@ -6,7 +6,7 @@ Created on Wed May  6 12:36:20 2020
 @author: marcnol
 
 
-This script takes JSON file with folders where datasets are 
+This script takes JSON file with folders where datasets are
 stored and processes multiple PWD matrices together.
 
 $ processHiMmatrix.py -F rootFolder
@@ -74,10 +74,10 @@ def parseArguments():
     parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
     parser.add_argument("--pixelSize", help="pixelSize in um")
     parser.add_argument("--HiMnormalization", help="Normalization of contact matrix: nonNANs (default) or nCells")
-    
+    parser.add_argument("--d3", help="Use to load 3D maps", action="store_true")
 
     p={}
-    
+
     args = parser.parse_args()
     if args.rootFolder:
         p["rootFolder"] = args.rootFolder
@@ -125,6 +125,10 @@ def parseArguments():
     else:
         p["HiMnormalization"] = "nonNANs"
 
+    if args.d3:
+        p["d3"] = args.d3
+    else:
+        p["d3"] = False
 
     return p
 # =============================================================================
@@ -135,7 +139,7 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     # [parsing arguments]
-    p=parseArguments()    
+    p=parseArguments()
 
     # [ initialises MD file]
     now = datetime.now()
@@ -151,7 +155,7 @@ if __name__ == "__main__":
         print("Loaded JSON file with {} datasets from {}\n".format(len(ListData), fileNameListDataJSON))
     else:
         print("File not found: {}".format(fileNameListDataJSON))
-        sys.exit()    
+        sys.exit()
 
     # [ creates output folder]
     p["outputFolder"] = p["rootFolder"] + os.sep + "scHiMmatrices"
