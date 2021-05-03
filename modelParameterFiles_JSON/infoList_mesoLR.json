@@ -80,7 +80,7 @@
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+		        "stardist_basename": "/home/nollmannm/work_episcope/models/nuclei2D",
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
