@@ -35,17 +35,17 @@ You are set.
 
 Clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
-Open your ~/.bashrc using nano
+Open your $HOME/.bashrc using nano
 
 ```bash
-nano ~/.bashrc
+nano $HOME/.bashrc
 ```
 
 and add the following line to the end
 
 ```sh
-export PATH="$PATH:/home/rata/Repositories/pyHiM/src:/home/rata/Repositories/pyHiM/src/fileProcessing"
-export PYTHONPATH="/home/rata/Repositories/pyHiM/src"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
+export PYTHONPATH="$HOME/Repositories/pyHiM/src"
 
 export MPLBACKEND=agg
 
@@ -56,19 +56,17 @@ make sure you use a different directory name if this is not where you put pyHiM 
 To install the necessary packages using conda, run:
 
 ```sh
-conda install numpy matplotlib astropy
-
+conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
+conda activate pyHiM
 conda install photutils -c astropy
-
-conda install dask
-
-pip install tqdm roipoly opencv-python stardist csbdeep numba
-
+pip install mrc roipoly opencv-python tqdm stardist csbdeep
 pip install --upgrade tensorflow
+```
 
-pip install --upgrade scikit-image
+Remember to activate the environment before running pyHiM:
 
-pip install mayavi mrc
+```sh
+conda activate pyHiM
 ```
 
 
@@ -76,11 +74,20 @@ pip install mayavi mrc
 ### Installing bigfish
 
 ```bash
-cd ~/Repositories
+cd $HOME/Repositories
 git clone https://github.com/fish-quant/big-fish.git
 cd big-fish && git checkout develop
-ln -s ~/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
+ln -s $HOME/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
 ```
+
+If you are running pyHiM in a conda environment, you can link bigfish as follows:
+
+```sh
+ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+
+```
+
+
 
 
 
@@ -116,6 +123,43 @@ pip install -e .  # Reinstall
 
 
 You should be set!
+
+
+
+### Install in Meso-LR super-computer
+
+To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
+
+Then run the following script:
+
+```sh
+#!/bin/bash
+
+# load conda
+module load  python/Anaconda/3-5.1.0
+
+# create environment and install packages
+conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
+conda activate pyHiM
+conda install photutils -c astropy
+pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install --upgrade tensorflow
+
+# big-fish
+cd $HOME/Repositories
+git clone https://github.com/fish-quant/big-fish.git
+cd big-fish && git checkout develop
+ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+
+# clone pyHiM
+cd $HOME/Repositories
+git clone git@github.com:marcnol/pyHiM.git
+git checkout development
+
+# settings
+ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/cleanHiM
+
+```
 
 
 

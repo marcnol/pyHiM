@@ -1,48 +1,33 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Aug 12 16:18:17 2020
+#!/usr/bin/bash3
+# Created on Tue May  4 09:23:56 2021
+# @author: marcnol
+# pyHiM installation script
+#!/bin/bash
 
-@author: marcnol
-"""
+# load conda otherwise install before running script
+# module load  python/Anaconda/3-5.1.0
 
-from setuptools import setup, find_packages
-from datetime import datetime
+# create environment and install packages
+conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
+conda activate pyHiM
+conda install photutils -c astropy
+pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install --upgrade tensorflow
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+# big-fish
+cd $HOME/Repositories
+git clone https://github.com/fish-quant/big-fish.git
+cd big-fish && git checkout develop
+ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
 
-version = "0.5.0_" + datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+# clone pyHiM
+# make sure you copied SSH keys to GITHUB: https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent
+cd $HOME/Repositories
+git clone git@github.com:marcnol/pyHiM.git
+git checkout development
 
-setup(
-    name='pyHiM',
-    version=version,
-    description='pipeline and functions to analyze Hi-M adata',
-    license='MIT',
-    packages=find_packages(),
-    author='Marcelo Nollmann',
-    author_email='marcelo.nollmann@cbs.cnrs.fr',
-    keywords=[
-              'astropy',
-              'csbdeep',
-              'dask',
-              'matplotlib',
-              'numpy',
-              'opencv-python',
-              'pandas',
-              'photutils',
-              'roipoly',
-              'scikit-learn',
-              'scikit-image',
-              'stardist',
-              'tensorflow',
-              'tqdm',
-              'mrc'
-              ],
-    python_requires='>=3.7.2',
-    install_requires=[''],
-    url='https://github.com/marcnol/pyHiM'
-)
+# settings
+ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/cleanHiM
 
 
 ######################################################
@@ -64,7 +49,7 @@ setup(
 # docker run py_him
 
 ######################################################
-#################### to install ######################
+################### to install pip version############
 ######################################################
 # pip install pyHiM-0.3.0.tar.gz
 
@@ -72,12 +57,6 @@ setup(
 #################### to test #########################
 ######################################################
 # pytest
-
-######################################################
-# to package, install in a virtual env and run tests #
-######################################################
-# tox
-# configuration lives in tox.ini
 
 ######################################################
 ############# conventional installation ##############
