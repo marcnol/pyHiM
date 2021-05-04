@@ -657,7 +657,7 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     plt.close(fig)
 
 
-def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True,parallelExecution=True):
+def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True,parallelExecution=True,background=False):
     """
     wrapper to remove inhomogeneous backgrounds for 2D and 3D images
 
@@ -679,9 +679,9 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),ver
 
     """
     if len(im.shape) == 2:
-        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
+        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose, background=background)
     elif len(im.shape) == 3:
-        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose,parallelExecution=parallelExecution)
+        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose,parallelExecution=parallelExecution,background=background)
     else:
         return None
     return output
@@ -724,7 +724,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
         return im1_bkg_substracted
 
 
-def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True, parallelExecution=True):
+def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True, parallelExecution=True, background = False):
     """
     Wrapper to remove inhomogeneous background in a 3D image by recursively calling _removesInhomogeneousBackground2D():
         - addresses output
@@ -785,8 +785,10 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
             )
             output[z, :, :] = image2D - bkg.background
 
-    return output
-
+    if background:
+        return output, bkg.background
+    else:
+        return output
 # =============================================================================
 # IMAGE ALIGNMENT
 # =============================================================================
