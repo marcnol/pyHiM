@@ -10,10 +10,19 @@ Created on Tue Sep 22 15:26:00 2020
 import os
 import argparse
 from datetime import datetime
+import logging
 
 from dask.distributed import Client, LocalCluster, get_client, as_completed, fire_and_forget
 
-from fileProcessing.fileManagement import daskCluster, writeString2File, log, session, retrieveNumberUniqueBarcodesRootFolder
+from fileProcessing.fileManagement import (
+    daskCluster,
+    writeString2File,
+    log,
+    session,
+    printDict,
+    retrieveNumberUniqueBarcodesRootFolder,
+    printLog,
+)
 
 from imageProcessing.alignImages import alignImages, appliesRegistrations
 from imageProcessing.makeProjections import makeProjections
@@ -22,172 +31,240 @@ from imageProcessing.localDriftCorrection import localDriftCorrection
 from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
-
+from imageProcessing.alignImages3D import drift3D
+from imageProcessing.segmentSources3D import segmentSources3D
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
-        self.runParameters=runParameters
-        self.rootFolder=runParameters["rootFolder"]
-        self.parallel=runParameters["parallel"]
-        self.sessionName=sessionName
+        self.runParameters = runParameters
+        self.rootFolder = runParameters["rootFolder"]
+        self.parallel = runParameters["parallel"]
+        self.sessionName = sessionName
 
-        self.log1 = log(rootFolder = self.rootFolder,parallel=self.parallel)
-
-        self.labels2Process = [
-            {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
-            {"label": "barcode", "parameterFile": "infoList_barcode.json"},
-            {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
-            {"label": "RNA", "parameterFile": "infoList_RNA.json"},
-        ]
+        self.log1 = log(rootFolder=self.rootFolder, parallel=self.parallel)
 
         self.session1 = session(self.rootFolder, self.sessionName)
 
     def initialize(self):
 
-        print("\n--------------------------------------------------------------------------")
+        printLog("\n--------------------------------------------------------------------------")
 
-        print("parameters> rootFolder: {}".format(self.rootFolder))
+        printLog("$ rootFolder: {}".format(self.rootFolder))
 
         begin_time = datetime.now()
 
-        # setup logs
-        # log1 = log(rootFolder = self.rootFolder,parallel=self.parallel)
-        self.log1.addSimpleText("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(self.sessionName))
-        if self.log1.fileNameMD=='.md':
-            self.log1.fileNameMD='HiM_report.md'
+        #####################
+        # setup markdown file
+        #####################
+        printLog("\n======================{}======================\n".format(self.sessionName))
+        now = datetime.now()
+        dateTime = now.strftime("%Y%m%d_%H%M%S")
 
-        self.log1.report("Hi-M analysis MD: {}".format(self.log1.fileNameMD))
+        fileNameRoot="HiM_analysis"
+        self.logFile = self.rootFolder + os.sep + fileNameRoot + dateTime + ".log"
+        self.fileNameMD = self.logFile.split(".")[0] + ".md"
+
+        printLog("$ Hi-M analysis will be written tos: {}".format(self.fileNameMD))
         writeString2File(
-            self.log1.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
+            self.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
         )  # initialises MD file
 
+        ##############
+        # setupLogger
+        ##############
 
-    def lauchDaskScheduler(self):
+        # creates output formats for terminal and log file
+        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
+        formatter2 = logging.Formatter("%(message)s")
+
+        # clears up any existing logger
+        logger = logging.getLogger()
+        logger.handlers = []
+        for hdlr in logger.handlers[:]:
+            if isinstance(hdlr,logging.FileHandler):
+                logger.removeHandler(hdlr)
+
+        # initializes handlers for terminal and file
+        filehandler = logging.FileHandler(self.logFile, 'w')
+        ch = logging.StreamHandler()
+
+        filehandler.setLevel(logging.INFO)
+        logger.setLevel(logging.INFO)
+        ch.setLevel(logging.INFO)
+
+        logger.addHandler(ch)
+        logger.addHandler(filehandler)
+
+        filehandler.setFormatter(formatter1)
+        ch.setFormatter(formatter2)
+
+    def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
         if self.parallel:
-            parametersFile = self.rootFolder + os.sep + self.labels2Process[0]["parameterFile"]
-            numberUniqueCycles = retrieveNumberUniqueBarcodesRootFolder(self.rootFolder,parametersFile)
-            print("Found {} unique cycles in rootFolder".format(numberUniqueCycles))
-            self.daskClusterInstance = daskCluster(numberUniqueCycles)
-            print("Go to http://localhost:8787/status for information on progress...")
+            printLog("$ Requested {} threads".format(threadsRequested))
 
-            self.cluster = LocalCluster(n_workers=self.daskClusterInstance.nThreads,
-                                # processes=True,
-                                # threads_per_worker=1,
-                                # memory_limit='2GB',
-                                # ip='tcp://localhost:8787',
-                                )
-            self.client = Client(self.cluster)
+            daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
 
-    def makeProjections(self,param):
+            daskClusterInstance.createDistributedClient()
+            self.client = daskClusterInstance.client
+            self.cluster = daskClusterInstance.cluster
+
+    def makeProjections(self, param):
         if not self.runParameters["parallel"]:
-            makeProjections(param, self.log1, self.session1)
+            makeProjections(param, self.session1)
         else:
-            result = self.client.submit(makeProjections,param, self.log1, self.session1)
+            result = self.client.submit(makeProjections, param, self.session1)
             _ = self.client.gather(result)
 
-    def alignImages(self, param, ilabel):
-        if self.getLabel(ilabel) == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            self.log1.report("Making image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info")
+    def alignImages(self, param, label):
+        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
+            printLog(
+                "> Making image registrations for label: {}".format(label))
             if not self.parallel:
-                alignImages(param, self.log1, self.session1)
+                alignImages(param, self.session1)
             else:
-                 result = self.client.submit(alignImages,param, self.log1, self.session1)
-                 _ = self.client.gather(result)
-
-    def appliesRegistrations(self, param, ilabel):
-        if self.getLabel(ilabel) != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            self.log1.report("Applying image registrations, ilabel: {}, label: {}".format(ilabel, self.getLabel(ilabel)), "info")
-
-            if not self.parallel:
-                appliesRegistrations(param, self.log1, self.session1)
-            else:
-                result = self.client.submit(appliesRegistrations,param, self.log1, self.session1)
+                result = self.client.submit(alignImages, param, self.session1)
                 _ = self.client.gather(result)
 
-    def segmentMasks(self, param, ilabel):
-        if (self.getLabel(ilabel)!= "fiducial" and \
-            param.param["acquisition"]["label"] != "fiducial" and \
-            self.getLabel(ilabel)!= "RNA" and \
-            param.param["acquisition"]["label"] != "RNA"):
+    def alignImages3D(self, param, label):
+        if label == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
+            printLog(
+                "> Making 3D image registrations label: {}".format(label))
+            _drift3D = drift3D(param, self.session1, parallel=self.parallel)
+            _drift3D.alignFiducials3D()
+
+    def appliesRegistrations(self, param, label):
+        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
+            printLog(
+                "> Applying image registrations for label: {}".format(label))
+
             if not self.parallel:
-                segmentMasks(param, self.log1, self.session1)
+                appliesRegistrations(param, self.session1)
             else:
-                result = self.client.submit(segmentMasks,param, self.log1, self.session1)
+                result = self.client.submit(appliesRegistrations, param, self.session1)
                 _ = self.client.gather(result)
 
-    def projectsBarcodes(self, param, ilabel):
-        if self.getLabel(ilabel)== "barcode":
+    def segmentMasks(self, param, label):
+        if "segmentedObjects" in param.param.keys():
+            operation = param.param["segmentedObjects"]["operation"]
+        else:
+            operation = [""]
+
+        if (
+            label != "RNA"
+            and param.param["acquisition"]["label"] != "RNA"
+            and "2D" in operation
+        ):
+            if not self.parallel:
+                segmentMasks(param, self.session1)
+            else:
+                result = self.client.submit(segmentMasks, param, self.session1)
+                _ = self.client.gather(result)
+
+    def segmentSources3D(self, param, label):
+        if (
+            label == "barcode"
+            and "3D" in param.param["segmentedObjects"]["operation"]
+        ):
+            printLog("Making 3D image segmentations for label: {}".format(label))
+            printLog(">>>>>>Label in functionCaller:{}".format(label))
+
+            _segmentSources3D = segmentSources3D(param, self.session1, parallel=self.parallel)
+            _segmentSources3D.segmentSources3D()
+
+
+    def projectsBarcodes(self, param, label):
+        if label == "barcode":
             if not self.parallel:
                 projectsBarcodes(param, self.log1, self.session1)
             else:
-                result = self.client.submit(projectsBarcodes,param, self.log1, self.session1)
+                result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
-
-    def refitBarcodes(self, param, ilabel):
-        if self.getLabel(ilabel) == "barcode" and self.runParameters["refit"]:
-            fittingSession = refitBarcodesClass(param, self.log1, self.session1,parallel=self.parallel)
+    def refitBarcodes(self, param, label):
+        if label == "barcode":
+            fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
             if not self.parallel:
                 fittingSession.refitFolders()
             else:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
 
-    def localDriftCorrection(self, param, ilabel):
-        if self.getLabel(ilabel) == "DAPI" and self.runParameters["localAlignment"]:
+    def localDriftCorrection(self, param, label):
+
+        # runs mask 2D aligment
+        if label == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
 
             if not self.parallel:
                 errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
             else:
-                result = self.client.submit(localDriftCorrection,param, self.log1, self.session1)
+                result = self.client.submit(localDriftCorrection, param, self.log1, self.session1)
                 errorCode, _, _ = self.client.gather(result)
 
-    def processesPWDmatrices(self, param, ilabel):
-        if self.getLabel(ilabel) == "DAPI":
+    def processesPWDmatrices(self, param, label):
+        if label == "DAPI":
             if not self.parallel:
-                processesPWDmatrices(param, self.log1, self.session1)
+                processesPWDmatrices(param, self.session1)
             else:
-                result = self.client.submit(processesPWDmatrices,param, self.log1, self.session1)
+                result = self.client.submit(processesPWDmatrices, param, self.session1)
                 a = self.client.gather(result)
 
     def getLabel(self, ilabel):
         return self.labels2Process[ilabel]["label"]
 
+
+def availableListCommands():
+    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
+                "segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+
+
+def defaultListCommands():
+    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
+                "segmentSources3D","buildHiMmatrix"]
+
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--parallel", help="Runs in parallel mode", action="store_true")
-    parser.add_argument("--localAlignment", help="Runs localAlignment function", action="store_true")
-    parser.add_argument("--refit", help="Refits barcode spots using a Gaussian axial fitting function.", action="store_true")
 
+    availableCommands=availableListCommands()
+    defaultCommands=defaultListCommands()
+
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
+                        appliesRegistrations alignImages3D segmentMasks \
+                        segmentSources3D refitBarcodes3D \
+                        localDriftCorrection projectBarcodes buildHiMmatrix")
+    parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
-    runParameters={}
+    printLog("\n--------------------------------------------------------------------------")
+    runParameters = {}
     if args.rootFolder:
         runParameters["rootFolder"] = args.rootFolder
     else:
-        if "HiMdata" in os.environ.keys():
+        if "docker" in os.environ.keys():
             # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
             runParameters["rootFolder"] = "/data"
-            print("\n\n Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
+            printLog("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
         else:
-            print("\n\n HiMdata: NOT FOUND")
-            runParameters["rootFolder"] = os.getenv("PWD") #os.getcwd()
+            printLog("\n\n# HiMdata: NOT FOUND")
+            runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
-    if args.parallel:
-        runParameters["parallel"] = args.parallel
+    if args.threads:
+        runParameters["threads"] = int(args.threads)
+        runParameters["parallel"] = True
     else:
+        runParameters["threads"] = 1
         runParameters["parallel"] = False
 
-    if args.localAlignment:
-        runParameters["localAlignment"] = args.localAlignment
+    if args.cmd:
+        runParameters["cmd"] = args.cmd.split(",")
     else:
-        runParameters["localAlignment"] = False
+        runParameters["cmd"] = defaultCommands
 
-    if args.refit:
-        runParameters["refit"] = args.refit
-    else:
-        runParameters["refit"] = False
+    for cmd in runParameters["cmd"]:
+        if cmd not in availableCommands:
+            printLog("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableCommands),status='WARN')
+            raise SystemExit
+
+    printDict(runParameters)
 
     return runParameters
