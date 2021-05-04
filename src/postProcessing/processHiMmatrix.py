@@ -83,7 +83,7 @@ def parseArguments():
         p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
-        p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
+        # p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
 
     if args.parameters:
         p["parametersFileName"] = args.parameters

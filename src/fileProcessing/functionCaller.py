@@ -58,7 +58,7 @@ class HiMfunctionCaller:
         #####################
         printLog("\n======================{}======================\n".format(self.sessionName))
         now = datetime.now()
-        dateTime = now.strftime("%Y%m%d_%H%M%S")
+        dateTime = now.strftime("%d%m%Y_%H%M%S")
 
         fileNameRoot="HiM_analysis"
         self.logFile = self.rootFolder + os.sep + fileNameRoot + dateTime + ".log"

@@ -35,12 +35,12 @@ from dask.distributed import get_client
 class log:
     def __init__(self, rootFolder="./", fileNameRoot="HiM_analysis", parallel=False):
         now = datetime.now()
-        dateTime = now.strftime("%Y%m%d_%H%M%S")
-        self.fileName = rootFolder + os.sep + fileNameRoot + dateTime + ".log"
+        dateTime = now.strftime("%d%m%Y_%H%M%S")
+        self.fileName = rootFolder + os.sep + 'logfile' + dateTime + ".log"
         self.fileNameMD = self.fileName.split(".")[0] + ".md"
         self.parallel = parallel
-        self.eraseFile()
-        self.report("Starting to log to: {}".format(self.fileName))
+        # self.eraseFile()
+        # # self.report("Starting to log to: {}".format(self.fileName))
 
     def eraseFile(self):
         writeString2File(self.fileName, "", "w")
@@ -796,7 +796,7 @@ def printDict(dictionary):
         spacer= "\t"*(3-int(len(key)/8))
         print("\t{}{}{}".format(key,spacer,dictionary[key]))
     print("\n")
-    
+
 def getDictionaryValue(dictionary, key, default=""):
 
     if key in dictionary.keys():
