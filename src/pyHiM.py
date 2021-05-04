@@ -14,13 +14,12 @@ This file contains routines to process Hi-M datasets
 
 from datetime import datetime
 
-from fileProcessing.fileManagement import Parameters, printLog
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
-import logging
-
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
+
+from fileProcessing.fileManagement import Parameters, printLog
+from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 
 # =============================================================================
 # MAIN
