@@ -35,6 +35,7 @@ if __name__ == "__main__":
     parser.add_argument("-R", "--run", help="Deletes folders, MD files, LOG files", action="store_true")
     parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
     parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
+    parser.add_argument("--nodelist", help="Specific host names to include in job allocation.")
 
     args = parser.parse_args()
 
@@ -86,6 +87,11 @@ if __name__ == "__main__":
     else:
         runParameters["partition"] = "tests"
 
+    if args.nodelist:
+        runParameters["nodelist"] = args.nodelist
+    else:
+        runParameters["nodelist"] = None
+
     print("Parameters loaded: {}\n".format(runParameters))
 
     if runParameters["dataset"] is None:
@@ -123,6 +129,11 @@ if __name__ == "__main__":
     else:
         memPerCPU = " --mem_per_cpu=" + runParameters["memPerCPU"]
 
+    if runParameters["nodelist"] is None:
+        nodelist = ""
+    else:
+        nodelist = " --nodelist=" + runParameters["nodelist"]
+
     for folder in folders:
 
         outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + ".log"
@@ -145,6 +156,7 @@ if __name__ == "__main__":
             + jobName
             + " --cpus-per-task "
             + str(runParameters["nCPU"])
+            + nodelist
             + memPerCPU
             + " --mail-user=marcnol@gmail.com pyHiM.py -F "
             + folder
