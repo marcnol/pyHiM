@@ -32,6 +32,7 @@ if __name__ == "__main__":
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("-R", "--run", help="Deletes folders, MD files, LOG files", action="store_true")
     parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
+    parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
 
     args = parser.parse_args()
 
@@ -68,6 +69,11 @@ if __name__ == "__main__":
     else:
         runParameters["dataFolder"] = runParameters["HOME"] + os.sep + "scratch"
 
+    if args.singleDataset:
+        runParameters["singleDataset"] = args.singleDataset
+    else:
+        runParameters["singleDataset"] = None
+
     runParameters["partition"] = "tests"
     runParameters["account"] = "episcope"
 
@@ -79,6 +85,14 @@ if __name__ == "__main__":
 
     rootFolder = runParameters["dataFolder"] + os.sep + runParameters["dataset"]
 
+    if runParameters["singleDataset"] is None:
+        folders = glob.glob(rootFolder + os.sep + "*")
+        folders0 = [x for x in folders if os.path.isdir(x)] # keeps only folders
+        folders = [x for x in folders0 if os.path.exists(x+os.sep+"infoList.json")]
+    else:
+        folders0 = folders = [runParameters["singleDataset"]]
+        runParameters["dataset"] = os.path.basename(runParameters["singleDataset"])
+
     print("*"*50)
     print("$ Dataset: {}".format(runParameters["dataset"]))
     print("$ Folder: {}".format(rootFolder))
@@ -86,12 +100,9 @@ if __name__ == "__main__":
     print("$ Command: {}".format(runParameters["cmd"]))
     print("*"*50)
 
-    folders = glob.glob(rootFolder + os.sep + "*")
-    folders0 = [x for x in folders if os.path.isdir(x)] # keeps only folders
-    folders = [x for x in folders0 if os.path.exists(x+os.sep+"infoList.json")]
-
     print("\n\n$ Found {} folders in {}".format(len(folders0),rootFolder))
     print("$ Of these, {} contained an infoList.json file and will be processed".format(len(folders)))
+    print("Folders to process: {}".format(folders))
     print("$ Scheduling {} jobs...".format(len(folders)))
     print("-"*50)
 
