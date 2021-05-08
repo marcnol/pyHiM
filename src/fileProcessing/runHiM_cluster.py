@@ -24,6 +24,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-D", "--dataset", help="dataset: folder in ~/scratch")
+    parser.add_argument("-A", "--account", help="Provide your account name. Default: episcope.")
+    parser.add_argument("-P", "--partition", help="Provide partition name. Default: tests")
     parser.add_argument("-N", "--nCPU", help="Number of CPUs/Task")
     parser.add_argument("--memPerCPU", help="Memory required per allocated CPU in Mb")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
@@ -74,8 +76,15 @@ if __name__ == "__main__":
     else:
         runParameters["singleDataset"] = None
 
-    runParameters["partition"] = "tests"
-    runParameters["account"] = "episcope"
+    if args.account:
+        runParameters["account"] = args.account
+    else:
+        runParameters["account"] = "episcope"
+
+    if args.partition:
+        runParameters["partition"] = args.partition
+    else:
+        runParameters["partition"] = "tests"
 
     print("Parameters loaded: {}\n".format(runParameters))
 
@@ -98,6 +107,9 @@ if __name__ == "__main__":
     print("$ Folder: {}".format(rootFolder))
     print("$ Number of CPUs: {}".format(runParameters["nCPU"]))
     print("$ Command: {}".format(runParameters["cmd"]))
+    print("$ Account: {}".format(runParameters["account"]))
+    print("$ Partition: {}".format(runParameters["partition"]))
+
     print("*"*50)
 
     print("\n\n$ Found {} folders in {}".format(len(folders0),rootFolder))
