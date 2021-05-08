@@ -91,7 +91,7 @@ if __name__ == "__main__":
         folders = [x for x in folders0 if os.path.exists(x+os.sep+"infoList.json")]
     else:
         folders0 = folders = [runParameters["singleDataset"]]
-        runParameters["dataset"] = os.path.basename(runParameters["singleDataset"])
+        # runParameters["dataset"] = os.path.basename(runParameters["singleDataset"])
 
     print("*"*50)
     print("$ Dataset: {}".format(runParameters["dataset"]))
