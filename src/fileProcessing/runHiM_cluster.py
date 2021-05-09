@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     for folder in folders:
 
-        outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + ".log"
+        outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + "_" + runParameters["cmd"] +".log"
         print("Folder to run: {}".format(folder))
         print("Output logfile: {}".format(outputFile))
 
