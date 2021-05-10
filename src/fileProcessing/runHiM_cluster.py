@@ -124,6 +124,8 @@ if __name__ == "__main__":
         folders0 = folders = [runParameters["singleDataset"]]
         # runParameters["dataset"] = os.path.basename(runParameters["singleDataset"])
 
+    folders.sort()
+    
     print("*"*50)
     print("$ Dataset: {}".format(runParameters["dataset"]))
     print("$ Folder: {}".format(rootFolder))
@@ -160,18 +162,22 @@ if __name__ == "__main__":
     else:
         nTasksNode = " --ntasks-per-node=" + runParameters["nTasksNode"]
 
+    if runParameters["cmd"] is None:
+        cmdName=""
+        CMD = ""
+        jobNameExt = "_completePipeline"
+    else:
+        cmdName=runParameters["cmd"]
+        CMD = " -C " + cmdName
+        jobNameExt = "_" + cmdName
+        
     for folder in folders:
 
-        outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + "_" + runParameters["cmd"] +".log"
+        outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + "_" + cmdName +".log"
+        jobName = os.path.basename(folder)+jobNameExt
+
         print("Folder to run: {}".format(folder))
         print("Output logfile: {}".format(outputFile))
-
-        if runParameters["cmd"] is None:
-            CMD = ""
-            jobName = os.path.basename(folder)+"_completePipeline"
-        else:
-            CMD = " -C " + runParameters["cmd"]
-            jobName = os.path.basename(folder) + "_" + runParameters["cmd"]
 
         SRUN = (
             "srun --account="
