@@ -19,23 +19,23 @@ import argparse
 # =============================================================================
 # MAIN
 # =============================================================================
-
-if __name__ == "__main__":
-
+def readArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-D", "--dataset", help="dataset: folder in ~/scratch")
+    parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
+    parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
     parser.add_argument("-A", "--account", help="Provide your account name. Default: episcope.")
     parser.add_argument("-P", "--partition", help="Provide partition name. Default: tests")
     parser.add_argument("-N", "--nCPU", help="Number of CPUs/Task")
     parser.add_argument("--memPerCPU", help="Memory required per allocated CPU in Mb")
+    parser.add_argument("--nodelist", help="Specific host names to include in job allocation.")
+    parser.add_argument("-T1","--nTasksNode", help="Number of tasks per node.")
+    parser.add_argument("-T2","--nTasksCPU", help="Number of tasks per CPU")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("-R", "--run", help="Deletes folders, MD files, LOG files", action="store_true")
-    parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
-    parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
-    parser.add_argument("--nodelist", help="Specific host names to include in job allocation.")
 
     args = parser.parse_args()
 
@@ -92,7 +92,23 @@ if __name__ == "__main__":
     else:
         runParameters["nodelist"] = None
 
+    if args.nTasksNode:
+        runParameters["nTasksNode"] = args.nTasksNode
+    else:
+        runParameters["nTasksNode"] = None
+
+    if args.nTasksCPU:
+        runParameters["nTasksCPU"] = args.nTasksCPU
+    else:
+        runParameters["nTasksCPU"] = None
+
     print("Parameters loaded: {}\n".format(runParameters))
+
+    return runParameters 
+
+if __name__ == "__main__":
+
+    runParameters = readArguments()
 
     if runParameters["dataset"] is None:
         print("ERROR: No dataset provided!")
@@ -134,6 +150,16 @@ if __name__ == "__main__":
     else:
         nodelist = " --nodelist=" + runParameters["nodelist"]
 
+    if runParameters["nTasksCPU"] is None:
+        nTasksCPU = ""
+    else:
+        nTasksCPU = " --ntasks-per-core=" + runParameters["nTasksCPU"]
+
+    if runParameters["nTasksNode"] is None:
+        nTasksNode = ""
+    else:
+        nTasksNode = " --ntasks-per-node=" + runParameters["nTasksNode"]
+
     for folder in folders:
 
         outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + "_" + runParameters["cmd"] +".log"
@@ -157,6 +183,8 @@ if __name__ == "__main__":
             + " --cpus-per-task "
             + str(runParameters["nCPU"])
             + nodelist
+            + nTasksCPU
+            + nTasksNode
             + memPerCPU
             + " --mail-user=marcnol@gmail.com pyHiM.py -F "
             + folder
