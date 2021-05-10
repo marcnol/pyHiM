@@ -35,7 +35,8 @@ def readArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
-    parser.add_argument("-R", "--run", help="Deletes folders, MD files, LOG files", action="store_true")
+    parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
+    parser.add_argument("--run", help="Runs using bash", action="store_true")
 
     args = parser.parse_args()
 
@@ -67,6 +68,11 @@ def readArguments():
     else:
         runParameters["run"] = False
 
+    if args.srun:
+        runParameters["srun"] = args.srun
+    else:
+        runParameters["srun"] = False
+        
     if args.dataFolder:
         runParameters["dataFolder"] = args.dataFolder
     else:
@@ -179,6 +185,15 @@ if __name__ == "__main__":
         print("Folder to run: {}".format(folder))
         print("Output logfile: {}".format(outputFile))
 
+        pyHiM = ( 
+            "pyHiM.py -F "
+            + folder
+            + CMD
+            + " > "
+            + outputFile
+            + " &"
+            )
+            
         SRUN = (
             "srun --account="
             + runParameters["account"]
@@ -192,18 +207,15 @@ if __name__ == "__main__":
             + nTasksCPU
             + nTasksNode
             + memPerCPU
-            + " --mail-user=marcnol@gmail.com pyHiM.py -F "
-            + folder
-            + CMD
-            + " > "
-            + outputFile
-            + " &"
+            + " --mail-user=marcnol@gmail.com "
+            + pyHiM
         )
+
+        if runParameters["run"]:
+            os.system(pyHiM)
+        elif runParameters["srun"]:
+            os.system(SRUN)            
 
         print("Command to run: {}".format(SRUN))
         print("-"*50)
 
-        if runParameters["run"]:
-            os.system(SRUN)
-
-    # NEED TO NOW INVOKE TO RUN
