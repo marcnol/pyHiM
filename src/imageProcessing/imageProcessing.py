@@ -845,6 +845,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
     numPlanes = images[0].shape[0]
     blockSize = (numPlanes, blockSizeXY, blockSizeXY)
 
+    printLog("$ Breaking images into blocks")
     blocks = [view_as_blocks(x, block_shape=blockSize).squeeze() for x in images]
 
     block_ref = blocks[0]
@@ -853,6 +854,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
     # - loop thru blocks and calculates block shift in xyz:
     shiftMatrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
 
+    # printLog("$ Aligning {} blocks".format(len(block_ref.shape[0])))
     for i in trange(block_ref.shape[0]):
         for j in range(block_ref.shape[1]):
             # - cross correlate in 3D to find 3D shift
