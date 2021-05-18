@@ -91,7 +91,7 @@ def readArguments():
     if args.partition:
         runParameters["partition"] = args.partition
     else:
-        runParameters["partition"] = "tests"
+        runParameters["partition"] = "defq"
 
     if args.nodelist:
         runParameters["nodelist"] = args.nodelist
