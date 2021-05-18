@@ -36,7 +36,7 @@ def readArguments():
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
-    parser.add_argument("--run", help="Runs using bash", action="store_true")
+    parser.add_argument("--xrun", help="Runs using bash", action="store_true")
 
     args = parser.parse_args()
 
@@ -64,15 +64,15 @@ def readArguments():
         runParameters["cmd"] = None
 
     if args.run:
-        runParameters["run"] = args.run
+        runParameters["xrun"] = args.xrun
     else:
-        runParameters["run"] = False
+        runParameters["xrun"] = False
 
     if args.srun:
         runParameters["srun"] = args.srun
     else:
         runParameters["srun"] = False
-        
+
     if args.dataFolder:
         runParameters["dataFolder"] = args.dataFolder
     else:
@@ -110,7 +110,7 @@ def readArguments():
 
     print("Parameters loaded: {}\n".format(runParameters))
 
-    return runParameters 
+    return runParameters
 
 if __name__ == "__main__":
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         # runParameters["dataset"] = os.path.basename(runParameters["singleDataset"])
 
     folders.sort()
-    
+
     print("*"*50)
     print("$ Dataset: {}".format(runParameters["dataset"]))
     print("$ Folder: {}".format(rootFolder))
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         cmdName=runParameters["cmd"]
         CMD = " -C " + cmdName
         jobNameExt = "_" + cmdName
-        
+
     for folder in folders:
 
         outputFile = runParameters["HOME"] + os.sep + "logs" + os.sep + runParameters["dataset"] + "_" + os.path.basename(folder) + "_" + cmdName +".log"
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         print("Folder to run: {}".format(folder))
         print("Output logfile: {}".format(outputFile))
 
-        pyHiM = ( 
+        pyHiM = (
             "pyHiM.py -F "
             + folder
             + CMD
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             + outputFile
             + " &"
             )
-            
+
         SRUN = (
             "srun --account="
             + runParameters["account"]
@@ -211,10 +211,10 @@ if __name__ == "__main__":
             + pyHiM
         )
 
-        if runParameters["run"]:
+        if runParameters["xrun"]:
             os.system(pyHiM)
         elif runParameters["srun"]:
-            os.system(SRUN)            
+            os.system(SRUN)
 
         print("Command to run: {}".format(SRUN))
         print("-"*50)
