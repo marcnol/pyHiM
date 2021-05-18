@@ -1,0 +1,111 @@
+{
+    "common": {
+        "acquisition": {
+            "DAPI_channel": "ch00",
+            "RNA_channel": "ch02",
+            "barcode_channel": "ch01",
+            "fiducialBarcode_channel": "ch00",
+            "fiducialDAPI_channel": "ch01",
+            "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+            "parallelizePlanes": false,
+            "pixelSizeXY": 0.1,
+            "pixelSizeZ": 0.25,
+            "positionROIinformation": 3,
+            "zBinning": 2
+        },
+        "alignImages": {
+            "3D_higher_threshold": 0.9999,
+            "3D_lower_threshold": 0.9,
+            "alignByBlock": true,
+            "background_sigma": 3.0,
+            "bezel": 20,
+            "blockSize": 256,
+            "folder": "alignImages",
+            "higher_threshold": 0.9999999,
+            "localAlignment": "block3D",
+            "localShiftTolerance": 1,
+            "lower_threshold": 0.999,
+            "operation": "overwrite",
+            "outputFile": "alignImages",
+            "referenceFiducial": "RT27",
+            "tolerance": 0.1
+        },
+        "buildsPWDmatrix": {
+            "flux_min": 10,
+            "flux_min_3D": 0.1,
+            "folder": "buildsPWDmatrix",
+            "toleranceDrift": 1
+        },
+        "projectsBarcodes": {
+            "folder": "projectsBarcodes",
+            "operation": "overwrite",
+            "outputFile": "projectsBarcodes"
+        },
+        "segmentedObjects": {
+            "3DGaussianfitWindow": 3,
+            "3D_area_max": 250,
+            "3D_area_min": 10,
+            "3D_boxSize": 32,
+            "3D_contrast": 0.001,
+            "3D_filter_size": 3,
+            "3D_higher_threshold": 0.9999,
+            "3D_lower_threshold": 0.99,
+            "3D_nlevels": 64,
+            "3D_psf_yx": 200,
+            "3D_psf_z": 500,
+            "3D_sigma": 3,
+            "3D_threshold_over_std": 5,
+            "3Dmethod": "thresholding",
+            "3dAP_brightest": 100,
+            "3dAP_distTolerance": 1,
+            "3dAP_flux_min": 2,
+            "3dAP_window": 5,
+            "Segment3D": "overwrite",
+            "area_max": 500,
+            "area_min": 50,
+            "background_method": "inhomogeneous",
+            "background_sigma": 3.0,
+            "brightest": 1100,
+            "centroidDifference_max": 5,
+            "folder": "segmentedObjects",
+            "fwhm": 3.0,
+            "intensity_max": 59,
+            "intensity_min": 0,
+            "operation": "2D,3D",
+            "outputFile": "segmentedObjects",
+            "residual_max": 2.5,
+            "sigma_max": 5,
+            "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+            "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+            "tesselation": true,
+            "threshold_over_std": 1.0
+        },
+        "zProject": {
+            "blockSize": 256,
+            "display": true,
+            "folder": "zProject",
+            "mode": "full",
+            "operation": "skip",
+            "saveImage": true,
+            "windowSecurity": 2,
+            "zProjectOption": "MIP",
+            "zmax": 59,
+            "zmin": 1,
+            "zwindows": 15
+        }
+    },
+    "labels": {
+        "DAPI": {
+            "order": 3
+        },
+        "RNA": {
+            "order": 4
+        },
+        "barcode": {
+            "order": 2
+        },
+        "fiducial": {
+            "order": 1
+        }
+    }
+}
