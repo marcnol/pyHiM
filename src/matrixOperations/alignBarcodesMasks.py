@@ -1042,7 +1042,6 @@ def buildsPWDmatrix(
                     )
                 )
 
-                # uniqueBarcodes = cellROI.uniqueBarcodes
 
                 # saves Table with results per ROI
                 cellROI.SCdistanceTable.write(
