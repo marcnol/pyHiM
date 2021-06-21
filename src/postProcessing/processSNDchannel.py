@@ -307,7 +307,8 @@ if __name__ == "__main__":
         log1.addSimpleText("**Analyzing label: {}**".format(label))
 
         # sets parameters
-        param = Parameters(rootFolder, labelParameterFile)
+        #param = Parameters(rootFolder, labelParameterFile)
+        param = Parameters(rootFolder=rootFolder, label=label, fileName=labelParameterFile)
 
         # processes Secondary masks
         if label == "RNA":
