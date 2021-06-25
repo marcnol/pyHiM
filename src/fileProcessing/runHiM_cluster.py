@@ -63,7 +63,7 @@ def readArguments():
     else:
         runParameters["cmd"] = None
 
-    if args.run:
+    if args.xrun:
         runParameters["xrun"] = args.xrun
     else:
         runParameters["xrun"] = False
