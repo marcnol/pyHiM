@@ -35,6 +35,7 @@ def readArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
+    parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
     parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
     parser.add_argument("--xrun", help="Runs using bash", action="store_true")
 
@@ -108,6 +109,11 @@ def readArguments():
     else:
         runParameters["nTasksCPU"] = None
 
+    if args.threads:
+        runParameters["threads"] = args.threads
+    else:
+        runParameters["threads"] = None
+        
     print("Parameters loaded: {}\n".format(runParameters))
 
     return runParameters
@@ -173,6 +179,11 @@ if __name__ == "__main__":
     else:
         nTasksNode = " --ntasks-per-node=" + runParameters["nTasksNode"]
 
+    if runParameters["threads"] is None:
+        threads = ""
+    else:
+        threads = " --threads " + runParameters["threads"]
+
     if runParameters["cmd"] is None:
         cmdName=""
         CMD = ""
@@ -194,6 +205,7 @@ if __name__ == "__main__":
             "pyHiM.py -F "
             + folder
             + CMD
+            + threads
             + " > "
             + outputFile
             + " &"
