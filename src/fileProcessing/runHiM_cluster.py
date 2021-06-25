@@ -21,7 +21,7 @@ import argparse
 # =============================================================================
 def readArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-D", "--dataset", help="dataset: folder in ~/scratch")
+    parser.add_argument("-D", "--dataset", help="dataset: name of folder with data within dataFolder")
     parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
     parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
     parser.add_argument("-A", "--account", help="Provide your account name. Default: episcope.")
@@ -51,7 +51,7 @@ def readArguments():
     if args.nCPU:
         runParameters["nCPU"] = int(args.nCPU)
     else:
-        runParameters["nCPU"] = 1
+        runParameters["nCPU"] = None
 
     if args.memPerCPU:
         runParameters["memPerCPU"] = args.memPerCPU
@@ -158,6 +158,11 @@ if __name__ == "__main__":
     else:
         nodelist = " --nodelist=" + runParameters["nodelist"]
 
+    if runParameters["nCPU"] is None:
+        CPUsPerTask = ""
+    else:
+        CPUsPerTask = " --cpus-per-task " + str(runParameters["nCPU"])
+        
     if runParameters["nTasksCPU"] is None:
         nTasksCPU = ""
     else:
@@ -201,8 +206,7 @@ if __name__ == "__main__":
             + runParameters["partition"]
             + " --job-name="
             + jobName
-            + " --cpus-per-task "
-            + str(runParameters["nCPU"])
+            + CPUsPerTask
             + nodelist
             + nTasksCPU
             + nTasksNode
