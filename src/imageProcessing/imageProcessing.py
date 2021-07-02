@@ -1421,6 +1421,34 @@ def _removesZplanes(image3D, Zrange):
 
     return output
 
+def _averageZplanes(image3D, Zrange):
+    """
+    Removes z-planes by calculating the average between successive planes
+
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    Zrange : range
+        range of planes for the output image.
+    mode : str, optional
+        'remove' will remove planes
+        'interpolate' will perform an interpolation
+        The default is 'remove'.
+
+    Returns
+    -------
+    output: numpy array
+
+    """ 
+    
+    output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
+    for i,index in enumerate(Zrange):
+        av = (image3D[index, :, :].astype(np.float) + image3D[index+1, :, :].astype(np.float))/2
+        output[i,:,:] = av.astype(np.uint16)
+
+    return output
+
 def _interpolatesZplanes(image3D, Zrange):
     """
     Removes z planes by reinterpolation
@@ -1452,7 +1480,7 @@ def _interpolatesZplanes(image3D, Zrange):
 
     return output
 
-def reinterpolateZ(image3D, Zrange,mode='remove'):
+def reinterpolateZ(image3D, Zrange,mode='average'):
     """
     wrapper function for any kind of z-interpolation
     to reduce the number of planes in an image
@@ -1477,6 +1505,8 @@ def reinterpolateZ(image3D, Zrange,mode='remove'):
         output = _interpolatesZplanes(image3D, Zrange)
     elif 'remove' in mode:
         output = _removesZplanes(image3D, Zrange)
+    elif 'average' in mode:
+        output = _averageZplanes(image3D, Zrange)
 
     printLog("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
 
