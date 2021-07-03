@@ -388,8 +388,10 @@ class cellID:
 
         if "mask2D" in self.param.param["alignImages"]["localAlignment"]:
             return self.searchLocalShift_mask2D(ROI, CellID, zxy_uncorrected)
-        elif "block3D" in self.param.param["alignImages"]["localAlignment"]:
+        elif "block3D" in self.param.param["alignImages"]["localAlignment"] and self.alignmentResultsTableRead:
             return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected,toleranceDrift)
+        else: # no correction was applied because the localAlignmentTable was not found
+            return zxy_uncorrected
 
     def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected, toleranceDrift=1):
         """

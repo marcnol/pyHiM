@@ -21,7 +21,7 @@ import argparse
 # =============================================================================
 def readArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-D", "--dataset", help="dataset: folder in ~/scratch")
+    parser.add_argument("-D", "--dataset", help="dataset: name of folder with data within dataFolder")
     parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
     parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
     parser.add_argument("-A", "--account", help="Provide your account name. Default: episcope.")
@@ -35,6 +35,7 @@ def readArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
+    parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
     parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
     parser.add_argument("--xrun", help="Runs using bash", action="store_true")
 
@@ -51,7 +52,7 @@ def readArguments():
     if args.nCPU:
         runParameters["nCPU"] = int(args.nCPU)
     else:
-        runParameters["nCPU"] = 1
+        runParameters["nCPU"] = None
 
     if args.memPerCPU:
         runParameters["memPerCPU"] = args.memPerCPU
@@ -63,7 +64,7 @@ def readArguments():
     else:
         runParameters["cmd"] = None
 
-    if args.run:
+    if args.xrun:
         runParameters["xrun"] = args.xrun
     else:
         runParameters["xrun"] = False
@@ -108,6 +109,11 @@ def readArguments():
     else:
         runParameters["nTasksCPU"] = None
 
+    if args.threads:
+        runParameters["threads"] = args.threads
+    else:
+        runParameters["threads"] = None
+        
     print("Parameters loaded: {}\n".format(runParameters))
 
     return runParameters
@@ -158,6 +164,11 @@ if __name__ == "__main__":
     else:
         nodelist = " --nodelist=" + runParameters["nodelist"]
 
+    if runParameters["nCPU"] is None:
+        CPUsPerTask = ""
+    else:
+        CPUsPerTask = " --cpus-per-task " + str(runParameters["nCPU"])
+        
     if runParameters["nTasksCPU"] is None:
         nTasksCPU = ""
     else:
@@ -167,6 +178,11 @@ if __name__ == "__main__":
         nTasksNode = ""
     else:
         nTasksNode = " --ntasks-per-node=" + runParameters["nTasksNode"]
+
+    if runParameters["threads"] is None:
+        threads = ""
+    else:
+        threads = " --threads " + runParameters["threads"]
 
     if runParameters["cmd"] is None:
         cmdName=""
@@ -189,6 +205,7 @@ if __name__ == "__main__":
             "pyHiM.py -F "
             + folder
             + CMD
+            + threads
             + " > "
             + outputFile
             + " &"
@@ -201,8 +218,7 @@ if __name__ == "__main__":
             + runParameters["partition"]
             + " --job-name="
             + jobName
-            + " --cpus-per-task "
-            + str(runParameters["nCPU"])
+            + CPUsPerTask
             + nodelist
             + nTasksCPU
             + nTasksNode

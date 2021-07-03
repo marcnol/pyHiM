@@ -435,10 +435,10 @@ class Parameters:
         # defines channels for RNA and DAPI-fiducial
         if len(fileList2Process) > 0:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch02")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch01")
+            channelDAPI_RNA = self.setsChannel("RNA_channel", "ch01")
         else:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch01")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch04")
+            channelDAPI_RNA = self.setsChannel("RNA_channel", "ch04")
 
         if channelDAPI_fiducial and len(fileList2Process) == 0:
             warn("\n\n****You are using ch02 for channelDAPI_fiducial but there are only 2 channels for DAPI!\n\n")

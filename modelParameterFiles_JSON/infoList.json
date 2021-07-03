@@ -94,7 +94,13 @@
         }
         },
         "RNA": {
-            "order": 4
+            "order": 4,
+            "acquisition": {
+                "label" : "RNA"
+            },
+            "segmentedObjects": {
+                "operation": "overwrite"
+            }
         },
         "barcode": {
             "order": 2,
