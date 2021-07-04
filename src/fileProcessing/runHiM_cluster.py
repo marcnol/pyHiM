@@ -36,8 +36,9 @@ def readArguments():
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
-    parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
+    parser.add_argument("--srun", help="Runs using srun", action="store_true")
     parser.add_argument("--xrun", help="Runs using bash", action="store_true")
+    parser.add_argument("--sbatch", help="Runs using sbatch", action="store_true")
 
     args = parser.parse_args()
 
@@ -73,6 +74,11 @@ def readArguments():
         runParameters["srun"] = args.srun
     else:
         runParameters["srun"] = False
+
+    if args.sbatch:
+        runParameters["sbatch"] = args.sbatch
+    else:
+        runParameters["sbatch"] = False
 
     if args.dataFolder:
         runParameters["dataFolder"] = args.dataFolder
@@ -113,7 +119,7 @@ def readArguments():
         runParameters["threads"] = args.threads
     else:
         runParameters["threads"] = None
-        
+
     print("Parameters loaded: {}\n".format(runParameters))
 
     return runParameters
@@ -168,7 +174,7 @@ if __name__ == "__main__":
         CPUsPerTask = ""
     else:
         CPUsPerTask = " --cpus-per-task " + str(runParameters["nCPU"])
-        
+
     if runParameters["nTasksCPU"] is None:
         nTasksCPU = ""
     else:
@@ -192,6 +198,18 @@ if __name__ == "__main__":
         cmdName=runParameters["cmd"]
         CMD = " -C " + cmdName
         jobNameExt = "_" + cmdName
+
+    if runParameters["sbatch"]:
+        SBATCH_list = [
+                "#!/bin/bash",\
+                "#SBATCH "+memPerCPU,\
+                "#SBATCH "+CPUsPerTask,\
+                "#SBATCH "+nTasksCPU,\
+                "#SBATCH --account="+runParameters["account"],\
+                "#SBATCH --partition="+runParameters["partition"],\
+                "#SBATCH --mail-user=marcnol@gmail.com ","",\
+                "source /trinity/shared/apps/local/Python/Anaconda/3-5.1.0/etc/profile.d/conda.sh",\
+                "conda activate pyHiM",""]
 
     for folder in folders:
 
@@ -227,11 +245,30 @@ if __name__ == "__main__":
             + pyHiM
         )
 
+        if runParameters["sbatch"]:
+            SBATCH_list.append("\n# dataset: {}".format(jobName))
+            SBATCH_list.append(
+                "srun "
+                + " --job-name="
+                + jobName
+                + pyHiM
+            )
+
         if runParameters["xrun"]:
             os.system(pyHiM)
         elif runParameters["srun"]:
             os.system(SRUN)
 
-        print("Command to run: {}".format(SRUN))
-        print("-"*50)
 
+        if not runParameters["sbatch"]:
+            print("Command to run: {}".format(SRUN))
+            print("-"*50)
+
+    if runParameters["sbatch"]:
+        print("SBATCH script:\n{}".format("\n".join(SBATCH_list)))
+        fileName="sbatch_script.bash"
+        with open(fileName, 'w') as f:
+            for item in SBATCH_list:
+                f.write("{}\n".format(item))
+
+        os.system("sbatch "+fileName)
