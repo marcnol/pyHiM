@@ -226,8 +226,10 @@ if __name__ == "__main__":
             + threads
             + " > "
             + outputFile
-            + " &"
             )
+
+        if not runParameters["sbatch"]:
+            pyHiM = pyHiM + " &"
 
         SRUN = (
             "srun --account="
