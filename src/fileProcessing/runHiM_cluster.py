@@ -271,4 +271,5 @@ if __name__ == "__main__":
             for item in SBATCH_list:
                 f.write("{}\n".format(item))
 
-        os.system("sbatch "+fileName)
+        # os.system("sbatch "+fileName)
+        print("\nRun by:\n$ sbatch {}".format(fileName))
