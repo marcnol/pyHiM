@@ -253,6 +253,7 @@ if __name__ == "__main__":
                 "srun "
                 + " --job-name="
                 + jobName
+                + " "
                 + pyHiM
             )
 
