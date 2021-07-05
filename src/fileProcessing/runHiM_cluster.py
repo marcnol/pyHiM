@@ -199,17 +199,20 @@ if __name__ == "__main__":
         CMD = " -C " + cmdName
         jobNameExt = "_" + cmdName
 
+
     if runParameters["sbatch"]:
-        SBATCH_list = [
+        BATCH_file = ["#!/bin/bash"]
+        SBATCH_header = [[
                 "#!/bin/bash",\
                 "#SBATCH "+memPerCPU,\
                 "#SBATCH "+CPUsPerTask,\
                 "#SBATCH "+nTasksCPU,\
                 "#SBATCH --account="+runParameters["account"],\
                 "#SBATCH --partition="+runParameters["partition"],\
-                "#SBATCH --mail-user=marcnol@gmail.com ","",\
+                "#SBATCH --mail-user=marcnol@gmail.com "]]
+        SBATCH_header.append(["",\
                 "source /trinity/shared/apps/local/Python/Anaconda/3-5.1.0/etc/profile.d/conda.sh",\
-                "conda activate pyHiM",""]
+                "conda activate pyHiM",""])
 
     for folder in folders:
 
@@ -248,12 +251,13 @@ if __name__ == "__main__":
         )
 
         if runParameters["sbatch"]:
+            SBATCH_list = list()
+            SBATCH_list = SBATCH_list + SBATCH_header[0]
+            SBATCH_list.append("#SBATCH --job-name={}".format(jobName))
+            SBATCH_list = SBATCH_list + SBATCH_header[1]
             SBATCH_list.append("\n# dataset: {}".format(jobName))
             SBATCH_list.append(
                 "srun "
-                + " --job-name="
-                + jobName
-                + " "
                 + pyHiM
             )
 
@@ -266,13 +270,24 @@ if __name__ == "__main__":
         if not runParameters["sbatch"]:
             print("Command to run: {}".format(SRUN))
             print("-"*50)
+        elif runParameters["sbatch"]:
+            print("SBATCH script:\n{}".format("\n".join(SBATCH_list)))
+            print("-"*80)
+
+            fileName="sbatch_script_{}.bash".format(jobName)
+            with open(fileName, 'w') as f:
+                for item in SBATCH_list:
+                    f.write("{}\n".format(item))
+
+            BATCH_file.append("bash {}".format(fileName))
 
     if runParameters["sbatch"]:
-        print("SBATCH script:\n{}".format("\n".join(SBATCH_list)))
-        fileName="sbatch_script.bash"
-        with open(fileName, 'w') as f:
-            for item in SBATCH_list:
+
+        print("*"*80)
+        BATCH_file.append("\n")
+        BASHscriptName="batch_script_{}.bash".format(runParameters["dataset"])
+        with open(BASHscriptName, 'w') as f:
+            for item in BATCH_file:
                 f.write("{}\n".format(item))
 
-        # os.system("sbatch "+fileName)
-        print("\nRun by:\n$ sbatch {}".format(fileName))
+        print("\nTo run master bash script:\n$ bash {}".format(BASHscriptName))
