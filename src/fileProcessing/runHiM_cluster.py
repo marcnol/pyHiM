@@ -279,7 +279,7 @@ if __name__ == "__main__":
                 for item in SBATCH_list:
                     f.write("{}\n".format(item))
 
-            BATCH_file.append("bash {}".format(fileName))
+            BATCH_file.append("sbatch {}".format(fileName))
 
     if runParameters["sbatch"]:
 
