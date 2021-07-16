@@ -1703,6 +1703,183 @@ def _deblend3Dsegmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
+# Define the folders where the trained model and the test data are saved
+# ----------------------------------------------------------------------
+model_dir_all = ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
+
+model_name_all = ['stardist_20210625_deconvolved']
+
+test_dir_all = [['/home/angelina/Repositories/segmentation_data_14/modified/temp']]
+
+def testing_early_embryos(model_dir_all=model_dir_all,
+                              model_name_all=model_name_all, 
+                              test_dir_all=test_dir_all, 
+                              Remove_planes=False):
+    """
+    Parameters
+    ----------
+    model_dir_all : List of strings, optional
+        paths of all models directory, the default is ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
+
+    model_name_all : List of strings, optional
+        names of all models, the default is ['stardist_20210625_deconvolved']
+
+    test_dir_all : List of Lists of strings, optional
+        paths of all test images directory, the default is [['/home/angelina/Repositories/segmentation_data_14/modified/temp']]
+
+    RemovePlanes : Boolean, optional
+        indicate whether half of the planes should be removed, the default is False.
+    """
+
+    np.random.seed(6)
+    lbl_cmap = random_label_cmap()
+
+    # For each model, calculate the segmented images
+    # ----------------------------------------------
+
+    for n_model in range(len(model_dir_all)):
+        
+        model_dir = model_dir_all[n_model]
+        model_name = model_name_all[n_model]
+        print('Model : {}'.format(model_name))
+        
+        for n_test in range(len(test_dir_all[n_model])):
+        
+            # For the selected model, define the folder where the test data are saved.
+            # For each model, creates a specific folder where the results will be saved.
+            # --------------------------------------------------------------------------
+        
+            test_dir = test_dir_all[n_model][n_test]
+            os.chdir(test_dir)
+        
+            dest_dir = 'Test_' + model_name
+            if os.path.isdir(dest_dir):
+                shutil.rmtree(dest_dir)
+            os.mkdir(dest_dir)
+        
+            # Load the model
+            # --------------
+        
+            model = StarDist3D(None, name=model_name, basedir=model_dir)
+            limit_gpu_memory(None, allow_growth=True)
+        
+            # Look for the data. Depending whether the images are large (>1000x1000pix) or
+            # small, the procedure for the image reconstruction is not the same.
+            # ------------------------------------------------------------------
+        
+            X = sorted(glob('*.tif'))
+            for n in range(len(X)):
+                X[n] = os.path.abspath(X[n])
+        
+            axis_norm = (0, 1, 2)
+        
+            t_av = np.zeros(len(X))
+            t_std = np.zeros(len(X))
+            nobjects = np.zeros(len(X))
+        
+            # Define the destination folder as the main folder
+            # ------------------------------------------------
+        
+            os.chdir(dest_dir)
+        
+            for n_im in range(len(X)):
+                im_name = Path(X[n_im]).stem
+        
+                im = imread(X[n_im])
+                
+                if Remove_planes:
+                    nplanes = round(im.shape[0]/2)
+                    
+                    im_small = np.zeros((nplanes,im.shape[1],im.shape[2]))
+                    for frame in range(nplanes):
+                        av = (im[ 2 * frame, :, :].astype(np.float) + im[ 2 * frame + 1, :, :].astype(np.float))/2
+                        im_small[frame, :, :]  = av.astype(np.uint16)
+                            
+                    im = im_small
+                
+                im = normalize(im, 1, 99.8, axis=axis_norm)
+                Lx = im.shape[1]
+        
+                t0 = time.time()
+                if Lx < 351:
+                    labels, details = model.predict_instances(im)
+        
+                else:
+                    resizer = PadAndCropResizer()
+                    axes = 'ZYX'
+        
+                    im = resizer.before(im, axes, model._axes_div_by(axes))
+                    labels, polys = model.predict_instances(im, n_tiles=(1, 8, 8))
+                    labels = resizer.after(labels, axes)
+        
+                t1 = time.time() - t0
+                print("Time elapsed: " + str(t1))
+        
+                nobjects[n_im] = np.max(np.unique(labels))
+                # mask = np.array(labels > 0, dtype=int)
+                mask = np.sum(labels, axis=0)
+                mask[mask > 0] = 1
+                
+                label_name = im_name + '_label.tif'
+                save_tiff_imagej_compatible(label_name, labels, axes='ZYX')
+
+test_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
+
+labels_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
+
+def subplot(test_dir_all=test_dir_all, labels_dir_all=labels_dir_all):
+    """
+    Parameters
+    ----------
+    labels_dir_all : List of Lists of strings, optional
+        paths of all labeled images directory, the default is ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
+
+    test_dir_all : List of Lists of strings, optional
+        paths of all test images directory, the default is ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
+    """
+    lbl_cmap = random_label_cmap()
+    cmap = lbl_cmap
+
+    for n_test in range(len(test_dir_all)):
+        
+        X = sorted(glob('*.tif'))
+        for n in range(len(X)):
+            X[n] = os.path.abspath(X[n])
+                    
+        for n_im in range(len(X)):
+            im_name = Path(X[n_im]).stem
+            image = imread(X[n_im])
+        
+    for n_labels in range(len(labels_dir_all)):
+        
+        Y = sorted(glob('*.tif'))
+        for n in range(len(Y)):
+            Y[n] = os.path.abspath(Y[n])
+            
+        for n_lbl in range(len(X)):
+            label = imread(Y[n_lbl])
+                    
+        moy = np.mean(image,axis=0)
+        #print(np.min(im), np.max(im))
+        #print(moy.shape)
+        lbl_moy = np.max(label,axis=0)
+                
+        ax = plt.subplot(1,2,1)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.imshow(moy, cmap="Greys_r", origin="lower")
+        plt.title(im_name)
+        ax = plt.subplot(1,2,2)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        plt.imshow(lbl_moy.astype(np.uint8), origin="lower", cmap=cmap)
+        plt.tight_layout()
+        plt.savefig(im_name + "_segmentedMasks.png", dpi = 1000)
+
+#if __name__ == '__main__':
+    #testing_early_embryos()
+    #subplot()
+
 ########################################################
 # SAVING ROUTINES
 ########################################################
