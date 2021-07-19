@@ -1703,16 +1703,18 @@ def _deblend3Dsegmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
-def _segments3DrawImagesForTesting(image3D,
-                                   axis_norm=(0,1,2),
-                                   model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models',
-                                   model_name='stardist_20210625_deconvolved'):
+def _segments3DMasks(image3D,
+                    axis_norm=(0,1,2),
+                    pmin=1, 
+                    pmax=99.8,
+                    model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models',
+                    model_name='stardist_20210625_deconvolved'):
     
     """
     Parameters
     ----------
-    image3D : List of numpy ndarray (N-dimensional array)
-        3D raw image to be segmented of format .tif
+    image3D : numpy ndarray (N-dimensional array)
+        3D raw image to be segmented 
         
     model_dir : List of strings, optional
         paths of all models directory, the default is ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
@@ -1723,14 +1725,13 @@ def _segments3DrawImagesForTesting(image3D,
     """
 
     np.random.seed(6)
-    lbl_cmap = random_label_cmap()
 
     numberPlanes = image3D.shape[0]
 
     printLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
     printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
     printLog("> Loading model {} from {}...".format(model_name,model_dir))
-    os.environ["CUDA_VISIBLE_DEVICES"]="1"
+    os.environ["CUDA_VISIBLE_DEVICES"]="1" # why do we need this?
         
     # Load the model
     # --------------
@@ -1738,11 +1739,10 @@ def _segments3DrawImagesForTesting(image3D,
     model = StarDist3D(None, name=model_name, basedir=model_dir)
     limit_gpu_memory(None, allow_growth=True)
     
-    im = normalize(image3D, 1, 99.8, axis=axis_norm)
+    im = normalize(image3D, pmin=pmin, pmax=pmax, axis=axis_norm)
     Lx = im.shape[1]
 
-    t0 = time.time()
-    if Lx < 351:
+    if Lx < 351: # what is this value? should it be a k-arg?
         labels, details = model.predict_instances(im)
 
     else:
@@ -1753,20 +1753,15 @@ def _segments3DrawImagesForTesting(image3D,
         labels, polys = model.predict_instances(im, n_tiles=(1, 8, 8))
         labels = resizer.after(labels, axes)
 
-    t1 = time.time() - t0
-    print("Time elapsed: " + str(t1))
 
-    #nobjects[n_im] = np.max(np.unique(labels))
-    # mask = np.array(labels > 0, dtype=int)
-    mask = np.sum(labels, axis=0)
+    mask = np.array(labels > 0, dtype=int)
+    # mask = np.sum(labels, axis=0)
     mask[mask > 0] = 1
     
-    label_name = raw_name + '_label.tif'
-    #save_tiff_imagej_compatible(label_name, labels, axes='ZYX')
-    return mask
+    return mask, labels 
 
 
-def _subplot3DrawImagesAndLabels(image,label):
+def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
 
     """
     Parameters
@@ -1777,26 +1772,25 @@ def _subplot3DrawImagesAndLabels(image,label):
     label : List of numpy ndarray (N-dimensional array)
         3D labeled image of format .tif
     """
-    
-    lbl_cmap = random_label_cmap()
-    cmap = lbl_cmap
+    from stardist import random_label_cmap
+    cmap= random_label_cmap() 
                     
     moy = np.mean(image,axis=0)
-    #print(np.min(im), np.max(im))
-    #print(moy.shape)
     lbl_moy = np.max(label,axis=0)
            
     fig, axes = plt.subplots(1, 2)
     fig.set_size_inches((5, 5))
     ax = axes.ravel()
-  
-    ax[0].imshow(moy, cmap="Greys_r", origin="lower")
-    ax[0].set_title(raw_name)
-    ax[1].imshow(lbl_moy, cmap="hot", origin="lower")
+    titles=['raw image','projected labeled image']
     
-    for axis in ax:
+    ax[0].imshow(moy, cmap="Greys_r", origin="lower")
+
+    ax[1].imshow(lbl_moy, cmap=cmap, origin="lower")
+    
+    for axis,title in zip(ax,titles):
         axis.set_xticks([])
         axis.set_yticks([])
+        axis.set_title(title)        
         
     return fig
 
