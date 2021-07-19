@@ -73,6 +73,10 @@ if __name__ == "__main__":
         if "segmentMasks" in runParameters["cmd"]:
             HiM.segmentMasks(param, label)
 
+        # [segments masks in 3D]
+        if "segmentMasks3D" in runParameters["cmd"]:
+            HiM.segmentMasks3D(param, label)
+            
         # [segments sources in 3D]
         if "segmentSources3D" in runParameters["cmd"]:
             HiM.segmentSources3D(param, label)

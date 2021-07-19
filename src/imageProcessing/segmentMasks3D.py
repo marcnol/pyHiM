@@ -63,7 +63,7 @@ from skimage.measure import regionprops
 # CLASSES
 # =============================================================================
 
-class segmentSources3D:
+class segmentMasks3D:
     def __init__(self, param, session1, parallel=False):
         self.param = param
         self.session1 = session1
@@ -315,6 +315,7 @@ class segmentSources3D:
         self.ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         self.numberROIs = len(self.ROIList)
         printLog("$ Detected {} ROIs".format(self.numberROIs))
+        printLog("$ Images to be processed: {}".format(self.param.fileList2Process))
         printLog("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
@@ -328,7 +329,7 @@ class segmentSources3D:
                 # loads reference fiducial image for this ROI
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI and \
-                                            "RT" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
+                                            "DAPI" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
                 Nfiles2Process=len(self.fileName2ProcessList)
                 printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
