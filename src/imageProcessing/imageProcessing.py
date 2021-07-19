@@ -1809,7 +1809,7 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
     lbl_moy = np.max(label,axis=0)
            
     fig, axes = plt.subplots(1, 2)
-    fig.set_size_inches((5, 5))
+    fig.set_size_inches((50, 50))
     ax = axes.ravel()
     titles=['raw image','projected labeled image']
     
