@@ -142,7 +142,7 @@ module load  python/Anaconda/3-5.1.0
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
 conda activate pyHiM
 conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 
 # big-fish

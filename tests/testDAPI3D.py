@@ -46,9 +46,6 @@ rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/run_zBinning2"
 rootFolder = "/mnt/PALM_dataserv/DATA/Olivier/Thesis/Insulators_Project/Paper_Insulator/HiM_analysis/Doc_Locus/Embryo_001"
 
 ROI="003"
-xyRange = (800,1200) 
-zRange = (10,50)
-zShift = 8
 
 fileNames_RT = [x for x in glob.glob(rootFolder+os.sep+"*tif") if ROI in os.path.basename(x).split("_")[3]\
              and "DAPI" not in x and "ch01" in x]
@@ -59,8 +56,15 @@ print("\nRT found = {}".format(fileNames_RT))
 print("\nDAPI found = {}".format(fileNames_DAPI))
 
 data = [io.imread(x).squeeze() for x in fileNames_RT]
-data = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data]
 data_DAPI = [io.imread(x).squeeze() for x in fileNames_DAPI]
+
+#%% preprocesses
+
+xyRange = (800,1200)
+zRange = (10,50)
+zShift = 8
+
+data = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data]
 data_DAPI = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data_DAPI]
 
 subdata = [x[zShift+zRange[0]:zShift+zRange[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data]
@@ -69,7 +73,7 @@ subdata_DAPI = [x[zRange[0]:zRange[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange
 #%% Displays overlays between two channels
 preFactor = 1
 
-fig, (ax1, ax2) = plt.subplots(2, 1)
+f0ig, (ax1, ax2) = plt.subplots(2, 1)
 # ax1.imshow(np.sum(subdata_DAPI[0][:,450:550,:]*1,axis=1), alpha=.7, cmap='Blues')
 ax2.imshow(np.sum(subdata_DAPI[0][:,:,:]*1,axis=0), alpha=.7, cmap='Blues')
 
@@ -78,7 +82,7 @@ sum_RT_xy = 0.0*np.sum(subdata[0][:,:,:]*preFactor,axis=0)
 for x in subdata:
     sum_RT_zx = sum_RT_zx + np.sum(x[:,450:550,:],axis=1)
     sum_RT_xy = sum_RT_xy + np.sum(x[:,:,:]*preFactor,axis=0)
-    
+
 cmap_RT = 'RdBu'
 ax1.imshow(sum_RT_zx,alpha=0.5,cmap=cmap_RT)
 ax2.imshow(sum_RT_xy,alpha=0.5,cmap=cmap_RT)
@@ -92,7 +96,7 @@ ax2.imshow(sum_RT_xy,alpha=0.5,cmap=cmap_RT)
 
 # contour3d(subdata_DAPI[0], vmin=0.2, vmax=1, line_width = 0, colormap = 'Pastel2')
 sf = pipeline.scalar_field(subdata_DAPI[0])
-iso = pipeline.iso_surface(sf,contours=[0.05],line_width = 0, colormap = 'spectral',opacity=.9)
+iso = pipeline.iso_surface(sf,contours=[0.1],line_width = 0, colormap = 'spectral',opacity=.9)
 iso.actor.property.representation = 'wireframe'
 
 # Displays 3D level reconstruction of barcode using mayavi

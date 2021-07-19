@@ -11,7 +11,7 @@
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
 conda activate pyHiM
 conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 
 # big-fish
@@ -28,7 +28,6 @@ git checkout development
 
 # settings
 ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/cleanHiM
-
 
 ######################################################
 #################### to package ######################

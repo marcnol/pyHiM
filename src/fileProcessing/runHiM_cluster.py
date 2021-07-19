@@ -21,7 +21,7 @@ import argparse
 # =============================================================================
 def readArguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-D", "--dataset", help="dataset: folder in ~/scratch")
+    parser.add_argument("-D", "--dataset", help="dataset: name of folder with data within dataFolder")
     parser.add_argument("-F", "--dataFolder", help="Folder with data. Default: ~/scratch")
     parser.add_argument("-S", "--singleDataset", help="Folder for single Dataset.")
     parser.add_argument("-A", "--account", help="Provide your account name. Default: episcope.")
@@ -35,8 +35,10 @@ def readArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
-    parser.add_argument("-R", "--srun", help="Runs using srun", action="store_true")
+    parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
+    parser.add_argument("--srun", help="Runs using srun", action="store_true")
     parser.add_argument("--xrun", help="Runs using bash", action="store_true")
+    parser.add_argument("--sbatch", help="Runs using sbatch", action="store_true")
 
     args = parser.parse_args()
 
@@ -51,7 +53,7 @@ def readArguments():
     if args.nCPU:
         runParameters["nCPU"] = int(args.nCPU)
     else:
-        runParameters["nCPU"] = 1
+        runParameters["nCPU"] = None
 
     if args.memPerCPU:
         runParameters["memPerCPU"] = args.memPerCPU
@@ -63,7 +65,7 @@ def readArguments():
     else:
         runParameters["cmd"] = None
 
-    if args.run:
+    if args.xrun:
         runParameters["xrun"] = args.xrun
     else:
         runParameters["xrun"] = False
@@ -72,6 +74,11 @@ def readArguments():
         runParameters["srun"] = args.srun
     else:
         runParameters["srun"] = False
+
+    if args.sbatch:
+        runParameters["sbatch"] = args.sbatch
+    else:
+        runParameters["sbatch"] = False
 
     if args.dataFolder:
         runParameters["dataFolder"] = args.dataFolder
@@ -107,6 +114,11 @@ def readArguments():
         runParameters["nTasksCPU"] = args.nTasksCPU
     else:
         runParameters["nTasksCPU"] = None
+
+    if args.threads:
+        runParameters["threads"] = args.threads
+    else:
+        runParameters["threads"] = None
 
     print("Parameters loaded: {}\n".format(runParameters))
 
@@ -158,6 +170,11 @@ if __name__ == "__main__":
     else:
         nodelist = " --nodelist=" + runParameters["nodelist"]
 
+    if runParameters["nCPU"] is None:
+        CPUsPerTask = ""
+    else:
+        CPUsPerTask = " --cpus-per-task " + str(runParameters["nCPU"])
+
     if runParameters["nTasksCPU"] is None:
         nTasksCPU = ""
     else:
@@ -168,6 +185,11 @@ if __name__ == "__main__":
     else:
         nTasksNode = " --ntasks-per-node=" + runParameters["nTasksNode"]
 
+    if runParameters["threads"] is None:
+        threads = ""
+    else:
+        threads = " --threads " + runParameters["threads"]
+
     if runParameters["cmd"] is None:
         cmdName=""
         CMD = ""
@@ -176,6 +198,21 @@ if __name__ == "__main__":
         cmdName=runParameters["cmd"]
         CMD = " -C " + cmdName
         jobNameExt = "_" + cmdName
+
+
+    if runParameters["sbatch"]:
+        BATCH_file = ["#!/bin/bash"]
+        SBATCH_header = [[
+                "#!/bin/bash",\
+                "#SBATCH "+memPerCPU,\
+                "#SBATCH "+CPUsPerTask,\
+                "#SBATCH "+nTasksCPU,\
+                "#SBATCH --account="+runParameters["account"],\
+                "#SBATCH --partition="+runParameters["partition"],\
+                "#SBATCH --mail-user=marcnol@gmail.com "]]
+        SBATCH_header.append(["",\
+                "source /trinity/shared/apps/local/Python/Anaconda/3-5.1.0/etc/profile.d/conda.sh",\
+                "conda activate pyHiM",""])
 
     for folder in folders:
 
@@ -189,10 +226,13 @@ if __name__ == "__main__":
             "pyHiM.py -F "
             + folder
             + CMD
+            + threads
             + " > "
             + outputFile
-            + " &"
             )
+
+        if not runParameters["sbatch"]:
+            pyHiM = pyHiM + " &"
 
         SRUN = (
             "srun --account="
@@ -201,8 +241,7 @@ if __name__ == "__main__":
             + runParameters["partition"]
             + " --job-name="
             + jobName
-            + " --cpus-per-task "
-            + str(runParameters["nCPU"])
+            + CPUsPerTask
             + nodelist
             + nTasksCPU
             + nTasksNode
@@ -211,11 +250,44 @@ if __name__ == "__main__":
             + pyHiM
         )
 
+        if runParameters["sbatch"]:
+            SBATCH_list = list()
+            SBATCH_list = SBATCH_list + SBATCH_header[0]
+            SBATCH_list.append("#SBATCH --job-name={}".format(jobName))
+            SBATCH_list = SBATCH_list + SBATCH_header[1]
+            SBATCH_list.append("\n# dataset: {}".format(jobName))
+            SBATCH_list.append(
+                "srun "
+                + pyHiM
+            )
+
         if runParameters["xrun"]:
             os.system(pyHiM)
         elif runParameters["srun"]:
             os.system(SRUN)
 
-        print("Command to run: {}".format(SRUN))
-        print("-"*50)
 
+        if not runParameters["sbatch"]:
+            print("Command to run: {}".format(SRUN))
+            print("-"*50)
+        elif runParameters["sbatch"]:
+            print("SBATCH script:\n{}".format("\n".join(SBATCH_list)))
+            print("-"*80)
+
+            fileName="sbatch_script_{}.bash".format(jobName)
+            with open(fileName, 'w') as f:
+                for item in SBATCH_list:
+                    f.write("{}\n".format(item))
+
+            BATCH_file.append("sbatch {}".format(fileName))
+
+    if runParameters["sbatch"]:
+
+        print("*"*80)
+        BATCH_file.append("\n")
+        BASHscriptName="batch_script_{}.bash".format(runParameters["dataset"])
+        with open(BASHscriptName, 'w') as f:
+            for item in BATCH_file:
+                f.write("{}\n".format(item))
+
+        print("\nTo run master bash script:\n$ bash {}".format(BASHscriptName))
