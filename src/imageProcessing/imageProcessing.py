@@ -1733,6 +1733,128 @@ def _deblend3Dsegmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
+def _segments3DMasks(image3D,
+                    axis_norm=(0,1,2),
+                    pmin=1, 
+                    pmax=99.8,
+                    model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models',
+                    model_name='stardist_20210625_deconvolved'):
+    
+    """
+    Parameters
+    ----------
+    image3D : numpy ndarray (N-dimensional array)
+        3D raw image to be segmented 
+        
+    model_dir : List of strings, optional
+        paths of all models directory, the default is ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
+
+    model_name : List of strings, optional
+        names of all models, the default is ['stardist_20210625_deconvolved']
+
+    """
+
+    np.random.seed(6)
+
+    numberPlanes = image3D.shape[0]
+
+    printLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
+    printLog("> Loading model {} from {}...".format(model_name,model_dir))
+    os.environ["CUDA_VISIBLE_DEVICES"]="1" # why do we need this?
+        
+    # Load the model
+    # --------------
+
+    model = StarDist3D(None, name=model_name, basedir=model_dir)
+    limit_gpu_memory(None, allow_growth=True)
+    
+    im = normalize(image3D, pmin=pmin, pmax=pmax, axis=axis_norm)
+    Lx = im.shape[1]
+
+    if Lx < 351: # what is this value? should it be a k-arg?
+        labels, details = model.predict_instances(im)
+
+    else:
+        resizer = PadAndCropResizer()
+        axes = 'ZYX'
+
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, polys = model.predict_instances(im, n_tiles=(1, 8, 8))
+        labels = resizer.after(labels, axes)
+
+
+    mask = np.array(labels > 0, dtype=int)
+    # mask = np.sum(labels, axis=0)
+    mask[mask > 0] = 1
+    
+    return mask, labels 
+
+
+def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
+
+    """
+    Parameters
+    ----------
+    image : List of numpy ndarray (N-dimensional array)
+        3D raw image of format .tif
+
+    label : List of numpy ndarray (N-dimensional array)
+        3D labeled image of format .tif
+    """
+    from stardist import random_label_cmap
+    cmap= random_label_cmap() 
+                    
+    moy = np.mean(image,axis=0)
+    lbl_moy = np.max(label,axis=0)
+           
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches((5, 5))
+    ax = axes.ravel()
+    titles=['raw image','projected labeled image']
+    
+    ax[0].imshow(moy, cmap="Greys_r", origin="lower")
+
+    ax[1].imshow(lbl_moy, cmap=cmap, origin="lower")
+    
+    for axis,title in zip(ax,titles):
+        axis.set_xticks([])
+        axis.set_yticks([])
+        axis.set_title(title)        
+        
+    return fig
+
+#if __name__ == '__main__':
+    
+    #test_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
+
+    #labels_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
+
+    #def read_images(path):
+        #images2read=glob(path+'/*.tif')
+        #images=[imread(x) for x in images2read]
+        #return images
+    
+    #def get_name(path):
+        #images2read=glob(path+'/*.tif')
+        #for k in range(len(images2read)) :
+            #print(images2read)
+            #raw_name=Path(images2read[k]).stem
+            #return raw_name
+
+    #raw_name=get_name(test_dir_all[0])
+    #raw=read_images(test_dir_all[0])
+    #labeled=read_images(labels_dir_all[0])
+    
+    #for image in raw :
+        #print(image)
+        #_segments3DrawImagesForTesting(image)
+        
+    #for im,lab,i in zip(raw,labeled,range(len(raw))):
+        
+        #fig = _subplot3DrawImagesAndLabels(im,lab)
+        #plt.savefig(labels_dir_all[0]+os.sep+"segmentedMasks_"+str(i)+".png", dpi = 1000)
+
 ########################################################
 # SAVING ROUTINES
 ########################################################

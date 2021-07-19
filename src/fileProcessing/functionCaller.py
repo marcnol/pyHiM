@@ -33,6 +33,7 @@ from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
+from imageProcessing.segmentMasks3D import segmentMasks3D
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -160,6 +161,20 @@ class HiMfunctionCaller:
                 result = self.client.submit(segmentMasks, param, self.session1)
                 _ = self.client.gather(result)
 
+
+
+    def segmentMasks3D(self, param, label):
+        if (
+            label == "DAPI"
+            and "3D" in param.param["segmentedObjects"]["operation"]
+        ):
+            printLog("Making 3D image segmentations for label: {}".format(label))
+            printLog(">>>>>>Label in functionCaller:{}".format(label))
+
+            _segmentSources3D = segmentMasks3D(param, self.session1, parallel=self.parallel)
+            _segmentSources3D.segmentMasks3D()
+
+
     def segmentSources3D(self, param, label):
         if (
             label == "barcode"
@@ -214,12 +229,12 @@ class HiMfunctionCaller:
 
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
 
 
 def defaultListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentSources3D","buildHiMmatrix"]
+                "segmentMasks3D", "segmentSources3D","buildHiMmatrix"]
 
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
@@ -230,7 +245,7 @@ def HiM_parseArguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentSources3D refitBarcodes3D \
+                        segmentMasks3D segmentSources3D refitBarcodes3D \
                         localDriftCorrection projectBarcodes buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
