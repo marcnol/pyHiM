@@ -102,6 +102,9 @@ class segmentMasks3D:
         # parameters for stardist
         self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
         self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
+        self.p["stardist_basename3D"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename3D", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models/')
+        self.p["stardist_network3D"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_20210625_deconvolved')
+
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
@@ -216,8 +219,8 @@ class segmentMasks3D:
                                     axis_norm=(0,1,2),
                                     pmin=1, 
                                     pmax=99.8,
-                                    model_dir=p["stardist_basename"],
-                                    model_name=p["stardist_network"])
+                                    model_dir=p["stardist_basename3D"],
+                                    model_name=p["stardist_network3D"])
 
                                     # deblend3D = True,
                                     # area_min = p["area_min"],

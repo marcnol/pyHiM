@@ -290,6 +290,8 @@ class Parameters:
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
                 "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
                 "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
+                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models",
                 "tesselation": True,  # tesselates DAPI masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
