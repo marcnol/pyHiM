@@ -19,12 +19,12 @@
             "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
-            "lower_threshold": 0.999,
             "higher_threshold": 0.9999999,
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
             "localShiftTolerance": 1,
+            "lower_threshold": 0.999,
             "operation": "overwrite",
             "outputFile": "alignImages",
             "referenceFiducial": "RT27",
@@ -82,6 +82,8 @@
 		        "operation": "2D,3D",
 		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_basename3D": "/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models",
+		        "stardist_network3D": "stardist_20210625_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
 	    },
@@ -129,7 +131,7 @@
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
-		        "stardist_basename": "/home/marcnol/data/AImodels/StarDist/barcodes",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
 		        "stardist_network": "stardist_18032021_single_loci"
 		    },
             "zProject": {

@@ -41,7 +41,6 @@ from imageProcessing.imageProcessing import (
     appliesXYshift3Dimages,
     preProcess3DImage,
     _segments3DvolumesByThresholding,
-    display3D_assembled,
     _reinterpolatesFocalPlane,
     reinterpolateZ,
     _plotsImage3D,
@@ -208,7 +207,7 @@ class segmentMasks3D:
         '''
         window = self.p["windowDisplay"]
         
-        fig1 = _plotsImage3D(image3D,masks,normalize=normalize,window = window)
+        fig1 = plotRawImagesAndLabels(image3D,masks,normalize=normalize,window = window)
 
         return fig1
 
