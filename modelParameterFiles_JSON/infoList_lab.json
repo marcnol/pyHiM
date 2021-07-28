@@ -130,7 +130,7 @@
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
 		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
-		        "stardist_network": "stardist_18032021_single_loci"
+		        "stardist_network": "stardist_20210618_simu_deconvolved_thresh_0_01"
 		    },
             "zProject": {
 		        "mode": "full",
