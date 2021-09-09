@@ -170,7 +170,16 @@ for region in measure.regionprops(label_image, im):
         subImage3D = I_3D.data[:, minr:maxr, minc:maxc]
 
         RTmatrix.append(
-            [ROI, barcode, x, y, region.equivalent_diameter, region.max_intensity, region.mean_intensity, region.convex_area,]
+            [
+                ROI,
+                barcode,
+                x,
+                y,
+                region.equivalent_diameter,
+                region.max_intensity,
+                region.mean_intensity,
+                region.convex_area,
+            ]
         )
 
 

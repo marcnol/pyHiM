@@ -225,7 +225,7 @@ if __name__ == "__main__":
             # only one matrix
             matrix = HiMdata1.data[iFigLabel]
 
-        print("Dataset: {} | cScale= {}-{}".format(iFigLabel,0,cMax))
+        print("Dataset: {} | cScale= {}-{}".format(iFigLabel, 0, cMax))
         f2_ax1_im = HiMdata1.plot2DMatrixSimple(
             ifigure,
             matrix,

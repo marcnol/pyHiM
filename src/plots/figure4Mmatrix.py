@@ -52,7 +52,9 @@ def parseArguments():
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
     parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
     parser.add_argument("--legend", help="Use if you want to show legends", action="store_true")
-    parser.add_argument("--normalize", help="Matrix normalization factor: maximum, none, single value (normalize 2nd profile by)")
+    parser.add_argument(
+        "--normalize", help="Matrix normalization factor: maximum, none, single value (normalize 2nd profile by)"
+    )
 
     args = parser.parse_args()
 
@@ -140,7 +142,7 @@ def parseArguments():
         runParameters["normalize"] = args.normalize
     else:
         runParameters["normalize"] = "none"
-        
+
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
     print("Input parameters:{}".format(runParameters))
 

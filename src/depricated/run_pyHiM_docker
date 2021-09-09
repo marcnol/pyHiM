@@ -1,0 +1,6 @@
+
+# define the environment variable first
+
+# attach current directory to volume in container and run 
+
+sudo docker run -e docker="True" -v $PWD:/data py_him
