@@ -1,7 +1,5 @@
 # Installing pyHiM
 
-
-
 ## Install conda
 
 in the Downloads directory, run:
@@ -30,8 +28,17 @@ conda update anaconda
 
 You are set.
 
+## Automatically install pyHiM
 
-## Install and configure pyHiM
+Run the ```installation.sh``` script by typing in the command line:
+
+```sh
+bash installation.sh
+```
+
+If you encounter problems, follow the manual installation (below).
+
+## Manually install and configure pyHiM
 
 Clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
@@ -41,7 +48,7 @@ Open your $HOME/.bashrc using nano
 nano $HOME/.bashrc
 ```
 
-and add the following line to the end
+and add the following lines to the end
 
 ```sh
 export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
@@ -69,8 +76,6 @@ Remember to activate the environment before running pyHiM:
 conda activate pyHiM
 ```
 
-
-
 ### Installing bigfish
 
 ```bash
@@ -88,12 +93,22 @@ ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
 ```
 
 
+### upgrade existing packages
 
+Sometimes, you will need to upgrade other packages to their last default version if you have an existing version of conda already installed. For this, run:
 
+```sh
+conda update -c astropy astropy
+conda update photoutils -c astropy
+pip install update stardist
+pip install --upgrade pip
+pip install --upgrade dask
+conda install spyder=4.2.0
+```
 
-### Upgrade scikit-image to development version
+#### Upgrade scikit-image to development version
 
-Uninstall any existing installations:
+Depending on whether you already had a version of scikit-image installed, you may need to upgrade it. For this, uninstall any existing installations:
 
 ```
 pip uninstall scikit-image
@@ -120,17 +135,13 @@ git pull  # Grab latest source
 pip install -e .  # Reinstall
 ```
 
-
-
 You should be set!
-
-
 
 ### Install in Meso-LR super-computer
 
 To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
-Then run the following script:
+Then run the following automatic script:
 
 ```sh
 #!/bin/bash
