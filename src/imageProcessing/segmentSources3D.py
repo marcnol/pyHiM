@@ -180,7 +180,13 @@ class segmentSources3D:
 
         if len(properties)>0:
             # selects nTolerance brightest spots and keeps only these for further processing
-            peak0=[x.max_intensity for x in properties]
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak0=[x.max_intensity for x in properties]
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak0=[x.intensity_max for x in properties]
+            
             peakList = peak0.copy()
             peakList.sort()
             last2keep=np.min([nTolerance,len(peakList)])
@@ -188,15 +194,32 @@ class segmentSources3D:
             selection = list(np.nonzero(peak0>highestPeakValue)[0])
 
             # attributes properties using the brightests spots selected
-            peak=[properties[x].max_intensity for x in selection]
-            centroids=[properties[x].weighted_centroid for x in selection]
-            sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
-            roundness1=[properties[x].equivalent_diameter for x in selection]
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak=[properties[x].max_intensity for x in selection]
+                   centroids=[properties[x].weighted_centroid for x in selection]
+                   sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
+                   roundness1=[properties[x].equivalent_diameter for x in selection]
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak=[properties[x].intensity_max for x in selection]
+                   centroids=[properties[x].centroid_weighted for x in selection]
+                   sharpness=[float(properties[x].area_filled/properties[x].area_bbox) for x in selection]
+                   roundness1=[properties[x].equivalent_diameter_area for x in selection]
+
             roundness2=[properties[x].extent for x in selection]
             npix=[properties[x].area for x in selection]
             sky=[0.0 for x in selection]
-            peak=[properties[x].max_intensity for x in selection]
-            flux=[100*properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
+
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak=[properties[x].max_intensity for x in selection]
+                   flux=[100*properties[x].max_intensity/threshold for x in selection] # peak intensity over t$
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak=[properties[x].intensity_max for x in selection]
+                   flux=[100*properties[x].intensity_max/threshold for x in selection] # peak intensity$
+                   
             mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
             # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
