@@ -186,7 +186,7 @@ class segmentSources3D:
             except AttributeError:
                    # compatibility with scikit_image versions >=0.19
                    peak0=[x.intensity_max for x in properties]
-            
+
             peakList = peak0.copy()
             peakList.sort()
             last2keep=np.min([nTolerance,len(peakList)])
@@ -219,7 +219,7 @@ class segmentSources3D:
                    # compatibility with scikit_image versions >=0.19
                    peak=[properties[x].intensity_max for x in selection]
                    flux=[100*properties[x].intensity_max/threshold for x in selection] # peak intensity$
-                   
+
             mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
             # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
@@ -266,17 +266,6 @@ class segmentSources3D:
         '''
         window = self.p["windowDisplay"]
         fig1 = _plotsImage3D(image3D,localizations=localizations,masks=masks,normalize=normalize,window = window)
-
-        # img = image3D
-        # center = int(img.shape[1]/2)
-
-        # images = list()
-        # images.append(np.sum(img,axis=0))
-        # images.append(np.sum(img[:,:,center-window:center+window],axis=2))
-        # images.append(np.sum(img[:,center-window:center+window,:],axis=1))
-
-        # fig1 = display3D_assembled(images, localizations = localizations, plottingRange = [center,window])
-
         return fig1
 
     def _segments3Dvolumes(self,image3D_aligned):
@@ -356,12 +345,10 @@ class segmentSources3D:
             # printLog("$ Applies shift = {:.2f}".format(shift))
             printLog("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
             image3D_aligned = appliesXYshift3Dimages(image3D, shift,parallelExecution=self.innerParallelLoop)
-            # image3D_raw_aligned = appliesXYshift3Dimages(image3D0, shift,parallelExecution=self.innerParallelLoop)
         else:
             printLog("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.,0.])
             image3D_aligned = image3D
-            # image3D_raw_aligned  = image3D0
 
         # segments 3D volumes
         binary, segmentedImage3D  = self._segments3Dvolumes(image3D_aligned)
