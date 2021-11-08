@@ -369,33 +369,6 @@ def get_tessellation(xy, img_shape):
     # follows an answer given here
     # https://stackoverflow.com/questions/20515554/colorize-voronoi-diagram/20678647#20678647
 
-    Parameters
-    ----------
-    xy : TYPE
-        DESCRIPTION.
-    img_shape : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    voronoiData : TYPE
-        DESCRIPTION.
-
-    """
-
-    x_center, y_center = np.array(img_shape) / 2
-    x_max, y_max = np.array(img_shape)
-
-    corner1 = [x_center - 100 * x_max, y_center - 100 * y_max]
-    corner2 = [x_center + 100 * x_max, y_center - 100 * y_max]
-    corner3 = [x_center - 100 * x_max, y_center + 100 * y_max]
-    corner4 = [x_center + 100 * x_max, y_center + 100 * y_max]
-
-    xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
-
-    # perform Voroin tesseslation
-    voronoiData = Voronoi(xy)
-
     # Attributes
     #    points ndarray of double, shape (npoints, ndim)
     #        Coordinates of input points.
@@ -418,6 +391,34 @@ def get_tessellation(xy, img_shape):
     #    furthest_site
     #        True if this was a furthest site triangulation and False if not.
     #        New in version 1.4.0.
+
+    Parameters
+    ----------
+    xy : TYPE
+        DESCRIPTION.
+    img_shape : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    voronoiData : TYPE
+        DESCRIPTION.
+
+
+    """
+
+    x_center, y_center = np.array(img_shape) / 2
+    x_max, y_max = np.array(img_shape)
+
+    corner1 = [x_center - 100 * x_max, y_center - 100 * y_max]
+    corner2 = [x_center + 100 * x_max, y_center - 100 * y_max]
+    corner3 = [x_center - 100 * x_max, y_center + 100 * y_max]
+    corner4 = [x_center + 100 * x_max, y_center + 100 * y_max]
+
+    xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
+
+    # perform Voroin tesseslation
+    voronoiData = Voronoi(xy)
 
     return voronoiData
 
