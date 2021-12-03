@@ -235,7 +235,9 @@ class Parameters:
                 "fiducialDAPI_channel": "ch01",
                 "RNA_channel": "ch02",
                 "fiducialBarcode_channel": "ch00",
+                "fiducialMask_channel": "ch00",               
                 "barcode_channel": "ch01",
+                "mask_channel": "ch01",                
                 "pixelSizeXY": 0.1,
                 "zBinning":2,
                 "parallelizePlanes": False, # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
@@ -426,10 +428,12 @@ class Parameters:
 
         # defines channel for DAPI, fiducials and barcodes
         channelDAPI = self.setsChannel("DAPI_channel", "ch00")
-        channelbarcode = self.setsChannel("barcode_channel", "ch01")
-        channelfiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelBarcode = self.setsChannel("barcode_channel", "ch01")
+        channelMask = self.setsChannel("mask_channel", "ch01")        
+        channelBarcodeFiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelMaskFiducial = self.setsChannel("fiducialMask_channel", "ch00")
 
-        # finds if there is 2 or 3 channels for DAPI acquisition
+        # finds if there are 2 or 3 channels for DAPI acquisition
         fileList2Process = [
             file
             for file in filesFolder
@@ -472,9 +476,18 @@ class Parameters:
                 file
                 for file in filesFolder
                 if len([i for i in file.split("_") if "RT" in i]) > 0
-                and self.decodesFileParts(path.basename(file))["channel"] == channelbarcode
+                and self.decodesFileParts(path.basename(file))["channel"] == channelBarcode
             ]
 
+        # selects mask files
+        elif self.param["acquisition"]["label"] == "mask":
+            self.fileList2Process = [
+                file
+                for file in filesFolder
+                if len([i for i in file.split("_") if "mask" in i]) > 0
+                and self.decodesFileParts(path.basename(file))["channel"] == channelMask
+            ]
+            
         # selects fiducial files
         elif self.param["acquisition"]["label"] == "fiducial":
             self.fileList2Process = [
@@ -482,13 +495,16 @@ class Parameters:
                 for file in filesFolder
                 if (
                     len([i for i in file.split("_") if "RT" in i]) > 0
-                    and self.decodesFileParts(path.basename(file))["channel"] == channelfiducial
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelBarcodeFiducial
                 )
                 or (
                     "DAPI" in file.split("_")
                     and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial
                 )
             ]
+            
+        else:
+            self.fileList2Process=[]
 
     def decodesFileParts(self, fileName):
         """
