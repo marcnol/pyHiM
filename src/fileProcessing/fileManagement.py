@@ -498,6 +498,10 @@ class Parameters:
                     and self.decodesFileParts(path.basename(file))["channel"] == channelBarcodeFiducial
                 )
                 or (
+                    len([i for i in file.split("_") if "mask" in i]) > 0
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelMaskFiducial
+                )
+                or (
                     "DAPI" in file.split("_")
                     and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial
                 )
@@ -505,6 +509,8 @@ class Parameters:
             
         else:
             self.fileList2Process=[]
+
+        print("Files to process: {}".format(self.fileList2Process))
 
     def decodesFileParts(self, fileName):
         """
