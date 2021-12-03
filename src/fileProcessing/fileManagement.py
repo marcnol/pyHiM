@@ -288,10 +288,10 @@ class Parameters:
                 "outputFile": "segmentedObjects",
                 "Segment3D":"overwrite",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
-                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models",
+                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 2D barcode segmentation
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", # network for 2D barcode segmentation
+                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 3D barcode segmentation
+                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models", # network for 3D barcode segmentation
                 "tesselation": True,  # tesselates DAPI masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
@@ -333,6 +333,9 @@ class Parameters:
                     },
                 "DAPI":{
                     "order":3
+                    },
+                "mask":{
+                    "order":5
                     },
                 "RNA":{
                     "order":4
