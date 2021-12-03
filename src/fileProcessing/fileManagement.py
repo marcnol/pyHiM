@@ -294,7 +294,7 @@ class Parameters:
                 "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", # network for 2D barcode segmentation
                 "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 3D barcode segmentation
                 "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models", # network for 3D barcode segmentation
-                "tesselation": True,  # tesselates DAPI masks
+                "tesselation": True,  # tesselates masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px
@@ -510,7 +510,7 @@ class Parameters:
         """
         decodes variables from an input file. typically, RE takes the form:
 
-        "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
+        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
 
         thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present
         in your infoList...json file or a dict as follows if it all worked out fine:
@@ -538,7 +538,6 @@ class Parameters:
             return fileParts
         else:
             return {}
-
 
 class daskCluster:
     def __init__(self, requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=2000):
@@ -670,7 +669,7 @@ def RT2fileName(param, referenceBarcode):
 
 def ROI2FiducialFileName(param, file, barcodeName):
     """
-    Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
+    Produces list of fiducial files that need to be loaded from a specific mask/barcode image
 
 
     Parameters
