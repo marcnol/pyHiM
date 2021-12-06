@@ -999,9 +999,9 @@ def buildsPWDmatrix(
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
-        printLog("--------------------------------------------------------")
-        printLog("> Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
-        printLog("--------------------------------------------------------")
+        printLog("----------------------------------------------------------------------")
+        printLog("> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(maskIdentifier,nROI))
+        printLog("----------------------------------------------------------------------")
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
