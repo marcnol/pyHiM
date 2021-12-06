@@ -238,6 +238,8 @@ class Parameters:
                 "fiducialMask_channel": "ch00",               
                 "barcode_channel": "ch01",
                 "mask_channel": "ch01",                
+                "label_channel": "ch00", # in future this field will contain the ch for the label. This parameter will supersed the individual channel fields above.
+                "label_channel_fiducial": "ch01", # in future this field will contain the ch for the label fiducial. This parameter will supersed the individual channel fields above.
                 "pixelSizeXY": 0.1,
                 "zBinning":2,
                 "parallelizePlanes": False, # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
