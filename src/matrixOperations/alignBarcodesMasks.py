@@ -1009,7 +1009,7 @@ def buildsPWDmatrix(
         fileList2Process = [
             file
             for file in filesinFolder
-            if file.split("_")[-1].split(".")[0] == "ch00"
+            if file.split("_")[-1].split(".")[0] == param.param["acquisition"]["label_channel"] # typically "ch00" 
             and maskIdentifier in os.path.basename(file).split("_")
             and int(os.path.basename(file).split("_")[3]) == nROI
         ]
