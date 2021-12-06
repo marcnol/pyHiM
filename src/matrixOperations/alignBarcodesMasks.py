@@ -1092,9 +1092,9 @@ def buildsPWDmatrix(
         Nmatrix = calculatesNmatrix(SCmatrixCollated)
 
         # saves output
-        np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
-        np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
-        np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
+        np.save(outputFileName + "_" + maskIdentifier + "_HiMscMatrix.npy", SCmatrixCollated)
+        np.savetxt(outputFileName + "_" + maskIdentifier + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
+        np.save(outputFileName + "_" + maskIdentifier + "_Nmatrix.npy", Nmatrix)
         pixelSizeXY = pixelSize['x']
 
         if SCmatrixCollated.shape[2]>0:
@@ -1107,7 +1107,7 @@ def buildsPWDmatrix(
                 uniqueBarcodes,
                 pixelSizeXY,
                 numberROIs,
-                outputFileName,
+                outputFileName + "_" + maskIdentifier,
                 logNameMD,
                 localizationDimension,
             )
