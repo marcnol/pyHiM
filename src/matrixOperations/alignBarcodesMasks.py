@@ -1146,69 +1146,78 @@ def processesPWDmatrices(param, session1):
         dataFolder.createsFolders(currentFolder, param)
         printLog("> Processing Folder: {}".format(currentFolder))
 
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-        if os.path.exists(fileNameBarcodeCoordinates):
-            # 2D
-            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-            printLog("> 2D processing: {}".format(outputFileName))
+        availableMasks = param.param["buildsPWDmatrix"]["masks2process"]
+        printLog("> Masks labels: {}".format(availableMasks))
 
-            if "pixelSizeXY" in param.param["acquisition"].keys():
-                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-                pixelSize = {'x': pixelSizeXY,
-                             'y': pixelSizeXY,
-                             'z': 0.0}
-            else:
-                pixelSize = {'x': 0.1,
-                             'y': 0.1,
-                             'z': 0.0}
-
-
-            buildsPWDmatrix(
-                param,
-                currentFolder,
-                fileNameBarcodeCoordinates,
-                outputFileName,
-                dataFolder,
-                pixelSize,
-                param.param["fileNameMD"],
-            )
-
-        # 3D
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
-        if os.path.exists(fileNameBarcodeCoordinates):
-            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
-            printLog("> 3D processing: {}".format(outputFileName))
-
-            if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
-                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-
-                if 'zBinning' in param.param['acquisition']:
-                    zBinning = param.param['acquisition']['zBinning']
+        for maskLabel in availableMasks.keys():
+            
+            maskIdentifier = availableMasks[maskLabel]
+            
+            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
+            if os.path.exists(fileNameBarcodeCoordinates):
+                # 2D
+                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
+                printLog("> 2D processing: {}".format(outputFileName))
+    
+                if "pixelSizeXY" in param.param["acquisition"].keys():
+                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+                    pixelSize = {'x': pixelSizeXY,
+                                 'y': pixelSizeXY,
+                                 'z': 0.0}
                 else:
-                    zBinning = 1
-
-                pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
-
-                pixelSize = {'x': pixelSizeXY,
-                             'y': pixelSizeXY,
-                             'z': pixelSizeZ*zBinning}
-            else:
-                pixelSize = {'x': 0.1,
-                             'y': 0.1,
-                             'z': 0.25}
-
-            buildsPWDmatrix(
-                param,
-                currentFolder,
-                fileNameBarcodeCoordinates,
-                outputFileName,
-                dataFolder,
-                pixelSize,
-                param.param["fileNameMD"],
-                ndims=3,
-            )
-
-        # loose ends
-        session1.add(currentFolder, sessionName)
-
-        printLog("HiM matrix in {} processed".format(currentFolder), "info")
+                    pixelSize = {'x': 0.1,
+                                 'y': 0.1,
+                                 'z': 0.0}
+    
+    
+                buildsPWDmatrix(
+                    param,
+                    currentFolder,
+                    fileNameBarcodeCoordinates,
+                    outputFileName,
+                    dataFolder,
+                    pixelSize,
+                    param.param["fileNameMD"],
+                    maskIdentifier =maskIdentifier, 
+                )
+    
+            # 3D
+            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
+            if os.path.exists(fileNameBarcodeCoordinates):
+                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
+                printLog("> 3D processing: {}".format(outputFileName))
+    
+                if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
+                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+    
+                    if 'zBinning' in param.param['acquisition']:
+                        zBinning = param.param['acquisition']['zBinning']
+                    else:
+                        zBinning = 1
+    
+                    pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
+    
+                    pixelSize = {'x': pixelSizeXY,
+                                 'y': pixelSizeXY,
+                                 'z': pixelSizeZ*zBinning}
+                else:
+                    pixelSize = {'x': 0.1,
+                                 'y': 0.1,
+                                 'z': 0.25}
+    
+                buildsPWDmatrix(
+                    param,
+                    currentFolder,
+                    fileNameBarcodeCoordinates,
+                    outputFileName,
+                    dataFolder,
+                    pixelSize,
+                    param.param["fileNameMD"],
+                    ndims=3,
+                    maskIdentifier =maskIdentifier,                     
+                )
+    
+            # tights loose ends
+            session1.add(currentFolder, sessionName)
+    
+            printLog("HiM matrix in {} processed".format(currentFolder), "info")
