@@ -235,7 +235,11 @@ class Parameters:
                 "fiducialDAPI_channel": "ch01",
                 "RNA_channel": "ch02",
                 "fiducialBarcode_channel": "ch00",
+                "fiducialMask_channel": "ch00",               
                 "barcode_channel": "ch01",
+                "mask_channel": "ch01",                
+                "label_channel": "ch00", # in future this field will contain the ch for the label. This parameter will supersed the individual channel fields above.
+                "label_channel_fiducial": "ch01", # in future this field will contain the ch for the label fiducial. This parameter will supersed the individual channel fields above.
                 "pixelSizeXY": 0.1,
                 "zBinning":2,
                 "parallelizePlanes": False, # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
@@ -288,11 +292,11 @@ class Parameters:
                 "outputFile": "segmentedObjects",
                 "Segment3D":"overwrite",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
-                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models",
-                "tesselation": True,  # tesselates DAPI masks
+                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 2D barcode segmentation
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", # network for 2D barcode segmentation
+                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 3D barcode segmentation
+                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models", # network for 3D barcode segmentation
+                "tesselation": True,  # tesselates masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px
@@ -333,6 +337,9 @@ class Parameters:
                     },
                 "DAPI":{
                     "order":3
+                    },
+                "mask":{
+                    "order":5
                     },
                 "RNA":{
                     "order":4
@@ -423,10 +430,12 @@ class Parameters:
 
         # defines channel for DAPI, fiducials and barcodes
         channelDAPI = self.setsChannel("DAPI_channel", "ch00")
-        channelbarcode = self.setsChannel("barcode_channel", "ch01")
-        channelfiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelBarcode = self.setsChannel("barcode_channel", "ch01")
+        channelMask = self.setsChannel("mask_channel", "ch01")        
+        channelBarcodeFiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelMaskFiducial = self.setsChannel("fiducialMask_channel", "ch00")
 
-        # finds if there is 2 or 3 channels for DAPI acquisition
+        # finds if there are 2 or 3 channels for DAPI acquisition
         fileList2Process = [
             file
             for file in filesFolder
@@ -469,9 +478,18 @@ class Parameters:
                 file
                 for file in filesFolder
                 if len([i for i in file.split("_") if "RT" in i]) > 0
-                and self.decodesFileParts(path.basename(file))["channel"] == channelbarcode
+                and self.decodesFileParts(path.basename(file))["channel"] == channelBarcode
             ]
 
+        # selects mask files
+        elif self.param["acquisition"]["label"] == "mask":
+            self.fileList2Process = [
+                file
+                for file in filesFolder
+                if len([i for i in file.split("_") if "mask" in i]) > 0
+                and self.decodesFileParts(path.basename(file))["channel"] == channelMask
+            ]
+            
         # selects fiducial files
         elif self.param["acquisition"]["label"] == "fiducial":
             self.fileList2Process = [
@@ -479,19 +497,28 @@ class Parameters:
                 for file in filesFolder
                 if (
                     len([i for i in file.split("_") if "RT" in i]) > 0
-                    and self.decodesFileParts(path.basename(file))["channel"] == channelfiducial
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelBarcodeFiducial
+                )
+                or (
+                    len([i for i in file.split("_") if "mask" in i]) > 0
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelMaskFiducial
                 )
                 or (
                     "DAPI" in file.split("_")
                     and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial
                 )
             ]
+            
+        else:
+            self.fileList2Process=[]
+
+        print("Files to process: {}".format(self.fileList2Process))
 
     def decodesFileParts(self, fileName):
         """
         decodes variables from an input file. typically, RE takes the form:
 
-        "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
+        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
 
         thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present
         in your infoList...json file or a dict as follows if it all worked out fine:
@@ -519,7 +546,6 @@ class Parameters:
             return fileParts
         else:
             return {}
-
 
 class daskCluster:
     def __init__(self, requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=2000):
@@ -651,7 +677,7 @@ def RT2fileName(param, referenceBarcode):
 
 def ROI2FiducialFileName(param, file, barcodeName):
     """
-    Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
+    Produces list of fiducial files that need to be loaded from a specific mask/barcode image
 
 
     Parameters

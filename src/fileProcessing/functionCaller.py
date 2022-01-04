@@ -165,7 +165,7 @@ class HiMfunctionCaller:
 
     def segmentMasks3D(self, param, label):
         if (
-            label == "DAPI"
+            (label == "DAPI" or label == 'mask')
             and "3D" in param.param["segmentedObjects"]["operation"]
         ):
             printLog("Making 3D image segmentations for label: {}".format(label))
@@ -187,6 +187,7 @@ class HiMfunctionCaller:
             _segmentSources3D.segmentSources3D()
 
 
+    # This function will be removed in new release
     def projectsBarcodes(self, param, label):
         if label == "barcode":
             if not self.parallel:
@@ -194,7 +195,8 @@ class HiMfunctionCaller:
             else:
                 result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
                 _ = self.client.gather(result)
-
+    
+    # This function will be removed in new release
     def refitBarcodes(self, param, label):
         if label == "barcode":
             fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
@@ -204,6 +206,7 @@ class HiMfunctionCaller:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
 
+    # This function will be removed in new release
     def localDriftCorrection(self, param, label):
 
         # runs mask 2D aligment
@@ -216,7 +219,7 @@ class HiMfunctionCaller:
                 errorCode, _, _ = self.client.gather(result)
 
     def processesPWDmatrices(self, param, label):
-        if label == "DAPI":
+        if (label == "DAPI" or label == 'mask'):
             if not self.parallel:
                 processesPWDmatrices(param, self.session1)
             else:

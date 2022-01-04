@@ -6,7 +6,7 @@ Created on Sun Apr  5 09:22:18 2020
 @author: marcnol
 
 Sets of functions that do alignment of 2D fiducial images. It also contains
-code to apply these alignments to other channels (DAPI/ barcodes)
+code to apply these alignments to other channels (masks/ barcodes)
 
 For the time being alignment is purely based on optimized sub-pixed accuracy
 image cross correlation
@@ -613,7 +613,7 @@ def appliesRegistrations2currentFolder(currentFolder, param, dataFolder, session
 
 def appliesRegistrations(param, session1, fileName=None):
     """This function will
-    - load DAPI, RNA and barcode 2D projected images,
+    - load masks, RNA and barcode 2D projected images,
     - apply registrations
     - save registered images as npy arrays
     """

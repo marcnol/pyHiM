@@ -99,9 +99,9 @@ class segmentMasks3D:
         self.p["contrast"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_contrast", default=0.001)
 
         # parameters for stardist
-        self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
+        self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/grey/DATA/users/marcnol/models/mask_DAPI/')
         self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
-        self.p["stardist_basename3D"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename3D", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models/')
+        self.p["stardist_basename3D"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename3D", default='/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/')
         self.p["stardist_network3D"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_20210625_deconvolved')
 
 
@@ -331,7 +331,8 @@ class segmentMasks3D:
                 # loads reference fiducial image for this ROI
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI and \
-                                            "DAPI" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
+                                            ("DAPI" in self.param.decodesFileParts(os.path.basename(x))["cycle"] or \
+                                             "mask" in self.param.decodesFileParts(os.path.basename(x))["cycle"])]
                 Nfiles2Process=len(self.fileName2ProcessList)
                 printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\

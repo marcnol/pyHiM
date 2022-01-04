@@ -7,7 +7,7 @@ Created on Fri Apr 17 09:23:36 2020
 
 This script:
     - iterates over ROIs
-        - assigns barcode localizations to DAPI masks
+        - assigns barcode localizations to masks
         - applies local drift correction, if available
         - removes localizations using flux and driftTolerance
         - calculates the pair-wise distances for each single-cell mask
@@ -944,6 +944,7 @@ def buildsPWDmatrix(
     pixelSize={'x':0.1,'y':0.1,'z':0.0},
     logNameMD="log.md",
     ndims=2,
+    maskIdentifier='DAPI'
 ):
     """
     Main function that:
@@ -998,9 +999,9 @@ def buildsPWDmatrix(
     for ROI in range(numberROIs):
         nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
 
-        printLog("--------------------------------------------------------")
-        printLog("> Loading masks and pre-processing barcodes for ROI# {}".format(nROI))
-        printLog("--------------------------------------------------------")
+        printLog("----------------------------------------------------------------------")
+        printLog("> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(maskIdentifier,nROI))
+        printLog("----------------------------------------------------------------------")
 
         barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
 
@@ -1008,8 +1009,8 @@ def buildsPWDmatrix(
         fileList2Process = [
             file
             for file in filesinFolder
-            if file.split("_")[-1].split(".")[0] == "ch00"
-            and "DAPI" in os.path.basename(file).split("_")
+            if file.split("_")[-1].split(".")[0] == param.param["acquisition"]["label_channel"] # typically "ch00" 
+            and maskIdentifier in os.path.basename(file).split("_")
             and int(os.path.basename(file).split("_")[3]) == nROI
         ]
 
@@ -1064,7 +1065,7 @@ def buildsPWDmatrix(
             ###############################################################################
             else:
                 printLog(
-                    "# Error, no DAPI mask file found for ROI: {}, segmentedMasks: {}\n".format(
+                    "# Error, no mask file found for ROI: {}, segmentedMasks: {}\n".format(
                         nROI, fileNameBarcodeCoordinates
                     )
                 )
@@ -1072,15 +1073,16 @@ def buildsPWDmatrix(
                 printLog("# Debug: ")
                 for file in filesinFolder:
                     if (
-                        file.split("_")[-1].split(".")[0] == "ch00"
-                        and "DAPI" in file.split("_")
+                        file.split("_")[-1].split(".")[0] == param.param["acquisition"]["label_channel"] # typically "ch00" 
+                        and maskIdentifier in file.split("_")
                         and int(os.path.basename(file).split("_")[3]) == nROI
                     ):
                         printLog("$ Hit found!")
                     printLog(
-                        "fileSplit:{}, DAPI in filename: {}, ROI: {}".format(
+                        "fileSplit:{}, {} in filename: {}, ROI: {}".format(
                             file.split("_")[-1].split(".")[0],
-                            "DAPI" in os.path.basename(file).split("_"),
+                            maskIdentifier,
+                            maskIdentifier in os.path.basename(file).split("_"),
                             int(os.path.basename(file).split("_")[3]),
                         )
                     )
@@ -1090,9 +1092,9 @@ def buildsPWDmatrix(
         Nmatrix = calculatesNmatrix(SCmatrixCollated)
 
         # saves output
-        np.save(outputFileName + "_HiMscMatrix.npy", SCmatrixCollated)
-        np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
-        np.save(outputFileName + "_Nmatrix.npy", Nmatrix)
+        np.save(outputFileName + "_" + maskIdentifier + "_HiMscMatrix.npy", SCmatrixCollated)
+        np.savetxt(outputFileName + "_" + maskIdentifier + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
+        np.save(outputFileName + "_" + maskIdentifier + "_Nmatrix.npy", Nmatrix)
         pixelSizeXY = pixelSize['x']
 
         if SCmatrixCollated.shape[2]>0:
@@ -1105,7 +1107,7 @@ def buildsPWDmatrix(
                 uniqueBarcodes,
                 pixelSizeXY,
                 numberROIs,
-                outputFileName,
+                outputFileName + "_" + maskIdentifier,
                 logNameMD,
                 localizationDimension,
             )
@@ -1114,7 +1116,7 @@ def buildsPWDmatrix(
 
 def processesPWDmatrices(param, session1):
     """
-    Function that assigns barcode localizations to DAPI masks and constructs single cell cummulative PWD matrix.
+    Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
     Parameters
     ----------
@@ -1144,69 +1146,78 @@ def processesPWDmatrices(param, session1):
         dataFolder.createsFolders(currentFolder, param)
         printLog("> Processing Folder: {}".format(currentFolder))
 
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-        if os.path.exists(fileNameBarcodeCoordinates):
-            # 2D
-            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-            printLog("> 2D processing: {}".format(outputFileName))
+        availableMasks = param.param["buildsPWDmatrix"]["masks2process"]
+        printLog("> Masks labels: {}".format(availableMasks))
 
-            if "pixelSizeXY" in param.param["acquisition"].keys():
-                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-                pixelSize = {'x': pixelSizeXY,
-                             'y': pixelSizeXY,
-                             'z': 0.0}
-            else:
-                pixelSize = {'x': 0.1,
-                             'y': 0.1,
-                             'z': 0.0}
-
-
-            buildsPWDmatrix(
-                param,
-                currentFolder,
-                fileNameBarcodeCoordinates,
-                outputFileName,
-                dataFolder,
-                pixelSize,
-                param.param["fileNameMD"],
-            )
-
-        # 3D
-        fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
-        if os.path.exists(fileNameBarcodeCoordinates):
-            outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
-            printLog("> 3D processing: {}".format(outputFileName))
-
-            if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
-                pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-
-                if 'zBinning' in param.param['acquisition']:
-                    zBinning = param.param['acquisition']['zBinning']
+        for maskLabel in availableMasks.keys():
+            
+            maskIdentifier = availableMasks[maskLabel]
+            
+            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
+            if os.path.exists(fileNameBarcodeCoordinates):
+                # 2D
+                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
+                printLog("> 2D processing: {}".format(outputFileName))
+    
+                if "pixelSizeXY" in param.param["acquisition"].keys():
+                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+                    pixelSize = {'x': pixelSizeXY,
+                                 'y': pixelSizeXY,
+                                 'z': 0.0}
                 else:
-                    zBinning = 1
-
-                pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
-
-                pixelSize = {'x': pixelSizeXY,
-                             'y': pixelSizeXY,
-                             'z': pixelSizeZ*zBinning}
-            else:
-                pixelSize = {'x': 0.1,
-                             'y': 0.1,
-                             'z': 0.25}
-
-            buildsPWDmatrix(
-                param,
-                currentFolder,
-                fileNameBarcodeCoordinates,
-                outputFileName,
-                dataFolder,
-                pixelSize,
-                param.param["fileNameMD"],
-                ndims=3,
-            )
-
-        # loose ends
-        session1.add(currentFolder, sessionName)
-
-        printLog("HiM matrix in {} processed".format(currentFolder), "info")
+                    pixelSize = {'x': 0.1,
+                                 'y': 0.1,
+                                 'z': 0.0}
+    
+    
+                buildsPWDmatrix(
+                    param,
+                    currentFolder,
+                    fileNameBarcodeCoordinates,
+                    outputFileName,
+                    dataFolder,
+                    pixelSize,
+                    param.param["fileNameMD"],
+                    maskIdentifier =maskIdentifier, 
+                )
+    
+            # 3D
+            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
+            if os.path.exists(fileNameBarcodeCoordinates):
+                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
+                printLog("> 3D processing: {}".format(outputFileName))
+    
+                if ("pixelSizeZ" in param.param["acquisition"].keys()) and ("pixelSizeXY" in param.param["acquisition"].keys()):
+                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
+    
+                    if 'zBinning' in param.param['acquisition']:
+                        zBinning = param.param['acquisition']['zBinning']
+                    else:
+                        zBinning = 1
+    
+                    pixelSizeZ = zBinning*param.param["acquisition"]["pixelSizeZ"]
+    
+                    pixelSize = {'x': pixelSizeXY,
+                                 'y': pixelSizeXY,
+                                 'z': pixelSizeZ*zBinning}
+                else:
+                    pixelSize = {'x': 0.1,
+                                 'y': 0.1,
+                                 'z': 0.25}
+    
+                buildsPWDmatrix(
+                    param,
+                    currentFolder,
+                    fileNameBarcodeCoordinates,
+                    outputFileName,
+                    dataFolder,
+                    pixelSize,
+                    param.param["fileNameMD"],
+                    ndims=3,
+                    maskIdentifier =maskIdentifier,                     
+                )
+    
+            # tights loose ends
+            session1.add(currentFolder, sessionName)
+    
+            printLog("HiM matrix in {} processed".format(currentFolder), "info")

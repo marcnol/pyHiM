@@ -4,8 +4,12 @@
             "DAPI_channel": "ch00",
             "RNA_channel": "ch02",
             "barcode_channel": "ch01",
+            "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
+            "fiducialMask_channel": "ch00",
             "fiducialDAPI_channel": "ch01",
+            "label_channel": "ch00",
+            "label_channel_fiducial": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
             "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
@@ -34,6 +38,7 @@
             "flux_min": 10,
             "flux_min_3D": 0.1,
             "folder": "buildsPWDmatrix",
+            "masks2process":{"nuclei":"DAPI","mask1":"mask1"},
             "toleranceDrift": 1
         },
         "projectsBarcodes": {
@@ -74,6 +79,10 @@
     "labels": {
         "DAPI": {
             "order": 3, 
+		    "acquisition": {
+		        "label_channel": "ch00",
+		        "label_channel_fiducial": "ch01"            
+		    },            
 		    "segmentedObjects": {
 		        "area_max": 3000,
 		        "area_min": 150,
@@ -82,7 +91,7 @@
 		        "operation": "2D,3D",
 		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-		        "stardist_basename3D": "/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models",
+		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
 		        "stardist_network3D": "stardist_20210625_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
@@ -106,6 +115,10 @@
         },
         "barcode": {
             "order": 2,
+		    "acquisition": {
+		        "label_channel": "ch01",
+		        "label_channel_fiducial": "ch00"
+		    },            
 		    "segmentedObjects": {
 		        "area_max": 500,
 		        "area_min": 50,
@@ -144,6 +157,33 @@
         },
         "fiducial": {
             "order": 1
+        },
+        "mask": {
+            "order": 5,
+		    "acquisition": {
+		        "label_channel": "ch01",
+		        "label_channel_fiducial": "ch00"            
+		    },            
+		    "segmentedObjects": {
+		        "area_max": 3000,
+		        "area_min": 150,
+		        "background_method": "inhomogeneous",
+		        "centroidDifference_max": 5,
+		        "operation": "2D,3D",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
+		        "stardist_network3D": "stardist_20210625_deconvolved",
+		        "tesselation": true,
+		        "threshold_over_std": 1.0
+		    },
+            "zProject": {
+		        "mode": "full",
+		        "zProjectOption": "sum",
+		        "zmax": 59,
+		        "zmin": 1,
+		        "zwindows": 15
+        }
         }
     }
 }
