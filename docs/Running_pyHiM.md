@@ -1336,6 +1336,18 @@ This last matrix will be outputed in the ```scHiMmatrices``` directory as two fi
 - ```CombinedMatrixwt_docTAD.dat```: plain text ensemble HiM contact probability matrix (can be opened in MATLAB). Each row in the matrix is separated by a ```\n``` .
 -  ```UniqueBarcodeswt_docTAD.dat```: plain text file with the barcodes used.
 
+
+
+#### Compiling 2D versus 3D datasets using processHiMmatrix.py
+
+```processHiMmatrix.py``` is used to compile different datasets together. These could come either from a 2D analysis or from a 3D analysis. By default ```processHiMmatrix``` will assume that data are from a 2D analysis. 
+
+However, if you want to compile 3D data just provide it with the ```--d3``` argument:
+
+```sh
+processHiMmatrix.py --d3
+```
+
 ### Analyzing labeled datasets
 
 If you run ```processSNDchannel.py``` before, you may want now to look at cells with different labels (ON, OFF, etc). For this, you need to run ```processHiMmatrix.py``` with two more parameters:
