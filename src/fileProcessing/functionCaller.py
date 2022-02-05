@@ -195,7 +195,7 @@ class HiMfunctionCaller:
             else:
                 result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
                 _ = self.client.gather(result)
-    
+
     # This function will be removed in new release
     def refitBarcodes(self, param, label):
         if label == "barcode":
@@ -224,7 +224,7 @@ class HiMfunctionCaller:
                 processesPWDmatrices(param, self.session1)
             else:
                 result = self.client.submit(processesPWDmatrices, param, self.session1)
-                a = self.client.gather(result)
+                _ = self.client.gather(result)
 
     def getLabel(self, ilabel):
         return self.labels2Process[ilabel]["label"]
@@ -248,8 +248,9 @@ def HiM_parseArguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentMasks3D segmentSources3D refitBarcodes3D \
-                        localDriftCorrection projectBarcodes buildHiMmatrix")
+                        segmentMasks3D segmentSources3D buildHiMmatrix")
+                        # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
+
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
 
