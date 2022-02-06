@@ -35,7 +35,10 @@ numberObjects = [np.amax(x) for x in data]
 
 data2D = [np.max(x,axis=0) for x in data]
 
-plt.imshow(data2D[0], cmap="gist_earth")
+cmaps=["Blues","Reds"]
+
+for _data2D,cmap in zip(data2D,cmaps):
+    plt.imshow(_data2D, cmap=cmap, alpha=.5)
 
 for numberObject,file in zip(numberObjects,files):
     print(f"\nFile: {os.path.basename(file)}")
