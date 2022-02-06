@@ -1440,8 +1440,8 @@ def _averageZplanes(image3D, Zrange):
     -------
     output: numpy array
 
-    """ 
-    
+    """
+
     output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
     for i,index in enumerate(Zrange):
         av = (image3D[index, :, :].astype(np.float) + image3D[index+1, :, :].astype(np.float))/2
@@ -1735,17 +1735,17 @@ def _deblend3Dsegmentation(binary):
 
 def _segments3DMasks(image3D,
                     axis_norm=(0,1,2),
-                    pmin=1, 
+                    pmin=1,
                     pmax=99.8,
                     model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models',
                     model_name='stardist_20210625_deconvolved'):
-    
+
     """
     Parameters
     ----------
     image3D : numpy ndarray (N-dimensional array)
-        3D raw image to be segmented 
-        
+        3D raw image to be segmented
+
     model_dir : List of strings, optional
         paths of all models directory, the default is ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
 
@@ -1762,13 +1762,13 @@ def _segments3DMasks(image3D,
     printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
     printLog("> Loading model {} from {}...".format(model_name,model_dir))
     os.environ["CUDA_VISIBLE_DEVICES"]="1" # why do we need this?
-        
+
     # Load the model
     # --------------
 
     model = StarDist3D(None, name=model_name, basedir=model_dir)
     limit_gpu_memory(None, allow_growth=True)
-    
+
     im = normalize(image3D, pmin=pmin, pmax=pmax, axis=axis_norm)
     Lx = im.shape[1]
 
@@ -1787,8 +1787,8 @@ def _segments3DMasks(image3D,
     mask = np.array(labels > 0, dtype=int)
     # mask = np.sum(labels, axis=0)
     mask[mask > 0] = 1
-    
-    return mask, labels 
+
+    return mask, labels
 
 
 def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
@@ -1803,29 +1803,29 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
         3D labeled image of format .tif
     """
     from stardist import random_label_cmap
-    cmap= random_label_cmap() 
-                    
+    cmap= random_label_cmap()
+
     moy = np.mean(image,axis=0)
     lbl_moy = np.max(label,axis=0)
-           
+
     fig, axes = plt.subplots(1, 2)
     fig.set_size_inches((50, 50))
     ax = axes.ravel()
     titles=['raw image','projected labeled image']
-    
+
     ax[0].imshow(moy, cmap="Greys_r", origin="lower")
 
     ax[1].imshow(lbl_moy, cmap=cmap, origin="lower")
-    
+
     for axis,title in zip(ax,titles):
         axis.set_xticks([])
         axis.set_yticks([])
-        axis.set_title(title)        
-        
+        axis.set_title(title)
+
     return fig
 
 #if __name__ == '__main__':
-    
+
     #test_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
 
     #labels_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
@@ -1834,7 +1834,7 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
         #images2read=glob(path+'/*.tif')
         #images=[imread(x) for x in images2read]
         #return images
-    
+
     #def get_name(path):
         #images2read=glob(path+'/*.tif')
         #for k in range(len(images2read)) :
@@ -1845,13 +1845,13 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
     #raw_name=get_name(test_dir_all[0])
     #raw=read_images(test_dir_all[0])
     #labeled=read_images(labels_dir_all[0])
-    
+
     #for image in raw :
         #print(image)
         #_segments3DrawImagesForTesting(image)
-        
+
     #for im,lab,i in zip(raw,labeled,range(len(raw))):
-        
+
         #fig = _subplot3DrawImagesAndLabels(im,lab)
         #plt.savefig(labels_dir_all[0]+os.sep+"segmentedMasks_"+str(i)+".png", dpi = 1000)
 
@@ -1914,7 +1914,7 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
 def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"):
     Row = ["".format(x) for x in range(matrix.shape[0])]
     im, cbar = heatmap(matrix, Row, Row, ax=ax, cmap=cmap, cbarlabel=cbarlabel, fontsize=fontsize, cbar_kw=cbar_kw)
-    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white"), fontsize=fontsize)
+    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white")) #, fontsize=fontsize
 
 
 def imageShowWithValues(matrices, outputName="tmp.png", cbarlabels=["focalPlane"], fontsize=6, verbose=False, title=""):
@@ -2280,6 +2280,5 @@ def annotate_heatmap(im, data=None, valfmt="{x:.1f}", textcolors=("black", "whit
             kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
-            # printLog(text)
 
     return texts
