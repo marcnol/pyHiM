@@ -45,7 +45,7 @@ class filter_localizations:
         """
 
         self.param = param
-        
+
     def filterLocalizations_Quality(self, barcodeMap, i):
         """
         [filters barcode localizations either by brigthness or 3D localization accuracy]
@@ -138,20 +138,20 @@ class filter_localizations:
             # [filters barcode per blockAlignmentMask, if existing]
             #keepAlignment = self.filterLocalizations_BlockAlignment(barcodeMap, i)
             keepAlignment =True
-            
+
             if keepQuality and keepAlignment:
                 rows_to_remove.append(i)
 
         # removes rows from table
         barcodeMap.remove_rows(rows_to_remove)
-        
+
         print(f"$ Removed {len(rows_to_remove)} barcode localizations from table.")
-                
+
         return barcodeMap
-    
+
     def setup_filter_values(self):
         """
-        
+
 
         Returns
         -------
@@ -175,26 +175,26 @@ class filter_localizations:
         else:
             self.tolerance_drift= 1
             printLog("# toleranceDrift not found. Set to {}!".format(self.toleranceDrift))
-    
+
         if "blockSize" in self.param.param["alignImages"]:
             self.blockSize = self.param.param["alignImages"]["blockSize"]
         else:
             self.blockSize = 256
             printLog("# blockSize not found. Set to {}!".format(self.blockSize))
 
-                
+
     def filter_folder(self):
         """
         Function that filters barcodes using a number of user-provided parameters
-    
-    
+
+
         Returns
         -------
         None.
-    
+
         """
         sessionName = "filter_localizations"
-    
+
         # processes folders and files
         self.dataFolder = folders(self.param.param["rootFolder"])
         printLog("\n===================={}====================\n".format(sessionName))
@@ -206,42 +206,43 @@ class filter_localizations:
         for currentFolder in self.dataFolder.listFolders:
             self.dataFolder.createsFolders(currentFolder, self.param)
             printLog("> Processing Folder: {}".format(currentFolder))
-    
+
             files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
-            
-                
+
+
             if len(files)>0:
-                
+
                 for file in files:
 
                     if "3D" in file:
                         self.ndims = 3
                     else:
                         self.ndims = 2
-                    
+
                     self.setup_filter_values()
 
                     # Loads barcode coordinate Tables
-                    table = localization_table() 
+                    table = localization_table()
                     barcodeMap, uniqueBarcodes = table.load(file)
+
+                    # saves original barcode coordinate Tables for safe keeping
+                    table.save(file, barcodeMap, tag = '_unfiltered',ext = 'dat')
 
                     # processes tables
                     barcodeMapROI = barcodeMap.group_by("ROI #")
                     numberROIs = len(barcodeMapROI.groups.keys)
                     print("\n$ ROIs detected: {}".format(numberROIs))
-                    
-                    # NEED TO ITERATE OVER ROIs !!
-                    
+
                     # Filters barcode coordinate Tables
                     barcodeMap = self.filter_barcode_table(barcodeMap)
-                    
+
                     # saves filtered barcode coordinate Tables
-                    table.save(file, barcodeMapROI, tag = '_filtered',ext = 'dat') 
-                    
+                    table.save(file, barcodeMap, tag = '',ext = 'dat')
+
             else:
                 printLog("No barcode tables found!")
-                
-   
+
+
             printLog("Barcode tables {} filtered".format(currentFolder), "info")
-            
+
 
