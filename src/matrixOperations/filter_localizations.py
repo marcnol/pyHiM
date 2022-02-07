@@ -130,8 +130,8 @@ class filter_localizations:
 
         rows_to_remove=list()
         nBarcodes = len(barcodeMap)
+        print(f"$ Minimum flux: {self.flux_min}")
         for i in trange(nBarcodes): # i is the index of the barcode in barcodeMapROI
-
 
             # [filters barcode localizations either by]
             keepQuality = self.filterLocalizations_Quality(barcodeMap, i)
