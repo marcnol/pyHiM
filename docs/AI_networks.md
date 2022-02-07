@@ -38,7 +38,7 @@ Comment: Third network, trained with a larger number of ROIs. Better performance
 Model: stardist 3D
 Training set: 17 ROIs, DAPI 3D embryos nc14, nc13, nc12, RAW and deconvolved images.
 Name: DAPI_3D_stardist_20210805_mixed
-Comment: Third network, trained with a larger number of ROIs. Better performance than 0625.
+Comment: Forth network, trained with a larger number of ROIs. Better performance than 0625.
 
 Model: stardist 3D
 Training set: pancreas, deconvolved images.
