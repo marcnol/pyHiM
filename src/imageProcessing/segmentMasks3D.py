@@ -240,8 +240,8 @@ class segmentMasks3D:
         roi = self.param.decodesFileParts(os.path.basename(fileName2Process))["roi"]
         label = str(self.param.decodesFileParts(os.path.basename(fileName2Process))["cycle"])
 
-        # - load  and preprocesses 3D fiducial file
-        printLog("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
+        # load  and preprocesses 3D fiducial file
+        printLog("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi,label))
         printLog("$ File:{}".format(os.path.basename(fileName2Process)))
         image3D0 = io.imread(fileName2Process).squeeze()
 
@@ -390,7 +390,6 @@ class segmentMasks3D:
 
         self.dataFolder.createsFolders(self.currentFolder, self.param)
         self.label = self.param.param["acquisition"]["label"]
-        # self.outputFileName = self.dataFolder.outputFiles["segmentedObjects"] + "_3D_" + self.label + ".dat"
 
         printLog("> Processing Folder: {}".format(self.currentFolder))
 
