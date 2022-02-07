@@ -292,10 +292,9 @@ class Parameters:
                 "outputFile": "segmentedObjects",
                 "Segment3D":"overwrite",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
                 "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 2D barcode segmentation
-                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models", # network for 2D barcode segmentation
                 "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 3D barcode segmentation
-                "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models", # network for 3D barcode segmentation
                 "tesselation": True,  # tesselates masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources

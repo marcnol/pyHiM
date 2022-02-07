@@ -1737,7 +1737,7 @@ def _segments3DMasks(image3D,
                     axis_norm=(0,1,2),
                     pmin=1,
                     pmax=99.8,
-                    model_dir='/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models',
+                    model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
                     model_name='stardist_20210625_deconvolved'):
 
     """
@@ -1747,7 +1747,7 @@ def _segments3DMasks(image3D,
         3D raw image to be segmented
 
     model_dir : List of strings, optional
-        paths of all models directory, the default is ['/mnt/PALM_dataserv/DATA/JB/2021/Data_early_embryo_3D_DAPI/Data_in_shape/deconvolved_data/models']
+        paths of all models directory, the default is ["/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"]
 
     model_name : List of strings, optional
         names of all models, the default is ['stardist_20210625_deconvolved']
@@ -1783,9 +1783,7 @@ def _segments3DMasks(image3D,
         labels, polys = model.predict_instances(im, n_tiles=(1, 8, 8))
         labels = resizer.after(labels, axes)
 
-
     mask = np.array(labels > 0, dtype=int)
-    # mask = np.sum(labels, axis=0)
     mask[mask > 0] = 1
 
     return mask, labels

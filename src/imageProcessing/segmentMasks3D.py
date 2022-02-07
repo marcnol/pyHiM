@@ -94,16 +94,13 @@ class segmentMasks3D:
         self.p["stardist_basename"] = getDictionaryValue(
             self.param.param["segmentedObjects"],
             "stardist_basename",
-            default="/mnt/grey/DATA/users/marcnol/models/mask_DAPI/",
-        )
+            default="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+        ).rstrip('/')
+
         self.p["stardist_network"] = getDictionaryValue(
             self.param.param["segmentedObjects"], "stardist_network", default="stardist_18032021_single_loci"
         )
-        self.p["stardist_basename3D"] = getDictionaryValue(
-            self.param.param["segmentedObjects"],
-            "stardist_basename3D",
-            default="/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
-        )
+        
         self.p["stardist_network3D"] = getDictionaryValue(
             self.param.param["segmentedObjects"], "stardist_network3D", default="stardist_20210625_deconvolved"
         )
@@ -227,7 +224,7 @@ class segmentMasks3D:
             axis_norm=(0, 1, 2),
             pmin=1,
             pmax=99.8,
-            model_dir=p["stardist_basename3D"],
+            model_dir=p["stardist_basename"],
             model_name=p["stardist_network3D"],
         )
 
