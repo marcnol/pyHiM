@@ -93,6 +93,10 @@ if __name__ == "__main__":
         if "localDriftCorrection" in runParameters["cmd"]:
             HiM.localDriftCorrection(param, label)
 
+        # [filters barcode localization table]
+        if "filter_localizations" in runParameters["cmd"]:
+            HiM.filter_localizations(param, label)
+        
         # [builds PWD matrix for all folders with images]
         if "buildHiMmatrix" in runParameters["cmd"]:
             HiM.processesPWDmatrices(param, label)
