@@ -237,7 +237,7 @@ class filter_localizations:
                     barcodeMap = self.filter_barcode_table(barcodeMap)
 
                     # saves filtered barcode coordinate Tables
-                    table.save(file, barcodeMap, tag = '',ext = 'dat')
+                    table.save(file, barcodeMap, tag = '',ext = 'dat',comments = ['filtered'])
 
             else:
                 printLog("No barcode tables found!")

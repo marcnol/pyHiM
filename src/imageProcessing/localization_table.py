@@ -68,12 +68,34 @@ class localization_table:
 
         return barcodeMap, uniqueBarcodes
 
-    def save(self, fileNameBarcodeCoordinates, barcodeMap, tag="_", ext = 'ecsv'):
-        
-        file = fileNameBarcodeCoordinates.split('.'+ext)[0] + tag + "." + ext
-        
+    def save(self, fileName, barcodeMap, tag="_", ext = 'ecsv', comments=list()):
+        """
+        Saves output table
+
+        Parameters
+        ----------
+        fileNameBarcodeCoordinates : string
+            filename of table.
+        barcodeMap : astropy Table
+            Table to be written to file.
+        tag : string, optional
+            tag to be added to filename. The default is "_".
+        ext : string, optional
+            file extension. The default is 'ecsv'.
+        comments : list of strings, optional
+            Will output as comments to the header. The default is [].
+
+        Returns
+        -------
+        None.
+
+        """
+        file = fileName.split('.'+ext)[0] + tag + "." + ext
+
         print(f"Saving {tag} results at {file}")
-        
+
+        barcodeMap.meta['comments']=comments
+
         barcodeMap.write(
             file,
             format="ascii.ecsv",
