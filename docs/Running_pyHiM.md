@@ -739,6 +739,11 @@ Model: stardist 3D
 Training set: 17 ROIs, DAPI 3D embryos nc14, nc13, nc12, RAW and deconvolved images.
 Name: DAPI_3D_stardist_20210805_mixed
 Comment: Third network, trained with a larger number of ROIs. Better performance than 0625.
+
+Model: stardist 3D
+Training set: pancreas, deconvolved images.
+Name: DAPI_3D_stardist_17032021
+Comment: First network for tissues.
 ```
 
 
@@ -992,7 +997,7 @@ The function does the following:
    1. rescales exposures
    2. removes non-uniform background in 3D
    3. readjusts levels to top pixel intensities
-4. The pre-processed 3D volume is then used to segment masks in 2D for each plane using DAOfind()
+4. The pre-processed 3D volume is then used to segment sources in 2D for each plane using DAOfind()
 5. Deblends masks for each plane
 6. Merges 2D masks into 3D masks
 7. Re-labels and reblends 3D masks
@@ -1115,17 +1120,17 @@ optional arguments:
 
 ```sh
 Model: stardist 3D
-Training set: 178 images 256x256, deconvolved
+Training set: 178 barcode images 256x256, deconvolved
 Name: PSF_3D_stardist_18032021_single_loci
 Comment: first network trial. Good performance in validation tests.
 
 Model: stardist 3D
-Training set: 178 images 256x256, deconvolved
+Training set: 178 barcode images 256x256, deconvolved
 Name: PSF_3D_stardist_19032021_single_loci
 Comment: Second network. Good performance in validation tests. Bright spots are sometimes not segmented properly.
 
 Model: stardist 3D
-Training set: 132 images 256x256, simulations of PSF.
+Training set: 132 barcode images 256x256, simulations of PSF.
 Name: PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01
 Comment: Third network. Excellent performance in validation tests. Some bright spots are still not perfectly segmented (very low percentage).
 ```
