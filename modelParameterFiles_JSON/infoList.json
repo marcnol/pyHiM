@@ -90,9 +90,7 @@
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
 		        "stardist_network3D": "stardist_20210625_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
@@ -145,7 +143,6 @@
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
-		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
 		        "stardist_network": "stardist_20210618_simu_deconvolved_thresh_0_01"
 		    },
             "zProject": {
@@ -171,9 +168,7 @@
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
 		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
 		        "stardist_network3D": "stardist_20210625_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
