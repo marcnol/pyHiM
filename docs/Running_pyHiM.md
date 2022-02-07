@@ -714,6 +714,27 @@ See networks for DAPI 3D segmentation [here](./AI_networks.md).
 
 
 
+**Postprocessing**
+
+`segmentMasks3D` will produce 3D Numpy labeled arrays that will not be used by `buildPWDmatrix` as this latter will load 2D projected masks.
+
+Thus, we need to take the output of `segmentMasks3D` and produce 2D Numpy labeled arrays with the appropriate names.
+
+This is accomplished by `process_segmentMasks3D.py`, a python script that you can find in `src/postProcessing`.
+
+The only input argument is the rootFolder.
+
+```sh
+usage: process_segmentMasks3D.py [-h] [-F ROOTFOLDER]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+```
+
+You can run this script in the root folder of an analysis and it should work fine (it assumes `./` to be the default folder).
+
 ##### 4.3 Segmentation of sources in 2D
 
 **Operation**
