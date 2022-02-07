@@ -129,7 +129,8 @@ class filter_localizations:
         """
 
         rows_to_remove=list()
-        for i in trange(len(barcodeMap)): # i is the index of the barcode in barcodeMapROI
+        nBarcodes = len(barcodeMap)
+        for i in trange(nBarcodes): # i is the index of the barcode in barcodeMapROI
 
 
             # [filters barcode localizations either by]
@@ -145,7 +146,7 @@ class filter_localizations:
         # removes rows from table
         barcodeMap.remove_rows(rows_to_remove)
 
-        print(f"$ Removed {len(rows_to_remove)} barcode localizations from table.")
+        print(f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {nBarcodes}.")
 
         return barcodeMap
 
