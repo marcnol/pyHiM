@@ -1286,11 +1286,10 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 
 ```pyHiM.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```
 
-Go to the ```destination_directory``` and run  ```processSNDchannel.py --addMask sna``` for manually segmenting all the ROIs in the destination_directory and label them with the ```sna``` tag. You can repeat this process as many times as you want using different tags. For instance, if you also want to label ```doc``` then you can run   ```processSNDchannel.py --addMask doc```. This second command will not overwrite what you did with the first command but rather accumulate different tags.
-
-After you run this command for all the tags you want to identify, you now need to assign these tags to the cells that were previously identified during the run of ```pyHiM.py```.
-
-For this, just run ```processSNDchannel.py``` on the command line.
+- Go to the ```destination_directory``` and run  ```processSNDchannel.py --addMask sna``` for manually segmenting all the ROIs in the destination_directory and label them with the ```sna``` tag. This will produce a numpy array in the `segmentedObjects` folder containing the mask.
+- You can repeat this process as many times as you want using different tags. For instance, if you also want to label ```doc``` then you can run   ```processSNDchannel.py --addMask doc```. This second command will not overwrite what you did with the first command but rather accumulate different tags.
+- After you run this command for all the tags you want to identify, you now need to assign these tags to the cells that were previously identified during the run of ```pyHiM.py```.
+- For this, just run ```processSNDchannel.py``` on the command line without any argument. This last execution will produce the `ecsv` table (see below) that you need to run `processHiMmatrix`.
 
 #### Folder
 
@@ -1331,7 +1330,7 @@ This file can then be loaded within ```replotHiMmatrix.py``` to identify which c
 
 
 
-### Analysis of several samples at once
+### 8.1 Analysis of several samples at once
 
 You can now use a new script to call several samples in one go:
 
@@ -1376,7 +1375,7 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 
 
-### Parallel Computations
+### 8.2 Parallel Computations
 
 Several routines are now fitted with the possibility of performing parallel computations using the Dask package.
 
@@ -1400,7 +1399,7 @@ ssh -L 8789:localhost:8787 marcnol@lopevi
 
 
 
-### zipping and erasing run
+### 9. zipping and erasing run
 
 #### zip and retrieve results
 
