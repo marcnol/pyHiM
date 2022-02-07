@@ -577,16 +577,174 @@ optional arguments:
 
 
 
-#### 4. Segmenting sources
+
+
+#### 4. Segmentation of masks and sources
 
 **Overall options** for source segmentation
 
-- 4.1 Segmentation in 2D
-- 4.2 Estimation of z-position post 2D segmentation using z-profile
-- 4.3 Estimation of z-position post 2D segmentation using ASTROPY
-- 4.4 DIrect segmentation in 3D
+- 4.1 Segmentation of masks in 2D
 
-##### 4.2 Segmentation in 2D
+- 4.2 Segmentation of masks in 3D
+
+- 4.3 Segmentation of sources 2D
+
+- 4.4 Estimation of z-position post 2D segmentation using z-profile
+
+- 4.5 Estimation of z-position post 2D segmentation using ASTROPY
+
+- 4.6 Direct segmentation in 3D
+
+  
+
+##### 4.1 Segmentation of masks in 2D
+
+**Operation**
+
+**Invoke**
+
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. 
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters
+                        !): makeProjections alignImages appliesRegistrations
+                        alignImages3D segmentMasks segmentMasks3D
+                        segmentSources3D refitBarcodes3D localDriftCorrection
+                        projectBarcodes buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+**Options**
+
+"segmentedObjects" relevant settings:
+
+```
+"folder": "segmentedObjects",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "segmentedObjects",
+"operation": "2D,3D",
+"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
+"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
+"background_sigma": 3.0,  *Description:* used to remove inhomogenous background
+"threshold_over_std": 1.0,  *Description:* threshold used to detect sources
+"area_min": 50,  *Description:* min area to keep object
+"area_max": 500,  *Description:* max area to keep object
+"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+```
+
+
+
+**Output**
+
+A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01_segmentedMasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01_Masks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects. 
+
+The NPY file is a 2D labeled numpy array  containing the segmented objects with a size identical to the original image. Background has the value *0* and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
+
+*Warning*:  This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
+
+
+
+**AI networks**
+
+`Folder: /mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks/`
+
+```sh
+Model: stardist 2D
+Training set: 3 ROIs, DAPI 2D embryos nc14, deconvolved, presegmented using image analysis.
+Name: DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2
+Comment: third network trial. Excellent performance.
+```
+
+
+
+##### 4.2 Segmentation of masks in 3D
+
+**Operation**
+
+**Invoke**
+
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList.json```. 
+
+If you want to run this function exclusively, run *pyHiM* using the `-C segmentMasks3D` argument. This is currently not in the default list of commands of *pyHiM*.
+
+
+
+**Options**
+
+"segmentedObjects" relevant settings:
+
+```
+"operation": "2D,3D",
+"stardist_basename3D":"/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
+"stardist_network3D":"stardist_20210625_deconvolved",
+```
+
+
+
+**Output**
+
+A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01.tif_3Dmasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01._3Dmasks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects. 
+
+The NPY file is a 3D labeled numpy array  containing the segmented objects. The file name is constructed using the original root filename with the tag `_3DMasks`.
+
+*Warning*:  This mode operates in 3D, therefore the Startdist network provided **must be** in 3D.
+
+
+
+**AI networks**
+
+`Folder: /mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks/`
+
+```sh
+Model: stardist 3D
+Training set: 3 ROIs, DAPI 3D embryos nc14, deconvolved
+Name: DAPI_3D_stardist_20210617_deconvolved
+Comment: first network trial.
+
+Model: stardist 3D
+Training set: 5 ROIs, DAPI 3D embryos nc14, deconvolved
+Name: DAPI_3D_stardist_20210625_deconvolved
+Comment: Second network, trained with a larger number of ROIs. Good performance in validation tests.
+
+Model: stardist 3D
+Training set: 17 ROIs, DAPI 3D embryos nc14, nc13, nc12, deconvolved
+Name: DAPI_3D_stardist_20210720_deconvolved
+Comment: Third network, trained with a larger number of ROIs. Better performance than 0625.
+
+Model: stardist 3D
+Training set: 17 ROIs, DAPI 3D embryos nc14, nc13, nc12, RAW and deconvolved images.
+Name: DAPI_3D_stardist_20210805_mixed
+Comment: Third network, trained with a larger number of ROIs. Better performance than 0625.
+```
+
+
+
+
+##### 4.3 Segmentation of sources in 2D
 
 **Operation**
 
@@ -675,6 +833,24 @@ d95b375c-5f4e-4adf-962e-66744e2b3110 1 0 31 1 nan 15.746314184707545 100.9821103
 
 
 
+**AI networks**
+
+`Folder: /mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks/`
+
+```sh
+Model: stardist 2D
+Training set: 6 ROIs, 3 barcodes, embryos nc14, deconvolved
+Name: PSF_2D_stardist_18032021_single_loci
+Comment: first network trial. Good performance in validation tests.
+
+Model: stardist 2D
+Training set: 6 ROIs, 3 barcodes, embryos nc14, deconvolved
+Name: PSF_2D_stardist_19032021_single_loci
+Comment: Second network. Good performance in validation tests.
+```
+
+
+
 **Examples**
 
 An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
@@ -689,7 +865,7 @@ An example of a barcode where localization signals are far from optimal: note th
 
 
 
-##### 4.2 3D fits of barcode positions using zProfiling
+##### 4.4 3D fits of barcode positions using zProfiling
 
 **Operation**
 
@@ -734,7 +910,7 @@ optional arguments:
 
 
 
-##### 4.3 3D fits of barcode positions using ASTROPY
+##### 4.5 3D fits of barcode positions using ASTROPY
 
 **Operation**
 
@@ -802,7 +978,7 @@ Output examples:
 
 
 
-#### 4.4 Direct segmentation of sources in 3D
+#### 4.6 Direct segmentation of sources in 3D
 
 **Operation**
 
@@ -930,6 +1106,33 @@ optional arguments:
 "stardist_network": "stardist_18032021_single_loci"
 
 ```
+
+
+
+**AI networks**
+
+`Folder: /mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks/`
+
+```sh
+Model: stardist 3D
+Training set: 178 images 256x256, deconvolved
+Name: PSF_3D_stardist_18032021_single_loci
+Comment: first network trial. Good performance in validation tests.
+
+Model: stardist 3D
+Training set: 178 images 256x256, deconvolved
+Name: PSF_3D_stardist_19032021_single_loci
+Comment: Second network. Good performance in validation tests. Bright spots are sometimes not segmented properly.
+
+Model: stardist 3D
+Training set: 132 images 256x256, simulations of PSF.
+Name: PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01
+Comment: Third network. Excellent performance in validation tests. Some bright spots are still not perfectly segmented (very low percentage).
+```
+
+
+
+**Examples**
 
 
 
