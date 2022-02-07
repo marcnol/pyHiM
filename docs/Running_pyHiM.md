@@ -1439,6 +1439,42 @@ scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_D
 scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/buildsPWDmatrix/*npy /home/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix/
 ```
 
+
+
+**Input arguments**
+
+```sh
+usage: processHiMmatrix.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+                           [-W ACTION] [--matlab] [--saveMatrix]
+                           [--getStructure] [--pixelSize PIXELSIZE]
+                           [--HiMnormalization HIMNORMALIZATION] [--d3]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --matlab              Use to load matlab formatted data
+  --saveMatrix          Use to load matlab formatted data
+  --getStructure        Use to save ShEc3D PDB structure
+  --pixelSize PIXELSIZE
+                        pixelSize in um
+  --HiMnormalization HIMNORMALIZATION
+                        Normalization of contact matrix: nonNANs (default) or
+                        nCells
+  --d3                  Use to load 3D maps
+```
+
+
+
+**Collecting data from several experiments**
+
 Now, you can run ```processHiMmatrix.py``` locally. You should setup your files in a directory. For instance the directory ```/mnt/disk2/marcnol/data/Experiment_19``` contains three folders:
 
 ```bash
