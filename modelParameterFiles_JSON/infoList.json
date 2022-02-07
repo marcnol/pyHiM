@@ -49,6 +49,7 @@
         "segmentedObjects": {
             "Segment3D": "overwrite",
 	        "operation": "2D",
+	        "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "background_sigma": 3.0,
             "brightest": 1100,
             "centroidDifference_max": 5,
