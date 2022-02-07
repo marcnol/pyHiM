@@ -1,37 +1,9 @@
 # Installing pyHiM
 
 
-
-## Install conda
-
-in the Downloads directory, run:
-
-```
-wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
-```
-
-or download the package from [conda installation script](https://www.anaconda.com/products/individual)
-
-
-
-Now, run the installation by
-
-```
-bash Anaconda3-2020.02-Linux-x86_64.sh
-
-```
-
-and accept all the questions and default installation folder. Then update anaconda by
-
-```bash
-bash
-conda update anaconda
-```
-
-You are set.
-
-
 ## Install and configure pyHiM
+
+### Clone pyHiM repository
 
 Clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
@@ -53,7 +25,44 @@ export MPLBACKEND=agg
 
 make sure you use a different directory name if this is not where you put pyHiM !
 
-To install the necessary packages using conda, run:
+### Set up enviroment using conda
+
+#### Install conda
+
+in the Downloads directory, run:
+
+```
+wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
+```
+
+or download the package from [conda installation script](https://www.anaconda.com/products/individual)
+
+Now, run the installation by
+
+```
+bash Anaconda3-2020.02-Linux-x86_64.sh
+```
+
+and accept all the questions and default installation folder. Then update anaconda by
+
+```bash
+bash
+conda update anaconda
+```
+
+#### Setup conda enviroment
+
+##### Automatic 
+
+Run this command in your terminal within the root 
+
+```sh
+conda env create -f environment.yml
+```
+
+##### Manual 
+
+To manually install the necessary packages using conda, run:
 
 ```sh
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
@@ -69,29 +78,7 @@ Remember to activate the environment before running pyHiM:
 conda activate pyHiM
 ```
 
-
-
-### Installing bigfish
-
-```bash
-cd $HOME/Repositories
-git clone https://github.com/fish-quant/big-fish.git
-cd big-fish && git checkout develop
-ln -s $HOME/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
-```
-
-If you are running pyHiM in a conda environment, you can link bigfish as follows:
-
-```sh
-ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
-
-```
-
-
-
-
-
-### Upgrade scikit-image to development version
+#### Upgrade scikit-image to development version
 
 Uninstall any existing installations:
 
@@ -120,13 +107,26 @@ git pull  # Grab latest source
 pip install -e .  # Reinstall
 ```
 
-
-
 You should be set!
 
+### Install bigfish
+
+```bash
+cd $HOME/Repositories
+git clone https://github.com/fish-quant/big-fish.git
+cd big-fish && git checkout develop
+ln -s $HOME/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
+```
+
+If you are running pyHiM in a conda environment, you can link bigfish as follows:
+
+```sh
+ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+```
 
 
-### Install in Meso-LR super-computer
+
+### Script installation for super-computer centers (e.g. Meso-LR)
 
 To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
