@@ -234,3 +234,61 @@ class localization_table:
         print("\n$ ROIs detected: {}".format(numberROIs))
 
         return barcodeMapROI,numberROIs
+
+    def compares_localizations(self,barcodeMap1,barcodeMap2,fileName_list):
+        """
+        Compares the localizations of two barcode tables
+
+        Parameters
+        ----------
+        barcodeMap1 : astropy Table
+            localization table 1.
+        barcodeMap2 : astropy Table
+            localization table 2.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        barcodeMap2.add_index('Buid')
+        number_localizations = len(barcodeMap1)
+
+        diffs = dict()
+        labels = ['xcentroid','ycentroid','zcentroid']
+        for label in labels:
+            diffs[label]=[]
+
+        # iterates over rows in barcodeMap1
+        for row in range(number_localizations):
+            Buid_1 = barcodeMap2[row]['Buid']
+            barcode_found = True
+
+            # finds same Buid in barcodeMap2
+            try:
+                barcodeMap2.loc[Buid_1]
+            except KeyError:
+                barcode_found = False
+                pass
+
+            # collects differences in values between same localization in both tables
+            if barcode_found:
+                for label in labels:
+                    diffs[label].append(barcodeMap2.loc[Buid_1][label]-barcodeMap1[row][label])
+
+
+        # plots figures
+
+        fig, axes = plt.subplots(2, 2)
+        ax = axes.ravel()
+        fig.set_size_inches((30, 30))
+
+        for label, axis in zip(labels,ax):
+            r = np.array(np.isfinite(diffs[label]))
+            axis.hist(r, bins=20)
+            axis.set_xlabel(label)
+            axis.set_ylabel("counts")
+
+        ax[3].scatter(np.array(np.isfinite(diffs['ycentroid'])),np.array(np.isfinite(diffs['xcentroid'])),s=3, alpha=.8)
+        fig.savefig("".join(fileName_list))

@@ -211,13 +211,15 @@ class register_localizations:
             print(f"\nWARNING>{file} contains an empty table!")
             return None
 
-        if "registered" in barcodeMapFull.meta['comments']:
-            print(f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything")
-            return None
+        if 'comments' in barcodeMapFull.meta.keys():
+            if "registered" in barcodeMapFull.meta['comments']:
+                print(f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything")
+                return None
 
         # preserves original copy of table for safe keeping
         new_file = get_file_table_new_name(file)
         table.save(new_file, barcodeMapFull)
+        barcodeMapFull_unregistered = barcodeMapFull.copy()
 
         # indexes table by ROI
         barcodeMapROI, numberROIs = table.decode_ROIs(barcodeMapFull)
@@ -232,10 +234,11 @@ class register_localizations:
             # registers localizations
             barcodeMap = self.register_barcodes(barcodeMap)
 
-        # saves and plots filtered barcode coordinate Tables
+        # saves and plots registered barcode coordinate Tables
         table.save(file, barcodeMap, comments = 'registered')
         table.plots_distributionFluxes(barcodeMap, [file.split('.')[0], "_registered", "_barcode_stats", ".png"])
         table.plots_localizations(barcodeMap, [file.split('.')[0], "_registered", "_barcode_localizations",".png"])
+        table.compares_localizations(barcodeMap,barcodeMapFull_unregistered,[file.split('.')[0], "_registered", "_barcode_comparisons",".png"])
 
 
     def register(self):
