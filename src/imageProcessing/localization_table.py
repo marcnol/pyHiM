@@ -101,3 +101,31 @@ class localization_table:
             format="ascii.ecsv",
             overwrite=True,
         )
+
+    def plots_distributionFluxes(self, barcodeMap, fileName):
+
+
+        fig, axes = plt.subplots(1, 2)
+        ax = axes.ravel()
+        fig.set_size_inches((10, 5))
+
+        fluxes = barcodeMap["flux"]
+        sharpness = barcodeMap["sharpness"]
+        roundness = barcodeMap["roundness1"]
+        peak = barcodeMap["peak"]
+        mag = barcodeMap["mag"]
+
+        p1 = ax[0].scatter(fluxes, sharpness, c=peak, cmap="terrain", alpha=0.5)
+        ax[0].set_title("color: peak intensity")
+        ax[0].set_xlabel("flux")
+        ax[0].set_ylabel("sharpness")
+
+        p2 = ax[1].scatter(roundness, mag, c=peak, cmap="terrain", alpha=0.5)
+        ax[1].set_title("color: peak intensity")
+        ax[1].set_xlabel("roundness")
+        ax[1].set_ylabel("magnitude")
+        fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
+
+        fig.savefig(fileName)
+
+        plt.close(fig)

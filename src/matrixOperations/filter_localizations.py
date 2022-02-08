@@ -62,9 +62,9 @@ class filter_localizations:
             True if the test is passed.
 
         """
-        if "3DfitKeep" in barcodeMap.keys() and self.ndims == 3:
+        if self.ndims == 3: # and  "3DfitKeep" in barcodeMap.keys()
             # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-            keep = barcodeMap["3DfitKeep"][i] and barcodeMap["flux"][i] > self.flux_min
+            keep = barcodeMap["flux"][i] > self.flux_min # and barcodeMap["3DfitKeep"][i]
         else:
             # [or by reading the flux from 2D localization]
             keep = barcodeMap["flux"][i] > self.flux_min
@@ -225,6 +225,8 @@ class filter_localizations:
                     # Loads barcode coordinate Tables
                     table = localization_table()
                     barcodeMap, uniqueBarcodes = table.load(file)
+
+                    table.plots_distributionFluxes(barcodeMap, file + "BarcodeStats.png")
 
                     # saves original barcode coordinate Tables for safe keeping
                     table.save(file, barcodeMap, tag = '_unfiltered',ext = 'dat')
