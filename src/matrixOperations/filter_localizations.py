@@ -9,16 +9,9 @@ Created on Mon Feb  7 16:45:44 2022
 # IMPORTS
 # =============================================================================
 
-import glob, os, sys
-import re
+import glob
 import numpy as np
-from tqdm.contrib import tzip
 from tqdm import trange
-import matplotlib.pyplot as plt
-
-from astropy.table import Table
-
-from photutils.segmentation import SegmentationImage
 
 from fileProcessing.fileManagement import (
     folders,
@@ -140,7 +133,7 @@ class filter_localizations:
             #keepAlignment = self.filterLocalizations_BlockAlignment(barcodeMap, i)
             keepAlignment =True
 
-            if keepQuality and keepAlignment:
+            if not keepQuality or not keepAlignment:
                 rows_to_remove.append(i)
 
         # removes rows from table
@@ -182,7 +175,6 @@ class filter_localizations:
         else:
             self.blockSize = 256
             printLog("# blockSize not found. Set to {}!".format(self.blockSize))
-
 
     def filter_folder(self):
         """
@@ -226,21 +218,28 @@ class filter_localizations:
                     table = localization_table()
                     barcodeMap, uniqueBarcodes = table.load(file)
 
-                    table.plots_distributionFluxes(barcodeMap, file + "BarcodeStats.png")
+                    if len(barcodeMap) > 0:
+                        # plots and saves original barcode coordinate Tables for safe keeping
+                        new_file = get_file_table_new_name(file)
+                        table.save(new_file, barcodeMap)
+                        table.plots_distributionFluxes(barcodeMap, [new_file.split('.')[0], "_barcode_stats",".png"])
+                        table.plots_localizations(barcodeMap, [new_file.split('.')[0], "_barcode_localizations",".png"])
 
-                    # saves original barcode coordinate Tables for safe keeping
-                    table.save(file, barcodeMap, tag = '_unfiltered',ext = 'dat')
+                        # processes tables
+                        barcodeMapROI = barcodeMap.group_by("ROI #")
+                        numberROIs = len(barcodeMapROI.groups.keys)
+                        print("\n$ ROIs detected: {}".format(numberROIs))
 
-                    # processes tables
-                    barcodeMapROI = barcodeMap.group_by("ROI #")
-                    numberROIs = len(barcodeMapROI.groups.keys)
-                    print("\n$ ROIs detected: {}".format(numberROIs))
+                        # Filters barcode coordinate Tables
+                        barcodeMap = self.filter_barcode_table(barcodeMap)
 
-                    # Filters barcode coordinate Tables
-                    barcodeMap = self.filter_barcode_table(barcodeMap)
+                        # saves and plots filtered barcode coordinate Tables
+                        table.save(file, barcodeMap, comments = 'filtered')
+                        table.plots_distributionFluxes(barcodeMap, [file.split('.')[0], "_barcode_stats", ".png"])
+                        table.plots_localizations(barcodeMap, [file.split('.')[0],"_barcode_localizations",".png"])
 
-                    # saves filtered barcode coordinate Tables
-                    table.save(file, barcodeMap, tag = '',ext = 'dat',comments = ['filtered'])
+                    else:
+                        print(f"\nWARNING>{file} contains an empty table!")
 
             else:
                 printLog("No barcode tables found!")
@@ -249,3 +248,16 @@ class filter_localizations:
             printLog("Barcode tables {} filtered".format(currentFolder), "info")
 
 
+def get_file_table_new_name(file):
+
+    existing_unfiltered_files = glob.glob(file.split('.')[0]+'_unfiltered*')
+    version_numbers = [int(x.split('_version_')[1].split('_')[0]) for x in existing_unfiltered_files]
+
+    if len(version_numbers)>0:
+        new_version = max(version_numbers) + 1
+    else:
+        new_version = 0
+
+    new_file = file.split('.dat')[0] + "_unfiltered_version_" + str(new_version) + "_.dat"
+
+    return new_file
