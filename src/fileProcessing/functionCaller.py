@@ -35,6 +35,7 @@ from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
 from imageProcessing.segmentMasks3D import segmentMasks3D
 from matrixOperations.filter_localizations import filter_localizations
+from matrixOperations.register_localizations import register_localizations
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -210,9 +211,15 @@ class HiMfunctionCaller:
     # filters barcode localization table
     def filter_localizations(self, param, label):
         if label == "barcode":
-            filters_loc = filter_localizations(param)
-            filters_loc.filter_folder()
-            
+            filter_localizations_instance = filter_localizations(param)
+            filter_localizations_instance.filter_folder()
+
+    # filters barcode localization table
+    def register_localizations(self, param, label):
+        if label == "barcode":
+            register_localizations_instance = register_localizations(param)
+            register_localizations_instance.register()
+
     # This function will be removed in new release
     def localDriftCorrection(self, param, label):
 
@@ -240,7 +247,7 @@ class HiMfunctionCaller:
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
-                "projectBarcodes","filter_localizations","buildHiMmatrix"]
+                "projectBarcodes","filter_localizations","register_localizations","buildHiMmatrix"]
 
 
 def defaultListCommands():
@@ -257,7 +264,7 @@ def HiM_parseArguments():
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
-                        optional: [filter_localizations]")
+                        optional: [ filter_localizations register_localizations ]")
                         # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
