@@ -275,8 +275,10 @@ class localization_table:
             # collects differences in values between same localization in both tables
             if barcode_found:
                 for label in labels:
-                    diffs[label].append(barcodeMap2.loc[Buid_1][label]-barcodeMap1[row][label])
-
+                    diff = barcodeMap2.loc[Buid_1][label]-barcodeMap1[row][label]
+                    if np.isnan(diff):
+                        diff = 0
+                    diffs[label].append(diff)
 
         # plots figures
 
@@ -285,10 +287,11 @@ class localization_table:
         fig.set_size_inches((30, 30))
 
         for label, axis in zip(labels,ax):
-            r = np.array(np.isfinite(diffs[label]))
+            r = np.array(diffs[label])
             axis.hist(r, bins=20)
             axis.set_xlabel(label)
             axis.set_ylabel("counts")
 
-        ax[3].scatter(np.array(np.isfinite(diffs['ycentroid'])),np.array(np.isfinite(diffs['xcentroid'])),s=3, alpha=.8)
+        ax[3].scatter(np.array(diffs['ycentroid']),np.array(diffs['xcentroid']),s=3, alpha=.8)
+
         fig.savefig("".join(fileName_list))
