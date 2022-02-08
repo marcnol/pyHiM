@@ -1821,37 +1821,6 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
 
     return fig
 
-#if __name__ == '__main__':
-
-    #test_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
-
-    #labels_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
-
-    #def read_images(path):
-        #images2read=glob(path+'/*.tif')
-        #images=[imread(x) for x in images2read]
-        #return images
-
-    #def get_name(path):
-        #images2read=glob(path+'/*.tif')
-        #for k in range(len(images2read)) :
-            #print(images2read)
-            #raw_name=Path(images2read[k]).stem
-            #return raw_name
-
-    #raw_name=get_name(test_dir_all[0])
-    #raw=read_images(test_dir_all[0])
-    #labeled=read_images(labels_dir_all[0])
-
-    #for image in raw :
-        #print(image)
-        #_segments3DrawImagesForTesting(image)
-
-    #for im,lab,i in zip(raw,labeled,range(len(raw))):
-
-        #fig = _subplot3DrawImagesAndLabels(im,lab)
-        #plt.savefig(labels_dir_all[0]+os.sep+"segmentedMasks_"+str(i)+".png", dpi = 1000)
-
 ########################################################
 # SAVING ROUTINES
 ########################################################
