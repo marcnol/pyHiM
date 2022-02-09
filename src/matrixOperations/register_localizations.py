@@ -45,7 +45,7 @@ class register_localizations:
         """
 
         self.param = param
-        self.alignmentResultsTableRead = Table()
+        self.alignmentResultsTableRead = False
         self.foundMatch = []
 
         if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
@@ -60,6 +60,7 @@ class register_localizations:
             return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected)
         else: # no correction was applied because the localAlignmentTable was not found
             return zxy_uncorrected
+            print('ERROR> did not found alignmentResultsTable')
 
     def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected):
         """
@@ -136,7 +137,7 @@ class register_localizations:
             blockSize = 256
             printLog("# blockSize not found. Set to {}!".format(blockSize))
 
-        print(f"\n$ Reference barcode = {referenceFiducial }")
+        print(f"\n$ Blocksize = {blockSize}\n Tolerance = {self.toleranceDrift}\n Reference barcode = {referenceFiducial}")
 
         NbarcodesROI = [], [], 0
 
@@ -181,19 +182,17 @@ class register_localizations:
         localAlignmentFileName = self.dataFolder.outputFiles["alignImages"].split(".")[0] + "_" + mode + ".dat"
 
         if os.path.exists(localAlignmentFileName):
-            alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
-            alignmentResultsTableRead = True
+            self.alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
+            self.alignmentResultsTableRead = True
             printLog("$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(localAlignmentFileName,mode))
-            printLog("$ Number of records: {}".format(len(alignmentResultsTable)))
+            printLog("$ Number of records: {}".format(len(self.alignmentResultsTable)))
         else:
             printLog("\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
                     localAlignmentFileName
                 )
             )
-            alignmentResultsTableRead = False
-            alignmentResultsTable = Table()
-
-        return alignmentResultsTable, alignmentResultsTableRead
+            self.alignmentResultsTableRead = False
+            self.alignmentResultsTable = Table()
 
     def register_barcodeMap_file(self, file):
 
@@ -266,9 +265,9 @@ class register_localizations:
         printLog("> Processing Folder: {}".format(currentFolder))
 
         # Loads localAlignment if it exists
-        alignmentResultsTable, alignmentResultsTable_read_result = self.loadsLocalAlignment()
+        self.loadsLocalAlignment()
 
-        if not alignmentResultsTable_read_result:
+        if not self.alignmentResultsTableRead:
             print(f"Unable to find aligment table.\nDid you run alignImages3D?\n\n Aborted.")
             return
 
