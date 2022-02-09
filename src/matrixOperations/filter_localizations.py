@@ -26,6 +26,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+
 class filter_localizations:
     def __init__(self, param):
         """
@@ -55,16 +56,16 @@ class filter_localizations:
             True if the test is passed.
 
         """
-        if self.ndims == 3: # and  "3DfitKeep" in barcodeMap.keys()
+        if self.ndims == 3:  # and  "3DfitKeep" in barcodeMap.keys()
             # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-            keep = barcodeMap["flux"][i] > self.flux_min # and barcodeMap["3DfitKeep"][i]
+            keep = barcodeMap["flux"][i] > self.flux_min  # and barcodeMap["3DfitKeep"][i]
         else:
             # [or by reading the flux from 2D localization]
             keep = barcodeMap["flux"][i] > self.flux_min
 
         return keep
 
-    def filterLocalizations_BlockAlignment(self, barcodeMap,i):
+    def filterLocalizations_BlockAlignment(self, barcodeMap, i):
         """
         [filters barcode per blockAlignmentMask, if existing]
         runs only if localAligment was not run!
@@ -84,7 +85,7 @@ class filter_localizations:
         y_int = int(barcodeMap["xcentroid"][i])
         x_int = int(barcodeMap["ycentroid"][i])
         keepAlignment = True
-        if not self.alignmentResultsTableRead: # only proceeds if localAlignment was not performed
+        if not self.alignmentResultsTableRead:  # only proceeds if localAlignment was not performed
             barcodeID = "barcode:" + str(barcodeMap["Barcode #"][i])
             barcodeROI = "ROI:" + str(barcodeMap["ROI #"][i])
 
@@ -98,15 +99,12 @@ class filter_localizations:
                         )
 
             # keeps it always if barcode is fiducial
-            if (
-                "RT" + str(barcodeMap["Barcode #"][i])
-                in self.param.param["alignImages"]["referenceFiducial"]
-            ):
+            if "RT" + str(barcodeMap["Barcode #"][i]) in self.param.param["alignImages"]["referenceFiducial"]:
                 keepAlignment = True
 
         return keepAlignment
 
-    def filter_barcode_table(self,barcodeMap):
+    def filter_barcode_table(self, barcodeMap):
         """
         iterates over rows of a barcode localization table and filters unwanted rows
 
@@ -121,17 +119,17 @@ class filter_localizations:
 
         """
 
-        rows_to_remove=list()
+        rows_to_remove = list()
         nBarcodes = len(barcodeMap)
         print(f"$ Minimum flux: {self.flux_min}")
-        for i in trange(nBarcodes): # i is the index of the barcode in barcodeMapROI
+        for i in trange(nBarcodes):  # i is the index of the barcode in barcodeMapROI
 
             # [filters barcode localizations either by]
             keepQuality = self.filterLocalizations_Quality(barcodeMap, i)
 
             # [filters barcode per blockAlignmentMask, if existing]
-            #keepAlignment = self.filterLocalizations_BlockAlignment(barcodeMap, i)
-            keepAlignment =True
+            # keepAlignment = self.filterLocalizations_BlockAlignment(barcodeMap, i)
+            keepAlignment = True
 
             if not keepQuality or not keepAlignment:
                 rows_to_remove.append(i)
@@ -157,7 +155,7 @@ class filter_localizations:
             Minimum flux to keep barcode localization
 
         """
-        flux_key = "flux_min_3D" if self.ndims==3 else "flux_min"
+        flux_key = "flux_min_3D" if self.ndims == 3 else "flux_min"
         if flux_key in self.param.param["buildsPWDmatrix"]:
             self.flux_min = self.param.param["buildsPWDmatrix"][flux_key]
         else:
@@ -167,7 +165,7 @@ class filter_localizations:
         if "toleranceDrift" in self.param.param["buildsPWDmatrix"]:
             self.tolerance_drift = self.param.param["buildsPWDmatrix"]["toleranceDrift"]
         else:
-            self.tolerance_drift= 1
+            self.tolerance_drift = 1
             printLog("# toleranceDrift not found. Set to {}!".format(self.toleranceDrift))
 
         if "blockSize" in self.param.param["alignImages"]:
@@ -193,8 +191,7 @@ class filter_localizations:
         printLog("\n===================={}====================\n".format(sessionName))
         printLog("$ folders read: {}".format(len(self.dataFolder.listFolders)))
         writeString2File(self.param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
-        label = 'barcode'
-
+        label = "barcode"
 
         for currentFolder in self.dataFolder.listFolders:
             self.dataFolder.createsFolders(currentFolder, self.param)
@@ -202,8 +199,7 @@ class filter_localizations:
 
             files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
 
-
-            if len(files)>0:
+            if len(files) > 0:
 
                 for file in files:
 
@@ -222,8 +218,10 @@ class filter_localizations:
                         # plots and saves original barcode coordinate Tables for safe keeping
                         new_file = get_file_table_new_name(file)
                         table.save(new_file, barcodeMap)
-                        table.plots_distributionFluxes(barcodeMap, [new_file.split('.')[0], "_barcode_stats",".png"])
-                        table.plots_localizations(barcodeMap, [new_file.split('.')[0], "_barcode_localizations",".png"])
+                        table.plots_distributionFluxes(barcodeMap, [new_file.split(".")[0], "_barcode_stats", ".png"])
+                        table.plots_localizations(
+                            barcodeMap, [new_file.split(".")[0], "_barcode_localizations", ".png"]
+                        )
 
                         # processes tables
                         barcodeMapROI = barcodeMap.group_by("ROI #")
@@ -234,9 +232,9 @@ class filter_localizations:
                         barcodeMap = self.filter_barcode_table(barcodeMap)
 
                         # saves and plots filtered barcode coordinate Tables
-                        table.save(file, barcodeMap, comments = 'filtered')
-                        table.plots_distributionFluxes(barcodeMap, [file.split('.')[0], "_barcode_stats", ".png"])
-                        table.plots_localizations(barcodeMap, [file.split('.')[0],"_barcode_localizations",".png"])
+                        table.save(file, barcodeMap, comments="filtered")
+                        table.plots_distributionFluxes(barcodeMap, [file.split(".")[0], "_barcode_stats", ".png"])
+                        table.plots_localizations(barcodeMap, [file.split(".")[0], "_barcode_localizations", ".png"])
 
                     else:
                         print(f"\nWARNING>{file} contains an empty table!")
@@ -244,20 +242,23 @@ class filter_localizations:
             else:
                 printLog("No barcode tables found!")
 
-
             printLog("Barcode tables {} filtered".format(currentFolder), "info")
 
 
 def get_file_table_new_name(file):
 
-    existing_unfiltered_files = glob.glob(file.split('.')[0]+'_unfiltered*')
-    version_numbers = [int(x.split('_version_')[1].split('_')[0]) for x in existing_unfiltered_files]
+    existing_versions = glob.glob(file.split(".")[0] + "_version_*.dat")
 
-    if len(version_numbers)>0:
-        new_version = max(version_numbers) + 1
-    else:
+    if len(existing_versions) < 1:
         new_version = 0
+    else:
+        version_numbers = [int(x.split("_version_")[1].split("_")[0]) for x in existing_versions]
 
-    new_file = file.split('.dat')[0] + "_unfiltered_version_" + str(new_version) + "_.dat"
+        if len(version_numbers) > 0:
+            new_version = max(version_numbers) + 1
+        else:
+            new_version = 0
+
+    new_file = file.split(".dat")[0] + "_version_" + str(new_version) + "_.dat"
 
     return new_file

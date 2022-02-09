@@ -171,6 +171,21 @@ class localization_table:
         axis.scatter(coord1,coord2, s=5, c=colors, alpha=.9, cmap = 'hsv') #nipy_spectral
         axis.set_title(title)
 
+    def build_color_dict(self,barcodeMap, key='Barcode #'):
+
+        color_dict = dict()
+        
+        unique_barcodes = np.unique(barcodeMap[key])
+        output_array = range(unique_barcodes.shape[0])
+        
+        for barcode, output in zip(unique_barcodes,output_array):
+            color_dict[str(barcode)]=output
+
+        
+
+        return color_dict
+    
+    
     def plots_localizations(self, barcodeMapFull, fileName_list):
 
         """
@@ -198,6 +213,8 @@ class localization_table:
             barcodeMap = barcodeMapROI.groups[iROI]
             nROI = barcodeMap['ROI #'][0]
             print(f"Plotting barcode localization map for ROI: {nROI}")
+            color_dict = self.build_color_dict(barcodeMap, key='Barcode #')
+            Nbarcodes = np.unique(barcodeMap['Barcode #']).shape[0]
 
             # initializes figure
             fig = plt.figure(constrained_layout=False)
@@ -210,7 +227,7 @@ class localization_table:
             x = barcodeMap["xcentroid"]
             y = barcodeMap["ycentroid"]
             z = barcodeMap["zcentroid"]
-            colors =  barcodeMap["Barcode #"] # np.random.rand(len(x))
+            colors =  [color_dict[str(x)] for x in barcodeMap["Barcode #"]]
             titles = ["Z-projection", "X-projection", "Y-projection"]
 
             # makes plot
@@ -235,7 +252,7 @@ class localization_table:
 
         return barcodeMapROI,numberROIs
 
-    def compares_localizations(self,barcodeMap1,barcodeMap2,fileName_list):
+    def compares_localizations(self,barcodeMap1,barcodeMap2,fileName_list, fontsize=20):
         """
         Compares the localizations of two barcode tables
 
@@ -281,7 +298,6 @@ class localization_table:
                     diffs[label].append(diff)
 
         # plots figures
-
         fig, axes = plt.subplots(2, 2)
         ax = axes.ravel()
         fig.set_size_inches((30, 30))
@@ -289,9 +305,11 @@ class localization_table:
         for label, axis in zip(labels,ax):
             r = np.array(diffs[label])
             axis.hist(r, bins=20)
-            axis.set_xlabel(label)
-            axis.set_ylabel("counts")
+            axis.set_xlabel(label+" correction, px", fontsize=fontsize)
+            axis.set_ylabel("counts", fontsize=fontsize)
 
         ax[3].scatter(np.array(diffs['ycentroid']),np.array(diffs['xcentroid']),s=3, alpha=.8)
+        ax[3].set_xlabel("dx-position, px", fontsize=fontsize)
+        ax[3].set_ylabel("dy-position, px", fontsize=fontsize)
 
         fig.savefig("".join(fileName_list))

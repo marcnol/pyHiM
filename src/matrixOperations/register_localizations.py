@@ -35,6 +35,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
+
 class register_localizations:
     def __init__(self, param):
         """
@@ -58,9 +59,9 @@ class register_localizations:
 
         if self.alignmentResultsTableRead:
             return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected)
-        else: # no correction was applied because the localAlignmentTable was not found
+        else:  # no correction was applied because the localAlignmentTable was not found
             return zxy_uncorrected
-            print('ERROR> did not found alignmentResultsTable')
+            print("ERROR> did not found alignmentResultsTable")
 
     def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected):
         """
@@ -69,7 +70,7 @@ class register_localizations:
 
         Parameters
         ----------
-        ROI : string
+        ROI : int
             ROI used
         x_uncorrected : float
             x coordinate.
@@ -90,25 +91,26 @@ class register_localizations:
         blockSizeXY = self.alignmentResultsTable[0]["blockXY"]
 
         # zxy coord in block reference coord system
-        zxyBlock = [np.floor(a/blockSizeXY).astype(int) for a in zxy_uncorrected]
+        zxyBlock = [np.floor(a / blockSizeXY).astype(int) for a in zxy_uncorrected]
 
-        for row in self.alignmentResultsTable:
+        # defines ROI, barcode ID, and blocks for the localization
+        nROI = "ROI:" + str(ROI)
+        nBarcode = "barcode:" + "RT" + str(barcode)
+        nBlock_i = "block_i:" + str(zxyBlock[1])
+        nBlock_j = "block_j:" + str(zxyBlock[2])
 
-            # I need to check that the XY coordinates from localization are the same as the ij indices from the block decomposition!
+        # finds the corresponding shift int the dictionary
 
-            if row["ROI #"] == ROI and row["label"] == "RT" + str(barcode) and row["block_i"] == zxyBlock[1] and row["block_j"] == zxyBlock[2]:
-                _foundMatch = True
-                shifts = [row["shift_z"],row["shift_x"],row["shift_y"]]
+        shifts = [self.dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j]["shift_z"],
+                  self.dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j]["shift_x"],
+                  self.dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j]["shift_y"]]
 
-                # checks that drifts > self.toleranceDrift are not applied
-                if max(shifts) < self.toleranceDrift:
-                    zxy_corrected = [a+shift for a,shift in zip(zxy_uncorrected,shifts)]
-                else:
-                    zxy_corrected = zxy_uncorrected
-
-                # check for quality of shift correction before applying it !!
-                #!TODO
-
+        if max(np.abs(shifts)) < self.toleranceDrift:
+            zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
+        else:
+            zxy_corrected = zxy_uncorrected      
+        
+        '''
         # keeps uncorrected values if no match is found
         if not _foundMatch:
             printLog("# Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
@@ -116,7 +118,8 @@ class register_localizations:
             self.foundMatch.append(False)
         else:
             self.foundMatch.append(True)
-
+        '''
+        
         return zxy_corrected
 
     def register_barcodes(self, barcodeMap):
@@ -137,12 +140,14 @@ class register_localizations:
             blockSize = 256
             printLog("# blockSize not found. Set to {}!".format(blockSize))
 
-        print(f"\n$ Blocksize = {blockSize}\n Tolerance = {self.toleranceDrift}\n Reference barcode = {referenceFiducial}")
+        printLog(
+            f"\n$ Parameters:\n Blocksize = {blockSize}\n Tolerance = {self.toleranceDrift}\n Reference barcode = {referenceFiducial}"
+        )
 
         NbarcodesROI = [], [], 0
 
         # loops over barcode Table rows in a given ROI
-        for i in trange(len(barcodeMap.groups[0])): # i is the index of the barcode in barcodeMapROI
+        for i in trange(len(barcodeMap.groups[0])):  # i is the index of the barcode in barcodeMapROI
             barcode = barcodeMap.groups[0]["Barcode #"][i]
             ROI = barcodeMap.groups[0]["ROI #"][i]
 
@@ -152,10 +157,10 @@ class register_localizations:
             z_uncorrected = barcodeMap.groups[0]["zcentroid"][i]
 
             # Corrects XYZ coordinate of barcode if localDriftCorrection is available
-            zxy_uncorrected = [z_uncorrected, x_uncorrected , y_uncorrected]
+            zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
             RTbarcode = "RT" + str(barcode)
 
-            if  RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
+            if RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
                 zxy_corrected = self.searchLocalShift(ROI, barcode, zxy_uncorrected)
             else:
                 # if it is the reference cycle, then it does not correct coordinates
@@ -164,7 +169,7 @@ class register_localizations:
             # rewrites corrected XYZ values to Table
             barcodeMap.groups[0]["ycentroid"][i] = zxy_corrected[1]
             barcodeMap.groups[0]["xcentroid"][i] = zxy_corrected[2]
-            if self.ndims>2:
+            if self.ndims > 2:
                 barcodeMap.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
         return barcodeMap
@@ -184,15 +189,85 @@ class register_localizations:
         if os.path.exists(localAlignmentFileName):
             self.alignmentResultsTable = Table.read(localAlignmentFileName, format="ascii.ecsv")
             self.alignmentResultsTableRead = True
-            printLog("$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(localAlignmentFileName,mode))
+
+            # builds dict of local alignments
+            self.build_local_alignment_dict()
+
+            printLog(
+                "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
+                    localAlignmentFileName, mode
+                )
+            )
             printLog("$ Number of records: {}".format(len(self.alignmentResultsTable)))
         else:
-            printLog("\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
+            printLog(
+                "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
                     localAlignmentFileName
                 )
             )
             self.alignmentResultsTableRead = False
             self.alignmentResultsTable = Table()
+            self.dictErrorBlockMasks = Table()
+
+    def build_local_alignment_dict(self):
+        """
+        Builds dictionary of local corrections for each ROI, barcode cycle, and block combination
+
+        Parameters
+        ----------
+        self.alignmentResultsTable: astropy Table
+            alignmentResultsTable table
+            
+        self.alignmentResultsTableRead: Boolean
+            True when alignmentResultsTable table was read from disk
+            
+        Returns
+        -------
+        exit_code: Boolean
+        
+        self.dictErrorBlockMasks: dict
+        
+        """
+        if not self.alignmentResultsTableRead:
+            printLog("Did not find alignmentResultsTable. Cannot continue")
+            return False
+        else:
+            alignmentResultsTable = self.alignmentResultsTable
+            
+        # gets blockSize
+        blockSizeXY = alignmentResultsTable[0]["blockXY"]
+
+        dictErrorBlockMasks = dict()
+
+        for row in alignmentResultsTable:
+            nROI = "ROI:" + str(row["ROI #"])
+            nBarcode = "barcode:" + row["label"]
+            nBlock_i = "block_i:" + str(row["block_i"])
+            nBlock_j = "block_j:" + str(row["block_j"])
+            
+            if nROI not in dictErrorBlockMasks.keys():
+                dictErrorBlockMasks[nROI] = {}
+
+            if nBarcode not in dictErrorBlockMasks[nROI].keys():
+                dictErrorBlockMasks[nROI][nBarcode] = {}
+
+            if nBlock_i not in dictErrorBlockMasks[nROI][nBarcode].keys():
+                dictErrorBlockMasks[nROI][nBarcode][nBlock_i] = {}
+
+            if nBlock_j not in dictErrorBlockMasks[nROI][nBarcode][nBlock_i].keys():
+                dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j] = {}
+
+            dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j] = {"shift_z":row["shift_z"], 
+                                                                       "shift_x":row["shift_x"], 
+                                                                       "shift_y":row["shift_y"], 
+                                                                       "quality_xy":row["quality_xy"], 
+                                                                       "quality_zy":row["quality_zy"],
+                                                                       "quality_zx":row["quality_zx"]}
+            
+            
+        self.dictErrorBlockMasks = dictErrorBlockMasks
+        return True
+
 
     def register_barcodeMap_file(self, file):
 
@@ -207,12 +282,12 @@ class register_localizations:
 
         # checks that everything is OK
         if len(barcodeMapFull) < 1:
-            print(f"\nWARNING>{file} contains an empty table!")
+            printLog(f"\nWARNING>{file} contains an empty table!")
             return None
 
-        if 'comments' in barcodeMapFull.meta.keys():
-            if "registered" in barcodeMapFull.meta['comments']:
-                print(f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything")
+        if "comments" in barcodeMapFull.meta.keys():
+            if "registered" in barcodeMapFull.meta["comments"]:
+                printLog(f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything")
                 return None
 
         # preserves original copy of table for safe keeping
@@ -227,18 +302,19 @@ class register_localizations:
 
             # creates sub Table for this ROI
             barcodeMap = barcodeMapROI.groups[iROI]
-            nROI = barcodeMap['ROI #'][0]
-            print(f"\nProcessing barcode localization Table for ROI: {nROI}")
+            nROI = barcodeMap["ROI #"][0]
+            printLog(f"\nProcessing barcode localization Table for ROI: {nROI}")
 
             # registers localizations
             barcodeMap = self.register_barcodes(barcodeMap)
 
         # saves and plots registered barcode coordinate Tables
-        table.save(file, barcodeMap, comments = 'registered')
-        table.plots_distributionFluxes(barcodeMap, [file.split('.')[0], "_registered", "_barcode_stats", ".png"])
-        table.plots_localizations(barcodeMap, [file.split('.')[0], "_registered", "_barcode_localizations",".png"])
-        table.compares_localizations(barcodeMap,barcodeMapFull_unregistered,[file.split('.')[0], "_registered", "_barcode_comparisons",".png"])
-
+        table.save(file, barcodeMap, comments="registered")
+        table.plots_distributionFluxes(barcodeMap, [file.split(".")[0], "_registered", "_barcode_stats", ".png"])
+        table.plots_localizations(barcodeMap, [file.split(".")[0], "_registered", "_barcode_localizations", ".png"])
+        table.compares_localizations(
+            barcodeMap, barcodeMapFull_unregistered, [file.split(".")[0], "_registered", "_barcode_comparisons", ".png"]
+        )
 
     def register(self):
 
@@ -258,7 +334,7 @@ class register_localizations:
         printLog("\n===================={}====================\n".format(sessionName))
         printLog("$ folders read: {}".format(len(self.dataFolder.listFolders)))
         writeString2File(self.param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
-        label = 'barcode'
+        label = "barcode"
 
         currentFolder = self.param.param["rootFolder"]
         self.dataFolder.createsFolders(currentFolder, self.param)
@@ -268,18 +344,17 @@ class register_localizations:
         self.loadsLocalAlignment()
 
         if not self.alignmentResultsTableRead:
-            print(f"Unable to find aligment table.\nDid you run alignImages3D?\n\n Aborted.")
+            printLog(f"Unable to find aligment table.\nDid you run alignImages3D?\n\n Aborted.")
             return
 
         # iterates over barcode localization tables in the current folder
         files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
 
-        if len(files)<1:
-            print("No file found to process!")
+        if len(files) < 1:
+            printLog("No file found to process!")
             return
 
         for file in files:
-
             self.register_barcodeMap_file(file)
 
-        print(f" {len(files)} barcode tables processed in {currentFolder}")
+        printLog(f" {len(files)} barcode tables processed in {currentFolder}")
