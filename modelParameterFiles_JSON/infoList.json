@@ -36,6 +36,7 @@
         },
         "buildsPWDmatrix": {
             "tracing_method": "masking",
+            "mask_expansion": 8,            
             "flux_min": 10,
             "flux_min_3D": 4000,
             "folder": "buildsPWDmatrix",

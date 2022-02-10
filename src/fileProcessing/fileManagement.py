@@ -284,6 +284,7 @@ class Parameters:
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
                 "tracing_method": "masking", # available methods: masking, spatial_clustering
+                "mask_expansion": 8, # Expands masks until they collide by a max of 'mask_expansion' pixels
                 "flux_min": 10,  # min flux to keeep object
                 "flux_min_3D": 0.1,  # min flux to keeep object
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
