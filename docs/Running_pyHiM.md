@@ -1152,7 +1152,57 @@ zoom: zx
 
 
 
-#### 5. Align DAPI masks and barcodes
+#### 5. Building chromatin traces
+
+##### 5.1 Build traces: new method
+
+The new method requires executing several modules:
+
+- `filter_localizations`
+- `register_localizations`
+- `build_traces`
+- `build_matrices`
+
+
+
+###### 5.1.1 `filter_localizations`
+
+
+
+###### 5.1.2 `register_localizations`
+
+
+
+outputs images:
+
+| statistics of registration                                   | localization map                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![image-20220210221852444](Running_pyHiM.assets/image-20220210221852444.png) | ![image-20220210221942291](Running_pyHiM.assets/image-20220210221942291.png) |
+| ![image-20220210222028835](Running_pyHiM.assets/image-20220210222028835.png) | ![image-20220210222006297](Running_pyHiM.assets/image-20220210222006297.png) |
+
+
+
+###### 5.1.3 `build_traces`
+
+
+
+Output images:
+
+| full image | zoomed images |
+| --- |   ----|
+| ![image-20220210221402082](Running_pyHiM.assets/image-20220210221402082.png) |![image-20220210221430543](Running_pyHiM.assets/image-20220210221430543.png)|
+| ![image-20220210222233148](Running_pyHiM.assets/image-20220210222233148.png) |![image-20220210222354093](Running_pyHiM.assets/image-20220210222354093.png)|
+
+
+
+###### 5.1.4 `build_matrices`
+
+
+
+
+##### 5.2 build traces: old method
+
+The old module `buildPWDmatrix `  does all operations at once: filtering, local registration, tracing by masking, and construction of PWD matrix.
 
 **Operation**
 
