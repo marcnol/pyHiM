@@ -46,6 +46,7 @@ import numpy as np
 from tqdm.contrib import tzip
 from tqdm import trange
 import matplotlib.pyplot as plt
+from skimage.segmentation import expand_labels
 
 from sklearn.metrics import pairwise_distances
 from astropy.table import Table
@@ -306,8 +307,11 @@ class build_traces:
             if os.path.exists(fullFileNameROImasks):
 
                 # loads and initializes masks
-                Masks = np.load(fullFileNameROImasks)
-                self.initializes_masks(Masks)
+                segmented_masks = np.load(fullFileNameROImasks)
+
+                self.Masks= expand_labels(segmented_masks, distance=10)
+
+                self.initializes_masks(self.Masks)
                 return True
 
             else:
@@ -394,7 +398,7 @@ class build_traces:
                 self.trace_table.save(output_table_fileName, self.trace_table.data)
 
                 # plots results
-                self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"])
+                self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"], Masks = self.Masks)
 
                 '''
                 self.SCdistanceTable.write(

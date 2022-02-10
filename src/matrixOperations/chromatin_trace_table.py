@@ -26,6 +26,9 @@ from fileProcessing.fileManagement import (
 
 from imageProcessing.localization_table import decode_ROIs, build_color_dict, plots_localization_projection
 
+from stardist import random_label_cmap
+lbl_cmap = random_label_cmap()
+
 # to remove in a future version
 import warnings
 
@@ -128,7 +131,7 @@ class chromatin_trace_table:
             overwrite=True,
         )
 
-    def plots_traces(self, fileName_list):
+    def plots_traces(self, fileName_list, Masks = np.zeros((2048,2048)),pixelSize = [0.1,0.1,0.25] ):
 
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
@@ -163,11 +166,15 @@ class chromatin_trace_table:
             ax = [fig.add_subplot(gs[:, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, 1])]
 
             # defines variables
-            x = data_ROI["x"]
-            y = data_ROI["y"]
-            z = data_ROI["z"]
+            x = data_ROI["x"]/pixelSize[0]
+            y = data_ROI["y"]/pixelSize[1]
+            z = data_ROI["z"]/pixelSize[2]
+
             colors =  [color_dict[str(x)] for x in data_ROI["Barcode #"]]
             titles = ["Z-projection", "X-projection", "Y-projection"]
+
+            # plots masks if available
+            ax[0].imshow(Masks, cmap=lbl_cmap,alpha=.3)
 
             # makes plot
             plots_localization_projection(x,y,ax[0], colors, titles[0])
@@ -176,11 +183,22 @@ class chromatin_trace_table:
 
             fig.tight_layout()
 
-            # plots circles for each trace
+            # calculates mean trace positions and sizes
             data_traces = data_ROI.group_by("Trace_ID")
             number_traces = len(data_traces.groups.keys)
-            x_trace = np.mean()
+            color_dict_traces = build_color_dict(data_traces, key='Trace_ID')
+            colors_traces =  [color_dict_traces[str(x)] for x in data_traces["Trace_ID"]]
+            s_traces=[]
+            for trace,color,trace_id in zip(data_traces.groups,colors_traces,data_traces.groups.keys):
+                x_trace = np.mean(trace['x'].data)/pixelSize[0]
+                y_trace = np.mean(trace['y'].data)/pixelSize[1]
+                z_trace = np.mean(trace['z'].data)/pixelSize[2]
+                s_trace = 300*(np.mean([np.std(trace['x'].data),np.std(trace['y'].data),np.std(trace['z'].data)]))/pixelSize[0]
 
+                # plots circles for each trace
+                sc = ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
+
+                #print(f"trace: {trace_id}, {len(trace['x'].data)} barcodes")
             # saves output figure
             fileName_list_i=fileName_list.copy()
             fileName_list_i.insert(-1,'_ROI' + str(nROI))
