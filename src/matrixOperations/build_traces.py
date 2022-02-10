@@ -107,6 +107,7 @@ class build_traces:
         self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
+        self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
 
     def initializeLists(self):
         self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.cuid, self.buid, self.barcodeCoordinates = (
@@ -259,31 +260,7 @@ class build_traces:
                             ]
                     self.trace_table.data.add_row(entry)
 
-                '''
-                self.ROIs.append(group["ROI #"].data[0])
-                self.cellID.append(key["CellID #"])
-                self.nBarcodes.append(len(group))
-                self.barcodeIDs.append(group["Barcode #"].data)
-                self.buid.append(group["Buid"].data)
-                self.barcodeCoordinates.append(R_nm)
-                self.cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
-                '''
-
         printLog("$ Coordinates dimensions: {}".format(self.ndims))
-
-        '''
-        SCdistanceTable = Table()
-        SCdistanceTable["Cuid"] = self.cuid
-        SCdistanceTable["ROI #"] = self.ROIs
-        SCdistanceTable["CellID #"] = self.cellID
-        SCdistanceTable["nBarcodes"] = self.nBarcodes
-        SCdistanceTable["Barcode #"] = self.barcodeIDs
-        SCdistanceTable["Buid"] = self.buid
-        SCdistanceTable["barcode xyz, nm"] = self.barcodeCoordinates
-
-        self.SCdistanceTable = SCdistanceTable
-        '''
-
 
     def load_mask(self,TIF_files_in_folder,):
 
@@ -309,8 +286,10 @@ class build_traces:
                 # loads and initializes masks
                 segmented_masks = np.load(fullFileNameROImasks)
 
-                self.Masks= expand_labels(segmented_masks, distance=10)
+                # expands mask without overlap by a maximmum of 'distance' pixels
+                self.Masks= expand_labels(segmented_masks, distance = self.mask_expansion)
 
+                # initializes masks
                 self.initializes_masks(self.Masks)
                 return True
 
@@ -399,14 +378,6 @@ class build_traces:
 
                 # plots results
                 self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"], Masks = self.Masks)
-
-                '''
-                self.SCdistanceTable.write(
-                    output_table_fileName,
-                    format="ascii.ecsv",
-                    overwrite=True,
-                )
-                '''
 
                 printLog(f"$ Saved output table as {output_table_fileName}")
                 processingOrder += 1
