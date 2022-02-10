@@ -101,6 +101,10 @@ if __name__ == "__main__":
         if "register_localizations" in runParameters["cmd"]:
             HiM.register_localizations(param, label)
 
+        # [build traces]
+        if "build_traces" in runParameters["cmd"]:
+            HiM.build_traces(param, label)
+
         # [builds PWD matrix for all folders with images]
         if "buildHiMmatrix" in runParameters["cmd"]:
             HiM.processesPWDmatrices(param, label)

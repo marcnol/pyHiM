@@ -146,46 +146,22 @@ class localization_table:
 
         plt.close(fig)
 
-    def plots_localization_projection(self, coord1, coord2, axis, colors, title=''*3):
-        """
-        This function will produce the scatter plot and add title
-
-        Parameters
-        ----------
-        coord1 : 1D Numpy array, float
-            first coordinate (x).
-        coord2 : 1D Numpy array, float
-            first coordinate (y).
-        axis : matplotlib axis
-            figure axis handle.
-        colors : 1D Numpy array, float
-            colorcode used in scatter plot.
-        title : string, optional
-            title of subpanel. The default is ''*3.
-
-        Returns
-        -------
-        None.
-
-        """
-        axis.scatter(coord1,coord2, s=5, c=colors, alpha=.9, cmap = 'hsv') #nipy_spectral
-        axis.set_title(title)
 
     def build_color_dict(self,barcodeMap, key='Barcode #'):
 
         color_dict = dict()
-        
+
         unique_barcodes = np.unique(barcodeMap[key])
         output_array = range(unique_barcodes.shape[0])
-        
+
         for barcode, output in zip(unique_barcodes,output_array):
             color_dict[str(barcode)]=output
 
-        
+
 
         return color_dict
-    
-    
+
+
     def plots_localizations(self, barcodeMapFull, fileName_list):
 
         """
@@ -231,9 +207,9 @@ class localization_table:
             titles = ["Z-projection", "X-projection", "Y-projection"]
 
             # makes plot
-            self.plots_localization_projection(x,y,ax[0], colors, titles[0])
-            self.plots_localization_projection(x,z,ax[1], colors, titles[1])
-            self.plots_localization_projection(y,z,ax[2], colors, titles[2])
+            plots_localization_projection(x,y,ax[0], colors, titles[0])
+            plots_localization_projection(x,z,ax[1], colors, titles[1])
+            plots_localization_projection(y,z,ax[2], colors, titles[2])
 
             fig.tight_layout()
 
@@ -244,6 +220,9 @@ class localization_table:
 
     def decode_ROIs(self, barcodeMap):
 
+        return decode_ROIs(barcodeMap)
+
+        '''
         barcodeMapROI = barcodeMap.group_by("ROI #")
 
         numberROIs = len(barcodeMapROI.groups.keys)
@@ -251,6 +230,7 @@ class localization_table:
         print("\n$ ROIs detected: {}".format(numberROIs))
 
         return barcodeMapROI,numberROIs
+        '''
 
     def compares_localizations(self,barcodeMap1,barcodeMap2,fileName_list, fontsize=20):
         """
@@ -313,3 +293,53 @@ class localization_table:
         ax[3].set_ylabel("dy-position, px", fontsize=fontsize)
 
         fig.savefig("".join(fileName_list))
+
+
+
+def decode_ROIs(data):
+
+    data_indexed = data.group_by("ROI #")
+
+    numberROIs = len(data_indexed.groups.keys)
+
+    print("\n$ ROIs detected: {}".format(numberROIs))
+
+    return data_indexed, numberROIs
+
+
+def build_color_dict(data, key='Barcode #'):
+
+    color_dict = dict()
+
+    unique_barcodes = np.unique(data[key])
+    output_array = range(unique_barcodes.shape[0])
+
+    for barcode, output in zip(unique_barcodes,output_array):
+        color_dict[str(barcode)]=output
+
+    return color_dict
+
+def plots_localization_projection(coord1, coord2, axis, colors, title=''*3):
+    """
+    This function will produce the scatter plot and add title
+
+    Parameters
+    ----------
+    coord1 : 1D Numpy array, float
+        first coordinate (x).
+    coord2 : 1D Numpy array, float
+        first coordinate (y).
+    axis : matplotlib axis
+        figure axis handle.
+    colors : 1D Numpy array, float
+        colorcode used in scatter plot.
+    title : string, optional
+        title of subpanel. The default is ''*3.
+
+    Returns
+    -------
+    None.
+
+    """
+    axis.scatter(coord1,coord2, s=5, c=colors, alpha=.9, cmap = 'hsv') #nipy_spectral
+    axis.set_title(title)

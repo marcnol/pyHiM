@@ -5,13 +5,13 @@ Created on Wed Feb  9 14:11:58 2022
 
 @author: marcnol
 
-This script will build chromatin traces using a segmentObjects_barcode table 
+This script will build chromatin traces using a segmentObjects_barcode table
 
 The methods that will be implemented are:
     1= assigment by mask (either DAPI mask or other)
     2= spatial clusterization using KDtree. This method is mask-free.
-    
-    
+
+
 
 Method 1:
     - iterates over ROIs
@@ -48,18 +48,20 @@ from tqdm import trange
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import pairwise_distances
-
 from astropy.table import Table
-
 from photutils.segmentation import SegmentationImage
 
 from fileProcessing.fileManagement import (
     folders,
     writeString2File,
     printLog,
+    getDictionaryValue,
 )
-
 from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms, calculateContactProbabilityMatrix
+from imageProcessing.localization_table import localization_table
+from matrixOperations.chromatin_trace_table import chromatin_trace_table
+
+from matrixOperations.filter_localizations import get_file_table_new_name
 
 # to remove in a future version
 import warnings
@@ -72,190 +74,54 @@ warnings.filterwarnings("ignore")
 
 
 class build_traces:
-    def __init__(self, param, dataFolder, barcodeMapROI, Masks, ROI, ndims=2):
+    def __init__(self, param):
         self.param = param
-        self.dataFolder = dataFolder
-        self.barcodeMapROI = barcodeMapROI
+
+        self.initialize_parameters()
+
+        # initialize with empty values
+        self.pixelSize = [0.1,0.1,0.25] # default pixel size
+        self.currentFolder = []
+        self.maskIdentifier = ['DAPI'] # default mask label
+
+    def initializes_masks(self, Masks):
         self.Masks = Masks
         self.NcellsAssigned = 0
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
-        self.ndims = ndims
-#        self.SegmentationMask = SegmentationImage(self.Masks)
+        self.SegmentationMask = SegmentationImage(self.Masks)
         self.numberMasks = self.SegmentationMask.nlabels
-        self.ROI = ROI
         self.barcodesinMask = dict()
 
         for mask in range(self.numberMasks + 1):
             self.barcodesinMask["maskID_" + str(mask)] = []
 
-    def filterLocalizations_Quality(self, i, flux_min):
-        """
-        [filters barcode localizations either by brigthness or 3D localization accuracy]
+    def initialize_parameters(self):
+        # initializes parameters from param
 
-        Parameters
-        ----------
-        i : int
-            index in barcodeMap Table
-        flux_min : float
-            Minimum flux to keep barcode localization
+        self.tracing_method = getDictionaryValue(self.param.param["buildsPWDmatrix"], "tracing_method",  default="masking")
+        self.zBinning = getDictionaryValue(self.param.param["acquisition"], "zBinning", default=1)
+        self.pixelSizeXY = getDictionaryValue(self.param.param["acquisition"], "pixelSizeXY", default=0.1)
+        self.pixelSizeZ_0 = getDictionaryValue(self.param.param["acquisition"], "pixelSizeZ", default=0.25)
+        self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
+        self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
+        self.logNameMD = self.param.param["fileNameMD"]
 
-        Returns
-        -------
-        keep : Boolean
-            True if the test is passed.
-
-        """
-        if "3DfitKeep" in self.barcodeMapROI.groups[0].keys() and self.ndims == 3:
-            # [reading the flag in barcodeMapROI assigned by the 3D localization routine]
-            keep = self.barcodeMapROI.groups[0]["3DfitKeep"][i] and self.barcodeMapROI.groups[0]["flux"][i] > flux_min
-        else:
-            # [or by reading the flux from 2D localization]
-            keep = self.barcodeMapROI.groups[0]["flux"][i] > flux_min
-
-        return keep
-
-    def filterLocalizations_BlockAlignment(self, i, toleranceDrift, blockSize):
-        """
-        [filters barcode per blockAlignmentMask, if existing]
-        runs only if localAligment was not run!
-
-        Parameters
-        ----------
-        i : int
-            index in barcodeMap Table
-        toleranceDrift : float
-            tolerance to keep barcode localization, in pixel units
-        blockSize : int
-            size of blocks used for blockAlignment.
-
-        Returns
-        -------
-        keepAlignment : Boolean
-            True if the test is passed.
-
-        """
-        y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-        x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-        keepAlignment = True
-        if not self.alignmentResultsTableRead:  # only proceeds if localAlignment was not performed
-            barcodeID = "barcode:" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
-            barcodeROI = "ROI:" + str(self.barcodeMapROI.groups[0]["ROI #"][i])
-
-            if len(self.dictErrorBlockMasks) > 0:
-                if barcodeROI in self.dictErrorBlockMasks.keys():
-                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
-                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
-                        keepAlignment = (
-                            errorMask[int(np.floor(x_int / blockSize)), int(np.floor(y_int / blockSize))]
-                            < toleranceDrift
-                        )
-
-            # keeps it always if barcode is fiducial
-            if (
-                "RT" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
-                in self.param.param["alignImages"]["referenceFiducial"]
-            ):
-                keepAlignment = True
-
-        return keepAlignment
-
-    def plots_distributionFluxes(self):
-        fileName = (
-            self.dataFolder.outputFolders["buildsPWDmatrix"]
-            + os.sep
-            + "BarcodeStats_ROI:"
-            + str(self.nROI)
-            + "_"
-            + str(self.ndims)
-            + "D.png"
-        )
-
-        fig, axes = plt.subplots(1, 2)
-        ax = axes.ravel()
-        fig.set_size_inches((10, 5))
-
-        fluxes = self.barcodeMapROI.groups[0]["flux"]
-        sharpness = self.barcodeMapROI.groups[0]["sharpness"]
-        roundness = self.barcodeMapROI.groups[0]["roundness1"]
-        peak = self.barcodeMapROI.groups[0]["peak"]
-        mag = self.barcodeMapROI.groups[0]["mag"]
-
-        # p1 = ax[0].hist(fluxes,bins=25)
-        p1 = ax[0].scatter(fluxes, sharpness, c=peak, cmap="terrain", alpha=0.5)
-        ax[0].set_title("color: peak intensity")
-        ax[0].set_xlabel("flux")
-        ax[0].set_ylabel("sharpness")
-
-        p2 = ax[1].scatter(roundness, mag, c=peak, cmap="terrain", alpha=0.5)
-        ax[1].set_title("color: peak intensity")
-        ax[1].set_xlabel("roundness")
-        ax[1].set_ylabel("magnitude")
-        fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
-
-        fig.savefig(fileName)
-
-        plt.close(fig)
-
-        writeString2File(
-            self.logNameMD, "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.nROI, self.ndims, fileName), "a"
-        )
-
-    def plots_barcodesAlignment(self, blockSize):
-        """
-        plots barcode localizations together with the blockAlignment map
-
-        Returns
-        -------
-        None.
-
-        """
-        fileName = (
-            self.dataFolder.outputFolders["buildsPWDmatrix"]
-            + os.sep
-            + "BarcodeAlignmentAccuracy_ROI:"
-            + str(self.nROI)
-            + "_"
-            + str(self.ndims)
-            + "D.png"
-        )
-
-        fig, axes = plt.subplots()
-        fig.set_size_inches((20, 20))
-
-        accuracy, x, y = [], [], []
-        printLog("> Plotting barcode alignments...")
-        for i in trange(len(self.barcodeMapROI.groups[0])):
-            barcodeID = "barcode:" + str(self.barcodeMapROI.groups[0]["Barcode #"][i])
-            barcodeROI = "ROI:" + str(self.barcodeMapROI.groups[0]["ROI #"][i])
-            y_int = int(self.barcodeMapROI.groups[0]["xcentroid"][i])
-            x_int = int(self.barcodeMapROI.groups[0]["ycentroid"][i])
-
-            if len(self.dictErrorBlockMasks) > 0:
-                if barcodeROI in self.dictErrorBlockMasks.keys():
-                    if barcodeID in self.dictErrorBlockMasks[barcodeROI].keys():
-                        errorMask = self.dictErrorBlockMasks[barcodeROI][barcodeID]
-                        accuracy.append(errorMask[int(np.floor(x_int / blockSize)), int(np.floor(y_int / blockSize))])
-                        x.append(self.barcodeMapROI.groups[0]["xcentroid"][i])
-                        y.append(self.barcodeMapROI.groups[0]["ycentroid"][i])
-
-        p1 = axes.scatter(x, y, s=5, c=accuracy, cmap="terrain", alpha=0.5, vmin=0, vmax=5)
-        fig.colorbar(p1, ax=axes, fraction=0.046, pad=0.04)
-        axes.set_title("barcode drift correction accuracy, px")
-
-        axes.axis("off")
-
-        fig.savefig(fileName)
-
-        plt.close(fig)
-
-        writeString2File(
-            self.logNameMD, "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.nROI, self.ndims, fileName), "a"
+    def initializeLists(self):
+        self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.cuid, self.buid, self.barcodeCoordinates = (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
         )
 
     def alignByMasking(self):
         """
         Assigns barcodes to masks and creates <NbarcodesinMask>
+        And by filling in the "Cell #" key of barcodeMapROI
         This routine will only select which barcodes go to each cell mask
 
         Returns
@@ -270,22 +136,24 @@ class build_traces:
 
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
         NbarcodesROI = 0
-        
+
         # loops over barcode Table rows in a given ROI
         printLog("> Aligning by masking...")
         for i in trange(len(self.barcodeMapROI.groups[0])):  # i is the index of the barcode in barcodeMapROI
             barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
 
-            # keeps the particle if the test passed
+            # gets xyz coordinates
             x_corrected = self.barcodeMapROI.groups[0]["ycentroid"][i]
             y_corrected = self.barcodeMapROI.groups[0]["xcentroid"][i]
-            y_int = int(y_corrected)
-            x_int = int(x_corrected)
-            
+
             if self.ndims == 2:
                 z_corrected = self.barcodeMapROI.groups[0]["zcentroid"][i] = 0.0
             else:
                 z_corrected = self.barcodeMapROI.groups[0]["zcentroid"][i]
+
+            # binarizes coordinate
+            y_int = int(y_corrected)
+            x_int = int(x_corrected)
 
             # finds what mask label this barcode is sitting on
             maskID = self.Masks[x_int][y_int]
@@ -298,12 +166,12 @@ class build_traces:
                 # increments counter of number of barcodes in the cell mask attributed
                 NbarcodesinMask[maskID] += 1
 
-                # stores the identify of the barcode to the mask
+                # stores the identify of the barcode in a mask dictionary
                 self.barcodesinMask["maskID_" + str(maskID)].append(i)
 
-            # keeps statistics
-            if int(self.barcodeMapROI.groups[0]["ROI #"][i]) == int(self.nROI):
-                NbarcodesROI += 1
+                # keeps statistics
+                if int(self.barcodeMapROI.groups[0]["ROI #"][i]) == int(self.nROI):
+                    NbarcodesROI += 1
 
         # Total number of masks assigned and not assigned
         self.NcellsAssigned = np.count_nonzero(NbarcodesinMask > 0)
@@ -351,16 +219,19 @@ class build_traces:
         """
         # sorts Table by cellID
         barcodeMapROI = self.barcodeMapROI
-        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")  # ROI data sorted by cellID
+
+        # indexes table by cellID
+        barcodeMapROI_cellID = barcodeMapROI.group_by("CellID #")
 
         self.initializeLists()
 
-        # iterates over all cell masks in an ROI
-        printLog("> Building SC traces")
+        # iterates over all traces in an ROI
+        printLog("> Building single traces")
         for key, group in tzip(barcodeMapROI_cellID.groups.keys, barcodeMapROI_cellID.groups):
-            if key["CellID #"] > 1:  # excludes cellID 0 as this is background
+            if key["CellID #"] > 1:  # excludes trace 0 as this is background
 
                 groupKeys, CellID, ROI = group.keys(), key["CellID #"], group["ROI #"].data[0]
+                trace_ID = str(uuid.uuid4())
 
                 # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
                 x, y, z = (
@@ -369,21 +240,37 @@ class build_traces:
                     np.array(group["zcentroid"].data),
                 )
 
-                # calculates the PWD between barcodes in CellID
-                PWD = self.calculatesPWDsingleMask(ROI, CellID, groupKeys, x, y, z)
-                R_nm = self.buildsVector(groupKeys, x, y, z)
+                # gets vector in nm
+                R_mum = self.buildsVector(groupKeys, x, y, z)
 
+                for i in range(x.shape[0]):
+                    entry = [group["Buid"].data[i], # spot uid
+                            trace_ID,     # trace uid
+                            R_mum[i][0],            # x, microns
+                            R_mum[i][1],            # y, microns
+                            R_mum[i][2],            # z, microns
+                            "Chr3R",               # chromosome
+                            129999,                # start sequence
+                            149999,                # end sequence
+                            ROI,                   # ROI number
+                            CellID,                # Mask number
+                            group["Barcode #"].data[i], # Barcode name
+                            ]
+                    self.trace_table.data.add_row(entry)
+
+                '''
                 self.ROIs.append(group["ROI #"].data[0])
                 self.cellID.append(key["CellID #"])
                 self.nBarcodes.append(len(group))
                 self.barcodeIDs.append(group["Barcode #"].data)
                 self.buid.append(group["Buid"].data)
-                self.p.append(PWD)
                 self.barcodeCoordinates.append(R_nm)
                 self.cuid.append(str(uuid.uuid4()))  # creates cell unique identifier
+                '''
 
         printLog("$ Coordinates dimensions: {}".format(self.ndims))
 
+        '''
         SCdistanceTable = Table()
         SCdistanceTable["Cuid"] = self.cuid
         SCdistanceTable["ROI #"] = self.ROIs
@@ -391,286 +278,250 @@ class build_traces:
         SCdistanceTable["nBarcodes"] = self.nBarcodes
         SCdistanceTable["Barcode #"] = self.barcodeIDs
         SCdistanceTable["Buid"] = self.buid
-        SCdistanceTable["PWDmatrix"] = self.p
         SCdistanceTable["barcode xyz, nm"] = self.barcodeCoordinates
 
         self.SCdistanceTable = SCdistanceTable
-    
-# =============================================================================
-# FUNCTIONS
-# =============================================================================
+        '''
 
-def loadsBarcodeMap(fileNameBarcodeCoordinates, ndims):
-    """
-    Loads barcodeMap
 
-    Parameters
-    ----------
-    fileNameBarcodeCoordinates : string
-        filename with barcodeMap
-    ndims : int
-        either 2 or 3.
+    def load_mask(self,TIF_files_in_folder,):
 
-    Returns
-    -------
-    barcodeMap : Table()
-    localizationDimension : int
-        either 2 or 3.
-    uniqueBarcodes: list
-        lis of unique barcodes read from barcodeMap
+        # finds files with cell masks
+        channel = self.param.param["acquisition"][self.maskType+"_channel"]
 
-    """
-    if os.path.exists(fileNameBarcodeCoordinates):
-        barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
-        printLog("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
-
-        uniqueBarcodes = np.unique(barcodeMap["Barcode #"].data)
-        numberUniqueBarcodes = uniqueBarcodes.shape[0]
-
-        printLog("Number Barcodes read from barcodeMap: {}".format(numberUniqueBarcodes))
-        printLog("Unique Barcodes detected: {}".format(uniqueBarcodes))
-    else:
-        printLog("\n\n# ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
-        sys.exit()
-
-    return barcodeMap, ndims, uniqueBarcodes
-
-def buildsPWDmatrix(
-    param,
-    currentFolder,
-    fileNameBarcodeCoordinates,
-    outputFileName,
-    dataFolder,
-    pixelSize={"x": 0.1, "y": 0.1, "z": 0.0},
-    logNameMD="log.md",
-    ndims=2,
-    maskIdentifier="DAPI",
-):
-    """
-    Main function that:
-        loads and processes barcode localization files, local alignment file, and masks
-        initializes <cellROI> class and assigns barcode localizations to masks
-        then constructs the single cell PWD matrix and outputs it toghether with the contact map and the N-map.
-
-    Parameters
-    ----------
-    param : Parameters Class
-    currentFolder : string
-    fileNameBarcodeCoordinates : string
-    outputFileName : string
-    dataFolder : Folder Class
-        information to find barcode localizations, local drift corrections and masks
-
-    pixelSize : dict, optional
-        pixelSize = {'x': pixelSizeXY,
-                    'y': pixelSizeXY,
-                    'z': pixelSizeZ}
-        The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
-
-    logNameMD : str, optional
-        Filename of Markdown output. The default is "log.md".
-    ndims : int, optional
-        indicates whether barcodes were localized in 2 or 3D. The default is 2.
-
-    Returns
-    -------
-    None.
-
-    """
-    # Loads coordinate Tables
-    barcodeMap, localizationDimension, uniqueBarcodes = loadsBarcodeMap(fileNameBarcodeCoordinates, ndims)
-
-    # processes tables
-    barcodeMapROI = barcodeMap.group_by("ROI #")
-    numberROIs = len(barcodeMapROI.groups.keys)
-    printLog("\n$ ROIs detected: {}".format(numberROIs))
-
-    # loops over ROIs
-    filesinFolder = glob.glob(currentFolder + os.sep + "*.tif")
-    SCmatrixCollated, processingOrder = [], 0
-
-    for ROI in range(numberROIs):
-        nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
-
-        printLog("----------------------------------------------------------------------")
-        printLog("> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(maskIdentifier, nROI))
-        printLog("----------------------------------------------------------------------")
-
-        barcodeMapSingleROI = barcodeMap.group_by("ROI #").groups[ROI]
-
-        # finds file with cell masks
         fileList2Process = [
             file
-            for file in filesinFolder
-            if file.split("_")[-1].split(".")[0] == param.param["acquisition"]["label_channel"]  # typically "ch00"
-            and maskIdentifier in os.path.basename(file).split("_")
-            and int(os.path.basename(file).split("_")[3]) == nROI
+            for file in TIF_files_in_folder
+            if self.param.decodesFileParts(file)["channel"] == channel # typically "ch00"
+            and self.maskIdentifier in os.path.basename(file).split("_")
+            and int(self.param.decodesFileParts(file)["roi"]) == self.nROI
         ]
 
         if len(fileList2Process) > 0:
 
             # loads file with cell masks
             fileNameROImasks = os.path.basename(fileList2Process[0]).split(".")[0] + "_Masks.npy"
-            fullFileNameROImasks = os.path.dirname(fileNameBarcodeCoordinates) + os.sep + fileNameROImasks
-            if os.path.exists(fullFileNameROImasks):
-                Masks = np.load(fullFileNameROImasks)
+            fullFileNameROImasks = self.dataFolder.outputFolders["segmentedObjects"] + os.sep + fileNameROImasks
 
-                # Assigns barcodes to Masks for a given ROI
-                cellROI = cellID(param, dataFolder, barcodeMapSingleROI, Masks, ROI, ndims=localizationDimension)
-                cellROI.ndims, cellROI.nROI, cellROI.logNameMD, cellROI.pixelSize = ndims, nROI, logNameMD, pixelSize
-                cellROI.uniqueBarcodes = uniqueBarcodes
+            if os.path.exists(fullFileNameROImasks):
+
+                # loads and initializes masks
+                Masks = np.load(fullFileNameROImasks)
+                self.initializes_masks(Masks)
+                return True
+
+            else:
+                # Could not find a file with masks to assign. Report and continue with next ROI
+                debug_mask_fileName(TIF_files_in_folder,fullFileNameROImasks,self.maskIdentifier,self.nROI,label=self.param.param["acquisition"]["label_channel"])
+
+        else:
+            printLog(f"$ Did not identified any filename for mask: {self.maskIdentifier}, channel: {channel}","WARN")
+            printLog("-"*80)
+
+        return False
+
+    def assign_masks(self,
+                     outputFileName,
+                     barcodeMap,
+                 ):
+        """
+        Main function that:
+            loads and processes barcode localization files, local alignment file, and masks
+            initializes <cellROI> class and assigns barcode localizations to masks
+            then constructs the single cell PWD matrix and outputs it toghether with the contact map and the N-map.
+
+        Parameters
+        ----------
+        outputFileName : string
+        self.param : Parameters Class
+        self.currentFolder : string
+        self.dataFolder : Folder Class
+            information to find barcode localizations, local drift corrections and masks
+
+        self.pixelSize : dict, optional
+            pixelSize = {'x': pixelSizeXY,
+                        'y': pixelSizeXY,
+                        'z': pixelSizeZ}
+            The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
+
+        self.logNameMD : str, optional
+            Filename of Markdown output. The default is "log.md".
+        self.ndims : int, optional
+            indicates whether barcodes were localized in 2 or 3D. The default is 2.
+        self.maskIdentifier:
+
+        Returns
+        -------
+        None.
+
+        """
+
+        # indexes localization tables by ROI
+        barcodeMapROI = barcodeMap.group_by("ROI #")
+        numberROIs = len(barcodeMapROI.groups.keys)
+
+        printLog("-"*80)
+        printLog(" Loading masks and pre-processing barcodes for Mask <{}> for {} ROIs".format(self.maskIdentifier, numberROIs))
+
+        # finds TIFs in currentFolder
+        TIF_files_in_folder = glob.glob(self.currentFolder + os.sep + "*.tif")
+
+        # loops over ROIs
+        processingOrder = 0
+
+        for ROI in range(numberROIs):
+            self.nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
+            self.barcodeMapROI = barcodeMap.group_by("ROI #").groups[ROI]
+
+            mask_loaded = self.load_mask(TIF_files_in_folder,)
+            if mask_loaded:
+
+                printLog("> Processing ROI# {}".format(self.nROI))
+
+                # initializes trace table
+                self.trace_table.initialize()
 
                 # finds what barcodes are in each cell mask
-                cellROI.alignByMasking()
+                self.alignByMasking()
+                printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1} out of {self.numberMasks}\n")
 
-                # builds the single cell distance Matrix
-                cellROI.buildsdistanceMatrix("min")  # mean min last
+                # builds SCdistanceTable
+                self.buildsSCdistanceTable()
+                printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
 
-                printLog(
-                    "$ ROI: {}, N cells assigned: {} out of {}\n".format(
-                        ROI, cellROI.NcellsAssigned - 1, cellROI.numberMasks
-                    )
-                )
+                # saves trace table with results per ROI
+                output_table_fileName = outputFileName + "_mask:" + str(self.maskIdentifier) + "_ROI:" + str(self.nROI) + ".ecsv"
+                self.trace_table.save(output_table_fileName, self.trace_table.data)
 
-                # saves Table with results per ROI
-                cellROI.SCdistanceTable.write(
-                    outputFileName + "_order:" + str(processingOrder) + "_ROI:" + str(nROI) + ".ecsv",
+                # plots results
+                self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"])
+
+                '''
+                self.SCdistanceTable.write(
+                    output_table_fileName,
                     format="ascii.ecsv",
                     overwrite=True,
                 )
+                '''
 
-                if len(SCmatrixCollated) > 0:
-                    SCmatrixCollated = np.concatenate((SCmatrixCollated, cellROI.SCmatrix), axis=2)
-                else:
-                    SCmatrixCollated = cellROI.SCmatrix
-                del cellROI
-
+                printLog(f"$ Saved output table as {output_table_fileName}")
                 processingOrder += 1
 
-            # Could not find a file with masks to assign. Report and continue with next ROI
-            ###############################################################################
+    def build_trace_by_masking(self, barcodeMap):
+
+        printLog("> Masks labels: {}".format(self.availableMasks))
+
+        for maskLabel in self.availableMasks.keys():
+
+            self.maskIdentifier = self.availableMasks[maskLabel]
+            if "DAPI" in self.maskIdentifier:
+                self.maskType = "DAPI"
             else:
-                printLog(
-                    "# Error, no mask file found for ROI: {}, segmentedMasks: {}\n".format(
-                        nROI, fileNameBarcodeCoordinates
-                    )
-                )
-                printLog("# File I was searching for: {}".format(fullFileNameROImasks))
-                printLog("# Debug: ")
-                for file in filesinFolder:
-                    if (
-                        file.split("_")[-1].split(".")[0]
-                        == param.param["acquisition"]["label_channel"]  # typically "ch00"
-                        and maskIdentifier in file.split("_")
-                        and int(os.path.basename(file).split("_")[3]) == nROI
-                    ):
-                        printLog("$ Hit found!")
-                    printLog(
-                        "fileSplit:{}, {} in filename: {}, ROI: {}".format(
-                            file.split("_")[-1].split(".")[0],
-                            maskIdentifier,
-                            maskIdentifier in os.path.basename(file).split("_"),
-                            int(os.path.basename(file).split("_")[3]),
-                        )
-                    )
+                self.maskType = "mask"
 
-def processesPWDmatrices(param, session1):
-    """
-    Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
+            tag = '_' + str(self.ndims) + 'D'
 
-    Parameters
-    ----------
-    param : class
+            outputFileName = self.dataFolder.outputFiles["buildsPWDmatrix"] + tag
+
+            # creates and initializes trace table
+            self.trace_table = chromatin_trace_table()
+
+            self.assign_masks(
+                outputFileName,
+                barcodeMap,
+            )
+
+            printLog("$ Trace built using mask assignment. Output saved in: {} ".format(self.currentFolder), "info")
+
+    def method_caller(self,file):
+
+        # loads barcode coordinate Tables
+        table = localization_table()
+        barcodeMap, self.uniqueBarcodes = table.load(file)
+
+        if "3D" in file:
+            self.ndims = 3
+            self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": self.pixelSizeZ}
+        else:
+            self.ndims = 2
+            self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": 0}
+
+        if "masking" in self.tracing_method:
+            self.build_trace_by_masking(barcodeMap)
+
+    def run(self):
+        """
+        Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
+
         Parameters
-    log1 : class
-        logging class.
-    session1 : class
-        session information
+        ----------
+        param : class
+            Parameters
+        log1 : class
+            logging class.
+        session1 : class
+            session information
 
-    Returns
-    -------
-    None.
+        Returns
+        -------
+        None.
 
-    """
-    sessionName = "buildsPWDmatrix"
+        """
+        # initializes sessionName, dataFolder, currentFolder
+        label = "barcode"
+        self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_traces",label = label)
+
+        availableMasks = self.param.param["buildsPWDmatrix"]["masks2process"]
+        printLog("> Masks labels: {}".format(availableMasks))
+
+        # iterates over barcode localization tables in the current folder
+        files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
+
+        if len(files) < 1:
+            printLog("$ No localization table found to process!","WARN")
+            return
+
+        for file in files:
+            self.method_caller(file)
+
+        printLog(f"$ {len(files)} barcode tables processed in {self.currentFolder}")
+
+
+
+def initialize_module(param, module_name="build_traces",label = "barcode"):
+
+    sessionName = module_name
 
     # processes folders and files
     dataFolder = folders(param.param["rootFolder"])
-    printLog("\n===================={}====================\n".format(sessionName))
+    printLog("\n"+"="*35+f"{sessionName}"+"="*35+"\n")
     printLog("$ folders read: {}".format(len(dataFolder.listFolders)))
     writeString2File(param.param["fileNameMD"], "## {}\n".format(sessionName), "a")
-    label = "barcode"
 
-    for currentFolder in dataFolder.listFolders:
-        # filesFolder=glob.glob(currentFolder+os.sep+'*.tif')
-        dataFolder.createsFolders(currentFolder, param)
-        printLog("> Processing Folder: {}".format(currentFolder))
+    currentFolder = param.param["rootFolder"]
+    dataFolder.createsFolders(currentFolder, param)
+    printLog("> Processing Folder: {}".format(currentFolder))
 
-        availableMasks = param.param["buildsPWDmatrix"]["masks2process"]
-        printLog("> Masks labels: {}".format(availableMasks))
+    return dataFolder, currentFolder
 
-        for maskLabel in availableMasks.keys():
+def debug_mask_fileName(filesinFolder,fullFileNameROImasks,maskIdentifier,nROI,label=''):
 
-            maskIdentifier = availableMasks[maskLabel]
-
-            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_" + label + ".dat"
-            if os.path.exists(fileNameBarcodeCoordinates):
-                # 2D
-                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"]
-                printLog("> 2D processing: {}".format(outputFileName))
-
-                if "pixelSizeXY" in param.param["acquisition"].keys():
-                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-                    pixelSize = {"x": pixelSizeXY, "y": pixelSizeXY, "z": 0.0}
-                else:
-                    pixelSize = {"x": 0.1, "y": 0.1, "z": 0.0}
-
-                buildsPWDmatrix(
-                    param,
-                    currentFolder,
-                    fileNameBarcodeCoordinates,
-                    outputFileName,
-                    dataFolder,
-                    pixelSize,
-                    param.param["fileNameMD"],
-                    maskIdentifier=maskIdentifier,
-                )
-
-            # 3D
-            fileNameBarcodeCoordinates = dataFolder.outputFiles["segmentedObjects"] + "_3D_" + label + ".dat"
-            if os.path.exists(fileNameBarcodeCoordinates):
-                outputFileName = dataFolder.outputFiles["buildsPWDmatrix"] + "_3D"
-                printLog("> 3D processing: {}".format(outputFileName))
-
-                if ("pixelSizeZ" in param.param["acquisition"].keys()) and (
-                    "pixelSizeXY" in param.param["acquisition"].keys()
-                ):
-                    pixelSizeXY = param.param["acquisition"]["pixelSizeXY"]
-
-                    if "zBinning" in param.param["acquisition"]:
-                        zBinning = param.param["acquisition"]["zBinning"]
-                    else:
-                        zBinning = 1
-
-                    pixelSizeZ = zBinning * param.param["acquisition"]["pixelSizeZ"]
-
-                    pixelSize = {"x": pixelSizeXY, "y": pixelSizeXY, "z": pixelSizeZ * zBinning}
-                else:
-                    pixelSize = {"x": 0.1, "y": 0.1, "z": 0.25}
-
-                buildsPWDmatrix(
-                    param,
-                    currentFolder,
-                    fileNameBarcodeCoordinates,
-                    outputFileName,
-                    dataFolder,
-                    pixelSize,
-                    param.param["fileNameMD"],
-                    ndims=3,
-                    maskIdentifier=maskIdentifier,
-                )
-
-            # tights loose ends
-            session1.add(currentFolder, sessionName)
-
-            printLog("HiM matrix in {} processed".format(currentFolder), "info")
+    printLog(f"# Error, no mask file found for ROI: {nROI}\n")
+    printLog("# File I was searching for: {}".format(fullFileNameROImasks))
+    printLog("# Debug: ")
+    for file in filesinFolder:
+        if (
+            file.split("_")[-1].split(".")[0]
+            == label  # typically "ch00"
+            and maskIdentifier in file.split("_")
+            and int(os.path.basename(file).split("_")[3]) == nROI
+        ):
+            printLog("$ Hit found!")
+        printLog(
+            "fileSplit:{}, {} in filename: {}, ROI: {}".format(
+                file.split("_")[-1].split(".")[0],
+                maskIdentifier,
+                maskIdentifier in os.path.basename(file).split("_"),
+                int(os.path.basename(file).split("_")[3]),
+            )
+        )

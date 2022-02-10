@@ -36,6 +36,8 @@ from imageProcessing.segmentSources3D import segmentSources3D
 from imageProcessing.segmentMasks3D import segmentMasks3D
 from matrixOperations.filter_localizations import filter_localizations
 from matrixOperations.register_localizations import register_localizations
+from matrixOperations.build_traces import build_traces
+
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -220,6 +222,12 @@ class HiMfunctionCaller:
             register_localizations_instance = register_localizations(param)
             register_localizations_instance.register()
 
+    # build traces
+    def build_traces(self, param, label):
+        if label == "barcode":
+            build_traces_instance = build_traces(param)
+            build_traces_instance .run()
+
     # This function will be removed in new release
     def localDriftCorrection(self, param, label):
 
@@ -247,7 +255,7 @@ class HiMfunctionCaller:
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
-                "projectBarcodes","filter_localizations","register_localizations","buildHiMmatrix"]
+                "projectBarcodes","filter_localizations","register_localizations","build_traces","buildHiMmatrix"]
 
 
 def defaultListCommands():
@@ -264,7 +272,7 @@ def HiM_parseArguments():
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
-                        optional: [ filter_localizations register_localizations ]")
+                        optional: [ filter_localizations register_localizations build_traces]")
                         # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")

@@ -2,7 +2,7 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch02",
+            "RNA_channel": "ch01",
             "barcode_channel": "ch01",
             "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
@@ -31,14 +31,15 @@
             "lower_threshold": 0.999,
             "operation": "overwrite",
             "outputFile": "alignImages",
-            "referenceFiducial": "RT27",
+            "referenceFiducial": "RT1",
             "tolerance": 0.1
         },
         "buildsPWDmatrix": {
+            "tracing_method": "masking",
             "flux_min": 10,
-            "flux_min_3D": 0.1,
+            "flux_min_3D": 4000,
             "folder": "buildsPWDmatrix",
-            "masks2process":{"nuclei":"DAPI","mask1":"mask1"},
+            "masks2process":{"nuclei":"DAPI","mask1":"mask0"},
             "toleranceDrift": 1
         },
         "projectsBarcodes": {
@@ -49,7 +50,6 @@
         "segmentedObjects": {
             "Segment3D": "overwrite",
 	        "operation": "2D",
-	        "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "background_sigma": 3.0,
             "brightest": 1100,
             "centroidDifference_max": 5,
@@ -90,8 +90,10 @@
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_network": "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2",
-		        "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
+		        "stardist_network3D": "stardist_20210625_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
 	    },
@@ -143,8 +145,8 @@
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
-		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
-		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models",
+		        "stardist_network": "stardist_20210618_simu_deconvolved_thresh_0_01"
 		    },
             "zProject": {
 		        "mode": "full",
@@ -169,8 +171,10 @@
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
-		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01",
+		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
+		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_basename3D": "/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/models/",
+		        "stardist_network3D": "stardist_20210618_simu_deconvolved_thresh_0_01",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
 		    },

@@ -108,8 +108,8 @@ class register_localizations:
         if max(np.abs(shifts)) < self.toleranceDrift:
             zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
         else:
-            zxy_corrected = zxy_uncorrected      
-        
+            zxy_corrected = zxy_uncorrected
+
         '''
         # keeps uncorrected values if no match is found
         if not _foundMatch:
@@ -119,7 +119,7 @@ class register_localizations:
         else:
             self.foundMatch.append(True)
         '''
-        
+
         return zxy_corrected
 
     def register_barcodes(self, barcodeMap):
@@ -217,23 +217,23 @@ class register_localizations:
         ----------
         self.alignmentResultsTable: astropy Table
             alignmentResultsTable table
-            
+
         self.alignmentResultsTableRead: Boolean
             True when alignmentResultsTable table was read from disk
-            
+
         Returns
         -------
         exit_code: Boolean
-        
+
         self.dictErrorBlockMasks: dict
-        
+
         """
         if not self.alignmentResultsTableRead:
             printLog("Did not find alignmentResultsTable. Cannot continue")
             return False
         else:
             alignmentResultsTable = self.alignmentResultsTable
-            
+
         # gets blockSize
         blockSizeXY = alignmentResultsTable[0]["blockXY"]
 
@@ -244,7 +244,7 @@ class register_localizations:
             nBarcode = "barcode:" + row["label"]
             nBlock_i = "block_i:" + str(row["block_i"])
             nBlock_j = "block_j:" + str(row["block_j"])
-            
+
             if nROI not in dictErrorBlockMasks.keys():
                 dictErrorBlockMasks[nROI] = {}
 
@@ -257,14 +257,14 @@ class register_localizations:
             if nBlock_j not in dictErrorBlockMasks[nROI][nBarcode][nBlock_i].keys():
                 dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j] = {}
 
-            dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j] = {"shift_z":row["shift_z"], 
-                                                                       "shift_x":row["shift_x"], 
-                                                                       "shift_y":row["shift_y"], 
-                                                                       "quality_xy":row["quality_xy"], 
+            dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j] = {"shift_z":row["shift_z"],
+                                                                       "shift_x":row["shift_x"],
+                                                                       "shift_y":row["shift_y"],
+                                                                       "quality_xy":row["quality_xy"],
                                                                        "quality_zy":row["quality_zy"],
                                                                        "quality_zx":row["quality_zx"]}
-            
-            
+
+
         self.dictErrorBlockMasks = dictErrorBlockMasks
         return True
 
@@ -351,7 +351,7 @@ class register_localizations:
         files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
 
         if len(files) < 1:
-            printLog("No file found to process!")
+            printLog("No localization table found to process!")
             return
 
         for file in files:
