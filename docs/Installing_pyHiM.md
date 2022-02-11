@@ -60,6 +60,14 @@ Run this command in your terminal within the root
 conda env create -f environment.yml
 ```
 
+If you get the error:
+
+```sh
+ImportError: Dask's distributed scheduler is not installed.
+```
+
+You solve by running `pip install dask[complete] distributed --upgrade`.
+
 ##### Manual 
 
 To manually install the necessary packages using conda, run:
