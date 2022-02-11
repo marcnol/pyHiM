@@ -200,7 +200,6 @@ class chromatin_trace_table:
                 # plots circles for each trace
                 sc = ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
 
-                #print(f"trace: {trace_id}, {len(trace['x'].data)} barcodes")
             # saves output figure
             fileName_list_i=fileName_list.copy()
             fileName_list_i.insert(-1,'_ROI' + str(nROI))

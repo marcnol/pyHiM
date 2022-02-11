@@ -374,7 +374,7 @@ class build_traces:
                 printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
 
                 # saves trace table with results per ROI
-                output_table_fileName = outputFileName + "_mask:" + str(self.maskIdentifier) + "_ROI:" + str(self.nROI) + ".ecsv"
+                output_table_fileName = outputFileName + "_" + self.label + "_mask:" + str(self.maskIdentifier) + "_ROI:" + str(self.nROI) + ".ecsv"
                 self.trace_table.save(output_table_fileName, self.trace_table.data)
 
                 # plots results
@@ -397,7 +397,7 @@ class build_traces:
 
             tag = '_' + str(self.ndims) + 'D'
 
-            outputFileName = self.dataFolder.outputFiles["buildsPWDmatrix"] + tag
+            outputFileName = self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_" + tag
 
             # creates and initializes trace table
             self.trace_table = chromatin_trace_table()
@@ -444,13 +444,13 @@ class build_traces:
 
         """
         # initializes sessionName, dataFolder, currentFolder
-        label = "barcode"
-        self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_traces",label = label)
+        self.label = "barcode"
+        self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_traces",label = self.label)
 
         printLog("> Masks labels: {}".format(self.availableMasks))
 
         # iterates over barcode localization tables in the current folder
-        files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
+        files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + self.label + ".dat")]
 
         if len(files) < 1:
             printLog("$ No localization table found to process!","WARN")

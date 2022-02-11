@@ -151,7 +151,7 @@ class build_matrix:
         coord_labels = ['x','y','z']
 
         data_traces = self.trace_table.data.group_by("Trace_ID")
-        for trace, trace_id, itrace in zip(data_traces.groups, data_traces.groups.keys, range(numberMatrices)):
+        for trace, trace_id, itrace in tzip(data_traces.groups, data_traces.groups.keys, range(numberMatrices)):
 
             barcodes2Process = trace["Barcode #"].data
 
@@ -160,19 +160,20 @@ class build_matrix:
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
 
                 # gets coordinates for barcode 1
-                r1 = [trace[coord_label][ibarcode1].data for coord_label in coord_labels]
+                r1 = np.array([trace[coord_label][ibarcode1] for coord_label in coord_labels])
 
                 # loops over barcodes detected in cell mask: barcode2
                 for barcode2, ibarcode2 in zip(barcodes2Process, range(len(barcodes2Process))):
                     indexBarcode2 = np.nonzero(uniqueBarcodes == barcode2)[0][0]
 
                     # gets coordinates for barcode 2
-                    r2 = [trace[coord_label][ibarcode2].data for coord_label in coord_labels]
+                    r2 = np.array([trace[coord_label][ibarcode2] for coord_label in coord_labels])
 
                     if barcode1 != barcode2:
 
                         # attributes distance from the PWDmatrix field in the scPWDitem table
-                        newdistance = self.calculatesPWDsingleMask(r1, r2)
+                        PWD_matrix = self.calculatesPWDsingleMask(r1, r2)
+                        newdistance = PWD_matrix[0,1]
 
                         # inserts value into SCmatrix
                         if mode == "last":
@@ -331,14 +332,14 @@ class build_matrix:
     def run(self):
 
         # initializes sessionName, dataFolder, currentFolder
-        label = "barcode"
-        self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_matrix",label = label)
+        self.label = "barcode"
+        self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_matrix",label = self.label)
 
         # reads chromatin traces
-        files = [x for x in glob.glob(self.dataFolder.outputFiles["buildsPWDmatrix"] + "_mask*" + label + ".ecsv")]
+        files = [x for x in glob.glob(self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_*.ecsv")]
 
         if len(files) < 1:
-            printLog("$ No chromatin trace table found to process!","WARN")
+            printLog("$ No chromatin trace table found !","WARN")
             return
 
         for file in files:
