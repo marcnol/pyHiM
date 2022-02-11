@@ -97,6 +97,8 @@ class chromatin_trace_table:
             print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
             sys.exit()
 
+        self.data = trace_table
+
         return trace_table
 
 
@@ -183,7 +185,7 @@ class chromatin_trace_table:
 
             fig.tight_layout()
 
-            # calculates mean trace positions and sizes
+            # calculates mean trace positions and sizes by looping over traces
             data_traces = data_ROI.group_by("Trace_ID")
             number_traces = len(data_traces.groups.keys)
             color_dict_traces = build_color_dict(data_traces, key='Trace_ID')

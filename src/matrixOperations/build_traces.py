@@ -80,7 +80,7 @@ class build_traces:
 
         self.initialize_parameters()
 
-        # initialize with empty values
+        # initialize with default values
         self.pixelSize = [0.1,0.1,0.25] # default pixel size
         self.currentFolder = []
         self.maskIdentifier = ['DAPI'] # default mask label
@@ -108,6 +108,7 @@ class build_traces:
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
         self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
+        self.availableMasks = self.param.param["buildsPWDmatrix"]["masks2process"]
 
     def initializeLists(self):
         self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.cuid, self.buid, self.barcodeCoordinates = (
@@ -408,7 +409,7 @@ class build_traces:
 
             printLog("$ Trace built using mask assignment. Output saved in: {} ".format(self.currentFolder), "info")
 
-    def method_caller(self,file):
+    def launch_analysis(self,file):
 
         # loads barcode coordinate Tables
         table = localization_table()
@@ -446,8 +447,7 @@ class build_traces:
         label = "barcode"
         self.dataFolder, self.currentFolder  = initialize_module(self.param, module_name="build_traces",label = label)
 
-        availableMasks = self.param.param["buildsPWDmatrix"]["masks2process"]
-        printLog("> Masks labels: {}".format(availableMasks))
+        printLog("> Masks labels: {}".format(self.availableMasks))
 
         # iterates over barcode localization tables in the current folder
         files = [x for x in glob.glob(self.dataFolder.outputFiles["segmentedObjects"] + "_*" + label + ".dat")]
@@ -457,7 +457,7 @@ class build_traces:
             return
 
         for file in files:
-            self.method_caller(file)
+            self.launch_analysis(file)
 
         printLog(f"$ {len(files)} barcode tables processed in {self.currentFolder}")
 
