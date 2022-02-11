@@ -72,7 +72,6 @@ class build_matrix:
         self.initialize_parameters()
 
         # initialize with default values
-        self.pixelSize = [0.1,0.1,0.25] # default pixel size
         self.currentFolder = []
 
     def initialize_parameters(self):
@@ -83,12 +82,13 @@ class build_matrix:
         self.pixelSizeXY = getDictionaryValue(self.param.param["acquisition"], "pixelSizeXY", default=0.1)
         self.pixelSizeZ_0 = getDictionaryValue(self.param.param["acquisition"], "pixelSizeZ", default=0.25)
         self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
+        self.pixelSize = [self.pixelSizeXY, self.pixelSizeXY, self.pixelSizeZ]
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
         self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
         self.availableMasks = self.param.param["buildsPWDmatrix"]["masks2process"]
 
-    def calculatesPWDsingleMask(self, ROI, CellID, groupKeys, x, y, z):
+    def calculatesPWDsingleMask(self, r1, r2):
         """
         Calculates PWD between barcodes detected in a given mask. For this:
             - converts xyz pixel coordinates into nm using self.pixelSize dictionary
@@ -97,27 +97,22 @@ class build_matrix:
 
         Parameters
         ----------
-        ROI : string
-            ROI used
-        CellID: string
-            ID of the cell
-        x_uncorrected: float
-            x coordinates uncorrected
-        y_uncorrected: float
-            y coordinates uncorrected
-        z_uncorrected: float
-            z coordinates uncorrected
+        r1: list of floats with xyz coordinates for spot 1 in microns
+        r2: list of floats with xyz coordinates for spot 2 in microns
 
         Returns
         -------
-        Returns pairwise distance matrix between corrected barcodes in isotropic pixel units
+        Returns pairwise distance matrix between barcodes in microns
 
         """
-        R_nm = self.buildsVector(groupKeys, x, y, z)
 
-        P = pairwise_distances(R_nm)
+        x = np.array([r1[0], r2[0]])
+        y = np.array([r1[1], r2[1]])
+        z = np.array([r1[2], r2[2]])
 
-        P = P/self.pixelSize["x"]
+        R_mum = np.column_stack((x, y, z))
+
+        P = pairwise_distances(R_mum)
 
         return P
 
@@ -153,57 +148,59 @@ class build_matrix:
         SCmatrix[:] = np.NaN
 
         # loops over traces
+        coord_labels = ['x','y','z']
 
         data_traces = self.trace_table.data.group_by("Trace_ID")
-        for trace, trace_id in zip(data_traces.groups, data_traces.groups.keys):
+        for trace, trace_id, itrace in zip(data_traces.groups, data_traces.groups.keys, range(numberMatrices)):
 
-#        for iCell, scPWDitem in zip(range(numberMatrices), self.SCdistanceTable):
             barcodes2Process = trace["Barcode #"].data
-
------
 
             # loops over barcodes detected in cell mask: barcode1
             for barcode1, ibarcode1 in zip(barcodes2Process, range(len(barcodes2Process))):
                 indexBarcode1 = np.nonzero(uniqueBarcodes == barcode1)[0][0]
 
+                # gets coordinates for barcode 1
+                r1 = [trace[coord_label][ibarcode1].data for coord_label in coord_labels]
+
                 # loops over barcodes detected in cell mask: barcode2
                 for barcode2, ibarcode2 in zip(barcodes2Process, range(len(barcodes2Process))):
                     indexBarcode2 = np.nonzero(uniqueBarcodes == barcode2)[0][0]
 
+                    # gets coordinates for barcode 2
+                    r2 = [trace[coord_label][ibarcode2].data for coord_label in coord_labels]
+
                     if barcode1 != barcode2:
 
                         # attributes distance from the PWDmatrix field in the scPWDitem table
-                        newdistance = scPWDitem["PWDmatrix"][ibarcode1][ibarcode2]
+                        newdistance = self.calculatesPWDsingleMask(r1, r2)
 
                         # inserts value into SCmatrix
                         if mode == "last":
-                            SCmatrix[indexBarcode1][indexBarcode2][iCell] = newdistance
+                            SCmatrix[indexBarcode1][indexBarcode2][itrace] = newdistance
                         elif mode == "mean":
-                            SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmean(
-                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
+                            SCmatrix[indexBarcode1][indexBarcode2][itrace] = np.nanmean(
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][itrace],]
                             )
                         elif mode == "min":
-                            SCmatrix[indexBarcode1][indexBarcode2][iCell] = np.nanmin(
-                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][iCell],]
+                            SCmatrix[indexBarcode1][indexBarcode2][itrace] = np.nanmin(
+                                [newdistance, SCmatrix[indexBarcode1][indexBarcode2][itrace],]
                             )
 
         self.SCmatrix = SCmatrix
         self.meanSCmatrix = np.nanmean(SCmatrix, axis=2)
-        # self.uniqueBarcodes = uniqueBarcodes
+        self.uniqueBarcodes = uniqueBarcodes
 
+    def calculatesNmatrix(self):
 
-    def calculatesNmatrix(self,SCmatrix):
-
-        numberCells = SCmatrix.shape[2]
+        numberCells = self.SCmatrix.shape[2]
 
         if numberCells > 0:
-            Nmatrix = np.sum(~np.isnan(SCmatrix), axis=2)
+            Nmatrix = np.sum(~np.isnan(self.SCmatrix), axis=2)
         else:
-            numberBarcodes = SCmatrix.shape[0]
+            numberBarcodes = self.SCmatrix.shape[0]
             Nmatrix = np.zeros((numberBarcodes, numberBarcodes))
 
-        return Nmatrix
-
+        self.Nmatrix = Nmatrix
 
     def plotsAllmatrices(self, file):
         """
@@ -211,43 +208,27 @@ class build_matrix:
 
         Parameters
         ----------
-        SCmatrixCollated : npy array
-            PWD matrix for single cells.
-        Nmatrix : npy array
-            2d matrix with number of measurements per barcode combination.
-        uniqueBarcodes : npy array
-            barcode identities.
-        pixelSize : npy array
-            pixelsize in um.
-        numberROIs : int
-            self explanatory.
-        outputFileName : str
-            self explanatory.
-        logNameMD : str
-            Markdown filename.
-        localizationDimension : int
-            indicates dimension of barcode localization.
+        file : str
+            trace file name used for get output filenames.
 
         Returns
         -------
         None.
 
         """
-        # adapts clim depending on whether 2 or 3 dimensions are used for barcode localizations
-        if localizationDimension == 2:
-            clim = 1.6
-        else:
-            clim = 2.2
+        numberROIs = 1
+        outputFileName = file.split('.')[0] + '_Matrix'
+        clim = 2.2
 
         # plots PWD matrix
         # uses KDE
         plotMatrix(
-            SCmatrixCollated,
-            uniqueBarcodes,
-            pixelSize,
+            self.SCmatrix,
+            self.uniqueBarcodes,
+            self.pixelSize,
             numberROIs,
             outputFileName,
-            logNameMD,
+            self.logNameMD,
             figtitle="PWD matrix - KDE",
             mode="KDE",  # median or KDE
             clim=clim,
@@ -257,12 +238,12 @@ class build_matrix:
 
         # uses median
         plotMatrix(
-            SCmatrixCollated,
-            uniqueBarcodes,
-            pixelSize,
+            self.SCmatrix,
+            self.uniqueBarcodes,
+            self.pixelSize,
             numberROIs,
             outputFileName,
-            logNameMD,
+            self.logNameMD,
             figtitle="PWD matrix - median",
             mode="median",  # median or KDE
             clim=clim,
@@ -272,17 +253,17 @@ class build_matrix:
 
         # calculates and plots contact probability matrix from merged samples/datasets
         HiMmatrix, nCells = calculateContactProbabilityMatrix(
-            SCmatrixCollated, uniqueBarcodes, pixelSize, norm="nonNANs",
+            self.SCmatrix, self.uniqueBarcodes, self.pixelSize, norm="nonNANs",
         )  # norm: nCells (default), nonNANs
 
         cScale = HiMmatrix.max()
         plotMatrix(
             HiMmatrix,
-            uniqueBarcodes,
-            pixelSize,
+            self.uniqueBarcodes,
+            self.pixelSize,
             numberROIs,
             outputFileName,
-            logNameMD,
+            self.logNameMD,
             figtitle="Hi-M matrix",
             mode="counts",
             clim=cScale,
@@ -292,28 +273,31 @@ class build_matrix:
 
         # plots Nmatrix
         plotMatrix(
-            Nmatrix,
-            uniqueBarcodes,
-            pixelSize,
+            self.Nmatrix,
+            self.uniqueBarcodes,
+            self.pixelSize,
             numberROIs,
             outputFileName,
-            logNameMD,
+            self.logNameMD,
             figtitle="N-matrix",
             mode="counts",
-            clim=np.max(Nmatrix),
+            clim=np.max(self.Nmatrix),
             cm="Blues",
             fileNameEnding="_Nmatrix.png",
         )
 
         plotDistanceHistograms(
-            SCmatrixCollated, pixelSize, outputFileName, logNameMD, mode="KDE", kernelWidth=0.25, optimizeKernelWidth=False
+            self.SCmatrix, self.pixelSize, outputFileName, self.logNameMD, mode="KDE", kernelWidth=0.25, optimizeKernelWidth=False
         )
 
-    def save_matrices(self):
+    def save_matrices(self,file):
+
+        outputFileName = file.split('.')[0] + '_Matrix'
+
         # saves output
-        np.save(outputFileName + "_" + maskIdentifier + "_HiMscMatrix.npy", SCmatrixCollated)
-        np.savetxt(outputFileName + "_" + maskIdentifier + "_uniqueBarcodes.ecsv", uniqueBarcodes, delimiter=" ", fmt="%d")
-        np.save(outputFileName + "_" + maskIdentifier + "_Nmatrix.npy", Nmatrix)
+        np.save(outputFileName + "_HiMscMatrix.npy", self.SCmatrix)
+        np.savetxt(outputFileName + "_uniqueBarcodes.ecsv", self.uniqueBarcodes, delimiter=" ", fmt="%d")
+        np.save(outputFileName + "_Nmatrix.npy", self.Nmatrix)
 
     def launch_analysis(self, file):
         """

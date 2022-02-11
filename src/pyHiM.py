@@ -105,6 +105,10 @@ if __name__ == "__main__":
         if "build_traces" in runParameters["cmd"]:
             HiM.build_traces(param, label)
 
+        # [builds matrices]
+        if "build_matrix" in runParameters["cmd"]:
+            HiM.build_matrix(param, label)
+
         # [builds PWD matrix for all folders with images]
         if "buildHiMmatrix" in runParameters["cmd"]:
             HiM.processesPWDmatrices(param, label)

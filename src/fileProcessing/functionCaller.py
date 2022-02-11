@@ -37,7 +37,7 @@ from imageProcessing.segmentMasks3D import segmentMasks3D
 from matrixOperations.filter_localizations import filter_localizations
 from matrixOperations.register_localizations import register_localizations
 from matrixOperations.build_traces import build_traces
-
+from matrixOperations.build_traces import build_matrix
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -226,7 +226,13 @@ class HiMfunctionCaller:
     def build_traces(self, param, label):
         if label == "barcode":
             build_traces_instance = build_traces(param)
-            build_traces_instance .run()
+            build_traces_instance.run()
+
+    # build matrices
+    def build_matrix(self, param, label):
+        if label == "barcode":
+            build_matrix_instance = build_matrix(param)
+            build_matrix_instance.run()
 
     # This function will be removed in new release
     def localDriftCorrection(self, param, label):
