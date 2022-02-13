@@ -47,6 +47,7 @@ from tqdm.contrib import tzip
 from tqdm import trange
 import matplotlib.pyplot as plt
 from skimage.segmentation import expand_labels
+from scipy.spatial import KDTree
 
 from sklearn.metrics import pairwise_distances
 from astropy.table import Table
@@ -99,16 +100,17 @@ class build_traces:
     def initialize_parameters(self):
         # initializes parameters from param
 
-        self.tracing_method = getDictionaryValue(self.param.param["buildsPWDmatrix"], "tracing_method",  default="masking")
+        self.tracing_method = getDictionaryValue(self.param.param["buildsPWDmatrix"], "tracing_method",  default=["masking"])
         self.zBinning = getDictionaryValue(self.param.param["acquisition"], "zBinning", default=1)
         self.pixelSizeXY = getDictionaryValue(self.param.param["acquisition"], "pixelSizeXY", default=0.1)
         self.pixelSizeZ_0 = getDictionaryValue(self.param.param["acquisition"], "pixelSizeZ", default=0.25)
         self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
-        self.pixelSize = [self.pixelSizeXY, self.pixelSizeXY, self.pixelSizeZ]
+        #self.pixelSize = [self.pixelSizeXY, self.pixelSizeXY, self.pixelSizeZ]
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
         self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
         self.availableMasks = self.param.param["buildsPWDmatrix"]["masks2process"]
+        self.KDtree_distance_threshold_mum = getDictionaryValue(self.param.param["buildsPWDmatrix"], "KDtree_distance_threshold_mum", default=1)
 
     def initializeLists(self):
         self.ROIs, self.cellID, self.nBarcodes, self.barcodeIDs, self.cuid, self.buid, self.barcodeCoordinates = (
@@ -395,7 +397,7 @@ class build_traces:
             else:
                 self.maskType = "mask"
 
-            tag = '_' + str(self.ndims) + 'D'
+            tag = str(self.ndims) + 'D'
 
             outputFileName = self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_" + tag
 
@@ -409,6 +411,117 @@ class build_traces:
 
             printLog("$ Trace built using mask assignment. Output saved in: {} ".format(self.currentFolder), "info")
 
+
+    def group_localizations_by_coordinate(self,):
+        """
+        Uses a KDTree to group detections by it's coordinates, given a certain distance threshold
+        Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.dat)
+        where the detections are less than a pixel away from each other
+
+        Parameters
+        ----------
+        coordinates : numpy array, float
+            Matrix containing the xyz coordinates of barcodes.
+        distance_threshold : float, defaul 1.0
+            Distance threshold in pixels used to detect neighboring barcodes.
+
+        Returns
+        -------
+        group_list : list
+            list of lists containing the coordinates of barcodes associated together.
+        """
+
+        # gets coordinates from trace table
+        dataTable = self.barcodeMapROI
+        pixelSize=self.pixelSize
+        N = len(dataTable)
+
+        if self.ndims == 3:
+            coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(N,1),
+                                    pixelSize['y']*dataTable['ycentroid'].data.reshape(N,1),
+                                    pixelSize['z']*dataTable['zcentroid'].data.reshape(N,1)], axis = 1)
+        elif self.ndims == 2:
+            coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(N,1),
+                                    pixelSize['y']*dataTable['ycentroid'].data.reshape(N,1)], axis = 1)
+
+        # gets tree of coordinates
+        printLog('> Creating KDTree')
+        x_tree = KDTree(coordinates)
+
+        ## set distance thresold
+        r = self.KDtree_distance_threshold_mum
+
+        # Groups points when they're less than r away
+        points = []
+        for element in coordinates:
+            points.append(x_tree.query_ball_point(element, r, p=2.0))
+
+        # Get unique groups
+        groups = list(set(tuple(x) for x in points))
+        group_list = [list(x) for x in groups]
+        self.NcellsAssigned = len(group_list)
+
+        # Fills in trace information in localization table
+
+        # iterates over traces
+        for trace_id, trace in enumerate(group_list):
+
+            # iterates over localizations in trace
+            for i in range(len(trace)):
+                # gets index of localization in dataTable
+                index_localization = trace[i]
+
+                # records trace to which this index belongs
+                dataTable["CellID #"][index_localization] = trace_id
+
+        self.barcodeMapROI = dataTable
+
+    def build_trace_by_clustering(self,
+                                   barcodeMap,):
+
+        # decompose by ROI!
+        # indexes localization tables by ROI
+        barcodeMapROI = barcodeMap.group_by("ROI #")
+        numberROIs = len(barcodeMapROI.groups.keys)
+
+        printLog("-"*80)
+        printLog("> Starting spatial clustering for {} ROIs".format(numberROIs))
+
+
+        tag = str(self.ndims) + 'D'
+
+        outputFileName = self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_" + tag
+
+        # creates and initializes trace table
+        self.trace_table = chromatin_trace_table()
+
+        # loops over ROIs
+        for ROI in range(numberROIs):
+            self.nROI = barcodeMapROI.groups.keys[ROI][0]  # need to iterate over the first index
+            self.barcodeMapROI = barcodeMap.group_by("ROI #").groups[ROI]
+
+            printLog("$ Processing ROI# {}".format(self.nROI))
+
+            # initializes trace table
+            self.trace_table.initialize()
+
+            # build traces by spatial clustering
+            self.group_localizations_by_coordinate()
+            printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1}\n")
+
+            # builds SCdistanceTable
+            self.buildsSCdistanceTable()
+            printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
+
+            # saves trace table with results per ROI
+            output_table_fileName = outputFileName + "_" + self.label + "_KDtree" + "_ROI:" + str(self.nROI) + ".ecsv"
+            self.trace_table.save(output_table_fileName, self.trace_table.data)
+
+            # plots results
+            self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"])
+
+            printLog(f"$ Traces built. Saved output table as {output_table_fileName}")
+
     def launch_analysis(self,file):
 
         # loads barcode coordinate Tables
@@ -421,6 +534,9 @@ class build_traces:
         else:
             self.ndims = 2
             self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": 0}
+
+        if "clustering" in self.tracing_method and self.ndims == 3: # for now it only runs for 3D data
+            self.build_trace_by_clustering(barcodeMap)
 
         if "masking" in self.tracing_method:
             self.build_trace_by_masking(barcodeMap)
@@ -455,6 +571,10 @@ class build_traces:
         if len(files) < 1:
             printLog("$ No localization table found to process!","WARN")
             return
+
+        printLog(f"> Will process {len(files)} localization tables with names:")
+        for file in files:
+            printLog(f"{os.path.basename(file)}")
 
         for file in files:
             self.launch_analysis(file)

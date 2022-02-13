@@ -203,4 +203,8 @@ class chromatin_trace_table:
             # saves output figure
             fileName_list_i=fileName_list.copy()
             fileName_list_i.insert(-1,'_ROI' + str(nROI))
-            fig.savefig("".join(fileName_list_i))
+
+            try:
+                fig.savefig("".join(fileName_list_i))
+            except ValueError:
+                print("\nValue error while saving output figure with traces:{}".format("".join(fileName_list_i)))
