@@ -1169,11 +1169,53 @@ The new method requires executing several modules:
 
 
 
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C filter_localizations``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. To avoid overwriting data, existing files will be renamed with the extension `_version_n` where `n`will be incremented from run to run. The output of `filter_localizations` will be saved with the original localizations filename. A comment in the header will be added to indicate that a *filtering* operation was run on this file.
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"flux_min": 10, # maximum flux allowed for 2D
+"flux_min_3D": 4000,# maximum flux allowed for 3D
+```
+
+
+
+**Output images**
+
+- `_filtered_barcode_localizations_ROI*.png`
+
+
+
 ###### 5.1.2 `register_localizations`
 
 
 
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C register_localizations``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. To avoid overwriting data, existing files will be renamed with the extension `_version_n` where `n`will be incremented from run to run. The output of `register_localizations` will be saved with the original localizations filename. A comment in the header will be added to indicate that a *registration* operation was run on this file. `register_localizations` **will not be run on files that were previously registered.**
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"toleranceDrift": 1 # tolerance drift in pixels. Above this value localizations will not be locally registered
+```
+
+
+
 outputs images:
+
+- `_registered_barcode_stats.png`
+- `_registered_barcode_localizations_ROI*.png`
 
 | statistics of registration                                   | localization map                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -1186,17 +1228,73 @@ outputs images:
 
 
 
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C build_traces``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. The output of `register_localizations` will be saved in the `buildsPWDmatrix` folder with the name starting with `Trace_`. The reminder of the name will contain the kind of operation run (mask/KDtree) the identity of the mask (e.g. mask0, DAPI), and whether localizations used were from a *2D* or a *3D* analysis. 
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"tracing_method": ["masking","clustering"], # list of methods it will use
+"mask_expansion": 8,# number of pixels masks will be expanded to assign localizations
+"masks2process":{"nuclei":"DAPI","mask1":"mask0"}, # masks identities to process
+"KDtree_distance_threshold_mum": 1,# threshold distance used for KDtree clustering
+```
+
+
+
 Output images:
 
-| full image | zoomed images |
-| --- |   ----|
-| ![image-20220210221402082](Running_pyHiM.assets/image-20220210221402082.png) |![image-20220210221430543](Running_pyHiM.assets/image-20220210221430543.png)|
-| ![image-20220210222233148](Running_pyHiM.assets/image-20220210222233148.png) |![image-20220210222354093](Running_pyHiM.assets/image-20220210222354093.png)|
+- `_XYZ_ROI*.png`
+
+|  | full image | zoomed images |
+| --- |   ---- | --- |
+| 3D **mask** | ![image-20220210221402082](Running_pyHiM.assets/image-20220210221402082.png) |![image-20220210221430543](Running_pyHiM.assets/image-20220210221430543.png)|
+| 3D **mask** | ![image-20220210222233148](Running_pyHiM.assets/image-20220210222233148.png) |![image-20220210222354093](Running_pyHiM.assets/image-20220210222354093.png)|
+| 3D **KDtree** |  ||
 
 
 
 ###### 5.1.4 `build_matrices`
 
+
+
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C build_matrix``` argument. This function will find and process all the `Trace_` files in the `buildsPWDmatrix` folder. The outputs of `build_matrix` will be saved in the `buildsPWDmatrix` folder. Output files will be created with the root filename of `Trace_`files. They will contain Numpy arrays with single cell PWD matrices  (`_PWDscMatrix.npy`) and N-matrices (`_Nmatrix.npy`), and an `.ecsv` list of barcode names (`_unique_barcodes.ecsv`).
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},    
+```
+
+
+
+Output images:
+
+- `_PWDhistograms.png`
+- `_Nmatrix.png`
+- `HiMmatrix.png`
+- `_PWDmatrixMedian.png`
+- `_PWDmatrixKDE.png`
+
+*example uses fiducial mask*
+
+| method    | contact matrices                                             | **PWD matrix**                                               |
+| --------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 2D - mask | ![image-20220212093032574](Running_pyHiM.assets/image-20220212093032574.png) | ![image-20220212093119700](Running_pyHiM.assets/image-20220212093119700.png) |
+| 3D - mask | ![image-20220212093245315](Running_pyHiM.assets/image-20220212093245315.png) | ![image-20220212093210913](Running_pyHiM.assets/image-20220212093210913.png) |
+| KDtree 3D | ![image-20220213120843091](Running_pyHiM.assets/image-20220213120843091.png) | ![image-20220213120807698](Running_pyHiM.assets/image-20220213120807698.png) |
+| Nmatrices | Masking![image-20220212093324905](Running_pyHiM.assets/image-20220212093324905.png) | KDTREE![image-20220213120921749](Running_pyHiM.assets/image-20220213120921749.png) |
 
 
 
