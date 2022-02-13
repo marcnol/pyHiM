@@ -283,10 +283,12 @@ class Parameters:
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
-                "tracing_method": "masking", # available methods: masking, spatial_clustering
+                "tracing_method": ["masking","clustering"], # available methods: masking, clustering
                 "mask_expansion": 8, # Expands masks until they collide by a max of 'mask_expansion' pixels
                 "flux_min": 10,  # min flux to keeep object
                 "flux_min_3D": 0.1,  # min flux to keeep object
+                "KDtree_distance_threshold_mum": 1, # distance threshold used to build KDtree
+     			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"}, # colormaps used for plotting matrices
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
             },
             "segmentedObjects": {

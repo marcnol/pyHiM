@@ -35,12 +35,14 @@
             "tolerance": 0.1
         },
         "buildsPWDmatrix": {
-            "tracing_method": "masking",
+            "tracing_method": ["masking","clustering"],
             "mask_expansion": 8,            
             "flux_min": 10,
             "flux_min_3D": 4000,
+            "KDtree_distance_threshold_mum": 1,            
             "folder": "buildsPWDmatrix",
             "masks2process":{"nuclei":"DAPI","mask1":"mask0"},
+			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},            
             "toleranceDrift": 1
         },
         "projectsBarcodes": {
