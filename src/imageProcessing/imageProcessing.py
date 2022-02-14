@@ -1911,7 +1911,7 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
 def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"):
     Row = ["".format(x) for x in range(matrix.shape[0])]
     im, cbar = heatmap(matrix, Row, Row, ax=ax, cmap=cmap, cbarlabel=cbarlabel, fontsize=fontsize, cbar_kw=cbar_kw)
-    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white")) #, fontsize=fontsize
+    _ = annotate_heatmap(im, valfmt=valfmt, size=fontsize, threshold=None, textcolors=("black", "white")) #, fontsize=fontsize
 
 
 def imageShowWithValues(matrices, outputName="tmp.png", cbarlabels=["focalPlane"], fontsize=6, verbose=False, title=""):
