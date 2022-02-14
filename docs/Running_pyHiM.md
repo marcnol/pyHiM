@@ -646,7 +646,7 @@ optional arguments:
 
 **Output**
 
-A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
 
 ```
 scan_002_mask0_002_ROI_converted_decon_ch01_segmentedMasks.png
@@ -741,7 +741,7 @@ You can run this script in the root folder of an analysis and it should work fin
 
 **Invoke**
 
-This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```..
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
 
