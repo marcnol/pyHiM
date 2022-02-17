@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 
 from astropy.table import Table
 
+from apifish.stack import read_table_from_ecsv, save_table_to_ecsv
+
 from fileProcessing.fileManagement import (
     printLog,
 )
@@ -91,7 +93,10 @@ class chromatin_trace_table:
 
         """
         if os.path.exists(file):
-            trace_table = Table.read(file, format="ascii.ecsv")
+            #trace_table = Table.read(file, format="ascii.ecsv")
+
+            trace_table = read_table_from_ecsv(file)
+
             printLog("$ Successfully loaded chromatin trace table: {}".format(file))
         else:
             print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
@@ -127,11 +132,16 @@ class chromatin_trace_table:
         except KeyError:
             table.meta['comments']=[comments]
 
+        save_table_to_ecsv(table,fileName)
+
+        '''
         table.write(
             fileName,
             format="ascii.ecsv",
             overwrite=True,
         )
+        '''
+
 
     def plots_traces(self, fileName_list, Masks = np.zeros((2048,2048)),pixelSize = [0.1,0.1,0.25] ):
 

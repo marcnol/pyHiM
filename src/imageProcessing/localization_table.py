@@ -17,7 +17,8 @@ import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from astropy.table import Table
+from apifish.stack import save_table_to_ecsv
+from apifish.stack import read_table_from_ecsv
 
 from fileProcessing.fileManagement import (
     printLog,
@@ -51,7 +52,9 @@ class localization_table:
 
         """
         if os.path.exists(fileNameBarcodeCoordinates):
-            barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+            # barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
+            barcodeMap = read_table_from_ecsv(file)
+
             printLog("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
 
             uniqueBarcodes = np.unique(barcodeMap["Barcode #"].data)
@@ -94,11 +97,15 @@ class localization_table:
         except KeyError:
             barcodeMap.meta['comments']=[comments]
 
+        save_table_to_ecsv(barcodeMap,fileName)
+
+        '''
         barcodeMap.write(
             fileName,
             format="ascii.ecsv",
             overwrite=True,
         )
+        '''
 
     def plots_distributionFluxes(self, barcodeMap, fileName_list):
         """
