@@ -107,7 +107,6 @@ class build_traces:
         self.pixelSizeXY = getDictionaryValue(self.param.param["acquisition"], "pixelSizeXY", default=0.1)
         self.pixelSizeZ_0 = getDictionaryValue(self.param.param["acquisition"], "pixelSizeZ", default=0.25)
         self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
-        #self.pixelSize = [self.pixelSizeXY, self.pixelSizeXY, self.pixelSizeZ]
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
         self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
