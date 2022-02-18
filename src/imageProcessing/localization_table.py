@@ -17,8 +17,8 @@ import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-from apifish.stack import save_table_to_ecsv
-from apifish.stack import read_table_from_ecsv
+from apifish.stack.io import save_table_to_ecsv
+from apifish.stack.io import read_table_from_ecsv
 
 from fileProcessing.fileManagement import (
     printLog,
@@ -35,7 +35,7 @@ class localization_table:
     def __init__(self):
         self.a = 1
 
-    def load(self, fileNameBarcodeCoordinates):
+    def load(self, file):
         """
         Loads barcodeMap
 
@@ -51,11 +51,11 @@ class localization_table:
             lis of unique barcodes read from barcodeMap
 
         """
-        if os.path.exists(fileNameBarcodeCoordinates):
+        if os.path.exists(file):
             # barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
             barcodeMap = read_table_from_ecsv(file)
 
-            printLog("$ Successfully loaded barcode localizations file: {}".format(fileNameBarcodeCoordinates))
+            printLog("$ Successfully loaded barcode localizations file: {}".format(file))
 
             uniqueBarcodes = np.unique(barcodeMap["Barcode #"].data)
             numberUniqueBarcodes = uniqueBarcodes.shape[0]
@@ -63,7 +63,7 @@ class localization_table:
             print("Number of barcodes read from barcodeMap: {}".format(numberUniqueBarcodes))
             print("Unique Barcodes detected: {}".format(uniqueBarcodes))
         else:
-            print("\n\n# ERROR: could not find coordinates file: {}".format(fileNameBarcodeCoordinates))
+            print("\n\n# ERROR: could not find coordinates file: {}".format(file))
             sys.exit()
 
         return barcodeMap, uniqueBarcodes

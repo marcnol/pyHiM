@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from astropy.table import Table
 
-from apifish.stack import read_table_from_ecsv, save_table_to_ecsv
+from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 
 from fileProcessing.fileManagement import (
     printLog,

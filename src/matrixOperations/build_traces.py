@@ -53,7 +53,7 @@ from sklearn.metrics import pairwise_distances
 from astropy.table import Table
 from photutils.segmentation import SegmentationImage
 
-from apifish.stack import read_array
+from apifish.stack.io import read_array
 
 from fileProcessing.fileManagement import (
     folders,
