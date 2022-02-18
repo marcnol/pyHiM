@@ -53,6 +53,8 @@ from sklearn.metrics import pairwise_distances
 from astropy.table import Table
 from photutils.segmentation import SegmentationImage
 
+from apifish.stack.io import read_array
+
 from fileProcessing.fileManagement import (
     folders,
     writeString2File,
@@ -105,7 +107,6 @@ class build_traces:
         self.pixelSizeXY = getDictionaryValue(self.param.param["acquisition"], "pixelSizeXY", default=0.1)
         self.pixelSizeZ_0 = getDictionaryValue(self.param.param["acquisition"], "pixelSizeZ", default=0.25)
         self.pixelSizeZ = self.zBinning * self.pixelSizeZ_0
-        #self.pixelSize = [self.pixelSizeXY, self.pixelSizeXY, self.pixelSizeZ]
         self.availableMasks = getDictionaryValue(self.param.param["buildsPWDmatrix"], "masks2process",  default={"nuclei":"DAPI"})
         self.logNameMD = self.param.param["fileNameMD"]
         self.mask_expansion = getDictionaryValue(self.param.param["buildsPWDmatrix"], "mask_expansion", default=8)
@@ -287,7 +288,8 @@ class build_traces:
             if os.path.exists(fullFileNameROImasks):
 
                 # loads and initializes masks
-                segmented_masks = np.load(fullFileNameROImasks)
+                #segmented_masks = np.load(fullFileNameROImasks)
+                segmented_masks = read_array(fullFileNameROImasks)
 
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.Masks= expand_labels(segmented_masks, distance = self.mask_expansion)
