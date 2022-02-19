@@ -1576,6 +1576,53 @@ Make sure that the first argument has quotation marks if you use wildcards!
 
 ## 2- Combining results from different experiments
 
+Two methods exist for combining results:
+
+- The first relies on the combination of single cell matrices stored as numpy arrays with dimensions nBarcodes x nBarcodes x nCells. See 2.1
+- The second method relies on the combination of traces. See 2.2
+
+To start an assembly the typical steps are:
+
+- create a new folder where data will be stored
+
+- put your `folders2Load.json` parameters file in the folder (see below)
+
+- run pipeline in this folder. Output will be contained in a dedicated directory within your folder.
+
+  
+
+Both methods (2.1 and 2.2) use a parameters file typically called `folders2Load.json`.
+
+Follow the example below as template:
+
+```bash
+{
+    "wt_Pc_Chr3R": {
+        "Folders": [
+            "/home/marcnol/data/Experiment_Julian/000_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "PWD_cm": "terrain",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "iPWD_cm": "terrain",
+        "ContactProbability_scale": 12,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.35,
+	"ContactProbability_cm": "coolwarm",
+	"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
+	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
+    }
+}
+```
+
+Make sure you edit the name of the dataset (here ```wt_Pc_Chr3R```) and add a folder for each dataset you want to analyze.
+
+
+
+### 2.1 Combining results from buildHiMmatrix
+
 Once you run a bunch of datasets, you will want to combine the PWD matrices together. For this:
 
 1. Retrieve the matrices and barcodes files by scp:
@@ -1748,34 +1795,6 @@ Then, you need to have a file called ```buildsPWDmatrix_uniqueBarcodes.ecsv``` w
 92
 ```
 
-#### Create folders2Load.json file
-
-Now you create the parameters file. An example follows:
-
-```bash
-{
-    "wt_Pc_Chr3R": {
-        "Folders": [
-            "/home/marcnol/data/Experiment_Julian/000_Embryo/buildsPWDmatrix"
-        ],
-        "PWD_clim": 1.4,
-        "PWD_mode": "median",
-        "PWD_cm": "terrain",
-        "iPWD_clim": 6,
-        "iPWD_mode": "median",
-        "iPWD_cm": "terrain",
-        "ContactProbability_scale": 12,
-        "ContactProbability_cmin": 0.0,
-        "ContactProbability_distanceThreshold": 0.35,
-	"ContactProbability_cm": "coolwarm",
-	"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
-	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
-    }
-}
-```
-
-Make sure you edit the name of the dataset (here ```wt_Pc_Chr3R```) and add a folder for each dataset you want to analyze.
-
 #### Run processHiMmatrix.py
 
 You can now run the script. For instance, do
@@ -1787,6 +1806,59 @@ processHiMmatrix.py  --matlab
 to run with default options. The important thing is to add the ```--matlab``` flag.
 
 You should be now set.
+
+
+
+### 2.2 Combining traces
+
+This method is much simpler, as it just relies on the combination of chromatin traces from different experiments or ROIs into a single chromatin trace file.
+
+To run:
+
+- create *output folder* copy your `folders2Load.json` file.
+- within this *output folder*, run `trace_combinator`
+- The output `ecsv` format trace file will be stored in `buildsPWDmatrix` folder within your *output folder*.
+- Copy your `infoList.json` within the *output folder*.
+- Run `pyHiM.py -C build_matrix` in the *output folder* to produce the matrices from your new chromatin trace file. 
+
+
+
+Parameters of `trace_combinator`
+
+```sh
+usage: trace_combinator [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+                        [-W ACTION] [--saveMatrix] [--ndims NDIMS]
+                        [--method METHOD]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --saveMatrix          Use to load matlab formatted data
+  --ndims NDIMS         Dimensions of trace
+  --method METHOD       Method or mask ID used for tracing: KDtree, mask,
+                        mask0
+
+```
+
+
+
+Without arguments, `trace_combinator` will run using defaults values (ndims = 3, method = 'mask'). Somme comments:
+
+- `ndims` defines whether 2D or 3D was used for segmentation of localizations.
+
+- `method` is a string that is to decode the method used for tracing or the mask identity. For instance, if you use `--method KDtree` it will search for `KDtree`in the trace filename. Using `mask` will combine all the trace files processed using masking. Using `mask0 `will process all traces that were processed with `mask0`.
+
+- The output chromatin trace table is saved in the `buildsPWDmatrix` folder for compatibility with the `build_matrix` module. The trace table will have the number of traces combined in the `comments` field of the header.
+
+  
 
 ## 3- Plotting publication-quality figures
 

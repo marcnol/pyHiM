@@ -19,6 +19,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.table import Table
+from astropy.table import vstack
 
 from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 
@@ -142,6 +143,22 @@ class chromatin_trace_table:
         )
         '''
 
+    def append(self, table):
+        """
+        appends <table> to self.data
+
+        Parameters
+        ----------
+        table : astropy table
+            table to append to existing self.data table.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        self.data = vstack([self.data, table])
 
     def plots_traces(self, fileName_list, Masks = np.zeros((2048,2048)),pixelSize = [0.1,0.1,0.25] ):
 
