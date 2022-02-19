@@ -34,11 +34,6 @@ from fileProcessing.fileManagement import ( Parameters, log, session,
                                            folders, writeString2File)
 
 
-"""
-logging.basicConfig(format='%(levelname)s ''%(processName)-10s : %(asctime)s '
-                            '%(module)s.%(funcName)s:%(lineno)s %(message)s',
-                    level=logging.INFO)
-"""
 # =============================================================================
 # FUNCTIONS
 # =============================================================================q
@@ -46,7 +41,7 @@ logging.basicConfig(format='%(levelname)s ''%(processName)-10s : %(asctime)s '
 def imageShow(data_2D, normalization = "simple",size=(10, 10)):
     fig = plt.figure()
     fig.set_size_inches(size)
-    
+
     ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
     ax.set_axis_off()
 
@@ -93,7 +88,7 @@ def createsUserMask(param,log1,fileName, outputFileName):
     print("Saving and closing image with ROIs...")
     fig.savefig(outputFileName + "_segmentedSources.png")
     plt.close(fig)
-    
+
     # saves result
     np.save(outputFileName, masks)
 
@@ -116,7 +111,7 @@ def processesUserMasks(param, log1, processingList):
 
         allresultsTable = Table()
         for currentFolder in dataFolder.listFolders:
-            # currentFolder=dataFolder.listFolders[0] # only one folder processed so far...
+
             filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
             dataFolder.createsFolders(currentFolder, param)
             log1.report("-------> Processing Folder: {}".format(currentFolder))
@@ -208,7 +203,7 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
 
     numberFilesProcessed = 0
     #print(f"\nfiles2Process: {fileList2Process}")
-    
+
     for fileName in fileList2Process:
         print(f"\n-----> Processing: {fileName}")
         ROI = os.path.basename(fileName).split("_")[positionROIinformation]
@@ -220,9 +215,9 @@ def assignsSNDmask2Cells(fileList2Process, positionROIinformation):
             + "_".join(os.path.basename(fileName).split("_")[0:7])
             + "_ch00_Masks.npy"
         )
-        
+
         print(f"\nWill search masks in: {fileNameDAPImask}")
-        
+
         if os.path.exists(fileNameDAPImask) and fileName.split('.')[-1] == 'npy':
 
             # load DAPI mask
