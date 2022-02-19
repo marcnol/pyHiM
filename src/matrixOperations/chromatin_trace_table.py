@@ -59,6 +59,7 @@ class chromatin_trace_table:
                     "ROI #",
                     "Mask_id",
                     "Barcode #",
+                    "label",
                 ),
                 dtype=("S2",
                        "S2",
@@ -71,8 +72,10 @@ class chromatin_trace_table:
                        "int",
                        "int",
                        "int",
+                       "S2",
                        ),
             )
+
         self.data.meta['comments']=["XYZ_unit={}".format(self.XYZ_unit),
                                     "genome_assembly={}".format(self.genome_assembly),
                                     ]
@@ -217,7 +220,6 @@ class chromatin_trace_table:
             number_traces = len(data_traces.groups.keys)
             color_dict_traces = build_color_dict(data_traces, key='Trace_ID')
             colors_traces =  [color_dict_traces[str(x)] for x in data_traces["Trace_ID"]]
-            s_traces=[]
             for trace,color,trace_id in zip(data_traces.groups,colors_traces,data_traces.groups.keys):
                 x_trace = np.mean(trace['x'].data)/pixelSize[0]
                 y_trace = np.mean(trace['y'].data)/pixelSize[1]
@@ -225,7 +227,7 @@ class chromatin_trace_table:
                 s_trace = 300*(np.mean([np.std(trace['x'].data),np.std(trace['y'].data),np.std(trace['z'].data)]))/pixelSize[0]
 
                 # plots circles for each trace
-                sc = ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
+                ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
 
             # saves output figure
             fileName_list_i=fileName_list.copy()
