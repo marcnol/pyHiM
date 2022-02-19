@@ -1816,10 +1816,14 @@ This method is much simpler, as it just relies on the combination of chromatin t
 To run:
 
 - create *output folder* copy your `folders2Load.json` file.
-- within this *output folder*, run `trace_combinator`
+- within this *output folder*, run `trace_combinator`. 
 - The output `ecsv` format trace file will be stored in `buildsPWDmatrix` folder within your *output folder*.
 - Copy your `infoList.json` within the *output folder*.
 - Run `pyHiM.py -C build_matrix` in the *output folder* to produce the matrices from your new chromatin trace file. 
+
+
+
+`trace_combinator` lives in the `src/postProcessing` folder within `pyHiM`.
 
 
 
