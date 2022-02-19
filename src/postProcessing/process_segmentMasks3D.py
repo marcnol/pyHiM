@@ -22,21 +22,21 @@ def saves_projections(files,data2D):
     output_files_TIFF = [x.split('.npy')[0]+"_Masks.tif" for x in files]
 
     print(f"output files: {output_files}\n\n")
-    
+
     for output_file,_data2D, output_file_TIFF in zip(output_files,data2D,output_files_TIFF):
         if os.path.exists(output_file):
             print(f"----Warning!----\nRenaming {output_file} as it exists already!\n")
             os.rename(output_file, output_file+"._2Dmasks.npy")
-    
+
         print(f"> Saving:\n--> {output_file}\n--> {output_file_TIFF} \n")
         np.save(output_file,_data2D)
         imsave(output_file_TIFF,_data2D)
 
 def projects_3D_volumes(data,files):
     numberObjects = [np.amax(x) for x in data]
-    
+
     data2D = [np.max(x,axis=0) for x in data]
-    
+
     for numberObject,file in zip(numberObjects,files):
         print(f"\nFile: {os.path.basename(file)}")
         print(f"Number of objects detected: {numberObject}")
@@ -47,23 +47,23 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    args = parser.parse_args()  
-  
+    args = parser.parse_args()
+
     if args.rootFolder:
         rootFolder = args.rootFolder
     else:
         rootFolder = "."
-    
+
     folder_segmentedObjects = "segmentedObjects"
 
     folder = rootFolder + os.sep + folder_segmentedObjects
 
-    files = glob.glob(folder+os.sep+"*mask*3Dmasks*npy")
+    files = glob.glob(folder+os.sep+"_3Dmasks*npy")
 
     return files
 
 def _main():
-    
+
     begin_time = datetime.now()
 
     # parses input files
@@ -72,10 +72,10 @@ def _main():
 
     # loads data
     data = [np.load(x) for x in files]
-    
+
     # projects labeled image
     data2D = projects_3D_volumes(data,files)
-    
+
     # saves projections
     saves_projections(files,data2D)
 
