@@ -18,8 +18,8 @@ from tifffile import imsave
 
 
 def saves_projections(files,data2D):
-    output_files = [x.split('.npy')[0]+"_Masks.npy" for x in files]
-    output_files_TIFF = [x.split('.npy')[0]+"_Masks.tif" for x in files]
+    output_files = [x.split('_3Dmasks.npy')[0].rstrip('.')+"_Masks.npy" for x in files]
+    output_files_TIFF = [x.split('_3Dmasks.npy')[0].rstrip('.')+"_Masks.tif" for x in files]
 
     print(f"output files: {output_files}\n\n")
 
@@ -58,7 +58,8 @@ def parse_arguments():
 
     folder = rootFolder + os.sep + folder_segmentedObjects
 
-    files = glob.glob(folder+os.sep+"_3Dmasks*npy")
+    print(f"Folder: {folder}")
+    files = glob.glob(folder+os.sep+"*_3Dmasks.npy")
 
     return files
 
