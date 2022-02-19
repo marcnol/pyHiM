@@ -5,13 +5,13 @@ Created on Sat Feb 19 10:47:29 2022
 
 @author: marcnol
 
-This script will load a trace file and a number of numpy masks and assign them to each individual trace
+This script will load a trace file and a number of numpy masks and assign them labels
 
 $ trace_selector.py
 
 outputs
 
-chromatin_trace_table() object and output .ecsv formatted table file with assembled trace tables.
+chromatin_trace_table() object and output .ecsv trace table file .
 
 
 """
@@ -46,6 +46,7 @@ def parseArguments():
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--ndims", help="Dimensions of trace")
     parser.add_argument("--method", help="Method or mask ID used for tracing: KDtree, mask, mask0")
+    parser.add_argument("--pixel_size", help="Lateral pixel size un microns. Default = 0.1")
 
     p={}
 
@@ -80,6 +81,11 @@ def parseArguments():
     else:
         p["ndims"] = 3
 
+    if args.pixel_size:
+        p["pixel_size"] = args.pixel_size
+    else:
+        p["pixel_size"] = 0.1
+
     if args.method:
         p["method"] = args.method
     else:
@@ -90,17 +96,16 @@ def parseArguments():
 
 def assign_masks(trace, folder_masks, pixel_size = 0.1):
 
-    numberFilesProcessed = 0
-
-    # [checks if DAPI mask exists for the file to process] # NOT SURE IF THIS WILL ALWAYS FIND THE MASK FILES
-    mask_files = glob.glob(folder_masks + os.sep + "_Masks.npy")
+    # [checks if DAPI mask exists for the file to process]
+    mask_files = glob.glob(folder_masks.rstrip('/') + os.sep + "*.npy")
+    mask_files = [x for x in mask_files if "SNDmask" in x.split("_") ]
 
     if len(mask_files) < 1:
         print(f"No mask file found in folder: {folder_masks}")
         return
 
     for mask_file in mask_files:
-        label = mask_file.split("_")[-1].split(".")[0] # NOT SURE IF THIS WILL GET THE RIGHT LABEL OFF THE FILENAME
+        label = mask_file.split("_")[-1].split(".")[0]
 
         # load mask
         print(f"\nWill attemp to match mask {label} from: {mask_file}")
@@ -112,16 +117,18 @@ def assign_masks(trace, folder_masks, pixel_size = 0.1):
             x_int = int(trace_row['x']/pixel_size)
             y_int = int(trace_row['y']/pixel_size)
 
+            # labels are appended as comma separated lists. Thus a localization can have multiple labels
             if mask.data_2D[x_int,y_int] == 1:
                 trace_row['label'] = trace_row['label'] + "," + label
 
-def process_traces(folder):
+    return trace
+
+def process_traces(folder, pixel_size = 0.1):
 
     trace_folder = folder.rstrip('/') + os.sep + 'buildsPWDmatrix' + os.sep
     masks_folder = folder.rstrip('/') + os.sep + 'segmentedObjects' + os.sep
 
     trace_files = [x for x in glob.glob(trace_folder + 'Trace*ecsv') if 'uniqueBarcodes' not in x]
-
 
     print(f"\nTrace files to process= {trace_files}")
 
@@ -135,7 +142,7 @@ def process_traces(folder):
             #reads new trace
             trace.load(trace_file)
 
-            assign_masks(trace, masks_folder, pixel_size = 0.1)
+            trace = assign_masks(trace, masks_folder, pixel_size = pixel_size)
 
             outputfile = trace_file.rstrip('.ecsv') + "_labeled" + '.ecsv'
 
@@ -156,6 +163,6 @@ if __name__ == "__main__":
 
     # [loops over lists of datafolders]
     folder = p['rootFolder']
-    traces = process_traces(folder)
+    traces = process_traces(folder, pixel_size = p["pixel_size"])
 
     print("Finished execution")
