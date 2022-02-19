@@ -38,14 +38,6 @@ from imageProcessing.imageProcessing import Image
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
-    )
-    parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
-    parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
-    parser.add_argument("--ndims", help="Dimensions of trace")
-    parser.add_argument("--method", help="Method or mask ID used for tracing: KDtree, mask, mask0")
     parser.add_argument("--pixel_size", help="Lateral pixel size un microns. Default = 0.1")
 
     p={}
@@ -56,40 +48,11 @@ def parseArguments():
     else:
         p["rootFolder"] = "."
 
-    if args.parameters:
-        p["parametersFileName"] = args.parameters
-    else:
-        p["parametersFileName"] = "folders2Load.json"
-
-    if args.label:
-        p["label"] = args.label
-    else:
-        p["label"] = "M"
-
-    if args.action:
-        p["action"] = args.action
-    else:
-        p["action"] = "all"
-
-    if args.saveMatrix:
-        p["saveMatrix"] = True
-    else:
-        p["saveMatrix"] = False
-
-    if args.ndims:
-        p["ndims"] = args.ndims
-    else:
-        p["ndims"] = 3
-
     if args.pixel_size:
         p["pixel_size"] = args.pixel_size
     else:
         p["pixel_size"] = 0.1
 
-    if args.method:
-        p["method"] = args.method
-    else:
-        p["method"] = "mask"
 
     return p
 
@@ -159,7 +122,6 @@ if __name__ == "__main__":
 
     # [parsing arguments]
     p=parseArguments()
-    positionROIinformation = p["positionROIinformation"]
 
     # [loops over lists of datafolders]
     folder = p['rootFolder']

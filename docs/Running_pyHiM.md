@@ -1432,6 +1432,8 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 
 ### 7. Process second channel (i.e RNA, segments, etc)
 
+#### 7.1 Create label masks
+
 ```pyHiM.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```
 
 - Go to the ```destination_directory``` and run  ```processSNDchannel.py --addMask sna``` for manually segmenting all the ROIs in the destination_directory and label them with the ```sna``` tag. This will produce a numpy array in the `segmentedObjects` folder containing the mask.
@@ -1475,6 +1477,33 @@ The output of ```processSNDchannel.py``` will be stored in ```./segmentedObjects
 where the first column contains the ROI number, the second the number of the cell mask, the third the tag assigned.
 
 This file can then be loaded within ```replotHiMmatrix.py``` to identify which cells of the matrix have which tag. More on this will be added to the section below LATER.
+
+
+
+#### 7.2 Assign labels to chromatin trace tables
+
+Once you have processed your labels and created mask numpy arrays with the `SNDmask.npy` extension, you are ready to add the label to your chromatin trace tables. There is a specific column reserved specifically for this in each trace table (called `label`). 
+
+For this, you need to run `trace_selector`, a script that will iterate over each row of a trace table, and use the `xy` coordinates of each spot localization to define whether it belongs to each of the mask labels provided. Note: mask labels are not exclusive, therefore a single spot localization could belong to several masks.
+
+`$ trace_selector ` with no argument will search for trace tables in the `buildPWDmatrix` folder, and for `_SNDmask.npy` files in the `segmentedObjects` folder and attribute each labeled mask file to all the trace files in `buildPWDmatrix`. 
+
+
+
+`trace_selector`Arguments:
+
+```sh
+usage: trace_selector.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
+                         [--saveMatrix] [--ndims NDIMS] [--method METHOD]
+                         [--pixel_size PIXEL_SIZE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --pixel_size PIXEL_SIZE
+                        Lateral pixel size un microns. Default = 0.1
+```
 
 
 
