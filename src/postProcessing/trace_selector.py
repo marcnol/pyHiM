@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Feb 19 08:43:49 2022
+Created on Sat Feb 19 10:47:29 2022
 
 @author: marcnol
-- This script takes JSON file with folders where datasets are
-stored.
-- It searches for Trace files with the expected methods, loads them, and
-- combines them into a single table that is outputed to the buildPWDmatrix folder.
 
-$ trace_combinator.py
+This script will load a trace file and a number of numpy masks and assign them to each individual trace
+
+$ trace_selector.py
 
 outputs
 
-chromatin_trace_table() object and output .ecsv formatted file with assembled trace tables.
+chromatin_trace_table() object and output .ecsv formatted table file with assembled trace tables.
 
 
 """
@@ -31,6 +29,7 @@ import csv
 import glob
 
 from matrixOperations.chromatin_trace_table import chromatin_trace_table
+from imageProcessing.imageProcessing import Image
 
 # =============================================================================
 # FUNCTIONS
@@ -89,31 +88,58 @@ def parseArguments():
     return p
 
 
-def load_traces(folders, ndims = 3, method = 'mask'):
+def assign_masks(trace, folder_masks, pixel_size = 0.1):
 
-    traces = chromatin_trace_table()
-    traces.initialize()
-    traces.number_traces = 0
-    new_trace = chromatin_trace_table()
+    numberFilesProcessed = 0
 
-    for folder in folders:
-        trace_files = [x for x in glob.glob(folder.rstrip('/') + os.sep + 'Trace*ecsv') if 'uniqueBarcodes' not in x]
-        trace_files = [x for x in trace_files if (str(ndims)+"D" in x) and (method in x)]
-        print(f"trace_files = {trace_files}")
+    # [checks if DAPI mask exists for the file to process] # NOT SURE IF THIS WILL ALWAYS FIND THE MASK FILES
+    mask_files = glob.glob(folder_masks + os.sep + "_Masks.npy")
 
-        if len(trace_files) > 0:
-            # iterates over traces in folder
-            for trace_file in trace_files:
+    if len(mask_files) < 1:
+        print(f"No mask file found in folder: {folder_masks}")
+        return
 
-                #reads new trace
-                new_trace.load(trace_file)
+    for mask_file in mask_files:
+        label = mask_file.split("_")[-1].split(".")[0] # NOT SURE IF THIS WILL GET THE RIGHT LABEL OFF THE FILENAME
 
-                # adds it to existing trace collection
+        # load mask
+        print(f"\nWill attemp to match mask {label} from: {mask_file}")
+        mask = Image()
+        mask.data_2D = np.load(mask_file, allow_pickle=False).squeeze()
 
-                traces.append(new_trace.data)
-                traces.number_traces += 1
+        # matches traces and masks
+        for trace_row in trace.data:
+            x_int = int(trace_row['x']/pixel_size)
+            y_int = int(trace_row['y']/pixel_size)
 
-    print(f"Read and accumulated {traces.number_traces} traces with ndims = {ndims} and method = {method}")
+            if mask.data_2D[x_int,y_int] == 1:
+                trace_row['label'] = trace_row['label'] + "," + label
+
+def process_traces(folder):
+
+    trace_folder = folder.rstrip('/') + os.sep + 'buildsPWDmatrix' + os.sep
+    masks_folder = folder.rstrip('/') + os.sep + 'segmentedObjects' + os.sep
+
+    trace_files = [x for x in glob.glob(trace_folder + 'Trace*ecsv') if 'uniqueBarcodes' not in x]
+
+
+    print(f"\nTrace files to process= {trace_files}")
+
+    if len(trace_files) > 0:
+        # iterates over traces in folder
+        for trace_file in trace_files:
+
+            trace = chromatin_trace_table()
+            trace.initialize()
+
+            #reads new trace
+            trace.load(trace_file)
+
+            assign_masks(trace, masks_folder, pixel_size = 0.1)
+
+            outputfile = trace_file.rstrip('.ecsv') + "_labeled" + '.ecsv'
+
+            traces.save(outputfile,traces.data, comments = 'labeled')
 
     return traces
 
@@ -126,32 +152,10 @@ if __name__ == "__main__":
 
     # [parsing arguments]
     p=parseArguments()
-
-    # [ Lists and loads datasets from different embryos]
-    input_parameters = p["rootFolder"] + os.sep + p["parametersFileName"]
-    print("\n"+"-"*80)
-    if os.path.exists(input_parameters):
-        with open(input_parameters) as json_file:
-            data_dict = json.load(json_file)
-        print("Loaded JSON file with {} datasets from {}\n".format(len(data_dict), input_parameters))
-    else:
-        print("File not found: {}".format(input_parameters))
-        sys.exit()
-
-    # [ creates output folder]
-    p["outputFolder"] = p["rootFolder"] + os.sep + "buildsPWDmatrix"
-    if not os.path.exists(p["outputFolder"]):
-        os.mkdir(p["outputFolder"])
-        print("Folder created: {}".format(p["outputFolder"]))
+    positionROIinformation = p["positionROIinformation"]
 
     # [loops over lists of datafolders]
-    dataset_names = list(data_dict.keys())
-    for dataset in dataset_names:
-        folders = data_dict[dataset]['Folders']
-        traces = load_traces(folders, ndims = p['ndims'], method = p['method'])
-
-    outputfile = p["outputFolder"] + os.sep + 'Trace_' + str(p['ndims']) + 'D_barcode_' + p['method'] + '.ecsv'
-
-    traces.save(outputfile,traces.data, comments = 'appended_traces=' + str(traces.number_traces) )
+    folder = p['rootFolder']
+    traces = process_traces(folder)
 
     print("Finished execution")
