@@ -100,7 +100,7 @@ class segmentSources3D:
 
         # parameters for stardist
         self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
-        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
+        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_18032021_single_loci')
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
