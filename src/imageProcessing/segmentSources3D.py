@@ -54,7 +54,7 @@ from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumb
 
 from skimage import exposure
 
-from bigfish.detection.spot_modeling import fit_subpixel
+from apifish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
 
 
