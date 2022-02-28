@@ -17,6 +17,8 @@ from datetime import datetime
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 from fileProcessing.fileManagement import Parameters, printLog
 from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
