@@ -261,6 +261,7 @@ class build_traces:
                             ROI,                   # ROI number
                             CellID,                # Mask number
                             group["Barcode #"].data[i], # Barcode name
+                            '', # label
                             ]
                     self.trace_table.data.add_row(entry)
 
