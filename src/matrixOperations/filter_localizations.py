@@ -19,7 +19,7 @@ from fileProcessing.fileManagement import (
     printLog,
 )
 
-from imageProcessing.localization_table import localization_table
+from imageProcessing.localization_table import LocalizationTable
 
 # to remove in a future version
 import warnings
@@ -27,7 +27,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class filter_localizations:
+class FilterLocalizations:
     def __init__(self, param):
         """
         Parameters
@@ -211,7 +211,7 @@ class filter_localizations:
                     self.setup_filter_values()
 
                     # Loads barcode coordinate Tables
-                    table = localization_table()
+                    table = LocalizationTable()
                     barcodeMap, uniqueBarcodes = table.load(file)
 
                     if len(barcodeMap) > 0:

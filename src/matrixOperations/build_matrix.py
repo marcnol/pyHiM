@@ -52,7 +52,7 @@ from fileProcessing.fileManagement import (
 
 from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms, calculateContactProbabilityMatrix
 from matrixOperations.build_traces import initialize_module
-from matrixOperations.chromatin_trace_table import chromatin_trace_table
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 
 # to remove in a future version
@@ -65,7 +65,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 
 
-class build_matrix:
+class BuildMatrix:
     def __init__(self, param):
 
         self.param = param
@@ -313,7 +313,7 @@ class build_matrix:
         """
 
         # creates and loads trace table
-        self.trace_table = chromatin_trace_table()
+        self.trace_table = ChromatinTraceTable()
         self.trace_table.load(file)
 
         # runs calculation of PWD matrix

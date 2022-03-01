@@ -34,10 +34,10 @@ from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
 from imageProcessing.segmentMasks3D import segmentMasks3D
-from matrixOperations.filter_localizations import filter_localizations
-from matrixOperations.register_localizations import register_localizations
-from matrixOperations.build_traces import build_traces
-from matrixOperations.build_matrix import build_matrix
+from matrixOperations.filter_localizations import FilterLocalizations
+from matrixOperations.register_localizations import RegisterLocalizations
+from matrixOperations.build_traces import BuildTraces
+from matrixOperations.build_matrix import BuildMatrix
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -213,25 +213,25 @@ class HiMfunctionCaller:
     # filters barcode localization table
     def filter_localizations(self, param, label):
         if label == "barcode":
-            filter_localizations_instance = filter_localizations(param)
+            filter_localizations_instance = FilterLocalizations(param)
             filter_localizations_instance.filter_folder()
 
     # filters barcode localization table
     def register_localizations(self, param, label):
         if label == "barcode":
-            register_localizations_instance = register_localizations(param)
+            register_localizations_instance = RegisterLocalizations(param)
             register_localizations_instance.register()
 
     # build traces
     def build_traces(self, param, label):
         if label == "barcode":
-            build_traces_instance = build_traces(param)
+            build_traces_instance = BuildTraces(param)
             build_traces_instance.run()
 
     # build matrices
     def build_matrix(self, param, label):
         if label == "barcode":
-            build_matrix_instance = build_matrix(param)
+            build_matrix_instance = BuildMatrix(param)
             build_matrix_instance.run()
 
     # This function will be removed in new release

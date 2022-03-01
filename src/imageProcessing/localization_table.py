@@ -29,7 +29,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class localization_table:
+class LocalizationTable:
 
     def __init__(self):
         self.a = 1

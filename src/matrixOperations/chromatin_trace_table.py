@@ -35,7 +35,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class chromatin_trace_table:
+class ChromatinTraceTable:
 
     def __init__(self, XYZ_unit='micron', genome_assembly='mm10'):
         self.a = 1

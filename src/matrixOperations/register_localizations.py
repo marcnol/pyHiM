@@ -26,7 +26,7 @@ from fileProcessing.fileManagement import (
     printLog,
 )
 
-from imageProcessing.localization_table import localization_table
+from imageProcessing.localization_table import LocalizationTable
 
 from matrixOperations.filter_localizations import get_file_table_new_name
 
@@ -36,7 +36,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-class register_localizations:
+class RegisterLocalizations:
     def __init__(self, param):
         """
         Parameters
@@ -277,7 +277,7 @@ class register_localizations:
             self.ndims = 2
 
         # loads barcode coordinate Tables
-        table = localization_table()
+        table = LocalizationTable()
         barcodeMapFull, uniqueBarcodes = table.load(file)
 
         # checks that everything is OK

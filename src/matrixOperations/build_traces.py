@@ -60,8 +60,8 @@ from fileProcessing.fileManagement import (
     getDictionaryValue,
 )
 from matrixOperations.HIMmatrixOperations import plotMatrix, plotDistanceHistograms, calculateContactProbabilityMatrix
-from imageProcessing.localization_table import localization_table
-from matrixOperations.chromatin_trace_table import chromatin_trace_table
+from imageProcessing.localization_table import LocalizationTable
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 from matrixOperations.filter_localizations import get_file_table_new_name
 
@@ -75,7 +75,7 @@ warnings.filterwarnings("ignore")
 # =============================================================================
 
 
-class build_traces:
+class BuildTraces:
     def __init__(self, param):
         self.param = param
 
@@ -402,7 +402,7 @@ class build_traces:
             outputFileName = self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_" + tag
 
             # creates and initializes trace table
-            self.trace_table = chromatin_trace_table()
+            self.trace_table = ChromatinTraceTable()
 
             self.assign_masks(
                 outputFileName,
@@ -493,7 +493,7 @@ class build_traces:
         outputFileName = self.dataFolder.outputFolders["buildsPWDmatrix"] + os.sep+ "Trace_" + tag
 
         # creates and initializes trace table
-        self.trace_table = chromatin_trace_table()
+        self.trace_table = ChromatinTraceTable()
 
         # loops over ROIs
         for ROI in range(numberROIs):
@@ -525,7 +525,7 @@ class build_traces:
     def launch_analysis(self,file):
 
         # loads barcode coordinate Tables
-        table = localization_table()
+        table = LocalizationTable()
         barcodeMap, self.uniqueBarcodes = table.load(file)
 
         if "3D" in file:
