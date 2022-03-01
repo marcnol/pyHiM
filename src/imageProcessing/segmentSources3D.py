@@ -54,7 +54,7 @@ from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumb
 
 from skimage import exposure
 
-from bigfish.detection.spot_modeling import fit_subpixel
+from apifish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
 
 
@@ -100,7 +100,7 @@ class segmentSources3D:
 
         # parameters for stardist
         self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
-        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
+        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_18032021_single_loci')
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
@@ -376,13 +376,21 @@ class segmentSources3D:
             image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative intensity levels
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-            spots_subpixel = fit_subpixel(image3D_aligned,
-                                          spots,
-                                          voxel_size_z=p["voxel_size_z"],
-                                          voxel_size_yx=p["voxel_size_yx"],
-                                          psf_z=p["psf_z"],
-                                          psf_yx=p["psf_yx"])
-
+            # compatibility with latest version of bigfish. To be removed if stable.
+            try:
+                # version 0.4 commit fa0df4f
+                spots_subpixel = fit_subpixel(image3D_aligned,
+                                              spots,
+                                              voxel_size_z=p["voxel_size_z"],
+                                              voxel_size_yx=p["voxel_size_yx"],
+                                              psf_z=p["psf_z"],
+                                              psf_yx=p["psf_yx"])
+            except TypeError:                
+                # version > 0.5
+                spots_subpixel = fit_subpixel(image3D_aligned,
+                                              spots,
+                                              (p["voxel_size_z"],p["voxel_size_yx"],p["voxel_size_yx"]), # voxel size
+                                              (p["psf_z"],p["psf_yx"],p["psf_yx"])) # spot radius
 
             printLog(" > Updating table and saving results")
             # updates table

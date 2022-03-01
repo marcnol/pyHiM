@@ -1,0 +1,19 @@
+{
+    "HiRes_snaTAD": {
+        "Folders": [
+            "/mnt/disk2/marcnol/data/Experiment_4/0_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_4/1_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_4/2_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_4/4_Embryo/buildsPWDmatrix",
+            "/mnt/disk2/marcnol/data/Experiment_4/5_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "ContactProbability_scale": 15,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.25
+    }
+}
+

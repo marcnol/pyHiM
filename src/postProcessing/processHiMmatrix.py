@@ -30,6 +30,9 @@ from datetime import datetime
 import argparse
 import csv
 
+#Olivier
+csv.field_size_limit(sys.maxsize) 
+
 from fileProcessing.fileManagement import writeString2File
 
 from matrixOperations.HIMmatrixOperations import (

@@ -19,6 +19,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from astropy.table import Table
+from astropy.table import vstack
+
+from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 
 from fileProcessing.fileManagement import (
     printLog,
@@ -56,6 +59,7 @@ class ChromatinTraceTable:
                     "ROI #",
                     "Mask_id",
                     "Barcode #",
+                    "label",
                 ),
                 dtype=("S2",
                        "S2",
@@ -68,8 +72,10 @@ class ChromatinTraceTable:
                        "int",
                        "int",
                        "int",
+                       "S2",
                        ),
             )
+
         self.data.meta['comments']=["XYZ_unit={}".format(self.XYZ_unit),
                                     "genome_assembly={}".format(self.genome_assembly),
                                     ]
@@ -91,7 +97,10 @@ class ChromatinTraceTable:
 
         """
         if os.path.exists(file):
-            trace_table = Table.read(file, format="ascii.ecsv")
+            #trace_table = Table.read(file, format="ascii.ecsv")
+
+            trace_table = read_table_from_ecsv(file)
+
             printLog("$ Successfully loaded chromatin trace table: {}".format(file))
         else:
             print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
@@ -127,11 +136,32 @@ class ChromatinTraceTable:
         except KeyError:
             table.meta['comments']=[comments]
 
+        save_table_to_ecsv(table,fileName)
+
+        '''
         table.write(
             fileName,
             format="ascii.ecsv",
             overwrite=True,
         )
+        '''
+
+    def append(self, table):
+        """
+        appends <table> to self.data
+
+        Parameters
+        ----------
+        table : astropy table
+            table to append to existing self.data table.
+
+        Returns
+        -------
+        None.
+
+        """
+
+        self.data = vstack([self.data, table])
 
     def plots_traces(self, fileName_list, Masks = np.zeros((2048,2048)),pixelSize = [0.1,0.1,0.25] ):
 
@@ -190,7 +220,6 @@ class ChromatinTraceTable:
             number_traces = len(data_traces.groups.keys)
             color_dict_traces = build_color_dict(data_traces, key='Trace_ID')
             colors_traces =  [color_dict_traces[str(x)] for x in data_traces["Trace_ID"]]
-            s_traces=[]
             for trace,color,trace_id in zip(data_traces.groups,colors_traces,data_traces.groups.keys):
                 x_trace = np.mean(trace['x'].data)/pixelSize[0]
                 y_trace = np.mean(trace['y'].data)/pixelSize[1]
@@ -198,7 +227,7 @@ class ChromatinTraceTable:
                 s_trace = 300*(np.mean([np.std(trace['x'].data),np.std(trace['y'].data),np.std(trace['z'].data)]))/pixelSize[0]
 
                 # plots circles for each trace
-                sc = ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
+                ax[0].scatter(x_trace,y_trace, s = s_trace, c = color, marker="$\u25EF$", cmap = "nipy_spectral", linewidths=1, alpha = 0.7)
 
             # saves output figure
             fileName_list_i=fileName_list.copy()
