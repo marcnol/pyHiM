@@ -11,7 +11,7 @@ $ trace_selector.py
 
 outputs
 
-chromatin_trace_table() object and output .ecsv trace table file .
+ChromatinTraceTable() object and output .ecsv trace table file .
 
 
 """
@@ -28,7 +28,7 @@ import argparse
 import csv
 import glob
 
-from matrixOperations.chromatin_trace_table import chromatin_trace_table
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================
@@ -99,7 +99,7 @@ def process_traces(folder, pixel_size = 0.1):
         # iterates over traces in folder
         for trace_file in trace_files:
 
-            trace = chromatin_trace_table()
+            trace = ChromatinTraceTable()
             trace.initialize()
 
             #reads new trace

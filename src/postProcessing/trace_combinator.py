@@ -13,7 +13,7 @@ $ trace_combinator.py
 
 outputs
 
-chromatin_trace_table() object and output .ecsv formatted file with assembled trace tables.
+ChromatinTraceTable() object and output .ecsv formatted file with assembled trace tables.
 
 
 """
@@ -30,7 +30,7 @@ import argparse
 import csv
 import glob
 
-from matrixOperations.chromatin_trace_table import chromatin_trace_table
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 # =============================================================================
 # FUNCTIONS
@@ -91,10 +91,10 @@ def parseArguments():
 
 def load_traces(folders, ndims = 3, method = 'mask'):
 
-    traces = chromatin_trace_table()
+    traces = ChromatinTraceTable()
     traces.initialize()
     traces.number_traces = 0
-    new_trace = chromatin_trace_table()
+    new_trace = ChromatinTraceTable()
 
     for folder in folders:
         trace_files = [x for x in glob.glob(folder.rstrip('/') + os.sep + 'Trace*ecsv') if 'uniqueBarcodes' not in x]
