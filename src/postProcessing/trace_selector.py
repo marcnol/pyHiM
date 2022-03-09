@@ -83,12 +83,8 @@ def assign_masks(trace, folder_masks, pixel_size = 0.1):
             if 'x' in trace_row['label']:
                 trace_row['label']='_'
             
-            # print("type label: {}; type spot: {}".format(type(trace_row['label']), type(trace_row['Spot_ID'])))
-            
             # labels are appended as comma separated lists. Thus a localization can have multiple labels
             if mask.data_2D[x_int,y_int] == 1:
-                # trace_row['label'].append(label)
-                # trace_row['label'] = label
                 trace_row['label'] = trace_row['label'] + "," + label
                 index+=1
                 
