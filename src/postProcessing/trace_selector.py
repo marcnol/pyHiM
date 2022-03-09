@@ -106,7 +106,7 @@ def process_traces(folder, pixel_size = 0.1):
     # removes already labeled trace files
     trace_files = [x for x in trace_files if 'labeled' not in x]
     
-    print("\n{} trace files to process= {}".format(len(trace_files),"".join(map(str,trace_files))))
+    print("\n{} trace files to process= {}".format(len(trace_files),"\n".join(map(str,trace_files))))
     
     if len(trace_files) > 0:
         # iterates over traces in folder
