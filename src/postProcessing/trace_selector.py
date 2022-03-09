@@ -76,14 +76,26 @@ def assign_masks(trace, folder_masks, pixel_size = 0.1):
         mask.data_2D = np.load(mask_file, allow_pickle=False).squeeze()
 
         # matches traces and masks
+        index = 0
         for trace_row in trace.data:
             x_int = int(trace_row['x']/pixel_size)
             y_int = int(trace_row['y']/pixel_size)
-
+            if 'x' in trace_row['label']:
+                trace_row['label']='_'
+            
+            # print("type label: {}; type spot: {}".format(type(trace_row['label']), type(trace_row['Spot_ID'])))
+            
             # labels are appended as comma separated lists. Thus a localization can have multiple labels
             if mask.data_2D[x_int,y_int] == 1:
+                # trace_row['label'].append(label)
+                # trace_row['label'] = label
                 trace_row['label'] = trace_row['label'] + "," + label
-
+                index+=1
+                
+                print("label assigned: {}, {}".format(trace_row['label'],label))
+                
+        print(f"\n>I found {index} trace rows associated to mask {label}")
+        
     return trace
 
 def process_traces(folder, pixel_size = 0.1):
@@ -109,9 +121,9 @@ def process_traces(folder, pixel_size = 0.1):
 
             outputfile = trace_file.rstrip('.ecsv') + "_labeled" + '.ecsv'
 
-            traces.save(outputfile,traces.data, comments = 'labeled')
+            trace.save(outputfile,trace.data, comments = 'labeled')
 
-    return traces
+    return trace
 
 # =============================================================================
 # MAIN
