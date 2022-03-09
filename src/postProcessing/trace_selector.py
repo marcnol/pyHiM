@@ -77,6 +77,7 @@ def assign_masks(trace, folder_masks, pixel_size = 0.1):
 
         # matches traces and masks
         index = 0
+        labeled_trace = list()
         for trace_row in trace.data:
             x_int = int(trace_row['x']/pixel_size)
             y_int = int(trace_row['y']/pixel_size)
@@ -87,10 +88,11 @@ def assign_masks(trace, folder_masks, pixel_size = 0.1):
             if mask.data_2D[x_int,y_int] == 1:
                 trace_row['label'] = trace_row['label'] + "," + label
                 index+=1
-                
-                print("label assigned: {}, {}".format(trace_row['label'],label))
-                
-        print(f"\n>I found {index} trace rows associated to mask {label}")
+                labeled_trace.append(trace_row['Trace_ID'])
+                # print("label assigned: {}, {}".format(trace_row['label'],label))
+
+        unique_traces_labeled = set(labeled_trace)                
+        print(f"\n> {index} trace rows out of {len(trace.data)} were associated to mask {label}. Unique traces: {len(unique_traces_labeled)}")
         
     return trace
 
@@ -100,9 +102,12 @@ def process_traces(folder, pixel_size = 0.1):
     masks_folder = folder.rstrip('/') + os.sep + 'segmentedObjects' + os.sep
 
     trace_files = [x for x in glob.glob(trace_folder + 'Trace*ecsv') if 'uniqueBarcodes' not in x]
-
-    print(f"\nTrace files to process= {trace_files}")
-
+    
+    # removes already labeled trace files
+    trace_files = [x for x in trace_files if 'labeled' not in x]
+    
+    print("\n{} trace files to process= {}".format(len(trace_files),"".join(map(str,trace_files))))
+    
     if len(trace_files) > 0:
         # iterates over traces in folder
         for trace_file in trace_files:
