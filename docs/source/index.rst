@@ -113,6 +113,7 @@ TEMPO: `panda` template:
 
    reference/pyhim_class_diagram
    reference/infoList_comprehension
+   reference/apidoc/modules
 
 .. toctree::
    :caption: Contributor's Guide
