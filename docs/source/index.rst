@@ -7,6 +7,9 @@ pyHiM - Documentation
 `pyHiM` is a software package developed by the `Nollmann Lab <http://www.nollmannlab.org>`_ at the `Center of Structural Biology <http://www.cbs.cnrs.fr>`_, a department of the `CNRS <http://www.cnrs.fr>`_ and the `INSERM <http://www.inserm.fr>`_. 
 `pyHiM` implements the analysis of multiplexed DNA-FISH data, as described in our `protocols paper <https://github.com/NollmannLab/HiM_protocol>`_.
 
+Packages
+========
+
 pyHiM was entirely written in python and makes extensive use of the following packages:
 
 - `Astropy <https://www.astropy.org/>`_
