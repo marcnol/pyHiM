@@ -137,6 +137,22 @@ Update `PYTHONPATH` env variable by adding the following line to your local ~/.b
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 ```
 
+### Additional installation to generate documentation
+
+```sh
+conda install sphinx
+conda install -c conda-forge myst-parser
+conda install -c conda-forge sphinxcontrib-mermaid
+conda install -c conda-forge sphinx-panels
+conda install -c conda-forge sphinx_rtd_theme
+```
+Update `PYTHONPATH` env variable, for fileProcessing scripts documentation, by adding the following line to your local ~/.bashrc
+
+```sh
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
+```
+
+
 ### Script installation for super-computer centers (e.g. Meso-LR)
 
 To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
