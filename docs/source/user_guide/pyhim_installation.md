@@ -216,13 +216,22 @@ Now go to the pyHiM root directory (e.g. ```cd /home/marcnol/Repositories/pyHiM`
 pytest
 ```
 
-### Do a mock analysis on the test dataset
+
+
+### Test the installation
 
 If you want to go for a test run, do the following:
 
-Select a folder with data to analyse, for instance: ```/mnt/grey/DATA/users/marcnol/test_HiM/testDataset```
+- Download a test dataset from: [test dataset](https://zenodo.org/record/6351755)
 
-run by:
+- Open a terminal and cd into the folder with this dataset, for instance:
+
+  ```sh
+  cd /mnt/grey/DATA/users/marcnol/test_HiM/testDataset
+  ```
+
+- Copy a model `infoList.json` file into the data folder.
+- Run `pyHiM` by executing the following command:
 
 ```bash
 pyHiM.py -F .
