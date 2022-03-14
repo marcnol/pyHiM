@@ -430,7 +430,7 @@ flowchart TD
 	
 ```
 
-## 5. Building chromatin traces
+### 5. Building chromatin traces
 
 #### 5.1 Build traces: new method
 
@@ -497,8 +497,8 @@ outputs images:
 
 | statistics of registration                                   | localization map                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ![image-20220210221852444](Running_pyHiM.assets/image-20220210221852444.png) | ![image-20220210221942291](Running_pyHiM.assets/image-20220210221942291.png) |
-| ![image-20220210222028835](Running_pyHiM.assets/image-20220210222028835.png) | ![image-20220210222006297](Running_pyHiM.assets/image-20220210222006297.png) |
+| ![image-20220210221852444](../_static/user_guide/image-20220210221852444.png) | ![image-20220210221942291](../_static/user_guide/image-20220210221942291.png) |
+| ![image-20220210222028835](../_static/user_guide/image-20220210222028835.png) | ![image-20220210222006297](../_static/user_guide/image-20220210222006297.png) |
 
 
 
@@ -531,8 +531,8 @@ Output images:
 
 |  | full image | zoomed images |
 | --- |   ---- | --- |
-| 3D **mask** | ![image-20220210221402082](Running_pyHiM.assets/image-20220210221402082.png) |![image-20220210221430543](Running_pyHiM.assets/image-20220210221430543.png)|
-| 3D **mask** | ![image-20220210222233148](Running_pyHiM.assets/image-20220210222233148.png) |![image-20220210222354093](Running_pyHiM.assets/image-20220210222354093.png)|
+| 3D **mask** | ![image-20220210221402082](../_static/user_guide/image-20220210221402082.png) |![image-20220210221430543](../_static/user_guide/image-20220210221430543.png)|
+| 3D **mask** | ![image-20220210222233148](../_static/user_guide/image-20220210222233148.png) |![image-20220210222354093](../_static/user_guide/image-20220210222354093.png)|
 | 3D **KDtree** |  ||
 
 
@@ -569,10 +569,10 @@ Output images:
 
 | method    | contact matrices                                             | **PWD matrix**                                               |
 | --------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 2D - mask | ![image-20220212093032574](Running_pyHiM.assets/image-20220212093032574.png) | ![image-20220212093119700](Running_pyHiM.assets/image-20220212093119700.png) |
-| 3D - mask | ![image-20220212093245315](Running_pyHiM.assets/image-20220212093245315.png) | ![image-20220212093210913](Running_pyHiM.assets/image-20220212093210913.png) |
-| KDtree 3D | ![image-20220213120843091](Running_pyHiM.assets/image-20220213120843091.png) | ![image-20220213120807698](Running_pyHiM.assets/image-20220213120807698.png) |
-| Nmatrices | Masking![image-20220212093324905](Running_pyHiM.assets/image-20220212093324905.png) | KDTREE![image-20220213120921749](Running_pyHiM.assets/image-20220213120921749.png) |
+| 2D - mask | ![image-20220212093032574](../_static/user_guide/image-20220212093032574.png) | ![image-20220212093119700](../_static/user_guide/image-20220212093119700.png) |
+| 3D - mask | ![image-20220212093245315](../_static/user_guide/image-20220212093245315.png) | ![image-20220212093210913](../_static/user_guide/image-20220212093210913.png) |
+| KDtree 3D | ![image-20220213120843091](../_static/user_guide/image-20220213120843091.png) | ![image-20220213120807698](../_static/user_guide/image-20220213120807698.png) |
+| Nmatrices | Masking![image-20220212093324905](../_static/user_guide/image-20220212093324905.png) | KDTREE![image-20220213120921749](../_static/user_guide/image-20220213120921749.png) |
 
 
 
@@ -644,11 +644,11 @@ optional arguments:
 
 Mean pairwise distance matrix. By default means are calculated using Kernel Density Estimators of the PWD distributions.
 
-<img src="Running_pyHiM.assets/buildsPWDmatrix_HiMmatrix.png" alt="buildsPWDmatrix_HiMmatrix" style="zoom:50%;" />
+<img src="../_static/user_guide/buildsPWDmatrix_HiMmatrix.png" alt="buildsPWDmatrix_HiMmatrix" style="zoom:50%;" />
 
 In addition, the function outputs the distribution of distances for each combination of barcodes:
 
-<img src="Running_pyHiM.assets/buildsPWDmatrix_PWDhistograms.png" alt="buildsPWDmatrix_PWDhistograms" style="zoom: 25%;" />
+<img src="../_static/user_guide/buildsPWDmatrix_PWDhistograms.png" alt="buildsPWDmatrix_PWDhistograms" style="zoom: 25%;" />
 
 
 #### Filtering barcode localizations
@@ -668,11 +668,11 @@ There are several filters:
 
 | Filtering | Matrix |
 | --- |  ---- |
-| Unfiltered matrix. Total barcode localizations: 18700 | <img src="Running_pyHiM.assets/buildsPWDmatrix.png" alt="buildsPWDmatrix" style="zoom:25%;" /> |
-|```toleranceDrift = 1px```. Barcode localizations kept: 12377 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrixFilterBlockDrift.png" alt="buildsPWDmatrixFilterBlockDrift" style="zoom:25%;" />|
-| ```toleranceDrift = 1px```  ```Flux = 100```. Barcode localizations kept: 5562 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux100.png" alt="buildsPWDmatrix_filterFlux100" style="zoom:25%;" /> |
-|```toleranceDrift = 1px```  ```Flux = 200```. Barcode localizations kept: 4528 of a total: 18700. | <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux.png" alt="buildsPWDmatrix_filterFlux" style="zoom:25%;" />|
-|```toleranceDrift = 1px``` ```Flux = 1000```. Barcode localizations kept: 1923 of a total: 18700.| <img src="Running_pyHiM.assets/buildsPWDmatrix_filterFlux1000.png" alt="buildsPWDmatrix_filterFlux1000" style="zoom:25%;" />|
+| Unfiltered matrix. Total barcode localizations: 18700 | <img src="../_static/user_guide/buildsPWDmatrix.png" alt="buildsPWDmatrix" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```. Barcode localizations kept: 12377 of a total: 18700.| <img src="../_static/user_guide/buildsPWDmatrixFilterBlockDrift.png" alt="buildsPWDmatrixFilterBlockDrift" style="zoom:25%;" />|
+| ```toleranceDrift = 1px```  ```Flux = 100```. Barcode localizations kept: 5562 of a total: 18700. | <img src="../_static/user_guide/buildsPWDmatrix_filterFlux100.png" alt="buildsPWDmatrix_filterFlux100" style="zoom:25%;" /> |
+|```toleranceDrift = 1px```  ```Flux = 200```. Barcode localizations kept: 4528 of a total: 18700. | <img src="../_static/user_guide/buildsPWDmatrix_filterFlux.png" alt="buildsPWDmatrix_filterFlux" style="zoom:25%;" />|
+|```toleranceDrift = 1px``` ```Flux = 1000```. Barcode localizations kept: 1923 of a total: 18700.| <img src="../_static/user_guide/buildsPWDmatrix_filterFlux1000.png" alt="buildsPWDmatrix_filterFlux1000" style="zoom:25%;" />|
 
 
 
@@ -684,10 +684,10 @@ In addition to the PWD matrix, we now also have a map of the alignment accuracy 
 
 This provides a map of all barcode localizations in an ROI, colorcoded by the accuracy of localization. Colorbar scale is in pixels.
 
-<img src="Running_pyHiM.assets/BarcodeAlignmentAccuracy_ROI1_2D2.png" alt="BarcodeAlignmentAccuracy_ROI:1_2D2" style="zoom: 50%;" />
+<img src="../_static/user_guide/BarcodeAlignmentAccuracy_ROI1_2D2.png" alt="BarcodeAlignmentAccuracy_ROI:1_2D2" style="zoom: 50%;" />
 
 *Barcode localization statistics*
 
 This provides the localization statistics from ASTROPY. The main use of these plots is to determine if the threshold ```flux``` used is correct. Default is *200*.
 
-<img src="Running_pyHiM.assets/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
+<img src="../_static/user_guide/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
