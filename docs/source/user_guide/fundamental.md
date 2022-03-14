@@ -630,7 +630,7 @@ optional arguments:
 
 #### build_matrices
 
-
+This script will build single-cell pair-wise distance (PWD) matrices, proximity frequency maps, and N-matrices from each `Trace_` file in the `buildsPWDmatrix` folder. 
 
 **Invoke**
 
