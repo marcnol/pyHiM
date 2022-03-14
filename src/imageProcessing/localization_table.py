@@ -341,7 +341,7 @@ def plots_localization_projection(coord1, coord2, axis, colors, title=''*3):
     colors : 1D Numpy array, float
         colorcode used in scatter plot.
     title : string, optional
-        title of subpanel. The default is ''*3.
+        title of subpanel. The default is ''\*3.
 
     Returns
     -------
