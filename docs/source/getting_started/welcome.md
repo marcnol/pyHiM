@@ -2,7 +2,6 @@
 
 **Welcome to pyhiM !**
 
-TEST Message
 In context of structural biochemistry, pyHiM software provides the **processing** of **multiplexed FISH data** produced with HiM protocol and **visualization** tools.
 
 Basic concept of this software is to **determine 3D position** of fluorescent spots, like DNA loci or RNA, in FISH images. These coordinates will be associated with their corresponding cell in order to analyze them.
