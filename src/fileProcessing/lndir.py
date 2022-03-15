@@ -19,7 +19,7 @@ Make sure that the first argument has quotation marks if you use wildcards!
 import os
 import glob
 import argparse
-from fileManagement import Parameters, folders, writeString2File
+from fileProcessing.fileManagement import Parameters, folders, writeString2File
 import shutil
 import sys
 
