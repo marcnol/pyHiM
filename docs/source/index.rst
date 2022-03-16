@@ -108,7 +108,6 @@ TEMPO: `panda` template:
 
 .. toctree::
    :caption: Reference
-   :maxdepth: 2
    :hidden:
 
    reference/pyhim_class_diagram

@@ -1,4 +1,4 @@
-trainStarDist module
+trainStarDist script
 ====================
 
 .. automodule:: trainStarDist

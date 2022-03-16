@@ -1,4 +1,4 @@
-pyHiM module
+pyHiM main
 ============
 
 .. automodule:: pyHiM
