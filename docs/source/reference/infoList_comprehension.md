@@ -1,4 +1,6 @@
-# infoList.json - Input parameters
+# Input parameters
+*infoList.json file*
+
 ## Global structure
 
 The most parameters are define by default in `common` part in its corresponding section. If you want to change a parameter just for one channel, go to `labels` and in the good channel you can overwrite parameter value.

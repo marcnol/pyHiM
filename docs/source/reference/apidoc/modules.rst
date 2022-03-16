@@ -1,4 +1,4 @@
-src
+API Reference
 ===
 
 .. toctree::

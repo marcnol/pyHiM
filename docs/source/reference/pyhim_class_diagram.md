@@ -1,4 +1,4 @@
-# Use case diagram
+# Use case diagrams
 
 ## High-level
 

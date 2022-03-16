@@ -1,4 +1,4 @@
-# WIP - What is pyHiM ?
+# What is pyHiM ?
 
 ## Main goals
 
