@@ -17,10 +17,7 @@ import sys
 autodoc_mock_imports = [
     "pympler",
     "apifish",
-    "numpy",
     "dask",
-    "matplotlib",
-    "skimage",
     "tqdm",
     "astropy",
     "tifffile",
