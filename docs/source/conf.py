@@ -25,7 +25,10 @@ autodoc_mock_imports = [
     "astropy",
     "tifffile"
     "scipy",
-    "sklearn"
+    "sklearn",
+    "photutils",
+    "cv2",
+    "stardist"
     ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
