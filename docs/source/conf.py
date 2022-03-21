@@ -23,12 +23,12 @@ autodoc_mock_imports = [
     "skimage",
     "tqdm",
     "astropy",
-    "tifffile"
+    "tifffile",
     "scipy",
     "sklearn",
     "photutils",
     "cv2",
-    "stardist"
+    "stardist",
     ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
