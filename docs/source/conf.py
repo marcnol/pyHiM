@@ -29,6 +29,7 @@ autodoc_mock_imports = [
     "csbdeep",
     "numba",
     "pylab",
+    "skimage"
     ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
