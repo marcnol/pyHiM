@@ -48,7 +48,7 @@ from fileProcessing.fileManagement import folders, writeString2File, try_get_cli
 # ---- stardist
 import matplotlib
 
-# matplotlib.rcParams["image.interpolation"] = None
+matplotlib.rcParams["image.interpolation"] = 'none'
 
 # to remove in a future version
 import warnings
