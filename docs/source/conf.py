@@ -29,6 +29,9 @@ autodoc_mock_imports = [
     "photutils",
     "cv2",
     "stardist",
+    "csbdeep",
+    "numba",
+    "pylab",
     ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
