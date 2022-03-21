@@ -13,7 +13,11 @@
 import os
 import sys
 
-autodoc_mock_imports = ["pympler", "apifish"]
+# Sphinx import all module with autodoc but don't need these modules to build API doc
+autodoc_mock_imports = [
+    "pympler",
+    "apifish",
+    ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
 sys.path.insert(0, os.path.abspath('../../src/fileProcessing'))
