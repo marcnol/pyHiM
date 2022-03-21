@@ -19,6 +19,7 @@ autodoc_mock_imports = [
     "apifish",
     "numpy",
     "dask",
+    "matplotlib",
     "skimage",
     "tqdm",
     "astropy",
