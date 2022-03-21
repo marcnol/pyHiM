@@ -12,9 +12,7 @@ pyHiM was entirely written in python and makes extensive use of the following pa
 - `Astropy <https://www.astropy.org/>`_
 - `scikit-image <https://scikit-image.org/>`_
 - `starDist <https://github.com/stardist/stardist>`_
-- `Big-FISH <https://github.com/fish-quant/big-fish>`_ to perform Gaussian 3D fits
-
-TEMPO: `panda` template:
+- `Big-FISH <https://github.com/fish-quant/big-fish>`_ (`apiFISH <https://github.com/apiFISH/apiFISH>`_ soon)
 
 .. panels::
     :card: + intro-card text-center
