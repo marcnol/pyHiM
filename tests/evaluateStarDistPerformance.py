@@ -9,7 +9,7 @@ import sys, os
 import numpy as np
 import matplotlib
 
-matplotlib.rcParams["image.interpolation"] = 'none'
+matplotlib.rcParams["image.interpolation"] = None
 import matplotlib.pyplot as plt
 
 from tqdm import tqdm
