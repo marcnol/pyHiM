@@ -5,52 +5,61 @@
 
 ### Clone pyHiM repository
 
-Create a folder where you want to install pyHiM and go inside to clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
+1. Create a folder where you want to install pyHiM and go inside to clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
 ```bash
 mkdir $HOME/Repositories
 cd $HOME/Repositories
-git clone git@github.com:marcnol/pyHiM.git
 ```
 
-Open your $HOME/.bashrc using nano
+2. Choose your clone method between HTTPS or SSH key :
+    - HTTPS
+      ```bash
+      git clone https://github.com/marcnol/pyHiM.git
+      ```
+    - SSH
+      ```bash
+      git clone git@github.com:marcnol/pyHiM.git
+      ```
+
+3. Open your $HOME/.bashrc using nano
 
 ```bash
 nano $HOME/.bashrc
 ```
 
-and add the following line to the end
+4. Add the following line to the end
 
 ```sh
-export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
-export PYTHONPATH="$HOME/Repositories/pyHiM/src"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src/fileProcessing"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src/postProcessing"
+
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src"
 
 export MPLBACKEND=agg
-
 ```
 
-make sure you change ```.../Repositories/...``` with your directory name if this is not where you put pyHiM !
+```{note}
+Make sure you change ```.../Repositories/...``` with your directory name (step 1.) if this is not where you put pyHiM !
+```
 
 ### Set up enviroment using conda
 
 #### Install conda
 
-in the Downloads directory, run:
-
+1. In the Downloads directory, run follow command (or download the package from [conda installation script](https://www.anaconda.com/products/individual)) :
 ```
 wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
 ```
-
-or download the package from [conda installation script](https://www.anaconda.com/products/individual)
-
-Now, run the installation by
-
+2. Now, run the installation :
 ```
 bash Anaconda3-2020.02-Linux-x86_64.sh
 ```
 
-and accept all the questions and default installation folder. Then update anaconda by
+3. Accept all the questions and default installation folder.
 
+4. Then update anaconda :
 ```bash
 bash
 conda update anaconda
@@ -66,13 +75,12 @@ Run this command in your terminal within the root
 conda env create -f environment.yml
 ```
 
-If you get the error:
-
-```sh
-ImportError: Dask\'s distributed scheduler is not installed.
-```
+```{note}
+If you get this error :
+`ImportError: Dask\'s distributed scheduler is not installed.`
 
 You solve by running `pip install dask[complete] distributed --upgrade`.
+```
 
 ##### Manual 
 
@@ -123,15 +131,28 @@ pip install -e .  # Reinstall
 
 You should be set!
 
-### Install apifish
+### Install apifish module
 
+1. Navigate where you want install apifish
 ```bash
 cd $HOME/Repositories
-git clone git@github.com:apiFISH/apiFISH.git
-cd apifish && git checkout development
 ```
 
-Update `PYTHONPATH` env variable by adding the following line to your local ~/.bashrc
+2. Choose your clone method between HTTPS or SSH key :
+    - HTTPS
+      ```bash
+      git clone https://github.com/apiFISH/apiFISH.git
+      ```
+    - SSH
+      ```bash
+      git clone git@github.com:apiFISH/apiFISH.git
+      ```
+3. Switch on `development` branch
+```bash
+cd apiFISH && git checkout development
+```
+
+4. Update `PYTHONPATH` env variable by adding the following line to your local ~/.bashrc
 
 ```sh
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"

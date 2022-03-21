@@ -67,7 +67,7 @@ conda env create -f environment.yml
 ```bash
 cd $HOME/Repositories
 git clone https://github.com/apiFISH/apiFISH.git
-cd apifish && git checkout development
+cd apiFISH && git checkout development
 ```
 
 Update `PYTHONPATH` env variable by adding the following line to your local ~/.bashrc
