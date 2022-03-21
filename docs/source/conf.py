@@ -21,7 +21,11 @@ autodoc_mock_imports = [
     "dask",
     "matplotlib",
     "skimage",
-    "tqdm"
+    "tqdm",
+    "astropy",
+    "tifffile"
+    "scipy",
+    "sklearn"
     ]
 
 sys.path.insert(0, os.path.abspath('../../src/'))
