@@ -4,3 +4,5 @@ sphinx-rtd-theme >= 0.5.2
 myst-parser >= 0.17.0
 sphinx-panels >= 0.6.0
 sphinxcontrib-mermaid >= 0.7.1
+scipy >= 1.7.3
+tifffile >= 2021.7.2
