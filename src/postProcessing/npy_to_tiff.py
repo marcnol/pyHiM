@@ -16,16 +16,17 @@ import select
 
 import numpy as np
 from tifffile import TiffWriter
+from skimage.exposure import equalize_adapthist, rescale_intensity
 
 files = sys.argv[1:]
 
 if select.select([sys.stdin, ], [], [], 0.0)[0]:
-    print("Found data in stdin.\n!")
+    print("Found data in stdin !\n")
 
     piped_files = [line.rstrip("\n") for line in sys.stdin]
     if len(piped_files)>0:
         files = piped_files
-        print(f"Read {piped_files} files list from stdin!\n")
+        # print(f"Read {piped_files} files list from stdin!\n")
 else:
     print("No stdin")
 
@@ -33,11 +34,19 @@ if len(files)>0:
 
     print(f"{len(files)} files to process: ")
     for file in files:
+
         print(f"\n{os.path.basename(file)}")
 
+        # loads NPY
         data = np.load(file)
-        # data.astype('float')
-
+        
+        # rescales intensities
+        data = rescale_intensity(data, out_range = (0,1))
+        data = equalize_adapthist(data) #, kernel_size = 2)
+        data = data-np.min(data)
+        data = data/np.max(data)*(2**14)
+        
+        # saves TIFF
         file_out = file.rsplit('.')[0]+'.tif'
         print(f"output file: {file_out}")
 
