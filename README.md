@@ -17,11 +17,13 @@ pyHiM also uses functions from [Big-FISH](https://github.com/fish-quant/big-fish
 
 ## Documentation
 
-To install, please follow the tutorial [here](docs/Installing_pyHiM.md).
+Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/). 
 
-After you installed pyHiM, you may want to consult a [guide](docs/Running_pyHiM.md) on how to use it. More on single cell analysis [here](docs/SingleCells.md).
+To install, please follow the tutorial [here](https://pyhim.readthedocs.io/en/latest/user_guide/pyhim_installation.html).
 
-If you are a developer, follow packaging instructions [here](docs/packaging_pyHiM.md).
+After you installed pyHiM, you may want to consult a [guide](https://pyhim.readthedocs.io/en/latest/user_guide/fundamental.html) on how to use it. 
+
+If you are a developer, follow instructions [here](https://pyhim.readthedocs.io/en/latest/contributor/dev_process.html).
 
 
 ## Publications
