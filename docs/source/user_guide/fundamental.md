@@ -780,3 +780,25 @@ This provides a map of all barcode localizations in an ROI, colorcoded by the ac
 This provides the localization statistics from ASTROPY. The main use of these plots is to determine if the threshold ```flux``` used is correct. Default is *200*.
 
 <img src="../_static/user_guide/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
+
+
+## Post-processing scripts
+
+### npy_to_tiff
+
+This script will convert Numpy array files into imageJ-readable TIFs. Images will be rescaled to (0, 2^14) range and will be histogram normalized using `skimage.exposure.equalize_adapthist()`.
+
+You can invoke by two ways:
+
+- Use `find` and send the list of files as arguments:
+
+```sh
+npy_to_tiff $(find -name "*ch0*_2d_registered.npy")
+```
+
+- Otherwise you can pipe the results as follows:
+```sh
+ls *ch0*_2d_registered.npy | npy_to_tiff
+```
+
+
