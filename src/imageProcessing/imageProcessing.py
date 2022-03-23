@@ -1119,8 +1119,8 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     rawImages=[data[i,:,:] for i in range(data.shape[0])]
     LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
     LaplacianVariance = [0 if np.isnan(x) else x for x in LaplacianVariance] # removes any Nan that will trigger ValueError in spo.curve_fit
+    LaplacianVariance = [0 if np.isinf(x) else x for x in LaplacianVariance] # removes any Inf that will trigger ValueError in spo.curve_fit
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
-
     xCoord = range(len(LaplacianVariance))
     fitResult, _= fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
 
