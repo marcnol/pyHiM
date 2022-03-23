@@ -281,9 +281,9 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
     except RuntimeError:
         return dict(), []
     except ValueError:    
-        fitResult["gauss1d.pos"] = len(y)/2
-        fitResult["gauss1d.ampl"] = fitgauss[0][0]
-        fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
+        fitResult["gauss1d.pos"] = np.mean(x)
+        fitResult["gauss1d.ampl"] = 0.0
+        fitResult["gauss1d.fwhm"] = 0.0
         printLog("Warning: returned middle plane!")
         return fitResult, []
     
