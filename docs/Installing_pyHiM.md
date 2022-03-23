@@ -60,6 +60,14 @@ Run this command in your terminal within the root
 conda env create -f environment.yml
 ```
 
+If you get the error:
+
+```sh
+ImportError: Dask's distributed scheduler is not installed.
+```
+
+You solve by running `pip install dask[complete] distributed --upgrade`.
+
 ##### Manual 
 
 To manually install the necessary packages using conda, run:
@@ -68,7 +76,7 @@ To manually install the necessary packages using conda, run:
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
 conda activate pyHiM
 conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 ```
 
@@ -109,22 +117,19 @@ pip install -e .  # Reinstall
 
 You should be set!
 
-### Install bigfish
+### Install apifish
 
 ```bash
 cd $HOME/Repositories
-git clone https://github.com/fish-quant/big-fish.git
-cd big-fish && git checkout develop
-ln -s $HOME/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
+git clone git@github.com:apiFISH/apiFISH.git
+cd apifish && git checkout development
 ```
 
-If you are running pyHiM in a conda environment, you can link bigfish as follows:
+Update `PYTHONPATH` env variable by adding the following line to your local ~/.bashrc
 
 ```sh
-ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 ```
-
-
 
 ### Script installation for super-computer centers (e.g. Meso-LR)
 
@@ -145,11 +150,11 @@ conda install photutils -c astropy
 pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 
-# big-fish
+# api-fish
 cd $HOME/Repositories
-git clone https://github.com/fish-quant/big-fish.git
-cd big-fish && git checkout develop
-ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+git clone git@github.com:apiFISH/apiFISH.git
+cd apifish && git checkout development
+echo 'export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"'  >> ~/.bashrc
 
 # clone pyHiM
 cd $HOME/Repositories

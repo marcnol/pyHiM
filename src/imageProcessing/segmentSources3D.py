@@ -54,7 +54,7 @@ from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumb
 
 from skimage import exposure
 
-from bigfish.detection.spot_modeling import fit_subpixel
+from apifish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
 
 
@@ -83,8 +83,10 @@ class segmentSources3D:
 
         self.p["parallelizePlanes"] = getDictionaryValue(self.param.param['acquisition'], "parallelizePlanes", default=1)
 
+
         # decides what segmentation method to use
         self.p["3Dmethod"]=getDictionaryValue(self.param.param["segmentedObjects"], "3Dmethod", default='thresholding')
+        self.p["reducePlanes"]=getDictionaryValue(self.param.param["segmentedObjects"], "reducePlanes", default=True)
 
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
@@ -100,7 +102,7 @@ class segmentSources3D:
 
         # parameters for stardist
         self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
-        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
+        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_18032021_single_loci')
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
@@ -315,11 +317,15 @@ class segmentSources3D:
         image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],p["zBinning"]),mode='remove')
 
         # restricts analysis to a sub volume containing sources
-        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
-        zOffset = zRange[1][0]
-        image3D = image3D0[zRange[1],:,:].copy()
-
-        printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        if p["reducePlanes"]:
+            focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
+            zOffset = zRange[1][0]
+            image3D = image3D0[zRange[1],:,:].copy()
+            printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        else:
+            image3D = image3D0.copy()
+            zOffset = 0
+            printLog("$ zRange used = 0-{}".format(image3D.shape[0]))
 
         # preprocesses image by background substraction and level normalization
         if 'stardist' not in p["3Dmethod"]:

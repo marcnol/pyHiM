@@ -581,13 +581,15 @@ def makesSegmentations(fileName, param, session1, dataFolder):
         ##########################################
 
         if label == "barcode" and len([i for i in rootFileName.split("_") if "RT" in i]) > 0:
-            if param.param["segmentedObjects"]["background_method"] == "flat":
+            segmentationMathod = param.param["segmentedObjects"]["background_method"]
+            printLog(f"\n$ Segmenting barcodes using method: {segmentationMathod }")
+            if  segmentationMathod == "flat":
                 output = segmentSourceFlatBackground(im, param)
-            elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
+            elif segmentationMathod == "inhomogeneous":
                 output, im1_bkg_substracted = segmentSourceInhomogBackground(im, param)
             else:
                 printLog(
-                    "# segmentedObjects/background_method not specified in json file")
+                    f"# Method <{segmentationMathod}> not available for barcode segmentation!")
                 return Table()
 
             # show results

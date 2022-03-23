@@ -2,7 +2,7 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch02",
+            "RNA_channel": "ch01",
             "barcode_channel": "ch01",
             "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
@@ -31,14 +31,18 @@
             "lower_threshold": 0.999,
             "operation": "overwrite",
             "outputFile": "alignImages",
-            "referenceFiducial": "RT27",
+            "referenceFiducial": "RT1",
             "tolerance": 0.1
         },
         "buildsPWDmatrix": {
+            "tracing_method": ["masking","clustering"],
+            "mask_expansion": 8,            
             "flux_min": 10,
-            "flux_min_3D": 0.1,
+            "flux_min_3D": 4000,
+            "KDtree_distance_threshold_mum": 1,            
             "folder": "buildsPWDmatrix",
-            "masks2process":{"nuclei":"DAPI","mask1":"mask1"},
+            "masks2process":{"nuclei":"DAPI","mask1":"mask0"},
+			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},            
             "toleranceDrift": 1
         },
         "projectsBarcodes": {
@@ -49,8 +53,8 @@
         "segmentedObjects": {
             "Segment3D": "overwrite",
 	        "operation": "2D",
-	        "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "background_sigma": 3.0,
+			"stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "brightest": 1100,
             "centroidDifference_max": 5,
             "folder": "segmentedObjects",
@@ -61,6 +65,7 @@
             "residual_max": 2.5,
             "sigma_max": 5,
             "tesselation": true,
+            "reducePlanes": true,            
             "threshold_over_std": 1.0
         },
         "zProject": {

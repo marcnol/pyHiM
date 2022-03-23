@@ -658,7 +658,7 @@ def loadsSCdataMATLAB(ListData, datasetName, p):
 
 
 def listsSCtoKeep(p, mask):
-    print("{}:{}".format(p["label"], p["action"]))
+    #print("{}:{}".format(p["label"], p["action"]))
     if p["action"] == "all":
         try:
             cells2Plot = range(len(mask))
@@ -672,6 +672,8 @@ def listsSCtoKeep(p, mask):
         a = [i for i in range(len(mask)) if mask[i] == 0]
         cells2Plot = a
 
+    print(">> label: {}\t action:{}\t Ncells2plot:{}\t Ncells in SCmatrix:{}".format(p["label"], p["action"],max(cells2Plot),len(mask)))
+    
     return cells2Plot
 
 
@@ -1805,12 +1807,21 @@ def calculatesEnsemblePWDmatrix(SCmatrix, pixelSize, cells2Plot, mode="median"):
     elif mode == "KDE":
         keepPlotting = True
 
-        for bin1 in trange(Nbarcodes):
-            for bin2 in range(Nbarcodes):
-                if bin1 != bin2:
-                    (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
-                        SCmatrix[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
-                    )
-                    meanSCmatrix[bin1, bin2] = maximumKernelDistribution
+        if max(cells2Plot) > SCmatrix.shape[2]:
+            print(
+                "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
+                    max(cells2Plot), SCmatrix.shape[2]
+                )
+            )
+            keepPlotting = False
+        else:
+            for bin1 in trange(Nbarcodes):
+                for bin2 in range(Nbarcodes):
+                    if bin1 != bin2:
+                        # print(f"cells2Plot:{cells2Plot}, ncells:{SCmatrix.shape}")
+                        (maximumKernelDistribution, _, _, _,) = distributionMaximumKernelDensityEstimation(
+                            SCmatrix[:, :, cells2Plot], bin1, bin2, pixelSize, optimizeKernelWidth=False,
+                        )
+                        meanSCmatrix[bin1, bin2] = maximumKernelDistribution
 
     return meanSCmatrix, keepPlotting

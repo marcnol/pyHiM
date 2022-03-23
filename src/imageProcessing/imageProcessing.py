@@ -22,11 +22,6 @@ import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
 from scipy.stats import sigmaclip
-# from sherpa.data import Data1D
-# from sherpa.models.basic import Gauss1D
-# from sherpa.stats import LeastSq
-# from sherpa.optmethods import LevMar
-# from sherpa.fit import Fit as sherpaFit
 
 import cv2
 from tifffile import imsave
@@ -284,9 +279,14 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.ampl"] = fitgauss[0][0]
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
-        # printLog("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
-
+    except ValueError:    
+        fitResult["gauss1d.pos"] = np.mean(x)
+        fitResult["gauss1d.ampl"] = 0.0
+        fitResult["gauss1d.fwhm"] = 0.0
+        printLog("Warning: returned middle plane!")
+        return fitResult, []
+    
     if verbose:
         fig=plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -300,58 +300,6 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         return fitResult, fig
 
     return fitResult, []
-
-# def fit1DGaussian_sherpa(x,y,title='',verbose=True):
-#     """
-#     Fits a function using a 1D Gaussian and returns parameters if successfull.
-#     Otherwise will return an empty dict
-#     Uses sherpa package
-
-#     Parameters
-#     ----------
-#     x : numpy 1D array
-#         x data.
-#     y : numpy 1D array
-#         y data.
-#     title : str, optional
-#         figure title. The default is ''.
-#     verbose : Boolean, optional
-#         whether fig and results will be shown. The default is True.
-
-#     Returns
-#     -------
-#     dict()
-#         dictionary with fitting parameters.
-#     fig
-#         matplotlib figure for saving
-
-#     """
-
-#     d=Data1D('laplacianProfile',x,y)
-#     Gauss1Dmodel = Gauss1D()
-#     opt = LevMar()
-#     stat = LeastSq()
-
-#     gFit = sherpaFit(d,Gauss1Dmodel,stat=stat, method=opt)
-#     fitResult = gFit.fit()
-
-#     if fitResult.succeeded:
-#         if verbose:
-#             printLog("<<Fitting successful>>")
-#             # printLog(fitResult.format())
-
-#             fig=plt.figure()
-#             ax = fig.add_subplot(1,1,1)
-#             ax.plot(d.x,d.y,'ko',label='data')
-#             ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
-#             ax.legend(loc=2)
-#             ax.set_title(title)
-#         else:
-#             fig=None
-
-#         return dict(zip(fitResult.parnames,fitResult.parvals)), fig
-#     else:
-#         return dict()
 
 def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
     """
@@ -1176,8 +1124,9 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     # finds focal plane
     rawImages=[data[i,:,:] for i in range(data.shape[0])]
     LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
+    # LaplacianVariance = [0 if np.isnan(x) else x for x in LaplacianVariance] # removes any Nan that will trigger ValueError in spo.curve_fit
+    # LaplacianVariance = [0 if np.isinf(x) else x for x in LaplacianVariance] # removes any Inf that will trigger ValueError in spo.curve_fit
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
-
     xCoord = range(len(LaplacianVariance))
     fitResult, _= fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
 
@@ -1820,37 +1769,6 @@ def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
         axis.set_title(title)
 
     return fig
-
-#if __name__ == '__main__':
-
-    #test_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp']
-
-    #labels_dir_all = ['/home/angelina/Repositories/segmentation_data_14/modified/temp/Test_stardist_20210625_deconvolved']
-
-    #def read_images(path):
-        #images2read=glob(path+'/*.tif')
-        #images=[imread(x) for x in images2read]
-        #return images
-
-    #def get_name(path):
-        #images2read=glob(path+'/*.tif')
-        #for k in range(len(images2read)) :
-            #print(images2read)
-            #raw_name=Path(images2read[k]).stem
-            #return raw_name
-
-    #raw_name=get_name(test_dir_all[0])
-    #raw=read_images(test_dir_all[0])
-    #labeled=read_images(labels_dir_all[0])
-
-    #for image in raw :
-        #print(image)
-        #_segments3DrawImagesForTesting(image)
-
-    #for im,lab,i in zip(raw,labeled,range(len(raw))):
-
-        #fig = _subplot3DrawImagesAndLabels(im,lab)
-        #plt.savefig(labels_dir_all[0]+os.sep+"segmentedMasks_"+str(i)+".png", dpi = 1000)
 
 ########################################################
 # SAVING ROUTINES

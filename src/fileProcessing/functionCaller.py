@@ -34,6 +34,10 @@ from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
 from imageProcessing.segmentMasks3D import segmentMasks3D
+from matrixOperations.filter_localizations import FilterLocalizations
+from matrixOperations.register_localizations import RegisterLocalizations
+from matrixOperations.build_traces import BuildTraces
+from matrixOperations.build_matrix import BuildMatrix
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -206,6 +210,30 @@ class HiMfunctionCaller:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
 
+    # filters barcode localization table
+    def filter_localizations(self, param, label):
+        if label == "barcode":
+            filter_localizations_instance = FilterLocalizations(param)
+            filter_localizations_instance.filter_folder()
+
+    # filters barcode localization table
+    def register_localizations(self, param, label):
+        if label == "barcode":
+            register_localizations_instance = RegisterLocalizations(param)
+            register_localizations_instance.register()
+
+    # build traces
+    def build_traces(self, param, label):
+        if label == "barcode":
+            build_traces_instance = BuildTraces(param)
+            build_traces_instance.run()
+
+    # build matrices
+    def build_matrix(self, param, label):
+        if label == "barcode":
+            build_matrix_instance = BuildMatrix(param)
+            build_matrix_instance.run()
+
     # This function will be removed in new release
     def localDriftCorrection(self, param, label):
 
@@ -232,7 +260,8 @@ class HiMfunctionCaller:
 
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
+                "projectBarcodes","filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
 
 
 def defaultListCommands():
@@ -248,7 +277,8 @@ def HiM_parseArguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentMasks3D segmentSources3D buildHiMmatrix")
+                        segmentMasks3D segmentSources3D buildHiMmatrix \
+                        optional: [ filter_localizations register_localizations build_traces build_matrix]")
                         # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")

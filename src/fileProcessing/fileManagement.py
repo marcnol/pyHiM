@@ -104,6 +104,7 @@ class folders:
         self.zProjectFolder = ""
         self.outputFolders = {}
         self.outputFiles = {}
+
         self.setsFolders()
 
     # returns list of directories with given extensions
@@ -235,9 +236,9 @@ class Parameters:
                 "fiducialDAPI_channel": "ch01",
                 "RNA_channel": "ch02",
                 "fiducialBarcode_channel": "ch00",
-                "fiducialMask_channel": "ch00",               
+                "fiducialMask_channel": "ch00",
                 "barcode_channel": "ch01",
-                "mask_channel": "ch01",                
+                "mask_channel": "ch01",
                 "label_channel": "ch00", # in future this field will contain the ch for the label. This parameter will supersed the individual channel fields above.
                 "label_channel_fiducial": "ch01", # in future this field will contain the ch for the label fiducial. This parameter will supersed the individual channel fields above.
                 "pixelSizeXY": 0.1,
@@ -282,8 +283,12 @@ class Parameters:
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
+                "tracing_method": ["masking","clustering"], # available methods: masking, clustering
+                "mask_expansion": 8, # Expands masks until they collide by a max of 'mask_expansion' pixels
                 "flux_min": 10,  # min flux to keeep object
                 "flux_min_3D": 0.1,  # min flux to keeep object
+                "KDtree_distance_threshold_mum": 1, # distance threshold used to build KDtree
+     			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"}, # colormaps used for plotting matrices
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
             },
             "segmentedObjects": {
@@ -325,6 +330,7 @@ class Parameters:
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
+                "reducePlanes": True, # if true it will calculate focal plane and only use a region around it for segmentSources3D, otherwise will use the full stack
             },
             },
             "labels":{
@@ -430,7 +436,7 @@ class Parameters:
         # defines channel for DAPI, fiducials and barcodes
         channelDAPI = self.setsChannel("DAPI_channel", "ch00")
         channelBarcode = self.setsChannel("barcode_channel", "ch01")
-        channelMask = self.setsChannel("mask_channel", "ch01")        
+        channelMask = self.setsChannel("mask_channel", "ch01")
         channelBarcodeFiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
         channelMaskFiducial = self.setsChannel("fiducialMask_channel", "ch00")
 
@@ -488,7 +494,7 @@ class Parameters:
                 if len([i for i in file.split("_") if "mask" in i]) > 0
                 and self.decodesFileParts(path.basename(file))["channel"] == channelMask
             ]
-            
+
         # selects fiducial files
         elif self.param["acquisition"]["label"] == "fiducial":
             self.fileList2Process = [
@@ -507,7 +513,7 @@ class Parameters:
                     and self.decodesFileParts(path.basename(file))["channel"] == channelDAPI_fiducial
                 )
             ]
-            
+
         else:
             self.fileList2Process=[]
 
