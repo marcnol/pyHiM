@@ -27,6 +27,8 @@ from datetime import datetime
 import argparse
 import csv
 import glob
+import sys
+import select
 
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from imageProcessing.imageProcessing import Image
@@ -40,6 +42,7 @@ def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--pixel_size", help="Lateral pixel size un microns. Default = 0.1")
+    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action = 'store_true')
 
     p = {}
 
@@ -53,6 +56,16 @@ def parseArguments():
         p["pixel_size"] = args.pixel_size
     else:
         p["pixel_size"] = 0.1
+
+    p["trace_files"] = list()
+    if args.pipe:
+        p["pipe"] = True
+        if select.select([sys.stdin, ], [], [], 0.0)[0]:
+            p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
+        else:
+            print("Nothing in stdin")
+    else:
+        p["pipe"] = False
 
     return p
 
@@ -99,12 +112,13 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
     return trace
 
 
-def process_traces(folder, pixel_size=0.1):
+def process_traces(folder, pixel_size=0.1, trace_files = list()):
 
     trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
     masks_folder = folder.rstrip("/") + os.sep + "segmentedObjects" + os.sep
 
-    trace_files = [x for x in glob.glob(trace_folder + "Trace*ecsv") if "uniqueBarcodes" not in x]
+    if len(trace_files)<1:
+        trace_files = [x for x in glob.glob(trace_folder + "Trace*ecsv") if "uniqueBarcodes" not in x]
 
     # removes already labeled trace files
     trace_files = [x for x in trace_files if "labeled" not in x]
@@ -139,9 +153,9 @@ if __name__ == "__main__":
 
     # [parsing arguments]
     p = parseArguments()
-
+    
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
-    traces = process_traces(folder, pixel_size=p["pixel_size"])
+    traces = process_traces(folder, pixel_size=p["pixel_size"], trace_files = p["trace_files"])
 
     print("Finished execution")
