@@ -27,7 +27,6 @@ from datetime import datetime
 import argparse
 import csv
 import glob
-import sys
 import select
 
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable

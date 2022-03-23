@@ -29,6 +29,7 @@ from datetime import datetime
 import argparse
 import csv
 import glob
+import select
 
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
@@ -48,6 +49,7 @@ def parseArguments():
     parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
     parser.add_argument("--ndims", help="Dimensions of trace")
     parser.add_argument("--method", help="Method or mask ID used for tracing: KDtree, mask, DAPI")
+    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action = 'store_true')
 
     p = {}
 
@@ -87,6 +89,17 @@ def parseArguments():
     else:
         p["method"] = "mask"
 
+    p["trace_files"] = list()
+    if args.pipe:
+        p["pipe"] = True
+        if select.select([sys.stdin, ], [], [], 0.0)[0]:
+            p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
+        else:
+            print("Nothing in stdin")
+    else:
+        p["pipe"] = False
+
+
     print("Input parameters\n" + "-" * 15)
     for item in p.keys():
         print("{}-->{}".format(item, p[item]))
@@ -121,34 +134,47 @@ def filter_trace(trace, label, action):
 
     return trace
 
+def appends_traces(traces,trace_files, label, action):
 
-def load_traces(folders, ndims=3, method="mask", label="none", action="all"):
+    new_trace = ChromatinTraceTable()
+
+    # iterates over traces in folder
+    for trace_file in trace_files:
+
+        # reads new trace
+        new_trace.load(trace_file)
+
+        # filters rows based on label
+        new_trace = filter_trace(new_trace, label, action)
+
+        # adds it to existing trace collection
+
+        traces.append(new_trace.data)
+        traces.number_traces += 1
+
+    return traces
+
+
+def load_traces(folders=list(), ndims=3, method="mask", label="none", action="all", trace_files = list()):
 
     traces = ChromatinTraceTable()
     traces.initialize()
     traces.number_traces = 0
-    new_trace = ChromatinTraceTable()
 
-    for folder in folders:
-        trace_files = [x for x in glob.glob(folder.rstrip("/") + os.sep + "Trace*ecsv") if "uniqueBarcodes" not in x]
-        trace_files = [x for x in trace_files if (str(ndims) + "D" in x) and (method in x)]
-
-        print("\n{} trace files to process= {}".format(len(trace_files), "\n--> ".join(map(str, trace_files))))
-
+    if len(trace_files)<1:
+        # user provided a list of folders in folders2Load.json
+        for folder in folders:
+            trace_files = [x for x in glob.glob(folder.rstrip("/") + os.sep + "Trace*ecsv") if "uniqueBarcodes" not in x]
+            trace_files = [x for x in trace_files if (str(ndims) + "D" in x) and (method in x)]
+    
+            print("\n{} trace files to process= {}".format(len(trace_files), "\n--> ".join(map(str, trace_files))))
+    
+            if len(trace_files) > 0:
+                traces = appends_traces(traces, trace_files, label, action)
+    else:
+        # user provided a list of files to concatenate
         if len(trace_files) > 0:
-            # iterates over traces in folder
-            for trace_file in trace_files:
-
-                # reads new trace
-                new_trace.load(trace_file)
-
-                # filters rows based on label
-                new_trace = filter_trace(new_trace, label, action)
-
-                # adds it to existing trace collection
-
-                traces.append(new_trace.data)
-                traces.number_traces += 1
+            traces = appends_traces(traces, trace_files, label, action)
 
     print(f"Read and accumulated {traces.number_traces} trace files with ndims = {ndims} and method = {method}")
 
@@ -168,13 +194,15 @@ if __name__ == "__main__":
     # [ Lists and loads datasets from different embryos]
     input_parameters = p["rootFolder"] + os.sep + p["parametersFileName"]
     print("\n" + "-" * 80)
-    if os.path.exists(input_parameters):
-        with open(input_parameters) as json_file:
-            data_dict = json.load(json_file)
-        print("Loaded JSON file with {} datasets from {}\n".format(len(data_dict), input_parameters))
-    else:
-        print("File not found: {}".format(input_parameters))
-        sys.exit()
+
+    if not p["pipe"]:
+        if os.path.exists(input_parameters):
+            with open(input_parameters) as json_file:
+                data_dict = json.load(json_file)
+            print("Loaded JSON file with {} datasets from {}\n".format(len(data_dict), input_parameters))
+        else:
+            print("File not found: {}".format(input_parameters))
+            sys.exit()
 
     # [ creates output folder]
     p["outputFolder"] = p["rootFolder"] + os.sep + "combined_traces"
@@ -182,11 +210,13 @@ if __name__ == "__main__":
         os.mkdir(p["outputFolder"])
         print("Folder created: {}".format(p["outputFolder"]))
 
-    # [loops over lists of datafolders]
-    dataset_names = list(data_dict.keys())
-    for dataset in dataset_names:
-        folders = data_dict[dataset]["Folders"]
-        traces = load_traces(folders, ndims=p["ndims"], method=p["method"], label=p["label"], action=p["action"])
+    if not p["pipe"]:
+        # [loops over lists of datafolders]
+        dataset_names = list(data_dict.keys())
+        for dataset in dataset_names:
+            traces = load_traces(folders = data_dict[dataset]["Folders"], ndims=p["ndims"], method=p["method"], label=p["label"], action=p["action"])
+    else:
+        traces = load_traces(ndims=p["ndims"], method=p["method"], label=p["label"], action=p["action"], trace_files = p["trace_files"])            
 
     outputfile = (
         p["outputFolder"]
