@@ -324,6 +324,7 @@ class segmentSources3D:
             printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
         else:
             image3D = image3D0.copy()
+            zOffset = 0
             printLog("$ zRange used = 0-{}".format(image3D.shape[0]))
 
         # preprocesses image by background substraction and level normalization
