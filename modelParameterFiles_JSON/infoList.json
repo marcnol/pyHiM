@@ -65,6 +65,7 @@
             "residual_max": 2.5,
             "sigma_max": 5,
             "tesselation": true,
+            "reducePlanes": true,            
             "threshold_over_std": 1.0
         },
         "zProject": {

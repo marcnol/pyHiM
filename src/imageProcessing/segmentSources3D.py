@@ -86,7 +86,7 @@ class segmentSources3D:
 
         # decides what segmentation method to use
         self.p["3Dmethod"]=getDictionaryValue(self.param.param["segmentedObjects"], "3Dmethod", default='thresholding')
-        self.p["reducePlanes"]=getDictionaryValue(self.param.param["segmentedObjects"], "reducePlanes", default=False)
+        self.p["reducePlanes"]=getDictionaryValue(self.param.param["segmentedObjects"], "reducePlanes", default=True)
 
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
@@ -324,7 +324,7 @@ class segmentSources3D:
             printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
         else:
             image3D = image3D0.copy()
-            printLog("$ zRange used = 0-{}".format(image3D.shape))
+            printLog("$ zRange used = 0-{}".format(image3D.shape[0]))
 
         # preprocesses image by background substraction and level normalization
         if 'stardist' not in p["3Dmethod"]:

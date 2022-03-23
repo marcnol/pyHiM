@@ -330,6 +330,7 @@ class Parameters:
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
+                "reducePlanes": True, # if true it will calculate focal plane and only use a region around it for segmentSources3D, otherwise will use the full stack
             },
             },
             "labels":{
