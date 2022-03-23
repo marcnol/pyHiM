@@ -279,7 +279,6 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.ampl"] = fitgauss[0][0]
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
-        # printLog("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
 
     if verbose:
@@ -1119,6 +1118,7 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     # finds focal plane
     rawImages=[data[i,:,:] for i in range(data.shape[0])]
     LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
+    LaplacianVariance = [0 if np.isnan(x) else x for x in LaplacianVariance] # removes any Nan that will trigger ValueError in spo.curve_fit
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
 
     xCoord = range(len(LaplacianVariance))
