@@ -83,8 +83,10 @@ class segmentSources3D:
 
         self.p["parallelizePlanes"] = getDictionaryValue(self.param.param['acquisition'], "parallelizePlanes", default=1)
 
+
         # decides what segmentation method to use
         self.p["3Dmethod"]=getDictionaryValue(self.param.param["segmentedObjects"], "3Dmethod", default='thresholding')
+        self.p["reducePlanes"]=getDictionaryValue(self.param.param["segmentedObjects"], "reducePlanes", default=False)
 
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
@@ -315,11 +317,14 @@ class segmentSources3D:
         image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],p["zBinning"]),mode='remove')
 
         # restricts analysis to a sub volume containing sources
-        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
-        zOffset = zRange[1][0]
-        image3D = image3D0[zRange[1],:,:].copy()
-
-        printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        if p["reducePlanes"]:
+            focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
+            zOffset = zRange[1][0]
+            image3D = image3D0[zRange[1],:,:].copy()
+            printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        else:
+            image3D = image3D0.copy()
+            printLog("$ zRange used = 0-{}".format(image3D.shape))
 
         # preprocesses image by background substraction and level normalization
         if 'stardist' not in p["3Dmethod"]:
