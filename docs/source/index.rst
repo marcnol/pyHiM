@@ -101,7 +101,6 @@ pyHiM was entirely written in python and makes extensive use of the following pa
    user_guide/fundamental
    user_guide/script
    user_guide/tutorial
-   user_guide/reporting_bug
    user_guide/license
 
 .. toctree::
