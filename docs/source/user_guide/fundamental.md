@@ -6,9 +6,9 @@
 ## Pipeline overview
 ### Default pyHiM flow
 
-To run default pipeline, pyHiM need two kind of data :
+To run default pipeline, pyHiM need two kind of data:
 - A dictionary of initialization parameters as a JSON file, name `infoList.json`
-- 3D images with TIFF format, 4 types of images are accepted and they are processed in this order :
+- 3D images with TIFF format, 4 types of images are accepted and they are processed in this order:
 	1. Fiducial
 	2. Barcode
 	3. Mask (like DAPI)
@@ -16,17 +16,17 @@ To run default pipeline, pyHiM need two kind of data :
 
 These types of images are called **labels**.
 
-Steps of pipeline are executed sequentially in this order :
+Steps of pipeline are executed sequentially in this order:
 
-1. **makeProjections** : Projects all 3D images in 2D 
-2. **alignImages** : Compute the best shift to align all 2D fiducials.
-3. **appliesRegistrations** : Shifts 2D barcodes, masks and RNA with result of alignImages step.
-4. **alignImages3D** : Takes 2D aligned fiducials and find the best shift on Z-axis. This shift will be apply on the 3D segmented barecodes at buildHiMmatrix step.
-5. **segmentMasks** : Segments 2D aligned barcodes and masks with two different ways for each.
-6. **segmentSources3D** : Applies 2D shift, computed at alignImages step, to 3D barcodes. Then, segments them in 3D.
-7. **buildHiMmatrix** : Filters the segmentation results, associates barcode coordinates with the good mask and makes the PWD matrix for each mask.
+1. **makeProjections**: Projects all 3D images in 2D 
+2. **alignImages**: Compute the best shift to align all 2D fiducials.
+3. **appliesRegistrations**: Shifts 2D barcodes, masks and RNA with result of alignImages step.
+4. **alignImages3D**: Takes 2D aligned fiducials and find the best shift on Z-axis. This shift will be apply on the 3D segmented barecodes at buildHiMmatrix step.
+5. **segmentMasks**: Segments 2D aligned barcodes and masks with two different ways for each.
+6. **segmentSources3D**: Applies 2D shift, computed at alignImages step, to 3D barcodes. Then, segments them in 3D.
+7. **buildHiMmatrix**: Filters the segmentation results, associates barcode coordinates with the good mask and makes the PWD matrix for each mask.
 
-But there are specific routines for specific labels, so this is the real running order :
+But there are specific routines for specific labels, so this is the real running order:
 
 |Command|Fiducial|Barcode|DAPI|RNA|
 |:-:|:-:|:-:|:-:|:-:|
@@ -40,7 +40,7 @@ But there are specific routines for specific labels, so this is the real running
 
 ### Input / Output data
 
-Here is a table summarizing the type of input and output data for each routine :
+Here is a table summarizing the type of input and output data for each routine:
 
 |Routine|Input|Output|
 |:-:|---|---|
@@ -229,7 +229,7 @@ flowchart
 ### makeProjections
 *Projects 3D images in 2D*
 
-Initialization parameters :
+Initialization parameters:
 
 |Name|Option|Description|
 |:-:|:-:|:-:|
@@ -286,7 +286,7 @@ flowchart TD
 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
 The algorithm takes images one by one and align with the reference.
-There are two ways to compute the shift :
+There are two ways to compute the shift:
 - Global alignement make simple cross-correlation with tow images
 - Split image in block and make cross-correlation block by block. Then we have one shift by block and to align the global image an average of those shifts are made. This method is more robust against a bright noise spot.
 ```{mermaid}
