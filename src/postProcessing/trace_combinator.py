@@ -95,7 +95,7 @@ def parseArguments():
         if select.select([sys.stdin, ], [], [], 0.0)[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
-            print("Nothing in stdin")
+            print("Nothing in stdin!\n")
     else:
         p["pipe"] = False
 
@@ -181,16 +181,7 @@ def load_traces(folders=list(), ndims=3, method="mask", label="none", action="al
     return traces
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
-
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    # [parsing arguments]
-    p = parseArguments()
-
+def run(p):
     # [ Lists and loads datasets from different embryos]
     input_parameters = p["rootFolder"] + os.sep + p["parametersFileName"]
     print("\n" + "-" * 80)
@@ -235,3 +226,19 @@ if __name__ == "__main__":
     traces.save(outputfile, traces.data, comments="appended_trace_files=" + str(traces.number_traces))
 
     print("Finished execution")
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+
+    # [parsing arguments]
+    p = parseArguments()
+
+    print("trace_files{}".format(len(p["trace_files"])))
+    if p["pipe"] and len(p["trace_files"])<1:
+        print("\nNothing to process...\n")
+    else:
+        run(p)

@@ -152,7 +152,6 @@ if __name__ == "__main__":
 
     # [parsing arguments]
     p = parseArguments()
-    
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
     traces = process_traces(folder, pixel_size=p["pixel_size"], trace_files = p["trace_files"])
