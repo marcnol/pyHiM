@@ -6,7 +6,7 @@ To know what and how modify in this file for a specific feature go to [user guid
 
 You can find a global description of each parameters in [reference guide](../reference/infoList_comprehension.md).
 
-Find below an example extract :
+Find below an example extract:
 ```json
 "labels": {
     "DAPI": {
@@ -37,5 +37,5 @@ Find below an example extract :
 ```
 
 
-**TODO :**
+**TODO:**
 - *a example of a possible change to customize a parameter just for a label*

@@ -6,7 +6,7 @@ In context of structural biochemistry, pyHiM software provides the **processing*
 
 Basic concept of this software is to **determine 3D position** of fluorescent spots, like DNA loci or RNA, in FISH images. These coordinates will be associated with their corresponding cell in order to analyze them.
 
-To quickly get started with pyHiM, follow these steps :
+To quickly get started with pyHiM, follow these steps:
 
 ```{toctree}
 :maxdepth: 1

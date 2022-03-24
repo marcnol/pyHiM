@@ -1,7 +1,7 @@
 # WIP - How-to personalise a pyHiM runtime ?
 
 ## Separate input and output data
-This last step produce output data in the same folder than your input data. If you want to separate the both, run pyhiM from an output directory with this command :
+This last step produce output data in the same folder than your input data. If you want to separate the both, run pyhiM from an output directory with this command:
 ```bash
 pyHiM.py -F <input_directory_path>
 ```
@@ -9,7 +9,7 @@ Where `<input_directory_path>` is the relative or absolute path to the folder co
 
 ## Optional arguments
 
-If you have any doubt, you can use the help option, `pyhiM.py -h`, from anywhere to see every optional arguments and their description like this :
+If you have any doubt, you can use the help option, `pyhiM.py -h`, from anywhere to see every optional arguments and their description like this:
 ```sh
 usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
@@ -36,5 +36,5 @@ optional arguments:
 
 ```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a comma separated list. If you don't provide this argument, the full list of functions will be run and the mode of action will be determined from the ```infoList.json``` file (see below for details).
 
-**TODO :**
+**TODO:**
 - *a example of pyHiM run with -C option and with different parameter options.*

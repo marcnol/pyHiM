@@ -79,7 +79,7 @@ pyHiM was entirely written in python and makes extensive use of the following pa
 
     +++
 
-    .. link-button:: contributor/todolist_doc_pyhim
+    .. link-button:: contributor/dev_env
             :type: ref
             :text: To the development guide
             :classes: btn-block btn-secondary stretched-link
@@ -116,7 +116,12 @@ pyHiM was entirely written in python and makes extensive use of the following pa
    :caption: Contributor's Guide
    :hidden:
 
+   contributor/dev_env
+   contributor/coding_style
    contributor/dev_process
-   contributor/todolist_doc_pyhim
-   contributor/recovery_bigfish_update
+   contributor/good_commit
+   contributor/build_doc
+   contributor/issues
+   contributor/work_with_apifish
+   contributor/ressources
 

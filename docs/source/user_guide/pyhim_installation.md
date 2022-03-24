@@ -12,7 +12,7 @@ mkdir $HOME/Repositories
 cd $HOME/Repositories
 ```
 
-2. Choose your clone method between HTTPS or SSH key :
+2. Choose your clone method between HTTPS or SSH key:
     - HTTPS
       ```bash
       git clone https://github.com/marcnol/pyHiM.git
@@ -48,18 +48,18 @@ Make sure you change ```.../Repositories/...``` with your directory name (step 1
 
 #### Install conda
 
-1. In the Downloads directory, run follow command (or download the package from [conda installation script](https://www.anaconda.com/products/individual)) :
+1. In the Downloads directory, run follow command (or download the package from [conda installation script](https://www.anaconda.com/products/individual)):
 ```
 wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
 ```
-2. Now, run the installation :
+2. Now, run the installation:
 ```
 bash Anaconda3-2020.02-Linux-x86_64.sh
 ```
 
 3. Accept all the questions and default installation folder.
 
-4. Then update anaconda :
+4. Then update anaconda:
 ```bash
 bash
 conda update anaconda
@@ -76,7 +76,7 @@ conda env create -f environment.yml
 ```
 
 ```{note}
-If you get this error :
+If you get this error:
 `ImportError: Dask\'s distributed scheduler is not installed.`
 
 You solve by running `pip install dask[complete] distributed --upgrade`.
@@ -138,7 +138,7 @@ You should be set!
 cd $HOME/Repositories
 ```
 
-2. Choose your clone method between HTTPS or SSH key :
+2. Choose your clone method between HTTPS or SSH key:
     - HTTPS
       ```bash
       git clone https://github.com/apiFISH/apiFISH.git

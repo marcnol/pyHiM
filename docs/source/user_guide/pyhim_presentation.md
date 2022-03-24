@@ -14,7 +14,7 @@ FISH techniques can also be used to observe RNA and proteins. This software prov
 
 ## Advantages
 
-Each image taken during acquisition is associated with a spatial reference, the _fiducial_, common to all images. So pyHiM can :
+Each image taken during acquisition is associated with a spatial reference, the _fiducial_, common to all images. So pyHiM can:
 
 -   **Rectifies slight shifts** from one image to another due to experimental conditions.
     
@@ -26,7 +26,7 @@ Acquisition of HiM protocol experiment often generates huge volume data which ma
 ## Global structure
 The pyHiM software follow a pipeline pattern. A default pipeline is defined with main features but they can be used independently if you have the right input data.
 
-Features in the default pipeline can be classified into five categories :
+Features in the default pipeline can be classified into five categories:
 1. **Preprocessing** manipulate or delete a part of data before it is used in order to ensure or enhance performance.
 2. **Identification** segment areas for masks and detect coordinates for spots using starDist IA models.
 3. **Matching** allow to associate spots or mask with their mask.
@@ -35,7 +35,7 @@ Features in the default pipeline can be classified into five categories :
 
 Each step can be optimized with **parallel computations** using the Dask package.
 
-The use cases of pyHiM can be summarized in this diagram below :
+The use cases of pyHiM can be summarized in this diagram below:
 
 ```{mermaid}
 flowchart LR
