@@ -1,5 +1,5 @@
 *************
-NumPy license
+License
 *************
 
 .. include:: ../../../LICENSE
