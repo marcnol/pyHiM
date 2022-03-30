@@ -110,12 +110,17 @@ class folders:
     # returns list of directories with given extensions
     def setsFolders(self, extension="tif"):
 
+        self.listFolders = [self.masterFolder]
+        
+        '''
         # finds more folders inside the given folder
         hfolders = [
             folder
             for folder in glob.glob(self.masterFolder + os.sep + "*")
             if os.path.isdir(folder) and len(glob.glob(folder + os.sep + "*." + extension)) > 0
         ]
+
+        
         # os.path.name(folder)[0]!='F']
         if len(hfolders) > 0:
             self.listFolders = hfolders
@@ -126,7 +131,8 @@ class folders:
         if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder + os.sep + "*." + extension)) > 0:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
-
+        '''
+        
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
         """
@@ -163,13 +169,15 @@ class folders:
                 self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
             )
 
+        """
         if "projectsBarcodes" in param.param.keys():
             self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
             self.createSingleFolder(self.outputFolders["projectsBarcodes"])
             self.outputFiles["projectsBarcodes"] = (
                 self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
             )
-
+        """
+        
         # backwards compatibility
         if "buildsPWDmatrix" in param.param.keys():
             self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"]
@@ -517,7 +525,9 @@ class Parameters:
         else:
             self.fileList2Process=[]
 
-        print("Files to process: {}".format(self.fileList2Process))
+        printLog(f"$ Files to process: {len(self.fileList2Process)}")
+        for file in self.fileList2Process:
+            printLog(f"\t{file}")
 
     def decodesFileParts(self, fileName):
         """
