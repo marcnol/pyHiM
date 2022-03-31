@@ -51,7 +51,6 @@ from scipy.spatial import KDTree
 
 from sklearn.metrics import pairwise_distances
 from astropy.table import Table
-from photutils.segmentation import SegmentationImage
 
 from apifish.stack.io import read_array
 
@@ -92,9 +91,7 @@ class BuildTraces:
         self.NcellsAssigned = 0
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
-        self.SegmentationMask = SegmentationImage(self.Masks)
         self.numberMasks = np.max(self.Masks).astype(int)
-        # self.numberMasks = self.SegmentationMask.nlabels        
         self.barcodesinMask = dict()
 
         for mask in range(self.numberMasks + 1):
