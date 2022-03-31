@@ -93,7 +93,8 @@ class BuildTraces:
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
         self.SegmentationMask = SegmentationImage(self.Masks)
-        self.numberMasks = self.SegmentationMask.nlabels
+        self.numberMasks = np.max(self.Masks).astype(int)
+        # self.numberMasks = self.SegmentationMask.nlabels        
         self.barcodesinMask = dict()
 
         for mask in range(self.numberMasks + 1):
@@ -146,7 +147,7 @@ class BuildTraces:
         image_size = self.Masks.shape
         
         # loops over barcode Table rows in a given ROI
-        printLog("> Aligning by masking...")
+        printLog(f"> Aligning localizations to {self.numberMasks} masks...")
         for i in trange(len(self.barcodeMapROI.groups[0])):  # i is the index of the barcode in barcodeMapROI
             barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
 
