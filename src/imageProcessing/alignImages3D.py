@@ -278,14 +278,16 @@ class drift3D:
                 alignmentResultsTableGlobal = vstack([alignmentResultsTableGlobal]+alignmentResultsTables)
 
         # saves Table with all shifts
+        output_filename = self.dataFolder.outputFiles["alignImages"].split(".")[0] + "_block3D.dat"
         alignmentResultsTableGlobal.write(
-            self.dataFolder.outputFiles["alignImages"].split(".")[0] + "_block3D.dat",
+            output_filename,
             format="ascii.ecsv",
             overwrite=True,
         )
 
-        printLog("$ alignFiducials3D procesing time: {}".format(datetime.now() - now))
-
+        printLog("$ alignImages3D procesing time: {}".format(datetime.now() - now))
+        printLog(f"$ alignImages3D output Table saved in: {output_filename}")
+        
     def alignFiducials3D(self):
         """
         runs refitting routine in rootFolder
@@ -295,7 +297,7 @@ class drift3D:
         None.
 
         """
-        sessionName = "alignFiducials3D"
+        sessionName = "alignImages3D"
 
         # processes folders and files
         printLog("\n===================={}====================\n".format(sessionName))

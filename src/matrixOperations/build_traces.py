@@ -51,7 +51,6 @@ from scipy.spatial import KDTree
 
 from sklearn.metrics import pairwise_distances
 from astropy.table import Table
-from photutils.segmentation import SegmentationImage
 
 from apifish.stack.io import read_array
 
@@ -92,8 +91,7 @@ class BuildTraces:
         self.NcellsAssigned = 0
         self.NcellsUnAssigned = 0
         self.NbarcodesinMask = 0
-        self.SegmentationMask = SegmentationImage(self.Masks)
-        self.numberMasks = self.SegmentationMask.nlabels
+        self.numberMasks = np.max(self.Masks).astype(int)
         self.barcodesinMask = dict()
 
         for mask in range(self.numberMasks + 1):
@@ -143,8 +141,10 @@ class BuildTraces:
         NbarcodesinMask = np.zeros(self.numberMasks + 2)
         NbarcodesROI = 0
 
+        image_size = self.Masks.shape
+        
         # loops over barcode Table rows in a given ROI
-        printLog("> Aligning by masking...")
+        printLog(f"> Aligning localizations to {self.numberMasks} masks...")
         for i in trange(len(self.barcodeMapROI.groups[0])):  # i is the index of the barcode in barcodeMapROI
             barcode = self.barcodeMapROI.groups[0]["Barcode #"][i]
 
@@ -161,8 +161,12 @@ class BuildTraces:
             y_int = int(y_corrected)
             x_int = int(x_corrected)
 
+            
             # finds what mask label this barcode is sitting on
-            maskID = self.Masks[x_int][y_int]
+            if x_int < image_size[0] and y_int < image_size[1] and x_int > 0 and y_int > 0 :
+                maskID = self.Masks[x_int][y_int]
+            else:
+                maskID = 0
 
             # attributes CellID to a barcode
             self.barcodeMapROI["CellID #"][i] = maskID
