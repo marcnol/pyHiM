@@ -142,7 +142,7 @@ class BuildTraces:
         NbarcodesROI = 0
 
         image_size = self.Masks.shape
-        
+
         # loops over barcode Table rows in a given ROI
         printLog(f"> Aligning localizations to {self.numberMasks} masks...")
         for i in trange(len(self.barcodeMapROI.groups[0])):  # i is the index of the barcode in barcodeMapROI
@@ -161,7 +161,7 @@ class BuildTraces:
             y_int = int(y_corrected)
             x_int = int(x_corrected)
 
-            
+
             # finds what mask label this barcode is sitting on
             if x_int < image_size[0] and y_int < image_size[1] and x_int > 0 and y_int > 0 :
                 maskID = self.Masks[x_int][y_int]
@@ -259,9 +259,9 @@ class BuildTraces:
                             R_mum[i][0],            # x, microns
                             R_mum[i][1],            # y, microns
                             R_mum[i][2],            # z, microns
-                            "Chr3R",               # chromosome
-                            129999,                # start sequence
-                            149999,                # end sequence
+                            "xxxxx",               # chromosome
+                            0,                # start sequence
+                            999999999,                # end sequence
                             ROI,                   # ROI number
                             CellID,                # Mask number
                             group["Barcode #"].data[i], # Barcode name
