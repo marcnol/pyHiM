@@ -67,60 +67,6 @@ def parseArguments():
 
     return p
 
-def filter_traces_by_n(trace_table, minimum_number_barcodes = 2):
-    """
-    Removes rows in trace table with less than `minimum_number_barcodes` barcodes
-
-    Parameters
-    ----------
-    trace_table : ASTROPY Table
-        input trace table.
-    minimum_number_barcodes : TYPE, optional
-        minimum number of barcodes in trace. The default is 1.
-
-    Returns
-    -------
-    trace_table : ASTROPY Table
-        output trace table.
-
-    """
-
-    # indexes trace file
-    trace_table_indexed = trace_table.group_by("Trace_ID")
-
-    # iterates over traces
-    print(f"\n$ WIll keep traces with {minimum_number_barcodes } spots")
-    print(f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}")
-
-    barcodes_to_remove = list()
-
-    for idx, trace in enumerate(trace_table_indexed.groups):
-
-        if len(trace["Trace_ID"].data) < minimum_number_barcodes:
-            barcodes_to_remove.append(list(trace["Spot_ID"].data))
-
-    print(f"$ Number of barcodes to remove: {len(barcodes_to_remove)}")
-
-    list_barcode_to_remove=list()
-    for barcodes in barcodes_to_remove:
-        for x in barcodes:
-            list_barcode_to_remove.append(x)
-
-    rows_to_remove = list()
-
-    for idx, row in enumerate(trace_table):
-        spot_id = row["Spot_ID"]
-
-        if spot_id in list_barcode_to_remove:
-            rows_to_remove.append(idx)
-
-
-    trace_table.remove_rows(rows_to_remove)
-    trace_table_indexed = trace_table.group_by("Trace_ID")
-    print(f"$ Number of spots / traces left: {len(trace_table)} / {len(trace_table_indexed.groups)}")
-
-    return trace_table
-
 
 def runtime(folder, N_barcodes = 2, trace_files = list()):
 
@@ -143,7 +89,7 @@ def runtime(folder, N_barcodes = 2, trace_files = list()):
             trace.load(trace_file)
 
             # filters trace
-            trace = filter_traces_by_n(trace_file, minimum_number_barcodes = N_barcodes)
+            trace.filter_traces_by_n(minimum_number_barcodes = N_barcodes)
 
             # saves output trace
             outputfile = trace_file.rstrip(".ecsv") + "_filtered" + ".ecsv"
@@ -167,5 +113,5 @@ if __name__ == "__main__":
     folder = p["rootFolder"]
     n_traces_processed = runtime(folder, N_barcodes=p["N_barcodes"], trace_files = p["trace_files"])
 
-    print(f"Processed {n_traces_processed} traces")
+    print(f"Processed <{n_traces_processed}> trace(s)")
     print("Finished execution")
