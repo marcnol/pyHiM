@@ -122,6 +122,8 @@ class BuildTraces:
             [],
         )
 
+
+
     def alignByMasking(self):
         """
         Assigns barcodes to masks and creates <NbarcodesinMask>
@@ -158,15 +160,19 @@ class BuildTraces:
                 z_corrected = self.barcodeMapROI.groups[0]["zcentroid"][i]
 
             # binarizes coordinate
-            y_int = int(y_corrected)
-            x_int = int(x_corrected)
-
+            y_int = binarize_coordinate(y_corrected)
+            x_int = binarize_coordinate(x_corrected)
 
             # finds what mask label this barcode is sitting on
-            if x_int < image_size[0] and y_int < image_size[1] and x_int > 0 and y_int > 0 :
-                maskID = self.Masks[x_int][y_int]
-            else:
+            if np.isnan(x_int) or np.isnan(y_int):
+                # if a barcode has coordinates with NaNs, it is assigned to background
                 maskID = 0
+            else:
+                if x_int < image_size[0] and y_int < image_size[1] and x_int > 0 and y_int > 0 :
+                    maskID = self.Masks[x_int][y_int]
+                else:
+                    # if a barcode has coordinates outside the image, it is assigned to background
+                    maskID = 0
 
             # attributes CellID to a barcode
             self.barcodeMapROI["CellID #"][i] = maskID
@@ -627,3 +633,10 @@ def debug_mask_fileName(filesinFolder,fullFileNameROImasks,maskIdentifier,nROI,l
                 int(os.path.basename(file).split("_")[3]),
             )
         )
+
+
+def binarize_coordinate(x):
+    if not np.isnan(x):
+        return int(x)
+    else:
+        return np.nan

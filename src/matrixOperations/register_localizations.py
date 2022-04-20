@@ -55,12 +55,23 @@ class RegisterLocalizations:
             self.toleranceDrift = 1
             printLog("# toleranceDrift not found. Set to {}!".format(self.toleranceDrift))
 
+        if "remove_uncorrected_localizations" in self.param.param["buildsPWDmatrix"]:
+            self.remove_uncorrected_localizations = self.param.param["buildsPWDmatrix"]["remove_uncorrected_localizations"]
+        else:
+            self.remove_uncorrected_localizations = True
+
+        if self.remove_uncorrected_localizations:
+            printLog("# Uncorrected localizations will be removed!!")
+        else:
+            printLog("# Uncorrected localizations will be kept!!")                
+
+
     def searchLocalShift(self, ROI, barcode, zxy_uncorrected):
 
         if self.alignmentResultsTableRead:
             return self.searchLocalShift_block3D(ROI, barcode, zxy_uncorrected)
         else:  # no correction was applied because the localAlignmentTable was not found
-            return zxy_uncorrected
+            return zxy_uncorrected, {'below_tolerance':False}
             print("ERROR> did not found alignmentResultsTable")
 
     def searchLocalShift_block3D(self, ROI, barcode, zxy_uncorrected):
@@ -85,7 +96,6 @@ class RegisterLocalizations:
             corrected y coordinate.
 
         """
-        _foundMatch = False
 
         # gets blockSize
         blockSizeXY = self.alignmentResultsTable[0]["blockXY"]
@@ -107,20 +117,12 @@ class RegisterLocalizations:
 
         if max(np.abs(shifts)) < self.toleranceDrift:
             zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
+            quality_correction = {'below_tolerance':True}
         else:
             zxy_corrected = zxy_uncorrected
+            quality_correction = {'below_tolerance':False}
 
-        '''
-        # keeps uncorrected values if no match is found
-        if not _foundMatch:
-            printLog("# Did not find match for ROI #{} barcode #{}".format(ROI, barcode))
-            zxy_corrected = zxy_uncorrected
-            self.foundMatch.append(False)
-        else:
-            self.foundMatch.append(True)
-        '''
-
-        return zxy_corrected
+        return zxy_corrected, quality_correction 
 
     def register_barcodes(self, barcodeMap):
         """
@@ -145,6 +147,7 @@ class RegisterLocalizations:
         )
 
         NbarcodesROI = [], [], 0
+        list_uncorrected_barcodes = list()
 
         # loops over barcode Table rows in a given ROI
         for i in trange(len(barcodeMap.groups[0])):  # i is the index of the barcode in barcodeMapROI
@@ -161,16 +164,31 @@ class RegisterLocalizations:
             RTbarcode = "RT" + str(barcode)
 
             if RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
-                zxy_corrected = self.searchLocalShift(ROI, barcode, zxy_uncorrected)
+                zxy_corrected, quality_correction = self.searchLocalShift(ROI, barcode, zxy_uncorrected)
             else:
                 # if it is the reference cycle, then it does not correct coordinates
                 zxy_corrected = zxy_uncorrected
 
+            if not quality_correction['below_tolerance']:
+                list_uncorrected_barcodes.append(i) 
+
+                if self.remove_uncorrected_localizations:
+                    # will remove localizations that cannot be corrected
+                    zxy_corrected = [np.nan, np.nan, np.nan]
+                else:
+                    # will keep uncorrected localizations
+                    pass
+                
             # rewrites corrected XYZ values to Table
             barcodeMap.groups[0]["ycentroid"][i] = zxy_corrected[1]
             barcodeMap.groups[0]["xcentroid"][i] = zxy_corrected[2]
             if self.ndims > 2:
                 barcodeMap.groups[0]["zcentroid"][i] = zxy_corrected[0]
+
+        if self.remove_uncorrected_localizations:
+            printLog(f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcodeMap.groups[0])} were removed.")
+        else:
+            printLog(f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcodeMap.groups[0])} were uncorrected.")            
 
         return barcodeMap
 
