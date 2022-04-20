@@ -298,6 +298,7 @@ class Parameters:
                 "KDtree_distance_threshold_mum": 1, # distance threshold used to build KDtree
      			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"}, # colormaps used for plotting matrices
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
+                "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.       
             },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
