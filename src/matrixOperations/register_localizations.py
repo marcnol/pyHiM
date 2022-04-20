@@ -58,7 +58,7 @@ class RegisterLocalizations:
         if "remove_uncorrected_localizations" in self.param.param["buildsPWDmatrix"]:
             self.remove_uncorrected_localizations = self.param.param["buildsPWDmatrix"]["remove_uncorrected_localizations"]
         else:
-            self.remove_uncorrected_localizations = False
+            self.remove_uncorrected_localizations = True
 
         if self.remove_uncorrected_localizations:
             printLog("# Uncorrected localizations will be removed!!")
@@ -172,12 +172,12 @@ class RegisterLocalizations:
             if not quality_correction['below_tolerance']:
                 list_uncorrected_barcodes.append(i) 
 
-            if self.remove_uncorrected_localizations:
-                # will remove localizations that cannot be corrected
-                zxy_corrected = [np.nan, np.nan, np.nan]
-            else:
-                # will keep uncorrected localizations
-                pass
+                if self.remove_uncorrected_localizations:
+                    # will remove localizations that cannot be corrected
+                    zxy_corrected = [np.nan, np.nan, np.nan]
+                else:
+                    # will keep uncorrected localizations
+                    pass
                 
             # rewrites corrected XYZ values to Table
             barcodeMap.groups[0]["ycentroid"][i] = zxy_corrected[1]
