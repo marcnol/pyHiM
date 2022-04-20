@@ -335,6 +335,7 @@ class segmentSources3D:
                                         parallelExecution=self.innerParallelLoop)
 
         # drifts 3D stack in XY
+        shift = None
         if self.dictShiftsAvailable and  label != p["referenceBarcode"]:
             # uses existing shift calculated by alignImages
             try:
@@ -342,9 +343,12 @@ class segmentSources3D:
                 printLog("> Applying existing XY shift...")
             except KeyError:
                 shift = None
-                raise SystemExit(
-                    "# Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                        "ROI:" + self.ROI, label))
+
+        if shift is None:
+            raise SystemExit(
+                "ERROR> Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                    "ROI:" + self.ROI, label))
+
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
