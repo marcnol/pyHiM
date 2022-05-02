@@ -335,6 +335,7 @@ class segmentSources3D:
                                         parallelExecution=self.innerParallelLoop)
 
         # drifts 3D stack in XY
+        shift = None
         if self.dictShiftsAvailable and  label != p["referenceBarcode"]:
             # uses existing shift calculated by alignImages
             try:
@@ -342,9 +343,11 @@ class segmentSources3D:
                 printLog("> Applying existing XY shift...")
             except KeyError:
                 shift = None
-                raise SystemExit(
-                    "# Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                        "ROI:" + self.ROI, label))
+
+        if shift is None and label != p["referenceBarcode"]:
+            raise SystemExit(
+                "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                    "ROI:" + self.ROI, label))
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
@@ -460,7 +463,7 @@ class segmentSources3D:
         self.param.files2Process(filesFolder)
         self.ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         self.numberROIs = len(self.ROIList)
-        printLog("$ Detected {} ROIs".format(self.numberROIs))
+        printLog("\n$ Detected {} ROIs".format(self.numberROIs))
         printLog("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
@@ -480,11 +483,12 @@ class segmentSources3D:
             # loops over ROIs
             for ROI in self.ROIList:
                 # loads reference fiducial image for this ROI
-
+                self.ROI = ROI
+                
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI and \
                                             "RT" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
-                # printLog(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
+
                 Nfiles2Process=len(self.fileName2ProcessList)
                 printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
