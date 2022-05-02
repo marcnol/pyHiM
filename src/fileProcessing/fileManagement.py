@@ -527,8 +527,8 @@ class Parameters:
             self.fileList2Process=[]
 
         printLog(f"$ Files to process: {len(self.fileList2Process)}")
-        for file in self.fileList2Process:
-            printLog(f"\t{file}")
+        for i, file in enumerate(self.fileList2Process):
+            printLog("{}\t{}".format(i,os.path.basename(file)))
 
     def decodesFileParts(self, fileName):
         """
