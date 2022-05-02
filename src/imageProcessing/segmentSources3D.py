@@ -346,9 +346,8 @@ class segmentSources3D:
 
         if shift is None:
             raise SystemExit(
-                "ERROR> Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                     "ROI:" + self.ROI, label))
-
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
@@ -484,11 +483,12 @@ class segmentSources3D:
             # loops over ROIs
             for ROI in self.ROIList:
                 # loads reference fiducial image for this ROI
-
+                self.ROI = ROI
+                
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI and \
                                             "RT" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
-                # printLog(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
+
                 Nfiles2Process=len(self.fileName2ProcessList)
                 printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\
