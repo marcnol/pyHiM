@@ -344,7 +344,7 @@ class segmentSources3D:
             except KeyError:
                 shift = None
 
-        if shift is None:
+        if shift is None and label != p["referenceBarcode"]:
             raise SystemExit(
                 "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                     "ROI:" + self.ROI, label))
@@ -463,7 +463,7 @@ class segmentSources3D:
         self.param.files2Process(filesFolder)
         self.ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         self.numberROIs = len(self.ROIList)
-        printLog("$ Detected {} ROIs".format(self.numberROIs))
+        printLog("\n$ Detected {} ROIs".format(self.numberROIs))
         printLog("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
