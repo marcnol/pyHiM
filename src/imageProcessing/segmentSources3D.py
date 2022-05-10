@@ -191,7 +191,12 @@ class segmentSources3D:
 
             peakList = peak0.copy()
             peakList.sort()
-            last2keep=np.min([nTolerance,len(peakList)])
+            
+            if nTolerance == "None":
+                last2keep = len(peakList)
+            else:
+                last2keep = np.min([nTolerance,len(peakList)])
+                
             highestPeakValue  = peakList[-last2keep]
             selection = list(np.nonzero(peak0>highestPeakValue)[0])
 
