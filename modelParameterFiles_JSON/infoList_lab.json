@@ -16,7 +16,6 @@
         "alignImages": {
             "alignByBlock": true,
             "background_sigma": 3.0,
-            "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
             "higher_threshold": 0.9999999,

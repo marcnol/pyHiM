@@ -37,7 +37,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -62,9 +62,6 @@ graph TD
 	A[Start] --> B[1. Make 2D projections]
 	B --> C1[2.1 2.2 align fiducials in 2D] --> D1[3. Applies Registrations 2D]
 	D1 --> E1[4.1 Segment Sources and Masks in 2D] --> F[5. Build Matrix]
-	
-	E1 --> G1[4.2 4.3 Refit 3D] --> H1[2.3 localDriftCorrection Mask] --> F
-        
 	E1 --> D2[2.4 Align fiducials in 3D]
 	D2 --> E[4.4 Segment Sources 3D] --> F
 	F --> G(HiM matrix) 
@@ -201,7 +198,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -265,7 +262,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -289,7 +286,6 @@ optional arguments:
 "higher_threshold": 0.9999999, # higher threshold to adjust image intensity levels before xcorrelation
 "background_sigma": 3.0,  # used to remove inhom background
 "localShiftTolerance": 1,
-"bezel": 20,
 ```
 
 
@@ -400,47 +396,8 @@ Alignment using blockAlignment:
 
 
 
-#####  2.3 LocalDriftCorrection in 2D
 
-**Operation**
-
-The ```localDriftCorrection``` function will iterate over the DAPI masks, retrieve a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It will then apply the same cross-correlation algorithm to find an additional local shift.  If this shift is larger than ```localShiftTolerance``` in any direction, then it will not apply it.
-
-Deformation of samples means a simple translation will not be enough to correct drift. Typical example where most fiducial spots are corrected apart from one on the top right, very likely due to the embryo getting deformed in this cycle:
-
-![image-20200928150007248](Running_pyHiM.assets/image-20200928150007248.png)
-
-
-
-**Invoke**
-
-Parameters to run this script will be read from the ```alignImages``` field of ```infoList.json```.
-
-To activate this method use ```"localAlignment": "mask2D"``` in the ```infoList.json``` file when you run *pyHiM*.
-
-2D Local drift correction will be run after you run a global drift correction method either using methods 1 (global) or 2 (block alignment).  To select between these, use the ```alignByBlock``` flag.
-
-Otherwise, if you just want to call this method, call *pyHiM* with the ```-C localDriftCorrection``` argument.
-
-```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -F ROOTFOLDER, --rootFolder ROOTFOLDER
-                        Folder with images
-  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
-  						makeProjections, appliesRegistrations,
-                        alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
-  --threads THREADS     Number of threads to run in parallel mode. If none,
-                        then it will run with one thread.
-```
-
-
-
-#####  2.4 Local Drift Correction in 3D
+#####  2.3 Local Drift Correction in 3D
 
 **Operation**
 
@@ -482,7 +439,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -513,7 +470,6 @@ These options are shared by all alignment routines: "**alignImages**".
 |"higher_threshold"| 0.9999999| higher threshold to adjust image intensity levels before xcorrelation |
 |"background_sigma"| 3.0 |used to remove inhomogeneous background|
 |"localShiftTolerance"| 1|Number of pixels tolerated to apply local drift correction|
-|"bezel"|20|number of pixels to use around a box made around each DAPI mask. Used for localDriftCorrection|
 
 **Output of method**
 
@@ -569,7 +525,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -616,7 +572,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters
                         !): makeProjections alignImages appliesRegistrations
                         alignImages3D segmentMasks segmentMasks3D
-                        segmentSources3D localDriftCorrection
+                        segmentSources3D
                         buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -755,7 +711,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -923,7 +879,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -1227,7 +1183,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,
-                        localDriftCorrection,buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```

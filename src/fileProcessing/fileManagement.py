@@ -273,7 +273,6 @@ class Parameters:
                 "background_sigma": 3.0,  # used to remove inhom background
                 "localShiftTolerance": 1,
                 "blockSize": 256,
-                "bezel": 20,
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder

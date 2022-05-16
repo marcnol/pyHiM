@@ -12,7 +12,6 @@
         "positionROIinformation": 3
     },
     "alignImages": {
-        "bezel": 20,
         "folder": "alignImages",
         "localAlignment": "overwrite",
         "localShiftTolerance": 1,

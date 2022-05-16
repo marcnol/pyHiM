@@ -54,12 +54,6 @@ testData['test_processesPWDmatrices']["rootFolder"] = rootFolder
 testData['test_processesPWDmatrices']['expectedOutputs']= [rootFolder+"/buildsPWDmatrix/buildsPWDmatrix_HiMscMatrix.npy"]
 testData['test_processesPWDmatrices']['labels']= 2
 
-
-testData['test_localDriftCorrection']={}
-testData['test_localDriftCorrection']["rootFolder"] = rootFolder
-testData['test_localDriftCorrection']['expectedOutputs']= [rootFolder+"/alignImages/LocalShiftsViolinPlot_ROI:001.png"]
-testData['test_localDriftCorrection']['labels']= 2
-
 #%% saves dictionary with settings
 
 fileName="testData.json"

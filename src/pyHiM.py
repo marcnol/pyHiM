@@ -83,10 +83,6 @@ if __name__ == "__main__":
         if "segmentSources3D" in runParameters["cmd"]:
             HiM.segmentSources3D(param, label)
 
-        # [local drift correction]
-        if "localDriftCorrection" in runParameters["cmd"]:
-            HiM.localDriftCorrection(param, label)
-
         # [filters barcode localization table]
         if "filter_localizations" in runParameters["cmd"]:
             HiM.filter_localizations(param, label)

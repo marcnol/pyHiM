@@ -27,7 +27,6 @@ from fileProcessing.fileManagement import (
 from imageProcessing.alignImages import alignImages, appliesRegistrations
 from imageProcessing.makeProjections import makeProjections
 from imageProcessing.segmentMasks import segmentMasks
-from imageProcessing.localDriftCorrection import localDriftCorrection
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
@@ -212,18 +211,6 @@ class HiMfunctionCaller:
             build_matrix_instance = BuildMatrix(param)
             build_matrix_instance.run()
 
-    # This function will be removed in new release
-    def localDriftCorrection(self, param, label):
-
-        # runs mask 2D aligment
-        if label == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
-
-            if not self.parallel:
-                errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
-            else:
-                result = self.client.submit(localDriftCorrection, param, self.log1, self.session1)
-                errorCode, _, _ = self.client.gather(result)
-
     def processesPWDmatrices(self, param, label):
         if (label == "DAPI" or label == 'mask'):
             if not self.parallel:
@@ -238,7 +225,7 @@ class HiMfunctionCaller:
 
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentMasks3D","segmentSources3D","localDriftCorrection",\
+                "segmentMasks3D","segmentSources3D",\
                 "filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
 
 
@@ -257,7 +244,6 @@ def HiM_parseArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
                         optional: [ filter_localizations register_localizations build_traces build_matrix]")
-                        # to be removed: localDriftCorrection
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
