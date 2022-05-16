@@ -34,7 +34,7 @@ def readArguments():
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D refitBarcodes3D \
-                        localDriftCorrection projectBarcodes buildHiMmatrix")
+                        localDriftCorrection buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
     parser.add_argument("--srun", help="Runs using srun", action="store_true")
     parser.add_argument("--xrun", help="Runs using bash", action="store_true")

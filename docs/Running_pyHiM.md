@@ -37,7 +37,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -201,7 +201,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -265,7 +265,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -433,7 +433,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -482,7 +482,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -569,7 +569,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -617,7 +617,7 @@ optional arguments:
                         !): makeProjections alignImages appliesRegistrations
                         alignImages3D segmentMasks segmentMasks3D
                         segmentSources3D refitBarcodes3D localDriftCorrection
-                        projectBarcodes buildHiMmatrix
+                        buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -755,7 +755,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -881,7 +881,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -921,7 +921,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -1037,7 +1037,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```
@@ -1341,7 +1341,7 @@ optional arguments:
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
                         segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```

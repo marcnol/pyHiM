@@ -250,7 +250,7 @@ class HiMfunctionCaller:
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
-                "projectBarcodes","filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
+                "filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
 
 
 def defaultListCommands():
@@ -268,7 +268,7 @@ def HiM_parseArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
                         optional: [ filter_localizations register_localizations build_traces build_matrix]")
-                        # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
+                        # to be removed: refitBarcodes3D localDriftCorrection
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
