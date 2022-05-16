@@ -29,7 +29,6 @@ from imageProcessing.makeProjections import makeProjections
 from imageProcessing.segmentMasks import segmentMasks
 from imageProcessing.localDriftCorrection import localDriftCorrection
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
-from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
 from imageProcessing.segmentMasks3D import segmentMasks3D
@@ -189,16 +188,6 @@ class HiMfunctionCaller:
             _segmentSources3D = segmentSources3D(param, self.session1, parallel=self.parallel)
             _segmentSources3D.segmentSources3D()
 
-    # This function will be removed in new release
-    def refitBarcodes(self, param, label):
-        if label == "barcode":
-            fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
-            if not self.parallel:
-                fittingSession.refitFolders()
-            else:
-                result = self.client.submit(fittingSession.refitFolders)
-                _ = self.client.gather(result)
-
     # filters barcode localization table
     def filter_localizations(self, param, label):
         if label == "barcode":
@@ -249,7 +238,7 @@ class HiMfunctionCaller:
 
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
+                "segmentMasks3D","segmentSources3D","localDriftCorrection",\
                 "filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
 
 
@@ -268,7 +257,7 @@ def HiM_parseArguments():
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
                         optional: [ filter_localizations register_localizations build_traces build_matrix]")
-                        # to be removed: refitBarcodes3D localDriftCorrection
+                        # to be removed: localDriftCorrection
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()

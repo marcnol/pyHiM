@@ -79,10 +79,6 @@ if __name__ == "__main__":
         if "segmentSources3D" in runParameters["cmd"]:
             HiM.segmentSources3D(param, label)
 
-        # [refits spots in 3D]
-        if "refitBarcodes3D" in runParameters["cmd"]:
-            HiM.refitBarcodes(param, label)
-
         # [local drift correction]
         if "localDriftCorrection" in runParameters["cmd"]:
             HiM.localDriftCorrection(param, label)

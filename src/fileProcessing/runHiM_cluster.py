@@ -33,7 +33,7 @@ def readArguments():
     parser.add_argument("-T2","--nTasksCPU", help="Number of tasks per CPU")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentSources3D refitBarcodes3D \
+                        segmentSources3D \
                         localDriftCorrection buildHiMmatrix")
     parser.add_argument("--threads", help="Number of threads for parallel mode. None: sequential execution")
     parser.add_argument("--srun", help="Runs using srun", action="store_true")

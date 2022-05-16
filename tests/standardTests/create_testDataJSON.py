@@ -55,11 +55,6 @@ testData['test_processesPWDmatrices']['expectedOutputs']= [rootFolder+"/buildsPW
 testData['test_processesPWDmatrices']['labels']= 2
 
 
-testData['test_refitBarcodes3D']={}
-testData['test_refitBarcodes3D']["rootFolder"] = rootFolder
-testData['test_refitBarcodes3D']['expectedOutputs']= [rootFolder+"/segmentedObjects/segmentedObjects_barcode2D.dat"]
-testData['test_refitBarcodes3D']['labels']= 1
-
 testData['test_localDriftCorrection']={}
 testData['test_localDriftCorrection']["rootFolder"] = rootFolder
 testData['test_localDriftCorrection']['expectedOutputs']= [rootFolder+"/alignImages/LocalShiftsViolinPlot_ROI:001.png"]

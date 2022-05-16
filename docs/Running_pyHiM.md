@@ -36,7 +36,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -200,7 +200,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -264,7 +264,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -432,7 +432,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -481,7 +481,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -568,7 +568,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -616,7 +616,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters
                         !): makeProjections alignImages appliesRegistrations
                         alignImages3D segmentMasks segmentMasks3D
-                        segmentSources3D refitBarcodes3D localDriftCorrection
+                        segmentSources3D localDriftCorrection
                         buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -754,7 +754,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -842,121 +842,7 @@ An example of a barcode where localization signals are far from optimal: note th
 ![image-20201009114117140](Running_pyHiM.assets/image-20201009114117140.png)
 
 
-
-##### 4.4 3D fits of barcode positions using zProfiling
-
-**Operation**
-
-Barcode 3D positions are now calculated as follows.
-
-First ASTROPY calculates the 2D positions using 2D projected images.
-
-Then the ```fittingSession.refitFolders``` class function draws a subVolume around each localized barcode (default: 7x7 window), estimates the axial intensity profile, substracts background, calculates the z position by calculating the weighted moment, then uses it as a seed to Gaussian fit the axial intensity distribution and find a better estimate of the z-position based on Gaussian fitting.
-Finally, the localizations are filtered by following various criteria
-
-- the residual of the fit has to be small (see parameter in infoList)
-- the difference between Moment and Gaussian positions has to me small (see parameter in infoList)
-- the sigma of the Gaussian fit has to be smaller than a threshold (see parameter in infoList)
-
-The results for any given ROI and barcode appear as a figure with two subplots where these values are shown. The dots in black represent the spots that will be kept for further analysis.
-
-![segmentedObjects_3Drefit_ROI:1_barcode:29](Running_pyHiM.assets/segmentedObjects_3Drefit_ROI1_barcode29.png)
-
-
-
-**Invoke**
-
-Use ```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json* file when you run *pyHiM*.
-
-If you want to run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using```"3Dmethod":"zProfile"``` in the ```segmentObjects``` key of *infoList.json* file
-
-```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -F ROOTFOLDER, --rootFolder ROOTFOLDER
-                        Folder with images
-  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
-  						makeProjections, appliesRegistrations,
-                        alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,buildHiMmatrix
-  --threads THREADS     Number of threads to run in parallel mode. If none,
-                        then it will run with one thread.
-```
-
-
-
-##### 4.5 3D fits of barcode positions using ASTROPY
-
-**Operation**
-
-In this case, the 2D XY source positions calculated using projected images are loaded from disk.
-
-Then the ```fittingSession.refitFolders``` will 
-
-- reinterpolate the 3D stack to correct for XY drift
-- Make a YZ plane projection at a specific xPlane position. For this it will sum the YZ images from ```xPlane-3dAP_window:xPlane+3dAP_window``` . From this YZ projection, it will call ASTROPY and localize new sources using the parameters: 
-  - ```3dAP_flux_min``` it will discard sources that have a flux smaller than this value
-  - ```3dAP_brightest```: it will recover this number of sources per YZ plane
-- Then, it will iterate over the sources in that YZ plane and match them to a source in the original 2D XY source list. For this, it will find the sources within a Y-distance of  ```3dAP_distTolerance```, and match to the closest source found. If no source is found closer than this threshold, it will not match it to anything. *There is an experimental setting ```addSources``` that can be used to add the sources as new sources if no match was found in the original 2D XY list of sources. By default this is set to ```False```.* 
-- If the flux of the 2D XY source is smaller than that of the ZY source, the flux will be updated accordingly.
-- This process is repeated for all xPlanes using ```range(3dAP_window, imageSizeX,3dAP_window)``` (i.e. the x-range of the image will be split into ```imageSizeX/3dAP_window``` equally-spaced planes). Typically ```3dAP_window=5``` works fine.
-
-**Invoke**
-
-Use ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList.json* file when you run *pyHiM*.
-
-To run this function exclusively, run *pyHiM* using the ```-C refitBarcodes3D``` argument using ```"3Dmethod":"zASTROPY"``` in the ```segmentObjects``` key of *infoList.json* file
-
-```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -F ROOTFOLDER, --rootFolder ROOTFOLDER
-                        Folder with images
-  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
-  						makeProjections, appliesRegistrations,
-                        alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,buildHiMmatrix
-  --threads THREADS     Number of threads to run in parallel mode. If none,
-                        then it will run with one thread.
-```
-
-
-
-**Outputs**
-
-The results for any given ROI and barcode appear with three figures representing:
-
-- a typical YZ profile in the middle of the x-range. Sources will be represented as crosses.
-- the 2D-projected image with sources represented as crosses. Color-code represents z-position. Colormap is from ```0``` to the max number of z-planes in the image.
-- Finally, a scatter plot displaying the z-position and the flux of every source detected is displayed. 
-
-Important: Sources are not flux-filtered at this stage. The original or updated flux values will be outputted in the Table, and used in the ```alignBarcodesMasks``` module to filter the localization using the value of ```flux_min``` provided in the ```infoList.json``` file.
-
-Output examples:
-
-![image-20201228111034499](Running_pyHiM.assets/image-20201228111034499.png)
-
-
-
-![image-20201228111115388](Running_pyHiM.assets/image-20201228111115388.png)
-
-
-
-![image-20201228111138959](Running_pyHiM.assets/image-20201228111138959.png)
-
-
-
-![image-20201228111209001](Running_pyHiM.assets/image-20201228111209001.png)
-
-
-
-#### 4.6 Direct segmentation of sources in 3D
+#### 4.4 Direct segmentation of sources in 3D
 
 **Operation**
 
@@ -1036,7 +922,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
@@ -1340,7 +1226,7 @@ optional arguments:
   -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
+                        segmentSources3D,
                         localDriftCorrection,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
