@@ -75,7 +75,6 @@ if __name__ == "__main__":
         folders2Remove.append(currentFolder + os.sep + param.param["alignImages"]["folder"])
         folders2Remove.append(currentFolder + os.sep + param.param["segmentedObjects"]["folder"])
         folders2Remove.append(currentFolder + os.sep + "buildsPWDmatrix")
-        folders2Remove.append(currentFolder + os.sep + param.param["projectsBarcodes"]["folder"])
 
         for newFolder in folders2Remove:
             if os.path.isdir(newFolder):

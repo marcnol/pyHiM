@@ -168,15 +168,6 @@ class folders:
             self.outputFiles["segmentedObjects"] = (
                 self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
             )
-
-        """
-        if "projectsBarcodes" in param.param.keys():
-            self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
-            self.createSingleFolder(self.outputFolders["projectsBarcodes"])
-            self.outputFiles["projectsBarcodes"] = (
-                self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
-            )
-        """
         
         # backwards compatibility
         if "buildsPWDmatrix" in param.param.keys():
@@ -283,11 +274,6 @@ class Parameters:
                 "localShiftTolerance": 1,
                 "blockSize": 256,
                 "bezel": 20,
-            },
-            "projectsBarcodes": {
-                "folder": "projectsBarcodes",  # output folder
-                "operation": "overwrite",  # overwrite, skip
-                "outputFile": "projectsBarcodes",
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder

@@ -116,10 +116,9 @@ The second key ```common``` contains the common parameters for each of the modul
 
 1. ```acquisition```: common to all labels. The parameters defined here are used by most functions.
 2. ```alignImages```: common to all labels. Parameters specific to the ```alignImages```, ```alignImages3D``` and ```appliesRegistrations``` functions.
-3. ```projectsBarcodes```: only for *barcode*. 
-4. ```segmentedObjects```: only for *barcode* and *DAPI*. Parameters specific to the ```segmentMasks``` and ```segmentSources3D``` functions.
-5. ```zProject```: common to all labels. Parameters specific to the ```makeProjections``` function.
-6. ```buildsPWDMatrix```: only for *DAPI*. Parameters specific to the ```buildHiMmatrix``` function.
+3. ```segmentedObjects```: only for *barcode* and *DAPI*. Parameters specific to the ```segmentMasks``` and ```segmentSources3D``` functions.
+4. ```zProject```: common to all labels. Parameters specific to the ```makeProjections``` function.
+5. ```buildsPWDMatrix```: only for *DAPI*. Parameters specific to the ```buildHiMmatrix``` function.
 
 The description of parameters encoded in these dictionaries will be described with each function below.
 
@@ -1414,25 +1413,9 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 
 <img src="Running_pyHiM.assets/BarcodeStats_ROI1_2D.png" alt="BarcodeStats_ROI:1_2D" style="zoom: 67%;" />
 
-### 6. Projects barcodes
+### 6. Process second channel (i.e RNA, segments, etc)
 
-
-
-**Options**
-
-"projectsBarcodes"
-
-```
-"folder": "projectsBarcodes",  *Description:* output folder
-"operation": "overwrite",  *Options:* overwrite | skip
-"outputFile": "projectsBarcodes",
-```
-
-
-
-### 7. Process second channel (i.e RNA, segments, etc)
-
-#### 7.1 Create label masks
+#### 6.1 Create label masks
 
 ```pyHiM.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```
 
@@ -1480,7 +1463,7 @@ This file can then be loaded within ```replotHiMmatrix.py``` to identify which c
 
 
 
-#### 7.2 Assign labels to chromatin trace tables
+#### 6.2 Assign labels to chromatin trace tables
 
 Once you have processed your labels and created mask numpy arrays with the `SNDmask.npy` extension, you are ready to add the label to your chromatin trace tables. There is a specific column reserved specifically for this in each trace table (called `label`). 
 
@@ -1507,7 +1490,7 @@ optional arguments:
 
 
 
-### 8.1 Analysis of several samples at once
+### 7.1 Analysis of several samples at once
 
 You can now use a new script to call several samples in one go:
 
@@ -1552,7 +1535,7 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 
 
-### 8.2 Parallel Computations
+### 7.2 Parallel Computations
 
 Several routines are now fitted with the possibility of performing parallel computations using the Dask package.
 
@@ -1576,7 +1559,7 @@ ssh -L 8789:localhost:8787 marcnol@lopevi
 
 
 
-### 9. zipping and erasing run
+### 8. zipping and erasing run
 
 #### zip and retrieve results
 

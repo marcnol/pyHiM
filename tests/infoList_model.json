@@ -36,11 +36,6 @@
             "folder": "buildsPWDmatrix",
             "toleranceDrift": 1
         },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
-        },
         "segmentedObjects": {
             "3DGaussianfitWindow": 3,
             "3D_area_max": 250,

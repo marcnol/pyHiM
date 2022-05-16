@@ -28,7 +28,6 @@ from imageProcessing.alignImages import alignImages, appliesRegistrations
 from imageProcessing.makeProjections import makeProjections
 from imageProcessing.segmentMasks import segmentMasks
 from imageProcessing.localDriftCorrection import localDriftCorrection
-from imageProcessing.projectsBarcodes import projectsBarcodes
 from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
@@ -189,16 +188,6 @@ class HiMfunctionCaller:
 
             _segmentSources3D = segmentSources3D(param, self.session1, parallel=self.parallel)
             _segmentSources3D.segmentSources3D()
-
-
-    # This function will be removed in new release
-    def projectsBarcodes(self, param, label):
-        if label == "barcode":
-            if not self.parallel:
-                projectsBarcodes(param, self.log1, self.session1)
-            else:
-                result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
-                _ = self.client.gather(result)
 
     # This function will be removed in new release
     def refitBarcodes(self, param, label):

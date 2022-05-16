@@ -79,10 +79,6 @@ if __name__ == "__main__":
         if "segmentSources3D" in runParameters["cmd"]:
             HiM.segmentSources3D(param, label)
 
-        # [2D projects all barcodes in an ROI]
-        if "projectBarcodes" in runParameters["cmd"]:
-            HiM.projectsBarcodes(param, label)
-
         # [refits spots in 3D]
         if "refitBarcodes3D" in runParameters["cmd"]:
             HiM.refitBarcodes(param, label)

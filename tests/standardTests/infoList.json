@@ -20,11 +20,6 @@
         "outputFile": "alignImages",
         "referenceFiducial": "RT18"
     },
-    "projectsBarcodes": {
-        "folder": "projectsBarcodes",
-        "operation": "overwrite",
-        "outputFile": "projectsBarcodes"
-    },
     "segmentedObjects": {
         "3DGaussianfitWindow": 3,
         "Segment3D": "overwrite",

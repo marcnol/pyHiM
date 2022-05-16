@@ -82,7 +82,6 @@ if __name__ == "__main__":
         folders2zip.append(currentFolder + os.sep + "alignImages")
         folders2zip.append(currentFolder + os.sep + "segmentedObjects")
         folders2zip.append(currentFolder + os.sep + "buildsPWDmatrix")
-        folders2zip.append(currentFolder + os.sep + "projectsBarcodes")
 
         print("sub-folders to zip:\n{}".format(folders2zip))
 

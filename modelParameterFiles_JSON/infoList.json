@@ -46,11 +46,6 @@
             "remove_uncorrected_localizations": true,
             "toleranceDrift": 1
         },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
-        },
         "segmentedObjects": {
             "Segment3D": "overwrite",
 	        "operation": "2D",
