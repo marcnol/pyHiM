@@ -27,10 +27,7 @@ from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    runParameters=HiM_parseArguments()
+def old_main(runParameters):
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
@@ -115,5 +112,41 @@ if __name__ == "__main__":
         HiM.client.close()
 
     del HiM
+
+
+def main(command_line_arguments=None):
+    """main function to run pyHiM
+
+    Parameters
+    ----------
+    command_line_arguments : List, optional
+        Used for test functions, by default None
+    """
+    
+    run_args = RunArgs(command_line_arguments)
+
+    pipeline = Pipeline(run_args.cmd_list)
+
+    data = InputData(run_args.data_path)
+    data.check_consistency(pipeline)
+
+    # TODO
+    parameters = InputParameters(run_args.param_path)
+    parameters.check_consistency(pipeline, data)
+
+    pipeline.build_output_folders(run_args.output_path)
+    pipeline.fill(data, parameters)
+    pipeline.run()
+
+
+if __name__ == "__main__":
+    begin_time = datetime.now()
+
+    runParameters=HiM_parseArguments()
+
+    if "new" in runParameters["cmd"]:
+        main()
+    else:
+        old_main(runParameters)
 
     printLog("Elapsed time: {}".format(datetime.now() - begin_time))

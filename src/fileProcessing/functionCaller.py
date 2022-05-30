@@ -226,7 +226,7 @@ class HiMfunctionCaller:
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentMasks3D","segmentSources3D",\
-                "filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
+                "filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix","new"]
 
 
 def defaultListCommands():

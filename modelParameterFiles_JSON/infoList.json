@@ -2,7 +2,7 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch01",
+            "RNA_channel": "ch02",
             "barcode_channel": "ch01",
             "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
