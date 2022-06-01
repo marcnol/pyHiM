@@ -109,7 +109,7 @@ def processesUserMasks(current_param, current_log, processingList):
         session_name = "processesUserMasks"
 
         # processes folders and files
-        data_folder = Folders(current_param.param_dict["root_folder"])
+        data_folder = Folders(current_param.param_dict["rootFolder"])
         data_folder.set_folders()
         current_log.add_simple_text(
             "\n===================={}====================\n".format(session_name)
@@ -117,7 +117,7 @@ def processesUserMasks(current_param, current_log, processingList):
         current_log.report("folders read: {}".format(len(data_folder.list_folders)))
 
         position_roi_information = current_param.param_dict["acquisition"][
-            "position_roi_information"
+            "positionROIinformation"
         ]
         numberMaskedFiles = 0
 
@@ -326,7 +326,7 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-A", "--addMask", help="Add manual segmentation")
     parser.add_argument("--cleanAllMasks", help="Clear all masks", action="store_true")
 

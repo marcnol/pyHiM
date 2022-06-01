@@ -42,7 +42,7 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
         "-P",
         "--parameters",
@@ -67,9 +67,9 @@ def parse_arguments():
 
     args = parser.parse_args()
     if args.root_folder:
-        p["root_folder"] = args.root_folder
+        p["rootFolder"] = args.root_folder
     else:
-        p["root_folder"] = "."
+        p["rootFolder"] = "."
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -190,7 +190,7 @@ def load_traces(
             trace_files = [
                 x
                 for x in glob.glob(folder.rstrip("/") + os.sep + "Trace*ecsv")
-                if "unique_barcodes" not in x
+                if "uniqueBarcodes" not in x
             ]
             trace_files = [
                 x for x in trace_files if (str(ndims) + "D" in x) and (method in x)
@@ -218,7 +218,7 @@ def load_traces(
 
 def run(p):
     # [ Lists and loads datasets from different embryos]
-    input_parameters = p["root_folder"] + os.sep + p["parametersFileName"]
+    input_parameters = p["rootFolder"] + os.sep + p["parametersFileName"]
     print("\n" + "-" * 80)
 
     if not p["pipe"]:
@@ -235,10 +235,10 @@ def run(p):
             sys.exit()
 
     # [ creates output folder]
-    p["output_folder"] = p["root_folder"] + os.sep + "combined_traces"
-    if not os.path.exists(p["output_folder"]):
-        os.mkdir(p["output_folder"])
-        print("Folder created: {}".format(p["output_folder"]))
+    p["outputFolder"] = p["rootFolder"] + os.sep + "combined_traces"
+    if not os.path.exists(p["outputFolder"]):
+        os.mkdir(p["outputFolder"])
+        print("Folder created: {}".format(p["outputFolder"]))
 
     if not p["pipe"]:
         # [loops over lists of datafolders]
@@ -261,7 +261,7 @@ def run(p):
         )
 
     outputfile = (
-        p["output_folder"]
+        p["outputFolder"]
         + os.sep
         + "Trace_combined_"
         + str(p["ndims"])

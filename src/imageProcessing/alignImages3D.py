@@ -112,7 +112,7 @@ class Drift3D:
         )
 
         self.p["axes2Plot"] = range(3)
-        self.p["reference_barcode"] = self.current_param.param_dict["alignImages"][
+        self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
             "referenceFiducial"
         ]
 
@@ -195,7 +195,7 @@ class Drift3D:
 
         """
 
-        self.p["filename_reference"] = filename_reference
+        self.p["fileNameReference"] = filename_reference
         self.p["ROI"] = self.roi_list[filename_reference]
         print_log("Loading reference 3D image: {}".format(filename_reference))
 
@@ -254,9 +254,9 @@ class Drift3D:
         None.
 
         """
-        print_log("\nReference barcode: {}".format(self.p["reference_barcode"]))
+        print_log("\nReference barcode: {}".format(self.p["referenceBarcode"]))
         self.filenames_with_ref_barcode, self.roi_list = rt_to_filename(
-            self.current_param, self.p["reference_barcode"]
+            self.current_param, self.p["referenceBarcode"]
         )
 
         self.number_rois = len(self.roi_list)
@@ -376,10 +376,10 @@ class Drift3D:
 
         # processes folders and files
         print_log("\n===================={}====================\n".format(session_name))
-        self.data_folder = Folders(self.current_param.param_dict["root_folder"])
+        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["markdown_filename"],
+            self.current_param.param_dict["fileNameMD"],
             "## {}\n".format(session_name),
             "a",
         )
@@ -591,7 +591,7 @@ def _align_fiducials_3d_file(
     for i in range(num_blocks):
         for j in range(num_blocks):
             table_entry = [
-                os.path.basename(p["filename_reference"]),
+                os.path.basename(p["fileNameReference"]),
                 os.path.basename(filename_to_process),
                 int(block_xy),
                 int(roi),
@@ -633,7 +633,7 @@ def create_output_table():
         names=(
             "reference file",
             "aligned file",
-            "block_xy",
+            "blockXY",
             "ROI #",
             "label",
             "block_i",

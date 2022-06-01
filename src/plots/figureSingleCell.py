@@ -48,8 +48,8 @@ matplotlib.rc("font", **font)
 def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with dataset")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
         "-P",
@@ -65,7 +65,7 @@ def parse_arguments():
         "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument(
-        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
     )
     parser.add_argument(
         "--barcodes",
@@ -74,7 +74,7 @@ def parse_arguments():
     )
     parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
     parser.add_argument("--pixelSize", help="Pixel Size in um")
-    parser.add_argument("--max_distance", help="Maximum distance for histograms, in um")
+    parser.add_argument("--maxDistance", help="Maximum distance for histograms, in um")
 
     parser.add_argument(
         "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
@@ -101,7 +101,7 @@ def parse_arguments():
         help="Use if you want to plot the PWD histograms for all bin combinations. This is slow!",
         action="store_true",
     )
-    parser.add_argument("--min_number_pwd", help="Minimum number of PWD to calculate Rg")
+    parser.add_argument("--minNumberPWD", help="Minimum number of PWD to calculate Rg")
     parser.add_argument(
         "--threshold", help="Maximum accepted PWD to calculate Rg, in px"
     )
@@ -153,9 +153,9 @@ def parse_arguments():
         run_parameters["pixelSize"] = 0.1
 
     if args.max_distance:
-        run_parameters["max_distance"] = float(args.max_distance)
+        run_parameters["maxDistance"] = float(args.max_distance)
     else:
-        run_parameters["max_distance"] = 4.0
+        run_parameters["maxDistance"] = 4.0
 
     if args.threshold:
         run_parameters["threshold"] = float(args.threshold)
@@ -163,9 +163,9 @@ def parse_arguments():
         run_parameters["threshold"] = 8
 
     if args.min_number_pwd:
-        run_parameters["min_number_pwd"] = args.min_number_pwd
+        run_parameters["minNumberPWD"] = args.min_number_pwd
     else:
-        run_parameters["min_number_pwd"] = 6
+        run_parameters["minNumberPWD"] = 6
 
     if args.axisLabel:
         run_parameters["axisLabel"] = args.axisLabel
@@ -173,9 +173,9 @@ def parse_arguments():
         run_parameters["axisLabel"] = False
 
     if args.axis_ticks:
-        run_parameters["axis_ticks"] = args.axis_ticks
+        run_parameters["axisTicks"] = args.axis_ticks
     else:
-        run_parameters["axis_ticks"] = False
+        run_parameters["axisTicks"] = False
 
     if args.barcodes:
         run_parameters["barcodes"] = args.barcodes
@@ -680,7 +680,7 @@ def makesPlotHistograms(
         mode="KDE",
         kernel_width=0.25,
         optimize_kernel_width=False,
-        max_distance=run_parameters["max_distance"],
+        max_distance=run_parameters["maxDistance"],
     )
 
 
@@ -702,7 +702,7 @@ if __name__ == "__main__":
 
     him_data.retrieve_sc_matrix()
 
-    n_datasets = len(him_data.data["run_name"])
+    n_datasets = len(him_data.data["runName"])
 
     if output_folder == "none":
         output_folder = him_data.data_folder
@@ -740,7 +740,7 @@ if __name__ == "__main__":
     plotsBarcodesEfficiencies(
         sc_matrix,
         run_parameters,
-        list(him_data.data["unique_barcodes"]),
+        list(him_data.data["uniqueBarcodes"]),
         outputFileNameRoot=outputFileNameRoot,
     )
 
@@ -752,7 +752,7 @@ if __name__ == "__main__":
         nRows,
         run_parameters,
         output_filename=output,
-        min_number_pwd=int(run_parameters["min_number_pwd"]),
+        min_number_pwd=int(run_parameters["minNumberPWD"]),
         threshold=float(run_parameters["threshold"]),
         bandwidths=10 ** np.linspace(-1, 0, 20),
     )

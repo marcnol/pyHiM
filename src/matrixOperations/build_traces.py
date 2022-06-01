@@ -116,7 +116,7 @@ class BuildTraces:
             self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
         )
         self.pixel_size_z_0 = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixel_size_z", default=0.25
+            self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
         )
         self.pixel_size_z = self.z_binning * self.pixel_size_z_0
         self.available_masks = get_dictionary_value(
@@ -124,7 +124,7 @@ class BuildTraces:
             "masks2process",
             default={"nuclei": "DAPI"},
         )
-        self.log_name_md = self.current_param.param_dict["markdown_filename"]
+        self.log_name_md = self.current_param.param_dict["fileNameMD"]
         self.mask_expansion = get_dictionary_value(
             self.current_param.param_dict["buildsPWDmatrix"],
             "mask_expansion",
@@ -751,16 +751,16 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
     session_name = module_name
 
     # processes folders and files
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log("\n" + "=" * 35 + f"{session_name}" + "=" * 35 + "\n")
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "## {}\n".format(session_name),
         "a",
     )
 
-    current_folder = current_param.param_dict["root_folder"]
+    current_folder = current_param.param_dict["rootFolder"]
     data_folder.create_folders(current_folder, current_param)
     print_log("> Processing Folder: {}".format(current_folder))
 

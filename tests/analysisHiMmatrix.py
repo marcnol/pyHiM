@@ -58,7 +58,7 @@ class AnalysisHiMMatrix:
         data_files = {}
         data_files["ensembleContactProbability"] = "_ensembleContactProbability.npy"
         # data_files['unique_barcodes']="_uniqueBarcodes.npy"
-        data_files["sc_matrix_collated"] = "_SCmatrixCollated.npy"
+        data_files["SCmatrixCollated"] = "_SCmatrixCollated.npy"
         data_files["SClabeledCollated"] = "_SClabeledCollated.npy"
 
         data_files["anchor:4"] = "_anchor:4_ensemble3wayContacts.npy"
@@ -75,10 +75,10 @@ class AnalysisHiMMatrix:
             data[i_data_file] = np.load(output_filename + data_files[i_data_file]).squeeze()
 
         run_name = load_list(output_filename + "_runName.csv")
-        data["unique_barcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
+        data["uniqueBarcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
 
-        print("Loaded: {}".format("run_name"))
-        data["run_name"] = run_name
+        print("Loaded: {}".format("runName"))
+        data["runName"] = run_name
 
         self.data = data
         self.data_files = data_files

@@ -41,8 +41,8 @@ from matrixOperations.HIMmatrixOperations import (
 def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with dataset")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
         "-P",
@@ -58,7 +58,7 @@ def parse_arguments():
         "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument(
-        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
     )
     parser.add_argument(
         "--barcodes",
@@ -69,7 +69,7 @@ def parse_arguments():
         "--scalingParameter",
         help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter",
     )
-    parser.add_argument("--c_scale", help="Colormap absolute scale")
+    parser.add_argument("--cScale", help="Colormap absolute scale")
     parser.add_argument(
         "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
     )
@@ -133,9 +133,9 @@ def parse_arguments():
         run_parameters["axisLabel"] = False
 
     if args.axis_ticks:
-        run_parameters["axis_ticks"] = args.axis_ticks
+        run_parameters["axisTicks"] = args.axis_ticks
     else:
-        run_parameters["axis_ticks"] = False
+        run_parameters["axisTicks"] = False
 
     if args.barcodes:
         run_parameters["barcodes"] = args.barcodes
@@ -148,9 +148,9 @@ def parse_arguments():
         run_parameters["scalingParameter"] = 1.0
 
     if args.c_scale:
-        run_parameters["c_scale"] = float(args.c_scale)
+        run_parameters["cScale"] = float(args.c_scale)
     else:
-        run_parameters["c_scale"] = 0.0
+        run_parameters["cScale"] = 0.0
 
     if args.plottingFileExtension:
         run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
@@ -227,12 +227,12 @@ if __name__ == "__main__":
             cells_to_plot,
             mode=run_parameters["PWDmode"],
         )
-        if run_parameters["c_scale"] == 0:
+        if run_parameters["cScale"] == 0:
             c_scale = (
                 matrix[~np.isnan(matrix)].max() / run_parameters["scalingParameter"]
             )
         else:
-            c_scale = run_parameters["c_scale"]
+            c_scale = run_parameters["cScale"]
     elif run_parameters["inputMatrix"] == "iPWD":
         sc_matrix = him_data.sc_matrix_selected
         cells_to_plot = list_sc_to_keep(run_parameters, him_data.data["SClabeledCollated"])
@@ -244,7 +244,7 @@ if __name__ == "__main__":
             mode=run_parameters["PWDmode"],
         )
         matrix = np.reciprocal(matrix)
-        c_scale = run_parameters["c_scale"]
+        c_scale = run_parameters["cScale"]
 
     print(
         "scalingParameters, scale={}, {}".format(
@@ -254,7 +254,7 @@ if __name__ == "__main__":
 
     n_cells = him_data.n_cells_loaded()
 
-    n_datasets = len(him_data.data["run_name"])
+    n_datasets = len(him_data.data["runName"])
 
     if output_folder == "none":
         output_folder = him_data.data_folder
@@ -335,7 +335,7 @@ if __name__ == "__main__":
     f1_ax1_im = him_data.plot_2d_matrix_simple(
         f_1,
         matrix,
-        list(him_data.data["unique_barcodes"]),
+        list(him_data.data["uniqueBarcodes"]),
         run_parameters["axisLabel"],
         run_parameters["axisLabel"],
         cmtitle="probability",
@@ -344,7 +344,7 @@ if __name__ == "__main__":
         c_m=run_parameters["cmap"],
         fontsize=run_parameters["fontsize"],
         colorbar=colorbar,
-        axis_ticks=run_parameters["axis_ticks"],
+        axis_ticks=run_parameters["axisTicks"],
         n_cells=n_cells,
         n_datasets=n_datasets,
         show_title=True,

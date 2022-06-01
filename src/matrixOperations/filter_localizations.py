@@ -199,11 +199,11 @@ class FilterLocalizations:
         session_name = "filter_localizations"
 
         # processes folders and files
-        self.data_folder = Folders(self.current_param.param_dict["root_folder"])
+        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("\n===================={}====================\n".format(session_name))
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["markdown_filename"],
+            self.current_param.param_dict["fileNameMD"],
             "## {}\n".format(session_name),
             "a",
         )

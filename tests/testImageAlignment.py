@@ -117,7 +117,7 @@ current_param = Parameters()
 current_param.initialize_standard_parameters()
 param_file = root_folder + os.sep + label
 current_param.load_parameters_file(param_file)
-current_param.param_dict["root_folder"] = root_folder
+current_param.param_dict["rootFolder"] = root_folder
 
 log_file = "alignImagesXcorrelation.log"
 logFileName = root_folder + os.sep + log_file
@@ -126,7 +126,7 @@ current_log.erase_file()
 current_log.report("Starting to log to: {}".format(logFileName))
 
 # processes folders and files
-data_folder = Folders(current_param.param_dict["root_folder"])
+data_folder = Folders(current_param.param_dict["rootFolder"])
 data_folder.set_folders()
 data_folder.create_folders(root_folder, current_param)
 current_log.report("folders read: {}".format(len(data_folder.list_folders)))

@@ -38,7 +38,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
     parser.add_argument(
         "-P",
         "--parameters",
@@ -67,7 +67,7 @@ def parse_arguments():
     )
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
     # parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    # parser.add_argument("--axis_ticks", help="Use if you want axes ticks", action="store_true")
+    # parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
     parser.add_argument("--scalingParameter", help="Scaling parameter of colormap")
     parser.add_argument(
         "--colorbar", help="Use if you want a colorbar", action="store_true"
@@ -272,7 +272,7 @@ if __name__ == "__main__":
         f2_ax1_im = him_data_1.plot_2d_matrix_simple(
             ifigure,
             matrix,
-            list(him_data_1.data["unique_barcodes"]),
+            list(him_data_1.data["uniqueBarcodes"]),
             iyticks,
             ixticks,
             cmtitle="probability",

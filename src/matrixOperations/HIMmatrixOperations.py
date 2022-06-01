@@ -93,7 +93,7 @@ class AnalysisHiMMatrix:
         # Creates filenames to be loaded
         data_files = {}
         data_files["ensembleContactProbability"] = "_ensembleContactProbability.npy"
-        data_files["sc_matrix_collated"] = "_SCmatrixCollated.npy"
+        data_files["SCmatrixCollated"] = "_SCmatrixCollated.npy"
         data_files["SClabeledCollated"] = "_SClabeledCollated.npy"
 
         if "3wayContacts_anchors" in list_data[dataset_name]:
@@ -116,17 +116,17 @@ class AnalysisHiMMatrix:
 
         # loads datasets: lists
         run_name = load_list(output_filename + "_runName.csv")
-        data["run_name"] = run_name
-        print("Loaded runNames: {}".format(data["run_name"]))
+        data["runName"] = run_name
+        print("Loaded runNames: {}".format(data["runName"]))
 
-        data["unique_barcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
-        print("Loaded barcodes #: {}".format(data["unique_barcodes"]))
-        self.number_barcodes = len(data["unique_barcodes"])
+        data["uniqueBarcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
+        print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
+        self.number_barcodes = len(data["uniqueBarcodes"])
 
         print(
-            "Total number of cells loaded: {}".format(data["sc_matrix_collated"].shape[2])
+            "Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2])
         )
-        print("Number Datasets loaded: {}".format(len(data["run_name"])))
+        print("Number Datasets loaded: {}".format(len(data["runName"])))
 
         # Exports data
         self.data = data
@@ -229,16 +229,16 @@ class AnalysisHiMMatrix:
 
         if xticks:
             ifigure.set_xlabel("barcode #", fontsize=self.run_parameters["fontsize"])
-            if not self.run_parameters["axis_ticks"]:
+            if not self.run_parameters["axisTicks"]:
                 ifigure.set_xticklabels(())
             else:
-                ifigure.set_xticklabels(self.data["unique_barcodes"])
+                ifigure.set_xticklabels(self.data["uniqueBarcodes"])
         else:
             ifigure.set_xticklabels(())
 
         if yticks:
             ifigure.set_ylabel("Probability", fontsize=self.run_parameters["fontsize"])
-            if not self.run_parameters["axis_ticks"]:
+            if not self.run_parameters["axisTicks"]:
                 ifigure.set_yticklabels(())
             else:
                 ifigure.set_yticks(
@@ -259,7 +259,7 @@ class AnalysisHiMMatrix:
             ]
             n_cells = len(cells_with_label)
         else:
-            n_cells = self.data["sc_matrix_collated"].shape[2]
+            n_cells = self.data["SCmatrixCollated"].shape[2]
         print("n_cells selected with label: {}".format(n_cells))
         return n_cells
 
@@ -281,7 +281,7 @@ class AnalysisHiMMatrix:
             ]
             new_cell = 0
             for i_cell in cells_with_label:
-                sc_matrix_selected[:, :, new_cell] = self.data["sc_matrix_collated"][
+                sc_matrix_selected[:, :, new_cell] = self.data["SCmatrixCollated"][
                     :, :, i_cell
                 ]
                 new_cell += 1
@@ -291,12 +291,12 @@ class AnalysisHiMMatrix:
             ]
             new_cell = 0
             for i_cell in cells_with_label:
-                sc_matrix_selected[:, :, new_cell] = self.data["sc_matrix_collated"][
+                sc_matrix_selected[:, :, new_cell] = self.data["SCmatrixCollated"][
                     :, :, i_cell
                 ]
                 new_cell += 1
         else:
-            sc_matrix_selected = self.data["sc_matrix_collated"]
+            sc_matrix_selected = self.data["SCmatrixCollated"]
         print("n_cells retrieved: {}".format(sc_matrix_selected.shape[2]))
         self.sc_matrix_selected = sc_matrix_selected
 
@@ -365,16 +365,16 @@ def plot_1d_profile2datasets(
 
     if xticks:
         ifigure.set_xlabel("barcode #", fontsize=run_parameters["fontsize"])
-        if not run_parameters["axis_ticks"]:
+        if not run_parameters["axisTicks"]:
             ifigure.set_xticklabels(())
         else:
-            ifigure.set_xticklabels(him_data_1.data["unique_barcodes"])
+            ifigure.set_xticklabels(him_data_1.data["uniqueBarcodes"])
     else:
         ifigure.set_xticklabels(())
 
     if yticks:
         ifigure.set_ylabel("Probability", fontsize=run_parameters["fontsize"])
-        if not run_parameters["axis_ticks"]:
+        if not run_parameters["axisTicks"]:
             ifigure.set_yticklabels(())
         else:
             ifigure.set_yticks(
@@ -726,7 +726,7 @@ def load_sc_data_matlab(list_data, dataset_name, p):
             print("*** Error: could not find {}".format(filename_matrix))
 
         # loads cell attributes
-        cell_attributes_matrix = data["cell_attributes_matrix"]
+        cell_attributes_matrix = data["cellAttributesMatrix"]
         results_table = cell_attributes_matrix[0, :]
 
         sc_labeled = np.zeros(len(results_table))
@@ -847,7 +847,7 @@ def plot_ensemble_3_way_contact_matrix(
 
         # output_filename = p['output_folder'] + os.sep + dataset_name + "_Cells:" + p['action'] + "_ensemble3wayContacts"
         output_filename = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + dataset_name
             + "_label:"
@@ -886,7 +886,7 @@ def plot_ensemble_3_way_contact_matrix(
 
         # saves matrices as individual files for further plotting
         root_output_filename = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + dataset_name
             + "_label:"
@@ -975,7 +975,7 @@ def plot_single_pwd_matrice(
         sc_matrix_collated, unique_barcodes, run_name, p["SClabeledCollated"]
     ):
         output_filename = (
-            p["output_folder"] + os.sep + i_tag + "_Cells:" + p["action"] + "_PWDmatrix"
+            p["outputFolder"] + os.sep + i_tag + "_Cells:" + p["action"] + "_PWDmatrix"
         )
 
         # selects cels according to label
@@ -1014,7 +1014,7 @@ def plot_inverse_pwd_matrix(
         sc_matrix_collated, unique_barcodes, run_name, p["SClabeledCollated"]
     ):
         output_filename = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + i_tag
             + "_Cells:"
@@ -1057,8 +1057,8 @@ def plot_single_contact_probability_matrix(
     dataset_name="",
 ):
     # Plots contact probability matrices for each dataset
-    if "min_number_contacts" in i_list_data.keys():
-        min_number_contacts = i_list_data["min_number_contacts"]
+    if "minNumberContacts" in i_list_data.keys():
+        min_number_contacts = i_list_data["minNumberContacts"]
     else:
         min_number_contacts = 0
 
@@ -1089,7 +1089,7 @@ def plot_single_contact_probability_matrix(
                 norm="nonNANs",
             )  # norm: n_cells (default), nonNANs
             output_filename = (
-                p["output_folder"]
+                p["outputFolder"]
                 + os.sep
                 + dataset_name
                 + i_tag
@@ -1178,7 +1178,7 @@ def fuses_sc_matrix_collated_from_datasets(
                     mean_sc_matrix[bin1, bin2] = maximum_kernel_distribution
 
         output_filename = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + "CombinedMatrix_PWD_KDE"
             + ":"
@@ -1222,7 +1222,7 @@ def fuses_sc_matrix_collated_from_datasets(
         xyz = mds.fit(mean_sc_matrix).embedding_
         print(xyz)
         output_filename_pdb = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + "CombinedMatrix_PWD_KDE"
             + ":"
@@ -1246,8 +1246,8 @@ def plot_ensemble_contact_probability_matrix(
     dataset_name="",
 ):
 
-    if "min_number_contacts" in i_list_data.keys():
-        min_number_contacts = i_list_data["min_number_contacts"]
+    if "minNumberContacts" in i_list_data.keys():
+        min_number_contacts = i_list_data["minNumberContacts"]
     else:
         min_number_contacts = 0
 
@@ -1280,7 +1280,7 @@ def plot_ensemble_contact_probability_matrix(
     # outputs line for MD file and sets output filename
     c_scale = sc_matrix.max() / i_list_data["ContactProbability_scale"]
     output_filename = (
-        p["output_folder"]
+        p["outputFolder"]
         + os.sep
         + dataset_name
         + "_Cells:"
@@ -1307,7 +1307,7 @@ def plot_ensemble_contact_probability_matrix(
 
     # saves SC matrix in text format
     np.savetxt(
-        p["output_folder"]
+        p["outputFolder"]
         + os.sep
         + "CombinedMatrix"
         + ":"
@@ -1327,7 +1327,7 @@ def plot_ensemble_contact_probability_matrix(
 
     # saves barcodes in text format
     np.savetxt(
-        p["output_folder"]
+        p["outputFolder"]
         + os.sep
         + "UniqueBarcodes"
         + ":"
@@ -2002,7 +2002,7 @@ def get_coordinates_from_pwd_matrix(matrix):
 
 def sort_cells_by_number_pwd(him_data):
 
-    # sc_matrix = him_data.data["sc_matrix_collated"]
+    # sc_matrix = him_data.data["SCmatrixCollated"]
     sc_matrix = him_data.sc_matrix_selected
 
     n_cells = sc_matrix.shape[2]

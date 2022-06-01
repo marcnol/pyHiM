@@ -24,7 +24,7 @@ def test_processesPWDmatrices():
     else:
         raise FileNotFoundError()
         
-    root_folder = testData["test_processesPWDmatrices"]["root_folder"]
+    root_folder = testData["test_processesPWDmatrices"]["rootFolder"]
     ilabel=testData["test_processesPWDmatrices"]["labels"]
     expectedOutputs = testData["test_processesPWDmatrices"]["expectedOutputs"]
 
@@ -34,21 +34,21 @@ def test_processesPWDmatrices():
             expectedOutputsTimeStamped[x]=os.path.getmtime(x)
                 
     labels_to_process = [
-        {"label": "fiducial", "parameter_file": "infoList_fiducial.json"},
-        {"label": "barcode", "parameter_file": "infoList_barcode.json"},
-        {"label": "DAPI", "parameter_file": "infoList_DAPI.json"},
-        {"label": "RNA", "parameter_file": "infoList_RNA.json"},
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
     run_parameters={}
-    run_parameters["root_folder"]=root_folder
+    run_parameters["rootFolder"]=root_folder
     run_parameters["parallel"]=False
 
     him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
     him.initialize()  
     
     # sets parameters
-    current_param = Parameters(run_parameters["root_folder"], him.labels_to_process[ilabel]["parameter_file"])
+    current_param = Parameters(run_parameters["rootFolder"], him.labels_to_process[ilabel]["parameterFile"])
     current_param.param_dict['parallel']=him.parallel
     
     him.process_pwd_matrices(current_param, ilabel)

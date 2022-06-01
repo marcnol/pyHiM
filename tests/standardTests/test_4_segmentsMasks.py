@@ -24,13 +24,13 @@ def test_segmentsMasks():
     else:
         raise FileNotFoundError()
         
-    root_folder = testData["test_segmentsMasks"]["root_folder"]
+    root_folder = testData["test_segmentsMasks"]["rootFolder"]
     filename_to_process = testData["test_segmentsMasks"]["filename_to_process"]
     expectedOutputs = testData["test_segmentsMasks"]["expectedOutputs"]
     labels=testData["test_segmentsMasks"]["labels"]
 
     run_parameters={}
-    run_parameters["root_folder"]=root_folder
+    run_parameters["rootFolder"]=root_folder
     run_parameters["parallel"]=False
 
     him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
@@ -42,19 +42,19 @@ def test_segmentsMasks():
             expectedOutputsTimeStamped[x]=os.path.getmtime(x)
         
     labels_to_process = [
-        {"label": "fiducial", "parameter_file": "infoList_fiducial.json"},
-        {"label": "barcode", "parameter_file": "infoList_barcode.json"},
-        {"label": "DAPI", "parameter_file": "infoList_DAPI.json"},
-        {"label": "RNA", "parameter_file": "infoList_RNA.json"},
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
     for ilabel,file_name in zip(labels,filename_to_process):
         
         # sets parameters
-        current_param = Parameters(run_parameters["root_folder"], him.labels_to_process[ilabel]["parameter_file"])
+        current_param = Parameters(run_parameters["rootFolder"], him.labels_to_process[ilabel]["parameterFile"])
         current_param.param_dict['parallel']=him.parallel
             
-        data_folder = Folders(current_param.param_dict["root_folder"])
+        data_folder = Folders(current_param.param_dict["rootFolder"])
         data_folder.create_folders(root_folder, current_param)
     
         him.segment_masks(current_param, ilabel)      

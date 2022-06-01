@@ -24,7 +24,7 @@ import os
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images, default: .")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
     parser.add_argument(
         "-P", "--fileParameters", help="parameters file, default: infoList_barcode.json"
     )

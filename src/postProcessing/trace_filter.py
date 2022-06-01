@@ -40,7 +40,7 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
@@ -50,9 +50,9 @@ def parse_arguments():
 
     args = parser.parse_args()
     if args.root_folder:
-        p["root_folder"] = args.root_folder
+        p["rootFolder"] = args.root_folder
     else:
-        p["root_folder"] = "."
+        p["rootFolder"] = "."
 
     if args.N_barcodes:
         p["N_barcodes"] = args.N_barcodes
@@ -80,7 +80,7 @@ def runtime(folder, N_barcodes=2, trace_files=[]):
         trace_files = [
             x
             for x in glob.glob(trace_folder + "Trace*ecsv")
-            if "unique_barcodes" not in x
+            if "uniqueBarcodes" not in x
         ]
 
     print(
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     # [parsing arguments]
     p = parse_arguments()
     # [loops over lists of datafolders]
-    folder = p["root_folder"]
+    folder = p["rootFolder"]
     n_traces_processed = runtime(
         folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"]
     )

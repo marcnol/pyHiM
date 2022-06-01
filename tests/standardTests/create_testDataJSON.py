@@ -13,7 +13,7 @@ from fileProcessing.fileManagement import (
 #%% defines data folder
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-F", "--root_folder", help="Folder with images")
+parser.add_argument("-F", "--rootFolder", help="Folder with images")
 args = parser.parse_args()
 
 if args.root_folder:
@@ -50,7 +50,7 @@ testData['test_segmentsMasks']['expectedOutputs']= [root_folder+"/segmentedObjec
 testData['test_segmentsMasks']['labels']= [1, 2]
 
 testData['test_processesPWDmatrices']={}
-testData['test_processesPWDmatrices']["root_folder"] = root_folder
+testData['test_processesPWDmatrices']["rootFolder"] = root_folder
 testData['test_processesPWDmatrices']['expectedOutputs']= [root_folder+"/buildsPWDmatrix/buildsPWDmatrix_HiMscMatrix.npy"]
 testData['test_processesPWDmatrices']['labels']= 2
 

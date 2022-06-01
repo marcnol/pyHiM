@@ -44,7 +44,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
         "-P",
@@ -72,7 +72,7 @@ def parse_arguments():
         "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument(
-        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
     )
     parser.add_argument(
         "--splines",
@@ -149,9 +149,9 @@ def parse_arguments():
         run_parameters["axisLabel"] = False
 
     if args.axis_ticks:
-        run_parameters["axis_ticks"] = args.axis_ticks
+        run_parameters["axisTicks"] = args.axis_ticks
     else:
-        run_parameters["axis_ticks"] = True
+        run_parameters["axisTicks"] = True
 
     if args.splines:
         run_parameters["splines"] = args.splines

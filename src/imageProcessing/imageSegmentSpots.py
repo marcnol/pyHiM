@@ -37,8 +37,8 @@ from imageProcessing.imageProcessing import (
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
-    parser.add_argument("-O", "--output_file", help="Provide input file ")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-O", "--outputFile", help="Provide input file ")
 
     parser.add_argument("-M", "--mode", help="Mode: tif, fits, npy")
     parser.add_argument(
@@ -72,17 +72,17 @@ def parse_arguments():
     run_parameters = {}
 
     if args.root_folder:
-        run_parameters["root_folder"] = args.root_folder
+        run_parameters["rootFolder"] = args.root_folder
     else:
         print("\n> root_folder NOT FOUND, using PWD")
-        run_parameters["root_folder"] = os.getenv("PWD")  # os.getcwd()
+        run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
     if args.output_file:
-        run_parameters["output_file"] = (
-            run_parameters["root_folder"] + os.sep + args.output_file
+        run_parameters["outputFile"] = (
+            run_parameters["rootFolder"] + os.sep + args.output_file
         )
     else:
-        run_parameters["output_file"] = None
+        run_parameters["outputFile"] = None
 
     if args.mode:
         run_parameters["mode"] = args.mode
@@ -151,11 +151,11 @@ if __name__ == "__main__":
     # - gets list of images in folder using wildcard, *tif by default
     if "None" in run_parameters["wildcard"]:
         extension = run_parameters["mode"]
-        search_string = run_parameters["root_folder"] + os.sep + "*." + extension
+        search_string = run_parameters["rootFolder"] + os.sep + "*." + extension
     else:
         print("wildcard: {}".format(run_parameters["wildcard"]))
         search_string = (
-            run_parameters["root_folder"] + os.sep + run_parameters["wildcard"]
+            run_parameters["rootFolder"] + os.sep + run_parameters["wildcard"]
         )
         extension = run_parameters["wildcard"].split(".")[1]
 
@@ -209,10 +209,10 @@ if __name__ == "__main__":
 
         # - save outputs
         file_name = file.split(".")[0]
-        if run_parameters["output_file"] is None:
+        if run_parameters["outputFile"] is None:
             output_file = file_name + "_segmented"
         else:
-            output_file = run_parameters["output_file"] + "_" + str(i) + "_segmented"
+            output_file = run_parameters["outputFile"] + "_" + str(i) + "_segmented"
             i += 1
 
         outfile = output_file + "." + extension

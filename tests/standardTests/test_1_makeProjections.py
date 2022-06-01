@@ -23,12 +23,12 @@ def test_makeProjections():
     else:
         raise FileNotFoundError()
         
-    root_folder = testData["test_makeProjections"]["root_folder"]
+    root_folder = testData["test_makeProjections"]["rootFolder"]
     filename_to_process = testData["test_makeProjections"]["filename_to_process"]
     expectedOutputs = testData["test_makeProjections"]["expectedOutputs"]
 
     run_parameters={}
-    run_parameters["root_folder"]=root_folder
+    run_parameters["rootFolder"]=root_folder
     run_parameters["parallel"]=False
 
     him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
@@ -36,7 +36,7 @@ def test_makeProjections():
      
     ilabel=2
     # sets parameters
-    current_param = Parameters(run_parameters["root_folder"], him.labels_to_process[ilabel]["parameter_file"])
+    current_param = Parameters(run_parameters["rootFolder"], him.labels_to_process[ilabel]["parameterFile"])
     current_param.param_dict['parallel']=him.parallel
                 
     expectedOutputsTimeStamped={}

@@ -36,7 +36,7 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class HiMFunctionCaller:
     def __init__(self, run_parameters, session_name="HiM_analysis"):
         self.run_parameters = run_parameters
-        self.root_folder = run_parameters["root_folder"]
+        self.root_folder = run_parameters["rootFolder"]
         self.parallel = run_parameters["parallel"]
         self.session_name = session_name
 
@@ -268,7 +268,7 @@ def him_parse_arguments():
     available_commands = available_list_commands()
     default_commands = default_list_commands()
 
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
         "-C",
         "--cmd",
@@ -289,19 +289,19 @@ def him_parse_arguments():
     )
     run_parameters = {}
     if args.root_folder:
-        run_parameters["root_folder"] = args.root_folder
+        run_parameters["rootFolder"] = args.root_folder
     else:
         # pylint: disable-next=consider-iterating-dictionary
         if "docker" in os.environ.keys():
-            run_parameters["root_folder"] = "/data"
+            run_parameters["rootFolder"] = "/data"
             print_log(
                 "\n\n$ Running in docker, him_data: {}".format(
-                    run_parameters["root_folder"]
+                    run_parameters["rootFolder"]
                 )
             )
         else:
             print_log("\n\n# him_data: NOT FOUND")
-            run_parameters["root_folder"] = os.getenv("PWD")  # os.getcwd()
+            run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
     if args.threads:
         run_parameters["threads"] = int(args.threads)

@@ -40,7 +40,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
         "-P",
@@ -68,7 +68,7 @@ def parse_arguments():
         "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument(
-        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
     )
     parser.add_argument(
         "--ratio",
@@ -150,9 +150,9 @@ def parse_arguments():
         run_parameters["axisLabel"] = False
 
     if args.axis_ticks:
-        run_parameters["axis_ticks"] = args.axis_ticks
+        run_parameters["axisTicks"] = args.axis_ticks
     else:
-        run_parameters["axis_ticks"] = False
+        run_parameters["axisTicks"] = False
 
     if args.ratio:
         run_parameters["ratio"] = args.ratio
@@ -353,7 +353,7 @@ if __name__ == "__main__":
         f1_ax1_im = him_data_1.plot_2d_matrix_simple(
             f_1,
             matrix,
-            list(him_data_1.data["unique_barcodes"]),
+            list(him_data_1.data["uniqueBarcodes"]),
             run_parameters["axisLabel"],
             run_parameters["axisLabel"],
             cmtitle=cmtitle,
@@ -361,7 +361,7 @@ if __name__ == "__main__":
             c_max=c_scale,
             fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axis_ticks=run_parameters["axis_ticks"],
+            axis_ticks=run_parameters["axisTicks"],
             c_m="RdBu",
         )
         plt.savefig(outputFileName1)
@@ -390,7 +390,7 @@ if __name__ == "__main__":
         him_data_1.plot_2d_matrix_simple(
             f2,
             matrix2,
-            list(him_data_1.data["unique_barcodes"]),
+            list(him_data_1.data["uniqueBarcodes"]),
             run_parameters["axisLabel"],
             run_parameters["axisLabel"],
             cmtitle="probability",
@@ -398,7 +398,7 @@ if __name__ == "__main__":
             c_max=run_parameters["cAxis"][0],
             fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axis_ticks=run_parameters["axis_ticks"],
+            axis_ticks=run_parameters["axisTicks"],
             c_m="coolwarm",
         )
         plt.savefig(outputFileName2 + run_parameters["plottingFileExtension"])

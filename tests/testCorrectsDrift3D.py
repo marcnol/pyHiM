@@ -38,7 +38,7 @@ Barcode =  31
 # load dict of 3D shifts
 local_alignment_filename ='/home/marcnol/data/Embryo_debug_dataset/test_dataset/alignImages/'+"alignImages_block3Dalignment.dat"
 alignment_results_table = Table.read(local_alignment_filename, format="ascii.ecsv")
-block_size_xy = alignment_results_table[0]["block_xy"]
+block_size_xy = alignment_results_table[0]["blockXY"]
 zxy_uncorrectedList,zxy_correctedList=[],[]
 found_match=[]
 for i in range(len(barcode_map_roi.groups[0])): # i is the index of the barcode in barcode_map_roi

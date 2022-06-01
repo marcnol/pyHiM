@@ -102,7 +102,7 @@ class RegisterLocalizations:
         """
 
         # gets blockSize
-        block_size_xy = self.alignment_results_table[0]["block_xy"]
+        block_size_xy = self.alignment_results_table[0]["blockXY"]
 
         # zxy coord in block reference coord system
         zxy_block = [np.floor(a / block_size_xy).astype(int) for a in zxy_uncorrected]
@@ -285,7 +285,7 @@ class RegisterLocalizations:
             alignment_results_table = self.alignment_results_table
 
         # gets block_size
-        block_size_xy = alignment_results_table[0]["block_xy"]
+        block_size_xy = alignment_results_table[0]["blockXY"]
 
         dict_error_block_masks = {}
 
@@ -389,17 +389,17 @@ class RegisterLocalizations:
         session_name = "register_localizations"
 
         # processes folders and files
-        self.data_folder = Folders(self.current_param.param_dict["root_folder"])
+        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("\n===================={}====================\n".format(session_name))
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["markdown_filename"],
+            self.current_param.param_dict["fileNameMD"],
             "## {}\n".format(session_name),
             "a",
         )
         label = "barcode"
 
-        current_folder = self.current_param.param_dict["root_folder"]
+        current_folder = self.current_param.param_dict["rootFolder"]
         self.data_folder.create_folders(current_folder, self.current_param)
         print_log("> Processing Folder: {}".format(current_folder))
 

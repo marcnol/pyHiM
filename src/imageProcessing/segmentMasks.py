@@ -660,7 +660,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
     if os.path.exists(filename_2d_aligned):  # file exists
 
         roi = os.path.basename(file_name).split("_")[
-            current_param.param_dict["acquisition"]["position_roi_information"]
+            current_param.param_dict["acquisition"]["positionROIinformation"]
         ]
         label = current_param.param_dict["acquisition"]["label"]
 
@@ -705,7 +705,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
                 im,
                 im1_bkg_substracted,
                 output,
-                current_param.param_dict["markdown_filename"],
+                current_param.param_dict["fileNameMD"],
                 output_filename,
             )
 
@@ -782,14 +782,14 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
                 show_image_masks(
                     im,
                     labeled,
-                    current_param.param_dict["markdown_filename"],
+                    current_param.param_dict["fileNameMD"],
                     output_filename_stardist,
                 )
 
             show_image_masks(
                 im,
                 output,
-                current_param.param_dict["markdown_filename"],
+                current_param.param_dict["fileNameMD"],
                 output_filename,
             )
 
@@ -821,10 +821,10 @@ def segment_masks(current_param, current_session, file_name=None):
             session_name, current_param.param_dict["acquisition"]["label"]
         )
     )
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log("> folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "## {}: {}\n".format(
             session_name, current_param.param_dict["acquisition"]["label"]
         ),

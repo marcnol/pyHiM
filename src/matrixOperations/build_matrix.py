@@ -90,7 +90,7 @@ class BuildMatrix:
             self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
         )
         self.pixel_size_z_0 = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixel_size_z", default=0.25
+            self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
         )
         self.pixel_size_z = self.z_binning * self.pixel_size_z_0
         self.pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
@@ -99,7 +99,7 @@ class BuildMatrix:
             "masks2process",
             default={"nuclei": "DAPI"},
         )
-        self.log_name_md = self.current_param.param_dict["markdown_filename"]
+        self.log_name_md = self.current_param.param_dict["fileNameMD"]
         self.mask_expansion = get_dictionary_value(
             self.current_param.param_dict["buildsPWDmatrix"],
             "mask_expansion",
@@ -327,7 +327,7 @@ class BuildMatrix:
             figtitle="N-matrix",
             mode="counts",
             clim=np.max(self.n_matrix),
-            c_m=self.colormaps["n_matrix"],
+            c_m=self.colormaps["Nmatrix"],
             cmtitle="number of measurements",
             filename_ending="_Nmatrix.png",
         )
@@ -398,7 +398,7 @@ class BuildMatrix:
                 + os.sep
                 + "Trace_*.ecsv"
             )
-            if "unique_barcodes" not in x
+            if "uniqueBarcodes" not in x
         ]
 
         if len(files) < 1:

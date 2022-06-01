@@ -41,8 +41,8 @@ from matrixOperations.HIMmatrixOperations import (
 def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with dataset")
-    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
+    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
+    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
         "-P",
@@ -58,7 +58,7 @@ def parse_arguments():
         "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument(
-        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
     )
     parser.add_argument(
         "--barcodes",
@@ -89,7 +89,7 @@ def parse_arguments():
         action="store_true",
     )
     parser.add_argument(
-        "--normalize_matrix",
+        "--normalizeMatrix",
         help="Normalizes matrices by maximum. Default: True",
         action="store_true",
     )
@@ -136,9 +136,9 @@ def parse_arguments():
         run_parameters["axisLabel"] = False
 
     if args.axis_ticks:
-        run_parameters["axis_ticks"] = args.axis_ticks
+        run_parameters["axisTicks"] = args.axis_ticks
     else:
-        run_parameters["axis_ticks"] = False
+        run_parameters["axisTicks"] = False
 
     if args.barcodes:
         run_parameters["barcodes"] = args.barcodes
@@ -186,12 +186,12 @@ def parse_arguments():
         run_parameters["ratio"] = False
 
     if args.normalize_matrix:
-        run_parameters["normalize_matrix"] = args.normalize_matrix
+        run_parameters["normalizeMatrix"] = args.normalize_matrix
     else:
-        run_parameters["normalize_matrix"] = False
+        run_parameters["normalizeMatrix"] = False
 
-    run_parameters["output_folder"] = output_folder
-    run_parameters["root_folder"] = root_folder
+    run_parameters["outputFolder"] = output_folder
+    run_parameters["rootFolder"] = root_folder
 
     return run_parameters
 
@@ -229,7 +229,7 @@ def plotTADs(list_data, run_parameters):
             him_data.load_data()
 
             m1 = him_data.data["ensembleContactProbability"]
-            if run_parameters["normalize_matrix"]:
+            if run_parameters["normalizeMatrix"]:
                 m1 = m1 / m1.max()
 
             submatrixReference = m1[
@@ -279,7 +279,7 @@ def plotTADs(list_data, run_parameters):
                     TAD2plot[0] : TAD2plot[1], TAD2plot[0] : TAD2plot[1]
                 ]
 
-                if run_parameters["normalize_matrix"]:
+                if run_parameters["normalizeMatrix"]:
                     subMatrix = subMatrix / subMatrix.max()
 
                 if "ContactProbability_cm" in list_data[idataSet].keys():
@@ -300,12 +300,12 @@ def plotTADs(list_data, run_parameters):
 
                 n_cells = him_data.n_cells_loaded()
 
-                n_datasets = len(him_data.data["run_name"])
+                n_datasets = len(him_data.data["runName"])
 
                 f2_ax1_im = him_data.plot_2d_matrix_simple(
                     ifigure,
                     subMatrixNormalized,
-                    list(him_data.data["unique_barcodes"]),
+                    list(him_data.data["uniqueBarcodes"]),
                     run_parameters["axisLabel"],
                     run_parameters["axisLabel"],
                     cmtitle=segmentLabels[i],
@@ -313,7 +313,7 @@ def plotTADs(list_data, run_parameters):
                     c_max=c_scale,
                     fontsize=run_parameters["fontsize"],
                     colorbar=icolorbar,
-                    axis_ticks=run_parameters["axis_ticks"],
+                    axis_ticks=run_parameters["axisTicks"],
                     n_cells=n_cells,
                     n_datasets=n_datasets,
                     show_title=True,
@@ -332,7 +332,7 @@ def plotTADs(list_data, run_parameters):
             # cbar.set_label("difference",fontsize=float(fontsize)*0.85)
             # f2_ax1_im.set_clim(vmin=-c_scale, vmax=c_scale)
 
-            outputFileName2 = run_parameters["output_filename"].replace(
+            outputFileName2 = run_parameters["outputFileName"].replace(
                 "Fig_HiMmatrix", "Fig_TAD"
             )
             print("Output written to {}".format(outputFileName2))
@@ -398,14 +398,14 @@ def plotHiMLineProfile(list_data, run_parameters):
             him_data.load_data()
             # m1=him_data.data["ensembleContactProbability"]
             m1, _ = calculate_contact_probability_matrix(
-                him_data.data["sc_matrix_collated"],
-                list(him_data.data["unique_barcodes"]),
+                him_data.data["SCmatrixCollated"],
+                list(him_data.data["uniqueBarcodes"]),
                 pixel_size=run_parameters["pixelSize"],
                 threshold=0.25,
                 norm="nonNANs",
             )
 
-            if run_parameters["normalize_matrix"]:
+            if run_parameters["normalizeMatrix"]:
                 m1 = m1 / m1.max()
             contactsAnchor = m1[plotSegment_anchor, :]
 
@@ -421,13 +421,13 @@ def plotHiMLineProfile(list_data, run_parameters):
 
                 # matrix=him_data.data["ensembleContactProbability"]
                 matrix, _ = calculate_contact_probability_matrix(
-                    him_data.data["sc_matrix_collated"],
-                    list(him_data.data["unique_barcodes"]),
+                    him_data.data["SCmatrixCollated"],
+                    list(him_data.data["uniqueBarcodes"]),
                     pixel_size=run_parameters["pixelSize"],
                     threshold=0.25,
                     norm="nonNANs",
                 )
-                if run_parameters["normalize_matrix"]:
+                if run_parameters["normalizeMatrix"]:
                     matrix = matrix / matrix.max()
 
                 if run_parameters["ratio"] == True:
@@ -441,7 +441,7 @@ def plotHiMLineProfile(list_data, run_parameters):
                     )
                     cmtitle = "difference"
 
-            unique_barcodes = list(him_data.data["unique_barcodes"])
+            unique_barcodes = list(him_data.data["uniqueBarcodes"])
 
             fig1 = makesplotHiMLineProfile(
                 matrixSegmentAnchor,
@@ -451,7 +451,7 @@ def plotHiMLineProfile(list_data, run_parameters):
                 c_m=c_m,
                 fontsize=fontsize,
             )
-            outputFileName1 = run_parameters["output_filename"].replace(
+            outputFileName1 = run_parameters["outputFileName"].replace(
                 "Fig_HiMmatrix", "Fig_Segment"
             )
             print("Output written to {}".format(outputFileName1))
@@ -467,7 +467,7 @@ def plotHiMLineProfile(list_data, run_parameters):
                     c_m=c_m,
                     fontsize=fontsize,
                 )
-                outputFileName2 = run_parameters["output_filename"].replace(
+                outputFileName2 = run_parameters["outputFileName"].replace(
                     "Fig_HiMmatrix", "Fig_Segment_subMatrix"
                 )
                 print("Output written to {}".format(outputFileName2))
@@ -526,7 +526,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                     colormap = list_data[idataSet]["ContactProbability_cm"]
 
             elif run_parameters["type"] == "PWD":
-                matrix_sc = him_data.data["sc_matrix_collated"]
+                matrix_sc = him_data.data["SCmatrixCollated"]
                 cells_to_plot = list_sc_to_keep(
                     run_parameters, him_data.data["SClabeledCollated"]
                 )
@@ -539,7 +539,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                 del matrix_sc
 
             elif run_parameters["type"] == "iPWD":
-                matrix_sc = him_data.data["sc_matrix_collated"]
+                matrix_sc = him_data.data["SCmatrixCollated"]
                 cells_to_plot = list_sc_to_keep(
                     run_parameters, him_data.data["SClabeledCollated"]
                 )
@@ -564,7 +564,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
 
             n_cells = him_data.n_cells_loaded()
 
-            n_datasets = len(him_data.data["run_name"])
+            n_datasets = len(him_data.data["runName"])
 
             if run_parameters["shuffle"] == 0:
                 index = range(matrix.shape[0])
@@ -575,7 +575,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
             f2_ax1_im = him_data.plot_2d_matrix_simple(
                 ifigure,
                 matrix,
-                list(him_data.data["unique_barcodes"]),
+                list(him_data.data["uniqueBarcodes"]),
                 run_parameters["axisLabel"],
                 run_parameters["axisLabel"],
                 cmtitle=run_parameters["type"],
@@ -583,7 +583,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                 c_max=c_scale,
                 fontsize=run_parameters["fontsize"],
                 colorbar=icolorbar,
-                axis_ticks=run_parameters["axis_ticks"],
+                axis_ticks=run_parameters["axisTicks"],
                 n_cells=n_cells,
                 n_datasets=n_datasets,
                 show_title=True,
@@ -606,11 +606,11 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
         )
 
         # him_data.update_clims(0, c_scale, f_1)
-        print("Output written to {}".format(run_parameters["output_filename"]))
-        plt.savefig(run_parameters["output_filename"])
+        print("Output written to {}".format(run_parameters["outputFileName"]))
+        plt.savefig(run_parameters["outputFileName"])
         title_text = "N = {} | n = {}".format(n_cells, n_datasets)
         print("Title: {}".format(title_text))
-        print("Output figure: {}".format(run_parameters["output_filename"]))
+        print("Output figure: {}".format(run_parameters["outputFileName"]))
 
 
 # =============================================================================
@@ -624,17 +624,17 @@ if __name__ == "__main__":
 
     # loads datasets: parameter files
     filename_list_data_json = (
-        run_parameters["root_folder"] + os.sep + run_parameters["parametersFileName"]
+        run_parameters["rootFolder"] + os.sep + run_parameters["parametersFileName"]
     )
     with open(filename_list_data_json, encoding="utf-8") as json_file:
         list_data = json.load(json_file)
 
     dataSets = list(list_data.keys())
-    if run_parameters["output_folder"] == "none":
-        run_parameters["output_folder"] = run_parameters["root_folder"]
+    if run_parameters["outputFolder"] == "none":
+        run_parameters["outputFolder"] = run_parameters["rootFolder"]
 
-    run_parameters["output_filename"] = (
-        run_parameters["output_folder"]
+    run_parameters["outputFileName"] = (
+        run_parameters["outputFolder"]
         + os.sep
         + "Fig_HiMmatrix"
         + "_label:"

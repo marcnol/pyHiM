@@ -23,13 +23,13 @@ def test_appliesProjections():
     else:
         raise FileNotFoundError()
         
-    root_folder = testData["test_appliesRegistrations"]["root_folder"]
+    root_folder = testData["test_appliesRegistrations"]["rootFolder"]
     filename_to_process = testData["test_appliesRegistrations"]["filename_to_process"]
     expectedOutputs = testData["test_appliesRegistrations"]["expectedOutput"]
     ilabel=testData["test_appliesRegistrations"]["label"]
 
     run_parameters={}
-    run_parameters["root_folder"]=root_folder
+    run_parameters["rootFolder"]=root_folder
     run_parameters["parallel"]=False
     
     expectedOutputsTimeStamped={}
@@ -38,17 +38,17 @@ def test_appliesProjections():
             expectedOutputsTimeStamped[x]=os.path.getmtime(x)
             
     labels_to_process = [
-        {"label": "fiducial", "parameter_file": "infoList_fiducial.json"},
-        {"label": "barcode", "parameter_file": "infoList_barcode.json"},
-        {"label": "DAPI", "parameter_file": "infoList_DAPI.json"},
-        {"label": "RNA", "parameter_file": "infoList_RNA.json"},
+        {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+        {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+        {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+        {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
     him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
     him.initialize()  
 
     # sets parameters
-    current_param = Parameters(run_parameters["root_folder"], him.labels_to_process[ilabel]["parameter_file"])
+    current_param = Parameters(run_parameters["rootFolder"], him.labels_to_process[ilabel]["parameterFile"])
     current_param.param_dict['parallel']=him.parallel
     
     him.apply_registrations(current_param, ilabel)

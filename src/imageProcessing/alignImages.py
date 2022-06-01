@@ -63,17 +63,17 @@ def display_equalization_histograms(
 ):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 
-    ax1.plot(i_histogram["img_1"][0][1], i_histogram["img_1"][0][0])
-    ax2.plot(i_histogram["img_2"][0][1], i_histogram["img_2"][0][0])
-    ax3.plot(i_histogram["img_1"][1][1], i_histogram["img_1"][1][0])
-    ax4.plot(i_histogram["img_2"][1][1], i_histogram["img_2"][1][0])
+    ax1.plot(i_histogram["Im1"][0][1], i_histogram["Im1"][0][0])
+    ax2.plot(i_histogram["Im2"][0][1], i_histogram["Im2"][0][0])
+    ax3.plot(i_histogram["Im1"][1][1], i_histogram["Im1"][1][0])
+    ax4.plot(i_histogram["Im2"][1][1], i_histogram["Im2"][1][0])
     ax3.set_yscale("log")
     ax4.set_yscale("log")
     ax1.vlines(
-        lower_threshold["img_1"], 0, i_histogram["img_1"][0][0].max(), colors="r"
+        lower_threshold["Im1"], 0, i_histogram["Im1"][0][0].max(), colors="r"
     )
     ax2.vlines(
-        lower_threshold["img_2"], 0, i_histogram["img_2"][0][0].max(), colors="r"
+        lower_threshold["Im2"], 0, i_histogram["Im2"][0][0].max(), colors="r"
     )
     plt.savefig(output_filename + "_intensityHist.png")
     write_string_to_file(
@@ -238,7 +238,7 @@ def align_2_files(
             i_histogram,
             lower_threshold,
             output_filename,
-            current_param.param_dict["markdown_filename"],
+            current_param.param_dict["fileNameMD"],
             verbose,
         )
 
@@ -278,7 +278,7 @@ def align_2_files(
         )
 
         write_string_to_file(
-            current_param.param_dict["markdown_filename"],
+            current_param.param_dict["fileNameMD"],
             "{}\n ![]({})\n".format(
                 os.path.basename(output_filename),
                 output_filename + "_block_alignments.png",
@@ -320,7 +320,7 @@ def align_2_files(
 
     # reports image in MD file
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "{}\n ![]({})\n ![]({})\n".format(
             os.path.basename(output_filename),
             output_filename + "_overlay_corrected.png",
@@ -536,7 +536,7 @@ def align_images_in_current_folder(
 
         # saves dicShifts dictionary with shift results
         dictionary_filename = (
-            os.path.splitext(data_folder.output_files["dict_shifts"])[0] + ".json"
+            os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
         )
         save_json(dictionary_filename, dict_shifts)
         print_log("$ Saved alignment dictionary to {}".format(dictionary_filename))
@@ -569,12 +569,12 @@ def align_images(current_param, current_session, file_name=None):
     session_name = "registersImages"
 
     # processes folders and adds information to log files
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     data_folder.set_folders()
     print_log("\n===================={}====================\n".format(session_name))
     print_log("folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "## {}: {}\n".format(
             session_name, current_param.param_dict["acquisition"]["label"]
         ),
@@ -704,10 +704,10 @@ def apply_registrations_to_current_folder(
 
     # loads dicShifts with shifts for all rois and all labels
     dict_filename = (
-        os.path.splitext(data_folder.output_files["dict_shifts"])[0] + ".json"
+        os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
 
-    # dict_filename = data_folder.output_files["dict_shifts"] + ".json"
+    # dict_filename = data_folder.output_files["dictShifts"] + ".json"
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
         print_log("# File with dictionary not found!: {}".format(dict_filename))
@@ -748,7 +748,7 @@ def apply_registrations(current_param, current_session, file_name=None):
     # verbose=False
 
     # processes folders and files
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     data_folder.set_folders()
     print_log("\n===================={}====================\n".format(session_name))
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))

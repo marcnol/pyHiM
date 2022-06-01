@@ -37,7 +37,7 @@ if __name__ == "__main__":
     current_session, current_log = him.current_session, him.current_log
 
     him.lauch_dask_scheduler(threads_requested=run_parameters["threads"], maximum_load=0.8)
-    current_param = Parameters(root_folder=run_parameters["root_folder"], file_name='infoList.json')
+    current_param = Parameters(root_folder=run_parameters["rootFolder"], file_name='infoList.json')
     labels = current_param.param_dict['labels']
 
     print_log('$ Started logging to: {}'.format(him.log_file))
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     for label in labels:#range(len(him.labels_to_process)):
 
         # sets parameters
-        current_param = Parameters(root_folder=run_parameters["root_folder"], label=label, file_name='infoList.json')
+        current_param = Parameters(root_folder=run_parameters["rootFolder"], label=label, file_name='infoList.json')
 
         print_log("--------------------------------------------------------------------------")
         print_log(">                  Analyzing label: {}           ".format(current_param.param_dict["acquisition"]["label"]))

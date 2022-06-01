@@ -487,7 +487,7 @@ class CellID:
         _found_match = False
 
         # gets blockSize
-        block_size_xy = self.alignment_results_table[0]["block_xy"]
+        block_size_xy = self.alignment_results_table[0]["blockXY"]
 
         # zxy coord in block reference coord system
         zxy_block = [np.floor(a / block_size_xy).astype(int) for a in zxy_uncorrected]
@@ -696,7 +696,7 @@ class CellID:
         sc_distance_table["Cuid"] = self.cuid
         sc_distance_table["ROI #"] = self.rois
         sc_distance_table["CellID #"] = self.cell_id
-        sc_distance_table["n_barcodes"] = self.n_barcodes
+        sc_distance_table["nBarcodes"] = self.n_barcodes
         sc_distance_table["Barcode #"] = self.barcode_ids
         sc_distance_table["Buid"] = self.buid
         sc_distance_table["PWDmatrix"] = self.p
@@ -1346,11 +1346,11 @@ def process_pwd_matrices(current_param, current_session):
     session_name = "buildsPWDmatrix"
 
     # processes folders and files
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log("\n===================={}====================\n".format(session_name))
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "## {}\n".format(session_name),
         "a",
     )
@@ -1389,7 +1389,7 @@ def process_pwd_matrices(current_param, current_session):
                     output_filename,
                     data_folder,
                     pixel_size,
-                    current_param.param_dict["markdown_filename"],
+                    current_param.param_dict["fileNameMD"],
                     mask_identifier=mask_identifier,
                 )
 
@@ -1402,7 +1402,7 @@ def process_pwd_matrices(current_param, current_session):
                 print_log("> 3D processing: {}".format(output_filename))
 
                 if (
-                    "pixel_size_z" in current_param.param_dict["acquisition"].keys()
+                    "pixelSizeZ" in current_param.param_dict["acquisition"].keys()
                 ) and ("pixelSizeXY" in current_param.param_dict["acquisition"].keys()):
                     pixel_size_xy = current_param.param_dict["acquisition"]["pixelSizeXY"]
 
@@ -1412,7 +1412,7 @@ def process_pwd_matrices(current_param, current_session):
                         z_binning = 1
 
                     pixel_size_z = (
-                        z_binning * current_param.param_dict["acquisition"]["pixel_size_z"]
+                        z_binning * current_param.param_dict["acquisition"]["pixelSizeZ"]
                     )
 
                     pixel_size = {
@@ -1430,7 +1430,7 @@ def process_pwd_matrices(current_param, current_session):
                     output_filename,
                     data_folder,
                     pixel_size,
-                    current_param.param_dict["markdown_filename"],
+                    current_param.param_dict["fileNameMD"],
                     ndims=3,
                     mask_identifier=mask_identifier,
                 )

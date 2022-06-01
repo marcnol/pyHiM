@@ -100,9 +100,9 @@ def read_arguments():
         run_parameters["sbatch"] = False
 
     if args.dataFolder:
-        run_parameters["data_folder"] = args.dataFolder
+        run_parameters["dataFolder"] = args.dataFolder
     else:
-        run_parameters["data_folder"] = run_parameters["HOME"] + os.sep + "scratch"
+        run_parameters["dataFolder"] = run_parameters["HOME"] + os.sep + "scratch"
 
     if args.singleDataset:
         run_parameters["singleDataset"] = args.singleDataset
@@ -152,7 +152,7 @@ if __name__ == "__main__":
         print("ERROR: No dataset provided!")
         raise SystemExit
 
-    root_folder = run_parameters["data_folder"] + os.sep + run_parameters["dataset"]
+    root_folder = run_parameters["dataFolder"] + os.sep + run_parameters["dataset"]
 
     if run_parameters["singleDataset"] is None:
         folders = glob.glob(root_folder + os.sep + "*")

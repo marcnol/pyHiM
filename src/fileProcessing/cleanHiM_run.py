@@ -33,7 +33,7 @@ from fileProcessing.fileManagement import Folders, Parameters
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images, default: .")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
     parser.add_argument(
         "-P", "--fileParameters", help="parameters file, default: infoList.json"
     )
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         root_folder=ROOT_FOLDER, label="", file_name=FILE_PARAMETERS
     )
 
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
 
     for current_folder in data_folder.list_folders:
 

@@ -70,7 +70,7 @@ def make_2d_projections_file(file_name, current_param, current_session, data_fol
                 output_name=png_file_name,
             )
             write_string_to_file(
-                current_param.param_dict["markdown_filename"],
+                current_param.param_dict["fileNameMD"],
                 "{}\n ![]({})\n".format(os.path.basename(file_name), png_file_name),
                 "a",
             )  # initialises MD file
@@ -82,7 +82,7 @@ def make_2d_projections_file(file_name, current_param, current_session, data_fol
                 im_obj.image_show_with_values(output_name)
 
                 write_string_to_file(
-                    current_param.param_dict["markdown_filename"],
+                    current_param.param_dict["fileNameMD"],
                     "{}\n ![]({})\n".format(os.path.basename(file_name), output_name),
                     "a",
                 )  # initialises MD file
@@ -97,10 +97,10 @@ def make_projections(current_param, current_session, file_name=None):
 
     # processes folders and files
     print_log("\n===================={}====================\n".format(session_name))
-    data_folder = Folders(current_param.param_dict["root_folder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log("> Folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["markdown_filename"],
+        current_param.param_dict["fileNameMD"],
         "## {}: {}\n".format(
             session_name, current_param.param_dict["acquisition"]["label"]
         ),

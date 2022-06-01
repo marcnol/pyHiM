@@ -44,7 +44,7 @@ def loadsSCdataMATLAB(list_data, dataset_name, p):
             print("*** Error: could not find {}".format(filename_barcodes))
 
         # loads cell attributes
-        cell_attributes_matrix = data["cell_attributes_matrix"]
+        cell_attributes_matrix = data["cellAttributesMatrix"]
         results_table = cell_attributes_matrix[0, :]
 
         sc_labeled = np.zeros(len(results_table))

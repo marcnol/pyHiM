@@ -68,7 +68,7 @@ def joinsListArrays(ListArrays, axis=0):
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
         "-P",
         "--parameters",
@@ -98,10 +98,10 @@ def parse_arguments():
 
     args = parser.parse_args()
     if args.root_folder:
-        p["root_folder"] = args.root_folder
+        p["rootFolder"] = args.root_folder
     else:
-        p["root_folder"] = "."
-        # p["root_folder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
+        p["rootFolder"] = "."
+        # p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     filename_root = "processHiMmatrixAnalysis_"
 
     # [ Lists and loads datasets from different embryos]
-    filename_list_data_json = p["root_folder"] + os.sep + p["parametersFileName"]
+    filename_list_data_json = p["rootFolder"] + os.sep + p["parametersFileName"]
     print(
         "\n--------------------------------------------------------------------------"
     )
@@ -184,10 +184,10 @@ if __name__ == "__main__":
         sys.exit()
 
     # [ creates output folder]
-    p["output_folder"] = p["root_folder"] + os.sep + "scHiMmatrices"
-    if not os.path.exists(p["output_folder"]):
-        os.mkdir(p["output_folder"])
-        print("Folder created: {}".format(p["output_folder"]))
+    p["outputFolder"] = p["rootFolder"] + os.sep + "scHiMmatrices"
+    if not os.path.exists(p["outputFolder"]):
+        os.mkdir(p["outputFolder"])
+        print("Folder created: {}".format(p["outputFolder"]))
 
     # [loops over lists of datafolders]
     for dataset_name in list(list_data.keys()):
@@ -212,7 +212,7 @@ if __name__ == "__main__":
             ) = load_sc_data_matlab(list_data, dataset_name, p)
 
         markdown_filename = (
-            p["root_folder"]
+            p["rootFolder"]
             + os.sep
             + filename_root
             + "_"
@@ -343,7 +343,7 @@ if __name__ == "__main__":
 
         # creates output_filename root
         output_filename = (
-            p["output_folder"]
+            p["outputFolder"]
             + os.sep
             + dataset_name
             + "_label:"

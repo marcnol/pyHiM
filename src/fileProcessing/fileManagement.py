@@ -129,12 +129,12 @@ class Folders:
         self.output_files["alignImages"] = (
             self.output_folders["alignImages"]
             + os.sep
-            + current_param.param_dict["alignImages"]["output_file"]
+            + current_param.param_dict["alignImages"]["outputFile"]
         )
-        self.output_files["dict_shifts"] = (
+        self.output_files["dictShifts"] = (
             self.output_folders["alignImages"]
             + os.sep
-            + current_param.param_dict["alignImages"]["output_file"]
+            + current_param.param_dict["alignImages"]["outputFile"]
         )
 
         if "segmentedObjects" in current_param.param_dict.keys():
@@ -147,7 +147,7 @@ class Folders:
             self.output_files["segmentedObjects"] = (
                 self.output_folders["segmentedObjects"]
                 + os.sep
-                + current_param.param_dict["segmentedObjects"]["output_file"]
+                + current_param.param_dict["segmentedObjects"]["outputFile"]
             )
 
         # backwards compatibility
@@ -216,7 +216,7 @@ class Parameters:
         self.param_dict = {
             "common": {
                 "acquisition": {
-                    "position_roi_information": 3,
+                    "positionROIinformation": 3,
                     "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
                     "DAPI_channel": "ch00",
                     "fiducialDAPI_channel": "ch01",
@@ -230,7 +230,7 @@ class Parameters:
                     "pixelSizeXY": 0.1,
                     "zBinning": 2,
                     "parallelizePlanes": False,  # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
-                    "pixel_size_z": 0.25,
+                    "pixelSizeZ": 0.25,
                 },  # barcode, fiducial
                 "zProject": {
                     "folder": "zProject",  # output folder
@@ -248,7 +248,7 @@ class Parameters:
                 "alignImages": {
                     "folder": "alignImages",  # output folder
                     "operation": "overwrite",  # overwrite, skip
-                    "output_file": "alignImages",
+                    "outputFile": "alignImages",
                     "referenceFiducial": "RT27",
                     "localAlignment": "block3D",  # options: None, mask2D, block3D
                     "alignByBlock": True,  # alignByBlock True will perform block alignment
@@ -275,7 +275,7 @@ class Parameters:
                         "PWD_KDE": "terrain",
                         "PWD_median": "terrain",
                         "contact": "coolwarm",
-                        "n_matrix": "Blues",
+                        "Nmatrix": "Blues",
                     },  # colormaps used for plotting matrices
                     "toleranceDrift": 1,  # tolerance used for block drift correction, in px
                     "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.
@@ -283,7 +283,7 @@ class Parameters:
                 "segmentedObjects": {
                     "folder": "segmentedObjects",  # output folder
                     "operation": "2D,3D",  # options: 2D or 3D
-                    "output_file": "segmentedObjects",
+                    "outputFile": "segmentedObjects",
                     "Segment3D": "overwrite",
                     "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
                     "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
@@ -333,7 +333,7 @@ class Parameters:
         self.initialize_standard_parameters()
         self.param_file = root_folder + os.sep + file_name
         self.convert_parameter_file(self.param_file, self.label)
-        self.param_dict["root_folder"] = root_folder
+        self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 
     def get_param_section(self, param_section=""):
@@ -813,7 +813,7 @@ def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
 def load_alignment_dictionary(data_folder):
 
     dict_filename = (
-        os.path.splitext(data_folder.output_files["dict_shifts"])[0] + ".json"
+        os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
 
     dict_shifts = load_json(dict_filename)

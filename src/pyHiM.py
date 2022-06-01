@@ -39,7 +39,7 @@ def old_main(run_parameters):
         threads_requested=run_parameters["threads"], maximum_load=0.8
     )
     global_param = Parameters(
-        root_folder=run_parameters["root_folder"], file_name="infoList.json"
+        root_folder=run_parameters["rootFolder"], file_name="infoList.json"
     )
     labels = global_param.param_dict["labels"]
 
@@ -50,7 +50,7 @@ def old_main(run_parameters):
 
         # sets parameters
         current_param = Parameters(
-            root_folder=run_parameters["root_folder"],
+            root_folder=run_parameters["rootFolder"],
             label=label,
             file_name="infoList.json",
         )
@@ -68,7 +68,7 @@ def old_main(run_parameters):
         )
 
         current_param.param_dict["parallel"] = him.parallel
-        current_param.param_dict["markdown_filename"] = him.markdown_filename
+        current_param.param_dict["fileNameMD"] = him.markdown_filename
 
         # [projects 3D images in 2d]
         if "makeProjections" in run_parameters["cmd"]:
@@ -143,20 +143,20 @@ def main(command_line_arguments=None):
         Used for test functions, by default None
     """
 
-    # run_args = RunArgs(command_line_arguments)
+    run_args = RunArgs(command_line_arguments)
 
-    # pipeline = Pipeline(run_args.cmd_list)
+    pipeline = Pipeline(run_args.cmd_list)
 
-    # data = InputData(run_args.data_path)
-    # data.check_consistency(pipeline)
+    data = InputData(run_args.data_path)
+    data.check_consistency(pipeline)
 
-    # # TODO
-    # parameters = InputParameters(run_args.param_path)
-    # parameters.check_consistency(pipeline, data)
+    # TODO
+    parameters = InputParameters(run_args.param_path)
+    parameters.check_consistency(pipeline, data)
 
-    # pipeline.build_output_folders(run_args.output_path)
-    # pipeline.fill(data, parameters)
-    # pipeline.run()
+    pipeline.build_output_folders(run_args.output_path)
+    pipeline.fill(data, parameters)
+    pipeline.run()
 
 
 if __name__ == "__main__":

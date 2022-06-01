@@ -87,14 +87,14 @@ class SegmentSources3D:
         self.output_filename = None
 
         # parameters from infoList.json
-        self.p["reference_barcode"] = self.current_param.param_dict["alignImages"][
+        self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
             "referenceFiducial"
         ]
         self.p["brightest"] = self.current_param.param_dict["segmentedObjects"][
             "brightest"
         ]
         self.p["blockSizeXY"] = self.current_param.param_dict["zProject"]["blockSize"]
-        self.p["reg_exp"] = self.current_param.param_dict["acquisition"][
+        self.p["regExp"] = self.current_param.param_dict["acquisition"][
             "fileNameRegExp"
         ]
         self.p["zBinning"] = get_dictionary_value(
@@ -107,8 +107,8 @@ class SegmentSources3D:
         self.p["pixelSizeXY"] = self.current_param.param_dict["acquisition"][
             "pixelSizeXY"
         ]
-        self.p["pixel_size_z"] = self.current_param.param_dict["acquisition"][
-            "pixel_size_z"
+        self.p["pixelSizeZ"] = self.current_param.param_dict["acquisition"][
+            "pixelSizeZ"
         ]
 
         self.p["parallelizePlanes"] = get_dictionary_value(
@@ -139,7 +139,7 @@ class SegmentSources3D:
         box_size = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"], "3D_boxSize", default=32
         )
-        self.p["box_size"] = (box_size, box_size)
+        self.p["boxSize"] = (box_size, box_size)
         filter_size = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"],
             "3D_filter_size",
@@ -176,7 +176,7 @@ class SegmentSources3D:
         )
 
         # parameters used for 3D gaussian fitting
-        self.p["voxel_size_z"] = float(1000 * self.p["pixel_size_z"] * self.p["zBinning"])
+        self.p["voxel_size_z"] = float(1000 * self.p["pixelSizeZ"] * self.p["zBinning"])
         self.p["voxel_size_yx"] = float(1000 * self.p["pixelSizeXY"])
         self.p["psf_z"] = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"], "3D_psf_z", default=500
@@ -243,7 +243,7 @@ class SegmentSources3D:
                 image_3d_aligned,
                 threshold_over_std=p["threshold_over_std"],
                 sigma=p["sigma"],
-                box_size=p["box_size"],
+                box_size=p["boxSize"],
                 filter_size=p["filter_size"],
                 area_min=p["area_min"],
                 area_max=p["area_max"],
@@ -309,7 +309,7 @@ class SegmentSources3D:
 
         # drifts 3D stack in XY
         shift = None
-        if self.dict_shifts_available and label != p["reference_barcode"]:
+        if self.dict_shifts_available and label != p["referenceBarcode"]:
             # uses existing shift calculated by align_images
             try:
                 shift = self.dict_shifts["ROI:" + roi][label]
@@ -317,7 +317,7 @@ class SegmentSources3D:
             except KeyError:
                 shift = None
 
-        if shift is None and label != p["reference_barcode"]:
+        if shift is None and label != p["referenceBarcode"]:
             raise SystemExit(
                 "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
                     "ROI:" + self.roi, label
@@ -325,7 +325,7 @@ class SegmentSources3D:
             )
 
         # applies XY shift to 3D stack
-        if label != p["reference_barcode"]:
+        if label != p["referenceBarcode"]:
             # print_log("$ Applies shift = {:.2f}".format(shift))
             print_log("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0], shift[1]))
             image_3d_aligned = apply_xy_shift_3d_images(
@@ -476,7 +476,7 @@ class SegmentSources3D:
         files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
         self.roi_list = retrieve_number_rois_folder(
-            self.current_folder, p["reg_exp"], ext="tif"
+            self.current_folder, p["regExp"], ext="tif"
         )
         self.number_rois = len(self.roi_list)
         print_log("\n$ Detected {} rois".format(self.number_rois))
@@ -599,10 +599,10 @@ class SegmentSources3D:
 
         # processes folders and files
         print_log("\n===================={}====================\n".format(session_name))
-        self.data_folder = Folders(self.current_param.param_dict["root_folder"])
+        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["markdown_filename"],
+            self.current_param.param_dict["fileNameMD"],
             "## {}\n".format(session_name),
             "a",
         )

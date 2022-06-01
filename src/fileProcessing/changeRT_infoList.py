@@ -17,10 +17,10 @@ import sys
 
 
 labels_to_process = [
-    {"label": "fiducial", "parameter_file": "infoList_fiducial.json"},
-    {"label": "barcode", "parameter_file": "infoList_barcode.json"},
-    {"label": "DAPI", "parameter_file": "infoList_DAPI.json"},
-    {"label": "RNA", "parameter_file": "infoList_RNA.json"},
+    {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
+    {"label": "barcode", "parameterFile": "infoList_barcode.json"},
+    {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
+    {"label": "RNA", "parameterFile": "infoList_RNA.json"},
 ]
 
 PATTERN = r"(.*)\"(?P<RT>RT\d{1,3})\""
@@ -40,7 +40,7 @@ else:
 
 for label_to_process in labels_to_process:
     LABEL = label_to_process["label"]
-    LABEL_PARAMETER_FILE = label_to_process["parameter_file"]
+    LABEL_PARAMETER_FILE = label_to_process["parameterFile"]
     print("**Modifying label {}: {}**".format(LABEL, LABEL_PARAMETER_FILE))
 
     with open(LABEL_PARAMETER_FILE, mode="r", encoding="utf-8") as f:

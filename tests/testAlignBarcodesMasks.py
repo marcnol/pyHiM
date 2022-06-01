@@ -115,7 +115,7 @@ class CellID:
         SCdistanceTable = Table()  # [],names=('CellID', 'barcode1', 'barcode2', 'distances'))
         SCdistanceTable["ROI #"] = rois
         SCdistanceTable["CellID #"] = cell_id
-        SCdistanceTable["n_barcodes"] = n_barcodes
+        SCdistanceTable["nBarcodes"] = n_barcodes
         SCdistanceTable["Barcode #"] = barcode_ids
         SCdistanceTable["PWDmatrix"] = p
 

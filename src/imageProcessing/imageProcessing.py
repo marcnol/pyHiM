@@ -1078,10 +1078,10 @@ def align_2_images_cross_correlation(
     )
 
     # zips histograms
-    lower_threshold = {"img_1": lower_cutoff1, "img_2": lower_cutoff2}
+    lower_threshold = {"Im1": lower_cutoff1, "Im2": lower_cutoff2}
     i_histogram = {
-        "img_1": (hist1_before, hist1_after),
-        "img_2": (hist2_before, hist2_after),
+        "Im1": (hist1_before, hist1_after),
+        "Im2": (hist2_before, hist2_after),
     }
 
     # calculates shift
@@ -2049,7 +2049,7 @@ def image_show_with_values_single(
 def image_show_with_values(
     matrices,
     output_name="tmp.png",
-    cbarlabels=["focal_plane"],
+    cbarlabels=["focalPlane"],
     fontsize=6,
     verbose=False,
     title="",
@@ -2064,7 +2064,7 @@ def image_show_with_values(
     output_name : TYPE, optional
         DESCRIPTION. The default is "tmp.png".
     cbarlabels : list, optional
-        titles of subplots. The default is ["focal_plane"].
+        titles of subplots. The default is ["focalPlane"].
     fontsize : float, optional
         fontsize. The default is 6.
     verbose : Boolean, optional
@@ -2091,8 +2091,6 @@ def image_show_with_values(
 
     for matrix, axis, cbarlabel in zip(matrices, ax, cbarlabels):
         image_show_with_values_single(axis, matrix, cbarlabel, fontsize, cbar_kw)
-
-        # image_show_with_values_single(ax[1], matrices[1], "filtered laplacian*focal_plane", fontsize, cbar_kw)
 
     fig.tight_layout()
     plt.savefig(output_name)

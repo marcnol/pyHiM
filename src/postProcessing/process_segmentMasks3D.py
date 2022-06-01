@@ -55,7 +55,7 @@ def projects_3D_volumes(data, files):
 def parse_arguments():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
 
     if args.root_folder:
