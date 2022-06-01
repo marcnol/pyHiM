@@ -7,7 +7,7 @@ Created on Tue Sep 29 16:58:03 2020
 """
 
 
-# project a number of images and makes an RGB image
+# project a number of images and makes an rgb image
 
 
 import os
@@ -18,46 +18,46 @@ from skimage import io
 import cv2
 import matplotlib.gridspec as gridspec
 
-from imageProcessing.imageProcessing import Image, imageAdjust
+from imageProcessing.imageProcessing import Image, image_adjust
 import imageProcessing.makeProjections
 from astropy.stats import SigmaClip
 from photutils import Background2D, MedianBackground
 from astropy.visualization import SqrtStretch, simple_norm
 
 #%% loads all images
-rootFolder = "/home/marcnol/grey/Olivier/2020_08_13_Experiment_tetraspeck/Deconvolved/Tetraspeck_Scan_1"
-rootFolder = (
+root_folder = "/home/marcnol/grey/Olivier/2020_08_13_Experiment_tetraspeck/Deconvolved/Tetraspeck_Scan_1"
+root_folder = (
     "/mnt/grey/DATA/Olivier/2020_08_14_Experiment_Chromatic_aberration_Embryo_Locus2L/Deconvolved/Embryo_Scan_11"
 )
-files = glob.glob(rootFolder + os.sep + "*.tif")
+files = glob.glob(root_folder + os.sep + "*.tif")
 
 print("Files to load {}\n".format("\n".join([os.path.basename(x) for x in files])))
 
-images = list()
-boxSize = (64, 64)
-# boxSize=(16, 16)
+images = []
+box_size = (64, 64)
+# box_size=(16, 16)
 for file in files:
 
     # loads image
     print("Loading {}...".format(os.path.basename(file)))
     im = io.imread(file).squeeze()
 
-    imageSize = im.shape
+    image_size = im.shape
 
     # makes actual 2d projection
-    (zmin, zmax) = (0, imageSize[0])
-    zRange = (round((zmin + zmax) / 2), range(zmin, zmax))
+    (zmin, zmax) = (0, image_size[0])
+    z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
 
     print("Summing {}...".format(os.path.basename(file)))
 
-    im2D = np.max(im[zRange[1][0] : zRange[1][-1]], axis=0)
+    im2D = np.max(im[z_range[1][0] : z_range[1][-1]], axis=0)
 
     # im2D = im2D - im2D[0,0]
     # im2D = im2D / im2D.max()
     sigma_clip = SigmaClip(sigma=3.0)
     bkg_estimator = MedianBackground()
 
-    bkg = Background2D(im2D, boxSize, filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+    bkg = Background2D(im2D, box_size, filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
 
     im2D_substracted = im2D - bkg.background
     im2D_substracted = im2D_substracted - np.min(im2D_substracted)
@@ -65,18 +65,18 @@ for file in files:
 
 
 #%% displays
-outputFileNameRoot = "/home/marcnol/Downloads" + os.sep + "RGB"
+outputFileNameRoot = "/home/marcnol/Downloads" + os.sep + "rgb"
 Nplots = len(files)
 fig = plt.figure(constrained_layout=False, figsize=(10 * Nplots, 10), dpi=300, facecolor="w", edgecolor="k")
 nCols, nRows = Nplots, 1
 spec2 = gridspec.GridSpec(ncols=nCols, nrows=nRows, figure=fig)
 
 FigList, Yticks, Xticks = [], [], []
-for iRow in range(nRows):
-    for iCol in range(nCols):
-        FigList.append(fig.add_subplot(spec2[iRow, iCol]))
+for i_row in range(nRows):
+    for i_col in range(nCols):
+        FigList.append(fig.add_subplot(spec2[i_row, i_col]))
 
-outputFileName = outputFileNameRoot + "single_ch" + ".png"
+output_filename = outputFileNameRoot + "single_ch" + ".png"
 
 percents = [97.0, 99.9, 99.9]
 # percents = [99.99, 99., 99.9, 99.]
@@ -87,17 +87,17 @@ for ax, im, file, percent in zip(FigList, images, files, percents):
     ax.imshow(im, cmap="Greys", origin="lower", norm=simple_norm(im, "sqrt", percent=percent))
     ax.set_title(title)
 
-fig.savefig(outputFileName)
+fig.savefig(output_filename)
 
 # plt.close(fig)
-#%% plots RGB images
+#%% plots rgb images
 
 thresholds = [[0.9, 0.99], [0.9, 0.999], [0.85, 0.999], [0.85, 0.90]]
 
 cmaps = ["Blues", "Greens", "Reds"]
 for i in range(len(images) - 2):
     fig, ax = plt.subplots()
-    outputFileName = outputFileNameRoot + str(i) + ":" + str(i + 2) + ".png"
+    output_filename = outputFileNameRoot + str(i) + ":" + str(i + 2) + ".png"
 
     fig.set_size_inches((30, 30))
 
@@ -105,17 +105,17 @@ for i in range(len(images) - 2):
     for j, x in enumerate(images[i : i + 3]):
         x = x - x.min()
         x = x / x.max()
-        x, _, _, _, _ = imageAdjust(x, lower_threshold=thresholds[j][0], higher_threshold=thresholds[j][1])
+        x, _, _, _, _ = image_adjust(x, lower_threshold=thresholds[j][0], higher_threshold=thresholds[j][1])
         images2.append(x)
 
-    RGB = np.dstack(images[i : i + 3])
+    rgb = np.dstack(images[i : i + 3])
     # for I,cmap in zip(images2,cmaps):
     #     ax.imshow(I, cmap=cmap, origin="lower", alpha = 0.3, norm=simple_norm(I, "sqrt", percent=percent))
 
-    RGB = np.dstack(images2)
-    ax.imshow(RGB)
+    rgb = np.dstack(images2)
+    ax.imshow(rgb)
     ax.axis("off")
-    fig.savefig(outputFileName)
+    fig.savefig(output_filename)
 
     # plt.close(fig)
 

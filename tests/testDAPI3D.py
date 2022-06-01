@@ -21,35 +21,35 @@ from skimage import io
 
 #%% loads data for only one barcode and one DAPI
 
-rootFolder = "/home/marcnol/Downloads"
+root_folder = "/home/marcnol/Downloads"
 
-rootFolder = "/home/marcnol/grey/rawData_2020/Exp_Combinatory_3_Tof/ROIs/ROI001"
-fileName = "scan_007_DAPI_001_ROI_converted_decon_ch00.tif"
+root_folder = "/home/marcnol/grey/rawData_2020/Exp_Combinatory_3_Tof/rois/ROI001"
+file_name = "scan_007_DAPI_001_ROI_converted_decon_ch00.tif"
 fileNameF = "scan_007_DAPI_001_ROI_converted_decon_ch01.tif"
 
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
-fileName = "scan_001_RT27_001_ROI_converted_decon_ch01.tif"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
+file_name = "scan_001_RT27_001_ROI_converted_decon_ch01.tif"
 fileNameF="scan_006_DAPI_001_ROI_converted_decon_ch00.tif"
 
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
-fileName = "scan_001_RT27_001_ROI_converted_decon_ch01.tif"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
+file_name = "scan_001_RT27_001_ROI_converted_decon_ch01.tif"
 fileNameF="scan_006_DAPI_001_ROI_converted_decon_ch00.tif"
 
-fullFileName = rootFolder + os.sep + fileName
-fullFileNameF = rootFolder + os.sep + fileNameF
+full_filename = root_folder + os.sep + file_name
+fullFileNameF = root_folder + os.sep + fileNameF
 
-data = [io.imread(fullFileName).squeeze()]
+data = [io.imread(full_filename).squeeze()]
 data_DAPI = [io.imread(fullFileNameF).squeeze()]
 
 #%% selects all files in a folder within a given ROI
-rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/run_zBinning2"
-rootFolder = "/mnt/PALM_dataserv/DATA/Olivier/Thesis/Insulators_Project/Paper_Insulator/HiM_analysis/Doc_Locus/Embryo_001"
+root_folder = "/home/marcnol/grey/users/marcnol/test_HiM/run_zBinning2"
+root_folder = "/mnt/PALM_dataserv/DATA/Olivier/Thesis/Insulators_Project/Paper_Insulator/HiM_analysis/Doc_Locus/Embryo_001"
 
 ROI="003"
 
-fileNames_RT = [x for x in glob.glob(rootFolder+os.sep+"*tif") if ROI in os.path.basename(x).split("_")[3]\
+fileNames_RT = [x for x in glob.glob(root_folder+os.sep+"*tif") if ROI in os.path.basename(x).split("_")[3]\
              and "DAPI" not in x and "ch01" in x]
-fileNames_DAPI = [x for x in glob.glob(rootFolder+os.sep+"*tif") if ROI in os.path.basename(x).split("_")[3]\
+fileNames_DAPI = [x for x in glob.glob(root_folder+os.sep+"*tif") if ROI in os.path.basename(x).split("_")[3]\
              and "DAPI" in x and "ch00" in x]
 
 print("\nRT found = {}".format(fileNames_RT))
@@ -61,14 +61,14 @@ data_DAPI = [io.imread(x).squeeze() for x in fileNames_DAPI]
 #%% preprocesses
 
 xyRange = (800,1200)
-zRange = (10,50)
+z_range = (10,50)
 zShift = 8
 
 data = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data]
 data_DAPI = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data_DAPI]
 
-subdata = [x[zShift+zRange[0]:zShift+zRange[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data]
-subdata_DAPI = [x[zRange[0]:zRange[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data_DAPI]
+subdata = [x[zShift+z_range[0]:zShift+z_range[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data]
+subdata_DAPI = [x[z_range[0]:z_range[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data_DAPI]
 
 #%% Displays overlays between two channels
 preFactor = 1

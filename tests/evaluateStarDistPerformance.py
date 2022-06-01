@@ -76,51 +76,51 @@ def plot_img_label(img, lbl, pred, **kwargs):
 #     return x, y
 
 
-def loadsTrainingDataJB(rootFolder):
+def load_training_data_jb(root_folder):
 
-    folderMasks = "Labeled_images"
-    folderImages = "Original_images"
+    folder_masks = "Labeled_images"
+    folder_images = "Original_images"
 
-    ListMasks, ListImages = [], []
-    ListMasks = sorted(glob(rootFolder + os.sep + folderMasks + os.sep + "*.tif"))
+    list_masks, list_images = [], []
+    list_masks = sorted(glob(root_folder + os.sep + folder_masks + os.sep + "*.tif"))
 
-    baseNameMasks = [os.path.basename(basename) for basename in ListMasks]
+    base_name_masks = [os.path.basename(basename) for basename in list_masks]
 
-    for target in baseNameMasks:
+    for target in base_name_masks:
 
-        expectedFolder = rootFolder + os.sep + folderImages + os.sep + target.split(".tif")[0]
-        expectedFolder45 = rootFolder + os.sep + folderImages + os.sep + target.split("_45.tif")[0]
+        expected_folder = root_folder + os.sep + folder_images + os.sep + target.split(".tif")[0]
+        expected_folder_45 = root_folder + os.sep + folder_images + os.sep + target.split("_45.tif")[0]
 
-        if os.path.exists(expectedFolder):
-            fileName = expectedFolder + os.sep + "00_Raw_Embryo_segmentation.mat"
-            if os.path.exists(fileName):
-                ListImages.append(fileName)
+        if os.path.exists(expected_folder):
+            file_name = expected_folder + os.sep + "00_Raw_Embryo_segmentation.mat"
+            if os.path.exists(file_name):
+                list_images.append(file_name)
 
-        elif os.path.exists(expectedFolder45):
-            fileName = expectedFolder45 + os.sep + "00_Raw_Embryo_segmentation_45.mat"
-            if os.path.exists(fileName):
-                ListImages.append(fileName)
+        elif os.path.exists(expected_folder_45):
+            file_name = expected_folder_45 + os.sep + "00_Raw_Embryo_segmentation_45.mat"
+            if os.path.exists(file_name):
+                list_images.append(file_name)
 
-    print("Number of Masks: {}".format(len(ListMasks)))
-    print("Number of Images: {}".format(len(ListImages)))
+    print("Number of Masks: {}".format(len(list_masks)))
+    print("Number of Images: {}".format(len(list_images)))
 
-    if len(ListMasks) == len(ListImages):
+    if len(list_masks) == len(list_images):
 
-        Y = list(map(imread, ListMasks))
+        Y = list(map(imread, list_masks))
         # measure.label
         Y = [measure.label(y) for y in Y]
-        Xmat = list(map(spio.loadmat, ListImages))
+        x_mat = list(map(spio.loadmat, list_images))
         # for y in Ymat:
         #     if 'im_raw' in y.keys():
         #         Y.append(y['im_raw'])
         #     elif 'im_raw_45' in y.keys():
         #         Y.append(y['im_raw_45'])
 
-        X = [x[list(x.keys())[-1]] for x in Xmat]
+        X = [x[list(x.keys())[-1]] for x in x_mat]
 
     else:
         print("Warning, something is wrong...")
-    # mat = spio.loadmat(rootFolder+fileName, squeeze_me=True)
+    # mat = spio.loadmat(root_folder+file_name, squeeze_me=True)
     return X, Y
 
 
@@ -178,11 +178,11 @@ if __name__ == "__main__":
     # net 6
     run = {"baseDir": "/mnt/grey/DATA/users/marcnol/models", "modelName": "stardist_nc14_nrays:128_epochs:400_grid:2"}
     # loads data
-    ownTrainingSet = True
-    if ownTrainingSet:
-        rootFolder = "/mnt/PALM_dataserv/DATA/JB/JB/Sara/Deep_Learning/Training_data/Embryo/Marcelo_embryo_data/DAPI_nuclei_segmentation/stage_14"
-        X, Y = loadsTrainingDataJB(rootFolder)
-        print("Loading data from: {}".format(rootFolder))
+    OWN_TRAINING_SET = True
+    if OWN_TRAINING_SET:
+        root_folder = "/mnt/PALM_dataserv/DATA/JB/JB/Sara/Deep_Learning/Training_data/Embryo/Marcelo_embryo_data/DAPI_nuclei_segmentation/stage_14"
+        X, Y = load_training_data_jb(root_folder)
+        print("Loading data from: {}".format(root_folder))
 
     else:
 

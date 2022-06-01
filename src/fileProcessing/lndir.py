@@ -10,19 +10,18 @@ make links of files in a directory to a second directory
 In the command line, run as 
 
 Example:
-    
+
 $ lndir.py "/home/marcnol/Repositories/pyHiM/*py" ~/Downloads/test
 
 Make sure that the first argument has quotation marks if you use wildcards!
-    
+
 """
-import os
+
 import glob
-import argparse
-from fileManagement import Parameters, folders, writeString2File
-import shutil
+import os
 import sys
 
+from fileManagement import write_string_to_file
 
 # =============================================================================
 # MAIN
@@ -33,27 +32,31 @@ if __name__ == "__main__":
     if len(sys.argv) < 3:
         raise SystemExit("Not enough arguments")
 
-    fileListString = sys.argv[1]
-    destFolder = sys.argv[2]
+    file_list_string = sys.argv[1]
+    dest_folder = sys.argv[2]
 
-    print("fileList = {} | destDir = {}".format(fileListString, destFolder))
+    print("file_list = {} | destDir = {}".format(file_list_string, dest_folder))
 
-    fileList = [x for x in glob.glob(fileListString)]
+    file_list = list(glob.glob(file_list_string))
 
-    if len(fileList) > 0:
-        fileName = os.path.dirname(fileList[0]) + os.sep + "lndir.log"
+    if len(file_list) > 0:
+        file_name = os.path.dirname(file_list[0]) + os.sep + "lndir.log"
 
-        for file in fileList:
+        for file in file_list:
 
-            newFile = destFolder + os.sep + os.path.basename(file)
-            print("{}-->{}".format(file, newFile))
+            new_file = dest_folder + os.sep + os.path.basename(file)
+            print("{}-->{}".format(file, new_file))
 
-            command = "ln -s " + file + " " + newFile
+            command = "ln -s " + file + " " + new_file
             os.system(command)
 
-            writeString2File(fileName, command, attribute="a")
+            write_string_to_file(file_name, command, attribute="a")
 
-        print("Linked {} files form {} to {}".format(len(fileList), os.path.dirname(fileList[0]), destFolder))
+        print(
+            "Linked {} files form {} to {}".format(
+                len(file_list), os.path.dirname(file_list[0]), dest_folder
+            )
+        )
 
     else:
         print("File List is empty :(")

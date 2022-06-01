@@ -22,20 +22,22 @@ $ processingMultipleDatasets.py /mnt/grey/DATA/rawData_2020/Experiment_4/deconvo
 import os
 import sys
 
-nArgs = len(sys.argv)
-print("Total arguments passed: {}".format(nArgs))
+n_args = len(sys.argv)
+print("Total arguments passed: {}".format(n_args))
 EmbryoTag = "Embryo_"
-if nArgs > 2:
+if n_args > 2:
     rootDir = sys.argv[1]
-    print("parameters> rootFolder: {}".format(rootDir))
+    print("parameters> root_folder: {}".format(rootDir))
 
-    for i in range(2, nArgs):
+    for i in range(2, n_args):
         print("Processing Embryo #{}".format(sys.argv[i]))
-        command2Run1 = "nice -19 processingPipeline.py -F " + rootDir + EmbryoTag + sys.argv[i]
-        os.system(command2Run1)
-        command2Run2 = "zipHiM_run.py -F " + rootDir + EmbryoTag + str(i)
-        os.system(command2Run2)
-        print("Commands: {}\n{}".format(command2Run1, command2Run2))
+        command_to_run_1 = (
+            "nice -19 processingPipeline.py -F " + rootDir + EmbryoTag + sys.argv[i]
+        )
+        os.system(command_to_run_1)
+        command_to_run_2 = "zipHiM_run.py -F " + rootDir + EmbryoTag + str(i)
+        os.system(command_to_run_2)
+        print("Commands: {}\n{}".format(command_to_run_1, command_to_run_2))
 
 
 else:

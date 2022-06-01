@@ -18,8 +18,8 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings("ignore")
 
-from fileProcessing.fileManagement import Parameters, printLog
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+from fileProcessing.fileManagement import Parameters, print_log
+from fileProcessing.functionCaller import HiMFunctionCaller, him_parse_arguments
 
 # =============================================================================
 # MAIN
@@ -28,72 +28,72 @@ from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=HiM_parseArguments()
-    runParameters['rootFolder'] = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
-    runParameters['cmd'] = ['alignImages3D']
+    run_parameters=him_parse_arguments()
+    run_parameters['root_folder'] = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
+    run_parameters['cmd'] = ['alignImages3D']
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
-    HiM.initialize()
-    session1, log1=HiM.session1, HiM.log1
+    him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
+    him.initialize()
+    current_session, current_log = him.current_session, him.current_log
 
-    HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
-    param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json')
-    labels=param.param['labels']
+    him.lauch_dask_scheduler(threads_requested=run_parameters["threads"], maximum_load=0.8)
+    current_param = Parameters(root_folder=run_parameters["root_folder"], file_name='infoList.json')
+    labels = current_param.param_dict['labels']
 
-    printLog('$ Started logging to: {}'.format(HiM.logFile))
-    printLog("$ labels to process: {}\n".format(labels))
+    print_log('$ Started logging to: {}'.format(him.log_file))
+    print_log("$ labels to process: {}\n".format(labels))
 
-    for label in labels:#range(len(HiM.labels2Process)):
+    for label in labels:#range(len(him.labels_to_process)):
 
         # sets parameters
-        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json')
+        current_param = Parameters(root_folder=run_parameters["root_folder"], label=label, file_name='infoList.json')
 
-        printLog("--------------------------------------------------------------------------")
-        printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
-        printLog("--------------------------------------------------------------------------")
+        print_log("--------------------------------------------------------------------------")
+        print_log(">                  Analyzing label: {}           ".format(current_param.param_dict["acquisition"]["label"]))
+        print_log("--------------------------------------------------------------------------")
 
-        param.param['parallel']=HiM.parallel
-        param.param['fileNameMD']=HiM.fileNameMD
+        current_param.param_dict['parallel']=him.parallel
+        current_param.param_dict['markdown_filename']=him.markdown_filename
 
         # [projects 3D images in 2d]
-        if "makeProjections" in runParameters["cmd"]:
-            HiM.makeProjections(param)
+        if "makeProjections" in run_parameters["cmd"]:
+            him.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
-        if "alignImages" in runParameters["cmd"]:
-            HiM.alignImages(param, label)
+        if "alignImages" in run_parameters["cmd"]:
+            him.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in runParameters["cmd"]:
-            HiM.appliesRegistrations(param, label)
+        if "appliesRegistrations" in run_parameters["cmd"]:
+            him.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in runParameters["cmd"]:
-            HiM.alignImages3D(param, label)
+        if "alignImages3D" in run_parameters["cmd"]:
+            him.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in runParameters["cmd"]:
-            HiM.segmentMasks(param, label)
+        if "segmentMasks" in run_parameters["cmd"]:
+            him.segment_masks(current_param, label)
 
         # [segments sources in 3D]
-        if "segmentSources3D" in runParameters["cmd"]:
-            HiM.segmentSources3D(param, label)
+        if "segmentSources3D" in run_parameters["cmd"]:
+            him.segment_sources_3d(current_param, label)
 
         # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in runParameters["cmd"]:
-            HiM.processesPWDmatrices(param, label)
+        if "buildHiMmatrix" in run_parameters["cmd"]:
+            him.process_pwd_matrices(current_param, label)
 
         print("\n")
-        del param
+        del current_param
 
     # exits
-    HiM.session1.save(HiM.log1)
-    printLog("\n===================={}====================\n".format("Normal termination"))
+    him.current_session.save()
+    print_log("\n===================={}====================\n".format("Normal termination"))
 
-    if runParameters["parallel"]:
-        HiM.cluster.close()
-        HiM.client.close()
+    if run_parameters["parallel"]:
+        him.cluster.close()
+        him.client.close()
 
-    del HiM
+    del him
 
-    printLog("Elapsed time: {}".format(datetime.now() - begin_time))
+    print_log("Elapsed time: {}".format(datetime.now() - begin_time))

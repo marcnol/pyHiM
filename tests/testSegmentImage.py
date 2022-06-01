@@ -20,15 +20,15 @@ from skimage.segmentation import watershed, clear_border
 from scipy import ndimage as ndi
 import matplotlib.patches as mpatches
 from imageProcessing import Image
-from fileManagement import loadJSON
+from fileManagement import load_json
 
 
 #%% segments using normal morphological operations from skimage
 rootDir = "/home/marcnol/Documents/Images/Embryo_debug_dataset"
 
 file = "scan_004_RT19_017_ROI_converted_decon_ch01.tif"
-fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
-im = np.load(fileName)
+file_name = rootDir + "/raw_images/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
+im = np.load(file_name)
 im = exposure.rescale_intensity(im, out_range=(0, 1))
 
 threshold = filters.threshold_otsu(im)
@@ -76,9 +76,9 @@ from photutils import Background2D, MedianBackground
 rootDir = "/home/marcnol/Documents/Images/Embryo_debug_dataset"
 
 file = "scan_004_RT18_017_ROI_converted_decon_ch01.tif"
-fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
+file_name = rootDir + "/raw_images/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
 
-im = np.load(fileName)
+im = np.load(file_name)
 
 brightest = 1000
 threshold_over_std = 1.8
@@ -121,8 +121,8 @@ plt.ylim(0, im.shape[0] - 1)
 
 
 file = "scan_001_DAPI_017_ROI_converted_decon_ch00.tif"
-fileName = rootDir + "/rawImages/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
-data = np.load(fileName)
+file_name = rootDir + "/raw_images/alignImages/" + file.split(".")[0] + "_2d_registered.npy"
+data = np.load(file_name)
 
 threshold = detect_threshold(data, nsigma=2.0)
 
@@ -151,14 +151,14 @@ ax2.set_title("Segmentation Image")
 
 #%% will 3D fit sources from original image
 
-dictShifts = loadJSON(rootDir + os.sep + "alignImages.bed.json")
+dict_shifts = load_json(rootDir + os.sep + "alignImages.bed.json")
 
-fileNameTif = rootDir + "/rawImages/" + file
+fileNameTif = rootDir + "/raw_images/" + file
 I_3D = Image()
-I_3D.loadImage(fileNameTif)
+I_3D.load_image(fileNameTif)
 ROI = file.split("_")[3]
 barcode = file.split("_")[2]
-shiftArray = dictShifts["ROI:" + ROI][barcode]
+shift_array = dict_shifts["ROI:" + ROI][barcode]
 RTmatrix = []
 
 for region in measure.regionprops(label_image, im):

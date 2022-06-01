@@ -71,16 +71,16 @@ viewer = napari.view_image(data2D_reloaded[0])
 
 from tifffile import imread
 
-def reinterpolateZ(image3D, Zrange):
+def reinterpolate_z(image_3d, z_range):
     """
     wrapper function for any kind of z-interpolation
     to reduce the number of planes in an image
 
     Parameters
     ----------
-    image3D : numpy array
+    image_3d : numpy array
         input 3D image.
-    Zrange : range
+    z_range : range
         range of planes for the output image.
     mode : str, optional
         'remove' will remove planes
@@ -93,11 +93,11 @@ def reinterpolateZ(image3D, Zrange):
 
     """
 
-    output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
-    for i,index in enumerate(Zrange):
-        output[i,:,:] = image3D[index,:,:]
+    output = np.zeros((len(z_range),image_3d.shape[1],image_3d.shape[2]))
+    for i,index in enumerate(z_range):
+        output[i,:,:] = image_3d[index,:,:]
 
-    print("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
+    print("$ Reduced Z-planes from {} to {}".format(image_3d.shape[0],output.shape[0]))
 
     return output
 
@@ -112,7 +112,7 @@ for file,im in zip(files_raw,data_raw):
     output_TIFF = file.split(".npy")[0]+"_reduced_planes.tif"
     output_TIFF_2D = file.split(".npy")[0]+"_reduced_planes_2D.tif"
 
-    new_im = reinterpolateZ(im,range(0, im.shape[0],2))
+    new_im = reinterpolate_z(im,range(0, im.shape[0],2))
     new_im_2D = np.max(new_im,axis=0)
 
     imsave(output_TIFF,new_im)

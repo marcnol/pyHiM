@@ -9,26 +9,34 @@ produces movies and structures from single cell PWD matrices
 
 """
 
-#%% imports and plotting settings
-import os
-import numpy as np
 import argparse
 
+#%% imports and plotting settings
+import os
+
 import cv2
+import matplotlib
 
 # from mayavi.mlab import *
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib
+import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
-from sklearn.neighbors import KernelDensity
 from sklearn import manifold
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
+from sklearn.neighbors import KernelDensity
 
-from matrixOperations.HIMmatrixOperations import getRgFromPWD, getDetectionEffBarcodes, getBarcodesPerCell, kdeFit
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, getsCoordinatesFromPWDmatrix, sortsCellsbyNumberPWD
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, write_XYZ_2_pdb
-
+from matrixOperations.HIMmatrixOperations import (
+    AnalysisHiMMatrix,
+    get_barcodes_per_cell,
+    get_detection_eff_barcodes,
+    get_rg_from_pwd,
+    get_coordinates_from_pwd_matrix,
+    kde_fit,
+    plot_distance_histograms,
+    sort_cells_by_number_pwd,
+    write_xyz_2_pdb,
+)
 
 font = {"family": "DejaVu Sans", "weight": "normal", "size": 22}
 
@@ -37,26 +45,40 @@ matplotlib.rc("font", **font)
 #%% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
-    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+    parser.add_argument("-F", "--root_folder", help="Folder with dataset")
+    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
 
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-P",
+        "--parameters",
+        help="Provide name of parameter files. folders_to_load.json assumed as default",
     )
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
+    parser.add_argument(
+        "-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted "
+    )
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
+    )
+    parser.add_argument(
+        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+    )
+    parser.add_argument(
+        "--barcodes",
+        help="Use if you want barcode images to be displayed",
+        action="store_true",
+    )
     parser.add_argument("--nRows", help="The number of cells is set by nRows**2")
     parser.add_argument("--pixelSize", help="Pixel Size in um")
-    parser.add_argument("--maxDistance", help="Maximum distance for histograms, in um")
+    parser.add_argument("--max_distance", help="Maximum distance for histograms, in um")
 
-    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
+    )
     parser.add_argument(
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
@@ -66,7 +88,9 @@ def parseArguments():
         help="Use if you want ensembleMatrix to be plotted alongside sc matrices",
         action="store_true",
     )
-    parser.add_argument("--video", help="Use if you want to output video", action="store_true")
+    parser.add_argument(
+        "--video", help="Use if you want to output video", action="store_true"
+    )
     parser.add_argument(
         "--videoAllcells",
         help="Use if you want all nRows**2 single cells to take part of the video",
@@ -77,132 +101,134 @@ def parseArguments():
         help="Use if you want to plot the PWD histograms for all bin combinations. This is slow!",
         action="store_true",
     )
-    parser.add_argument("--minNumberPWD", help="Minimum number of PWD to calculate Rg")
-    parser.add_argument("--threshold", help="Maximum accepted PWD to calculate Rg, in px")
+    parser.add_argument("--min_number_pwd", help="Minimum number of PWD to calculate Rg")
+    parser.add_argument(
+        "--threshold", help="Maximum accepted PWD to calculate Rg, in px"
+    )
 
     args = parser.parse_args()
 
-    runParameters = {}
+    run_parameters = {}
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
+    if args.root_folder:
+        root_folder = args.root_folder
     else:
-        # rootFolder = "."
-        # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
-        # rootFolder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
-        rootFolder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
+        # root_folder = "."
+        # root_folder='/home/marcnol/data'+os.sep+'Experiment_18'
+        # root_folder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
+        root_folder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
 
-    if args.outputFolder:
-        outputFolder = args.outputFolder
+    if args.output_folder:
+        output_folder = args.output_folder
     else:
-        outputFolder = rootFolder + os.sep + "figureSingleCell"
+        output_folder = root_folder + os.sep + "figureSingleCell"
 
-    if not os.path.exists(outputFolder):
-        os.mkdir(outputFolder)
-        print("Folder created: {}".format(outputFolder))
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+        print("Folder created: {}".format(output_folder))
 
     if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
+        run_parameters["parametersFileName"] = args.parameters
     else:
-        runParameters["parametersFileName"] = "folders2Load.json"
+        run_parameters["parametersFileName"] = "folders_to_load.json"
 
     if args.label:
-        runParameters["label"] = args.label
+        run_parameters["label"] = args.label
     else:
-        runParameters["label"] = "doc"
+        run_parameters["label"] = "doc"
 
     if args.action:
-        runParameters["action"] = args.action
+        run_parameters["action"] = args.action
     else:
-        runParameters["action"] = "all"
+        run_parameters["action"] = "all"
 
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.pixelSize:
-        runParameters["pixelSize"] = float(args.pixelSize)
+        run_parameters["pixelSize"] = float(args.pixelSize)
     else:
-        runParameters["pixelSize"] = 0.1
+        run_parameters["pixelSize"] = 0.1
 
-    if args.maxDistance:
-        runParameters["maxDistance"] = float(args.maxDistance)
+    if args.max_distance:
+        run_parameters["max_distance"] = float(args.max_distance)
     else:
-        runParameters["maxDistance"] = 4.0
+        run_parameters["max_distance"] = 4.0
 
     if args.threshold:
-        runParameters["threshold"] = float(args.threshold)
+        run_parameters["threshold"] = float(args.threshold)
     else:
-        runParameters["threshold"] = 8
+        run_parameters["threshold"] = 8
 
-    if args.minNumberPWD:
-        runParameters["minNumberPWD"] = args.minNumberPWD
+    if args.min_number_pwd:
+        run_parameters["min_number_pwd"] = args.min_number_pwd
     else:
-        runParameters["minNumberPWD"] = 6
+        run_parameters["min_number_pwd"] = 6
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
+        run_parameters["axisLabel"] = False
 
-    if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
+    if args.axis_ticks:
+        run_parameters["axis_ticks"] = args.axis_ticks
     else:
-        runParameters["axisTicks"] = False
+        run_parameters["axis_ticks"] = False
 
     if args.barcodes:
-        runParameters["barcodes"] = args.barcodes
+        run_parameters["barcodes"] = args.barcodes
     else:
-        runParameters["barcodes"] = False
+        run_parameters["barcodes"] = False
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".png"
+        run_parameters["plottingFileExtension"] = ".png"
 
     if args.shuffle:
-        runParameters["shuffle"] = args.shuffle
+        run_parameters["shuffle"] = args.shuffle
     else:
-        runParameters["shuffle"] = 0
+        run_parameters["shuffle"] = 0
 
     if args.nRows:
-        runParameters["nRows"] = int(args.nRows)
+        run_parameters["nRows"] = int(args.nRows)
     else:
-        runParameters["nRows"] = int(10)
+        run_parameters["nRows"] = int(10)
 
     if args.ensembleMatrix:
-        runParameters["ensembleMatrix"] = args.ensembleMatrix
+        run_parameters["ensembleMatrix"] = args.ensembleMatrix
     else:
-        runParameters["ensembleMatrix"] = False
+        run_parameters["ensembleMatrix"] = False
 
     if args.video:
-        runParameters["video"] = args.video
+        run_parameters["video"] = args.video
     else:
-        runParameters["video"] = False
+        run_parameters["video"] = False
 
     if args.videoAllcells:
-        runParameters["videoAllcells"] = args.videoAllcells
+        run_parameters["videoAllcells"] = args.videoAllcells
     else:
-        runParameters["videoAllcells"] = False
+        run_parameters["videoAllcells"] = False
 
     if args.plotHistogramMatrix:
-        runParameters["plotHistogramMatrix"] = args.plotHistogramMatrix
+        run_parameters["plotHistogramMatrix"] = args.plotHistogramMatrix
     else:
-        runParameters["plotHistogramMatrix"] = False
+        run_parameters["plotHistogramMatrix"] = False
 
-    return rootFolder, outputFolder, runParameters
+    return root_folder, output_folder, run_parameters
 
 
-def returnCellsHighestNumberPWD(sortedValues, n):
-    cellID = list()
-    Npwd = list()
+def returnCellsHighestNumberPWD(sorted_values, n):
+    cell_id = []
+    Npwd = []
 
     for i in range(1, n + 1):
-        cellID.append(sortedValues[-i][0])
-        Npwd.append(sortedValues[-i][1])
+        cell_id.append(sorted_values[-i][0])
+        Npwd.append(sorted_values[-i][1])
 
-    return cellID, Npwd
+    return cell_id, Npwd
 
 
 def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3D.png"):
@@ -212,12 +238,12 @@ def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3
 
     ax = plt.axes(projection="3d")
 
-    xdata, ydata, zdata, barcodeID = [], [], [], []
+    xdata, ydata, zdata, barcode_id = [], [], [], []
     for i, r in enumerate(coordinates):
         xdata.append(r[0])
         ydata.append(r[1])
         zdata.append(r[2])
-        barcodeID.append(i)
+        barcode_id.append(i)
 
     if len(colors) == 0:
         colors = np.arange(coordinates.shape[0])
@@ -258,12 +284,12 @@ def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3
 
 #     ax = plt.axes(projection='3d')
 
-#     xdata, ydata, zdata, barcodeID = [],[],[], []
+#     xdata, ydata, zdata, barcode_id = [],[],[], []
 #     for i,r in enumerate(coordinates):
 #         xdata.append(r[0])
 #         ydata.append(r[1])
 #         zdata.append(r[2])
-#         barcodeID.append(i)
+#         barcode_id.append(i)
 
 #     if len(colors)==0:
 #         colors=np.arange(coordinates.shape[0])
@@ -289,7 +315,9 @@ def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3
 #     plt.close(fig)
 
 
-def visualize2D(coordinateList, colors=[], cmap="hsv", titles=[], output="visualize2D.png"):
+def visualize2D(
+    coordinateList, colors=[], cmap="hsv", titles=[], output="visualize2D.png"
+):
 
     nRows = len(coordinateList)
 
@@ -302,12 +330,12 @@ def visualize2D(coordinateList, colors=[], cmap="hsv", titles=[], output="visual
             colors = np.arange(coordinates.shape[0])
             colors = colors.flatten()
 
-        xdata, ydata, zdata, barcodeID = [], [], [], []
+        xdata, ydata, zdata, barcode_id = [], [], [], []
         for i, r in enumerate(coordinates):
             xdata.append(r[0])
             ydata.append(r[1])
             zdata.append(r[2])
-            barcodeID.append(i)
+            barcode_id.append(i)
 
         ax.plot(xdata, ydata, "black")
         pos = ax.scatter(
@@ -332,34 +360,45 @@ def visualize2D(coordinateList, colors=[], cmap="hsv", titles=[], output="visual
         plt.close(fig)
 
 
-def plotTrajectories(HiMdata, runParameters, outputFileNameRoot, cellID, mode="matplotlib"):
+def plotTrajectories(
+    him_data, run_parameters, outputFileNameRoot, cell_id, mode="matplotlib"
+):
 
-    PWDmatrix = SCmatrix[:, :, cellID]
-    EnsembleMatrix = 1 / HiMdata.data["ensembleContactProbability"]
+    pwd_matrix = sc_matrix[:, :, cell_id]
+    EnsembleMatrix = 1 / him_data.data["ensembleContactProbability"]
 
-    ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]["BarcodeColormap"]) / 10
+    ATACseqMatrix = (
+        np.array(him_data.list_data[him_data.dataset_name]["BarcodeColormap"]) / 10
+    )
     colors = np.atleast_2d(ATACseqMatrix).flatten()
 
-    singleCellTitle = "Cell #" + str(cellID)
+    singleCellTitle = "Cell #" + str(cell_id)
     ensembleTitle = "Ensemble"
 
     # removes nans
-    for i in range(PWDmatrix.shape[0]):
-        PWDmatrix[i, i] = 0
+    for i in range(pwd_matrix.shape[0]):
+        pwd_matrix[i, i] = 0
         EnsembleMatrix[i, i] = 0
 
     # gets coordinates and saves in PDB format
     EnsembleMatrix[np.isnan(EnsembleMatrix)] = 0  # removes NaNs from matrix
-    coordinatesEnsemble = getsCoordinatesFromPWDmatrix(EnsembleMatrix)
+    coordinatesEnsemble = get_coordinates_from_pwd_matrix(EnsembleMatrix)
 
-    PWDmatrix[np.isnan(PWDmatrix)] = 0  # removes NaNs from matrix
-    coordinates = runParameters["pixelSize"] * getsCoordinatesFromPWDmatrix(PWDmatrix)
-    outputFileNamePDB = outputFileNameRoot + "_SingleCellTrajectory:" + str(cellID) + ".pdb"
-    write_XYZ_2_pdb(outputFileNamePDB, coordinates)
+    pwd_matrix[np.isnan(pwd_matrix)] = 0  # removes NaNs from matrix
+    coordinates = run_parameters["pixelSize"] * get_coordinates_from_pwd_matrix(pwd_matrix)
+    output_filename_pdb = (
+        outputFileNameRoot + "_SingleCellTrajectory:" + str(cell_id) + ".pdb"
+    )
+    write_xyz_2_pdb(output_filename_pdb, coordinates)
 
     # makes plots
     cmap = "tab10"
-    output = outputFileNameRoot + "_2DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
+    output = (
+        outputFileNameRoot
+        + "_2DsingleCell:"
+        + str(cell_id)
+        + run_parameters["plottingFileExtension"]
+    )
     visualize2D(
         [coordinates, coordinatesEnsemble],
         colors=colors,
@@ -368,31 +407,54 @@ def plotTrajectories(HiMdata, runParameters, outputFileNameRoot, cellID, mode="m
         output=output,
     )
 
-    output = outputFileNameRoot + "_3DensembleMatrix" + runParameters["plottingFileExtension"]
-    visualize3D(coordinatesEnsemble, colors=colors, cmap=cmap, title=ensembleTitle, output=output)
+    output = (
+        outputFileNameRoot
+        + "_3DensembleMatrix"
+        + run_parameters["plottingFileExtension"]
+    )
+    visualize3D(
+        coordinatesEnsemble,
+        colors=colors,
+        cmap=cmap,
+        title=ensembleTitle,
+        output=output,
+    )
 
-    output = outputFileNameRoot + "_3DsingleCell:" + str(cellID) + runParameters["plottingFileExtension"]
+    output = (
+        outputFileNameRoot
+        + "_3DsingleCell:"
+        + str(cell_id)
+        + run_parameters["plottingFileExtension"]
+    )
 
     if mode == "matplotlib":
-        visualize3D(coordinates, colors=colors, cmap=cmap, title=singleCellTitle, output=output)
+        visualize3D(
+            coordinates, colors=colors, cmap=cmap, title=singleCellTitle, output=output
+        )
 
     # else:
     #     visualize3D_mayavi(coordinates,colors=colors,cmap='rainbow',title=singleCellTitle, output=output)
 
 
-def plotSCmatrix(HiMdata, cellID, outputFileNameRoot="SCmatrix.png", ensembleMatrix=False, searchPattern="_scMatrix:"):
-    datasetName = list(HiMdata.ListData.keys())[0]
+def plot_sc_matrix(
+    him_data,
+    cell_id,
+    outputFileNameRoot="sc_matrix.png",
+    ensembleMatrix=False,
+    searchPattern="_scMatrix:",
+):
+    dataset_name = list(him_data.list_data.keys())[0]
 
-    vmax = HiMdata.ListData[datasetName]["iPWD_clim"]
-    cmap = HiMdata.ListData[datasetName]["iPWD_cm"]
-    SCmatrix = HiMdata.SCmatrixSelected
-    singleCellTitle = "Cell #" + str(cellID)
+    vmax = him_data.list_data[dataset_name]["iPWD_clim"]
+    cmap = him_data.list_data[dataset_name]["iPWD_cm"]
+    sc_matrix = him_data.sc_matrix_selected
+    singleCellTitle = "Cell #" + str(cell_id)
 
     if ensembleMatrix:
         ensembleTitle = "Ensemble"
-        EnsembleMatrix = 1 / HiMdata.data["ensembleContactProbability"]
+        EnsembleMatrix = 1 / him_data.data["ensembleContactProbability"]
 
-    PWDmatrix = SCmatrix[:, :, cellID]
+    pwd_matrix = sc_matrix[:, :, cell_id]
 
     if ensembleMatrix:
         fig, allAxes = plt.subplots(1, 2)
@@ -403,59 +465,68 @@ def plotSCmatrix(HiMdata, cellID, outputFileNameRoot="SCmatrix.png", ensembleMat
         fig.set_size_inches((10, 10))
         ax = [allAxes]
 
-    uniqueBarcodes = 1 + np.arange(PWDmatrix.shape[0])
+    unique_barcodes = 1 + np.arange(pwd_matrix.shape[0])
 
-    p1 = ax[0].imshow(1 / PWDmatrix, cmap=cmap, vmin=0, vmax=vmax)
-    fig.colorbar(p1, ax=ax[0], fraction=0.046, pad=0.04)
+    p_1 = ax[0].imshow(1 / pwd_matrix, cmap=cmap, vmin=0, vmax=vmax)
+    fig.colorbar(p_1, ax=ax[0], fraction=0.046, pad=0.04)
     ax[0].set_title(singleCellTitle)
-    plt.xticks(np.arange(PWDmatrix.shape[0]), uniqueBarcodes)
-    plt.yticks(np.arange(PWDmatrix.shape[0]), uniqueBarcodes)
+    plt.xticks(np.arange(pwd_matrix.shape[0]), unique_barcodes)
+    plt.yticks(np.arange(pwd_matrix.shape[0]), unique_barcodes)
 
     if ensembleMatrix:
-        p2 = ax[1].imshow(1 / EnsembleMatrix[:, :], cmap=cmap, vmin=0, vmax=vmax)
-        fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
+        p_2 = ax[1].imshow(1 / EnsembleMatrix[:, :], cmap=cmap, vmin=0, vmax=vmax)
+        fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
         ax[1].set_title(ensembleTitle)
 
-    output = outputFileNameRoot + searchPattern + str(cellID) + runParameters["plottingFileExtension"]
+    output = (
+        outputFileNameRoot
+        + searchPattern
+        + str(cell_id)
+        + run_parameters["plottingFileExtension"]
+    )
     plt.savefig(output)
     plt.close(fig)
 
 
-def plotsSubplotSCmatrices(HiMdata, nRows, output="subplotMatrices.png"):
+def plotsSubplot_sc_matrices(him_data, nRows, output="subplotMatrices.png"):
 
-    datasetName = list(HiMdata.ListData.keys())[0]
+    dataset_name = list(him_data.list_data.keys())[0]
 
-    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)
+    sc_matrix, sorted_values, n_cells = sort_cells_by_number_pwd(him_data)
 
     # displays plots
     Ncells2Process = nRows ** 2
-    cellID, Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    cell_id, Npwd = returnCellsHighestNumberPWD(sorted_values, Ncells2Process)
 
     fig, allAxes = plt.subplots(nRows, nRows)
     fig.set_size_inches((50, 50))
     ax = allAxes.ravel()
 
-    cmap = HiMdata.ListData[datasetName]["ContactProbability_cm"]
-    vmax = HiMdata.ListData[datasetName]["iPWD_clim"]
+    cmap = him_data.list_data[dataset_name]["ContactProbability_cm"]
+    vmax = him_data.list_data[dataset_name]["iPWD_clim"]
 
     iplot = 0
-    for iCell in cellID:
-        pos = ax[iplot].imshow(1 / SCmatrix[:, :, iCell], cmap=cmap, vmin=0, vmax=vmax)
+    for i_cell in cell_id:
+        pos = ax[iplot].imshow(1 / sc_matrix[:, :, i_cell], cmap=cmap, vmin=0, vmax=vmax)
         ax[iplot].set_xticklabels(())
         ax[iplot].set_yticklabels(())
         ax[iplot].set_axis_off()
-        ax[iplot].set_title(str(iCell))
+        ax[iplot].set_title(str(i_cell))
 
         iplot += 1
 
     plt.savefig(output)
     plt.close(fig)
-    return cellID, SCmatrix
+    return cell_id, sc_matrix
 
 
 def makesVideo(folder, video_name, searchPattern):
 
-    images = [img for img in os.listdir(os.path.dirname(folder)) if img.endswith(".png") and searchPattern in img]
+    images = [
+        img
+        for img in os.listdir(os.path.dirname(folder))
+        if img.endswith(".png") and searchPattern in img
+    ]
     if len(images) > 0:
         frame = cv2.imread(os.path.join(os.path.dirname(folder), images[0]))
         height, width, layers = frame.shape
@@ -468,64 +539,80 @@ def makesVideo(folder, video_name, searchPattern):
         cv2.destroyAllWindows()
         video.release()
     else:
-        print("Sorry, no images found fitting the pattern {} in this folder: {}".format(searchPattern, folder))
+        print(
+            "Sorry, no images found fitting the pattern {} in this folder: {}".format(
+                searchPattern, folder
+            )
+        )
 
 
-def plotsBarcodesPerCell(SCmatrix, runParameters, outputFileNameRoot="./"):
+def plotsBarcodesPerCell(sc_matrix, run_parameters, outputFileNameRoot="./"):
 
-    numBarcodes = getBarcodesPerCell(SCmatrix)
-    maxNumberBarcodes = SCmatrix.shape[0]
+    num_barcodes = get_barcodes_per_cell(sc_matrix)
+    maxNumberBarcodes = sc_matrix.shape[0]
 
     fig, ax = plt.subplots()
     fig.set_size_inches((10, 10))
-    ax.hist(numBarcodes, bins=range(2, maxNumberBarcodes + 1))
+    ax.hist(num_barcodes, bins=range(2, maxNumberBarcodes + 1))
     ax.set_xlabel("number of barcodes")
     ax.set_ylabel("counts")
 
-    output = outputFileNameRoot + "_SChistBarcodesPerCell" + runParameters["plottingFileExtension"]
+    output = (
+        outputFileNameRoot
+        + "_SChistBarcodesPerCell"
+        + run_parameters["plottingFileExtension"]
+    )
     plt.savefig(output)
     plt.close(fig)
 
 
-def plotsBarcodesEfficiencies(SCmatrix, runParameters, uniqueBarcodes, outputFileNameRoot="./"):
+def plotsBarcodesEfficiencies(
+    sc_matrix, run_parameters, unique_barcodes, outputFileNameRoot="./"
+):
 
-    eff = getDetectionEffBarcodes(SCmatrix)
+    eff = get_detection_eff_barcodes(sc_matrix)
 
     fig, ax = plt.subplots()
     fig.set_size_inches((10, 10))
-    ax.bar(uniqueBarcodes, eff)
+    ax.bar(unique_barcodes, eff)
     ax.set_xlabel("barcode ID")
     ax.set_ylabel("efficiency")
     ax.set_xticks(np.arange(len(eff)))
-    ax.set_xticklabels(uniqueBarcodes)
+    ax.set_xticklabels(unique_barcodes)
 
-    output = outputFileNameRoot + "_SCBarcodesEfficiency" + runParameters["plottingFileExtension"]
+    output = (
+        outputFileNameRoot
+        + "_SCBarcodesEfficiency"
+        + run_parameters["plottingFileExtension"]
+    )
     plt.savefig(output)
     plt.close(fig)
 
 
 def plotsRgvalues(
-    HiMdata,
+    him_data,
     nRows,
-    runParameters,
-    outputFileName="./RgValues.png",
-    minNumberPWD=6,
+    run_parameters,
+    output_filename="./RgValues.png",
+    min_number_pwd=6,
     threshold=6,
     bandwidths=10 ** np.linspace(-1.5, 0, 20),
 ):
 
-    print("Threshold = {} px | min number PWDs = {}".format(threshold, minNumberPWD))
+    print("Threshold = {} px | min number PWDs = {}".format(threshold, min_number_pwd))
 
-    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)
+    sc_matrix, sorted_values, n_cells = sort_cells_by_number_pwd(him_data)
     Ncells2Process = nRows ** 2
-    selectedCellsIDs, Npwd = returnCellsHighestNumberPWD(sortedValues, Ncells2Process)
+    selectedCellsIDs, Npwd = returnCellsHighestNumberPWD(sorted_values, Ncells2Process)
 
     # calculates Rg for all cells
-    RgList = list()
-    for cellID in selectedCellsIDs:
+    RgList = []
+    for cell_id in selectedCellsIDs:
         RgList.append(
-            runParameters["pixelSize"]
-            * getRgFromPWD(SCmatrix[:, :, cellID], minNumberPWD=minNumberPWD, threshold=threshold)
+            run_parameters["pixelSize"]
+            * get_rg_from_pwd(
+                sc_matrix[:, :, cell_id], min_number_pwd=min_number_pwd, threshold=threshold
+            )
         )
 
     RgListArray = np.array(RgList)
@@ -533,7 +620,12 @@ def plotsRgvalues(
 
     # plots single Rg as bars
     fig, ax = plt.subplots(
-        1, 1, figsize=(10, 10), sharex=True, sharey=True, subplot_kw={"xlim": (0, maxRange), "ylim": (-0.02, 1.2)}
+        1,
+        1,
+        figsize=(10, 10),
+        sharex=True,
+        sharey=True,
+        subplot_kw={"xlim": (0, maxRange), "ylim": (-0.02, 1.2)},
     )
     ax.plot(RgListArray, np.full_like(RgListArray, -0.01), "|k", markeredgewidth=0.5)
 
@@ -548,13 +640,15 @@ def plotsRgvalues(
     # fist finds best bandwidth
     print("Calculating optimal KDE bandwidth...")
 
-    grid = GridSearchCV(KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut())
+    grid = GridSearchCV(
+        KernelDensity(kernel="gaussian"), {"bandwidth": bandwidths}, cv=LeaveOneOut()
+    )
     grid.fit(RgListArray[:, None])
     bandwidth = grid.best_params_["bandwidth"]
     print("bandwidth = {}".format(bandwidth))
 
     # calculates KDE with optimal bandwidth
-    logprob, kde = kdeFit(RgListArray, x_d, bandwidth=bandwidth)
+    logprob, kde = kde_fit(RgListArray, x_d, bandwidth=bandwidth)
     kde_params = kde.get_params()
     maxlogprob = logprob.max()
     ax.fill_between(x_d, np.exp(logprob) / np.exp(maxlogprob), alpha=0.3)
@@ -564,29 +658,29 @@ def plotsRgvalues(
 
     ax.axvline(x=mean, color="black", linestyle=(0, (5, 5)))
 
-    plt.savefig(outputFileName)
+    plt.savefig(output_filename)
     plt.close(fig)
     return RgList
 
 
 def makesPlotHistograms(
-    HiMdata,
-    runParameters,
-    outputFileName="./HiMhistograms.png",
+    him_data,
+    run_parameters,
+    output_filename="./HiMhistograms.png",
     mode="KDE",
-    kernelWidth=0.25,
-    optimizeKernelWidth=False,
+    kernel_width=0.25,
+    optimize_kernel_width=False,
 ):
-    SCmatrix, sortedValues, nCells = sortsCellsbyNumberPWD(HiMdata)
+    sc_matrix, sorted_values, n_cells = sort_cells_by_number_pwd(him_data)
 
-    plotDistanceHistograms(
-        SCmatrix,
-        runParameters["pixelSize"],
-        outputFileName,
+    plot_distance_histograms(
+        sc_matrix,
+        run_parameters["pixelSize"],
+        output_filename,
         mode="KDE",
-        kernelWidth=0.25,
-        optimizeKernelWidth=False,
-        maxDistance=runParameters["maxDistance"],
+        kernel_width=0.25,
+        optimize_kernel_width=False,
+        max_distance=run_parameters["max_distance"],
     )
 
 
@@ -598,96 +692,117 @@ def makesPlotHistograms(
 if __name__ == "__main__":
 
     print(">>> Producing HiM matrix")
-    rootFolder, outputFolder, runParameters = parseArguments()
+    root_folder, output_folder, run_parameters = parse_arguments()
 
-    HiMdata = analysisHiMmatrix(runParameters, rootFolder)
+    him_data = AnalysisHiMMatrix(run_parameters, root_folder)
 
-    HiMdata.loadData()
+    him_data.load_data()
 
-    nCells = HiMdata.nCellsLoaded()
+    n_cells = him_data.n_cells_loaded()
 
-    HiMdata.retrieveSCmatrix()
+    him_data.retrieve_sc_matrix()
 
-    nDatasets = len(HiMdata.data["runName"])
+    n_datasets = len(him_data.data["run_name"])
 
-    if outputFolder == "none":
-        outputFolder = HiMdata.dataFolder
+    if output_folder == "none":
+        output_folder = him_data.data_folder
 
     outputFileNameRoot = (
-        outputFolder
+        output_folder
         + os.sep
         + "Fig_SCmatrices"
         + "_dataset1:"
-        + HiMdata.datasetName
+        + him_data.dataset_name
         + "_label:"
-        + runParameters["label"]
+        + run_parameters["label"]
         + "_action:"
-        + runParameters["action"]
+        + run_parameters["action"]
     )
-    datasetName = list(HiMdata.ListData.keys())[0]
+    dataset_name = list(him_data.list_data.keys())[0]
     print("Data output: {}".format(outputFileNameRoot))
 
     # "makes subplots with sc 1/PWD matrices"
     print("\n>>>Plotting subplots with 1/PWD matrices<<<\n")
-    nRows = runParameters["nRows"]
-    output = outputFileNameRoot + "_scMatrices" + runParameters["plottingFileExtension"]
-    cellID_most_PWDs, SCmatrix = plotsSubplotSCmatrices(HiMdata, nRows, output=output)
+    nRows = run_parameters["nRows"]
+    output = (
+        outputFileNameRoot + "_scMatrices" + run_parameters["plottingFileExtension"]
+    )
+    cellID_most_PWDs, sc_matrix = plotsSubplot_sc_matrices(him_data, nRows, output=output)
 
     # "calculates the number of barcodes per cell and makes histograms"
     print("\n>>>Calculating distribution of barcodes<<<\n")
-    plotsBarcodesPerCell(SCmatrix, runParameters, outputFileNameRoot=outputFileNameRoot)
+    plotsBarcodesPerCell(
+        sc_matrix, run_parameters, outputFileNameRoot=outputFileNameRoot
+    )
 
     # "calculates the detection efficiency for each barcode"
     print("\n>>>Calculating detection efficiency distribution<<<\n")
     plotsBarcodesEfficiencies(
-        SCmatrix, runParameters, list(HiMdata.data["uniqueBarcodes"]), outputFileNameRoot=outputFileNameRoot
+        sc_matrix,
+        run_parameters,
+        list(him_data.data["unique_barcodes"]),
+        outputFileNameRoot=outputFileNameRoot,
     )
 
     # "calculates the Rg for each cell from the PWD sc matrix"
     print("\n>>>Calculating Rg distributions<<<\n")
-    output = outputFileNameRoot + "_RgValues" + runParameters["plottingFileExtension"]
+    output = outputFileNameRoot + "_RgValues" + run_parameters["plottingFileExtension"]
     RgList = plotsRgvalues(
-        HiMdata,
+        him_data,
         nRows,
-        runParameters,
-        outputFileName=output,
-        minNumberPWD=int(runParameters["minNumberPWD"]),
-        threshold=float(runParameters["threshold"]),
+        run_parameters,
+        output_filename=output,
+        min_number_pwd=int(run_parameters["min_number_pwd"]),
+        threshold=float(run_parameters["threshold"]),
         bandwidths=10 ** np.linspace(-1, 0, 20),
     )
 
     # plots distance histograms
-    if runParameters["plotHistogramMatrix"]:
+    if run_parameters["plotHistogramMatrix"]:
         print("\n>>>Plotting distance histograms<<<\n")
-        output = outputFileNameRoot + "_HistogramPWDs" + runParameters["plottingFileExtension"]
+        output = (
+            outputFileNameRoot
+            + "_HistogramPWDs"
+            + run_parameters["plottingFileExtension"]
+        )
         makesPlotHistograms(
-            HiMdata, runParameters, outputFileName=output, mode="KDE", kernelWidth=0.25, optimizeKernelWidth=False
+            him_data,
+            run_parameters,
+            output_filename=output,
+            mode="KDE",
+            kernel_width=0.25,
+            optimize_kernel_width=False,
         )
 
     # "plots trajectories for selected cells"
     print("\n>>>Plotting trajectories for selected cells<<<\n")
-    if "CellIDs" in HiMdata.ListData[datasetName].keys():
-        CellIDs = HiMdata.ListData[datasetName]["CellIDs"]
+    if "CellIDs" in him_data.list_data[dataset_name].keys():
+        CellIDs = him_data.list_data[dataset_name]["CellIDs"]
         print("CellIDs to process: {}".format(CellIDs))
-        for cellID in CellIDs:
-            if cellID < HiMdata.SCmatrixSelected.shape[2]:
+        for cell_id in CellIDs:
+            if cell_id < him_data.sc_matrix_selected.shape[2]:
                 #  Plots sc 1/PWD matrix and ensemble 1/PWD matrix together
-                plotSCmatrix(HiMdata, cellID, outputFileNameRoot, ensembleMatrix=runParameters["ensembleMatrix"])
+                plot_sc_matrix(
+                    him_data,
+                    cell_id,
+                    outputFileNameRoot,
+                    ensembleMatrix=run_parameters["ensembleMatrix"],
+                )
 
                 # plots trajectories
-                plotTrajectories(HiMdata, runParameters, outputFileNameRoot, cellID)
+                plotTrajectories(him_data, run_parameters, outputFileNameRoot, cell_id)
 
     # "makes video of SC matrix for selected cells"
-    if runParameters["video"]:
+    if run_parameters["video"]:
         print("\n>>>Making video<<<\n")
-        if runParameters["videoAllcells"]:
+        if run_parameters["videoAllcells"]:
             searchPattern = "_scMostPWD:"
-            for cellID in cellID_most_PWDs:
-                plotSCmatrix(
-                    HiMdata,
-                    cellID,
+            for cell_id in cellID_most_PWDs:
+                plot_sc_matrix(
+                    him_data,
+                    cell_id,
                     outputFileNameRoot,
-                    ensembleMatrix=runParameters["ensembleMatrix"],
+                    ensembleMatrix=run_parameters["ensembleMatrix"],
                     searchPattern=searchPattern,
                 )
         else:

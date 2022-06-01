@@ -7,50 +7,77 @@ Created on Fri Jun  5 09:24:51 2020
 """
 
 
+import argparse
+import csv
+import json
+
 #%% imports and plotting settings
 import os
-import numpy as np
-import argparse
+
+import matplotlib.gridspec as gridspec
 
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-from matrixOperations.alignBarcodesMasks import plotDistanceHistograms, plotMatrix
+import numpy as np
+
+from matrixOperations.alignBarcodesMasks import plot_distance_histograms, plot_matrix
 
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
-    plotsEnsemble3wayContactMatrix,
-    calculate3wayContactMatrix,
-    getMultiContact,
-    shuffleMatrix,
-    analysisHiMmatrix,
+    AnalysisHiMMatrix,
+    calculate_3_way_contact_matrix,
+    get_multi_contact,
+    plot_ensemble_3_way_contact_matrix,
+    shuffle_matrix,
 )
-
 
 #%% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
-    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
 
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-P",
+        "--parameters",
+        help="Provide name of parameter files. folders_to_load.json assumed as default",
     )
-    parser.add_argument("-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)")
-    parser.add_argument("-W1", "--action1", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
-    parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
-    parser.add_argument("-W2", "--action2", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
+    parser.add_argument(
+        "-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)"
+    )
+    parser.add_argument(
+        "-W1",
+        "--action1",
+        help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ",
+    )
+    parser.add_argument(
+        "-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)"
+    )
+    parser.add_argument(
+        "-W2",
+        "--action2",
+        help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ",
+    )
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
+    )
+    parser.add_argument(
+        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+    )
+    parser.add_argument(
+        "--ratio",
+        help="Does ratio between matrices. Default: difference",
+        action="store_true",
+    )
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
-    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
+    )
     parser.add_argument(
         "--shuffle1",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
@@ -66,8 +93,8 @@ def parseArguments():
 
     args = parser.parse_args()
 
-    runParameters = {}
-    runParameters["pixelSize"] = 0.1
+    run_parameters = {}
+    run_parameters["pixelSize"] = 0.1
 
     if args.rootFolder1:
         rootFolder1 = args.rootFolder1
@@ -76,90 +103,90 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters["run2Datasets"] = True
+        run_parameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters["run2Datasets"] = False
+        run_parameters["run2Datasets"] = False
 
-    if args.outputFolder:
-        outputFolder = args.outputFolder
+    if args.output_folder:
+        output_folder = args.output_folder
     else:
-        outputFolder = "none"
+        output_folder = "none"
 
     if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
+        run_parameters["parametersFileName"] = args.parameters
     else:
-        runParameters["parametersFileName"] = "folders2Load.json"
+        run_parameters["parametersFileName"] = "folders_to_load.json"
 
     if args.label1:
-        runParameters["label1"] = args.label1
+        run_parameters["label1"] = args.label1
     else:
-        runParameters["label1"] = "doc"
+        run_parameters["label1"] = "doc"
 
     if args.label2:
-        runParameters["label2"] = args.label2
+        run_parameters["label2"] = args.label2
     else:
-        runParameters["label2"] = "NE"
+        run_parameters["label2"] = "NE"
 
     if args.action1:
-        runParameters["action1"] = args.action1
+        run_parameters["action1"] = args.action1
     else:
-        runParameters["action1"] = "labeled"
+        run_parameters["action1"] = "labeled"
 
     if args.action2:
-        runParameters["action2"] = args.action2
+        run_parameters["action2"] = args.action2
     else:
-        runParameters["action2"] = "labeled"
+        run_parameters["action2"] = "labeled"
 
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
+        run_parameters["axisLabel"] = False
 
-    if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
+    if args.axis_ticks:
+        run_parameters["axis_ticks"] = args.axis_ticks
     else:
-        runParameters["axisTicks"] = False
+        run_parameters["axis_ticks"] = False
 
     if args.ratio:
-        runParameters["ratio"] = args.ratio
+        run_parameters["ratio"] = args.ratio
     else:
-        runParameters["ratio"] = False
+        run_parameters["ratio"] = False
 
     if args.cAxis:
-        runParameters["cAxis"] = float(args.cAxis)
+        run_parameters["cAxis"] = float(args.cAxis)
     else:
-        runParameters["cAxis"] = 0.6
+        run_parameters["cAxis"] = 0.6
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".svg"
+        run_parameters["plottingFileExtension"] = ".svg"
 
     if args.shuffle1:
-        runParameters["shuffle1"] = args.shuffle1
+        run_parameters["shuffle1"] = args.shuffle1
     else:
-        runParameters["shuffle1"] = 0
+        run_parameters["shuffle1"] = 0
 
     if args.shuffle2:
-        runParameters["shuffle2"] = args.shuffle2
+        run_parameters["shuffle2"] = args.shuffle2
     else:
-        runParameters["shuffle2"] = 0
+        run_parameters["shuffle2"] = 0
 
     if args.cMinMax:
-        runParameters["cMinMax"] = args.cMinMax
+        run_parameters["cMinMax"] = args.cMinMax
     else:
-        runParameters["cMinMax"] = 0
+        run_parameters["cMinMax"] = 0
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
-    print("Input parameters:{}".format(runParameters))
+    print("Input parameters:{}".format(run_parameters))
 
-    return rootFolder1, rootFolder2, outputFolder, runParameters
+    return rootFolder1, rootFolder2, output_folder, run_parameters
 
 
 # =============================================================================
@@ -168,104 +195,107 @@ def parseArguments():
 
 if __name__ == "__main__":
 
-    rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
+    rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
 
-    HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
-    HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
-    HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
-    HiMdata1.loadData()
-    nCells = HiMdata1.nCellsLoaded()
+    him_data_1 = AnalysisHiMMatrix(run_parameters, rootFolder1)
+    him_data_1.run_parameters["action"] = him_data_1.run_parameters["action1"]
+    him_data_1.run_parameters["label"] = him_data_1.run_parameters["label1"]
+    him_data_1.load_data()
+    n_cells = him_data_1.n_cells_loaded()
 
-    HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
-    HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
-    HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
-    HiMdata2.loadData()
-    nCells2 = HiMdata2.nCellsLoaded()
+    him_data_2 = AnalysisHiMMatrix(run_parameters, rootFolder2)
+    him_data_2.run_parameters["action"] = him_data_2.run_parameters["action2"]
+    him_data_2.run_parameters["label"] = him_data_2.run_parameters["label2"]
+    him_data_2.load_data()
+    n_cells_2 = him_data_2.n_cells_loaded()
 
-    # cScale1 = HiMdata1.data['ensembleContactProbability'].max() / runParameters['cAxis']
-    # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
-    # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
+    # cScale1 = him_data_1.data['ensembleContactProbability'].max() / run_parameters['cAxis']
+    # cScale2 = him_data_2.data['ensembleContactProbability'].max() / run_parameters['scalingParameter']
+    # print('scalingParameters={}'.format(run_parameters["scalingParameter"] ))
 
-    if outputFolder == "none":
-        outputFolder = HiMdata1.dataFolder
+    if output_folder == "none":
+        output_folder = him_data_1.data_folder
 
     outputFileName1 = (
-        outputFolder
+        output_folder
         + os.sep
         + "Fig_ratio2HiMmatrices"
         + "_dataset1:"
-        + HiMdata1.datasetName
+        + him_data_1.dataset_name
         + "_label1:"
-        + runParameters["label1"]
+        + run_parameters["label1"]
         + "_action1:"
-        + runParameters["action1"]
+        + run_parameters["action1"]
         + "_dataset2:"
-        + HiMdata2.datasetName
+        + him_data_2.dataset_name
         + "_label2:"
-        + runParameters["label2"]
+        + run_parameters["label2"]
         + "_action2:"
-        + runParameters["action2"]
-        + runParameters["plottingFileExtension"]
+        + run_parameters["action2"]
+        + run_parameters["plottingFileExtension"]
     )
 
     outputFileName2 = (
-        outputFolder
+        output_folder
         + os.sep
         + "Fig_mixedHiMmatrices"
         + "_dataset1:"
-        + HiMdata1.datasetName
+        + him_data_1.dataset_name
         + "_label1:"
-        + runParameters["label1"]
+        + run_parameters["label1"]
         + "_action1:"
-        + runParameters["action1"]
+        + run_parameters["action1"]
         + "_dataset2:"
-        + HiMdata2.datasetName
+        + him_data_2.dataset_name
         + "_label2:"
-        + runParameters["label2"]
+        + run_parameters["label2"]
         + "_action2:"
-        + runParameters["action2"]
-        + runParameters["plottingFileExtension"]
+        + run_parameters["action2"]
+        + run_parameters["plottingFileExtension"]
     )
 
-    if HiMdata1.data["ensembleContactProbability"].shape == HiMdata2.data["ensembleContactProbability"].shape:
+    if (
+        him_data_1.data["ensembleContactProbability"].shape
+        == him_data_2.data["ensembleContactProbability"].shape
+    ):
         ### Fig1: difference or ratio of the two matrices
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f1 = fig1.add_subplot(spec1[0, 0])  # 16
-        m1 = HiMdata1.data["ensembleContactProbability"]
-        m2 = HiMdata2.data["ensembleContactProbability"]
+        f_1 = fig1.add_subplot(spec1[0, 0])  # 16
+        m1 = him_data_1.data["ensembleContactProbability"]
+        m2 = him_data_2.data["ensembleContactProbability"]
 
-        if runParameters["shuffle1"] != 0:
-            index1 = [int(i) for i in runParameters["shuffle1"].split(",")]
-            m1 = shuffleMatrix(m1, index1)
+        if run_parameters["shuffle1"] != 0:
+            index1 = [int(i) for i in run_parameters["shuffle1"].split(",")]
+            m1 = shuffle_matrix(m1, index1)
 
-        if runParameters["shuffle2"] != 0:
-            index2 = [int(i) for i in runParameters["shuffle2"].split(",")]
-            m2 = shuffleMatrix(m2, index2)
+        if run_parameters["shuffle2"] != 0:
+            index2 = [int(i) for i in run_parameters["shuffle2"].split(",")]
+            m2 = shuffle_matrix(m2, index2)
 
         m1 = m1 / m1.max()
         m2 = m2 / m2.max()
 
-        if runParameters["ratio"] == True:
+        if run_parameters["ratio"] == True:
             matrix = np.log(m1 / m2)
             cmtitle = "log(ratio)"
         else:
             matrix = m1 - m2
             cmtitle = "difference"
 
-        f1_ax1_im = HiMdata1.plot2DMatrixSimple(
-            f1,
+        f1_ax1_im = him_data_1.plot_2d_matrix_simple(
+            f_1,
             matrix,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
+            list(him_data_1.data["unique_barcodes"]),
+            run_parameters["axisLabel"],
+            run_parameters["axisLabel"],
             cmtitle=cmtitle,
-            cMin=-runParameters["cAxis"],
-            cMax=runParameters["cAxis"],
-            fontsize=runParameters["fontsize"],
+            c_min=-run_parameters["cAxis"],
+            c_max=run_parameters["cAxis"],
+            fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="RdBu",
+            axis_ticks=run_parameters["axis_ticks"],
+            c_m="RdBu",
         )
         plt.savefig(outputFileName1)
         print("Output figure: {}".format(outputFileName1))
@@ -277,48 +307,50 @@ if __name__ == "__main__":
         f2 = fig2.add_subplot(spec2[0, 0])  # 16
 
         # load data once more
-        matrix1 = HiMdata1.data["ensembleContactProbability"]
-        matrix2 = HiMdata2.data["ensembleContactProbability"]
+        matrix1 = him_data_1.data["ensembleContactProbability"]
+        matrix2 = him_data_2.data["ensembleContactProbability"]
 
-        if runParameters["shuffle1"] != 0:
-            index1 = [int(i) for i in runParameters["shuffle1"].split(",")]
-            matrix1 = shuffleMatrix(matrix1, index1)
+        if run_parameters["shuffle1"] != 0:
+            index1 = [int(i) for i in run_parameters["shuffle1"].split(",")]
+            matrix1 = shuffle_matrix(matrix1, index1)
 
-        if runParameters["shuffle2"] != 0:
-            index2 = [int(i) for i in runParameters["shuffle2"].split(",")]
-            matrix2 = shuffleMatrix(matrix2, index2)
+        if run_parameters["shuffle2"] != 0:
+            index2 = [int(i) for i in run_parameters["shuffle2"].split(",")]
+            matrix2 = shuffle_matrix(matrix2, index2)
 
         for i in range(matrix1.shape[0]):
             for j in range(0, i):
                 matrix1[i, j] = matrix2[i, j]
 
-        if runParameters["cMinMax"] == 0:
-            cMin = 0
-            cMax = runParameters["cAxis"]
+        if run_parameters["cMinMax"] == 0:
+            c_min = 0
+            c_max = run_parameters["cAxis"]
         else:
-            index = [float(i) for i in runParameters["cMinMax"].split(",")]
-            cMin = index[0]
-            cMax = index[1]
+            index = [float(i) for i in run_parameters["cMinMax"].split(",")]
+            c_min = index[0]
+            c_max = index[1]
 
-        HiMdata1.plot2DMatrixSimple(
+        him_data_1.plot_2d_matrix_simple(
             f2,
             matrix1,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
+            list(him_data_1.data["unique_barcodes"]),
+            run_parameters["axisLabel"],
+            run_parameters["axisLabel"],
             cmtitle="probability",
-            cMin=cMin,
-            cMax=cMax,
-            fontsize=runParameters["fontsize"],
+            c_min=c_min,
+            c_max=c_max,
+            fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="coolwarm",
+            axis_ticks=run_parameters["axis_ticks"],
+            c_m="coolwarm",
         )
         plt.savefig(outputFileName2)
         print("Output figure: {}".format(outputFileName2))
 
         # save also the npy
-        outputFileName3 = outputFileName2.replace(runParameters["plottingFileExtension"], ".npy")
+        outputFileName3 = outputFileName2.replace(
+            run_parameters["plottingFileExtension"], ".npy"
+        )
         np.save(outputFileName3, matrix1)
     else:
         print("Error: matrices do not have the same dimensions!")

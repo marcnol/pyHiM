@@ -21,12 +21,12 @@ masks = np.load("masks.npy")
 
 
 # Create image
-rootFolder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
-fileNameRNA = rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
+root_folder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
+fileNameRNA = root_folder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
 img = np.load(fileNameRNA).squeeze()
-Im = Image()
-Im.data_2D = img
-ax = Im.imageShow(show=True)
+im_obj = Image()
+im_obj.data_2d = img
+ax = im_obj.show_image(show=True)
 
 # fig, ax = plt.subplots()
 allMasks = np.sum(masks, axis=2)
@@ -52,18 +52,18 @@ from astropy.table import Table, Column, vstack
 
 ROI = 1
 fileNameDAPImask = "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch00_Masks.npy"
-fileName = "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered_SNDmask_sna.npy"
+file_name = "./segmentedObjects/scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered_SNDmask_sna.npy"
 # load DAPI mask
 maskDAPI = Image()
-maskDAPI.data_2D = np.load(fileNameDAPImask).squeeze()
+maskDAPI.data_2d = np.load(fileNameDAPImask).squeeze()
 
 # load SND mask
 maskSND = Image()
-maskSND.data_2D = np.load(fileName).squeeze()
+maskSND.data_2d = np.load(file_name).squeeze()
 
 # matches cells and SND masks
-newMatrix = maskDAPI.data_2D * maskSND.data_2D
-cellsWithinMask = np.unique(newMatrix)
+new_matrix = maskDAPI.data_2d * maskSND.data_2d
+cellsWithinMask = np.unique(new_matrix)
 allResults = Table()
 
 if len(cellsWithinMask) > 0:

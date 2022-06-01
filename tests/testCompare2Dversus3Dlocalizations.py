@@ -9,9 +9,9 @@ Created on Thu Mar 18 15:42:24 2021
 from astropy.table import Table
 import matplotlib.pyplot as plt
 
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset/segmentedObjects/"
-file1 = rootFolder + "segmentedObjects_barcode.dat"
-file2 = rootFolder + "segmentedObjects_3D_barcode.dat"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/test_dataset/segmentedObjects/"
+file1 = root_folder + "segmentedObjects_barcode.dat"
+file2 = root_folder + "segmentedObjects_3D_barcode.dat"
 
 
 barcodeMap2D = Table.read(file1, format="ascii.ecsv")

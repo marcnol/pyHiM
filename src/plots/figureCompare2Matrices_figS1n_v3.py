@@ -10,21 +10,22 @@ plot a mixed matrix for the "brightest spots" subset
 
 """
 
-import os
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 
-# from matrixOperations.alignBarcodesMasks import plotMatrix
+import matplotlib.pyplot as plt
+import numpy as np
+
+# from matrixOperations.alignBarcodesMasks import plot_matrix
 
 
 #%% define and loads datasets
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
     parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
-    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
 
     args = parser.parse_args()
 
@@ -38,12 +39,12 @@ def parseArguments():
     else:
         rootFolder2 = "."
 
-    if args.outputFolder:
-        outputFolder = args.outputFolder
+    if args.output_folder:
+        output_folder = args.output_folder
     else:
-        outputFolder = "none"
+        output_folder = "none"
 
-    return rootFolder1, rootFolder2, outputFolder
+    return rootFolder1, rootFolder2, output_folder
 
 
 # =============================================================================
@@ -56,16 +57,20 @@ if __name__ == "__main__":
     p = {}
     p["pixelSize"] = 0.1
 
-    rootFolder1, rootFolder2, outputFolder = parseArguments()  # F1 all, F2 brightest
+    rootFolder1, rootFolder2, output_folder = parse_arguments()  # F1 all, F2 brightest
 
     # %% define paths
-    barcodeFile = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_uniqueBarcodes.csv"
+    barcodeFile = (
+        "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_uniqueBarcodes.csv"
+    )
 
     dataFile1 = "scHiMmatrices/wt_docTAD_nc14_label:doc_action:labeled_ensembleContactProbability.npy"
     dataFile2 = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_ensembleContactProbability.npy"
 
-    SClabeled1 = "scHiMmatrices/wt_docTAD_nc14_label:doc_action:labeled_SClabeledCollated.npy"
-    SClabeled2 = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_SClabeledCollated.npy"
+    sc_labeled1 = (
+        "scHiMmatrices/wt_docTAD_nc14_label:doc_action:labeled_SClabeledCollated.npy"
+    )
+    sc_labeled2 = "scHiMmatrices/wt_docTAD_nc14_label:docHigh_action:labeled_SClabeledCollated.npy"
 
     # %% load the data
 
@@ -77,18 +82,18 @@ if __name__ == "__main__":
     contactMap2 = np.load(fn2)
 
     # load array with info with cells were "labeled", i.e. selected for plotting
-    fn1_SClabeled = os.path.join(rootFolder1, SClabeled1)
-    fn2_SClabeled = os.path.join(rootFolder2, SClabeled2)
+    fn1_sc_labeled = os.path.join(rootFolder1, sc_labeled1)
+    fn2_sc_labeled = os.path.join(rootFolder2, sc_labeled2)
 
-    SClabeled1 = np.load(fn1_SClabeled)
-    SClabeled2 = np.load(fn2_SClabeled)
+    sc_labeled1 = np.load(fn1_sc_labeled)
+    sc_labeled2 = np.load(fn2_sc_labeled)
 
-    numCells1 = np.sum(SClabeled1 == 1)
-    numCells2 = np.sum(SClabeled2 == 1)
+    numCells1 = np.sum(sc_labeled1 == 1)
+    numCells2 = np.sum(sc_labeled2 == 1)
 
     # load barcodes
     fnBarcodes = os.path.join(rootFolder2, barcodeFile)
-    commonSetUniqueBarcodes = np.loadtxt(fnBarcodes).astype(int)
+    common_set_unique_barcodes = np.loadtxt(fnBarcodes).astype(int)
 
     # %% mix it
 
@@ -103,15 +108,19 @@ if __name__ == "__main__":
     print("Pearson correlation coefficient = {}".format(corrcoef_matrix[0, 1]))
 
     # %% plots results
-    mode, clim, cMin = "counts", 0.6, 0.0  # mode = counts -> just use matrix as is, no scaling
+    mode, clim, c_min = (
+        "counts",
+        0.6,
+        0.0,
+    )  # mode = counts -> just use matrix as is, no scaling
     minVal = np.nanmin(contactMap_mix)
     maxVal = np.nanmax(contactMap_mix)
     print("Matrix to be plotted: min {}, max {}".format(minVal, maxVal))
 
     figtitle = "Contact probability map"
-    nCells = "{}\{}".format(numCells2, numCells1)
-    numberROIs = 0
-    uniqueBarcodes = range(1, contactMap_mix.shape[0] + 1)
+    n_cells = "{}\{}".format(numCells2, numCells1)
+    number_rois = 0
+    unique_barcodes = range(1, contactMap_mix.shape[0] + 1)
     cmtitle = "Contact probability"
     matrixPlot = contactMap_mix
 
@@ -120,22 +129,33 @@ if __name__ == "__main__":
     plt.xlabel("Barcode #")
     plt.ylabel("Barcode #")
     plt.title(
-        figtitle + " | " + str(matrixPlot.shape[0]) + " barcodes | n=" + str(nCells) + " | ROIs=" + str(numberROIs)
+        figtitle
+        + " | "
+        + str(matrixPlot.shape[0])
+        + " barcodes | n="
+        + str(n_cells)
+        + " | rois="
+        + str(number_rois)
     )
-    plt.xticks(np.arange(matrixPlot.shape[0]), uniqueBarcodes)
-    plt.yticks(np.arange(matrixPlot.shape[0]), uniqueBarcodes)
+    plt.xticks(np.arange(matrixPlot.shape[0]), unique_barcodes)
+    plt.yticks(np.arange(matrixPlot.shape[0]), unique_barcodes)
     cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
     # cbar.minorticks_on()
     cbar.set_label(cmtitle)
-    plt.clim(cMin, clim)
+    plt.clim(c_min, clim)
 
     # save to PNG
     saveExt = "png"  # png, svg, jpg
-    fnSave = os.path.join(outputFolder, "label:doc_action:labeled_label:docHigh_action:labeled." + saveExt)
+    fnSave = os.path.join(
+        output_folder,
+        "label:doc_action:labeled_label:docHigh_action:labeled." + saveExt,
+    )
     fig.savefig(fnSave)
 
     # save also the npy
-    fnSave2 = os.path.join(outputFolder, "label:doc_action:labeled_label:docHigh_action:labeled." + "npy")
+    fnSave2 = os.path.join(
+        output_folder, "label:doc_action:labeled_label:docHigh_action:labeled." + "npy"
+    )
     np.save(fnSave2, matrixPlot)
 
     # %% plot 4M profiles
@@ -160,7 +180,7 @@ if __name__ == "__main__":
         ax.set_xlim(0, profile1.shape[0] - 1)
 
         ax.set_xticks(np.arange(profile1.shape[0]))
-        # ax.set_xticklabels(commonSetUniqueBarcodes)
+        # ax.set_xticklabels(common_set_unique_barcodes)
         ax.set_xticklabels(np.arange(profile1.shape[0]) + 1)
 
         # ax.set_yticks([0, 0.5, 1])
@@ -171,5 +191,7 @@ if __name__ == "__main__":
         ax.legend(("Dorsal ectoderm", "Subset transcription\nhotspots"))
 
         saveExt = "png"  # png, svg, jpg
-        outputFileName = os.path.join(outputFolder, "4M_doc_subset_anchor_{}.{}".format(anchor, saveExt))
-        fig.savefig(outputFileName)
+        output_filename = os.path.join(
+            output_folder, "4M_doc_subset_anchor_{}.{}".format(anchor, saveExt)
+        )
+        fig.savefig(output_filename)

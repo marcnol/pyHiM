@@ -12,106 +12,126 @@ This file contains routines to process Hi-M datasets
 # IMPORTS
 # =============================================================================q
 
-from datetime import datetime
-
+import os
 # to remove in a future version
 import warnings
-warnings.filterwarnings("ignore")
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+from datetime import datetime
 
-from fileProcessing.fileManagement import Parameters, printLog
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+from fileProcessing.fileManagement import Parameters, print_log
+import fileProcessing.functionCaller as fc
+
+warnings.filterwarnings("ignore")
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
-def old_main(runParameters):
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
-    HiM.initialize()
-    session1, log1=HiM.session1, HiM.log1
+def old_main(run_parameters):
 
-    HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
-    param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json')
-    labels=param.param['labels']
+    him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
+    him.initialize()
 
-    printLog('$ Started logging to: {}'.format(HiM.logFile))
-    printLog("$ labels to process: {}\n".format(labels))
+    him.lauch_dask_scheduler(
+        threads_requested=run_parameters["threads"], maximum_load=0.8
+    )
+    global_param = Parameters(
+        root_folder=run_parameters["root_folder"], file_name="infoList.json"
+    )
+    labels = global_param.param_dict["labels"]
 
-    for label in labels:#range(len(HiM.labels2Process)):
+    print_log("$ Started logging to: {}".format(him.log_file))
+    print_log("$ labels to process: {}\n".format(labels))
+
+    for label in labels:
 
         # sets parameters
-        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json')
+        current_param = Parameters(
+            root_folder=run_parameters["root_folder"],
+            label=label,
+            file_name="infoList.json",
+        )
 
-        printLog("--------------------------------------------------------------------------")
-        printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
-        printLog("--------------------------------------------------------------------------")
+        print_log(
+            "--------------------------------------------------------------------------"
+        )
+        print_log(
+            ">                  Analyzing label: {}           ".format(
+                current_param.param_dict["acquisition"]["label"]
+            )
+        )
+        print_log(
+            "--------------------------------------------------------------------------"
+        )
 
-        param.param['parallel']=HiM.parallel
-        param.param['fileNameMD']=HiM.fileNameMD
+        current_param.param_dict["parallel"] = him.parallel
+        current_param.param_dict["markdown_filename"] = him.markdown_filename
 
         # [projects 3D images in 2d]
-        if "makeProjections" in runParameters["cmd"]:
-            HiM.makeProjections(param)
+        if "makeProjections" in run_parameters["cmd"]:
+            him.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
-        if "alignImages" in runParameters["cmd"]:
-            HiM.alignImages(param, label)
+        if "alignImages" in run_parameters["cmd"]:
+            him.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in runParameters["cmd"]:
-            HiM.appliesRegistrations(param, label)
+        if "appliesRegistrations" in run_parameters["cmd"]:
+            him.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in runParameters["cmd"]:
-            HiM.alignImages3D(param, label)
+        if "alignImages3D" in run_parameters["cmd"]:
+            him.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in runParameters["cmd"]:
-            HiM.segmentMasks(param, label)
+        if "segmentMasks" in run_parameters["cmd"]:
+            him.segment_masks(current_param, label)
 
         # [segments masks in 3D]
-        if "segmentMasks3D" in runParameters["cmd"]:
-            HiM.segmentMasks3D(param, label)
+        if "segmentMasks3D" in run_parameters["cmd"]:
+            him.segment_masks_3d(current_param, label)
 
         # [segments sources in 3D]
-        if "segmentSources3D" in runParameters["cmd"]:
-            HiM.segmentSources3D(param, label)
+        if "segmentSources3D" in run_parameters["cmd"]:
+            him.segment_sources_3d(current_param, label)
 
         # [filters barcode localization table]
-        if "filter_localizations" in runParameters["cmd"]:
-            HiM.filter_localizations(param, label)
+        if "filter_localizations" in run_parameters["cmd"]:
+            fc.filter_localizations(current_param, label)
 
         # [registers barcode localization table]
-        if "register_localizations" in runParameters["cmd"]:
-            HiM.register_localizations(param, label)
+        if "register_localizations" in run_parameters["cmd"]:
+            fc.register_localizations(current_param, label)
 
         # [build traces]
-        if "build_traces" in runParameters["cmd"]:
-            HiM.build_traces(param, label)
+        if "build_traces" in run_parameters["cmd"]:
+            fc.build_traces(current_param, label)
 
         # [builds matrices]
-        if "build_matrix" in runParameters["cmd"]:
-            HiM.build_matrix(param, label)
+        if "build_matrix" in run_parameters["cmd"]:
+            fc.build_matrix(current_param, label)
 
         # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in runParameters["cmd"]:
-            HiM.processesPWDmatrices(param, label)
+        if "buildHiMmatrix" in run_parameters["cmd"]:
+            him.process_pwd_matrices(current_param, label)
 
         print("\n")
-        del param
+        del current_param
 
     # exits
-    HiM.session1.save(HiM.log1)
-    printLog("\n===================={}====================\n".format("Normal termination"))
+    him.current_session.save()
+    print_log(
+        "\n===================={}====================\n".format("Normal termination")
+    )
 
-    if runParameters["parallel"]:
-        HiM.cluster.close()
-        HiM.client.close()
+    if run_parameters["parallel"]:
+        him.cluster.close()
+        him.client.close()
 
-    del HiM
+    del him
 
 
 def main(command_line_arguments=None):
@@ -122,31 +142,31 @@ def main(command_line_arguments=None):
     command_line_arguments : List, optional
         Used for test functions, by default None
     """
-    
-    run_args = RunArgs(command_line_arguments)
 
-    pipeline = Pipeline(run_args.cmd_list)
+    # run_args = RunArgs(command_line_arguments)
 
-    data = InputData(run_args.data_path)
-    data.check_consistency(pipeline)
+    # pipeline = Pipeline(run_args.cmd_list)
 
-    # TODO
-    parameters = InputParameters(run_args.param_path)
-    parameters.check_consistency(pipeline, data)
+    # data = InputData(run_args.data_path)
+    # data.check_consistency(pipeline)
 
-    pipeline.build_output_folders(run_args.output_path)
-    pipeline.fill(data, parameters)
-    pipeline.run()
+    # # TODO
+    # parameters = InputParameters(run_args.param_path)
+    # parameters.check_consistency(pipeline, data)
+
+    # pipeline.build_output_folders(run_args.output_path)
+    # pipeline.fill(data, parameters)
+    # pipeline.run()
 
 
 if __name__ == "__main__":
     begin_time = datetime.now()
 
-    runParameters=HiM_parseArguments()
+    run_parameters = fc.him_parse_arguments()
 
-    if "new" in runParameters["cmd"]:
+    if "new" in run_parameters["cmd"]:
         main()
     else:
-        old_main(runParameters)
+        old_main(run_parameters)
 
-    printLog("Elapsed time: {}".format(datetime.now() - begin_time))
+    print_log("Elapsed time: {}".format(datetime.now() - begin_time))

@@ -9,12 +9,12 @@ Created on Wed May  6 12:36:20 2020
 This script takes JSON file with folders where datasets are
 stored and processes multiple PWD matrices together.
 
-$ processHiMmatrix.py -F rootFolder
+$ processHiMmatrix.py -F root_folder
 
 outputs
 
-SCmatrixCollated: 3D npy matrix. PWD matrix for single cells. Axes:0-1 barcodes, Axis:2, cellID
-uniqueBarcodes: npy array. list of unique barcodes
+sc_matrix_collated: 3D npy matrix. PWD matrix for single cells. Axes:0-1 barcodes, Axis:2, cellID
+unique_barcodes: npy array. list of unique barcodes
 SClabeledCollated: npy array. binary label indicating if cell is in pattern or not. Axis:0 cellID
 
 """
@@ -23,30 +23,31 @@ SClabeledCollated: npy array. binary label indicating if cell is in pattern or n
 # IMPORTS
 # =============================================================================q
 
-import numpy as np
-import os, sys
-import json
-from datetime import datetime
 import argparse
 import csv
+import json
+import os
+import sys
+from datetime import datetime
 
-#Olivier
-csv.field_size_limit(sys.maxsize) 
+import numpy as np
 
-from fileProcessing.fileManagement import writeString2File
-
-from matrixOperations.HIMmatrixOperations import (
-    loadsSCdata,
-    plotsEnsemble3wayContactMatrix,
-    loadsSCdataMATLAB,
-    plotsSinglePWDmatrices,
-    plotsInversePWDmatrix,
-    plotsSingleContactProbabilityMatrix,
-    plotsEnsembleContactProbabilityMatrix,
-)
+# Olivier
+csv.field_size_limit(sys.maxsize)
 
 # to remove in a future version
 import warnings
+
+from fileProcessing.fileManagement import write_string_to_file
+from matrixOperations.HIMmatrixOperations import (
+    load_sc_data,
+    load_sc_data_matlab,
+    plot_ensemble_3_way_contact_matrix,
+    plot_ensemble_contact_probability_matrix,
+    plot_inverse_pwd_matrix,
+    plot_single_contact_probability_matrix,
+    plot_single_pwd_matrice,
+)
 
 # warnings.filterwarnings("ignore")
 
@@ -64,34 +65,48 @@ def joinsListArrays(ListArrays, axis=0):
             joinedArray = np.concatenate((joinedArray, iArray), axis=axis)
     return joinedArray
 
-def parseArguments():
+
+def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-F", "--root_folder", help="Folder with images")
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-P",
+        "--parameters",
+        help="Provide name of parameter files. folders_to_load.json assumed as default",
     )
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
-    parser.add_argument("--matlab", help="Use to load matlab formatted data", action="store_true")
-    parser.add_argument("--saveMatrix", help="Use to load matlab formatted data", action="store_true")
-    parser.add_argument("--getStructure", help="Use to save ShEc3D PDB structure", action="store_true")
+    parser.add_argument(
+        "-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted "
+    )
+    parser.add_argument(
+        "--matlab", help="Use to load matlab formatted data", action="store_true"
+    )
+    parser.add_argument(
+        "--saveMatrix", help="Use to load matlab formatted data", action="store_true"
+    )
+    parser.add_argument(
+        "--getStructure", help="Use to save ShEc3D PDB structure", action="store_true"
+    )
     parser.add_argument("--pixelSize", help="pixelSize in um")
-    parser.add_argument("--HiMnormalization", help="Normalization of contact matrix: nonNANs (default) or nCells")
+    parser.add_argument(
+        "--HiMnormalization",
+        help="Normalization of contact matrix: nonNANs (default) or n_cells",
+    )
     parser.add_argument("--d3", help="Use to load 3D maps", action="store_true")
 
-    p={}
+    p = {}
 
     args = parser.parse_args()
-    if args.rootFolder:
-        p["rootFolder"] = args.rootFolder
+    if args.root_folder:
+        p["root_folder"] = args.root_folder
     else:
-        p["rootFolder"] = "."
-        # p["rootFolder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
+        p["root_folder"] = "."
+        # p["root_folder"] = "/home/marcnol/grey/docPaper_fullDatasets/updatedDatasets/white_wt_docTAD_nc14"
 
     if args.parameters:
         p["parametersFileName"] = args.parameters
     else:
-        p["parametersFileName"] = "folders2Load.json"
+        p["parametersFileName"] = "folders_to_load.json"
 
     if args.label:
         p["label"] = args.label
@@ -134,6 +149,8 @@ def parseArguments():
         p["d3"] = False
 
     return p
+
+
 # =============================================================================
 # MAIN
 # =============================================================================
@@ -142,154 +159,233 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     # [parsing arguments]
-    p=parseArguments()
+    p = parse_arguments()
 
     # [ initialises MD file]
     now = datetime.now()
-    dateTime = now.strftime("%d%m%Y_%H%M%S")
-    fileNameRoot = "processHiMmatrixAnalysis_"
+    date_time = now.strftime("%d%m%Y_%H%M%S")
+    filename_root = "processHiMmatrixAnalysis_"
 
     # [ Lists and loads datasets from different embryos]
-    fileNameListDataJSON = p["rootFolder"] + os.sep + p["parametersFileName"]
-    print("\n--------------------------------------------------------------------------")
-    if os.path.exists(fileNameListDataJSON):
-        with open(fileNameListDataJSON) as json_file:
-            ListData = json.load(json_file)
-        print("Loaded JSON file with {} datasets from {}\n".format(len(ListData), fileNameListDataJSON))
+    filename_list_data_json = p["root_folder"] + os.sep + p["parametersFileName"]
+    print(
+        "\n--------------------------------------------------------------------------"
+    )
+    if os.path.exists(filename_list_data_json):
+        with open(filename_list_data_json, encoding="utf-8") as json_file:
+            list_data = json.load(json_file)
+        print(
+            "Loaded JSON file with {} datasets from {}\n".format(
+                len(list_data), filename_list_data_json
+            )
+        )
     else:
-        print("File not found: {}".format(fileNameListDataJSON))
+        print("File not found: {}".format(filename_list_data_json))
         sys.exit()
 
     # [ creates output folder]
-    p["outputFolder"] = p["rootFolder"] + os.sep + "scHiMmatrices"
-    if not os.path.exists(p["outputFolder"]):
-        os.mkdir(p["outputFolder"])
-        print("Folder created: {}".format(p["outputFolder"]))
+    p["output_folder"] = p["root_folder"] + os.sep + "scHiMmatrices"
+    if not os.path.exists(p["output_folder"]):
+        os.mkdir(p["output_folder"])
+        print("Folder created: {}".format(p["output_folder"]))
 
     # [loops over lists of datafolders]
-    for datasetName in list(ListData.keys()):
+    for dataset_name in list(list_data.keys()):
 
         # [loads SC matrices]
         if p["format"] == "pyHiM":
             print(">>> Loading pyHiM-formatted dataset")
-            SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName, SClabeledCollated = loadsSCdata(
-                ListData, datasetName, p
-            )
+            (
+                sc_matrix_collated,
+                unique_barcodes,
+                build_pwd_matrix_collated,
+                run_name,
+                sc_labeled_collated,
+            ) = load_sc_data(list_data, dataset_name, p)
         elif p["format"] == "matlab":
             print(">>> Loading MATLAB-formatted dataset")
-            SCmatrixCollated, uniqueBarcodes, runName, SClabeledCollated = loadsSCdataMATLAB(ListData, datasetName, p)
+            (
+                sc_matrix_collated,
+                unique_barcodes,
+                run_name,
+                sc_labeled_collated,
+            ) = load_sc_data_matlab(list_data, dataset_name, p)
 
-        fileNameMD = (
-            p["rootFolder"] + os.sep + fileNameRoot + "_" + datasetName + "_Cells:" + p["action"] + "_" + dateTime + ".md"
+        markdown_filename = (
+            p["root_folder"]
+            + os.sep
+            + filename_root
+            + "_"
+            + dataset_name
+            + "_Cells:"
+            + p["action"]
+            + "_"
+            + date_time
+            + ".md"
         )
-        writeString2File(fileNameMD, "# Post-processing of Hi-M matrices", "w")
-        writeString2File(fileNameMD, "**dataset: {}** - **Cells: {}**".format(datasetName, p["action"]), "a")
-        p["SClabeledCollated"] = SClabeledCollated
+        write_string_to_file(
+            markdown_filename, "# Post-processing of Hi-M matrices", "w"
+        )
+        write_string_to_file(
+            markdown_filename,
+            "**dataset: {}** - **Cells: {}**".format(dataset_name, p["action"]),
+            "a",
+        )
+        p["SClabeledCollated"] = sc_labeled_collated
 
-        if len(SCmatrixCollated) > 0:
+        if len(sc_matrix_collated) > 0:
             # [plots distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single dataset PWD matrices", "a")
-            print(">>> Producing {} PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
-            plotsSinglePWDmatrices(
-                SCmatrixCollated,
-                uniqueBarcodes,
-                runName,
-                ListData[datasetName],
+            write_string_to_file(
+                markdown_filename, "## single dataset PWD matrices", "a"
+            )
+            print(
+                ">>> Producing {} PWD matrices for dataset {}\n".format(
+                    len(sc_matrix_collated), dataset_name
+                )
+            )
+            plot_single_pwd_matrice(
+                sc_matrix_collated,
+                unique_barcodes,
+                run_name,
+                list_data[dataset_name],
                 p,
-                fileNameMD,
-                datasetName=datasetName,
+                markdown_filename,
+                dataset_name=dataset_name,
             )
 
-            # plots histograms for each dataset
-            # for iSCmatrixCollated, iuniqueBarcodes in zip(SCmatrixCollated, uniqueBarcodes):
-            #     plotDistanceHistograms(iSCmatrixCollated, pixelSize, mode="KDE", limitNplots=15)
-
-            # [plots inverse distance matrix for each dataset]
-            writeString2File(fileNameMD, "## single dataset inverse PWD matrices", "a")
-            print(">>> Producing {} inverse PWD matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
-            plotsInversePWDmatrix(
-                SCmatrixCollated,
-                uniqueBarcodes,
-                runName,
-                ListData[datasetName],
+            write_string_to_file(
+                markdown_filename, "## single dataset inverse PWD matrices", "a"
+            )
+            print(
+                ">>> Producing {} inverse PWD matrices for dataset {}\n".format(
+                    len(sc_matrix_collated), dataset_name
+                )
+            )
+            plot_inverse_pwd_matrix(
+                sc_matrix_collated,
+                unique_barcodes,
+                run_name,
+                list_data[dataset_name],
                 p,
-                fileNameMD,
-                datasetName=datasetName,
+                markdown_filename,
+                dataset_name=dataset_name,
             )
 
             # [Plots contact probability matrices for each dataset]
-            writeString2File(fileNameMD, "## single dataset Contact Probability matrices", "a")
-            print(">>> Producing {} contact matrices for dataset {}\n".format(len(SCmatrixCollated), datasetName))
-            plotsSingleContactProbabilityMatrix(
-                SCmatrixCollated,
-                uniqueBarcodes,
-                runName,
-                ListData[datasetName],
+            write_string_to_file(
+                markdown_filename, "## single dataset Contact Probability matrices", "a"
+            )
+            print(
+                ">>> Producing {} contact matrices for dataset {}\n".format(
+                    len(sc_matrix_collated), dataset_name
+                )
+            )
+            plot_single_contact_probability_matrix(
+                sc_matrix_collated,
+                unique_barcodes,
+                run_name,
+                list_data[dataset_name],
                 p,
-                fileNameMD=fileNameMD,
-                datasetName=datasetName,
+                markdown_filename=markdown_filename,
+                dataset_name=dataset_name,
             )
 
             # [combines matrices from different embryos and calculates integrated contact probability matrix]
-            writeString2File(fileNameMD, "## Ensemble contact probability", "a")
-            print(">>> Producing ensemble contact matrix for dataset {}\n".format(datasetName))
-            SCmatrixCollatedEnsemble, commonSetUniqueBarcodes = plotsEnsembleContactProbabilityMatrix(
-                SCmatrixCollated,
-                uniqueBarcodes,
-                runName,
-                ListData[datasetName],
+            write_string_to_file(
+                markdown_filename, "## Ensemble contact probability", "a"
+            )
+            print(
+                ">>> Producing ensemble contact matrix for dataset {}\n".format(
+                    dataset_name
+                )
+            )
+            (
+                sc_matrixCollatedEnsemble,
+                common_set_unique_barcodes,
+            ) = plot_ensemble_contact_probability_matrix(
+                sc_matrix_collated,
+                unique_barcodes,
+                run_name,
+                list_data[dataset_name],
                 p,
-                fileNameMD=fileNameMD,
-                datasetName=datasetName,
+                markdown_filename=markdown_filename,
+                dataset_name=dataset_name,
             )
 
-            anchors = ListData[datasetName]["3wayContacts_anchors"]
+            anchors = list_data[dataset_name]["3wayContacts_anchors"]
             anchors = [a - 1 for a in anchors]  # convert to zero-based
-            sOut = "Probability"  # Probability or Counts
-            writeString2File(fileNameMD, "## Ensemble 3way contacts", "a")
-            print(">>> Producing ensemble 3way contact matrix for dataset {}\n".format(datasetName))
-            plotsEnsemble3wayContactMatrix(
-                SCmatrixCollated,
-                uniqueBarcodes,
+            s_out = "Probability"  # Probability or Counts
+            write_string_to_file(markdown_filename, "## Ensemble 3way contacts", "a")
+            print(
+                ">>> Producing ensemble 3way contact matrix for dataset {}\n".format(
+                    dataset_name
+                )
+            )
+            plot_ensemble_3_way_contact_matrix(
+                sc_matrix_collated,
+                unique_barcodes,
                 anchors,
-                sOut,
-                runName,
-                ListData[datasetName],
+                s_out,
+                run_name,
+                list_data[dataset_name],
                 p,
-                fileNameMD=fileNameMD,
-                datasetName=datasetName,
+                markdown_filename=markdown_filename,
+                dataset_name=dataset_name,
             )
 
             # [deletes variables before starting new iteration]
-            # del SCmatrixCollated, uniqueBarcodes, buildsPWDmatrixCollated, runName
-            print("\nDone with dataset {}".format(datasetName))
+            # del sc_matrix_collated, unique_barcodes, build_pwd_matrix_collated, run_name
+            print("\nDone with dataset {}".format(dataset_name))
         else:
             print("\n Could not load ANY dataset!\n")
 
         # [saves output files]
 
-        # creates outputFileName root
-        outputFileName = p["outputFolder"] + os.sep + datasetName + "_label:" + p["label"] + "_action:" + p["action"]
+        # creates output_filename root
+        output_filename = (
+            p["output_folder"]
+            + os.sep
+            + dataset_name
+            + "_label:"
+            + p["label"]
+            + "_action:"
+            + p["action"]
+        )
 
         # saves npy arrays
-        if 'SCmatrixCollatedEnsemble' in locals():
-            np.save(outputFileName + "_ensembleContactProbability.npy", SCmatrixCollatedEnsemble)
+        if "SCmatrixCollatedEnsemble" in locals():
+            np.save(
+                output_filename + "_ensembleContactProbability.npy",
+                sc_matrixCollatedEnsemble,
+            )
 
-        np.save(outputFileName + "_SCmatrixCollated.npy", joinsListArrays(SCmatrixCollated, axis=2))
-        np.save(outputFileName + "_SClabeledCollated.npy", joinsListArrays(SClabeledCollated, axis=0))
+        np.save(
+            output_filename + "_SCmatrixCollated.npy",
+            joinsListArrays(sc_matrix_collated, axis=2),
+        )
+        np.save(
+            output_filename + "_SClabeledCollated.npy",
+            joinsListArrays(sc_labeled_collated, axis=0),
+        )
 
         # saves lists
-        if 'SCmatrixCollatedEnsemble' in locals():
-            with open(outputFileName + "_uniqueBarcodes.csv", "w", newline="") as csvfile:
-                spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-                spamwriter.writerow(commonSetUniqueBarcodes)
+        if "SCmatrixCollatedEnsemble" in locals():
+            with open(
+                output_filename + "_uniqueBarcodes.csv", mode="w", newline="", encoding="utf-8"
+            ) as csvfile:
+                spamwriter = csv.writer(
+                    csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL
+                )
+                spamwriter.writerow(common_set_unique_barcodes)
 
         p["SClabeledCollated"] = []
-        with open(outputFileName + "_parameters.json", "w") as f:
+        with open(output_filename + "_parameters.json", mode="w", encoding="utf-8") as f:
             json.dump(p, f, ensure_ascii=False, sort_keys=True, indent=4)
 
-        with open(outputFileName + "_runName.csv", "w", newline="") as csvfile:
-            spamwriter = csv.writer(csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL)
-            spamwriter.writerow(runName)
+        with open(output_filename + "_runName.csv", mode="w", newline="", encoding="utf-8") as csvfile:
+            spamwriter = csv.writer(
+                csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL
+            )
+            spamwriter.writerow(run_name)
 
         print("Finished execution")

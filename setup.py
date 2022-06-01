@@ -9,7 +9,7 @@ Created on Wed Aug 12 16:18:17 2020
 from setuptools import setup, find_packages
 from datetime import datetime
 
-with open("README.md", "r") as fh:
+with open("README.md", mode="r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 version = "0.5.0_" + datetime.now().strftime("%Y/%m/%d %H:%M:%S")

@@ -8,158 +8,186 @@ Created on Thu Jun  4 09:04:10 2020
 """
 
 
+import argparse
+import csv
+import json
+
 #%% imports and plotting settings
 import os
-import numpy as np
-import argparse
+
+import matplotlib.gridspec as gridspec
 
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
+import numpy as np
+
+from matrixOperations.HIMmatrixOperations import (
+    AnalysisHiMMatrix,
+    calculate_ensemble_pwd_matrix,
+    list_sc_to_keep,
+    normalize_matrix,
+    plot_distance_histograms,
+    plot_matrix,
+    plot_scalogram,
+    shuffle_matrix,
+)
 
 # import scaleogram as scg
 
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix, listsSCtoKeep
-from matrixOperations.HIMmatrixOperations import (
-    analysisHiMmatrix,
-    normalizeMatrix,
-    shuffleMatrix,
-    plotScalogram,
-    calculatesEnsemblePWDmatrix,
-)
 
 #%% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with dataset")
-    parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
+    parser.add_argument("-F", "--root_folder", help="Folder with dataset")
+    parser.add_argument("-O", "--output_folder", help="Folder for outputs")
 
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-P",
+        "--parameters",
+        help="Provide name of parameter files. folders_to_load.json assumed as default",
     )
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
-    parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument(
-        "--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter"
+        "-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted "
     )
-    parser.add_argument("--cScale", help="Colormap absolute scale")
-    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
+    )
+    parser.add_argument(
+        "--axis_ticks", help="Use if you want axes ticks", action="store_true"
+    )
+    parser.add_argument(
+        "--barcodes",
+        help="Use if you want barcode images to be displayed",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--scalingParameter",
+        help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter",
+    )
+    parser.add_argument("--c_scale", help="Colormap absolute scale")
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
+    )
     parser.add_argument(
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
     )
-    parser.add_argument("--scalogram", help="Use if you want scalogram image to be displayed", action="store_true")
-    parser.add_argument("--inputMatrix", help="contact, PWD, or iPWD. Default is contact")
+    parser.add_argument(
+        "--scalogram",
+        help="Use if you want scalogram image to be displayed",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--inputMatrix", help="contact, PWD, or iPWD. Default is contact"
+    )
     parser.add_argument("--pixelSize", help="pixel size in um")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
     parser.add_argument(
-        "--PWDmode", help="Mode used to calculate the mean distance. Can be either 'median' or KDE. Default: median"
+        "--PWDmode",
+        help="Mode used to calculate the mean distance. Can be either 'median' or KDE. Default: median",
     )
 
     args = parser.parse_args()
 
-    runParameters = {}
+    run_parameters = {}
 
-    if args.rootFolder:
-        rootFolder = args.rootFolder
+    if args.root_folder:
+        root_folder = args.root_folder
     else:
-        rootFolder = "."
-        # rootFolder='/home/marcnol/data'+os.sep+'Experiment_18'
+        root_folder = "."
+        # root_folder='/home/marcnol/data'+os.sep+'Experiment_18'
 
-    if args.outputFolder:
-        outputFolder = args.outputFolder
+    if args.output_folder:
+        output_folder = args.output_folder
     else:
-        outputFolder = "none"
+        output_folder = "none"
 
     if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
+        run_parameters["parametersFileName"] = args.parameters
     else:
-        runParameters["parametersFileName"] = "folders2Load.json"
+        run_parameters["parametersFileName"] = "folders_to_load.json"
 
     if args.label:
-        runParameters["label"] = args.label
+        run_parameters["label"] = args.label
     else:
-        runParameters["label"] = "doc"
+        run_parameters["label"] = "doc"
 
     if args.action:
-        runParameters["action"] = args.action
+        run_parameters["action"] = args.action
     else:
-        runParameters["action"] = "labeled"
+        run_parameters["action"] = "labeled"
 
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
+        run_parameters["axisLabel"] = False
 
-    if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
+    if args.axis_ticks:
+        run_parameters["axis_ticks"] = args.axis_ticks
     else:
-        runParameters["axisTicks"] = False
+        run_parameters["axis_ticks"] = False
 
     if args.barcodes:
-        runParameters["barcodes"] = args.barcodes
+        run_parameters["barcodes"] = args.barcodes
     else:
-        runParameters["barcodes"] = False
+        run_parameters["barcodes"] = False
 
     if args.scalingParameter:
-        runParameters["scalingParameter"] = float(args.scalingParameter)
+        run_parameters["scalingParameter"] = float(args.scalingParameter)
     else:
-        runParameters["scalingParameter"] = 1.0
+        run_parameters["scalingParameter"] = 1.0
 
-    if args.cScale:
-        runParameters["cScale"] = float(args.cScale)
+    if args.c_scale:
+        run_parameters["c_scale"] = float(args.c_scale)
     else:
-        runParameters["cScale"] = 0.0
+        run_parameters["c_scale"] = 0.0
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".png"
+        run_parameters["plottingFileExtension"] = ".png"
 
     if args.shuffle:
-        runParameters["shuffle"] = args.shuffle
+        run_parameters["shuffle"] = args.shuffle
     else:
-        runParameters["shuffle"] = 0
+        run_parameters["shuffle"] = 0
 
     if args.scalogram:
-        runParameters["scalogram"] = args.scalogram
+        run_parameters["scalogram"] = args.scalogram
     else:
-        runParameters["scalogram"] = False
+        run_parameters["scalogram"] = False
 
     if args.inputMatrix:
-        runParameters["inputMatrix"] = args.inputMatrix
+        run_parameters["inputMatrix"] = args.inputMatrix
     else:
-        runParameters["inputMatrix"] = "contact"
+        run_parameters["inputMatrix"] = "contact"
 
     if args.pixelSize:
-        runParameters["pixelSize"] = args.pixelSize
+        run_parameters["pixelSize"] = args.pixelSize
     else:
-        runParameters["pixelSize"] = 0.1
+        run_parameters["pixelSize"] = 0.1
 
     if args.cmap:
-        runParameters["cmap"] = args.cmap
+        run_parameters["cmap"] = args.cmap
     else:
-        runParameters["cmap"] = "coolwarm"
+        run_parameters["cmap"] = "coolwarm"
 
     if args.PWDmode:
-        runParameters["PWDmode"] = args.PWDmode
+        run_parameters["PWDmode"] = args.PWDmode
     else:
-        runParameters["PWDmode"] = "median"
+        run_parameters["PWDmode"] = "median"
 
-    return rootFolder, outputFolder, runParameters
+    return root_folder, output_folder, run_parameters
 
 
 #%%
@@ -171,81 +199,101 @@ def parseArguments():
 if __name__ == "__main__":
 
     print(">>> Producing HiM matrix")
-    rootFolder, outputFolder, runParameters = parseArguments()
+    root_folder, output_folder, run_parameters = parse_arguments()
 
-    HiMdata = analysisHiMmatrix(runParameters, rootFolder)
+    him_data = AnalysisHiMMatrix(run_parameters, root_folder)
 
-    HiMdata.loadData()
+    him_data.load_data()
 
-    nCells = HiMdata.nCellsLoaded()
+    n_cells = him_data.n_cells_loaded()
 
-    HiMdata.retrieveSCmatrix()
+    him_data.retrieve_sc_matrix()
 
-    if runParameters["inputMatrix"] == "contact":
+    if run_parameters["inputMatrix"] == "contact":
         # contact probability matrix
-        matrix = HiMdata.data["ensembleContactProbability"]
-        cScale = matrix.max() / runParameters["scalingParameter"]
-    elif runParameters["inputMatrix"] == "PWD":
+        matrix = him_data.data["ensembleContactProbability"]
+        c_scale = matrix.max() / run_parameters["scalingParameter"]
+    elif run_parameters["inputMatrix"] == "PWD":
         # PWD matrix
-        # SCmatrix = HiMdata.SCmatrixSelected
-        # print("SC matrix size: {}".format(SCmatrix.shape))
-        # matrix, keepPlotting = calculatesEnsemblePWDmatrix(SCmatrix, runParameters["pixelSize"],mode=runParameters["PWDmode"])
-        SCmatrix = HiMdata.SCmatrixSelected
-        cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
-        print("N cells to plot: {}/{}".format(len(cells2Plot), SCmatrix.shape[2]))
-        matrix, keepPlotting = calculatesEnsemblePWDmatrix(
-            SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"]
+        # sc_matrix = him_data.sc_matrix_selected
+        # print("SC matrix size: {}".format(sc_matrix.shape))
+        # matrix, keep_plotting = calculate_ensemble_pwd_matrix(sc_matrix, run_parameters["pixelSize"],mode=run_parameters["PWDmode"])
+        sc_matrix = him_data.sc_matrix_selected
+        cells_to_plot = list_sc_to_keep(run_parameters, him_data.data["SClabeledCollated"])
+        print("N cells to plot: {}/{}".format(len(cells_to_plot), sc_matrix.shape[2]))
+        matrix, keep_plotting = calculate_ensemble_pwd_matrix(
+            sc_matrix,
+            run_parameters["pixelSize"],
+            cells_to_plot,
+            mode=run_parameters["PWDmode"],
         )
-        if runParameters["cScale"] == 0:
-            cScale = matrix[~np.isnan(matrix)].max() / runParameters["scalingParameter"]
+        if run_parameters["c_scale"] == 0:
+            c_scale = (
+                matrix[~np.isnan(matrix)].max() / run_parameters["scalingParameter"]
+            )
         else:
-            cScale = runParameters["cScale"]
-    elif runParameters["inputMatrix"] == "iPWD":
-        SCmatrix = HiMdata.SCmatrixSelected
-        cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
-        print("N cells to plot: {}/{}".format(len(cells2Plot), SCmatrix.shape[2]))
-        matrix, keepPlotting = calculatesEnsemblePWDmatrix(
-            SCmatrix, runParameters["pixelSize"], cells2Plot, mode=runParameters["PWDmode"]
+            c_scale = run_parameters["c_scale"]
+    elif run_parameters["inputMatrix"] == "iPWD":
+        sc_matrix = him_data.sc_matrix_selected
+        cells_to_plot = list_sc_to_keep(run_parameters, him_data.data["SClabeledCollated"])
+        print("N cells to plot: {}/{}".format(len(cells_to_plot), sc_matrix.shape[2]))
+        matrix, keep_plotting = calculate_ensemble_pwd_matrix(
+            sc_matrix,
+            run_parameters["pixelSize"],
+            cells_to_plot,
+            mode=run_parameters["PWDmode"],
         )
         matrix = np.reciprocal(matrix)
-        cScale = runParameters["cScale"]
+        c_scale = run_parameters["c_scale"]
 
-    print("scalingParameters, scale={}, {}".format(runParameters["scalingParameter"], cScale))
+    print(
+        "scalingParameters, scale={}, {}".format(
+            run_parameters["scalingParameter"], c_scale
+        )
+    )
 
-    nCells = HiMdata.nCellsLoaded()
+    n_cells = him_data.n_cells_loaded()
 
-    nDatasets = len(HiMdata.data["runName"])
+    n_datasets = len(him_data.data["run_name"])
 
-    if outputFolder == "none":
-        outputFolder = HiMdata.dataFolder
+    if output_folder == "none":
+        output_folder = him_data.data_folder
 
-    outputFileName = (
-        outputFolder
+    output_filename = (
+        output_folder
         + os.sep
         + "Fig_HiMmatrix"
         + "_dataset1:"
-        + HiMdata.datasetName
+        + him_data.dataset_name
         + "_label:"
-        + runParameters["label"]
+        + run_parameters["label"]
         + "_action:"
-        + runParameters["action"]
-        + runParameters["plottingFileExtension"]
+        + run_parameters["action"]
+        + run_parameters["plottingFileExtension"]
     )
 
-    if runParameters["barcodes"]:
+    if run_parameters["barcodes"]:
         fig1 = plt.figure(figsize=(10, 10), constrained_layout=False)
-        gs1 = fig1.add_gridspec(nrows=19, ncols=22, left=0.05, right=0.95, wspace=0.05, hspace=0.05)
-        f1 = fig1.add_subplot(gs1[0:-1, 5:-1])
-        f2 = fig1.add_subplot(gs1[:-1, 3], sharey=f1)
-        f3 = fig1.add_subplot(gs1[-1, 5:-1], sharex=f1)
-        ATACseqMatrix = np.array(HiMdata.ListData[HiMdata.datasetName]["BarcodeColormap"]) / 10
+        gs1 = fig1.add_gridspec(
+            nrows=19, ncols=22, left=0.05, right=0.95, wspace=0.05, hspace=0.05
+        )
+        f_1 = fig1.add_subplot(gs1[0:-1, 5:-1])
+        f2 = fig1.add_subplot(gs1[:-1, 3], sharey=f_1)
+        f3 = fig1.add_subplot(gs1[-1, 5:-1], sharex=f_1)
+        ATACseqMatrix = (
+            np.array(him_data.list_data[him_data.dataset_name]["BarcodeColormap"]) / 10
+        )
         ATACseqMatrixV = np.copy(ATACseqMatrix).reshape((-1, 1))
-        pos1 = f2.imshow(np.atleast_2d(ATACseqMatrixV), cmap="tab10")  # colormaps RdBu seismic
+        pos1 = f2.imshow(
+            np.atleast_2d(ATACseqMatrixV), cmap="tab10"
+        )  # colormaps RdBu seismic
         f2.set_xticklabels(())
         f2.set_yticklabels(())
         pos1.set_clim(vmin=-1, vmax=1)
 
-        pos2 = f3.imshow(np.atleast_2d(ATACseqMatrix), cmap="tab10")  # colormaps RdBu seismic
+        pos2 = f3.imshow(
+            np.atleast_2d(ATACseqMatrix), cmap="tab10"
+        )  # colormaps RdBu seismic
         f3.set_xticklabels(())
         f3.set_yticklabels(())
         pos2.set_clim(vmin=-1, vmax=1)
@@ -259,7 +307,7 @@ if __name__ == "__main__":
                 ha="center",
                 va="center",
                 color="w",
-                fontsize=int((14.0 / 22.0) * float(runParameters["fontsize"])),
+                fontsize=int((14.0 / 22.0) * float(run_parameters["fontsize"])),
             )
             text = f2.text(
                 0,
@@ -268,62 +316,62 @@ if __name__ == "__main__":
                 ha="center",
                 va="center",
                 color="w",
-                fontsize=int((14.0 / 22.0) * float(runParameters["fontsize"])),
+                fontsize=int((14.0 / 22.0) * float(run_parameters["fontsize"])),
             )
 
         colorbar = False
     else:
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f1 = fig1.add_subplot(spec1[0, 0])  # 16
+        f_1 = fig1.add_subplot(spec1[0, 0])  # 16
         colorbar = True
 
-    if runParameters["shuffle"] == 0:
+    if run_parameters["shuffle"] == 0:
         index = range(matrix.shape[0])
     else:
-        index = [int(i) for i in runParameters["shuffle"].split(",")]
-        matrix = shuffleMatrix(matrix, index)
+        index = [int(i) for i in run_parameters["shuffle"].split(",")]
+        matrix = shuffle_matrix(matrix, index)
 
-    f1_ax1_im = HiMdata.plot2DMatrixSimple(
-        f1,
+    f1_ax1_im = him_data.plot_2d_matrix_simple(
+        f_1,
         matrix,
-        list(HiMdata.data["uniqueBarcodes"]),
-        runParameters["axisLabel"],
-        runParameters["axisLabel"],
+        list(him_data.data["unique_barcodes"]),
+        run_parameters["axisLabel"],
+        run_parameters["axisLabel"],
         cmtitle="probability",
-        cMin=0,
-        cMax=cScale,
-        cm=runParameters["cmap"],
-        fontsize=runParameters["fontsize"],
+        c_min=0,
+        c_max=c_scale,
+        c_m=run_parameters["cmap"],
+        fontsize=run_parameters["fontsize"],
         colorbar=colorbar,
-        axisTicks=runParameters["axisTicks"],
-        nCells=nCells,
-        nDatasets=nDatasets,
-        showTitle=True,
+        axis_ticks=run_parameters["axis_ticks"],
+        n_cells=n_cells,
+        n_datasets=n_datasets,
+        show_title=True,
     )
 
-    # HiMdata.update_clims(0, cScale, f1)
-    print("Output written to {}".format(outputFileName))
-    plt.savefig(outputFileName)
-    np.save(outputFileName + ".npy", matrix)
-    titleText = "N = {} | n = {}".format(nCells, nDatasets)
-    print("Title: {}".format(titleText))
-    print("Output figure: {}".format(outputFileName))
+    # him_data.update_clims(0, c_scale, f_1)
+    print("Output written to {}".format(output_filename))
+    plt.savefig(output_filename)
+    np.save(output_filename + ".npy", matrix)
+    title_text = "N = {} | n = {}".format(n_cells, n_datasets)
+    print("Title: {}".format(title_text))
+    print("Output figure: {}".format(output_filename))
 
-    # if runParameters["scalogram"]:
+    # if run_parameters["scalogram"]:
     #     outputFileNameScalogram = (
-    #         outputFolder
+    #         output_folder
     #         + os.sep
     #         + "Fig_HiMmatrix_scalogram"
     #         + "_dataset1:"
-    #         + HiMdata.datasetName
+    #         + him_data.dataset_name
     #         + "_label:"
-    #         + runParameters["label"]
+    #         + run_parameters["label"]
     #         + "_action:"
-    #         + runParameters["action"]
-    #         + runParameters["plottingFileExtension"]
+    #         + run_parameters["action"]
+    #         + run_parameters["plottingFileExtension"]
     #     )
 
-    #     plotScalogram(matrix, outputFileNameScalogram)
+    #     plot_scalogram(matrix, outputFileNameScalogram)
 
     print("\nDone\n\n")

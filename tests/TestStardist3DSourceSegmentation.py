@@ -24,10 +24,10 @@ from csbdeep.utils.tf import limit_gpu_memory
 from stardist.models import StarDist3D
 
 from imageProcessing.imageProcessing  import (
-    imageAdjust,
-    reinterpolateZ,
-    _segments3Dvolumes_StarDist,
-    _plotsImage3D,
+    image_adjust,
+    reinterpolate_z,
+    _segment_3d_volumes_stardist,
+    _plot_image_3d,
     )
 
 import matplotlib.pyplot as plt
@@ -39,12 +39,12 @@ os.environ["CUDA_VISIBLE_DEVICES"]="1"
 # --------------
 if "atlantis" in os.uname()[1]:
     model_dir = '/home/marcnol/data/AImodels/StarDist/barcodes/'
-    rootFolder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
-    file = rootFolder+'scan_001_RT27_001_ROI_converted_decon_ch01.tif'
+    root_folder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
+    file = root_folder+'scan_001_RT27_001_ROI_converted_decon_ch01.tif'
 else:
     model_dir = '/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/'
-    rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-    file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+    root_folder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+    file = root_folder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
 model_name = 'stardist_18032021_single_loci'
 model = StarDist3D(None, name=model_name, basedir=model_dir)
@@ -53,22 +53,22 @@ limit_gpu_memory(None, allow_growth=True)
 
 #%% Segments image using Stardist
 
-output = rootFolder+"segmentedStardist3D_rebinned.npy"
+output = root_folder+"segmentedStardist3D_rebinned.npy"
 im= io.imread(file).squeeze()
 
-zBinning = 2
+z_binning = 2
 
-img = reinterpolateZ(im, range(0,im.shape[0],zBinning),mode='remove')
+img = reinterpolate_z(im, range(0,im.shape[0],z_binning),mode='remove')
 
 axis_norm = (0,1,2)
 begin_time = datetime.now()
 
-mask, labeled = _segments3Dvolumes_StarDist(img,
+mask, labeled = _segment_3d_volumes_stardist(img,
                                 area_min = 3,
                                 area_max=1000,
                                 nlevels=64,
                                 contrast=0.001,
-                                deblend3D = True,
+                                deblend_3d = True,
                                 axis_norm=(0,1,2),
                                 model_dir=model_dir,
                                 model_name=model_name)
@@ -82,7 +82,7 @@ np.save(output,mask)
 labels = measure.label(mask)
 
 img2distplay=img.copy()
-img2distplay= imageAdjust(img2distplay, lower_threshold=0.999, higher_threshold=0.99999)[0]
+img2distplay= image_adjust(img2distplay, lower_threshold=0.999, higher_threshold=0.99999)[0]
 
-fig = _plotsImage3D(img2distplay,normalize=True, masks=labels)
+fig = _plot_image_3d(img2distplay,normalize=True, masks=labels)
 

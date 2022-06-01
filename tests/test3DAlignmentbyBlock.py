@@ -26,24 +26,24 @@ import os, sys
 import numpy as np
 import matplotlib.pylab as plt
 from imageProcessing.imageProcessing import (
-    _reinterpolatesFocalPlane,
-    imageShowWithValues,
-    imageShowWithValuesSingle,
-    imageAdjust,
-    _removesInhomogeneousBackground,
-    appliesXYshift3Dimages,
-    imageBlockAlignment3D,
-    plots3DshiftMatrices,
-    combinesBlocksImageByReprojection,
-    plots4images,
-    makesShiftMatrixHiRes,
+    _reinterpolate_focal_plane,
+    image_show_with_values,
+    image_show_with_values_single,
+    image_adjust,
+    _remove_inhomogeneous_background,
+    apply_xy_shift_3d_images,
+    image_block_alignment_3d,
+    plot_3d_shift_matrices,
+    combine_blocks_image_by_reprojection,
+    plot_4_images,
+    make_shift_matrix_hi_res,
 )
 
 from scipy.stats import sigmaclip
 from skimage.util.shape import view_as_blocks
 
 from skimage.registration import phase_cross_correlation
-from scipy.ndimage import shift as shiftImage
+from scipy.ndimage import shift as shift_image
 from tqdm import trange, tqdm
 from skimage import exposure
 
@@ -51,20 +51,20 @@ from skimage import exposure
 #%%    - load test 3D fiducial files
 
 if "atlantis" in os.uname()[1]:
-    rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+    root_folder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
 else:
-    rootFolder = "/home/marcnol/grey/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
+    root_folder = "/home/marcnol/grey/users/marcnol/test_HiM/merfish_2019_Experiment_18_Embryo0"
 files=["scan_001_RT27_001_ROI_converted_decon_ch00.tif","scan_001_RT29_001_ROI_converted_decon_ch00.tif"]
 # files = ["scan_001_RT27_001_ROI_converted_decon_ch00.tif", "scan_001_RT41_001_ROI_converted_decon_ch00.tif"]
 
-filenames = [rootFolder + os.sep + x for x in files]
+filenames = [root_folder + os.sep + x for x in files]
 
 print("\nReading files: \n{}".format(" \n\n ".join(filenames)))
 images0 = [io.imread(x).squeeze() for x in filenames]
 
 #%% settings
 
-blockSizeXY = 128
+block_size_xy = 128
 upsample_factor=100
 lower_threshold = 0.9
 higher_threshold=0.9999
@@ -76,31 +76,31 @@ axes2Plot = range(3)
 images0 = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in images0]
 
 print("Removing inhomogeneous background...")
-images = [_removesInhomogeneousBackground(x) for x in images0]
+images = [_remove_inhomogeneous_background(x) for x in images0]
 
 print("Rescaling grey levels...")
-images = [imageAdjust(x, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0] for x in images]
+images = [image_adjust(x, lower_threshold=lower_threshold, higher_threshold=higher_threshold)[0] for x in images]
 
 #%% calculates XY shift  and applies it
-images_2D = [np.sum(x, axis=0) for x in images]
+images_2d = [np.sum(x, axis=0) for x in images]
 
 print("Calculating shifts...")
 upsample_factor = 100
-shift, error, diffphase = phase_cross_correlation(images_2D[0], images_2D[1], upsample_factor=upsample_factor)
+shift, error, diffphase = phase_cross_correlation(images_2d[0], images_2d[1], upsample_factor=upsample_factor)
 print("shifts XY = {}".format(shift))
 
-images_2D.append(shiftImage(images_2D[1], shift))
+images_2d.append(shift_image(images_2d[1], shift))
 
 #%% shows original images and background substracted
 
 allimages = images0 + images
-plots4images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
+plot_4_images(allimages, titles=['reference','cycle <i>','processed reference','processed cycle <i>'])
 
 #%% reinterpolate second file in XY using dictionnary to get rough alignment
 
 # this will only be done in the real pyHiM script. For now this has been simulated in the block above
 
-images.append(appliesXYshift3Dimages(images[1], shift))
+images.append(apply_xy_shift_3d_images(images[1], shift))
 
 #%% shows images so far
 
@@ -153,11 +153,11 @@ for axis, img, title in zip(ax2, images, titles):
 
 #%% 3D image alignment by block
 
-shiftMatrices, block_ref, block_target = imageBlockAlignment3D(images, blockSizeXY=blockSizeXY, upsample_factor=upsample_factor)
+shift_matrices, block_ref, block_target = image_block_alignment_3d(images, block_size_xy=block_size_xy, upsample_factor=upsample_factor)
 
 #%% checks by plotting results
 
-plots3DshiftMatrices(shiftMatrices, fontsize=8)
+plot_3d_shift_matrices(shift_matrices, fontsize=8)
 
 
 #%% - verify xy cross-correlation is close to zero
@@ -173,9 +173,9 @@ plots3DshiftMatrices(shiftMatrices, fontsize=8)
 
 outputs = []
 for axis in axes2Plot:
-    outputs.append(combinesBlocksImageByReprojection(block_ref, block_target, shiftMatrices=shiftMatrices, axis1=axis))
+    outputs.append(combine_blocks_image_by_reprojection(block_ref, block_target, shift_matrices=shift_matrices, axis1=axis))
 
-SSIM_matrices = [x[1] for x in outputs]
+ssim_matrices = [x[1] for x in outputs]
 
 fig = plt.figure(constrained_layout=False)
 fig.set_size_inches((20 * 2, 20))
@@ -190,28 +190,16 @@ for axis, output, i in zip(ax, outputs, axes2Plot):
 
 fig.tight_layout()
 
-newFig = plots3DshiftMatrices(SSIM_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
+newFig = plot_3d_shift_matrices(ssim_matrices, fontsize=6, log=False,valfmt="{x:.2f}")
 newFig.suptitle("SSIM block matrices")
 
-#%% makes HR shift matrix to save
-# numberBlocks = block_ref.shape[0]
-# blockSizeXY = block_ref.shape[3]
+shift_matrix = make_shift_matrix_hi_res(shift_matrices, block_ref.shape)
 
-# shiftMatrix=np.zeros((3,blockSizeXY*shiftMatrices[0].shape[0],blockSizeXY*shiftMatrices[0].shape[1]))
-# for _ax,m in enumerate(shiftMatrices):
-#     print("size={}".format(m.shape))
-#     for i in range(numberBlocks):
-#         for j in range(numberBlocks):
-#             shiftMatrix[_ax,i * blockSizeXY: (i + 1) * blockSizeXY,j * blockSizeXY: (j + 1) * blockSizeXY] = m[i,j]
-
-# aaa=[shiftMatrix[0,:,:],shiftMatrix[1,:,:],shiftMatrix[2,:,:]]
-shiftMatrix = makesShiftMatrixHiRes(shiftMatrices, block_ref.shape)
-
-plots3DshiftMatrices(shiftMatrix, fontsize=8)
+plot_3d_shift_matrices(shift_matrix, fontsize=8)
 
 #%% - Validate results plotting image with aligned masks
 
-def plotBlocks(block_ref, block_target, shiftMatrices, cmap="RdBu", axis1=0):
+def plotBlocks(block_ref, block_target, shift_matrices, cmap="RdBu", axis1=0):
     a = 1
     Nx, Ny = block_ref.shape[0:2]
     fig, axes = plt.subplots(Nx, Ny)
@@ -225,24 +213,24 @@ def plotBlocks(block_ref, block_target, shiftMatrices, cmap="RdBu", axis1=0):
 
             # aligns block
 
-            imgs = list()
+            imgs = []
             imgs.append(block_ref[i, j])
 
-            shift3D = np.array([x[i, j] for x in shiftMatrices])
-            imgs.append(shiftImage(block_target[i, j], shift3D))
+            shift_3d = np.array([x[i, j] for x in shift_matrices])
+            imgs.append(shift_image(block_target[i, j], shift_3d))
 
             imgs = [x / x.max() for x in imgs]
 
             imgs = [np.sum(x, axis=axis1) for x in imgs]
-            # imgs=[_removesInhomogeneousBackground(x) for x in imgs]
-            imgs = [imageAdjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs]
+            # imgs=[_remove_inhomogeneous_background(x) for x in imgs]
+            imgs = [image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs]
 
             if axis1 > 0:
                 imgs = [x.transpose() for x in imgs]
 
             imgs.append(np.zeros(imgs[0].shape))
-            RGB = np.dstack(imgs)
-            axis.imshow(RGB)
+            rgb = np.dstack(imgs)
+            axis.imshow(rgb)
 
             axis.axes.xaxis.set_visible(False)
             axis.axes.yaxis.set_visible(False)
@@ -254,7 +242,7 @@ def plotBlocks(block_ref, block_target, shiftMatrices, cmap="RdBu", axis1=0):
 
 
 for axis in range(2):
-    plotBlocks(block_ref, block_target, shiftMatrices,cmap="RdBu", axis1=axis)
+    plotBlocks(block_ref, block_target, shift_matrices,cmap="RdBu", axis1=axis)
 
 # fig.tight_layout()
 
@@ -268,4 +256,4 @@ for axis in range(2):
 
 
 
-# plt.imshow(shiftMatrix[0,:,:])
+# plt.imshow(shift_matrix[0,:,:])

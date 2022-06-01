@@ -20,15 +20,15 @@ from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
 from imageProcessing.imageProcessing  import (
-    _removesInhomogeneousBackground2D,
-    _removesInhomogeneousBackground,
-    imageAdjust,
-    _segments3DvolumesByThresholding,
-    savesImageAsBlocks,
-    display3D,
-    combinesBlocksImageByReprojection,
-    display3D_assembled,
-    appliesXYshift3Dimages,
+    _remove_inhomogeneous_background_2d,
+    _remove_inhomogeneous_background,
+    image_adjust,
+    _segment_3d_volumes_by_thresholding,
+    save_image_as_blocks,
+    display_3d,
+    combine_blocks_image_by_reprojection,
+    display_3d_assembled,
+    apply_xy_shift_3d_images,
     )
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
@@ -50,18 +50,18 @@ from skimage import io
 
 z = 40
 
-rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+root_folder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+file = root_folder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
 print("loading image {}".format(os.path.basename(file)))
-image3D = io.imread(file).squeeze()
+image_3d = io.imread(file).squeeze()
 
 print("Normalizing exposures")
-image3D = exposure.equalize_hist(image3D)  # improves detection
+image_3d = exposure.equalize_hist(image_3d)  # improves detection
 
 print("Calling blob_log to detect in 3D")
-# localizationTable = feature.blob_log(image3D, threshold = .3)
-localizationTable = feature.blob_dog(image3D[z-1:z+2,:,:], threshold = .3)
+# localizationTable = feature.blob_log(image_3d, threshold = .3)
+localizationTable = feature.blob_dog(image_3d[z-1:z+2,:,:], threshold = .3)
 
-display3D(image3D=image3D,localizations = localizationTable, z=40, rangeXY=1000,norm=False)
+display_3d(image_3d=image_3d,localizations = localizationTable, z=40, range_xy=1000,norm=False)
 

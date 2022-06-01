@@ -7,16 +7,6 @@ Created on Wed Apr  1 18:16:10 2020
 
 """
 
-
-# Imports
-"""import logging
-logging.basicConfig(level=logging.INFO
-                #,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-                #,datefmt='%d/%m/%Y %I:%M:%S %p'
-                #,filename='testImageProcessing.log'
-                )  
-"""
-
 import glob, os, sys
 
 # from copy import deepcopy
@@ -28,8 +18,8 @@ from matplotlib import cm
 from skimage import io
 from imageProcessing import Image
 import parameters as parameters
-from fileManagement import log
-from fileManagement import folders
+from fileManagement import Log
+from fileManagement import Folders
 
 # import cPickle as pickle
 # from scipy.spatial import ConvexHull
@@ -41,61 +31,61 @@ from fileManagement import folders
 # import workers_cells_v3 as wkc
 
 
-def processImage(fileName, param, log1):
-    log1.report("Analysing file: {}\n".format(fileName))
+def processImage(file_name, current_param, current_log):
+    current_log.report("Analysing file: {}\n".format(file_name))
 
     # creates image object
-    Im = Image()
+    im_obj = Image()
 
     # loads image
-    Im.loadImage(fileName)
+    im_obj.load_image(file_name)
 
-    Im.zProjectionRange(param, log1)
+    im_obj.z_projection_range(current_param, current_log)
 
-    if Im.fileName:
-        Im.printImageProperties()
+    if im_obj.file_name:
+        im_obj.print_image_properties()
 
-    Im.imageShow(save=False)
+    im_obj.show_image(save=False)
 
-    del Im
+    del im_obj
 
 
 if __name__ == "__main__":
 
     # defines folders
-    rootFolder = "/home/marcnol/Documents/Images"
-    logFile = "testImageProcess.log"
+    root_folder = "/home/marcnol/Documents/Images"
+    log_file = "testImageProcess.log"
 
     # sets parameters
-    param = parameters.Parameters()
-    param.initializeStandardParameters()
-    paramFile = rootFolder + os.sep + "infoList.inf"
-    param.loadParametersFile(paramFile)
+    current_param = parameters.Parameters()
+    current_param.initialize_standard_parameters()
+    param_file = root_folder + os.sep + "infoList.inf"
+    current_param.load_parameters_file(param_file)
 
     # setup logs
-    logFileName = rootFolder + os.sep + logFile
-    log1 = log(logFileName)
-    log1.eraseFile()
+    logFileName = root_folder + os.sep + log_file
+    current_log = Log(logFileName)
+    current_log.erase_file()
 
     # processes folders and files
-    dataFolder = folders(rootFolder)
-    dataFolder.setsFolders()
-    log1.report("folders read: {}".format(len(dataFolder.listFolders)))
-    filesFolder = glob.glob(dataFolder.listFolders[0] + os.sep + "*.tif")
-    log1.report("About to read {} files\n".format(len(filesFolder)))
+    data_folder = Folders(root_folder)
+    data_folder.set_folders()
+    current_log.report("folders read: {}".format(len(data_folder.list_folders)))
+    files_folder = glob.glob(data_folder.list_folders[0] + os.sep + "*.tif")
+    current_log.report("About to read {} files\n".format(len(files_folder)))
 
     # Processes all DAPI masks
-    for fileName in filesFolder:
-        if fileName.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in fileName.split("_"):
-            processImage(fileName, param, log1)
+    for file_name in files_folder:
+        if file_name.split("_")[-1].split(".")[0] == "ch00" and "DAPI" in file_name.split("_"):
+            processImage(file_name, current_param, current_log)
 
     # Processes all DAPI masks
-    for fileName in filesFolder:
-        res = [i for i in fileName.split("_") if "RT" in i]
-        if len(res) > 0 and fileName.split("_")[-1].split(".")[0] == "ch00":
+    for file_name in files_folder:
+        res = [i for i in file_name.split("_") if "RT" in i]
+        if len(res) > 0 and file_name.split("_")[-1].split(".")[0] == "ch00":
             barcodeNumber = res[0].split("RT")[1]
-            log1.report("Processing barcode: {}".format(barcodeNumber))
-            processImage(fileName, param, log1)
+            current_log.report("Processing barcode: {}".format(barcodeNumber))
+            processImage(file_name, current_param, current_log)
 
     # exits
-    log1.report("Normal exit.")
+    current_log.report("Normal exit.")

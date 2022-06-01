@@ -5,35 +5,39 @@ Created on Mon Jul 20 12:39:42 2020
 
 @author: marcnol
 """
-import sys, os
-import numpy as np
+import os
+import sys
 import matplotlib
+import numpy as np
+from glob import glob
+from tifffile import imread
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import scipy.io as spio
+from csbdeep.utils import Path, download_and_extract_zip_file, normalize
+from skimage import measure
+from stardist import (
+    _draw_polygons,
+    calculate_extents,
+    fill_label_holes,
+    gputools_available,
+    random_label_cmap,
+    relabel_image_stardist,
+)
+from stardist.matching import matching, matching_dataset
+from stardist.models import Config2D, StarDist2D, StarDistData2D
 
 matplotlib.rcParams["image.interpolation"] = None
-import matplotlib.pyplot as plt
-
-from tqdm import tqdm
-from csbdeep.utils import Path, download_and_extract_zip_file
-from tifffile import imread
-from glob import glob
-from csbdeep.utils import Path, download_and_extract_zip_file
-from csbdeep.utils import normalize
-from stardist import fill_label_holes, relabel_image_stardist, random_label_cmap
-from stardist.matching import matching_dataset
-from skimage import measure
-from stardist import calculate_extents, gputools_available, _draw_polygons
-from stardist.matching import matching
-from stardist.models import Config2D, StarDist2D, StarDistData2D
-import scipy.io as spio
-
 np.random.seed(42)
 lbl_cmap = random_label_cmap()
 
 #%% functions
 
 
-def plot_img_label(img, lbl, img_title="image", lbl_title="label", **kwargs):
-    fig, (ai, al) = plt.subplots(1, 2, figsize=(12, 5), gridspec_kw=dict(width_ratios=(1.25, 1)))
+def plot_img_label(img, lbl, img_title="image", lbl_title="label"):
+    fig, (ai, al) = plt.subplots(
+        1, 2, figsize=(12, 5), gridspec_kw=dict(width_ratios=(1.25, 1))
+    )
     im = ai.imshow(img, cmap="gray", clim=(0, 1))
     ai.set_title(img_title)
     fig.colorbar(im, ax=ai)
@@ -73,51 +77,55 @@ def augmenter(x, y):
     return x, y
 
 
-def loadsTrainingDataJB(rootFolder):
+def load_training_data_jb(root_folder):
 
-    folderMasks = "Labeled_images"
-    folderImages = "Original_images"
+    folder_masks = "Labeled_images"
+    folder_images = "Original_images"
 
-    ListMasks, ListImages = [], []
-    ListMasks = sorted(glob(rootFolder + os.sep + folderMasks + os.sep + "*.tif"))
+    list_masks, list_images = [], []
+    list_masks = sorted(glob(root_folder + os.sep + folder_masks + os.sep + "*.tif"))
 
-    baseNameMasks = [os.path.basename(basename) for basename in ListMasks]
+    base_name_masks = [os.path.basename(basename) for basename in list_masks]
 
-    for target in baseNameMasks:
+    for target in base_name_masks:
 
-        expectedFolder = rootFolder + os.sep + folderImages + os.sep + target.split(".tif")[0]
-        expectedFolder45 = rootFolder + os.sep + folderImages + os.sep + target.split("_45.tif")[0]
+        expected_folder = (
+            root_folder + os.sep + folder_images + os.sep + target.split(".tif")[0]
+        )
+        expected_folder_45 = (
+            root_folder + os.sep + folder_images + os.sep + target.split("_45.tif")[0]
+        )
 
-        if os.path.exists(expectedFolder):
-            fileName = expectedFolder + os.sep + "00_Raw_Embryo_segmentation.mat"
-            if os.path.exists(fileName):
-                ListImages.append(fileName)
+        if os.path.exists(expected_folder):
+            file_name = expected_folder + os.sep + "00_Raw_Embryo_segmentation.mat"
+            if os.path.exists(file_name):
+                list_images.append(file_name)
 
-        elif os.path.exists(expectedFolder45):
-            fileName = expectedFolder45 + os.sep + "00_Raw_Embryo_segmentation_45.mat"
-            if os.path.exists(fileName):
-                ListImages.append(fileName)
+        elif os.path.exists(expected_folder_45):
+            file_name = expected_folder_45 + os.sep + "00_Raw_Embryo_segmentation_45.mat"
+            if os.path.exists(file_name):
+                list_images.append(file_name)
 
-    print("Number of Masks: {}".format(len(ListMasks)))
-    print("Number of Images: {}".format(len(ListImages)))
+    print("Number of Masks: {}".format(len(list_masks)))
+    print("Number of Images: {}".format(len(list_images)))
 
-    if len(ListMasks) == len(ListImages):
+    if len(list_masks) == len(list_images):
 
-        Y = list(map(imread, ListMasks))
+        Y = list(map(imread, list_masks))
         # measure.label
         Y = [measure.label(y) for y in Y]
-        Xmat = list(map(spio.loadmat, ListImages))
+        x_mat = list(map(spio.loadmat, list_images))
         # for y in Ymat:
         #     if 'im_raw' in y.keys():
         #         Y.append(y['im_raw'])
         #     elif 'im_raw_45' in y.keys():
         #         Y.append(y['im_raw_45'])
 
-        X = [x[list(x.keys())[-1]] for x in Xmat]
+        X = [x[list(x.keys())[-1]] for x in x_mat]
 
     else:
         print("Warning, something is wrong...")
-    # mat = spio.loadmat(rootFolder+fileName, squeeze_me=True)
+    # mat = spio.loadmat(root_folder+file_name, squeeze_me=True)
     return X, Y
 
 
@@ -152,27 +160,27 @@ def example(model, i, show_dist=True):
 if __name__ == "__main__":
 
     #%% sets parameters
-    ownTrainingSet = True
-    sampleName = "nc14"
-    sep = "_"
+    OWN_TRAINING_SET = True
+    SAMPLE_NAME = "nc14"
+    SEP = "_"
     # 32 is a good default choice (see 1_data.ipynb)
-    n_rays = 32
-    quick_demo = False
+    N_RAYS = 32
+    QUICK_DEMO = False
     train_epochs = 20
     # Predict on subsampled grid for increased efficiency and larger field of view
     grid = (2, 2)
     modelName = "".join(
         [
             "stardist",
-            sep,
-            sampleName,
-            sep,
+            SEP,
+            SAMPLE_NAME,
+            SEP,
             "nrays:",
-            str(n_rays),
-            sep,
+            str(N_RAYS),
+            SEP,
             "epochs:",
             str(train_epochs),
-            sep,
+            SEP,
             "grid:",
             str(grid[0]),
         ]
@@ -180,10 +188,10 @@ if __name__ == "__main__":
 
     #%% loads data
 
-    if ownTrainingSet:
-        rootFolder = "/mnt/PALM_dataserv/DATA/JB/JB/Sara/Deep_Learning/Training_data/Embryo/Marcelo_embryo_data/DAPI_nuclei_segmentation/stage_14"
-        X, Y = loadsTrainingDataJB(rootFolder)
-        print("Loading data from: {}".format(rootFolder))
+    if OWN_TRAINING_SET:
+        root_folder = "/mnt/PALM_dataserv/DATA/JB/JB/Sara/Deep_Learning/Training_data/Embryo/Marcelo_embryo_data/DAPI_nuclei_segmentation/stage_14"
+        X, Y = load_training_data_jb(root_folder)
+        print("Loading data from: {}".format(root_folder))
 
     else:
 
@@ -230,7 +238,8 @@ if __name__ == "__main__":
     # axis_norm = (0,1,2) # normalize channels jointly
     if n_channel > 1:
         print(
-            "Normalizing image channels %s." % ("jointly" if axis_norm is None or 2 in axis_norm else "independently")
+            "Normalizing image channels %s."
+            % ("jointly" if axis_norm is None or 2 in axis_norm else "independently")
         )
         sys.stdout.flush()
 
@@ -268,7 +277,13 @@ if __name__ == "__main__":
     # Use OpenCL-based computations for data generator during training (requires 'gputools')
     use_gpu = False and gputools_available()
 
-    conf = Config2D(n_rays=n_rays, grid=grid, use_gpu=use_gpu, n_channel_in=n_channel, train_epochs=train_epochs,)
+    conf = Config2D(
+        n_rays=N_RAYS,
+        grid=grid,
+        use_gpu=use_gpu,
+        n_channel_in=n_channel,
+        train_epochs=train_epochs,
+    )
     # print(conf)
     vars(conf)
 
@@ -289,28 +304,41 @@ if __name__ == "__main__":
     print(f"network field of view :  {fov}")
 
     if any(median_size > fov):
-        print("WARNING: median object size larger than field of view of the neural network.")
+        print(
+            "WARNING: median object size larger than field of view of the neural network."
+        )
 
     # plot some augmented examples
     img, lbl = X[0], Y[0]
     plot_img_label(img, lbl)
     for _ in range(3):
         img_aug, lbl_aug = augmenter(img, lbl)
-        plot_img_label(img_aug, lbl_aug, img_title="image augmented", lbl_title="label augmented")
+        plot_img_label(
+            img_aug, lbl_aug, img_title="image augmented", lbl_title="label augmented"
+        )
 
     #%% TRAINING
 
-    if quick_demo:
+    if QUICK_DEMO:
         print(
             "NOTE: This is only for a quick demonstration!\n"
-            "      Please set the variable 'quick_demo = False' for proper (long) training.",
+            "      Please set the variable 'QUICK_DEMO = False' for proper (long) training.",
             file=sys.stderr,
             flush=True,
         )
-        model.train(X_trn, Y_trn, validation_data=(X_val, Y_val), augmenter=augmenter, epochs=2, steps_per_epoch=10)
+        model.train(
+            X_trn,
+            Y_trn,
+            validation_data=(X_val, Y_val),
+            augmenter=augmenter,
+            epochs=2,
+            steps_per_epoch=10,
+        )
 
         print(
-            "====> Stopping training and loading previously trained demo model from disk.", file=sys.stderr, flush=True
+            "====> Stopping training and loading previously trained demo model from disk.",
+            file=sys.stderr,
+            flush=True,
         )
         model = StarDist2D.from_pretrained("2D_demo")
     else:
@@ -322,7 +350,7 @@ if __name__ == "__main__":
     # many cases, we still recommend to adapt the thresholds to your data. The optimized threshold values are saved to
     # disk and will be automatically loaded with the model.
 
-    if quick_demo:
+    if QUICK_DEMO:
         model.optimize_thresholds(X_val[:2], Y_val[:2])
     else:
         model.optimize_thresholds(X_val, Y_val)
@@ -335,7 +363,9 @@ if __name__ == "__main__":
 
         # example(model, index)
         Y_val_pred = [
-            model.predict_instances(x, n_tiles=model._guess_n_tiles(x), show_tile_progress=False)[0]
+            model.predict_instances(
+                x, n_tiles=model._guess_n_tiles(x), show_tile_progress=False
+            )[0]
             for x in tqdm(X_val)
         ]
 
@@ -345,14 +375,25 @@ if __name__ == "__main__":
     #%% Choose several IoU thresholds $\tau$ that might be of interest and for each compute matching statistics for the validation data.
 
     taus = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    stats = [matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False) for t in tqdm(taus)]
+    stats = [
+        matching_dataset(Y_val, Y_val_pred, thresh=t, show_progress=False)
+        for t in tqdm(taus)
+    ]
     print("\nMatching stats for 0.5: {}\n".format(stats[taus.index(0.5)]))
 
     # Plot the matching statistics and the number of true/false positives/negatives as a function of the IoU threshold $\tau$.
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
-    for m in ("precision", "recall", "accuracy", "f1", "mean_true_score", "mean_matched_score", "panoptic_quality"):
+    for m in (
+        "precision",
+        "recall",
+        "accuracy",
+        "f1",
+        "mean_true_score",
+        "mean_matched_score",
+        "panoptic_quality",
+    ):
         ax1.plot(taus, [s._asdict()[m] for s in stats], ".-", lw=2, label=m)
     ax1.set_xlabel(r"IoU threshold $\tau$")
     ax1.set_ylabel("Metric value")

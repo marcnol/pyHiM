@@ -12,14 +12,14 @@ import os
 from matplotlib.pylab import plt
 import numpy as np
 
-rootFolder = "/mnt/grey/DATA/rawData_2020/Experiment_6_sara/dcimg_raw_data"
-fileName = "185__FTL.dcimg"
-fileID = DCIMGFile(rootFolder + os.sep + fileName)
+root_folder = "/mnt/grey/DATA/rawData_2020/Experiment_6_sara/dcimg_raw_data"
+file_name = "185__FTL.dcimg"
+fileID = DCIMGFile(root_folder + os.sep + file_name)
 
 fileID.open()
 image = fileID.mma
 
-# image2D=np.sum(image,axis=0)
+# image_2d=np.sum(image,axis=0)
 
 plt.imshow(image[100, :, :])
 # fileID.close()

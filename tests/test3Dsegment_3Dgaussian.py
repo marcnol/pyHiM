@@ -24,15 +24,15 @@ from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
 from imageProcessing.imageProcessing  import (
-    _removesInhomogeneousBackground2D,
-    _removesInhomogeneousBackground,
-    imageAdjust,
-    _segments3DvolumesByThresholding,
-    savesImageAsBlocks,
-    display3D,
-    combinesBlocksImageByReprojection,
-    display3D_assembled,
-    appliesXYshift3Dimages,
+    _remove_inhomogeneous_background_2d,
+    _remove_inhomogeneous_background,
+    image_adjust,
+    _segment_3d_volumes_by_thresholding,
+    save_image_as_blocks,
+    display_3d,
+    combine_blocks_image_by_reprojection,
+    display_3d_assembled,
+    apply_xy_shift_3d_images,
     )
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
@@ -61,66 +61,66 @@ higher_threshold = 0.9999
 if preProcesses:
     # pre-processes image
     if "atlantis" in os.uname()[1]:
-        rootFolder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
-        file = rootFolder+'scan_001_RT31_001_ROI_converted_decon_ch01.tif'
+        root_folder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
+        file = root_folder+'scan_001_RT31_001_ROI_converted_decon_ch01.tif'
     else:
-        rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-        file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+        root_folder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+        file = root_folder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
     imageRaw = io.imread(file).squeeze()
     # autoscales exposures
-    image3D = exposure.rescale_intensity(imageRaw, out_range=(0, 1))
+    image_3d = exposure.rescale_intensity(imageRaw, out_range=(0, 1))
 
     # removes inhomogeneous background
     print("\nRemoving inhomogeneous background...")
-    image3D= _removesInhomogeneousBackground(image3D)
+    image_3d= _remove_inhomogeneous_background(image_3d)
 
     # rescales grey levels
     print("\nRescaling grey levels...")
-    image3D,_,_,_,_ = imageAdjust(image3D, lower_threshold=lower_threshold,higher_threshold=higher_threshold)
+    image_3d,_,_,_,_ = image_adjust(image_3d, lower_threshold=lower_threshold,higher_threshold=higher_threshold)
     shift = [-6.185384615384616, -2.9223076923076925]
     shift = np.array(shift)
-    image3D = appliesXYshift3Dimages(image3D, shift)
+    image_3d = apply_xy_shift_3d_images(image_3d, shift)
 
 else:
 
     if "atlantis" in os.uname()[1]:
-        rootFolder="/home/marcnol/data/Embryo_debug_dataset/"
-        file = rootFolder+'scan_001_RT27_001_ROI_converted_decon_ch01_preProcessed_index:0.tif'
+        root_folder="/home/marcnol/data/Embryo_debug_dataset/"
+        file = root_folder+'scan_001_RT27_001_ROI_converted_decon_ch01_preProcessed_index:0.tif'
     else:
-        rootFolder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
-        file = rootFolder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
+        root_folder="/mnt/grey/DATA/users/marcnol/models/StarDist3D/training3Dbarcodes/dataset1/"
+        file = root_folder+'scan_001_RT25_001_ROI_converted_decon_ch01_preProcessed_index0.tif'
 
     print("loading image {}".format(os.path.basename(file)))
 
-    image3D = io.imread(file).squeeze()
+    image_3d = io.imread(file).squeeze()
 
 
 
 #%%
-image3D_test=image3D.copy()
+image3D_test=image_3d.copy()
 area_min = 10
 area_max = 250
-threshold_over_std,sigma ,boxSize, filter_size=5, 3, (32, 32),(3, 3)
+threshold_over_std,sigma ,box_size, filter_size=5, 3, (32, 32),(3, 3)
 nlevels=64
 contrast=0.001
 
 # segments in 3D using ASTROPY
-binary, segmentedImage3D = _segments3DvolumesByThresholding(image3D_test,
+binary, segmented_image_3d = _segment_3d_volumes_by_thresholding(image3D_test,
                                                        threshold_over_std=threshold_over_std,
                                                        sigma = 3,
                                                        area_min = area_min,
                                                        area_max=area_max,
-                                                       boxSize=(32, 32),
+                                                       box_size=(32, 32),
                                                        filter_size=(3, 3),
                                                        nlevels=nlevels,
                                                        contrast=contrast,
-                                                       deblend3D=True)
+                                                       deblend_3d=True)
 
 # finds first estimate of centroids from 3D masks
 image3D_test = exposure.rescale_intensity(image3D_test, out_range=(0, 1))
 
-properties = regionprops(segmentedImage3D, intensity_image=image3D_test, )
+properties = regionprops(segmented_image_3d, intensity_image=image3D_test, )
 centroids=[x.weighted_centroid for x in properties]
 
 z=[x[0] for x in centroids]
@@ -132,7 +132,7 @@ localizationTable[:,0]=z
 localizationTable[:,1]=y
 localizationTable[:,2]=x
 
-display3D(image3D=image3D_test,localizationsList = [localizationTable],labels=segmentedImage3D,z=40, rangeXY=1000, norm=True,cmap='Greys')
+display_3d(image_3d=image3D_test,localizations_list = [localizationTable],labels=segmented_image_3d,z=40, range_xy=1000, norm=True,cmap='Greys')
 
 #%%
 # fits 3D gaussians using BIGFISH
@@ -145,40 +145,40 @@ print("Running bigfish...")
 spots_subpixel = fit_subpixel(image3D_test, spots, voxel_size_z=250, voxel_size_yx=100,psf_z=500, psf_yx=200)
 
 # Plots results
-display3D(image3D=image3D_test,localizationsList = [spots,spots_subpixel],labels=segmentedImage3D,z=40, rangeXY=1000, norm=True,cmap='Greys')
+display_3d(image_3d=image3D_test,localizations_list = [spots,spots_subpixel],labels=segmented_image_3d,z=40, range_xy=1000, norm=True,cmap='Greys')
 
 # represents image in 3D with localizations
-img = segmentedImage3D
-img = image3D
+img = segmented_image_3d
+img = image_3d
 center = int(img.shape[1]/2)
 window = 10
 
-images = list()
+images = []
 images.append(np.sum(img,axis=0))
 images.append(np.sum(img[:,:,center-window:center+window],axis=2))
 images.append(np.sum(img[:,center-window:center+window,:],axis=1))
 
 # produces and saves output figure
-figures=list()
-figures.append([display3D_assembled(images, localizations = [spots_subpixel,spots], plottingRange = [center,window]),'_3DimageNlocalizations.png'])
+figures=[]
+figures.append([display_3d_assembled(images, localizations = [spots_subpixel,spots], plotting_range = [center,window]),'_3DimageNlocalizations.png'])
 
 # saves figures
-outputFileNames = [rootFolder+os.path.basename(file)+x[1] for x in figures]
+output_filenames = [root_folder+os.path.basename(file)+x[1] for x in figures]
 
-for fig, file in zip(figures,outputFileNames):
+for fig, file in zip(figures,output_filenames):
     fig[0].savefig(file)
 
 #%% gets object properties
-def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10,nTolerance=1000):
+def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10,n_tolerance=1000):
     """
     get object properties from labeled image and formats
     centroids in NPY array
 
     Parameters
     ----------
-    segmentedImage3D : NPY 3D array
+    segmented_image_3d : NPY 3D array
         labeled 3D image.
-    image3D_aligned : NPY 3D array
+    image_3d_aligned : NPY 3D array
         pre-processed 3D image.
 
     Returns
@@ -187,15 +187,15 @@ def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10,nTolerance
         list of spots with the format: zyx
 
     """
-    properties = regionprops(segmentedImage3D, intensity_image=image3D_aligned)
+    properties = regionprops(segmented_image_3d, intensity_image=image_3d_aligned)
 
     peak0=[x.max_intensity for x in properties]
 
-    peakList = peak0.copy()
-    peakList.sort()
-    last2keep=np.min([nTolerance,len(peakList)])
-    highestPeakValue  = peakList[-last2keep]
-    selection = list(np.nonzero(peak0>highestPeakValue)[0])
+    peak_list = peak0.copy()
+    peak_list.sort()
+    last2keep=np.min([n_tolerance,len(peak_list)])
+    highest_peak_value  = peak_list[-last2keep]
+    selection = list(np.nonzero(peak0>highest_peak_value)[0])
 
     peak=[properties[x].max_intensity for x in selection]
 
@@ -240,10 +240,10 @@ def getMaskProperties(segmentedImage3D, image3D_aligned, threshold=10,nTolerance
     peak,
     flux,
     mag,
-    ) = getMaskProperties(segmentedImage3D, image3D,threshold = threshold_over_std,nTolerance=2000)
+    ) = get_mask_properties(segmented_image_3d, image_3d,threshold = threshold_over_std,n_tolerance=2000)
 
 z,window=40,5
-plt.imshow(np.sum(image3D[z-window:z+window,:,:],axis=0),cmap='Greys',vmax=.8)
+plt.imshow(np.sum(image_3d[z-window:z+window,:,:],axis=0),cmap='Greys',vmax=.8)
 selection=np.abs(spots[:,0]-z)<window
 color=np.array(flux)
 plt.scatter(spots[selection,2],spots[selection,1],c=color[selection],marker='+',alpha=.7,cmap='jet')
@@ -260,19 +260,19 @@ plt.scatter(spots[selection,2],spots[selection,1],c=color[selection],marker='+',
 
 #%% breaks in blocks and represents in 3D
 
-blockSizeXY=128
-numPlanes = image3D_test.shape[0]
-blockSize = (numPlanes, blockSizeXY, blockSizeXY)
-images = [image3D_test,segmentedImage3D]
-blocks = [view_as_blocks(x, block_shape=blockSize).squeeze() for x in images]
+block_size_xy=128
+num_planes = image3D_test.shape[0]
+block_size = (num_planes, block_size_xy, block_size_xy)
+images = [image3D_test,segmented_image_3d]
+blocks = [view_as_blocks(x, block_shape=block_size).squeeze() for x in images]
 
 fig_output = []
 for axis in range(3):
-    fig_output.append(combinesBlocksImageByReprojection(blocks[0], blocks[1],axis1=axis))
+    fig_output.append(combine_blocks_image_by_reprojection(blocks[0], blocks[1],axis1=axis))
 
 images = [x[0][:,:,0] for x in fig_output]
 
-fig = display3D_assembled(images, localizations = [spots_subpixel,spots])
+fig = display_3d_assembled(images, localizations = [spots_subpixel,spots])
 
 #%%  first test ti make a 3D plot. Problem is it depends on image size... so will ignore.
 
@@ -288,7 +288,7 @@ rect_YZ = [left_2, left, width_2, 0.15]
 
 fig = plt.figure()
 # fig.set_size_inches((20, 20))
-ax=list()
+ax=[]
 ax.append(plt.axes(rect_XY))
 ax.append(plt.axes(rect_ZX))
 ax.append(plt.axes(rect_YZ))

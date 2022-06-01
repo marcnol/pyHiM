@@ -17,17 +17,17 @@ from skimage import io
 import os
 import numpy as np
 import matplotlib.pylab as plt
-from imageProcessing.imageProcessing import _reinterpolatesFocalPlane, imageShowWithValues
+from imageProcessing.imageProcessing import _reinterpolate_focal_plane, image_show_with_values
 # from astropy.stats import SigmaClip
 from scipy.stats import sigmaclip
 
 from skimage.registration import phase_cross_correlation
-from scipy.ndimage import shift as shiftImage
+from scipy.ndimage import shift as shift_image
 
 
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
-filename1 = rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00.tif"
-filename2 = rootFolder+os.sep+"scan_001_RT29_001_ROI_converted_decon_ch00.tif"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
+filename1 = root_folder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00.tif"
+filename2 = root_folder+os.sep+"scan_001_RT29_001_ROI_converted_decon_ch00.tif"
 
 print("Reading files: \n{}\n{}".format(filename1,filename2))
 img1=io.imread(filename1).squeeze()
@@ -42,7 +42,7 @@ img2=img2/img2.max()
 
 shift, error, diffphase = phase_cross_correlation(img1, img2, upsample_factor=upsample_factor)
 
-img2_corrected = shiftImage(img2, shift)
+img2_corrected = shift_image(img2, shift)
 img2_corrected=img2_corrected/img2_corrected.max()
 
 #%% plots 2d projection

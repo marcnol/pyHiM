@@ -9,28 +9,28 @@ The pyHi-M.projections package includes functions to produce 2D projections from
 
 """
 
-# from .makeProjections import makeProjections
-# from .makeProjections import makes2DProjectionsFile
+# from .makeProjections import make_projections
+# from .make_projections import make_2d_projections_file
 
 # from .imageProcessing import Image
 # from .imageProcessing import gaussian
 # from .imageProcessing import calculate_zrange
-# from .imageProcessing import imageAdjust
-# from .imageProcessing import save2imagesRGB
-# from .imageProcessing import saveImage2Dcmd
-# from .imageProcessing import align2ImagesCrossCorrelation
+# from .imageProcessing import image_adjust
+# from .imageProcessing import save_2_images_rgb
+# from .imageProcessing import save_image_2d_cmd
+# from .imageProcessing import align_2_images_cross_correlation
 
 # _makeProjections = [
-#     "makeProjections",
-#     "makes2DProjectionsFile"]
+#     "make_projections",
+#     "make_2d_projections_file"]
 
 # _imageProcessing = [
 #     "Image",
 #     "gaussian",
 #     "calculate_zrange",
-#     "imageAdjust",
-#     "save2imagesRGB",
-#     "saveImage2Dcmd",
-#     "align2ImagesCrossCorrelation"]
+#     "image_adjust",
+#     "save_2_images_rgb",
+#     "save_image_2d_cmd",
+#     "align_2_images_cross_correlation"]
 
 # __all__ = _makeProjections + _imageProcessing

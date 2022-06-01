@@ -11,7 +11,7 @@ import logging
 formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
 formatter2 = logging.Formatter("%(message)s")
 
-logFile = "/home/marcnol/data/Embryo_debug_dataset/test_dataset/test.log"
+log_file = "/home/marcnol/data/Embryo_debug_dataset/test_dataset/test.log"
 
 logger = logging.getLogger()  # root logger - Good to get it only once.
 logger.handlers = []
@@ -19,7 +19,7 @@ for hdlr in logger.handlers[:]:  # remove the existing file handlers
     if isinstance(hdlr,logging.FileHandler):
         logger.removeHandler(hdlr)
 
-filehandler = logging.FileHandler(logFile, 'w')
+filehandler = logging.FileHandler(log_file, 'w')
 ch = logging.StreamHandler()
 
 filehandler.setLevel(logging.INFO)

@@ -40,7 +40,7 @@ def make_data1(N, baseline=2, errorAmp=1, rseed=1):
     return x
 
 
-def kdeFit(x, x_d, bandwidth=1, kernel="gaussian"):
+def kde_fit(x, x_d, bandwidth=1, kernel="gaussian"):
 
     kde = KernelDensity(bandwidth=bandwidth, kernel="gaussian")
     kde.fit(x[:, None])
@@ -102,7 +102,7 @@ for i, offset, xi in zip(range(len(offsets)), offsets, x):
     ax[i].hist(xi, bins=bins + offset, normed=True, alpha=0.5, color="r")
     ax[i].plot(xi, np.full_like(xi, -0.01), "|k", markeredgewidth=0.5)
 
-    logprob, kde = kdeFit(xi, x_d, bandwidth=bandwidth)
+    logprob, kde = kde_fit(xi, x_d, bandwidth=bandwidth)
     ax[i].fill_between(x_d, np.exp(logprob) * 1.3, alpha=0.3)
     contactProbability = np.nonzero(xi < threshold)[0].shape[0] / xi.shape[0]
     ax[i].text(7, 0.5, "p = {}\nmean = {:.2f}".format(contactProbability, np.mean(xi)))

@@ -20,15 +20,15 @@ from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
 from imageProcessing.imageProcessing  import (
-    _removesInhomogeneousBackground2D,
-    _removesInhomogeneousBackground,
-    imageAdjust,
-    _segments3DvolumesByThresholding,
-    savesImageAsBlocks,
-    display3D,
-    combinesBlocksImageByReprojection,
-    display3D_assembled,
-    appliesXYshift3Dimages,
+    _remove_inhomogeneous_background_2d,
+    _remove_inhomogeneous_background,
+    image_adjust,
+    _segment_3d_volumes_by_thresholding,
+    save_image_as_blocks,
+    display_3d,
+    combine_blocks_image_by_reprojection,
+    display_3d_assembled,
+    apply_xy_shift_3d_images,
     )
 from photutils import detect_sources
 from astropy.convolution import Gaussian2DKernel
@@ -41,60 +41,60 @@ from scipy import ndimage as ndi
 from skimage.segmentation import watershed
 from skimage.feature import peak_local_max
 
-rootFolder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
-file = rootFolder+'scan_001_RT27_001_ROI_converted_decon_ch01.tif'
+root_folder="/home/marcnol/data/Embryo_debug_dataset/test_dataset/"
+file = root_folder+'scan_001_RT27_001_ROI_converted_decon_ch01.tif'
 
-image3D = io.imread(file).squeeze()
+image_3d = io.imread(file).squeeze()
 
 #%% takes one every n planes
 from datetime import datetime
 
-def _removesZplanes(image3D, Zrange):
+def _remove_z_planes(image_3d, z_range):
 
-    output = np.zeros(image3D.shape)
-    for i,index in enumerate(Zrange):
-        output[i,:,:] = image3D[index,:,:]
+    output = np.zeros(image_3d.shape)
+    for i,index in enumerate(z_range):
+        output[i,:,:] = image_3d[index,:,:]
 
     return output
 
-def _interpolatesZplanes(image3D, Zrange):
+def _interpolate_z_planes(image_3d, z_range):
 
     from scipy.interpolate import interpn
 
-    output = np.zeros(image3D.shape)
+    output = np.zeros(image_3d.shape)
 
     # need to code using interpn
-    output = image3D
+    output = image_3d
 
     return output
 
-def reinterpolateZ(image3D, Zrange,mode='remove'):
+def reinterpolate_z(image_3d, z_range,mode='remove'):
 
     if 'interpolate' in mode:
-        output = _interpolatesZplanes(image3D, Zrange)
+        output = _interpolate_z_planes(image_3d, z_range)
     elif 'remove' in mode:
-        output = _removesZplanes(image3D, Zrange)
+        output = _remove_z_planes(image_3d, z_range)
 
     return output
 
 
-numberZplanes=image3D.shape[0]
+numberZplanes=image_3d.shape[0]
 binning = 2
-Zrange = range(0,numberZplanes,binning)
+z_range = range(0,numberZplanes,binning)
 
 begin_time = datetime.now()
-image3Dr = reinterpolateZ(image3D, Zrange,mode='remove')
+image3Dr = reinterpolate_z(image_3d, z_range,mode='remove')
 print("Elapsed time: {}".format(datetime.now() - begin_time))
 
 
-images = [image3D, image3Dr,np.zeros(image3D.shape)]
+images = [image_3d, image3Dr,np.zeros(image_3d.shape)]
 axis = 0
 
 images2d = [np.sum(img,axis=axis) for img in images]
 images2d = [img/img.max() for img in images2d]
-RGB = np.zeros((images2d[0].shape[0],images2d[0].shape[1],3))
+rgb = np.zeros((images2d[0].shape[0],images2d[0].shape[1],3))
 
 for i, img in enumerate(images2d):
-    RGB[:,:,i] = img
+    rgb[:,:,i] = img
 
-plt.imshow(RGB)
+plt.imshow(rgb)

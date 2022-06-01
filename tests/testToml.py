@@ -8,7 +8,7 @@ Created on Fri Sep 18 15:07:12 2020
 
 import toml
 
-with open("test.toml", "r") as myfile:
+with open("test.toml", mode="r", encoding="utf-8") as myfile:
     dataString = myfile.readlines()
 
 parsed_toml = toml.loads("".join(dataString))

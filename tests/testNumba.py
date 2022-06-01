@@ -6,13 +6,6 @@ Created on Tue Sep 15 21:38:15 2020
 @author: marcnol
 """
 
-# import numba
-# import numpy as np
-
-# from datetime import datetime
-
-#%% mandelbrot
-
 
 from timeit import default_timer as timer
 

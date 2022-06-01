@@ -31,24 +31,24 @@ def createsUserMask(filename):
 
     # loads image
     img = np.load(filename).squeeze()
-    outputFileName = "masks"
+    output_filename = "masks"
 
     # displays image
-    Im = Image()
-    Im.data_2D = img
-    Im.imageShow(show=True, normalization="simple")
+    im_obj = Image()
+    im_obj.data_2d = img
+    im_obj.show_image(show=True, normalization="simple")
     print("Click on the button to add a new ROI")
 
-    # Draw multiple ROIs
+    # Draw multiple rois
     multiroi_named = MultiRoi(roi_names=["My first ROI", "My second ROI"])
 
-    numberROIs = len(multiroi_named.rois)
-    print("Number of ROIs drawn: {}".format(numberROIs))
+    number_rois = len(multiroi_named.rois)
+    print("Number of rois drawn: {}".format(number_rois))
 
-    masks = np.zeros((img.shape[0], img.shape[1], numberROIs))
+    masks = np.zeros((img.shape[0], img.shape[1], number_rois))
 
-    # Display image with all ROIs
-    Im.imageShow(show=True, normalization="simple")
+    # Display image with all rois
+    im_obj.show_image(show=True, normalization="simple")
 
     roi_names = []
     i = 0
@@ -62,7 +62,7 @@ def createsUserMask(filename):
     plt.show()
 
     # saves result
-    np.save(outputFileName, masks)
+    np.save(output_filename, masks)
 
 
 # =============================================================================
@@ -72,7 +72,7 @@ def createsUserMask(filename):
 if __name__ == "__main__":
 
     # Create image
-    rootFolder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
-    fileNameRNA = rootFolder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
+    root_folder = "/home/marcnol/data/Experiment_4/0_Embryo/alignImages/"
+    fileNameRNA = root_folder + "scan_002_DAPI_001_ROI_converted_decon_ch01_2d_registered.npy"
 
     createsUserMask(fileNameRNA)

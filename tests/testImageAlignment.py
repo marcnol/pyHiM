@@ -16,15 +16,15 @@ from skimage.feature import register_translation
 from skimage.feature.register_translation import _upsampled_dft
 from skimage import exposure
 from scipy.ndimage import fourier_shift
-from scipy.ndimage import shift as shiftImage
+from scipy.ndimage import shift as shift_image
 from imageProcessing import Image
-from fileManagement import folders, Parameters
-from fileManagement import log
+from fileManagement import Folders, Parameters
+from fileManagement import Log
 import cv2
 
 
 def displaysEquializationHistograms(
-    hist1_before, hist1_after, hist2_before, hist2_after, min_threshold, vebose=False, fileName="test",
+    hist1_before, hist1_after, hist2_before, hist2_after, min_threshold, vebose=False, file_name="test",
 ):
     fig = plt.figure(figsize=(6, 3))
     ax1 = plt.subplot(2, 2, 1)
@@ -40,12 +40,12 @@ def displaysEquializationHistograms(
     ax4.set_yscale("log")
     ax1.vlines(min_threshold[0], 0, hist1_before[0].max(), colors="r")
     ax2.vlines(min_threshold[1], 0, hist2_before[0].max(), colors="r")
-    plt.savefig(fileName + "_intensityHist.png")
+    plt.savefig(file_name + "_intensityHist.png")
     if not verbose:
         plt.close(fig)
 
 
-def imageAdjust(image, fileName="test", lower_threshold=0.3, higher_threshold=0.9999, display=False):
+def image_adjust(image, file_name="test", lower_threshold=0.3, higher_threshold=0.9999, display=False):
 
     image1 = exposure.rescale_intensity(image, out_range=(0, 1))
 
@@ -57,20 +57,20 @@ def imageAdjust(image, fileName="test", lower_threshold=0.3, higher_threshold=0.
 
     if display:
         plt.figure(figsize=(30, 30))
-        plt.imsave(fileName + "_adjusted.png", image1, cmap="hot")
+        plt.imsave(file_name + "_adjusted.png", image1, cmap="hot")
 
     return image1, hist1_before, hist1
 
 
-def showCCimage(image1, image2, verbose=False, fileName="test"):
+def show_cc_image(image1, image2, verbose=False, file_name="test"):
     image_product = np.fft.fft2(image1) * np.fft.fft2(image2).conj()
     cc_image = _upsampled_dft(image_product, 150, 100, (shift * 100) + 75).conj()
     if verbose:
         plt.figure(figsize=(60, 30))
         ax1 = plt.subplot(1, 2, 1)
         ax2 = plt.subplot(1, 2, 2)
-        RGB_falsecolor_image = np.dstack([image1, image2, np.zeros([2048, 2048])])
-        ax1.imshow(RGB_falsecolor_image, origin="lower", interpolation="nearest")
+        rgb_falsecolor_image = np.dstack([image1, image2, np.zeros([2048, 2048])])
+        ax1.imshow(rgb_falsecolor_image, origin="lower", interpolation="nearest")
         ax1.set_axis_off()
         ax1.set_title("Super-imposed images")
 
@@ -79,32 +79,32 @@ def showCCimage(image1, image2, verbose=False, fileName="test"):
         ax2.set_title("Supersampled XC sub-area")
     else:
         plt.figure(figsize=(30, 30))
-        plt.imsave(fileName + "_CC.png", cc_image)
+        plt.imsave(file_name + "_CC.png", cc_image)
 
 
-def save2imagesRGB(image1, image2, fileName):
-    RGB_falsecolor_image = np.dstack([image1, np.zeros([2048, 2048]), image2])
+def save_2_images_rgb(image1, image2, file_name):
+    rgb_falsecolor_image = np.dstack([image1, np.zeros([2048, 2048]), image2])
     plt.figure(figsize=(30, 30))
-    plt.imsave(fileName, RGB_falsecolor_image)
-    # cv2.write(fileName+'_RGB.png',RGB_falsecolor_image)
+    plt.imsave(file_name, rgb_falsecolor_image)
+    # cv2.write(file_name+'_RGB.png',rgb_falsecolor_image)
 
 
-rootFolder = "/home/marcnol/Documents/Images/Embryo_debug_dataset/rawImages"
-fileName1 = "scan_001_DAPI_017_ROI_converted_decon_ch01.tif"
-# fileName1='scan_004_RT18_017_ROI_converted_decon_ch00.tif'
-fileName2 = "scan_004_RT20_017_ROI_converted_decon_ch00.tif"
+root_folder = "/home/marcnol/Documents/Images/Embryo_debug_dataset/raw_images"
+filename_1 = "scan_001_DAPI_017_ROI_converted_decon_ch01.tif"
+# filename_1='scan_004_RT18_017_ROI_converted_decon_ch00.tif'
+filename_2 = "scan_004_RT20_017_ROI_converted_decon_ch00.tif"
 
-rootFolder = "/home/marcnol/data/Experiment_15/Embryo_006_ROI18"
-fileName2 = "scan_001_DAPI_018_ROI_converted_decon_ch01.tif"
-fileName1 = "scan_004_RT18_018_ROI_converted_decon_ch00.tif"
+root_folder = "/home/marcnol/data/Experiment_15/Embryo_006_ROI18"
+filename_2 = "scan_001_DAPI_018_ROI_converted_decon_ch01.tif"
+filename_1 = "scan_004_RT18_018_ROI_converted_decon_ch00.tif"
 
-# rootFolder='/home/marcnol/Documents/Images/Experiment15_embryo001/rawImages'
-# fileName1='scan_001_RT14_002_ROI_converted_decon_ch01.tif'
-# fileName2='scan_001_RT1_002_ROI_converted_decon_ch01.tif'
+# root_folder='/home/marcnol/Documents/Images/Experiment15_embryo001/raw_images'
+# filename_1='scan_001_RT14_002_ROI_converted_decon_ch01.tif'
+# filename_2='scan_001_RT1_002_ROI_converted_decon_ch01.tif'
 
 verbose = False
 
-outputFileName = os.path.basename(fileName2).split(".")[0]
+output_filename = os.path.basename(filename_2).split(".")[0]
 
 parameterFiles = [
     "infoList_DAPI.json",
@@ -113,48 +113,48 @@ parameterFiles = [
 ]
 
 label = parameterFiles[0]
-param = Parameters()
-param.initializeStandardParameters()
-paramFile = rootFolder + os.sep + label
-param.loadParametersFile(paramFile)
-param.param["rootFolder"] = rootFolder
+current_param = Parameters()
+current_param.initialize_standard_parameters()
+param_file = root_folder + os.sep + label
+current_param.load_parameters_file(param_file)
+current_param.param_dict["root_folder"] = root_folder
 
-logFile = "alignImagesXcorrelation.log"
-logFileName = rootFolder + os.sep + logFile
-log1 = log(logFileName)
-log1.eraseFile()
-log1.report("Starting to log to: {}".format(logFileName))
+log_file = "alignImagesXcorrelation.log"
+logFileName = root_folder + os.sep + log_file
+current_log = Log(logFileName)
+current_log.erase_file()
+current_log.report("Starting to log to: {}".format(logFileName))
 
 # processes folders and files
-dataFolder = folders(param.param["rootFolder"])
-dataFolder.setsFolders()
-dataFolder.createsFolders(rootFolder, param)
-log1.report("folders read: {}".format(len(dataFolder.listFolders)))
+data_folder = Folders(current_param.param_dict["root_folder"])
+data_folder.set_folders()
+data_folder.create_folders(root_folder, current_param)
+current_log.report("folders read: {}".format(len(data_folder.list_folders)))
 
 # creates image object
-Im1 = Image()
-Im2 = Image()
+img_1 = Image()
+img_2 = Image()
 
 # loads image
-Im1.loadImage2D(fileName1, log1, dataFolder)
-Im2.loadImage2D(fileName2, log1, dataFolder)
+img_1.load_image_2d(filename_1, current_log, data_folder)
+img_2.load_image_2d(filename_2, current_log, data_folder)
 
 # adjusts image levels
-image1_uncorrected = Im1.data_2D / Im1.data_2D.max()
-image2_uncorrected = Im2.data_2D / Im2.data_2D.max()
+image1_uncorrected = img_1.data_2d / img_1.data_2d.max()
+image2_uncorrected = img_2.data_2d / img_2.data_2d.max()
 lower_threshold1 = 2 * filters.threshold_otsu(image1_uncorrected)
 lower_threshold2 = 2 * filters.threshold_otsu(image2_uncorrected)
 
-image1, hist1_before, hist1_after = imageAdjust(
-    image1_uncorrected, outputFileName + "_ref", lower_threshold1, higher_threshold=0.9999, display=verbose,
+image1, hist1_before, hist1_after = image_adjust(
+    image1_uncorrected, output_filename + "_ref", lower_threshold1, higher_threshold=0.9999, display=verbose,
 )
-image2, hist2_before, hist2_after = imageAdjust(
-    image2_uncorrected, outputFileName, lower_threshold2, higher_threshold=0.9999, display=verbose,
+image2, hist2_before, hist2_after = image_adjust(
+    image2_uncorrected, output_filename, lower_threshold2, higher_threshold=0.9999, display=verbose,
 )
 
 # shows eq histograms
 displaysEquializationHistograms(
-    hist1_before, hist1_after, hist2_before, hist2_after, (lower_threshold1, lower_threshold2), verbose, outputFileName,
+    hist1_before, hist1_after, hist2_before, hist2_after, (lower_threshold1, lower_threshold2), verbose, output_filename,
 )
 
 # calculates shift
@@ -165,16 +165,16 @@ shift, error, diffphase = register_translation(image1, image2, 100)
 # The shift corresponds to the pixel offset relative to the reference image
 # offset_image = fourier_shift(np.fft.fftn(image2_uncorrected), shift)
 # image2_corrected = np.fft.ifftn(offset_image)
-image2_corrected = shiftImage(image2, shift)
+image2_corrected = shift_image(image2, shift)
 image2_corrected = exposure.rescale_intensity(image2_corrected, out_range=(0, 1))
 
 print(f"Detected subpixel offset (y, x): {shift}")
 
 
 if verbose:
-    showCCimage(image1, image2, verbose, outputFileName)
+    show_cc_image(image1, image2, verbose, output_filename)
 
-save2imagesRGB(image1_uncorrected, image2_uncorrected, outputFileName + "_overlay_uncorrected.png")
+save_2_images_rgb(image1_uncorrected, image2_uncorrected, output_filename + "_overlay_uncorrected.png")
 image1 = image1 > 0.1
 image2_corrected = image2_corrected > 0.1
-save2imagesRGB(image1, image2_corrected, outputFileName + "_overlay_corrected.png")
+save_2_images_rgb(image1, image2_corrected, output_filename + "_overlay_corrected.png")

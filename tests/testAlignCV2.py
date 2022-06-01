@@ -26,14 +26,14 @@ from skimage import data, segmentation, measure
 from skimage import filters
 from skimage.feature import register_translation
 from skimage.registration import phase_cross_correlation
-from scipy.ndimage import shift as shiftImage
+from scipy.ndimage import shift as shift_image
 import cv2
 from skimage.exposure import match_histograms
 
 ## Functions
 
 
-def alignCV2(im1, im2, warp_mode):
+def align_cv2(im1, im2, warp_mode):
 
     # Find size of image1
     sz = im1.shape
@@ -74,7 +74,7 @@ def alignCV2(im1, im2, warp_mode):
     return cc, warp_matrix
 
 
-def applyCorrection(im2, warp_matrix):
+def apply_correction(im2, warp_matrix):
 
     sz = im2.shape
 
@@ -84,7 +84,7 @@ def applyCorrection(im2, warp_matrix):
     return im2_aligned
 
 
-def showImages(image1, image2, im2_aligned, fileName):
+def showImages(image1, image2, im2_aligned, file_name):
 
     fig, (ax1, ax2) = plt.subplots(1, 2)
     fig.set_size_inches((60, 30))
@@ -95,91 +95,91 @@ def showImages(image1, image2, im2_aligned, fileName):
     ax2.imshow(image1 - im2_aligned, cmap=cmap)
     ax2.axis("off")
 
-    plt.savefig(fileName)
+    plt.savefig(file_name)
 
 
-def alignImagesByBlocks(I1, I2, blockSize, upsample_factor=100):
+def align_images_by_blocks(img_1, img_2, block_size, upsample_factor=100):
 
-    Block1 = view_as_blocks(image1, blockSize)
-    Block2 = view_as_blocks(image2, blockSize)
+    block_1 = view_as_blocks(image1, block_size)
+    block_2 = view_as_blocks(image2, block_size)
     warp_matrix = np.eye(2, 3, dtype=np.float32)
 
-    shiftImageNorm = np.zeros((Block1.shape[0], Block1.shape[1]))
-    shiftedImage = np.zeros((Block1.shape[0], Block1.shape[1], 2))
-    rmsImage = np.zeros((Block1.shape[0], Block1.shape[1]))
+    shift_image_norm = np.zeros((block_1.shape[0], block_1.shape[1]))
+    shifted_image = np.zeros((block_1.shape[0], block_1.shape[1], 2))
+    rms_image = np.zeros((block_1.shape[0], block_1.shape[1]))
 
-    for i in trange(Block1.shape[0]):
-        for j in range(Block1.shape[1]):
+    for i in trange(block_1.shape[0]):
+        for j in range(block_1.shape[1]):
 
-            # shift, error, diffphase = register_translation(Block1[i,j], Block2[i,j],upsample_factor=upsample_factor)
+            # shift, error, diffphase = register_translation(block_1[i,j], block_2[i,j],upsample_factor=upsample_factor)
             shift, error, diffphase = phase_cross_correlation(
-                Block1[i, j], Block2[i, j], upsample_factor=upsample_factor
+                block_1[i, j], block_2[i, j], upsample_factor=upsample_factor
             )
 
-            shiftImageNorm[i, j] = LA.norm(shift)
-            shiftedImage[i, j, 0], shiftedImage[i, j, 1] = shift[0], shift[1]
-            I2_aligned = shiftImage(I2, shift)
+            shift_image_norm[i, j] = LA.norm(shift)
+            shifted_image[i, j, 0], shifted_image[i, j, 1] = shift[0], shift[1]
+            img_2_aligned = shift_image(img_2, shift)
 
-            # cc, warp_matrix = alignCV2(Block1[i,j], Block2[i,j], warp_mode)
-            # shiftImageNorm[i,j] = LA.norm(warp_matrix[:,2])
-            # shiftedImage[i,j,0],shiftedImage[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
-            # I2_aligned = applyCorrection(I2,warp_matrix)
+            # cc, warp_matrix = align_cv2(block_1[i,j], block_2[i,j], warp_mode)
+            # shift_image_norm[i,j] = LA.norm(warp_matrix[:,2])
+            # shifted_image[i,j,0],shifted_image[i,j,1] = warp_matrix[:,2][0], warp_matrix[:,2][1]
+            # img_2_aligned = apply_correction(img_2,warp_matrix)
 
-            rmsImage[i, j] = np.sum(np.sum(np.abs(I1 - I2_aligned), axis=1))
+            rms_image[i, j] = np.sum(np.sum(np.abs(img_1 - img_2_aligned), axis=1))
 
     # calculates optimal shifts by polling blocks showing the best RMS
     tolerance = 0.1
 
-    # threshold = filters.threshold_otsu(rmsImage)
-    threshold = (1 + tolerance) * np.min(rmsImage)
-    mask = rmsImage < threshold
-    contours = measure.find_contours(rmsImage, threshold)
+    # threshold = filters.threshold_otsu(rms_image)
+    threshold = (1 + tolerance) * np.min(rms_image)
+    mask = rms_image < threshold
+    contours = measure.find_contours(rms_image, threshold)
     try:
         contour = sorted(contours, key=lambda x: len(x))[-1]
     except IndexError:
         contour = np.array([0, 0])
 
-    meanShifts = [np.mean(shiftedImage[mask, 0]), np.mean(shiftedImage[mask, 1])]
-    warp_matrix[:, 2] = meanShifts
-    stdShifts = [np.std(shiftedImage[mask, 0]), np.std(shiftedImage[mask, 1])]
-    meanShiftNorm = np.mean(shiftImageNorm[mask])
+    mean_shifts = [np.mean(shifted_image[mask, 0]), np.mean(shifted_image[mask, 1])]
+    warp_matrix[:, 2] = mean_shifts
+    std_shifts = [np.std(shifted_image[mask, 0]), np.std(shifted_image[mask, 1])]
+    mean_shift_norm = np.mean(shift_image_norm[mask])
 
-    meanError = np.mean(rmsImage[mask])
+    mean_error = np.mean(rms_image[mask])
 
-    relativeShifts = np.abs(shiftImageNorm - meanShiftNorm)
+    relative_shifts = np.abs(shift_image_norm - mean_shift_norm)
 
     # if it does not have enough pollsters to fall back to then it does a global cross correlation!
     if np.sum(mask) < 4:
-        cc, warp_matrix_global = alignCV2(I1, I2, warp_mode)
-        meanShifts_global = warp_matrix_global[:, 2]
-        I2_aligned_global = applyCorrection(I2, warp_matrix_global)
-        meanError_global = np.sum(np.sum(np.abs(I1 - I2_aligned_global), axis=1))
+        cc, warp_matrix_global = align_cv2(img_1, img_2, warp_mode)
+        mean_shifts_global = warp_matrix_global[:, 2]
+        img_2_aligned_global = apply_correction(img_2, warp_matrix_global)
+        mean_error_global = np.sum(np.sum(np.abs(img_1 - img_2_aligned_global), axis=1))
 
-        if meanError_global < meanError:
-            meanShifts = meanShifts_global
+        if mean_error_global < mean_error:
+            mean_shifts = mean_shifts_global
             warp_matrix = warp_matrix_global
-            meanError = meanError_global
+            mean_error = mean_error_global
             print("Falling back to global registration")
 
     print(
         "Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(
-            meanShifts[0], stdShifts[0], meanShifts[1], stdShifts[1]
+            mean_shifts[0], std_shifts[0], mean_shifts[1], std_shifts[1]
         )
     )
 
     # We apply the consensous correction and we calculate how well it does for each block to get a benchmark
-    rmsBlock = np.zeros((Block1.shape[0], Block1.shape[1]))  # new
-    for i in trange(Block1.shape[0]):
-        for j in range(Block1.shape[1]):
-            Block2aligned = shiftImage(Block2[i, j], meanShifts)  # new
-            rmsBlock[i, j] = np.sum(np.sum(np.abs(Block1[i, j] - Block2aligned), axis=1)) / (
-                np.sum(Block1[i, j]) + np.sum(Block2aligned)
+    rmsBlock = np.zeros((block_1.shape[0], block_1.shape[1]))  # new
+    for i in trange(block_1.shape[0]):
+        for j in range(block_1.shape[1]):
+            Block2aligned = shift_image(block_2[i, j], mean_shifts)  # new
+            rmsBlock[i, j] = np.sum(np.sum(np.abs(block_1[i, j] - Block2aligned), axis=1)) / (
+                np.sum(block_1[i, j]) + np.sum(Block2aligned)
             )  # new
 
-    return meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, rmsBlock, contour
+    return mean_shifts, warp_matrix, mean_error, mask, relative_shifts, rms_image, rmsBlock, contour
 
 
-def plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour, fileName="BlockALignmentResults.png"):
+def plotting_block_alignment_results(relative_shifts, rms_image, rmsBlock, contour, file_name="BlockALignmentResults.png"):
 
     # plotting
     fig, axes = plt.subplots(2, 2)
@@ -187,15 +187,15 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour, f
     fig.set_size_inches((10, 10))
 
     cbwindow = 3
-    p1 = ax[0].imshow(relativeShifts, cmap="terrain", vmin=0, vmax=cbwindow)
+    p_1 = ax[0].imshow(relative_shifts, cmap="terrain", vmin=0, vmax=cbwindow)
     ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
     ax[0].set_title("abs(global-block) shifts, px")
-    fig.colorbar(p1, ax=ax[0], fraction=0.046, pad=0.04)
+    fig.colorbar(p_1, ax=ax[0], fraction=0.046, pad=0.04)
 
-    p2 = ax[1].imshow(rmsImage, cmap="terrain", vmin=np.min(rmsImage), vmax=np.max(rmsImage))
+    p_2 = ax[1].imshow(rms_image, cmap="terrain", vmin=np.min(rms_image), vmax=np.max(rms_image))
     ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
     ax[1].set_title("RMS-image")
-    fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
+    fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
 
     # add
     p3 = ax[2].imshow(rmsBlock, cmap="terrain", vmin=np.min(rmsBlock), vmax=np.max(rmsBlock))
@@ -209,12 +209,12 @@ def plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour, f
 #%% loading and preprocessing of example images
 
 ## main
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject"
-# imFileName1=rootFolder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00_2d.npy"
-# imFileName2=rootFolder+os.sep+"scan_001_RT37_001_ROI_converted_decon_ch00_2d.npy"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject"
+# imFileName1=root_folder+os.sep+"scan_001_RT27_001_ROI_converted_decon_ch00_2d.npy"
+# imFileName2=root_folder+os.sep+"scan_001_RT37_001_ROI_converted_decon_ch00_2d.npy"
 
-imFileName1 = rootFolder + os.sep + "scan_001_RT27_003_ROI_converted_decon_ch00_2d.npy"
-imFileName2 = rootFolder + os.sep + "scan_001_RT40_003_ROI_converted_decon_ch00_2d.npy"
+imFileName1 = root_folder + os.sep + "scan_001_RT27_003_ROI_converted_decon_ch00_2d.npy"
+imFileName2 = root_folder + os.sep + "scan_001_RT40_003_ROI_converted_decon_ch00_2d.npy"
 
 image1 = np.load(imFileName1).squeeze()
 image2 = np.load(imFileName2).squeeze()
@@ -243,19 +243,19 @@ elif model == "afine":
 elif model == "euclidean":
     warp_mode = cv2.MOTION_EUCLIDEAN
 
-outputFileName = "/home/marcnol/Downloads/" + "test_" + model + ".png"
+output_filename = "/home/marcnol/Downloads/" + "test_" + model + ".png"
 
 begin_time = datetime.now()
 
-cc, warp_matrix = alignCV2(image1, image2, warp_mode)
-im2_aligned = applyCorrection(image2, warp_matrix)
+cc, warp_matrix = align_cv2(image1, image2, warp_mode)
+im2_aligned = apply_correction(image2, warp_matrix)
 print("Elapsed time: {}".format(datetime.now() - begin_time))
 
 begin_time = datetime.now()
 
 # shift, error, diffphase = register_translation(image1,image2,upsample_factor=100)
 shift, error, diffphase = phase_cross_correlation(image1, image2, upsample_factor=100)
-im2_aligned = shiftImage(image2, shift)
+im2_aligned = shift_image(image2, shift)
 
 print("Elapsed time: {}".format(datetime.now() - begin_time))
 
@@ -263,23 +263,23 @@ print("Elapsed time: {}".format(datetime.now() - begin_time))
 print("Done registering with CV: Shifts={}".format(warp_matrix[:, 2]))
 print("Done registering with Skkimage: Shifts={}".format(shift))
 
-# showing RGB image
+# showing rgb image
 sz = image1.shape
 
 fig, (ax1, ax2) = plt.subplots(1, 2)
 fig.set_size_inches((60, 30))
 
-nullImage = np.zeros(sz)
+null_image = np.zeros(sz)
 
-RGB = np.dstack([image1, image2, nullImage])
-ax1.imshow(RGB)
+rgb = np.dstack([image1, image2, null_image])
+ax1.imshow(rgb)
 ax1.axis("off")
 
-RGB_aligned = np.dstack([image1, im2_aligned, nullImage])
+RGB_aligned = np.dstack([image1, im2_aligned, null_image])
 ax2.imshow(RGB_aligned)
 ax2.axis("off")
 
-plt.savefig(outputFileName)
+plt.savefig(output_filename)
 
 
 #%% Testing difference image
@@ -288,35 +288,35 @@ showImages(image1, image2, im2_aligned, "/home/marcnol/Downloads/" + "difference
 
 #%% test multiscale alignments
 
-imageSize = image1.shape[0]
-c = int(np.round(imageSize / 2))
+image_size = image1.shape[0]
+c = int(np.round(image_size / 2))
 
 factors = [16, 8, 4, 2, 1]
-windows = [int(imageSize / x) for x in factors]
-shifts = list()
-rms = list()
-CC = list()
+windows = [int(image_size / x) for x in factors]
+shifts = []
+rms = []
+CC = []
 
 for window in windows:
-    if window == imageSize:
-        I1 = image1
-        I2 = image2
+    if window == image_size:
+        img_1 = image1
+        img_2 = image2
     else:
-        I1 = image1[c - window : c + window, c - window : c + window]
-        I2 = image2[c - window : c + window, c - window : c + window]
+        img_1 = image1[c - window : c + window, c - window : c + window]
+        img_2 = image2[c - window : c + window, c - window : c + window]
 
-    cc, warp_matrix = alignCV2(I1, I2, warp_mode)
+    cc, warp_matrix = align_cv2(img_1, img_2, warp_mode)
 
-    I2_aligned = applyCorrection(I2, warp_matrix)
+    img_2_aligned = apply_correction(img_2, warp_matrix)
 
     shifts.append(warp_matrix[:, 2])
-    rms.append(np.sum(np.sum(np.abs(I1 - I2_aligned), axis=1)))
+    rms.append(np.sum(np.sum(np.abs(img_1 - img_2_aligned), axis=1)))
     CC.append(cc)
 
     print("Aligned images for window: {}".format(window))
-    fileName = "/home/marcnol/Downloads/" + "difference_" + str(window) + ".png"
+    file_name = "/home/marcnol/Downloads/" + "difference_" + str(window) + ".png"
 
-    showImages(I1, I2, I2_aligned, fileName)
+    showImages(img_1, img_2, img_2_aligned, file_name)
 
 
 # display
@@ -339,10 +339,10 @@ ax3.set_ylabel("relative shifts")
 
 # image2=match_histograms(image2,image1)
 upsample_factor = 100
-blockSize = (256, 256)
+block_size = (256, 256)
 
-meanShifts, warp_matrix, meanError, mask, relativeShifts, rmsImage, rmsBlock, contour = alignImagesByBlocks(
-    image1, image2, blockSize, upsample_factor
+mean_shifts, warp_matrix, mean_error, mask, relative_shifts, rms_image, rmsBlock, contour = align_images_by_blocks(
+    image1, image2, block_size, upsample_factor
 )
 
-plottingBlockALignmentResults(relativeShifts, rmsImage, rmsBlock, contour)
+plotting_block_alignment_results(relative_shifts, rms_image, rmsBlock, contour)

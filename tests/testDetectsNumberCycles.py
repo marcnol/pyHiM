@@ -7,7 +7,7 @@ Created on Tue Sep 22 16:04:23 2020
 """
 
 import os, glob
-from fileProcessing.fileManagement import folders, Parameters
+from fileProcessing.fileManagement import Folders, Parameters
 
 # function to get unique values
 def unique(list1):
@@ -24,21 +24,21 @@ def unique(list1):
     return unique_list
 
 
-rootFolder = "./"
-allFilesinRootFolder = glob.glob(rootFolder + "*tif")
-print("Number of files: {}".format(len(allFilesinRootFolder)))
+root_folder = "./"
+all_files_in_root_folder = glob.glob(root_folder + "*tif")
+print("Number of files: {}".format(len(all_files_in_root_folder)))
 
-parameterFile = "infoList_DAPI.json"
+parameter_file = "infoList_DAPI.json"
 
-# dataFolder = folders(rootFolder)
-param = Parameters(rootFolder, rootFolder + parameterFile)
+# data_folder = Folders(root_folder)
+current_param = Parameters(root_folder, root_folder + parameter_file)
 
-ROIs, RTs = [], []
-for x in allFilesinRootFolder:
-    fileParts = param.decodesFileParts(x)
-    ROIs.append(fileParts["roi"])
-    RTs.append(fileParts["cycle"])
+rois, rts = [], []
+for x in all_files_in_root_folder:
+    file_parts = current_param.decode_file_parts(x)
+    rois.append(file_parts["roi"])
+    rts.append(file_parts["cycle"])
 
-numberUniqueCycles = len(unique(RTs))
+number_unique_cycles = len(unique(rts))
 
-print("Number Unique cycles: {}".format(numberUniqueCycles))
+print("Number Unique cycles: {}".format(number_unique_cycles))

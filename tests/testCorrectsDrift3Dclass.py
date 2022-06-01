@@ -6,9 +6,9 @@ Created on Thu Mar  4 16:15:00 2021
 @author: marcnol
 """
 
-from imageProcessing.alignImages3D import drift3D
+from imageProcessing.alignImages3D import Drift3D
 
 
 
 
-_drift3D = drift3D()
+_drift_3d = Drift3D()

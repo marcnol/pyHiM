@@ -10,16 +10,16 @@ plot line profile from npy image
 
 """
 import os
+
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import numpy as np
+from matplotlib.patches import Rectangle
 
-
-rootFolder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject"
+root_folder = "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject"
 file = "scan_001_RT29_001_ROI_converted_decon_ch01_2d.npy"
-filename = rootFolder + os.sep + file
+filename = root_folder + os.sep + file
 
-pixelSize = 0.1
+pixel_size = 0.1
 
 
 xmin = 802
@@ -53,7 +53,6 @@ fig2 = plt.figure(constrained_layout=True)
 
 profile = im[xmin, ymin:ymax]
 profile = profile / profile.max()
-# x = pixelSize*np.linspace(0, profile.shape[0], num=profile.shape[0], endpoint=True)
-x = pixelSize * np.arange(profile.shape[0])
+x = pixel_size * np.arange(profile.shape[0])
 plt.plot(x, profile)
 plt.plot(x, profile, "o")

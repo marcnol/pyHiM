@@ -20,46 +20,52 @@ ChromatinTraceTable() object and output .ecsv trace table file .
 # IMPORTS
 # =============================================================================q
 
-import numpy as np
-import os, sys
-import json
-from datetime import datetime
 import argparse
 import csv
 import glob
+import json
+import os
 import select
+import sys
+from datetime import datetime
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+import numpy as np
+
 from imageProcessing.imageProcessing import Image
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================q
 
 
-def parseArguments():
+def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--pixel_size", help="Lateral pixel size un microns. Default = 0.1")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action = 'store_true')
+    parser.add_argument("-F", "--root_folder", help="Folder with images")
+    parser.add_argument(
+        "--pixel_size", help="Lateral pixel size un microns. Default = 0.1"
+    )
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
 
     p = {}
 
     args = parser.parse_args()
-    if args.rootFolder:
-        p["rootFolder"] = args.rootFolder
+    if args.root_folder:
+        p["root_folder"] = args.root_folder
     else:
-        p["rootFolder"] = "."
+        p["root_folder"] = "."
 
     if args.pixel_size:
         p["pixel_size"] = args.pixel_size
     else:
         p["pixel_size"] = 0.1
 
-    p["trace_files"] = list()
+    p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin, ], [], [], 0.0)[0]:
+        if select.select([sys.stdin,], [], [], 0.0)[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -85,11 +91,11 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
         # load mask
         print(f"\nWill attemp to match mask {label} from: {mask_file}")
         mask = Image()
-        mask.data_2D = np.load(mask_file, allow_pickle=False).squeeze()
+        mask.data_2d = np.load(mask_file, allow_pickle=False).squeeze()
 
         # matches traces and masks
         index = 0
-        labeled_trace = list()
+        labeled_trace = []
         for trace_row in trace.data:
             x_int = int(trace_row["x"] / pixel_size)
             y_int = int(trace_row["y"] / pixel_size)
@@ -97,7 +103,7 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
                 trace_row["label"] = "_"
 
             # labels are appended as comma separated lists. Thus a localization can have multiple labels
-            if mask.data_2D[x_int, y_int] == 1:
+            if mask.data_2d[x_int, y_int] == 1:
                 trace_row["label"] = trace_row["label"] + "," + label
                 index += 1
                 labeled_trace.append(trace_row["Trace_ID"])
@@ -111,18 +117,26 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
     return trace
 
 
-def process_traces(folder, pixel_size=0.1, trace_files = list()):
+def process_traces(folder, pixel_size=0.1, trace_files=[]):
 
     trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
     masks_folder = folder.rstrip("/") + os.sep + "segmentedObjects" + os.sep
 
-    if len(trace_files)<1:
-        trace_files = [x for x in glob.glob(trace_folder + "Trace*ecsv") if "uniqueBarcodes" not in x]
+    if len(trace_files) < 1:
+        trace_files = [
+            x
+            for x in glob.glob(trace_folder + "Trace*ecsv")
+            if "unique_barcodes" not in x
+        ]
 
     # removes already labeled trace files
     trace_files = [x for x in trace_files if "labeled" not in x]
 
-    print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+    print(
+        "\n{} trace files to process= {}".format(
+            len(trace_files), "\n".join(map(str, trace_files))
+        )
+    )
 
     if len(trace_files) > 0:
         # iterates over traces in folder
@@ -151,9 +165,11 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     # [parsing arguments]
-    p = parseArguments()
+    p = parse_arguments()
     # [loops over lists of datafolders]
-    folder = p["rootFolder"]
-    traces = process_traces(folder, pixel_size=p["pixel_size"], trace_files = p["trace_files"])
+    folder = p["root_folder"]
+    traces = process_traces(
+        folder, pixel_size=p["pixel_size"], trace_files=p["trace_files"]
+    )
 
     print("Finished execution")

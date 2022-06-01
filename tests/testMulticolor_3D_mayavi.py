@@ -21,11 +21,11 @@ from skimage import io
 
 #%% loads data for only one barcode and one DAPI
 
-rootFolder = "/mnt/grey/DATA/rawData_2019/Experiment_17/2019-08-08/Embryos_deconvolved/Embryo_001"
+root_folder = "/mnt/grey/DATA/rawData_2019/Experiment_17/2019-08-08/Embryos_deconvolved/Embryo_001"
 
 fileNames = ["scan_002_DAPI_000_ROI_converted_decon_ch00.tif","scan_002_RT1_000_ROI_converted_decon_ch00.tif"]
 
-fullFileNames = [rootFolder + os.sep + fileName for fileName in fileNames]
+fullFileNames = [root_folder + os.sep + file_name for file_name in fileNames]
 
 data = [io.imread(x).squeeze() for x in fullFileNames]
 
@@ -35,10 +35,10 @@ data = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in data]
 #%%
 # takes ROI
 xyRange = (900,1300) 
-zRange = (10,50)
+z_range = (10,50)
 zShift = 8
 
-subdata = [x[zShift+zRange[0]:zShift+zRange[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data]
+subdata = [x[zShift+z_range[0]:zShift+z_range[1], xyRange[0]:xyRange[1], xyRange[0]:xyRange[1]] for x in data]
 
 #%% Displays overlays between two channels
 preFactor = 1
