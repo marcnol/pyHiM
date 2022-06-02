@@ -66,8 +66,8 @@ def parse_arguments():
     p = {}
 
     args = parser.parse_args()
-    if args.root_folder:
-        p["rootFolder"] = args.root_folder
+    if args.rootFolder:
+        p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
 

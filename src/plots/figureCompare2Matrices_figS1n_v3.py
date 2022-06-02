@@ -39,8 +39,8 @@ def parse_arguments():
     else:
         rootFolder2 = "."
 
-    if args.output_folder:
-        output_folder = args.output_folder
+    if args.outputFolder:
+        output_folder = args.outputFolder
     else:
         output_folder = "none"
 

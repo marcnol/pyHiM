@@ -288,8 +288,8 @@ def him_parse_arguments():
         "\n--------------------------------------------------------------------------"
     )
     run_parameters = {}
-    if args.root_folder:
-        run_parameters["rootFolder"] = args.root_folder
+    if args.rootFolder:
+        run_parameters["rootFolder"] = args.rootFolder
     else:
         # pylint: disable-next=consider-iterating-dictionary
         if "docker" in os.environ.keys():

@@ -96,14 +96,14 @@ def parse_arguments():
 
     run_parameters = {}
 
-    if args.root_folder:
-        root_folder = args.root_folder
+    if args.rootFolder:
+        root_folder = args.rootFolder
     else:
         root_folder = "."
         # root_folder='/home/marcnol/data'+os.sep+'Experiment_18'
 
-    if args.output_folder:
-        output_folder = args.output_folder
+    if args.outputFolder:
+        output_folder = args.outputFolder
     else:
         output_folder = "none"
 
@@ -132,8 +132,8 @@ def parse_arguments():
     else:
         run_parameters["axisLabel"] = False
 
-    if args.axis_ticks:
-        run_parameters["axisTicks"] = args.axis_ticks
+    if args.axisTicks:
+        run_parameters["axisTicks"] = args.axisTicks
     else:
         run_parameters["axisTicks"] = False
 
@@ -147,8 +147,8 @@ def parse_arguments():
     else:
         run_parameters["scalingParameter"] = 1.0
 
-    if args.c_scale:
-        run_parameters["cScale"] = float(args.c_scale)
+    if args.cScale:
+        run_parameters["cScale"] = float(args.cScale)
     else:
         run_parameters["cScale"] = 0.0
 

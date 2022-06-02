@@ -97,8 +97,8 @@ def parse_arguments():
         rootFolder2 = "."
         run_parameters["run2Datasets"] = False
 
-    if args.output_folder:
-        output_folder = args.output_folder
+    if args.outputFolder:
+        output_folder = args.outputFolder
     else:
         output_folder = "none"
 

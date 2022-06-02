@@ -58,8 +58,8 @@ def parse_arguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
 
-    if args.root_folder:
-        root_folder = args.root_folder
+    if args.rootFolder:
+        root_folder = args.rootFolder
     else:
         root_folder = "."
 

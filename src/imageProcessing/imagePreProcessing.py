@@ -73,15 +73,15 @@ def parse_arguments():
     )
     run_parameters = {}
 
-    if args.root_folder:
-        run_parameters["rootFolder"] = args.root_folder
+    if args.rootFolder:
+        run_parameters["rootFolder"] = args.rootFolder
     else:
-        print("\n> root_folder NOT FOUND, using PWD")
+        print("\n> rootFolder NOT FOUND, using PWD")
         run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
 
-    if args.output_file:
+    if args.outputFile:
         run_parameters["outputFile"] = (
-            run_parameters["rootFolder"] + os.sep + args.output_file
+            run_parameters["rootFolder"] + os.sep + args.outputFile
         )
     else:
         run_parameters["outputFile"] = None

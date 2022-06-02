@@ -110,16 +110,16 @@ def parse_arguments():
 
     run_parameters = {}
 
-    if args.root_folder:
-        root_folder = args.root_folder
+    if args.rootFolder:
+        root_folder = args.rootFolder
     else:
         # root_folder = "."
         # root_folder='/home/marcnol/data'+os.sep+'Experiment_18'
         # root_folder = "/mnt/grey/DATA/docPaper_fullDatasets/updatedDatasets/wt_docTAD_nc14"
         root_folder = "/home/marcnol/data/updatedDatasets/wt_docTAD_nc14"
 
-    if args.output_folder:
-        output_folder = args.output_folder
+    if args.outputFolder:
+        output_folder = args.outputFolder
     else:
         output_folder = root_folder + os.sep + "figureSingleCell"
 
@@ -152,8 +152,8 @@ def parse_arguments():
     else:
         run_parameters["pixelSize"] = 0.1
 
-    if args.max_distance:
-        run_parameters["maxDistance"] = float(args.max_distance)
+    if args.maxDistance:
+        run_parameters["maxDistance"] = float(args.maxDistance)
     else:
         run_parameters["maxDistance"] = 4.0
 
@@ -162,8 +162,8 @@ def parse_arguments():
     else:
         run_parameters["threshold"] = 8
 
-    if args.min_number_pwd:
-        run_parameters["minNumberPWD"] = args.min_number_pwd
+    if args.minNumberPWD:
+        run_parameters["minNumberPWD"] = args.minNumberPWD
     else:
         run_parameters["minNumberPWD"] = 6
 
@@ -172,8 +172,8 @@ def parse_arguments():
     else:
         run_parameters["axisLabel"] = False
 
-    if args.axis_ticks:
-        run_parameters["axisTicks"] = args.axis_ticks
+    if args.axisTicks:
+        run_parameters["axisTicks"] = args.axisTicks
     else:
         run_parameters["axisTicks"] = False
 

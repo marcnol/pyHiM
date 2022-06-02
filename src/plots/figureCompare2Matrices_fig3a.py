@@ -108,8 +108,8 @@ def parse_arguments():
         rootFolder2 = "."
         run_parameters["run2Datasets"] = False
 
-    if args.output_folder:
-        output_folder = args.output_folder
+    if args.outputFolder:
+        output_folder = args.outputFolder
     else:
         output_folder = "none"
 
@@ -148,8 +148,8 @@ def parse_arguments():
     else:
         run_parameters["axisLabel"] = False
 
-    if args.axis_ticks:
-        run_parameters["axisTicks"] = args.axis_ticks
+    if args.axisTicks:
+        run_parameters["axisTicks"] = args.axisTicks
     else:
         run_parameters["axisTicks"] = False
 

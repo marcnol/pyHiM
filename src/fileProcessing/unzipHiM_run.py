@@ -34,8 +34,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.root_folder:
-        root_folder_tempo = args.root_folder
+    if args.rootFolder:
+        root_folder_tempo = args.rootFolder
     else:
         root_folder_tempo = os.getcwd()
 

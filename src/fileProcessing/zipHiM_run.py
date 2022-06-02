@@ -37,8 +37,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.root_folder:
-        root_folder = args.root_folder
+    if args.rootFolder:
+        root_folder = args.rootFolder
     else:
         root_folder = os.getcwd()
 

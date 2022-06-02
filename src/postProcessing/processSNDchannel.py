@@ -337,8 +337,8 @@ if __name__ == "__main__":
     )
     processingList = {}
 
-    if args.root_folder:
-        root_folder = args.root_folder
+    if args.rootFolder:
+        root_folder = args.rootFolder
     else:
         root_folder = "."
         # root_folder='/home/marcnol/data/Experiment_4/0_Embryo/alignImages/'

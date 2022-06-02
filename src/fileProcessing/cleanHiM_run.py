@@ -43,8 +43,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.root_folder:
-        ROOT_FOLDER = args.root_folder
+    if args.rootFolder:
+        ROOT_FOLDER = args.rootFolder
     else:
         ROOT_FOLDER = "."
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     else:
         FILE_PARAMETERS = "infoList.json"
 
-    # removes files in root_folder
+    # removes files in rootFolder
     if args.all:
         markdown_files = glob.glob(
             ROOT_FOLDER + os.sep + "HiM_analysis*.md", recursive=True
