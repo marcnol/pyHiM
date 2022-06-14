@@ -419,7 +419,7 @@ class BuildTraces:
             printLog("$ Trace built using mask assignment. Output saved in: {} ".format(self.currentFolder), "info")
 
 
-    def group_localizations_by_coordinate(self,):
+    def group_localizations_by_coordinate(self):
         """
         Uses a KDTree to group detections by it's coordinates, given a certain distance threshold
         Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.dat)
