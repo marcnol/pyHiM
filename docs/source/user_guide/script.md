@@ -82,6 +82,16 @@ optional arguments:
 
 ## plots
 - figure3wayInteractions.py
+
+#####Check
+
+Plots 3-way contact probability matrices for a given anchor (or set of anchors), defined in folders2Load.json file. The calculation of 3-way contact probability matrices needs to be previously done using processHiMmatrix.py script. 
+
+```
+Usage: figure3wayInteractions.py
+
+```
+
 - figure4Mmatrix.py
 - figureCompare2Matrices_fig3a.py
 - figureCompare2Matrices_figS1n_v3.py
@@ -92,7 +102,50 @@ optional arguments:
 - figureSingleCell.py
 
 ## postProcessing
-- processHiMmatrix.py
+
+## processHiMmatrix.py
+
+This script performs the post-processing of one or more previously pyHiM-analysed datasets, defined in folders2Load.json file. 
+
+It performs the following operations:
+
+* Calculates and plots ensemble pairwise distance (PWD) matrix.
+* Calculates and plots the inverse of the PWD matrix. 
+* Calculates and plots the contact probability matrix for each dataset.
+* Calculates and plots the ensemble contact probability matrix.
+* Calcualtes and plots the ensemble 3-way contact probability matrix, for the set of anchors defined in folders2Load.json file. 
+* Optional: Read MATLAB single-cell PWD matrices, and perform all previous operations.
+
+```
+Usage: processHiMmatrix.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
+						   [--matlab] [--saveMatrix] [--getStructure] [--pixelSize]
+						   [--HiMnormalization] [--d3]
+Optional arguments:
+
+	-F ROOTFOLDER, --rootFolder ROOTFOLDER
+			Folder with folders2Load.json file
+	-P PARAMETERS, --parameters PARAMETERS
+			File with parameters. Default: folders2Load.json
+	-A LABEL, --labal LABEL
+			Name of label for the dataset
+	-W ACTION, --action ACTION
+			Selects: [all], [labeled] or [unlabeled] for the datasets. 
+	--matlab
+			Loads MATLAB data (e.g. .mat files)
+	--saveMatrix
+			????
+			Saves the combined PWD matrix from all datasets. Default: False
+	--getStructure
+			????
+			Multi-dimensional scaling to get coordinates from PWDs. Default: False
+	--pixelSize
+			Specify images pixel size. Default: 100 nm.
+	--HiMnormalization
+			Normalization of contact matrix: nonNANs (default) or nCells.
+	--d3
+			Loads data segmented in 3D. Default: False
+```
+
 - processingMultipleDatasets.py
 - processSNDchannel.py
 
