@@ -1,13 +1,10 @@
 # Installing pyHiM
 
+## Clone pyHiM repository
 
-## Install and configure pyHiM
+Clone the repository into your local filesystem. The standard location is: ```$HOME/Repositories/pyHiM```
 
-### Clone pyHiM repository
-
-Clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
-
-Open your $HOME/.bashrc using nano
+Next setup environmental variables by opening your $HOME/.bashrc (e.g. using nano)
 
 ```bash
 nano $HOME/.bashrc
@@ -18,9 +15,7 @@ and add the following line to the end
 ```sh
 export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
 export PYTHONPATH="$HOME/Repositories/pyHiM/src"
-
 export MPLBACKEND=agg
-
 ```
 
 make sure you use a different directory name if this is not where you put pyHiM !
@@ -50,9 +45,17 @@ bash
 conda update anaconda
 ```
 
-#### Setup conda enviroment
+## Automatically configure pyHiM
 
-##### Automatic 
+Run the ```installation.sh``` script by typing in the command line:
+
+```sh
+bash installation.sh
+```
+
+If you encounter problems, follow the manual installation (below).
+
+##### Semi-automatic configuration
 
 Run this command in your terminal within the root 
 
@@ -68,7 +71,7 @@ ImportError: Dask's distributed scheduler is not installed.
 
 You solve by running `pip install dask[complete] distributed --upgrade`.
 
-##### Manual 
+##### Manual configuration
 
 To manually install the necessary packages using conda, run:
 
@@ -88,7 +91,7 @@ conda activate pyHiM
 
 #### Upgrade scikit-image to development version
 
-Uninstall any existing installations:
+Depending on whether you already had a version of scikit-image installed, you may need to upgrade it. For this, uninstall any existing installations:
 
 ```
 pip uninstall scikit-image
@@ -135,7 +138,7 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 
 To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
-Then run the following script:
+Then run the following automatic script:
 
 ```sh
 #!/bin/bash
@@ -166,8 +169,6 @@ ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/clea
 
 ```
 
-
-
 ## Test run
 
 There are two ways to do a test run in this version of pyHiM
@@ -175,7 +176,6 @@ There are two ways to do a test run in this version of pyHiM
 ### pytest
 
 The first is to use the **pytest** module. For this, you need to first configure the location of the test datasets by
-
 
 ```sh
 cd tests/standardTests
