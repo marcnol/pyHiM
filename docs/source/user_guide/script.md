@@ -97,7 +97,60 @@ Usage: figure3wayInteractions.py
 - figureCompare2Matrices_figS1n_v3.py
 - figureCompare2Matrices.py
 - figureHiMmatrix.py
-- figureN_HiMmatrices.py
+## figureN_HiMmatrices.py
+Plots N HiM matrices in the same plot, using N datasets specified in folders2Load.json.
+
+It also plots a submatrix containing the difference of contact probability for a subset of barcodes with respect to a particular dataset. The subset of barcodes and the reference dataset are defined in folders2Load.json by the options "barcodes2plot" and "plotSegment_anchor" respectively. 
+
+```
+Usage figureN_HiMmatrices.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
+							 [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
+							 [--axisTicks] [--barcodes] [--scalingParameter]
+							 [--plottingFileExtension] [--shuffle] [--scalogram]
+							 [--type] [--pixelSize] [--cAxis] [--ratio]
+							 [--normalizeMatrix]
+	 -F ROOTFOLDER, --rootFolder ROOTFOLDER
+		 Folder with datasets
+	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+		 Folder for outputs
+	 -P PARAMETERS, --parameters PARAMETERS
+		 Name of parameters file. Default: folders2Load.json
+	 -A LABEL, --label LABEL
+		 Name of label
+	 -W ACTION, --action ACTION
+		 Selects: all, labeled or unlabeled for the datasets.
+	 --fontsize
+		 Size of fonts to be used in plots
+	 --axisLabel
+		 Select optional label in x and y axis
+	 --axisTicks
+		 Display axis ticks
+	 --barcodes
+		 Display barcode images
+	 --scalingParameter
+		 Scaling parameter of colormap
+	 --plottingFileExtension
+		 Select file extension to save images. Default: svg. 
+		 Other options: pdf, png
+	 --shuffle
+		 Provide shuffle vector: 0,1,2,3,.. of the same size or
+		 smaller than the original matrix. 
+	 --scalogram
+		 Display scalogram image
+	 --type
+		 Select plot type among one of the following: PWD, contact, iPWD
+	 --pixelSize
+		 Pixel size in µm
+	 --cAxis
+		 Absolute axis value for colormap
+	 --ratio
+		 Calculates ration between matrices for submatrices plots. 
+		 Default: difference
+	 --normalizeMatrix
+		 Normalize matrices by maximum. Default: True
+```
+
+
 - figurePlotImageProfile.py
 - figureSingleCell.py
 
@@ -129,7 +182,7 @@ Optional arguments:
 	-A LABEL, --labal LABEL
 			Name of label for the dataset
 	-W ACTION, --action ACTION
-			Selects: [all], [labeled] or [unlabeled] for the datasets. 
+			Selects: all, labeled or unlabeled for the datasets. 
 	--matlab
 			Loads MATLAB data (e.g. .mat files)
 	--saveMatrix
@@ -146,8 +199,35 @@ Optional arguments:
 			Loads data segmented in 3D. Default: False
 ```
 
-- processingMultipleDatasets.py
-- processSNDchannel.py
+## processingMultipleDatasets.py ??
+
+Script to process several datasets at once. 
+
+```
+Usage: processingMultipleDatasets.py rootfolder datasetID 
+
+	rootfolder 
+		Directory containing the files to analyse. 
+	datasetID 
+		Number of the datasets to be analysed, e.g. 1 2 3 will analyse dataset_1 
+		and dataset_2
+```
+
+
+## processSNDchannel.py
+
+Process secondary masks for RNA label
+
+```
+Usage: processSNDchannel.py [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
+
+	-F ROOTFOLDER, --rootFolder ROOTFOLDER
+		Folder with images
+	-A ADDMASK, --addMask ADDMASK
+		Add manual segmentation
+	--cleanAllMasks
+		Clear all masks
+```
 
 ## IA
 - trainStarDist.pye''' 
