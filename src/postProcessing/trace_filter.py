@@ -51,7 +51,7 @@ def parseArguments():
         p["rootFolder"] = "."
 
     if args.N_barcodes:
-        p["N_barcodes"] = args.N_barcodes
+        p["N_barcodes"] = int(args.N_barcodes)
     else:
         p["N_barcodes"] = 2
 
