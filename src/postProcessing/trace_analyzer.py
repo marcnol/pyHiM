@@ -42,8 +42,7 @@ import numpy as np
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from imageProcessing.imageProcessing import Image
 
-font = {'family' : 'normal',
-        'weight' : 'normal',
+font = {'weight' : 'normal',
         'size'   : 30}
 
 matplotlib.rc('font', **font)
