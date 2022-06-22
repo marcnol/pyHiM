@@ -180,11 +180,7 @@ class ChromatinTraceTable:
 
         for idx, trace in enumerate(trace_table_indexed.groups):
 
-            number_barcodes = len(trace["Trace_ID"].data)
             number_unique_barcodes = len(list(set(trace["Barcode #"].data)))
-            print(
-                f'trace: {trace["Trace_ID"][0]} | n barcodes: {number_barcodes} | n_unique barcodes: {number_unique_barcodes}'
-            )
             
             if number_unique_barcodes < minimum_number_barcodes:
                 barcodes_to_remove.append(list(trace["Spot_ID"].data))
