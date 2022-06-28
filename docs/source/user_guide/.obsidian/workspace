@@ -4,15 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "65cd9818f8a33e46",
+        "id": "e081ed9f71705e62",
         "type": "leaf",
         "state": {
-          "type": "markdown",
-          "state": {
-            "file": "script.md",
-            "mode": "source",
-            "source": false
-          }
+          "type": "empty",
+          "state": {}
         }
       }
     ],
@@ -69,7 +65,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "script.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -87,7 +82,7 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "65cd9818f8a33e46",
+  "active": "e081ed9f71705e62",
   "lastOpenFiles": [
     "script.md"
   ]
