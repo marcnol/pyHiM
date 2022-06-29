@@ -228,8 +228,12 @@ flowchart
 ## Main features
 ### makeProjections
 *Projects 3D images in 2D*
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
-Initialization parameters:
+#### Relevant options
+Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```
+
 
 |Name|Option|Description|
 |:-:|:-:|:-:|
@@ -241,8 +245,9 @@ Initialization parameters:
 |zProjectOption|sum|Sum plans in "zRange"|
 ||MIP|Maximum Intensity Projection of plans in "zRange"|
 
-This routine take all 3D images and project its in 2D.
-Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
+
+
+
 
 ```{mermaid}
 flowchart TD
