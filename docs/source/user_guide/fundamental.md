@@ -242,10 +242,12 @@ Parameters to run this scropt will be read from the ```zProject``` field of ```i
 ||full|Assign all plans to "zRange"|
 ||laplacian|Split 3D image into blocks of the size given by *blockSize*. Find Laplacian Variance maximum (blur estimation) for each block in order to estimate the focal plane. Rebuild block-by-block 2D image with optimal focal plane of each block. if *zwindows* option is activated, project each block with MIP option.|
 |windowSecurity||Used for *automatic* mode, removes the lowest and highest Z-plans.|
+|zwindows| | In automatic mode, selects the number of planes below and above the focal plane to be used for making the projection.
+|display| | Saves output 2D projections as png files
 |zProjectOption|sum|Sum plans in "zRange"|
-||MIP|Maximum Intensity Projection of plans in "zRange"|
-
-
+||MIP|Maximum Intensity Projection of plans in "zRange"|    
+|zmax| | Select ending plane to use for projection
+|zmin| | Select starting plane to use for projection
 
 
 
