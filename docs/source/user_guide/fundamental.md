@@ -291,11 +291,22 @@ flowchart TD
 ### alignImages
 *Registers fiducials using a barcode as reference*
 
+#### Invoke
+
+To run this function exclusively, run *pyHiM* using the ``` -C alignImages ``` argument. 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
 The algorithm takes images one by one and align with the reference.
 There are two ways to compute the shift:
 - Global alignement make simple cross-correlation with tow images
 - Split image in block and make cross-correlation block by block. Then we have one shift by block and to align the global image an average of those shifts are made. This method is more robust against a bright noise spot.
+
+#### Relevant options
+Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|referenceFiducial| |Selects reference barcode image|
+
 ```{mermaid}
 flowchart TD
 
