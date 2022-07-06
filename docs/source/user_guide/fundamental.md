@@ -336,6 +336,10 @@ flowchart TD
 
 ### AppliesRegistrations
 *Applies registration to DAPI and barcodes*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder. 
+
 ```{mermaid}
 flowchart TD
 
@@ -357,7 +361,15 @@ flowchart TD
 
 ### alignImages3D
 *Aligns fiducials in 3D*
-This feature run for *fiducial* images and with "block3D" value for "localAlignment" key in *infoList.json* file.
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C alignImages3D ``` argument.
+
+
+#### Relevant options
+Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```. 
+To run, the value for ```localAlignment``` key should be ```block3D```. 
+
 ```{mermaid}
 flowchart TD
 
@@ -377,8 +389,14 @@ flowchart TD
 		B4[["imageBlockAlignment3D()"]] --> C
 	
 ```
+
+
 ### segmentMasks
 *Segments DAPI and sources in 2D*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument.
+
 ```{mermaid}
 flowchart TD
 
@@ -414,8 +432,13 @@ flowchart TD
 	
 ```
 
+
 ### segmentSources3D
 *Segments sources in 3D*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C segmentSources3D ``` argument.
+
 
 ```{mermaid}
 flowchart TD
