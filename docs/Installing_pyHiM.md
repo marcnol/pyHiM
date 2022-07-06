@@ -1,6 +1,28 @@
 # Installing pyHiM
 
-## Install conda
+## Clone pyHiM repository
+
+Clone the repository into your local filesystem. The standard location is: ```$HOME/Repositories/pyHiM```
+
+Next setup environmental variables by opening your $HOME/.bashrc (e.g. using nano)
+
+```bash
+nano $HOME/.bashrc
+```
+
+and add the following line to the end
+
+```sh
+export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
+export PYTHONPATH="$HOME/Repositories/pyHiM/src"
+export MPLBACKEND=agg
+```
+
+make sure you use a different directory name if this is not where you put pyHiM !
+
+### Set up enviroment using conda
+
+#### Install conda
 
 in the Downloads directory, run:
 
@@ -10,13 +32,10 @@ wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
 
 or download the package from [conda installation script](https://www.anaconda.com/products/individual)
 
-
-
 Now, run the installation by
 
 ```
 bash Anaconda3-2020.02-Linux-x86_64.sh
-
 ```
 
 and accept all the questions and default installation folder. Then update anaconda by
@@ -26,9 +45,7 @@ bash
 conda update anaconda
 ```
 
-You are set.
-
-## Automatically install pyHiM
+## Automatically configure pyHiM
 
 Run the ```installation.sh``` script by typing in the command line:
 
@@ -38,35 +55,31 @@ bash installation.sh
 
 If you encounter problems, follow the manual installation (below).
 
-## Manually install and configure pyHiM
+##### Semi-automatic configuration
 
-Clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
-
-Open your $HOME/.bashrc using nano
-
-```bash
-nano $HOME/.bashrc
-```
-
-and add the following lines to the end
+Run this command in your terminal within the root 
 
 ```sh
-export PATH="$PATH:$HOME/Repositories/pyHiM/src:$HOME/Repositories/pyHiM/src/fileProcessing"
-export PYTHONPATH="$HOME/Repositories/pyHiM/src"
-
-export MPLBACKEND=agg
-
+conda env create -f environment.yml
 ```
 
-make sure you use a different directory name if this is not where you put pyHiM !
+If you get the error:
 
-To install the necessary packages using conda, run:
+```sh
+ImportError: Dask's distributed scheduler is not installed.
+```
+
+You solve by running `pip install dask[complete] distributed --upgrade`.
+
+##### Manual configuration
+
+To manually install the necessary packages using conda, run:
 
 ```sh
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
 conda activate pyHiM
 conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 ```
 
@@ -74,36 +87,6 @@ Remember to activate the environment before running pyHiM:
 
 ```sh
 conda activate pyHiM
-```
-
-### Installing bigfish
-
-```bash
-cd $HOME/Repositories
-git clone https://github.com/fish-quant/big-fish.git
-cd big-fish && git checkout develop
-ln -s $HOME/Repositories/big-fish/bigfish ~/anaconda3/lib/python3.7/bigfish
-```
-
-If you are running pyHiM in a conda environment, you can link bigfish as follows:
-
-```sh
-ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
-
-```
-
-
-### upgrade existing packages
-
-Sometimes, you will need to upgrade other packages to their last default version if you have an existing version of conda already installed. For this, run:
-
-```sh
-conda update -c astropy astropy
-conda update photoutils -c astropy
-pip install update stardist
-pip install --upgrade pip
-pip install --upgrade dask
-conda install spyder=4.2.0
 ```
 
 #### Upgrade scikit-image to development version
@@ -137,7 +120,21 @@ pip install -e .  # Reinstall
 
 You should be set!
 
-### Install in Meso-LR super-computer
+### Install apifish
+
+```bash
+cd $HOME/Repositories
+git clone git@github.com:apiFISH/apiFISH.git
+cd apifish && git checkout development
+```
+
+Update `PYTHONPATH` env variable by adding the following line to your local ~/.bashrc
+
+```sh
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
+```
+
+### Script installation for super-computer centers (e.g. Meso-LR)
 
 To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
@@ -153,14 +150,14 @@ module load  python/Anaconda/3-5.1.0
 conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
 conda activate pyHiM
 conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep
+pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 
-# big-fish
+# api-fish
 cd $HOME/Repositories
-git clone https://github.com/fish-quant/big-fish.git
-cd big-fish && git checkout develop
-ln -s $HOME/Repositories/big-fish/bigfish $HOME/Repositories/pyHiM/src/bigfish
+git clone git@github.com:apiFISH/apiFISH.git
+cd apifish && git checkout development
+echo 'export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"'  >> ~/.bashrc
 
 # clone pyHiM
 cd $HOME/Repositories
@@ -172,8 +169,6 @@ ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/clea
 
 ```
 
-
-
 ## Test run
 
 There are two ways to do a test run in this version of pyHiM
@@ -181,7 +176,6 @@ There are two ways to do a test run in this version of pyHiM
 ### pytest
 
 The first is to use the **pytest** module. For this, you need to first configure the location of the test datasets by
-
 
 ```sh
 cd tests/standardTests
