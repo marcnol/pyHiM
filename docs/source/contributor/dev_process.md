@@ -1,27 +1,29 @@
 # Development process
 
 ## Branching model
+The following branches will always exist in pyHiM:
 
-* The `master`: Reference branch of stable version, pyHiM run perfectly. Work with tag [versioning](https://semver.org/) system.
-* The `development`: Branch with latest delivered development works.
-* The features branches are used for development of single features and bug fixes, then are merged in the `development` branch with pull request.
+* The `master` branch: reference branch of stable versions. We use the tag [versioning](https://semver.org/) systems.
+* The `development` branch: features stable but pre-release features. Use at your own risk.
+* Features branches are used for development of single features
+* Bug branches are use to fix specific bugs repported as `issues`. Once the bug is fixed, the branch is merged into the `development` branch using a pull request and subsequentially deleted.
 
-Template:
+Template for branch naming scheme:
 
 ```<context>/(<scope>/)short_definition_of_work```
 
-- **<context>**:
+- `<context>`:
     - `fix` for bug fix
     - `feature` for development about a new feature
     - `doc` for adding documentation
     - `refactor` for improvement of readability, reusability or structure
-- **<scope>** is the feature ou field involved by this commit (optional)
+- `<scope>` is the feature ou field involved by this commit (optional)
 
 Examples:
 - ```doc/contributor/write_dev_process```
 - ```feature/matching/spot_into_mask```
 
-## Workflow
+## Typical workflow using `git`
 
 ### Create a git branch
 
@@ -68,7 +70,7 @@ Examples:
 
 ### Merge with development branch
 
-The good way to validate your new features is to make a **pull request**. It's a tool to make a **code review** with another member of the team in order to take a step back on our implementations.
+The best way to validate your new features is to make a **pull request**. The code in the pull request will be reviewed by another member of the team before it can be merged into the Development branch. 
 
 1. On your GitHub repository, navigate to `pull requests` section
 2. Button `New pull request`
@@ -80,9 +82,9 @@ The good way to validate your new features is to make a **pull request**. It's a
 8. Delete your feature branch locally and remotely (see below)
 9. Start a new task !
 
-### Release
+### pyHiM releases
 
-Make release version with [Semantic Versioning](https://semver.org/).
+New release versions are made using [Semantic Versioning](https://semver.org/).
 
 Given a version number MAJOR.MINOR.PATCH, increment the:
 
@@ -100,9 +102,9 @@ git log --graph --oneline
 
 ### Delete your branch
 
-> After you merge your pull request, delete your branch. This indicates that the work on the branch is complete and prevents you or others from accidentally using old branches. For more information, see "[Deleting and restoring branches in a pull request](https://docs.github.com/en/github/administering-a-repository/deleting-and-restoring-branches-in-a-pull-request)."
+After you merge your pull request, please delete your branch. This will signal to other developers that the work on the branch is complete and prevents you or others from accidentally using old branches. For more information, see "[Deleting and restoring branches in a pull request](https://docs.github.com/en/github/administering-a-repository/deleting-and-restoring-branches-in-a-pull-request)."
 
-> Don't worry about losing information. Your pull request and commit  history will not be deleted. You can always restore your deleted branch  or revert your pull request if needed.
+When you delete a branch, the commit history will be transfered to the development branch. You can always restore your deleted branch or revert your pull request if needed.
 
 ```shell
 // delete branch locally
@@ -112,7 +114,7 @@ git branch -d local_branch_name
 git push origin --delete remote_branch_name
 ```
 
-### Recover deleted git branch
+### Recover deleted branch
 
 - [Deleting and restoring branches in a pull request](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/deleting-and-restoring-branches-in-a-pull-request)
 

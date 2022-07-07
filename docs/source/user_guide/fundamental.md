@@ -1,7 +1,4 @@
-# WIP - pyHiM fundamentals
-
-**TODO**
-- Reorganise file
+# pyHiM fundamentals
 
 ## Pipeline overview
 ### Default pyHiM flow
@@ -52,7 +49,16 @@ Here is a table summarizing the type of input and output data for each routine:
 |**segmentSources3D**|3D_raw.tif + alignImages.ecsv|3D_segmented_barcode.ecsv|
 |**buildHiMmatrix**|segmented_barcode.ecsv + segmented_mask.npy + alignImages_block3D.ecsv + 3D_segmented_barcode.ecsv|PWDMatrix.ecsv + 3D_PWDMatrix.ecsv|
 
-### Flowchart of labels
+### Processing flowchart for different data sources
+
+Different data sources exist and need to processed differently by pyHiM:
+- fiducials
+- DNA-FISH barcodes
+- masks (e.g. DAPI, cell, genomic region)
+- RNA-FISH images
+
+Each data source is handled by a different workflow in pyHiM. In each workflow, you will see different symbols for `features`, `input data` and `I/O data`, as follows:
+
 ```{mermaid}
 flowchart TD
 	subgraph graph legend
@@ -62,7 +68,8 @@ flowchart TD
 	end 
 ```
 
-#### Fiducial flow
+#### fiducial flow
+This scheme shows the steps involved in the analysis of fiducial images.
 
 ```{mermaid}
 flowchart
@@ -93,14 +100,12 @@ flowchart
 	zProj0bis --> routine4
 	align1 -.-> routine4
 	routine4 --> align2
-	
-	
-	
-
 
 ```
 
-#### Barcode flow
+#### barcode flow
+This scheme shows the steps involved in the analysis of DNA-FISH barcode images.
+
 ```{mermaid}
 flowchart
 	
@@ -141,7 +146,9 @@ flowchart
 
 
 ```
-#### Mask flow
+#### masks flow
+This scheme shows the steps involved in the analysis of masks images.
+
 ```{mermaid}
 flowchart
 	
@@ -197,7 +204,9 @@ flowchart
 
 
 ```
-#### RNA flow
+#### RNA-FISH image flow
+This scheme shows the steps involved in the analysis of RNA-FISH images.
+
 ```{mermaid}
 flowchart
 	
@@ -228,8 +237,12 @@ flowchart
 ## Main features
 ### makeProjections
 *Projects 3D images in 2D*
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
-Initialization parameters:
+#### Relevant options
+Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```
+
 
 |Name|Option|Description|
 |:-:|:-:|:-:|
@@ -238,11 +251,14 @@ Initialization parameters:
 ||full|Assign all plans to "zRange"|
 ||laplacian|Split 3D image into blocks of the size given by *blockSize*. Find Laplacian Variance maximum (blur estimation) for each block in order to estimate the focal plane. Rebuild block-by-block 2D image with optimal focal plane of each block. if *zwindows* option is activated, project each block with MIP option.|
 |windowSecurity||Used for *automatic* mode, removes the lowest and highest Z-plans.|
+|zwindows| | In automatic mode, selects the number of planes below and above the focal plane to be used for making the projection.
+|display| | Saves output 2D projections as png files
 |zProjectOption|sum|Sum plans in "zRange"|
-||MIP|Maximum Intensity Projection of plans in "zRange"|
+||MIP|Maximum Intensity Projection of plans in "zRange"|    
+|zmax| | Select ending plane to use for projection
+|zmin| | Select starting plane to use for projection
 
-This routine take all 3D images and project its in 2D.
-Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
+
 
 ```{mermaid}
 flowchart TD
@@ -284,11 +300,22 @@ flowchart TD
 ### alignImages
 *Registers fiducials using a barcode as reference*
 
+#### Invoke
+
+To run this function exclusively, run *pyHiM* using the ``` -C alignImages ``` argument. 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
 The algorithm takes images one by one and align with the reference.
 There are two ways to compute the shift:
 - Global alignement make simple cross-correlation with tow images
 - Split image in block and make cross-correlation block by block. Then we have one shift by block and to align the global image an average of those shifts are made. This method is more robust against a bright noise spot.
+
+#### Relevant options
+Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|referenceFiducial| |Selects reference barcode image|
+
 ```{mermaid}
 flowchart TD
 
@@ -318,6 +345,10 @@ flowchart TD
 
 ### AppliesRegistrations
 *Applies registration to DAPI and barcodes*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder. 
+
 ```{mermaid}
 flowchart TD
 
@@ -339,7 +370,15 @@ flowchart TD
 
 ### alignImages3D
 *Aligns fiducials in 3D*
-This feature run for *fiducial* images and with "block3D" value for "localAlignment" key in *infoList.json* file.
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C alignImages3D ``` argument.
+
+
+#### Relevant options
+Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```. 
+To run, the value for ```localAlignment``` key should be ```block3D```. 
+
 ```{mermaid}
 flowchart TD
 
@@ -359,8 +398,14 @@ flowchart TD
 		B4[["imageBlockAlignment3D()"]] --> C
 	
 ```
+
+
 ### segmentMasks
 *Segments DAPI and sources in 2D*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument.
+
 ```{mermaid}
 flowchart TD
 
@@ -396,8 +441,13 @@ flowchart TD
 	
 ```
 
+
 ### segmentSources3D
 *Segments sources in 3D*
+
+#### Invoke
+To run this function exclusively, run *pyHiM* using the ``` -C segmentSources3D ``` argument.
+
 
 ```{mermaid}
 flowchart TD

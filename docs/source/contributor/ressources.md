@@ -1,4 +1,4 @@
-# Great ressources
+# Additional ressources
 
 This documentation are based on:
 - [Python Enhancement Proposals](https://peps.python.org/)
