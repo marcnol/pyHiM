@@ -263,38 +263,38 @@ def segmentSourceFlatBackground(im, param):
     return sources, im1_bkg_substracted
 
 
-def tessellate_DAPI_masks(segm_deblend):
+def tessellate_masks(segm_deblend):
     """
-    * takes a DAPI mask (background 0, nuclei labeled 1, 2, ...)
+    * takes a labeled mask (background 0, nuclei labeled 1, 2, ...)
     * calls get_tessellation(xy, img_shape)
-    * returns the tesselated DAPI mask and the voronoi data structure
+    * returns the tesselated mask and the voronoi data structure
 
     Parameters
     ----------
-    dapi_mask : TYPE
-        DESCRIPTION.
+    segm_deblend : TYPE
+        Labeled mask.
 
     Returns
     -------
     voronoiData : TYPE
         DESCRIPTION.
-    dapi_mask_voronoi : TYPE
+    mask_voronoi : TYPE
         DESCRIPTION.
 
     """
     start_time = time.time()
 
     # get centroids
-    dapi_mask = segm_deblend.data
-    dapi_mask_binary = dapi_mask.copy()
-    dapi_mask_binary[dapi_mask_binary > 0] = 1
+    mask_labeled = segm_deblend.data
+    mask_binary = mask_labeled.copy()
+    mask_binary[mask_binary > 0] = 1
 
-    regions_dapi = regionprops(dapi_mask)
+    regions = regionprops(mask_labeled)
 
-    numMasks = np.max(dapi_mask)
+    numMasks = np.max(mask_labeled)
     centroid = np.zeros((numMasks + 1, 2))  # +1 as labels run from 0 to max
 
-    for props in regions_dapi:
+    for props in regions:
         y0, x0 = props.centroid
         label = props.label
         centroid[label, :] = x0, y0
@@ -302,19 +302,19 @@ def tessellate_DAPI_masks(segm_deblend):
     # tesselation
     # remove first centroid (this is the background label)
     xy = centroid[1:, :]
-    voronoiData = get_tessellation(xy, dapi_mask.shape)
+    voronoiData = get_tessellation(xy, mask_labeled.shape)
 
     # add some clipping to the tessellation
     # gaussian blur and thresholding; magic numbers!
-    dapi_mask_blurred = gaussian_filter(dapi_mask_binary.astype("float64"), sigma=20)
-    dapi_mask_blurred = dapi_mask_blurred > 0.01
+    mask_blurred = gaussian_filter(mask_binary.astype("float64"), sigma=20)
+    mask_blurred = mask_blurred > 0.01
 
     # convert tessellation to mask
     np.random.seed(42)
 
-    dapi_mask_voronoi = np.zeros(dapi_mask.shape, dtype="int64")
+    mask_voronoi = np.zeros(mask_labeled.shape, dtype="int64")
 
-    nx, ny = dapi_mask.shape
+    nx, ny = mask_labeled.shape
 
     # Create vertex coordinates for each grid cell...
     # (<0,0> is at the top left of the grid in this system)
@@ -346,12 +346,12 @@ def tessellate_DAPI_masks(segm_deblend):
         poly_path = Path(vertices)
         mask = poly_path.contains_points(points)
         mask = mask.reshape((ny, nx))
-        dapi_mask_voronoi[mask & dapi_mask_blurred] = maskID
+        mask_voronoi[mask & mask_blurred] = maskID
 
     # printLog("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
     printLog("$ Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
 
-    return voronoiData, dapi_mask_voronoi
+    return voronoiData, mask_voronoi
 
 
 def get_tessellation(xy, img_shape):
@@ -368,33 +368,6 @@ def get_tessellation(xy, img_shape):
     # they are supposed "catch" all the vertices that end up at infinity
     # follows an answer given here
     # https://stackoverflow.com/questions/20515554/colorize-voronoi-diagram/20678647#20678647
-
-    Parameters
-    ----------
-    xy : TYPE
-        DESCRIPTION.
-    img_shape : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    voronoiData : TYPE
-        DESCRIPTION.
-
-    """
-
-    x_center, y_center = np.array(img_shape) / 2
-    x_max, y_max = np.array(img_shape)
-
-    corner1 = [x_center - 100 * x_max, y_center - 100 * y_max]
-    corner2 = [x_center + 100 * x_max, y_center - 100 * y_max]
-    corner3 = [x_center - 100 * x_max, y_center + 100 * y_max]
-    corner4 = [x_center + 100 * x_max, y_center + 100 * y_max]
-
-    xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
-
-    # perform Voroin tesseslation
-    voronoiData = Voronoi(xy)
 
     # Attributes
     #    points ndarray of double, shape (npoints, ndim)
@@ -419,12 +392,40 @@ def get_tessellation(xy, img_shape):
     #        True if this was a furthest site triangulation and False if not.
     #        New in version 1.4.0.
 
+    Parameters
+    ----------
+    xy : TYPE
+        DESCRIPTION.
+    img_shape : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    voronoiData : TYPE
+        DESCRIPTION.
+
+
+    """
+
+    x_center, y_center = np.array(img_shape) / 2
+    x_max, y_max = np.array(img_shape)
+
+    corner1 = [x_center - 100 * x_max, y_center - 100 * y_max]
+    corner2 = [x_center + 100 * x_max, y_center - 100 * y_max]
+    corner3 = [x_center - 100 * x_max, y_center + 100 * y_max]
+    corner4 = [x_center + 100 * x_max, y_center + 100 * y_max]
+
+    xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
+
+    # perform Voroin tesseslation
+    voronoiData = Voronoi(xy)
+
     return voronoiData
 
 
 def segmentMaskInhomogBackground(im, param):
     """
-    Function used for segmenting DAPI masks with the ASTROPY library that uses image processing
+    Function used for segmenting masks with the ASTROPY library that uses image processing
 
     Parameters
     ----------
@@ -461,7 +462,7 @@ def segmentMaskInhomogBackground(im, param):
     segm_deblend = deblend_sources(
         im,
         segm,
-        npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for DAPI
+        npixels=param.param["segmentedObjects"]["area_min"],  # typically 50 for masks
         filter_kernel=kernel,
         nlevels=32,
         contrast=0.001,  # try 0.2 or 0.3
@@ -485,7 +486,7 @@ def segmentMaskInhomogBackground(im, param):
 
 def segmentMaskStardist(im, param):
     """
-    Function used for segmenting DAPI masks with the STARDIST package that uses Deep Convolutional Networks
+    Function used for segmenting masks with the STARDIST package that uses Deep Convolutional Networks
 
     Parameters
     ----------
@@ -580,13 +581,15 @@ def makesSegmentations(fileName, param, session1, dataFolder):
         ##########################################
 
         if label == "barcode" and len([i for i in rootFileName.split("_") if "RT" in i]) > 0:
-            if param.param["segmentedObjects"]["background_method"] == "flat":
+            segmentationMathod = param.param["segmentedObjects"]["background_method"]
+            printLog(f"\n$ Segmenting barcodes using method: {segmentationMathod }")
+            if  segmentationMathod == "flat":
                 output = segmentSourceFlatBackground(im, param)
-            elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
+            elif segmentationMathod == "inhomogeneous":
                 output, im1_bkg_substracted = segmentSourceInhomogBackground(im, param)
             else:
                 printLog(
-                    "# segmentedObjects/background_method not specified in json file")
+                    f"# Method <{segmentationMathod}> not available for barcode segmentation!")
                 return Table()
 
             # show results
@@ -619,9 +622,9 @@ def makesSegmentations(fileName, param, session1, dataFolder):
             #    output[col].info.format = '%.8g'  # for consistent table output
 
         #######################################
-        #           Segments DAPI Masks
+        #           Segments Masks
         #######################################
-        elif label == "DAPI" and rootFileName.split("_")[2] == "DAPI":
+        elif (label == "DAPI" or label == "mask"): # and rootFileName.split("_")[2] == "DAPI":
             if param.param["segmentedObjects"]["background_method"] == "flat":
                 output = segmentMaskInhomogBackground(im, param)
             elif param.param["segmentedObjects"]["background_method"] == "inhomogeneous":
@@ -636,7 +639,7 @@ def makesSegmentations(fileName, param, session1, dataFolder):
 
             if "tesselation" in param.param["segmentedObjects"].keys():
                 if param.param["segmentedObjects"]["tesselation"]:
-                    _, output = tessellate_DAPI_masks(output)
+                    _, output = tessellate_masks(output)
 
             # show results
             if "labeled" in locals():

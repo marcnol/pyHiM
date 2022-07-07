@@ -54,7 +54,7 @@ from fileProcessing.fileManagement import loadsAlignmentDictionary, retrieveNumb
 
 from skimage import exposure
 
-from bigfish.detection.spot_modeling import fit_subpixel
+from apifish.detection.spot_modeling import fit_subpixel
 from skimage.measure import regionprops
 
 
@@ -83,8 +83,10 @@ class segmentSources3D:
 
         self.p["parallelizePlanes"] = getDictionaryValue(self.param.param['acquisition'], "parallelizePlanes", default=1)
 
+
         # decides what segmentation method to use
         self.p["3Dmethod"]=getDictionaryValue(self.param.param["segmentedObjects"], "3Dmethod", default='thresholding')
+        self.p["reducePlanes"]=getDictionaryValue(self.param.param["segmentedObjects"], "reducePlanes", default=True)
 
         # parameters used for 3D segmentation and deblending
         self.p["threshold_over_std"]=getDictionaryValue(self.param.param["segmentedObjects"], "3D_threshold_over_std", default=1)
@@ -100,7 +102,7 @@ class segmentSources3D:
 
         # parameters for stardist
         self.p["stardist_basename"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_basename", default='/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/')
-        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network", default='stardist_18032021_single_loci')
+        self.p["stardist_network"]=getDictionaryValue(self.param.param["segmentedObjects"], "stardist_network3D", default='stardist_18032021_single_loci')
 
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000*self.p["pixelSizeZ"]*self.p["zBinning"])
@@ -180,23 +182,51 @@ class segmentSources3D:
 
         if len(properties)>0:
             # selects nTolerance brightest spots and keeps only these for further processing
-            peak0=[x.max_intensity for x in properties]
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak0=[x.max_intensity for x in properties]
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak0=[x.intensity_max for x in properties]
+
             peakList = peak0.copy()
             peakList.sort()
-            last2keep=np.min([nTolerance,len(peakList)])
+            
+            if nTolerance == "None":
+                last2keep = len(peakList)
+            else:
+                last2keep = np.min([nTolerance,len(peakList)])
+                
             highestPeakValue  = peakList[-last2keep]
             selection = list(np.nonzero(peak0>highestPeakValue)[0])
 
             # attributes properties using the brightests spots selected
-            peak=[properties[x].max_intensity for x in selection]
-            centroids=[properties[x].weighted_centroid for x in selection]
-            sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
-            roundness1=[properties[x].equivalent_diameter for x in selection]
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak=[properties[x].max_intensity for x in selection]
+                   centroids=[properties[x].weighted_centroid for x in selection]
+                   sharpness=[float(properties[x].filled_area/properties[x].bbox_area) for x in selection]
+                   roundness1=[properties[x].equivalent_diameter for x in selection]
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak=[properties[x].intensity_max for x in selection]
+                   centroids=[properties[x].centroid_weighted for x in selection]
+                   sharpness=[float(properties[x].area_filled/properties[x].area_bbox) for x in selection]
+                   roundness1=[properties[x].equivalent_diameter_area for x in selection]
+
             roundness2=[properties[x].extent for x in selection]
             npix=[properties[x].area for x in selection]
             sky=[0.0 for x in selection]
-            peak=[properties[x].max_intensity for x in selection]
-            flux=[100*properties[x].max_intensity/threshold for x in selection] # peak intensity over the detection threshold
+
+            try:
+                   # compatibility with scikit_image versions <= 0.18
+                   peak=[properties[x].max_intensity for x in selection]
+                   flux=[100*properties[x].max_intensity/threshold for x in selection] # peak intensity over t$
+            except AttributeError:
+                   # compatibility with scikit_image versions >=0.19
+                   peak=[properties[x].intensity_max for x in selection]
+                   flux=[100*properties[x].intensity_max/threshold for x in selection] # peak intensity$
+
             mag=[-2.5*np.log10(x) for x in flux] # -2.5 log10(flux)
 
             # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
@@ -243,17 +273,6 @@ class segmentSources3D:
         '''
         window = self.p["windowDisplay"]
         fig1 = _plotsImage3D(image3D,localizations=localizations,masks=masks,normalize=normalize,window = window)
-
-        # img = image3D
-        # center = int(img.shape[1]/2)
-
-        # images = list()
-        # images.append(np.sum(img,axis=0))
-        # images.append(np.sum(img[:,:,center-window:center+window],axis=2))
-        # images.append(np.sum(img[:,center-window:center+window,:],axis=1))
-
-        # fig1 = display3D_assembled(images, localizations = localizations, plottingRange = [center,window])
-
         return fig1
 
     def _segments3Dvolumes(self,image3D_aligned):
@@ -303,11 +322,15 @@ class segmentSources3D:
         image3D0 = reinterpolateZ(image3D0, range(0,image3D0.shape[0],p["zBinning"]),mode='remove')
 
         # restricts analysis to a sub volume containing sources
-        focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
-        zOffset = zRange[1][0]
-        image3D = image3D0[zRange[1],:,:].copy()
-
-        printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        if p["reducePlanes"]:
+            focalPlaneMatrix, zRange, _= _reinterpolatesFocalPlane(image3D0,blockSizeXY = p["blockSizeXY"], window=p["zWindow"])
+            zOffset = zRange[1][0]
+            image3D = image3D0[zRange[1],:,:].copy()
+            printLog("$ Focal plane found: {}, zRange = {}, imageSize = {}".format(zRange[0],zRange[1],image3D.shape))
+        else:
+            image3D = image3D0.copy()
+            zOffset = 0
+            printLog("$ zRange used = 0-{}".format(image3D.shape[0]))
 
         # preprocesses image by background substraction and level normalization
         if 'stardist' not in p["3Dmethod"]:
@@ -317,6 +340,7 @@ class segmentSources3D:
                                         parallelExecution=self.innerParallelLoop)
 
         # drifts 3D stack in XY
+        shift = None
         if self.dictShiftsAvailable and  label != p["referenceBarcode"]:
             # uses existing shift calculated by alignImages
             try:
@@ -324,21 +348,21 @@ class segmentSources3D:
                 printLog("> Applying existing XY shift...")
             except KeyError:
                 shift = None
-                raise SystemExit(
-                    "# Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                        "ROI:" + self.ROI, label))
+
+        if shift is None and label != p["referenceBarcode"]:
+            raise SystemExit(
+                "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
+                    "ROI:" + self.ROI, label))
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
             # printLog("$ Applies shift = {:.2f}".format(shift))
             printLog("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0],shift[1]))
             image3D_aligned = appliesXYshift3Dimages(image3D, shift,parallelExecution=self.innerParallelLoop)
-            # image3D_raw_aligned = appliesXYshift3Dimages(image3D0, shift,parallelExecution=self.innerParallelLoop)
         else:
             printLog("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.,0.])
             image3D_aligned = image3D
-            # image3D_raw_aligned  = image3D0
 
         # segments 3D volumes
         binary, segmentedImage3D  = self._segments3Dvolumes(image3D_aligned)
@@ -366,13 +390,21 @@ class segmentSources3D:
             image3D_aligned = exposure.rescale_intensity(image3D_aligned, out_range=(0, 1)) # removes negative intensity levels
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-            spots_subpixel = fit_subpixel(image3D_aligned,
-                                          spots,
-                                          voxel_size_z=p["voxel_size_z"],
-                                          voxel_size_yx=p["voxel_size_yx"],
-                                          psf_z=p["psf_z"],
-                                          psf_yx=p["psf_yx"])
-
+            # compatibility with latest version of bigfish. To be removed if stable.
+            try:
+                # version 0.4 commit fa0df4f
+                spots_subpixel = fit_subpixel(image3D_aligned,
+                                              spots,
+                                              voxel_size_z=p["voxel_size_z"],
+                                              voxel_size_yx=p["voxel_size_yx"],
+                                              psf_z=p["psf_z"],
+                                              psf_yx=p["psf_yx"])
+            except TypeError:                
+                # version > 0.5
+                spots_subpixel = fit_subpixel(image3D_aligned,
+                                              spots,
+                                              (p["voxel_size_z"],p["voxel_size_yx"],p["voxel_size_yx"]), # voxel size
+                                              (p["psf_z"],p["psf_yx"],p["psf_yx"])) # spot radius
 
             printLog(" > Updating table and saving results")
             # updates table
@@ -436,7 +468,7 @@ class segmentSources3D:
         self.param.files2Process(filesFolder)
         self.ROIList = retrieveNumberROIsFolder(self.currentFolder, p["regExp"], ext="tif")
         self.numberROIs = len(self.ROIList)
-        printLog("$ Detected {} ROIs".format(self.numberROIs))
+        printLog("\n$ Detected {} ROIs".format(self.numberROIs))
         printLog("$ Number of images to be processed: {}".format(len(self.param.fileList2Process)))
 
         # loads dicShifts with shifts for all ROIs and all labels
@@ -456,11 +488,12 @@ class segmentSources3D:
             # loops over ROIs
             for ROI in self.ROIList:
                 # loads reference fiducial image for this ROI
-
+                self.ROI = ROI
+                
                 self.fileName2ProcessList = [x for x in self.param.fileList2Process\
                                         if self.param.decodesFileParts(os.path.basename(x))["roi"] == ROI and \
                                             "RT" in self.param.decodesFileParts(os.path.basename(x))["cycle"]]
-                # printLog(">>>>>>>Files to process:{}".format(self.param.fileList2Process))
+
                 Nfiles2Process=len(self.fileName2ProcessList)
                 printLog("$ Found {} files in ROI [{}]".format(Nfiles2Process, ROI))
                 printLog("$ [roi:cycle] {}".format(" | ".join([str(self.param.decodesFileParts(os.path.basename(x))["roi"])\

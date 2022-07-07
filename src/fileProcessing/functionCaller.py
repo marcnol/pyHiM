@@ -33,6 +33,11 @@ from matrixOperations.alignBarcodesMasks import processesPWDmatrices
 from imageProcessing.refitBarcodes3D import refitBarcodesClass
 from imageProcessing.alignImages3D import drift3D
 from imageProcessing.segmentSources3D import segmentSources3D
+from imageProcessing.segmentMasks3D import segmentMasks3D
+from matrixOperations.filter_localizations import FilterLocalizations
+from matrixOperations.register_localizations import RegisterLocalizations
+from matrixOperations.build_traces import BuildTraces
+from matrixOperations.build_matrix import BuildMatrix
 
 class HiMfunctionCaller:
     def __init__(self, runParameters, sessionName="HiM_analysis"):
@@ -160,6 +165,20 @@ class HiMfunctionCaller:
                 result = self.client.submit(segmentMasks, param, self.session1)
                 _ = self.client.gather(result)
 
+
+
+    def segmentMasks3D(self, param, label):
+        if (
+            (label == "DAPI" or label == 'mask')
+            and "3D" in param.param["segmentedObjects"]["operation"]
+        ):
+            printLog("Making 3D image segmentations for label: {}".format(label))
+            printLog(">>>>>>Label in functionCaller:{}".format(label))
+
+            _segmentSources3D = segmentMasks3D(param, self.session1, parallel=self.parallel)
+            _segmentSources3D.segmentMasks3D()
+
+
     def segmentSources3D(self, param, label):
         if (
             label == "barcode"
@@ -172,6 +191,7 @@ class HiMfunctionCaller:
             _segmentSources3D.segmentSources3D()
 
 
+    # This function will be removed in new release
     def projectsBarcodes(self, param, label):
         if label == "barcode":
             if not self.parallel:
@@ -180,6 +200,7 @@ class HiMfunctionCaller:
                 result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
                 _ = self.client.gather(result)
 
+    # This function will be removed in new release
     def refitBarcodes(self, param, label):
         if label == "barcode":
             fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
@@ -189,6 +210,31 @@ class HiMfunctionCaller:
                 result = self.client.submit(fittingSession.refitFolders)
                 _ = self.client.gather(result)
 
+    # filters barcode localization table
+    def filter_localizations(self, param, label):
+        if label == "barcode":
+            filter_localizations_instance = FilterLocalizations(param)
+            filter_localizations_instance.filter_folder()
+
+    # filters barcode localization table
+    def register_localizations(self, param, label):
+        if label == "barcode":
+            register_localizations_instance = RegisterLocalizations(param)
+            register_localizations_instance.register()
+
+    # build traces
+    def build_traces(self, param, label):
+        if label == "barcode":
+            build_traces_instance = BuildTraces(param)
+            build_traces_instance.run()
+
+    # build matrices
+    def build_matrix(self, param, label):
+        if label == "barcode":
+            build_matrix_instance = BuildMatrix(param)
+            build_matrix_instance.run()
+
+    # This function will be removed in new release
     def localDriftCorrection(self, param, label):
 
         # runs mask 2D aligment
@@ -201,12 +247,12 @@ class HiMfunctionCaller:
                 errorCode, _, _ = self.client.gather(result)
 
     def processesPWDmatrices(self, param, label):
-        if label == "DAPI":
+        if (label == "DAPI" or label == 'mask'):
             if not self.parallel:
                 processesPWDmatrices(param, self.session1)
             else:
                 result = self.client.submit(processesPWDmatrices, param, self.session1)
-                a = self.client.gather(result)
+                _ = self.client.gather(result)
 
     def getLabel(self, ilabel):
         return self.labels2Process[ilabel]["label"]
@@ -214,12 +260,13 @@ class HiMfunctionCaller:
 
 def availableListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentSources3D","refitBarcodes3D","localDriftCorrection","projectBarcodes","buildHiMmatrix"]
+                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
+                "projectBarcodes","filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
 
 
 def defaultListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentSources3D","buildHiMmatrix"]
+                "segmentMasks3D", "segmentSources3D","buildHiMmatrix"]
 
 def HiM_parseArguments():
     parser = argparse.ArgumentParser()
@@ -230,8 +277,10 @@ def HiM_parseArguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentSources3D refitBarcodes3D \
-                        localDriftCorrection projectBarcodes buildHiMmatrix")
+                        segmentMasks3D segmentSources3D buildHiMmatrix \
+                        optional: [ filter_localizations register_localizations build_traces build_matrix]")
+                        # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
+
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args()
 

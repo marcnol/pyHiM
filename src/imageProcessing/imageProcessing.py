@@ -22,11 +22,6 @@ import scipy.optimize as spo
 from scipy.ndimage import shift as shiftImage
 from scipy import ndimage as ndi
 from scipy.stats import sigmaclip
-# from sherpa.data import Data1D
-# from sherpa.models.basic import Gauss1D
-# from sherpa.stats import LeastSq
-# from sherpa.optmethods import LevMar
-# from sherpa.fit import Fit as sherpaFit
 
 import cv2
 from tifffile import imsave
@@ -215,7 +210,6 @@ class Image:
 
         if show:
             fig.add_axes(ax)
-            # ax.imshow(self.data_2D, aspect='equal')
             ax.imshow(self.data_2D, origin="lower", cmap="Greys_r", norm=norm)
             return ax
 
@@ -285,9 +279,14 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         fitResult["gauss1d.ampl"] = fitgauss[0][0]
         fitResult["gauss1d.fwhm"] = 2.355*fitgauss[0][2]
     except RuntimeError:
-        # printLog("# Warning, too many iterations trying to fit 1D gaussian function")
         return dict(), []
-
+    except ValueError:    
+        fitResult["gauss1d.pos"] = np.mean(x)
+        fitResult["gauss1d.ampl"] = 0.0
+        fitResult["gauss1d.fwhm"] = 0.0
+        printLog("Warning: returned middle plane!")
+        return fitResult, []
+    
     if verbose:
         fig=plt.figure()
         ax = fig.add_subplot(1,1,1)
@@ -301,58 +300,6 @@ def fit1DGaussian_scipy(x,y,title='',verbose=False):
         return fitResult, fig
 
     return fitResult, []
-
-# def fit1DGaussian_sherpa(x,y,title='',verbose=True):
-#     """
-#     Fits a function using a 1D Gaussian and returns parameters if successfull.
-#     Otherwise will return an empty dict
-#     Uses sherpa package
-
-#     Parameters
-#     ----------
-#     x : numpy 1D array
-#         x data.
-#     y : numpy 1D array
-#         y data.
-#     title : str, optional
-#         figure title. The default is ''.
-#     verbose : Boolean, optional
-#         whether fig and results will be shown. The default is True.
-
-#     Returns
-#     -------
-#     dict()
-#         dictionary with fitting parameters.
-#     fig
-#         matplotlib figure for saving
-
-#     """
-
-#     d=Data1D('laplacianProfile',x,y)
-#     Gauss1Dmodel = Gauss1D()
-#     opt = LevMar()
-#     stat = LeastSq()
-
-#     gFit = sherpaFit(d,Gauss1Dmodel,stat=stat, method=opt)
-#     fitResult = gFit.fit()
-
-#     if fitResult.succeeded:
-#         if verbose:
-#             printLog("<<Fitting successful>>")
-#             # printLog(fitResult.format())
-
-#             fig=plt.figure()
-#             ax = fig.add_subplot(1,1,1)
-#             ax.plot(d.x,d.y,'ko',label='data')
-#             ax.plot(d.x,Gauss1Dmodel(d.x),linewidth=2, label='gaussian fit')
-#             ax.legend(loc=2)
-#             ax.set_title(title)
-#         else:
-#             fig=None
-
-#         return dict(zip(fitResult.parnames,fitResult.parvals)), fig
-#     else:
-#         return dict()
 
 def makesShiftMatrixHiRes(shiftMatrices, block_ref_shape):
     """
@@ -657,7 +604,7 @@ def saveImageDifferences(I1, I2, I3, I4, outputFileName):
     plt.close(fig)
 
 
-def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True,parallelExecution=True):
+def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),verbose=True,parallelExecution=True,background=False):
     """
     wrapper to remove inhomogeneous backgrounds for 2D and 3D images
 
@@ -679,9 +626,9 @@ def _removesInhomogeneousBackground(im, boxSize=(32, 32), filter_size=(3, 3),ver
 
     """
     if len(im.shape) == 2:
-        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose)
+        output = _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose, background=background)
     elif len(im.shape) == 3:
-        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose,parallelExecution=parallelExecution)
+        output = _removesInhomogeneousBackground3D(im, boxSize=(32, 32), filter_size=(3, 3),verbose=verbose,parallelExecution=parallelExecution,background=background)
     else:
         return None
     return output
@@ -724,7 +671,7 @@ def _removesInhomogeneousBackground2D(im, boxSize=(32, 32), filter_size=(3, 3), 
         return im1_bkg_substracted
 
 
-def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True, parallelExecution=True):
+def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3, 3),verbose=True, parallelExecution=True, background = False):
     """
     Wrapper to remove inhomogeneous background in a 3D image by recursively calling _removesInhomogeneousBackground2D():
         - addresses output
@@ -785,8 +732,10 @@ def _removesInhomogeneousBackground3D(image3D, boxSize=(64, 64), filter_size=(3,
             )
             output[z, :, :] = image2D - bkg.background
 
-    return output
-
+    if background:
+        return output, bkg.background
+    else:
+        return output
 # =============================================================================
 # IMAGE ALIGNMENT
 # =============================================================================
@@ -843,6 +792,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
     numPlanes = images[0].shape[0]
     blockSize = (numPlanes, blockSizeXY, blockSizeXY)
 
+    printLog("$ Breaking images into blocks")
     blocks = [view_as_blocks(x, block_shape=blockSize).squeeze() for x in images]
 
     block_ref = blocks[0]
@@ -851,6 +801,7 @@ def imageBlockAlignment3D(images, blockSizeXY=256, upsample_factor=100):
     # - loop thru blocks and calculates block shift in xyz:
     shiftMatrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
 
+    # printLog("$ Aligning {} blocks".format(len(block_ref.shape[0])))
     for i in trange(block_ref.shape[0]):
         for j in range(block_ref.shape[1]):
             # - cross correlate in 3D to find 3D shift
@@ -1173,8 +1124,9 @@ def focalPlane(data,threshold_fwhm=20, verbose=False):
     # finds focal plane
     rawImages=[data[i,:,:] for i in range(data.shape[0])]
     LaplacianVariance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in rawImages]
+    # LaplacianVariance = [0 if np.isnan(x) else x for x in LaplacianVariance] # removes any Nan that will trigger ValueError in spo.curve_fit
+    # LaplacianVariance = [0 if np.isinf(x) else x for x in LaplacianVariance] # removes any Inf that will trigger ValueError in spo.curve_fit
     LaplacianVariance  = LaplacianVariance/max(LaplacianVariance)
-
     xCoord = range(len(LaplacianVariance))
     fitResult, _= fit1DGaussian_scipy(xCoord,LaplacianVariance,title='laplacian variance z-profile',verbose=verbose)
 
@@ -1417,6 +1369,34 @@ def _removesZplanes(image3D, Zrange):
 
     return output
 
+def _averageZplanes(image3D, Zrange):
+    """
+    Removes z-planes by calculating the average between successive planes
+
+    Parameters
+    ----------
+    image3D : numpy array
+        input 3D image.
+    Zrange : range
+        range of planes for the output image.
+    mode : str, optional
+        'remove' will remove planes
+        'interpolate' will perform an interpolation
+        The default is 'remove'.
+
+    Returns
+    -------
+    output: numpy array
+
+    """
+
+    output = np.zeros((len(Zrange),image3D.shape[1],image3D.shape[2]))
+    for i,index in enumerate(Zrange):
+        av = (image3D[index, :, :].astype(np.float) + image3D[index+1, :, :].astype(np.float))/2
+        output[i,:,:] = av.astype(np.uint16)
+
+    return output
+
 def _interpolatesZplanes(image3D, Zrange):
     """
     Removes z planes by reinterpolation
@@ -1448,7 +1428,7 @@ def _interpolatesZplanes(image3D, Zrange):
 
     return output
 
-def reinterpolateZ(image3D, Zrange,mode='remove'):
+def reinterpolateZ(image3D, Zrange,mode='average'):
     """
     wrapper function for any kind of z-interpolation
     to reduce the number of planes in an image
@@ -1473,6 +1453,8 @@ def reinterpolateZ(image3D, Zrange,mode='remove'):
         output = _interpolatesZplanes(image3D, Zrange)
     elif 'remove' in mode:
         output = _removesZplanes(image3D, Zrange)
+    elif 'average' in mode:
+        output = _averageZplanes(image3D, Zrange)
 
     printLog("$ Reduced Z-planes from {} to {}".format(image3D.shape[0],output.shape[0]))
 
@@ -1699,6 +1681,95 @@ def _deblend3Dsegmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
+def _segments3DMasks(image3D,
+                    axis_norm=(0,1,2),
+                    pmin=1,
+                    pmax=99.8,
+                    model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+                    model_name='stardist_20210625_deconvolved'):
+
+    """
+    Parameters
+    ----------
+    image3D : numpy ndarray (N-dimensional array)
+        3D raw image to be segmented
+
+    model_dir : List of strings, optional
+        paths of all models directory, the default is ["/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"]
+
+    model_name : List of strings, optional
+        names of all models, the default is ['stardist_20210625_deconvolved']
+
+    """
+
+    np.random.seed(6)
+
+    numberPlanes = image3D.shape[0]
+
+    printLog("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    printLog("> Segmenting {} planes using 1 worker...".format(numberPlanes))
+    printLog("> Loading model {} from {}...".format(model_name,model_dir))
+    os.environ["CUDA_VISIBLE_DEVICES"]="1" # why do we need this?
+
+    # Load the model
+    # --------------
+
+    model = StarDist3D(None, name=model_name, basedir=model_dir)
+    limit_gpu_memory(None, allow_growth=True)
+
+    im = normalize(image3D, pmin=pmin, pmax=pmax, axis=axis_norm)
+    Lx = im.shape[1]
+
+    if Lx < 351: # what is this value? should it be a k-arg?
+        labels, details = model.predict_instances(im)
+
+    else:
+        resizer = PadAndCropResizer()
+        axes = 'ZYX'
+
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, polys = model.predict_instances(im, n_tiles=(1, 8, 8))
+        labels = resizer.after(labels, axes)
+
+    mask = np.array(labels > 0, dtype=int)
+    mask[mask > 0] = 1
+
+    return mask, labels
+
+
+def plotRawImagesAndLabels(image,label, normalize = False, window = 3):
+
+    """
+    Parameters
+    ----------
+    image : List of numpy ndarray (N-dimensional array)
+        3D raw image of format .tif
+
+    label : List of numpy ndarray (N-dimensional array)
+        3D labeled image of format .tif
+    """
+    from stardist import random_label_cmap
+    cmap= random_label_cmap()
+
+    moy = np.mean(image,axis=0)
+    lbl_moy = np.max(label,axis=0)
+
+    fig, axes = plt.subplots(1, 2)
+    fig.set_size_inches((50, 50))
+    ax = axes.ravel()
+    titles=['raw image','projected labeled image']
+
+    ax[0].imshow(moy, cmap="Greys_r", origin="lower")
+
+    ax[1].imshow(lbl_moy, cmap=cmap, origin="lower")
+
+    for axis,title in zip(ax,titles):
+        axis.set_xticks([])
+        axis.set_yticks([])
+        axis.set_title(title)
+
+    return fig
+
 ########################################################
 # SAVING ROUTINES
 ########################################################
@@ -1758,7 +1829,7 @@ def savesImageAsBlocks(img,fullFileName,blockSizeXY=256,label = 'rawImage'):
 def imageShowWithValuesSingle(ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"):
     Row = ["".format(x) for x in range(matrix.shape[0])]
     im, cbar = heatmap(matrix, Row, Row, ax=ax, cmap=cmap, cbarlabel=cbarlabel, fontsize=fontsize, cbar_kw=cbar_kw)
-    _ = annotate_heatmap(im, valfmt=valfmt, size=20, threshold=None, textcolors=("black", "white"), fontsize=fontsize)
+    _ = annotate_heatmap(im, valfmt=valfmt, size=fontsize, threshold=None, textcolors=("black", "white")) #, fontsize=fontsize
 
 
 def imageShowWithValues(matrices, outputName="tmp.png", cbarlabels=["focalPlane"], fontsize=6, verbose=False, title=""):
@@ -2124,6 +2195,5 @@ def annotate_heatmap(im, data=None, valfmt="{x:.1f}", textcolors=("black", "whit
             kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
-            # printLog(text)
 
     return texts

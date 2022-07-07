@@ -104,17 +104,23 @@ class folders:
         self.zProjectFolder = ""
         self.outputFolders = {}
         self.outputFiles = {}
+
         self.setsFolders()
 
     # returns list of directories with given extensions
     def setsFolders(self, extension="tif"):
 
+        self.listFolders = [self.masterFolder]
+        
+        '''
         # finds more folders inside the given folder
         hfolders = [
             folder
             for folder in glob.glob(self.masterFolder + os.sep + "*")
             if os.path.isdir(folder) and len(glob.glob(folder + os.sep + "*." + extension)) > 0
         ]
+
+        
         # os.path.name(folder)[0]!='F']
         if len(hfolders) > 0:
             self.listFolders = hfolders
@@ -125,7 +131,8 @@ class folders:
         if os.path.isdir(self.masterFolder) and len(glob.glob(self.masterFolder + os.sep + "*." + extension)) > 0:
             # self.listFolders=self.masterFolder
             self.listFolders.append(self.masterFolder)
-
+        '''
+        
     # creates folders for outputs
     def createsFolders(self, filesFolder, param):
         """
@@ -162,13 +169,15 @@ class folders:
                 self.outputFolders["segmentedObjects"] + os.sep + param.param["segmentedObjects"]["outputFile"]
             )
 
+        """
         if "projectsBarcodes" in param.param.keys():
             self.outputFolders["projectsBarcodes"] = filesFolder + os.sep + param.param["projectsBarcodes"]["folder"]
             self.createSingleFolder(self.outputFolders["projectsBarcodes"])
             self.outputFiles["projectsBarcodes"] = (
                 self.outputFolders["projectsBarcodes"] + os.sep + param.param["projectsBarcodes"]["outputFile"]
             )
-
+        """
+        
         # backwards compatibility
         if "buildsPWDmatrix" in param.param.keys():
             self.outputFolders["buildsPWDmatrix"] = filesFolder + os.sep + param.param["buildsPWDmatrix"]["folder"]
@@ -235,7 +244,11 @@ class Parameters:
                 "fiducialDAPI_channel": "ch01",
                 "RNA_channel": "ch02",
                 "fiducialBarcode_channel": "ch00",
+                "fiducialMask_channel": "ch00",
                 "barcode_channel": "ch01",
+                "mask_channel": "ch01",
+                "label_channel": "ch00", # in future this field will contain the ch for the label. This parameter will supersed the individual channel fields above.
+                "label_channel_fiducial": "ch01", # in future this field will contain the ch for the label fiducial. This parameter will supersed the individual channel fields above.
                 "pixelSizeXY": 0.1,
                 "zBinning":2,
                 "parallelizePlanes": False, # if True it will parallelize inner loops (plane by plane). Otherwise outer loops (e.g. file by file)
@@ -278,9 +291,14 @@ class Parameters:
             },
             "buildsPWDmatrix": {
                 "folder": "buildsPWDmatrix",  # output folder
+                "tracing_method": ["masking","clustering"], # available methods: masking, clustering
+                "mask_expansion": 8, # Expands masks until they collide by a max of 'mask_expansion' pixels
                 "flux_min": 10,  # min flux to keeep object
                 "flux_min_3D": 0.1,  # min flux to keeep object
+                "KDtree_distance_threshold_mum": 1, # distance threshold used to build KDtree
+     			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"}, # colormaps used for plotting matrices
                 "toleranceDrift": 1,  # tolerance used for block drift correction, in px
+                "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.       
             },
             "segmentedObjects": {
                 "folder": "segmentedObjects",  # output folder
@@ -288,9 +306,10 @@ class Parameters:
                 "outputFile": "segmentedObjects",
                 "Segment3D":"overwrite",
                 "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
-                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-                "tesselation": True,  # tesselates DAPI masks
+                "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+                "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 2D barcode segmentation
+                "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2", # network for 3D barcode segmentation
+                "tesselation": True,  # tesselates masks
                 "background_sigma": 3.0,  # used to remove inhom background
                 "threshold_over_std": 1.0,  # threshold used to detect sources
                 "fwhm": 3.0,  # source size in px
@@ -320,6 +339,7 @@ class Parameters:
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
+                "reducePlanes": True, # if true it will calculate focal plane and only use a region around it for segmentSources3D, otherwise will use the full stack
             },
             },
             "labels":{
@@ -331,6 +351,9 @@ class Parameters:
                     },
                 "DAPI":{
                     "order":3
+                    },
+                "mask":{
+                    "order":5
                     },
                 "RNA":{
                     "order":4
@@ -421,10 +444,12 @@ class Parameters:
 
         # defines channel for DAPI, fiducials and barcodes
         channelDAPI = self.setsChannel("DAPI_channel", "ch00")
-        channelbarcode = self.setsChannel("barcode_channel", "ch01")
-        channelfiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelBarcode = self.setsChannel("barcode_channel", "ch01")
+        channelMask = self.setsChannel("mask_channel", "ch01")
+        channelBarcodeFiducial = self.setsChannel("fiducialBarcode_channel", "ch00")
+        channelMaskFiducial = self.setsChannel("fiducialMask_channel", "ch00")
 
-        # finds if there is 2 or 3 channels for DAPI acquisition
+        # finds if there are 2 or 3 channels for DAPI acquisition
         fileList2Process = [
             file
             for file in filesFolder
@@ -435,10 +460,10 @@ class Parameters:
         # defines channels for RNA and DAPI-fiducial
         if len(fileList2Process) > 0:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch02")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch01")
+            channelDAPI_RNA = self.setsChannel("RNA_channel", "ch01")
         else:
             channelDAPI_fiducial = self.setsChannel("fiducialDAPI_channel", "ch01")
-            channelDAPI_RNA = self.setsChannel("fiducialDAPI_channel", "ch04")
+            channelDAPI_RNA = self.setsChannel("RNA_channel", "ch04")
 
         if channelDAPI_fiducial and len(fileList2Process) == 0:
             warn("\n\n****You are using ch02 for channelDAPI_fiducial but there are only 2 channels for DAPI!\n\n")
@@ -467,7 +492,16 @@ class Parameters:
                 file
                 for file in filesFolder
                 if len([i for i in file.split("_") if "RT" in i]) > 0
-                and self.decodesFileParts(path.basename(file))["channel"] == channelbarcode
+                and self.decodesFileParts(path.basename(file))["channel"] == channelBarcode
+            ]
+
+        # selects mask files
+        elif self.param["acquisition"]["label"] == "mask":
+            self.fileList2Process = [
+                file
+                for file in filesFolder
+                if len([i for i in file.split("_") if "mask" in i]) > 0
+                and self.decodesFileParts(path.basename(file))["channel"] == channelMask
             ]
 
         # selects fiducial files
@@ -477,7 +511,11 @@ class Parameters:
                 for file in filesFolder
                 if (
                     len([i for i in file.split("_") if "RT" in i]) > 0
-                    and self.decodesFileParts(path.basename(file))["channel"] == channelfiducial
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelBarcodeFiducial
+                )
+                or (
+                    len([i for i in file.split("_") if "mask" in i]) > 0
+                    and self.decodesFileParts(path.basename(file))["channel"] == channelMaskFiducial
                 )
                 or (
                     "DAPI" in file.split("_")
@@ -485,11 +523,18 @@ class Parameters:
                 )
             ]
 
+        else:
+            self.fileList2Process=[]
+
+        printLog(f"$ Files to process: {len(self.fileList2Process)}")
+        for i, file in enumerate(self.fileList2Process):
+            printLog("{}\t{}".format(i,os.path.basename(file)))
+
     def decodesFileParts(self, fileName):
         """
         decodes variables from an input file. typically, RE takes the form:
 
-        "DAPI_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
+        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\w|-]+).tif"
 
         thus, by running decodesFileParts(param,fileName) you will get back either an empty dict if the RE were not present
         in your infoList...json file or a dict as follows if it all worked out fine:
@@ -517,7 +562,6 @@ class Parameters:
             return fileParts
         else:
             return {}
-
 
 class daskCluster:
     def __init__(self, requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=2000):
@@ -649,7 +693,7 @@ def RT2fileName(param, referenceBarcode):
 
 def ROI2FiducialFileName(param, file, barcodeName):
     """
-    Produces list of fiducial files that need to be loaded from a specific DAPI/barcode image
+    Produces list of fiducial files that need to be loaded from a specific mask/barcode image
 
 
     Parameters

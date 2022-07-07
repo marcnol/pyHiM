@@ -17,8 +17,6 @@ from datetime import datetime
 # to remove in a future version
 import warnings
 warnings.filterwarnings("ignore")
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
 
 from fileProcessing.fileManagement import Parameters, printLog
 from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
@@ -31,6 +29,8 @@ if __name__ == "__main__":
     begin_time = datetime.now()
 
     runParameters=HiM_parseArguments()
+    runParameters['rootFolder'] = "/home/marcnol/data/Embryo_debug_dataset/test_dataset"
+    runParameters['cmd'] = ['alignImages3D']
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
@@ -75,10 +75,6 @@ if __name__ == "__main__":
         if "segmentMasks" in runParameters["cmd"]:
             HiM.segmentMasks(param, label)
 
-        # [segments masks in 3D]
-        if "segmentMasks3D" in runParameters["cmd"]:
-            HiM.segmentMasks3D(param, label)
-
         # [segments sources in 3D]
         if "segmentSources3D" in runParameters["cmd"]:
             HiM.segmentSources3D(param, label)
@@ -94,22 +90,6 @@ if __name__ == "__main__":
         # [local drift correction]
         if "localDriftCorrection" in runParameters["cmd"]:
             HiM.localDriftCorrection(param, label)
-
-        # [filters barcode localization table]
-        if "filter_localizations" in runParameters["cmd"]:
-            HiM.filter_localizations(param, label)
-
-        # [registers barcode localization table]
-        if "register_localizations" in runParameters["cmd"]:
-            HiM.register_localizations(param, label)
-
-        # [build traces]
-        if "build_traces" in runParameters["cmd"]:
-            HiM.build_traces(param, label)
-
-        # [builds matrices]
-        if "build_matrix" in runParameters["cmd"]:
-            HiM.build_matrix(param, label)
 
         # [builds PWD matrix for all folders with images]
         if "buildHiMmatrix" in runParameters["cmd"]:

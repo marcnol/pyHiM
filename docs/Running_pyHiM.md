@@ -577,22 +577,171 @@ optional arguments:
 
 
 
-#### 4. Segmenting sources
+
+
+#### 4. Segmentation of masks and sources
 
 **Overall options** for source segmentation
 
-- 4.1 Segmentation in 2D
-- 4.2 Estimation of z-position post 2D segmentation using z-profile
-- 4.3 Estimation of z-position post 2D segmentation using ASTROPY
-- 4.4 DIrect segmentation in 3D
+- 4.1 Segmentation of masks in 2D
 
-##### 4.2 Segmentation in 2D
+- 4.2 Segmentation of masks in 3D
+
+- 4.3 Segmentation of sources 2D
+
+- 4.4 Estimation of z-position post 2D segmentation using z-profile
+
+- 4.5 Estimation of z-position post 2D segmentation using ASTROPY
+
+- 4.6 Direct segmentation in 3D
+
+  
+
+##### 4.1 Segmentation of masks in 2D
 
 **Operation**
 
 **Invoke**
 
-This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```..
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. 
+
+If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
+
+```sh
+usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters
+                        !): makeProjections alignImages appliesRegistrations
+                        alignImages3D segmentMasks segmentMasks3D
+                        segmentSources3D refitBarcodes3D localDriftCorrection
+                        projectBarcodes buildHiMmatrix
+  --threads THREADS     Number of threads to run in parallel mode. If none,
+                        then it will run with one thread.
+```
+
+**Options**
+
+"segmentedObjects" relevant settings:
+
+```
+"folder": "segmentedObjects",  *Description:* output folder
+"operation": "overwrite",  *Options:* overwrite | skip
+"outputFile": "segmentedObjects",
+"operation": "2D,3D",
+"background_method": "inhomogeneous",  *Options:* **flat** |**inhomogeneous** | **stardist** (AI)
+"stardist_network": "stardist_nc14_nrays:64_epochs:20_grid:2", *Description*: name of network
+"stardist_basename": "/mnt/grey/DATA/users/marcnol/models", *Description*: location of AI models
+"background_sigma": 3.0,  *Description:* used to remove inhomogenous background
+"threshold_over_std": 1.0,  *Description:* threshold used to detect sources
+"area_min": 50,  *Description:* min area to keep object
+"area_max": 500,  *Description:* max area to keep object
+"residual_max": 2.5, *Description:*  maximum difference between axial spot intensity and gaussian fit.
+```
+
+
+
+**Output**
+
+A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01_segmentedMasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01_Masks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects. 
+
+The NPY file is a 2D labeled numpy array  containing the segmented objects with a size identical to the original image. Background has the value *0* and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
+
+*Warning*:  This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
+
+
+
+**AI networks** 
+
+See networks for DAPI 2D segmentation [here](./AI_networks.md).
+
+
+
+##### 4.2 Segmentation of masks in 3D
+
+**Operation**
+
+**Invoke**
+
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "3D"``` in section ```segmentedObjects``` of ```infoList.json```. 
+
+If you want to run this function exclusively, run *pyHiM* using the `-C segmentMasks3D` argument. This is currently not in the default list of commands of *pyHiM*.
+
+
+
+**Options**
+
+"segmentedObjects" relevant settings:
+
+```
+"operation": "2D,3D",
+"stardist_basename3D":"/mnt/grey/DATA/users/marcnol/models/StarDist3D/mask_DAPI/models/",
+"stardist_network3D":"stardist_20210625_deconvolved",
+```
+
+
+
+**Output**
+
+A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01.tif_3Dmasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01._3Dmasks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects. 
+
+The NPY file is a 3D labeled numpy array  containing the segmented objects. The file name is constructed using the original root filename with the tag `_3DMasks`.
+
+*Warning*:  This mode operates in 3D, therefore the Startdist network provided **must be** in 3D.
+
+
+
+**AI networks** 
+
+See networks for DAPI 3D segmentation [here](./AI_networks.md).
+
+
+
+**Postprocessing**
+
+`segmentMasks3D` will produce 3D Numpy labeled arrays that will not be used by `buildPWDmatrix` as this latter will load 2D projected masks.
+
+Thus, we need to take the output of `segmentMasks3D` and produce 2D Numpy labeled arrays with the appropriate names.
+
+This is accomplished by `process_segmentMasks3D.py`, a python script that you can find in `src/postProcessing`.
+
+The only input argument is the rootFolder.
+
+```sh
+usage: process_segmentMasks3D.py [-h] [-F ROOTFOLDER]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+```
+
+You can run this script in the root folder of an analysis and it should work fine (it assumes `./` to be the default folder).
+
+##### 4.3 Segmentation of sources in 2D
+
+**Operation**
+
+**Invoke**
+
+This function will be applied when you run *pyHiM* using the parameter ```"operation": "2D"``` in section ```segmentedObjects``` of ```infoList.json```. If you want to run both 2D and 3D in one go, use:  ```"operation": "2D,3D"```.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C segmentMasks``` argument.
 
@@ -675,6 +824,12 @@ d95b375c-5f4e-4adf-962e-66744e2b3110 1 0 31 1 nan 15.746314184707545 100.9821103
 
 
 
+**AI networks** 
+
+See networks for barcode 2D segmentation [here](./AI_networks.md).
+
+
+
 **Examples**
 
 An example of a segmentation of a nice barcode (color indicates flux, with red being high:2000 and blue low:0, *jet colormap*):
@@ -689,7 +844,7 @@ An example of a barcode where localization signals are far from optimal: note th
 
 
 
-##### 4.2 3D fits of barcode positions using zProfiling
+##### 4.4 3D fits of barcode positions using zProfiling
 
 **Operation**
 
@@ -734,7 +889,7 @@ optional arguments:
 
 
 
-##### 4.3 3D fits of barcode positions using ASTROPY
+##### 4.5 3D fits of barcode positions using ASTROPY
 
 **Operation**
 
@@ -802,7 +957,7 @@ Output examples:
 
 
 
-#### 4.4 Direct segmentation of sources in 3D
+#### 4.6 Direct segmentation of sources in 3D
 
 **Operation**
 
@@ -816,7 +971,7 @@ The function does the following:
    1. rescales exposures
    2. removes non-uniform background in 3D
    3. readjusts levels to top pixel intensities
-4. The pre-processed 3D volume is then used to segment masks in 2D for each plane using DAOfind()
+4. The pre-processed 3D volume is then used to segment sources in 2D for each plane using DAOfind()
 5. Deblends masks for each plane
 6. Merges 2D masks into 3D masks
 7. Re-labels and reblends 3D masks
@@ -933,6 +1088,14 @@ optional arguments:
 
 
 
+**AI networks** 
+
+See networks for barcode 3D segmentation [here](./AI_networks.md).
+
+
+
+**Examples**
+
 **Graphical outputs**
 
 Typical example of XY-XZ-YZ projections. Localizations: weighted centroids (green); 3D gaussian fits (red).
@@ -989,7 +1152,155 @@ zoom: zx
 
 
 
-#### 5. Align DAPI masks and barcodes
+#### 5. Building chromatin traces
+
+##### 5.1 Build traces: new method
+
+The new method requires executing several modules:
+
+- `filter_localizations`
+- `register_localizations`
+- `build_traces`
+- `build_matrices`
+
+
+
+###### 5.1.1 `filter_localizations`
+
+
+
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C filter_localizations``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. To avoid overwriting data, existing files will be renamed with the extension `_version_n` where `n`will be incremented from run to run. The output of `filter_localizations` will be saved with the original localizations filename. A comment in the header will be added to indicate that a *filtering* operation was run on this file.
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"flux_min": 10, # maximum flux allowed for 2D
+"flux_min_3D": 4000,# maximum flux allowed for 3D
+```
+
+
+
+**Output images**
+
+- `_filtered_barcode_localizations_ROI*.png`
+
+
+
+###### 5.1.2 `register_localizations`
+
+
+
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C register_localizations``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. To avoid overwriting data, existing files will be renamed with the extension `_version_n` where `n`will be incremented from run to run. The output of `register_localizations` will be saved with the original localizations filename. A comment in the header will be added to indicate that a *registration* operation was run on this file. `register_localizations` **will not be run on files that were previously registered.**
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"toleranceDrift": 1 # tolerance drift in pixels. Above this value localizations will not be locally registered
+```
+
+
+
+outputs images:
+
+- `_registered_barcode_stats.png`
+- `_registered_barcode_localizations_ROI*.png`
+
+| statistics of registration                                   | localization map                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| ![image-20220210221852444](Running_pyHiM.assets/image-20220210221852444.png) | ![image-20220210221942291](Running_pyHiM.assets/image-20220210221942291.png) |
+| ![image-20220210222028835](Running_pyHiM.assets/image-20220210222028835.png) | ![image-20220210222006297](Running_pyHiM.assets/image-20220210222006297.png) |
+
+
+
+###### 5.1.3 `build_traces`
+
+
+
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C build_traces``` argument. This function will find and process all the localization files in the `segmentedObjects` folder. The output of `register_localizations` will be saved in the `buildsPWDmatrix` folder with the name starting with `Trace_`. The reminder of the name will contain the kind of operation run (mask/KDtree) the identity of the mask (e.g. mask0, DAPI), and whether localizations used were from a *2D* or a *3D* analysis. 
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"tracing_method": ["masking","clustering"], # list of methods it will use
+"mask_expansion": 8,# number of pixels masks will be expanded to assign localizations
+"masks2process":{"nuclei":"DAPI","mask1":"mask0"}, # masks identities to process
+"KDtree_distance_threshold_mum": 1,# threshold distance used for KDtree clustering
+```
+
+
+
+Output images:
+
+- `_XYZ_ROI*.png`
+
+|  | full image | zoomed images |
+| --- |   ---- | --- |
+| 3D **mask** | ![image-20220210221402082](Running_pyHiM.assets/image-20220210221402082.png) |![image-20220210221430543](Running_pyHiM.assets/image-20220210221430543.png)|
+| 3D **mask** | ![image-20220210222233148](Running_pyHiM.assets/image-20220210222233148.png) |![image-20220210222354093](Running_pyHiM.assets/image-20220210222354093.png)|
+| 3D **KDtree** |  ||
+
+
+
+###### 5.1.4 `build_matrices`
+
+
+
+**Invoke**
+
+To run this function exclusively, run *pyHiM* using the ```-C build_matrix``` argument. This function will find and process all the `Trace_` files in the `buildsPWDmatrix` folder. The outputs of `build_matrix` will be saved in the `buildsPWDmatrix` folder. Output files will be created with the root filename of `Trace_`files. They will contain Numpy arrays with single cell PWD matrices  (`_PWDscMatrix.npy`) and N-matrices (`_Nmatrix.npy`), and an `.ecsv` list of barcode names (`_unique_barcodes.ecsv`).
+
+
+
+**Relevant options**
+
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+
+```
+"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},    
+```
+
+
+
+Output images:
+
+- `_PWDhistograms.png`
+- `_Nmatrix.png`
+- `HiMmatrix.png`
+- `_PWDmatrixMedian.png`
+- `_PWDmatrixKDE.png`
+
+*example uses fiducial mask*
+
+| method    | contact matrices                                             | **PWD matrix**                                               |
+| --------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| 2D - mask | ![image-20220212093032574](Running_pyHiM.assets/image-20220212093032574.png) | ![image-20220212093119700](Running_pyHiM.assets/image-20220212093119700.png) |
+| 3D - mask | ![image-20220212093245315](Running_pyHiM.assets/image-20220212093245315.png) | ![image-20220212093210913](Running_pyHiM.assets/image-20220212093210913.png) |
+| KDtree 3D | ![image-20220213120843091](Running_pyHiM.assets/image-20220213120843091.png) | ![image-20220213120807698](Running_pyHiM.assets/image-20220213120807698.png) |
+| Nmatrices | Masking![image-20220212093324905](Running_pyHiM.assets/image-20220212093324905.png) | KDTREE![image-20220213120921749](Running_pyHiM.assets/image-20220213120921749.png) |
+
+
+
+##### 5.2 build traces: old method
+
+The old module `buildPWDmatrix `  does all operations at once: filtering, local registration, tracing by masking, and construction of PWD matrix.
 
 **Operation**
 
@@ -1121,13 +1432,14 @@ This provides the localization statistics from ASTROPY. The main use of these pl
 
 ### 7. Process second channel (i.e RNA, segments, etc)
 
+#### 7.1 Create label masks
+
 ```pyHiM.py``` will project all TIFFS, and align them together using the fiducial. This will include the second channel of DAPI containing RNA intensities. Now, we need to mask these files so that we can tell which cell was expressing or not a specific RNA. For this, you will run ```processSNDchannel.py```
 
-Go to the ```destination_directory``` and run  ```processSNDchannel.py --addMask sna``` for manually segmenting all the ROIs in the destination_directory and label them with the ```sna``` tag. You can repeat this process as many times as you want using different tags. For instance, if you also want to label ```doc``` then you can run   ```processSNDchannel.py --addMask doc```. This second command will not overwrite what you did with the first command but rather accumulate different tags.
-
-After you run this command for all the tags you want to identify, you now need to assign these tags to the cells that were previously identified during the run of ```pyHiM.py```.
-
-For this, just run ```processSNDchannel.py``` on the command line.
+- Go to the ```destination_directory``` and run  ```processSNDchannel.py --addMask sna``` for manually segmenting all the ROIs in the destination_directory and label them with the ```sna``` tag. This will produce a numpy array in the `segmentedObjects` folder containing the mask.
+- You can repeat this process as many times as you want using different tags. For instance, if you also want to label ```doc``` then you can run   ```processSNDchannel.py --addMask doc```. This second command will not overwrite what you did with the first command but rather accumulate different tags.
+- After you run this command for all the tags you want to identify, you now need to assign these tags to the cells that were previously identified during the run of ```pyHiM.py```.
+- For this, just run ```processSNDchannel.py``` on the command line without any argument. This last execution will produce the `ecsv` table (see below) that you need to run `processHiMmatrix`.
 
 #### Folder
 
@@ -1168,7 +1480,34 @@ This file can then be loaded within ```replotHiMmatrix.py``` to identify which c
 
 
 
-### Analysis of several samples at once
+#### 7.2 Assign labels to chromatin trace tables
+
+Once you have processed your labels and created mask numpy arrays with the `SNDmask.npy` extension, you are ready to add the label to your chromatin trace tables. There is a specific column reserved specifically for this in each trace table (called `label`). 
+
+For this, you need to run `trace_selector`, a script that will iterate over each row of a trace table, and use the `xy` coordinates of each spot localization to define whether it belongs to each of the mask labels provided. Note: mask labels are not exclusive, therefore a single spot localization could belong to several masks.
+
+`$ trace_selector ` with no argument will search for trace tables in the `buildPWDmatrix` folder, and for `_SNDmask.npy` files in the `segmentedObjects` folder and attribute each labeled mask file to all the trace files in `buildPWDmatrix`. 
+
+
+
+`trace_selector`Arguments:
+
+```sh
+usage: trace_selector.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
+                         [--saveMatrix] [--ndims NDIMS] [--method METHOD]
+                         [--pixel_size PIXEL_SIZE]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  --pixel_size PIXEL_SIZE
+                        Lateral pixel size un microns. Default = 0.1
+```
+
+
+
+### 8.1 Analysis of several samples at once
 
 You can now use a new script to call several samples in one go:
 
@@ -1213,7 +1552,7 @@ to run Emrbyo_0, Embryo_1 and Embryo_33 from rootFolder
 
 
 
-### Parallel Computations
+### 8.2 Parallel Computations
 
 Several routines are now fitted with the possibility of performing parallel computations using the Dask package.
 
@@ -1237,7 +1576,7 @@ ssh -L 8789:localhost:8787 marcnol@lopevi
 
 
 
-### zipping and erasing run
+### 9. zipping and erasing run
 
 #### zip and retrieve results
 
@@ -1266,6 +1605,53 @@ Make sure that the first argument has quotation marks if you use wildcards!
 
 ## 2- Combining results from different experiments
 
+Two methods exist for combining results:
+
+- The first relies on the combination of single cell matrices stored as numpy arrays with dimensions nBarcodes x nBarcodes x nCells. See 2.1
+- The second method relies on the combination of traces. See 2.2
+
+To start an assembly the typical steps are:
+
+- create a new folder where data will be stored
+
+- put your `folders2Load.json` parameters file in the folder (see below)
+
+- run pipeline in this folder. Output will be contained in a dedicated directory within your folder.
+
+  
+
+Both methods (2.1 and 2.2) use a parameters file typically called `folders2Load.json`.
+
+Follow the example below as template:
+
+```bash
+{
+    "wt_Pc_Chr3R": {
+        "Folders": [
+            "/home/marcnol/data/Experiment_Julian/000_Embryo/buildsPWDmatrix"
+        ],
+        "PWD_clim": 1.4,
+        "PWD_mode": "median",
+        "PWD_cm": "terrain",
+        "iPWD_clim": 6,
+        "iPWD_mode": "median",
+        "iPWD_cm": "terrain",
+        "ContactProbability_scale": 12,
+        "ContactProbability_cmin": 0.0,
+        "ContactProbability_distanceThreshold": 0.35,
+	"ContactProbability_cm": "coolwarm",
+	"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
+	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
+    }
+}
+```
+
+Make sure you edit the name of the dataset (here ```wt_Pc_Chr3R```) and add a folder for each dataset you want to analyze.
+
+
+
+### 2.1 Combining results from buildHiMmatrix
+
 Once you run a bunch of datasets, you will want to combine the PWD matrices together. For this:
 
 1. Retrieve the matrices and barcodes files by scp:
@@ -1275,6 +1661,42 @@ scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_D
 
 scp rata@lopevi:/mnt/tronador/Sergio/RAMM_experiments/Experiment_3/deconvolved_DAPI/Embryo_000/buildsPWDmatrix/*npy /home/marcnol/data/Experiment_3/000_Embryo/buildsPWDmatrix/
 ```
+
+
+
+**Input arguments**
+
+```sh
+usage: processHiMmatrix.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+                           [-W ACTION] [--matlab] [--saveMatrix]
+                           [--getStructure] [--pixelSize PIXELSIZE]
+                           [--HiMnormalization HIMNORMALIZATION] [--d3]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --matlab              Use to load matlab formatted data
+  --saveMatrix          Use to load matlab formatted data
+  --getStructure        Use to save ShEc3D PDB structure
+  --pixelSize PIXELSIZE
+                        pixelSize in um
+  --HiMnormalization HIMNORMALIZATION
+                        Normalization of contact matrix: nonNANs (default) or
+                        nCells
+  --d3                  Use to load 3D maps
+```
+
+
+
+**Collecting data from several experiments**
 
 Now, you can run ```processHiMmatrix.py``` locally. You should setup your files in a directory. For instance the directory ```/mnt/disk2/marcnol/data/Experiment_19``` contains three folders:
 
@@ -1414,34 +1836,6 @@ Then, you need to have a file called ```buildsPWDmatrix_uniqueBarcodes.ecsv``` w
 92
 ```
 
-#### Create folders2Load.json file
-
-Now you create the parameters file. An example follows:
-
-```bash
-{
-    "wt_Pc_Chr3R": {
-        "Folders": [
-            "/home/marcnol/data/Experiment_Julian/000_Embryo/buildsPWDmatrix"
-        ],
-        "PWD_clim": 1.4,
-        "PWD_mode": "median",
-        "PWD_cm": "terrain",
-        "iPWD_clim": 6,
-        "iPWD_mode": "median",
-        "iPWD_cm": "terrain",
-        "ContactProbability_scale": 12,
-        "ContactProbability_cmin": 0.0,
-        "ContactProbability_distanceThreshold": 0.35,
-	"ContactProbability_cm": "coolwarm",
-	"BarcodeColormap": [4, 4, 4, 4, 8, 4, 3, 4, 4, 8, 3, 4, 4, 8, 4, 8, 3],
-	"3wayContacts_anchors": [7, 11, 17, 5, 10, 14]
-    }
-}
-```
-
-Make sure you edit the name of the dataset (here ```wt_Pc_Chr3R```) and add a folder for each dataset you want to analyze.
-
 #### Run processHiMmatrix.py
 
 You can now run the script. For instance, do
@@ -1453,6 +1847,63 @@ processHiMmatrix.py  --matlab
 to run with default options. The important thing is to add the ```--matlab``` flag.
 
 You should be now set.
+
+
+
+### 2.2 Combining traces
+
+This method is much simpler, as it just relies on the combination of chromatin traces from different experiments or ROIs into a single chromatin trace file.
+
+To run:
+
+- create *output folder* copy your `folders2Load.json` file.
+- within this *output folder*, run `trace_combinator`. 
+- The output `ecsv` format trace file will be stored in `buildsPWDmatrix` folder within your *output folder*.
+- Copy your `infoList.json` within the *output folder*.
+- Run `pyHiM.py -C build_matrix` in the *output folder* to produce the matrices from your new chromatin trace file. 
+
+
+
+`trace_combinator` lives in the `src/postProcessing` folder within `pyHiM`.
+
+
+
+Parameters of `trace_combinator`
+
+```sh
+usage: trace_combinator [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+                        [-W ACTION] [--saveMatrix] [--ndims NDIMS]
+                        [--method METHOD]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -F ROOTFOLDER, --rootFolder ROOTFOLDER
+                        Folder with images
+  -P PARAMETERS, --parameters PARAMETERS
+                        Provide name of parameter files. folders2Load.json
+                        assumed as default
+  -A LABEL, --label LABEL
+                        Add name of label (e.g. doc)
+  -W ACTION, --action ACTION
+                        Select: [all], [labeled] or [unlabeled] cells plotted
+  --saveMatrix          Use to load matlab formatted data
+  --ndims NDIMS         Dimensions of trace
+  --method METHOD       Method or mask ID used for tracing: KDtree, mask,
+                        mask0
+
+```
+
+
+
+Without arguments, `trace_combinator` will run using defaults values (ndims = 3, method = 'mask'). Somme comments:
+
+- `ndims` defines whether 2D or 3D was used for segmentation of localizations.
+
+- `method` is a string that is to decode the method used for tracing or the mask identity. For instance, if you use `--method KDtree` it will search for `KDtree`in the trace filename. Using `mask` will combine all the trace files processed using masking. Using `mask0 `will process all traces that were processed with `mask0`.
+
+- The output chromatin trace table is saved in the `buildsPWDmatrix` folder for compatibility with the `build_matrix` module. The trace table will have the number of traces combined in the `comments` field of the header.
+
+  
 
 ## 3- Plotting publication-quality figures
 

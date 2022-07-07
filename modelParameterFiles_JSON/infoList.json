@@ -2,10 +2,14 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch02",
+            "RNA_channel": "ch01",
             "barcode_channel": "ch01",
+            "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
+            "fiducialMask_channel": "ch00",
             "fiducialDAPI_channel": "ch01",
+            "label_channel": "ch00",
+            "label_channel_fiducial": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
             "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
@@ -19,21 +23,27 @@
             "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
-            "lower_threshold": 0.999,
             "higher_threshold": 0.9999999,
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
             "localShiftTolerance": 1,
+            "lower_threshold": 0.999,
             "operation": "overwrite",
             "outputFile": "alignImages",
-            "referenceFiducial": "RT27",
+            "referenceFiducial": "RT1",
             "tolerance": 0.1
         },
         "buildsPWDmatrix": {
+            "tracing_method": ["masking","clustering"],
+            "mask_expansion": 8,            
             "flux_min": 10,
-            "flux_min_3D": 0.1,
+            "flux_min_3D": 4000,
+            "KDtree_distance_threshold_mum": 1,            
             "folder": "buildsPWDmatrix",
+            "masks2process":{"nuclei":"DAPI","mask1":"mask0"},
+			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},            	
+            "remove_uncorrected_localizations": true,
             "toleranceDrift": 1
         },
         "projectsBarcodes": {
@@ -45,6 +55,7 @@
             "Segment3D": "overwrite",
 	        "operation": "2D",
             "background_sigma": 3.0,
+			"stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "brightest": 1100,
             "centroidDifference_max": 5,
             "folder": "segmentedObjects",
@@ -55,6 +66,7 @@
             "residual_max": 2.5,
             "sigma_max": 5,
             "tesselation": true,
+            "reducePlanes": true,            
             "threshold_over_std": 1.0
         },
         "zProject": {
@@ -74,14 +86,18 @@
     "labels": {
         "DAPI": {
             "order": 3, 
+		    "acquisition": {
+		        "label_channel": "ch00",
+		        "label_channel_fiducial": "ch01"            
+		    },            
 		    "segmentedObjects": {
 		        "area_max": 3000,
 		        "area_min": 150,
 		        "background_method": "inhomogeneous",
 		        "centroidDifference_max": 5,
 		        "operation": "2D,3D",
-		        "stardist_basename": "/mnt/grey/DATA/users/marcnol/models",
-		        "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_network": "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2",
+		        "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
 	    },
@@ -94,10 +110,20 @@
         }
         },
         "RNA": {
-            "order": 4
+            "order": 4,
+            "acquisition": {
+                "label" : "RNA"
+            },
+            "segmentedObjects": {
+                "operation": "overwrite"
+            }
         },
         "barcode": {
             "order": 2,
+		    "acquisition": {
+		        "label_channel": "ch01",
+		        "label_channel_fiducial": "ch00"
+		    },            
 		    "segmentedObjects": {
 		        "area_max": 500,
 		        "area_min": 50,
@@ -123,8 +149,8 @@
                 "3D_psf_yx":200,
                 "3D_lower_threshold":0.99,
                 "3D_higher_threshold":0.9999,
-		        "stardist_basename": "/home/marcnol/data/AImodels/StarDist/barcodes",
-		        "stardist_network": "stardist_18032021_single_loci"
+		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
+		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
 		    },
             "zProject": {
 		        "mode": "full",
@@ -136,6 +162,31 @@
         },
         "fiducial": {
             "order": 1
+        },
+        "mask": {
+            "order": 5,
+		    "acquisition": {
+		        "label_channel": "ch01",
+		        "label_channel_fiducial": "ch00"            
+		    },            
+		    "segmentedObjects": {
+		        "area_max": 3000,
+		        "area_min": 150,
+		        "background_method": "inhomogeneous",
+		        "centroidDifference_max": 5,
+		        "operation": "2D,3D",
+		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
+		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01",
+		        "tesselation": true,
+		        "threshold_over_std": 1.0
+		    },
+            "zProject": {
+		        "mode": "full",
+		        "zProjectOption": "sum",
+		        "zmax": 59,
+		        "zmin": 1,
+		        "zwindows": 15
+        }
         }
     }
 }
