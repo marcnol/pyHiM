@@ -1,11 +1,11 @@
-# WIP - Secondary scripts
+# General-use scripts
 
 
-## fileProcessing Scripts
+## File Processing, handling HPC runs, etc
 
 ### changeRT_infoList.py
 
-This script is used to modify the reference fiducial signal to be used for shift correction in all parameters files (.json files)
+This script is used to modify the reference fiducial signal to be used for shift correction in the parameter file
 
 ```
 usage: cahngeRT_infolist.py old_RT new_RT
@@ -16,7 +16,7 @@ changeRT_infolist.py RT33 RT1
 
 ### cleanHiM_run.py
 
-Cleans the directories created by pyHiM in the analysis folder. 
+Cleans the directories and log files created by pyHiM from a previous run. 
 
 ```
 Usage: cleanHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-A ALL]
@@ -31,7 +31,7 @@ optional arguments:
 ```
 ### lndir.py
 
-Creates links for files in a directory into a second directory.
+Creates links for files in a directory into a second directory. Useful to analyze data in a new folder without copying the raw data files.
 
 ```
 Usage: lndir.py "/home/marcnol/Repositories/pyHiM/\*py" ~/Downloads/test
@@ -41,7 +41,7 @@ Use quotation marks in the first argument if using wildcards.
 
 ### zipHiM_run.py
 
-Zip all output files from a pyHiM run. It excludes .npy and .tif files. 
+Zip all output files from a pyHiM run. It excludes .npy and .tif files. Useful to retrieve results from a run from an HPC cluster.
 
 ```
 Usage: zipHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-R RECURSIVE]
@@ -57,7 +57,7 @@ optional arguments:
 
 ### unzipHiM_run.py
 
-Unzips HiM_run.tar.gz recursively
+Unzips HiM_run.tar.gz recursively. Useful to unzip the results from several folders retrieved from a run in an HPC cluster.
 
 ```
 Usage: unzipHiM_run.py [-F ROOTFOLDER] [-R RECURSIVE]
@@ -71,236 +71,14 @@ optional arguments:
 
 ### runHiM_cluster.py
 
-Launches pyHiM on a cluster using slurm srun job. 
+Launches pyHiM on a cluster using slurm `srun`. 
 
 ```
 Usage: runHiM_cluster.py
 ```
 
+## Plotting scripts
 
-### fileManagement.py --> ?? We dont use it directly.
-Contains classes and functions for file management.
-
-### functionCaller.py --> ?? We dont use it directly
-Contains classes, methods and functions that call the functions that perform different steps in the pyHiM pipeline (for example, segmentSources3D).
-
-## plots
-### figure3wayInteractions.py
-
-Plots 3-way contact probability matrices for a given anchor (or set of anchors), defined in folders2Load.json file. This can be done for two datasets simultaneously. 
-The calculation of 3-way contact probability matrices needs to be previously done using processHiMmatrix.py script. 
-
-```
-Usage: figure3wayInteractions.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
-								 [-O OUTPUTFOLDER] [-P PARAMETERS]
-								 [-P2 PARAMETERS2] [-A1 LABEL1] [-A2 LABEL2]
-								 [-W1 ACTION1] [-W2 ACTION2] [--fontsize]
-								 [--scalingParameter] [--colorbar] 
-								 [--plottingFileExtension] [--normalize]
-	
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -P2 PARAMETERS2, --parameters2 PARAMETERS2
-		 Name of parameters file for dataset 2. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --scalingParameter
-		 Scaling parameter of the colormap
-	 --colorbar
-		 Use if a colorbar is required
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg. 
-		 Other options: pdf, png
-	 --normalize
-		 Normalizes matrices by their maximum.
-
-```
-
-
-### figure4Mmatrix.py
-Creates 4M profiles of interaction freaquency for a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
-
-```
-Usage: figure4Mmatrix.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
-						 [-P PARAMETERS] [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
-						 [-W2 ACTION2] [--fontsize] [--axisLabel] [--axisTicks]
-						 [--splines] [--cAxis] [--plottingFileExtension]
-						 [--legend] [--normalize]
- 
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --splines 
-		 Plots data using spline interpolations
-	 --cAxis
-		 Absolute axis value for colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg. 
-		 Other options: pdf, png
-	 --legend
-		 Shows legends for datasets in plot
-	 --normalize
-		 Matrix normalization factor: maximum, none, single value. Default: none
-```
-
-### figureCompare2Matrices_fig3a.py
-Plots either the ration between two HiM matrices, or the difference. It also plots both matrices together, with one in the upper triangular part, and the other in the lower triangular part. 
-
-```
-Usage: figureCompare2Matrices_fig3a.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
-									   [-O OUTPUTFOLDER] [-P PARAMETERS]
-									   [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
-									   [-W2 ACTION2] [--fontsize] [--axisLabel] 
-									   [--axisTicks] [--ratio] [--cAxis] 
-									   [--plottingFileExtension] [--shuffle1]
-									   [--shuffle2] [--cMinMax]
- 
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --ratio 
-		 Performs the ratio between matrices. Defaukt: difference
-	 --cAxis
-		 Absolute axis value for colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg. 
-		 Other options: pdf, png
-	 --shuffle1
-		 Provide shuffle vector of the same size or smaller than the original
-		 matrix for dataset 1. The vector should be formatted as: 0,1,2,... 
-		 with no spaces, and comma-separated
-	 --shuffle2
-		 Provide shuffle vector of the same size or smaller than the original
-		 matrix for dataset 2. The vector should be formatted as: 0,1,2,... 
-		 with no spaces, and comma-separated
-	 --cMinMax
-		 Define min and max value for the colormap. It should be 
-		 comma-separated and with no spaces. For example: 0,0.5
-```
-
-### figureCompare2Matrices_figS1n_v3.py
-Plots a comparison matrix between nuclei displaying at least one RNA-FISH signal, and a subset of 33% nuclei displaying the brightest RNA-FISH signals.
-
-```
-Usage: figureCompare2Matrices_figS1n_v3.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
-										   [-O OUTPUTFOLDER] 
- 
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 
-```
-
-### figureCompare2Matrices.py
-Plots either the ration between two HiM matrices, or the difference. It also plots both matrices together, with one in the upper triangular part, and the other in the lower triangular part.
-
-```
-Usage: figureCompare2Matrices.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
-								 [-O OUTPUTFOLDER] [-P PARAMETERS]
-							     [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
-							     [-W2 ACTION2] [--fontsize] [--axisLabel] 
-							     [--axisTicks] [--ratio] [--cAxis] 
-							     [--plottingFileExtension] [--normalize]
-							     [--inputMatrix] [--pixelSize]
- 
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --ratio 
-		 Performs the ratio between matrices. Defaukt: difference
-	 --cAxis
-		 Absolute axis value for colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg. 
-		 Other options: pdf, png		
-	 --normalize
-		 Matrix normalization factor: maximum, none, single value, 
-		 bin pair. Default: none
-	 --inputMatrix
-		 Source of input matrix: contact (default), PWD matrix, 
-		 iPWD matrix
-	 --pixelSize
-		 Pixel size in microns. Default: 0.1 microns
-		 
-```
 
 ### figureHiMmatrix.py
 
@@ -356,8 +134,153 @@ Usage figureHiMmatrix.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 ```
 
 
+### figure4Mmatrix.py
+Creates proximity frequency 4M profiles from a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
+
+```
+Usage: figure4Mmatrix.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
+						 [-P PARAMETERS] [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
+						 [-W2 ACTION2] [--fontsize] [--axisLabel] [--axisTicks]
+						 [--splines] [--cAxis] [--plottingFileExtension]
+						 [--legend] [--normalize]
+ 
+
+	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+		 Folder with dataset 1
+	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+		 Folder with dataset 2
+	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+		 Folder for outputs
+	 -P PARAMETERS, --parameters PARAMETERS
+		 Name of parameters file. Default: folders2Load.json
+	 -A1 LABEL1, --label1 LABEL1
+		 Name of label for dataset 1
+	 -A2 LABEL2, --label2 LABEL2
+		 Name of label for dataset 2
+	 -W1 ACTION1, --action1 ACTION1
+		 Selects: all, labeled or unlabeled for dataset 1
+	 -W2 ACTION2, --action2 ACTION2
+		 Selects: all, labeled or unlabeled for dataset 2
+	 --fontsize
+		 Size of fonts to be used in plots
+	 --axisLabel
+		 Select optional label in x and y axis
+	 --axisTicks
+		 Display axis ticks
+	 --splines 
+		 Plots data using spline interpolations
+	 --cAxis
+		 Absolute axis value for colormap
+	 --plottingFileExtension
+		 Select file extension to save images. Default: svg. 
+		 Other options: pdf, png
+	 --legend
+		 Shows legends for datasets in plot
+	 --normalize
+		 Matrix normalization factor: maximum, none, single value. Default: none
+```
+
+### figureCompare2Matrices.py
+Comparison of proximity matrices. Plots either the ratio between two HiM matrices, or the difference. It also plots both matrices together, with one in the upper triangle, and the other in the lower triangle.
+
+```
+Usage: figureCompare2Matrices.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
+								 [-O OUTPUTFOLDER] [-P PARAMETERS]
+							     [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
+							     [-W2 ACTION2] [--fontsize] [--axisLabel] 
+							     [--axisTicks] [--ratio] [--cAxis] 
+							     [--plottingFileExtension] [--normalize]
+							     [--inputMatrix] [--pixelSize]
+ 
+
+	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+		 Folder with dataset 1
+	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+		 Folder with dataset 2
+	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+		 Folder for outputs
+	 -P PARAMETERS, --parameters PARAMETERS
+		 Name of parameters file. Default: folders2Load.json
+	 -A1 LABEL1, --label1 LABEL1
+		 Name of label for dataset 1
+	 -A2 LABEL2, --label2 LABEL2
+		 Name of label for dataset 2
+	 -W1 ACTION1, --action1 ACTION1
+		 Selects: all, labeled or unlabeled for dataset 1
+	 -W2 ACTION2, --action2 ACTION2
+		 Selects: all, labeled or unlabeled for dataset 2
+	 --fontsize
+		 Size of fonts to be used in plots
+	 --axisLabel
+		 Select optional label in x and y axis
+	 --axisTicks
+		 Display axis ticks
+	 --ratio 
+		 Performs the ratio between matrices. Defaukt: difference
+	 --cAxis
+		 Absolute axis value for colormap
+	 --plottingFileExtension
+		 Select file extension to save images. Default: svg. 
+		 Other options: pdf, png		
+	 --normalize
+		 Matrix normalization factor: maximum, none, single value, 
+		 bin pair. Default: none
+	 --inputMatrix
+		 Source of input matrix: contact (default), PWD matrix, 
+		 iPWD matrix
+	 --pixelSize
+		 Pixel size in microns. Default: 0.1 microns
+		 
+```
+
+### figure3wayInteractions.py
+
+Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `processHiMmatrix.py` script. 
+
+```
+Usage: figure3wayInteractions.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
+								 [-O OUTPUTFOLDER] [-P PARAMETERS]
+								 [-P2 PARAMETERS2] [-A1 LABEL1] [-A2 LABEL2]
+								 [-W1 ACTION1] [-W2 ACTION2] [--fontsize]
+								 [--scalingParameter] [--colorbar] 
+								 [--plottingFileExtension] [--normalize]
+	
+	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
+		 Folder with dataset 1
+	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
+		 Folder with dataset 2
+	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
+		 Folder for outputs
+	 -P PARAMETERS, --parameters PARAMETERS
+		 Name of parameters file. Default: folders2Load.json
+	 -P2 PARAMETERS2, --parameters2 PARAMETERS2
+		 Name of parameters file for dataset 2. Default: folders2Load.json
+	 -A1 LABEL1, --label1 LABEL1
+		 Name of label for dataset 1
+	 -A2 LABEL2, --label2 LABEL2
+		 Name of label for dataset 2
+	 -W1 ACTION1, --action1 ACTION1
+		 Selects: all, labeled or unlabeled for dataset 1
+	 -W2 ACTION2, --action2 ACTION2
+		 Selects: all, labeled or unlabeled for dataset 2
+	 --fontsize
+		 Size of fonts to be used in plots
+	 --scalingParameter
+		 Scaling parameter of the colormap
+	 --colorbar
+		 Use if a colorbar is required
+	 --plottingFileExtension
+		 Select file extension to save images. Default: svg. 
+		 Other options: pdf, png
+	 --normalize
+		 Normalizes matrices by their maximum.
+
+```
+
+
+
 ### figureN_HiMmatrices.py
-Plots N HiM matrices in the same plot, using N datasets specified in folders2Load.json.
+Plots several (`N`) HiM matrices in the same plot, using `N` datasets specified in folders2Load.json.
 
 It also plots a submatrix containing the difference of contact probability for a subset of barcodes with respect to a particular dataset. The subset of barcodes and the reference dataset are defined in folders2Load.json by the options "barcodes2plot" and "plotSegment_anchor" respectively. 
 
@@ -409,15 +332,13 @@ Usage figureN_HiMmatrices.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 		 Normalize matrices by maximum. Default: True
 ```
 
-### figurePlotImageProfile.py ???
-Plots a line profile from an image in npy format. Loads a maximum intensity projection of a barcode image (2D image). 
+### figureSingleCell.py
+This scripts: 
+- produces movies and trajectories from single cell PWD matrices. 
+- calculates barcode detection efficiencies and number of barcodes per cell.
+- plots single cell matrices.
+- plots distance histograms and distributions of Rg.
 
-```
-Usage: figurePlotImageProfile.py
-```
-
-### figureSingleCell.py ??
-Produces movies and structures from single cell PWD matrices. 
 
 ```
 Usage: figureSingleCell.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
@@ -473,20 +394,20 @@ Usage: figureSingleCell.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 		Default: 8
 ```
 
-## postProcessing
+## Matrix post-processing scripts
 
 ### processHiMmatrix.py
 
 This script performs the post-processing of one or more previously pyHiM-analysed datasets, defined in folders2Load.json file. 
 
 It performs the following operations:
-
-* Calculates and plots ensemble pairwise distance (PWD) matrix.
-* Calculates and plots the inverse of the PWD matrix. 
-* Calculates and plots the contact probability matrix for each dataset.
-* Calculates and plots the ensemble contact probability matrix.
-* Calcualtes and plots the ensemble 3-way contact probability matrix, for the set of anchors defined in folders2Load.json file. 
-* Optional: Read MATLAB single-cell PWD matrices, and perform all previous operations.
+- Merges datasets from different experiments.
+- Calculates and plots ensemble pairwise distance (PWD) matrix.
+- Calculates and plots the inverse of the PWD matrix. 
+- Calculates and plots the contact probability matrix for each dataset.
+- Calculates and plots the ensemble contact probability matrix.
+- Calcualtes and plots the ensemble 3-way contact probability matrix, for the set of anchors defined in folders2Load.json file. 
+- Optional: Read MATLAB single-cell PWD matrices, and perform all previous operations.
 
 ```
 Usage: processHiMmatrix.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
@@ -518,24 +439,12 @@ Optional arguments:
 			Loads data segmented in 3D. Default: False
 ```
 
-### processingMultipleDatasets.py ??
-
-Script to process several datasets at once. 
-
-```
-Usage: processingMultipleDatasets.py rootfolder datasetID 
-
-	rootfolder 
-		Directory containing the files to analyse. 
-	datasetID 
-		Number of the datasets to be analysed, e.g. 1 2 3 will analyse dataset_1 
-		and dataset_2
-```
-
-
 ### processSNDchannel.py
 
-Process secondary masks for RNA label
+This script will:
+- allow the user to manually draw ROI based on secondary labels, such as RNA-FISH images.
+- use the ROIs defined by the user to attribute labels to traces.
+
 
 ```
 Usage: processSNDchannel.py [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
@@ -550,14 +459,15 @@ Usage: processSNDchannel.py [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 
 ### process_segmentMasks3D.py
 
-Projects the 3D labeled numpy arrays produced by segmentMasks3D, and replaces those produced by segmentMasks
+Script used to 2D-project the 3D-labeled numpy array images generated by segmentMasks3D. By running this script, you will replace the output files produced by segmentMasks (2D labeled masks).
 
 ```
 Usage: process_segmentMasks3D.py
 ```
 
 ### trace_combinator.py
-This script takes the JSON file with folders where datasets are stored. It searches for Trace files calculated with the expected methods, loads them, and combines them into a single table that is outputed to buildPWDmatrix folder. 
+This script combines trace tables from different experiments/ROIs together into a single trace table.
+The folders containing the trace tables of the experiments to be combined are provided in as a JSON file. The possibility to selecting only a subset of trace tables within the folders provided is allowed using the `methods` parameter. Merged trace table is outputed to the buildPWDmatrix folder. 
 
 Outputs: ChromatinTraceTable() object, and output .ecsv formatted file with assembled trace tables.
 
@@ -583,7 +493,7 @@ Usage: trace_combinator.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION
 
 ### trace_selector.py
 
-This scipt loads a trace file and a number of numpy masks, and assings them labels.
+This scipt loads a trace file and a number of numpy masks, and assings them the labels produced by `processSNDchannel.py`.
 
 ```
 Usage: trace_selector.py [-F ROOTFOLDER] [--pixel_size]
@@ -594,5 +504,4 @@ Usage: trace_selector.py [-F ROOTFOLDER] [--pixel_size]
 		Lateral pixel size in microns. Default = 0.1
 ```
 
-## IA???
-- trainStarDist.pye''' 
+

@@ -3,24 +3,24 @@
 ## Source code
 
 Code and issues are hosted on GitHub in [marcnol/pyHiM repository](https://github.com/marcnol/pyHiM).
-To know how work on source code, see [development process page](./dev_process.md).
+If you want to contribute with code, checkout: [development process page](./dev_process.md).
 
 ## Dependencies
 
-To work on pyHiM, you need also work on [apiFISH](https://github.com/apiFISH/apiFISH). It's the reference library of functions used by pyHiM. See also [how work with apiFISH](./work_with_apifish.md).
+pyHiM relies on [apiFISH](https://github.com/apiFISH/apiFISH) for the 3D localization of barcodes. In future, more `pyHiM` common functions will be progressively moved to apiFISH to provide a commnon API for FISH-based analysis. If you develop pyHiM, you will need to install apiFISH using the following guide: [how work with apiFISH](./work_with_apifish.md).
 
 Main pyHiM dependencies:
 - [Astropy](https://www.astropy.org/)
 - [scikit-image](https://scikit-image.org/)
 - [starDist](https://github.com/stardist/stardist)
 
-To build documentation:
+Dependencies needed to locally build the `readthedocs` documentation website:
 - [Sphinx](https://www.sphinx-doc.org/en/master/)
 - [Read the Docs](https://readthedocs.org/)
 
 ## Development editor
 
-The development editor choice is up to you, we list here two examples suitable for development in Python:
+The development editor choice is up to you, we list here two editors suitable for pyHiM development in Python:
 - [Spyder](https://www.spyder-ide.org/) is popular in scientist community
 - [VSCode](https://code.visualstudio.com/) is popular in developer community
 

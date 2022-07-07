@@ -1,11 +1,12 @@
 # How to document
 
 ## Philosophy
+Our documentation is structured as follows:
 
-1. Getting started: Step by step from installation to first runtime
-2. User guide: Explain what pyHiM can do and how to do it step by step
-3. Reference guide: Technical description of software, include API documentation and architecture
-4. Contributor's guide: Place for project conventions and development tips
+1. Getting started: Step by step guide from installation to running an example.
+2. User guide: Detailed explanation of what pyHiM can do and how to do it step-by-step.
+3. Reference guide: Technical description of software, including API documentation and architecture.
+4. Contributor's guide: Description of project conventions and development tips.
 
 | Designed for  | Learn        | Work      |
 | ------------- | ------------ | --------- |
@@ -14,23 +15,23 @@
 
 ## Build documentation
 
-To build pyHiM documentation, we use [Sphinx](https://www.sphinx-doc.org/en/master/) to generate HTML pages. These pages are hosted on [Read the Docs](https://readthedocs.org/) to be available online for everyone.
+To build pyHiM documentation locally, we use [Sphinx](https://www.sphinx-doc.org/en/master/) which generates static, local HTML pages (see *Sphinx* section below). The documentation is automatically rebuilt by `readthedocs` using the github pyHiM source documentation files. This build of the documentation is hosted at [Read the Docs](https://readthedocs.org/) and available online.
 
-Inside pyHiM directory, there are two kind of documentation :
-- Pure text files (preferably written in [markdown](https://www.markdownguide.org/basic-syntax/))
-- [Docstring](https://www.python.org/dev/peps/pep-0257/) inside source code (with NumPy style)
+The documentation is placed in the `/docs` directory. Two kinds of documentations are provided by the developer:
+- Pure text files (preferably written in [markdown](https://www.markdownguide.org/basic-syntax/)).
+- [Docstring](https://www.python.org/dev/peps/pep-0257/) within the source code (using NumPy style). See section below for more information.
 
 ### Sphinx
 
-*Sphinx is a documentation generator. It is a tool to translate comment texts in source files into HTML. The default format is the [reStructuredText (reST)](https://docutils.sourceforge.io/rst.html).*
+*Sphinx* is a documentation generator. It's goal is to translate source documentation files into HTML static webpages. The default format for the documentation files is [reStructuredText (reST)](https://docutils.sourceforge.io/rst.html), however, *markdown* can also be used (see section below).
 
-We use it with these main extensions :
+We use *Sphinx* with these main extensions :
 - [autodoc](https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html) to automatically include documentation from docstring
 - [napoleon](https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html) to support NumPy style docstring
 - [MyST](https://myst-parser.readthedocs.io/en/latest/sphinx/intro.html) to support Markdown-based documentation
 
 
-#### How use reST directive in markdown file with MyST
+#### How use reST directives in markdown with MyST
 
 - **ReST:**
 
@@ -58,10 +59,6 @@ param_file
 personalise_run
 ```
 ````
-
-### Read the Docs
-
-[Read the Docs for pyHiM](https://pyhim.readthedocs.io) is hooked with GitHub pyHiM repository. So, when you update something on GitHub, Read the Docs will automatically build your new documentation for you.
 
 ## Document features
 

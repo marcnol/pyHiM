@@ -1,7 +1,4 @@
-# WIP - pyHiM fundamentals
-
-**TODO**
-- Reorganise file
+# pyHiM fundamentals
 
 ## Pipeline overview
 ### Default pyHiM flow
@@ -52,7 +49,16 @@ Here is a table summarizing the type of input and output data for each routine:
 |**segmentSources3D**|3D_raw.tif + alignImages.ecsv|3D_segmented_barcode.ecsv|
 |**buildHiMmatrix**|segmented_barcode.ecsv + segmented_mask.npy + alignImages_block3D.ecsv + 3D_segmented_barcode.ecsv|PWDMatrix.ecsv + 3D_PWDMatrix.ecsv|
 
-### Flowchart of labels
+### Processing flowchart for different data sources
+
+Different data sources exist and need to processed differently by pyHiM:
+- fiducials
+- DNA-FISH barcodes
+- masks (e.g. DAPI, cell, genomic region)
+- RNA-FISH images
+
+Each data source is handled by a different workflow in pyHiM. In each workflow, you will see different symbols for `features`, `input data` and `I/O data`, as follows:
+
 ```{mermaid}
 flowchart TD
 	subgraph graph legend
@@ -62,7 +68,8 @@ flowchart TD
 	end 
 ```
 
-#### Fiducial flow
+#### fiducial flow
+This scheme shows the steps involved in the analysis of fiducial images.
 
 ```{mermaid}
 flowchart
@@ -93,14 +100,12 @@ flowchart
 	zProj0bis --> routine4
 	align1 -.-> routine4
 	routine4 --> align2
-	
-	
-	
-
 
 ```
 
-#### Barcode flow
+#### barcode flow
+This scheme shows the steps involved in the analysis of DNA-FISH barcode images.
+
 ```{mermaid}
 flowchart
 	
@@ -141,7 +146,9 @@ flowchart
 
 
 ```
-#### Mask flow
+#### masks flow
+This scheme shows the steps involved in the analysis of masks images.
+
 ```{mermaid}
 flowchart
 	
@@ -197,7 +204,9 @@ flowchart
 
 
 ```
-#### RNA flow
+#### RNA-FISH image flow
+This scheme shows the steps involved in the analysis of RNA-FISH images.
+
 ```{mermaid}
 flowchart
 	
