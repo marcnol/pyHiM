@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "script.md",
+            "file": "fundamental.md",
             "mode": "source",
             "source": false
           }
@@ -69,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "script.md",
+                "file": "fundamental.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,7 +89,7 @@
   },
   "active": "e081ed9f71705e62",
   "lastOpenFiles": [
-    "script.md",
-    "fundamental.md"
+    "fundamental.md",
+    "script.md"
   ]
 }
