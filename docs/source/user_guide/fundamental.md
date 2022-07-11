@@ -355,6 +355,8 @@ Parameters for this script will be read from the  ```alignImages``` field of ```
 |localShiftTolerance | | Maximal tolerance in pixels to apply local correction |
 
 
+<img src="Running_pyHiM.assets/image-20200929135403059.png" alt="image-20200929135403059" style="zoom:150%;" />
+
 
 ```{mermaid}
 flowchart TD
@@ -459,8 +461,39 @@ flowchart TD
 *Segments DAPI and sources in 2D*
 
 #### Invoke
-To run this function exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument.
+To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument. This fucnction will be applied when the parameter ```operation``` is set to ```2D```, in the section ```segmentedObjects``` of ```infoList.json```. 
 
+
+#### Relevant options
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|operation|2D| Select 2D mask segmentation|
+||3D| Select 3D mask segmentation|
+|background_method|inhomogeneous| |
+||flat| | 
+||stardist| |
+|stardist_network| | Name of the network used for segmentation|
+|stardist_basename| | Folder containing AI models|
+|background_sigma| | Used to remove inhomogeneous background. Default: 3.0|
+|threshold_over_std| | Threshold used to detect sources. Default: 1.0|
+|area_min| | Minimal area to keep object|
+|area_max| | Maximal area to keep object|
+|residual_max| | Maximum difference between axial spot intensity and gaussian fit| 
+
+#### Outputs
+
+A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01_segmentedMasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01_Masks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects.
+
+The NPY file is a 2D labeled numpy array containing the segmented objects with a size identical to the original image. Background has the value _0_ and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
+
+_Warning_: This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
 ```{mermaid}
 flowchart TD
 
@@ -495,6 +528,36 @@ flowchart TD
 		
 	
 ```
+
+### segmentMasks3D
+*Segment masks in 3D*
+
+### Invoke
+
+To run a 3D segmentation exclusively, run *pyHiM* using the ```-C segmentMasks3D``` argument. This function will be applied when the parameter ```operation``` is set to ```3D```, in the section ```segmentedObjects``` of ```infoList.json```.  
+
+#### Relevant options
+Most of the parameters are shared with ```segmentMasks```, except for the following:
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|stardist_basename3D| | Folder containing 3D AI models|
+|stardist_network3D| | Name of the 3D network| 
+
+#### Outputs
+
+A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01.tif_3Dmasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01._3Dmasks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects.
+
+The NPY file is a 3D labeled numpy array containing the segmented objects. The file name is constructed using the original root filename with the tag `_3DMasks`.
+
+_Warning_: This mode operates in 3D, therefore the Startdist network provided **must be** in 3D.
 
 
 ### segmentSources3D
