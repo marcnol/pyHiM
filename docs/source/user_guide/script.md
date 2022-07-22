@@ -426,10 +426,8 @@ Optional arguments:
 	--matlab
 			Loads MATLAB data (e.g. .mat files)
 	--saveMatrix
-			????
 			Saves the combined PWD matrix from all datasets. Default: False
 	--getStructure
-			????
 			Multi-dimensional scaling to get coordinates from PWDs. Default: False
 	--pixelSize
 			Specify images pixel size. Default: 100 nm.

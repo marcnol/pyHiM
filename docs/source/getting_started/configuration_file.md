@@ -1,12 +1,12 @@
-# WIP - What is infoList.json ?
+# pyHiM configuration file (`infoList.json`)
 
-This file contains all input parameters necessary for pyHiM to run as you want.
+All configuration parameter of `pyHiM` are provided in a single configuration file called `infoList.json`.
 
-To know what and how modify in this file for a specific feature go to [user guide section](../user_guide/fundamental.md) of this feature.
+To know what and how to modify in this configuration file for a specific feature go to the [user guide section](../user_guide/fundamental.md) of this feature.
 
-You can find a global description of each parameters in [reference guide](../reference/infoList_comprehension.md).
+You can find a global description of each parameter in the [reference guide](../reference/infoList_comprehension.md).
 
-Find below an example extract:
+Find below an example extract of a section of the `infoList.json` file:
 ```json
 "labels": {
     "DAPI": {
@@ -36,6 +36,3 @@ Find below an example extract:
     },
 ```
 
-
-**TODO:**
-- *a example of a possible change to customize a parameter just for a label*

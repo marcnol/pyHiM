@@ -237,6 +237,30 @@ flowchart
 ## Main features
 ### makeProjections
 *Projects 3D images in 2D*
+
+This function will take 3D stacks and project them into 2D.
+
+There are many choices of how to do this:
+
+-   `manual`: indicate the planes in zmin and zmax and set to manual.
+    
+-   `automatic`: the function estimates focal plane using the maximum of the std deviation from plane to plane, then projects around `zwindows` of the focal plane. Set to automatic.
+    
+-   `full`: projects all planes into a 2D image. Set to full.
+    
+    There are some additional options that can be provided to indicate how projections are made:
+    
+-   `laplacian`: breaks the image into blocks of size `blockSize`. Then calculates the laplacian variance in each block, and estimates the focal position per block by maximizing the laplacian variance. The overall focal plane for the image will be outputed to the terminal and to the block image (see title in image below). The 2D image is reconstructed block by block by using the optimal focal plane for each block. If the parameter `zwindows` is set to zero, then only the image at the focal point will be used. Otherwise we will do an MIP in the subvolume: `focalPlane-zwindows/2:focalPlane+zwindows/2`.Set to laplacian.
+    
+    There are some additional options that can be provided to indicate how projections are made:
+    
+-   `windowSecurity`: during automatic focal plane search, it will discard maxima located this number of planes away from the border.
+    
+-   `zProjectOption`: how it converts a 3D stack into a 2D projection:
+    
+    -   sum: sums all planes
+    -   MIP: maximum intensity projection
+
 #### Invoke
 To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
@@ -258,6 +282,7 @@ Parameters to run this scropt will be read from the ```zProject``` field of ```i
 |zmax| | Select ending plane to use for projection
 |zmin| | Select starting plane to use for projection
 
+#### Outputs
 
 
 ```{mermaid}
@@ -300,14 +325,24 @@ flowchart TD
 ### alignImages
 *Registers fiducials using a barcode as reference*
 
+There are several ways of correcting for drift within pyHiM:
+
+2.1 **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle _fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed._
+
+2.2 **Block drift correlation.** This option will also use the 2D projection images of reference and cycle _fiducials, but it will first break them up into blocks and will perform a block-by-block optimization of XY drift. This means that this method is very robust and is not easily fooled by dirt in the sample. However, the method will find a consensus global drift that will be applied and therefore local drift issues are not solved. An additional advantage to method 1 is that it can estimate how much local drift is present in each block and will use this to discard blocks where the local drift is higher than a user-provided tolerance (see below). After you run this method, you will get the uncorrected and corrected images so you can evaluate whether it worked properly and whether local drift correction methods need to be applied. 
+
+2.3 **2D Local drift correction.** This method will be applied after methods 2.1 and 2.2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle _fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
+
 #### Invoke
 
 To run this function exclusively, run *pyHiM* using the ``` -C alignImages ``` argument. 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
 The algorithm takes images one by one and align with the reference.
-There are two ways to compute the shift:
-- Global alignement make simple cross-correlation with tow images
-- Split image in block and make cross-correlation block by block. Then we have one shift by block and to align the global image an average of those shifts are made. This method is more robust against a bright noise spot.
+There are several ways to compute the shift:
+- Global alignement make simple cross-correlation with two images
+- Split image in block and make cross-correlation block by block. The ```alignByBlock``` parameter in the ```alignImages``` field of ```infoList.json``` should be set to ```True```. It calculates the optimal shift between fiducial and reference in each block. It estimates the root mean squared error (RMS) between the reference and the shifted image for each block, and uses the blocks in which the RMS is within ```tolerance```. Mean and standar deviation of the XY shifhs are calcualted, and mean shifts are used for shifting the image and getting the final RMS error. This method is more robust against a bright noise spot.
+- Local drift correction in 2D using a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It applies the same cross-correlation algotrithm as before to find aditional local shift. If this shift is larger than ```localShiftTolerance``` in any direction, it will not apply it. 
+
 
 #### Relevant options
 Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```
@@ -315,6 +350,13 @@ Parameters for this script will be read from the  ```alignImages``` field of ```
 |Name|Option|Description|
 |:-:|:-:|:-:|
 |referenceFiducial| |Selects reference barcode image|
+|alignByBlock| | Set to false if a block correction is not needed. Default: True|
+|bezel| |Selects number of pixels around the fiducial mask for local shift correction|
+|localShiftTolerance | | Maximal tolerance in pixels to apply local correction |
+
+
+<img src="Running_pyHiM.assets/image-20200929135403059.png" alt="image-20200929135403059" style="zoom:150%;" />
+
 
 ```{mermaid}
 flowchart TD
@@ -347,7 +389,7 @@ flowchart TD
 *Applies registration to DAPI and barcodes*
 
 #### Invoke
-To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder. 
+To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder.  
 
 ```{mermaid}
 flowchart TD
@@ -371,13 +413,28 @@ flowchart TD
 ### alignImages3D
 *Aligns fiducials in 3D*
 
+None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle _. Then it will background-substract and level-normalize the reference and cycle _fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle _image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack.
+
 #### Invoke
 To run this function exclusively, run *pyHiM* using the ``` -C alignImages3D ``` argument.
-
+The following steps are implemented:
+- Iterate over reference fiducials available for each ROI
+- Iterate over all cycles for a given ROI
+- Load 3D reference fiducial image the current imaging cycle
+- Re-align 3D fiducial image using XY alignment resulting from the XY alignment produced while running `alignImages`. If this is not available, it will XY project the 3D stack of reference and cycle _fiducial to get an XY realignment. Beware, this will be global and will not use blockAlignment._
+- Breaks 3D images for both reference and cycle _fiducials in blocks (defined by `blockSizeXY`)
+- Cross-correlates each block to get an XYZ shift. This provides a 3D local drift correction for each block
+- Store shifts in output Table that contains values for each block (columns shift_z, shift_x and shift_y).
+- Store quality of image superposition based on the normalized root mean square matrix for each block in output Table (columns quality_xy, quality_zy, quality_zx).
 
 #### Relevant options
 Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```. 
-To run, the value for ```localAlignment``` key should be ```block3D```. 
+To run, the value for ```localAlignment``` key should be ```block3D```. The other parameters are shared with ```alignImages```.
+
+#### Outputs
+Shift block maps for X, Y and Z.
+Corrected blocks in XY, ZX, ZY
+Quality matrices.
 
 ```{mermaid}
 flowchart TD
@@ -404,8 +461,39 @@ flowchart TD
 *Segments DAPI and sources in 2D*
 
 #### Invoke
-To run this function exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument.
+To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument. This fucnction will be applied when the parameter ```operation``` is set to ```2D```, in the section ```segmentedObjects``` of ```infoList.json```. 
 
+
+#### Relevant options
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|operation|2D| Select 2D mask segmentation|
+||3D| Select 3D mask segmentation|
+|background_method|inhomogeneous| |
+||flat| | 
+||stardist| |
+|stardist_network| | Name of the network used for segmentation|
+|stardist_basename| | Folder containing AI models|
+|background_sigma| | Used to remove inhomogeneous background. Default: 3.0|
+|threshold_over_std| | Threshold used to detect sources. Default: 1.0|
+|area_min| | Minimal area to keep object|
+|area_max| | Maximal area to keep object|
+|residual_max| | Maximum difference between axial spot intensity and gaussian fit| 
+
+#### Outputs
+
+A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01_segmentedMasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01_Masks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects.
+
+The NPY file is a 2D labeled numpy array containing the segmented objects with a size identical to the original image. Background has the value _0_ and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
+
+_Warning_: This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
 ```{mermaid}
 flowchart TD
 
@@ -440,6 +528,36 @@ flowchart TD
 		
 	
 ```
+
+### segmentMasks3D
+*Segment masks in 3D*
+
+### Invoke
+
+To run a 3D segmentation exclusively, run *pyHiM* using the ```-C segmentMasks3D``` argument. This function will be applied when the parameter ```operation``` is set to ```3D```, in the section ```segmentedObjects``` of ```infoList.json```.  
+
+#### Relevant options
+Most of the parameters are shared with ```segmentMasks```, except for the following:
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|stardist_basename3D| | Folder containing 3D AI models|
+|stardist_network3D| | Name of the 3D network| 
+
+#### Outputs
+
+A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
+
+```
+scan_002_mask0_002_ROI_converted_decon_ch01.tif_3Dmasks.png
+scan_002_mask0_002_ROI_converted_decon_ch01._3Dmasks.npy
+```
+
+The PNG file is a representation of the raw image and the segmented objects.
+
+The NPY file is a 3D labeled numpy array containing the segmented objects. The file name is constructed using the original root filename with the tag `_3DMasks`.
+
+_Warning_: This mode operates in 3D, therefore the Startdist network provided **must be** in 3D.
 
 
 ### segmentSources3D
