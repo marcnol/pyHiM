@@ -19,7 +19,7 @@ pyHiM also uses functions from [Big-FISH](https://github.com/fish-quant/big-fish
 
 Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/). 
 
-To install, please follow the tutorial [here](https://pyhim.readthedocs.io/en/latest/user_guide/pyhim_installation.html).
+To install, please follow the tutorial [here](https://pyhim.readthedocs.io/en/latest/getting_started/quick_install.html).
 
 After you installed pyHiM, you may want to consult a [guide](https://pyhim.readthedocs.io/en/latest/user_guide/fundamental.html) on how to use it. 
 
