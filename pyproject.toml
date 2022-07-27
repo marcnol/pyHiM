@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyhim"
+version = "0.6.5-alpha5"
+description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
+readme = "README.md"
+authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
+license = { file = "LICENSE" }
+keywords = ["astropy",
+              "csbdeep",
+              "dask",
+              "matplotlib",
+              "numpy",
+              "opencv-python",
+              "numba",
+              "photutils",
+              "roipoly",
+              "scikit-learn",
+              "scikit-image",
+              "stardist",
+              "pympler",
+              "tqdm",
+              "scipy",
+              "tifffile"
+              ]
+dependencies = ["apifish",
+                "astropy >= 4.3.1",
+                "csbdeep >= 0.6.3",
+                "dask[distributed] >= 2021.10.0",
+                "matplotlib >= 3.5.1",
+                "numba >= 0.54.1",
+                "numpy >= 1.19.5",
+                "opencv-python >= 4.5.3.56",
+                "photutils == 1.1.0",
+                "pympler >= 1.0.1",
+                "roipoly >= 0.5.3",
+                "scikit-image >= 0.19.2",
+                "scikit-learn >= 1.1.1",
+                "scipy >= 1.7.3",
+                "stardist >= 0.7.3",
+                "tifffile >= 2021.10.10",
+                "tqdm >= 4.63.0"
+                ]
+requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/marcnol/pyHiM"
+
+[project.scripts]
+pyhim = "pyHiM:main"

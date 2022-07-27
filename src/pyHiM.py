@@ -27,7 +27,7 @@ from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     runParameters=HiM_parseArguments()
@@ -129,3 +129,7 @@ if __name__ == "__main__":
     del HiM
 
     printLog("Elapsed time: {}".format(datetime.now() - begin_time))
+
+
+if __name__ == "__main__":
+    main()
