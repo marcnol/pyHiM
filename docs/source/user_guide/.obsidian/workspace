@@ -1,0 +1,95 @@
+{
+  "main": {
+    "id": "048f25a554e7486c",
+    "type": "split",
+    "children": [
+      {
+        "id": "e081ed9f71705e62",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "fundamental.md",
+            "mode": "source",
+            "source": false
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "4a9306e3ddc08dc4",
+    "type": "split",
+    "children": [
+      {
+        "id": "a339b5744663de48",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1371ce37882242c9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "995f7b2cb252adf7",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 136
+  },
+  "right": {
+    "id": "c4b901c2d30a7727",
+    "type": "split",
+    "children": [
+      {
+        "id": "aa042f694532c2f2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "00b445977ea6b730",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "fundamental.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "e081ed9f71705e62",
+  "lastOpenFiles": [
+    "fundamental.md",
+    "script.md"
+  ]
+}

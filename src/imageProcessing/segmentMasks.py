@@ -191,10 +191,10 @@ def segmentSourceInhomogBackground(im, param):
     * ``peak``: the peak, sky-subtracted, pixel value of the object.
     * ``flux``: the object flux calculated as the peak density in
       the convolved image divided by the detection threshold.  This
-      derivation matches that of `DAOFIND`_ if ``sky`` is 0.0.
+      derivation matches that of `DAOFIND` if ``sky`` is 0.0.
     * ``mag``: the object instrumental magnitude calculated as
       ``-2.5 * log10(flux)``.  The derivation matches that of
-      `DAOFIND`_ if ``sky`` is 0.0.
+      `DAOFIND` if ``sky`` is 0.0.
 
     `None` is returned if no stars are found.
 
@@ -239,10 +239,10 @@ def segmentSourceFlatBackground(im, param):
     * ``peak``: the peak, sky-subtracted, pixel value of the object.
     * ``flux``: the object flux calculated as the peak density in
       the convolved image divided by the detection threshold.  This
-      derivation matches that of `DAOFIND`_ if ``sky`` is 0.0.
+      derivation matches that of `DAOFIND` if ``sky`` is 0.0.
     * ``mag``: the object instrumental magnitude calculated as
       ``-2.5 * log10(flux)``.  The derivation matches that of
-      `DAOFIND`_ if ``sky`` is 0.0.
+      `DAOFIND` if ``sky`` is 0.0.
 
     `None` is returned if no stars are found.
 
@@ -356,8 +356,7 @@ def tessellate_masks(segm_deblend):
 
 def get_tessellation(xy, img_shape):
     """
-    * runs the actual tesselation based on the xy position of the markers in
-    an image of given shape
+    * runs the actual tesselation based on the xy position of the markers in an image of given shape
 
     # follow this tutorial
     # https://hpaulkeeler.com/voronoi-dirichlet-tessellations/
@@ -379,10 +378,10 @@ def get_tessellation(xy, img_shape):
     #    ridge_points ndarray of ints, shape (nridges, 2)
     #        Indices of the points between which each Voronoi ridge lies.
     #
-    #    ridge_vertices list of list of ints, shape (nridges, *)
+    #    ridge_vertices list of list of ints, shape (nridges, \*)
     #        Indices of the Voronoi vertices forming each Voronoi ridge.
     #
-    #    regions list of list of ints, shape (nregions, *)
+    #    regions list of list of ints, shape (nregions, \*)
     #        Indices of the Voronoi vertices forming each Voronoi region. -1 indicates vertex outside the Voronoi diagram.
     #
     #    point_region list of ints, shape (npoints)

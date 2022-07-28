@@ -13,7 +13,7 @@ Created on Sun Feb 28 13:44:47 2021
 
 Steps:
     - defines runParameters
-    - gets list of images in folder using wildcard, *tif by default
+    - gets list of images in folder using wildcard, \*tif by default
     - loads iteratively images and applies operations described above
     - saves output
 
@@ -28,7 +28,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
-from imageProcessing import (
+from imageProcessing.imageProcessing import (
     _removesInhomogeneousBackground,
     imageAdjust,
     savesImageAsBlocks,
