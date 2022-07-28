@@ -22,7 +22,7 @@ to erase also the output MD, Log, and Session files
 import os
 import glob
 import argparse
-from fileManagement import Parameters, folders
+from fileProcessing.fileManagement import Parameters, folders
 import shutil
 
 # =============================================================================

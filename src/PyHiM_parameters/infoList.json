@@ -98,14 +98,14 @@
 		        "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
 		        "tesselation": true,
 		        "threshold_over_std": 1.0
-	    },
+	        },
             "zProject": {
 		        "mode": "full",
 		        "zProjectOption": "sum",
 		        "zmax": 59,
 		        "zmin": 1,
 		        "zwindows": 15
-        }
+            }
         },
         "RNA": {
             "order": 4,

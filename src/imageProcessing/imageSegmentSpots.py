@@ -26,7 +26,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
-from imageProcessing import (
+from imageProcessing.imageProcessing import (
     _removesInhomogeneousBackground2D,
     imageAdjust,
     _segments3DvolumesByThresholding,

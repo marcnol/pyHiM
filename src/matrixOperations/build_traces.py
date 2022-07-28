@@ -338,9 +338,7 @@ class BuildTraces:
             information to find barcode localizations, local drift corrections and masks
 
         self.pixelSize : dict, optional
-            pixelSize = {'x': pixelSizeXY,
-                        'y': pixelSizeXY,
-                        'z': pixelSizeZ}
+            pixelSize = {'x': pixelSizeXY, 'y': pixelSizeXY, 'z': pixelSizeZ}
             The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
 
         self.logNameMD : str, optional
