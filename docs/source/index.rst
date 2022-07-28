@@ -4,15 +4,26 @@ pyHiM - Documentation
 
 **Date**: |today| **Version**: |release|
 
-`pyHiM` is a software package developed by the `Nollmann Lab <http://www.nollmannlab.org>`_ at the `Center of Structural Biology <http://www.cbs.cnrs.fr>`_, a department of the `CNRS <http://www.cnrs.fr>`_ and the `INSERM <http://www.inserm.fr>`_. 
 `pyHiM` implements the analysis of multiplexed DNA-FISH data, as described in our `protocols paper <https://github.com/NollmannLab/HiM_protocol>`_.
 
-pyHiM was entirely written in python and makes extensive use of the following packages:
+`pyHiM` is a software package developed by the `Nollmann Lab <http://www.nollmannlab.org>`_ at the `Center of Structural Biology <http://www.cbs.cnrs.fr>`_, a department of the `CNRS <http://www.cnrs.fr>`_ and the `INSERM <http://www.inserm.fr>`_. 
 
-- `Astropy <https://www.astropy.org/>`_
-- `scikit-image <https://scikit-image.org/>`_
-- `starDist <https://github.com/stardist/stardist>`_
-- `Big-FISH <https://github.com/fish-quant/big-fish>`_ (`apiFISH <https://github.com/apiFISH/apiFISH>`_ soon)
+=============
+Main features
+=============
+
+pyHiM is a software package designed to pre-process and analyze multiplexed DNA-FISH data (e.g. Hi-M), as well as to visualize the results. pyHiM has specific modules (called features) that allow the user to:
+
+* register nuclei and barcode images to remove or minimize drift.
+* segment nuclei
+* segment and localize barcodes
+* construct chromatin traces
+* build single-trace and ensemble pair-wise distance maps
+
+==============
+How to proceed
+==============
+
 
 .. panels::
     :card: + intro-card text-center

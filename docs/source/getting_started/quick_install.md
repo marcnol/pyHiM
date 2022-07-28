@@ -28,3 +28,18 @@ Now activate the environment and install pyHiM:
 conda activate pyHiM
 pip install pyhim
 ```
+
+### Using jupyter labs
+
+If you want to use pyHiM from jupyter labs, we recommend you also run the following commands:
+
+```
+conda install ipykernel matplotlib
+ipython kernel install --user --name=pyHiM-kernel
+```
+
+Once you spin up a jupyter lab from the `base` environment, select the `pyHiM-kernel` to be able to run pyHiM functions.
+
+
+
+

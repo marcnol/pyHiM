@@ -4,7 +4,7 @@
 
 pyHiM is a software package designed to pre-process and analyze **multiplexed DNA-FISH data** (e.g. Hi-M), as well as to visualize the results. For more information about Hi-M please see the references below.
 
-A minimal Hi-M contains:
+A minimal Hi-M dataset contains:
 
 - images of nuclei for a given region of interest (ROI)
 - images of DNA-FISH barcodes acquired in different hybridization cycles for the same ROI as for the nuclei.
