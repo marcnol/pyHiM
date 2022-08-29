@@ -12,7 +12,7 @@ pyHiM - Documentation
 Main features
 =============
 
-pyHiM is a software package designed to pre-process and analyze multiplexed DNA-FISH data (e.g. Hi-M), as well as to visualize the results. pyHiM has specific modules (called features) that allow the user to:
+pyHiM is a software package designed to pre-process and analyze multiplexed DNA-FISH data (e.g. Hi-M), as well as to visualize the results. pyHiM has specific modules that allow the user to:
 
 * register nuclei and barcode images to remove or minimize drift.
 * segment nuclei

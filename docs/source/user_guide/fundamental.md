@@ -57,12 +57,12 @@ Different data sources exist and need to processed differently by pyHiM:
 - masks (e.g. DAPI, cell, genomic region)
 - RNA-FISH images
 
-Each data source is handled by a different workflow in pyHiM. In each workflow, you will see different symbols for `features`, `input data` and `I/O data`, as follows:
+Each data source is handled by a different workflow in pyHiM. In each workflow, you will see different symbols for `modules`, `input data` and `I/O data`, as follows:
 
 ```{mermaid}
 flowchart TD
 	subgraph graph legend
-		Z1((feature))
+		Z1((module))
 		Z2([initial data])
 		Z3[I/O data]
 	end 
@@ -234,7 +234,7 @@ flowchart
 	proc1[SNDassignedCells.ecsv]
 ```
 
-## Main features
+## Main modules
 ### makeProjections
 *Projects 3D images in 2D*
 
@@ -262,7 +262,7 @@ There are many choices of how to do this:
     -   MIP: maximum intensity projection
 
 #### Invoke
-To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this feature start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
+To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this module start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
 #### Relevant options
 Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```

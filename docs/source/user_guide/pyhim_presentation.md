@@ -24,7 +24,7 @@ Each image taken during acquisition is associated with a spatial reference, the 
 Acquisition of HiM protocol experiment often generates huge volume data which makes the analysis very time consuming. So, you can run pyHiM with **parallelization** on computing servers.
 
 ## Global structure
-The pyHiM software follow a pipeline pattern. A default pipeline is defined with main features but they can be used independently if you have the right input data.
+The pyHiM software follow a pipeline pattern. A default pipeline is defined with main modules but they can be used independently if you have the right input data.
 
 Features in the default pipeline can be classified into five categories:
 1. **Preprocessing** manipulate or delete a part of data before it is used in order to ensure or enhance performance.

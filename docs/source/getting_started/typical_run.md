@@ -32,4 +32,4 @@ To run pyHiM in the simplest way, follow this steps:
    conda activate pyHiM
 	pyHiM.py
 	```
-5. When computing is done, the results will be stored within the folders created at the `input_directory`. Each module or feature will store its results in a single folder. A summary of all the results and outputs is provided in a markdown file that will be created at the `input_directory`.
+5. When computing is done, the results will be stored within the folders created at the `input_directory`. Each module will store its results in a single folder. A summary of all the results and outputs is provided in a markdown file that will be created at the `input_directory`.

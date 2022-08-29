@@ -12,7 +12,7 @@ A minimal Hi-M dataset contains:
 
 
 
-pyHiM has specific modules (called features) that allow the user to:
+pyHiM has specific modules that allow the user to:
 
 - register nuclei and barcode images to remove or minimize drift.
 - segment nuclei

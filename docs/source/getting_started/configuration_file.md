@@ -2,7 +2,7 @@
 
 All configuration parameter of `pyHiM` are provided in a single configuration file called `infoList.json`.
 
-To know what and how to modify in this configuration file for a specific feature go to the [user guide section](../user_guide/fundamental.md) of this feature.
+To know what and how to modify in this configuration file for a specific module go to the [user guide section](../user_guide/fundamental.md) of this module.
 
 You can find a global description of each parameter in the [reference guide](../reference/infoList_comprehension.md).
 
