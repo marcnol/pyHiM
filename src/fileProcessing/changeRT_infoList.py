@@ -20,7 +20,7 @@ import re
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     labels2Process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
@@ -68,3 +68,6 @@ if __name__ == "__main__":
 
         returnValue = os.system(command2Run1)
         print("Changing {} to {}. returnValue {}.".format(oldRT, newRT, returnValue))
+
+if __name__ == "__main__":
+    main()

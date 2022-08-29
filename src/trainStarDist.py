@@ -149,7 +149,7 @@ def example(model, i, show_dist=True):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     #%% sets parameters
     ownTrainingSet = True
@@ -365,3 +365,6 @@ if __name__ == "__main__":
     ax2.set_ylabel("Number #")
     ax2.grid()
     ax2.legend()
+
+if __name__ == "__main__":
+    main()

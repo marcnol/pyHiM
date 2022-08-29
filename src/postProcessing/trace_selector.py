@@ -147,7 +147,7 @@ def process_traces(folder, pixel_size=0.1, trace_files = list()):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
@@ -157,3 +157,6 @@ if __name__ == "__main__":
     traces = process_traces(folder, pixel_size=p["pixel_size"], trace_files = p["trace_files"])
 
     print("Finished execution")
+
+if __name__ == "__main__":
+    main()
