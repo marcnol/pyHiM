@@ -182,14 +182,14 @@ class RegisterLocalizations:
                     pass
                 
             # rewrites corrected XYZ values to Table
-            print(f" $ Before correction: {barcodeMap.groups[0]} ")
+            print(f" $ Before correction: {barcodeMap.groups[0][i]} ")
 
             barcodeMap.groups[0]["ycentroid"][i] = zxy_corrected[1]
             barcodeMap.groups[0]["xcentroid"][i] = zxy_corrected[2]
             if self.ndims > 2:
                 barcodeMap.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
-            print(f" $ After correction: {barcodeMap.groups[0]} ")
+            print(f" $ After correction: {barcodeMap.groups[0][i]} ")
             
         if self.remove_uncorrected_localizations:
             printLog(f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcodeMap.groups[0])} were removed.")
