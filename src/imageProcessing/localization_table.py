@@ -98,7 +98,6 @@ class LocalizationTable:
             barcodeMap.meta['comments']=[comments]
 
         # save_table_to_ecsv(barcodeMap,fileName)
-
         
         barcodeMap.write(
             fileName,
@@ -106,7 +105,6 @@ class LocalizationTable:
             overwrite=True,
         )
         
-
     def plots_distributionFluxes(self, barcodeMap, fileName_list):
         """
         This function plots the distribution of fluxes, sharpness, roundness, magnitude and peak intensity from a Table
