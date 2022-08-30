@@ -176,6 +176,7 @@ class RegisterLocalizations:
                 if self.remove_uncorrected_localizations:
                     # will remove localizations that cannot be corrected
                     zxy_corrected = [np.nan, np.nan, np.nan]
+                    print(f">>> Removed localization #{i} from barcode: {RTbarcode}")
                 else:
                     # will keep uncorrected localizations
                     pass
