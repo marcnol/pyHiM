@@ -121,6 +121,7 @@ class RegisterLocalizations:
         else:
             zxy_corrected = zxy_uncorrected
             quality_correction = {'below_tolerance':False}
+            print(f">>> shift: {self.dictErrorBlockMasks[nROI][nBarcode][nBlock_i][nBlock_j]} | barcode: {nBarcode}")
 
         return zxy_corrected, quality_correction 
 
