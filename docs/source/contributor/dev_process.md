@@ -1,7 +1,7 @@
 # Development process
 
 ## Branching model
-The following branches will always exist in pyHiM:
+The following branches will always exist in *pyHiM*:
 
 * The `master` branch: reference branch of stable versions. We use the tag [versioning](https://semver.org/) systems.
 * The `development` branch: features stable but pre-release features. Use at your own risk.

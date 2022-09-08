@@ -1,4 +1,4 @@
-# Development environment
+# Environment
 
 ## Source code
 
@@ -7,9 +7,9 @@ If you want to contribute with code, checkout: [development process page](./dev_
 
 ## Dependencies
 
-pyHiM relies on [apiFISH](https://github.com/apiFISH/apiFISH) for the 3D localization of barcodes. In future, more `pyHiM` common functions will be progressively moved to apiFISH to provide a commnon API for FISH-based analysis. If you develop pyHiM, you will need to install apiFISH using the following guide: [how work with apiFISH](./work_with_apifish.md).
+*pyHiM* relies on [apiFISH](https://github.com/apiFISH/apiFISH) for the 3D localization of barcodes. In future, more `pyHiM` common functions will be progressively moved to apiFISH to provide a commnon API for FISH-based analysis. If you develop *pyHiM*, you will need to install apiFISH using the following guide: [how work with apiFISH](./work_with_apifish.md).
 
-Main pyHiM dependencies:
+Main *pyHiM* dependencies:
 - [Astropy](https://www.astropy.org/)
 - [scikit-image](https://scikit-image.org/)
 - [starDist](https://github.com/stardist/stardist)
@@ -20,7 +20,7 @@ Dependencies needed to locally build the `readthedocs` documentation website:
 
 ## Development editor
 
-The development editor choice is up to you, we list here two editors suitable for pyHiM development in Python:
+The development editor choice is up to you, we list here two editors suitable for *pyHiM* development in Python:
 - [Spyder](https://www.spyder-ide.org/) is popular in scientist community
 - [VSCode](https://code.visualstudio.com/) is popular in developer community
 

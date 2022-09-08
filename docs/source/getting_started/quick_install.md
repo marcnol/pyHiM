@@ -1,44 +1,37 @@
-# Quick installation
+# Installation
 
-*For the complete description of installation options, please refer to [pyHiM installation section](../user_guide/pyhim_installation.md).*
+|OS|Linux|Windows|Mac|
+|:-:|:-:|:-:|:-:|
+|**compatibility**|Yes|Beta|No| 
 
-## Install using conda and pip
+## Install conda and create environment
 
-### Install conda and create enviroment
+Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution).
 
-Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution). Briefly, for linux this requires you to download the installation script by running the following command on a terminal
+## Setup conda enviroment
 
-```
-wget https://repo.anaconda.com/archive/Anaconda3-2022.05-Linux-x86_64.sh
-bash Anaconda3-2022.05-Linux-x86_64.sh
-```
-
-### Setup conda enviroment
-
-Create a conda environment by running 
+Create a conda environment and activate it:
 ```bash
 conda create -n pyHiM
+conda activate pyHiM
 ```
 
-### Install pyHiM
-
-Now activate the environment and install pyHiM:
+## Install pyHiM
 
 ```bash
-conda activate pyHiM
 pip install pyhim
 ```
 
-### Using jupyter labs
+## Using jupyter labs
 
-If you want to use pyHiM from jupyter labs, we recommend you also run the following commands:
+If you want to use *pyHiM* from jupyter labs, we recommend you also run the following commands:
 
 ```
 conda install ipykernel matplotlib
 ipython kernel install --user --name=pyHiM-kernel
 ```
 
-Once you spin up a jupyter lab from the `base` environment, select the `pyHiM-kernel` to be able to run pyHiM functions.
+Once you spin up a jupyter lab from the `base` environment, select the `pyHiM-kernel` to be able to run *pyHiM* functions.
 
 
 

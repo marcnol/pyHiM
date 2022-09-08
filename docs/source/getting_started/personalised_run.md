@@ -1,4 +1,4 @@
-# How-to personalize a pyHiM runtime ?
+# Personalized runtime 
 
 ## Running pyHiM in multiple folders
 To run `pyHiM` in multiple folders we recommend that you create a BASH script and provide the location of each `input_directory` that needs to be processed. For this, run `pyHiM`:
@@ -30,8 +30,8 @@ optional arguments:
 
 
 
-```-F ``` or ```--rootFolder``` indicates the rootFolder where pyHiM expects to find the dataset.
+```-F ``` or ```--rootFolder``` indicates the rootFolder where *pyHiM* expects to find the dataset.
 
-```--threads``` will ask pyHiM to run in parallel using multiple threads in your computer or computer cluster. To visualize the progress of your run,  open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 username@servername``` if you are not running `pyHiM` locally.
+```--threads``` will ask *pyHiM* to run in parallel using multiple threads in your computer or computer cluster. To visualize the progress of your run,  open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 username@servername``` if you are not running `pyHiM` locally.
 
 ```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a comma separated list. If you don't provide this argument, the full list of functions will be run and the mode of action will be determined from the ```infoList.json``` configuration file.

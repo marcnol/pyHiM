@@ -16,7 +16,7 @@ changeRT_infolist.py RT33 RT1
 
 ### cleanHiM_run.py
 
-Cleans the directories and log files created by pyHiM from a previous run. 
+Cleans the directories and log files created by *pyHiM* from a previous run. 
 
 ```
 Usage: cleanHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-A ALL]
@@ -41,7 +41,7 @@ Use quotation marks in the first argument if using wildcards.
 
 ### zipHiM_run.py
 
-Zip all output files from a pyHiM run. It excludes .npy and .tif files. Useful to retrieve results from a run from an HPC cluster.
+Zip all output files from a *pyHiM* run. It excludes .npy and .tif files. Useful to retrieve results from a run from an HPC cluster.
 
 ```
 Usage: zipHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-R RECURSIVE]
@@ -71,7 +71,7 @@ optional arguments:
 
 ### runHiM_cluster.py
 
-Launches pyHiM on a cluster using slurm `srun`. 
+Launches *pyHiM* on a cluster using slurm `srun`. 
 
 ```
 Usage: runHiM_cluster.py

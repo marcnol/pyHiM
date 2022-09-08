@@ -5,7 +5,7 @@
 
 The most parameters are define by default in `common` part in its corresponding section. If you want to change a parameter just for one channel, go to `labels` and in the good channel you can overwrite parameter value.
 
-Each section in `common` represent a step of pyHiM processing. Find below a table of sections with the labels involved by their parameters:
+Each section in `common` represent a step of *pyHiM* processing. Find below a table of sections with the labels involved by their parameters:
 
 |Section name|fiducial|barcode|DAPI|RNA|mask|
 |:-:|:-:|:-:|:-:|:-:|:-:|
