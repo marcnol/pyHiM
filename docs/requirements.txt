@@ -6,7 +6,6 @@ sphinx-panels >= 0.6.0
 sphinxcontrib-mermaid >= 0.7.1
 nbsphinx
 sphinx-book-theme
-mmdc
 
 numpy >= 1.18.1
 matplotlib >= 3.1.3
