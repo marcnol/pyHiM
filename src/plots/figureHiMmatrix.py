@@ -2,9 +2,28 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jun  4 09:04:10 2020
+edited on Sep 6 2022
 
+This script calculates and plots matrices (PWD and proximity) from:
+    - a file with single-cell PWD matrices in Numpy format
+    - a file with the unique barcodes used
+
+
+Example:
+$ figureHiMmatrix.py -T Trace_3D_barcode_KDtree_ROI:4_Matrix_PWDscMatrix.npy -U Trace_3D_barcode_KDtree_ROI:4_Matrix_uniqueBarcodes.ecsv
+
+Options:
+    - plottingFileExtension: format of figure
+    - cScale: value of the max of the cScale used to plot the matrix
+    - cmap: name of cmap
+    - scalingParameter: Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter. Default is 1.
+    - mode: indicated the plotting mode, either ["proximity"] or ["KDE", "median"] for PWD matrix. 
+    - outputFolder: name of outputfolder. 'plots' is the default
+    
+Left to do:
+    - need to implement a way to select a subset of chromatin traces...
+    
 @author: marcnol
- Produces 
 """
 
 
@@ -13,21 +32,13 @@ import os, sys
 import numpy as np
 import argparse
 
-# import matplotlib as plt
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-
-# import scaleogram as scg
-
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix, listsSCtoKeep
 from matrixOperations.HIMmatrixOperations import (
+    plotMatrix,
     analysisHiMmatrix,
     normalizeMatrix,
     shuffleMatrix,
     plotScalogram,
     calculatesEnsemblePWDmatrix,
-    loadList,
     calculateContactProbabilityMatrix,
 )
 
@@ -41,9 +52,6 @@ def parseArguments():
     parser.add_argument("-U", "--uniqueBarcodes", help="csv file with list of unique barcodes")
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
-    parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
-    )
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
     parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
@@ -60,7 +68,6 @@ def parseArguments():
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
     )
     parser.add_argument("--proximity_threshold", help="proximity threshold in um")
-    parser.add_argument("--pixelSize", help="pixel size in um")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
     parser.add_argument(
         "--mode", help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median"
@@ -86,11 +93,6 @@ def parseArguments():
         runParameters["outputFolder"] = args.outputFolder
     else:
         runParameters["outputFolder"] = "plots"
-
-    if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
-    else:
-        runParameters["parametersFileName"] = "folders2Load.json"
 
     if args.label:
         runParameters["label"] = args.label
@@ -147,10 +149,7 @@ def parseArguments():
     else:
         runParameters["shuffle"] = 0
 
-    if args.pixelSize:
-        runParameters["pixelSize"] = args.pixelSize
-    else:
-        runParameters["pixelSize"] = 1
+    runParameters["pixelSize"] = 1
 
     if args.cmap:
         runParameters["cmap"] = args.cmap
