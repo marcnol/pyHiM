@@ -56,8 +56,10 @@ extensions = [
     'myst_parser',          # parse markdown files to be understood by sphinx
     "sphinxcontrib.mermaid",# mermaid extension for MyST
     "sphinx_panels",        # for creating panels like pandas or numpy main doc page
-    "nbsphinx"
+    "nbsphinx",
 ]
+
+mermaid_output_format = "png"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
