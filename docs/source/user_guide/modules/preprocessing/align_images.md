@@ -1,6 +1,37 @@
 # alignImages
 *Registers fiducials using a barcode as reference*
 
+## Invoke
+Inside the folder with your input data, run:
+```shell
+pyhim -C alignImages
+```
+
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
+
+## Relevant options
+
+Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|referenceFiducial| |Selects reference barcode image|
+|alignByBlock| | Set to false if a block correction is not needed. Default: True|
+|bezel| |Selects number of pixels around the fiducial mask for local shift correction|
+|localShiftTolerance | | Maximal tolerance in pixels to apply local correction |
+
+
+## Description
+
 There are several ways of correcting for drift within *pyHiM*:
 
 2.1 **Global drift correction by cross-correlation.** This option just runs a x-correlation between the 2D projected images for the reference and cycle _fiducials. It is the fastest, but will ignore local deformations in the sample and, sometimes, can get fooled by bright dirt in the image that will drive the x-correlation to the wrong place. If your sample is clean and does not show much deformation, this is the way to go. The method will output overlap images that should be used whether the method worked as expected, and to what extent a local correction is needed._
@@ -9,7 +40,7 @@ There are several ways of correcting for drift within *pyHiM*:
 
 2.3 **2D Local drift correction.** This method will be applied after methods 2.1 and 2.2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle _fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
 
-## Invoke
+## (Invoke)
 
 To run this function exclusively, run *pyHiM* using the ``` -C alignImages ``` argument. 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
@@ -20,16 +51,9 @@ There are several ways to compute the shift:
 - Local drift correction in 2D using a bounding box that is ```bezel``` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It applies the same cross-correlation algotrithm as before to find aditional local shift. If this shift is larger than ```localShiftTolerance``` in any direction, it will not apply it. 
 
 
-## Relevant options
-Parameters for this script will be read from the  ```alignImages``` field of ```infoList.json```
 
-|Name|Option|Description|
-|:-:|:-:|:-:|
-|referenceFiducial| |Selects reference barcode image|
-|alignByBlock| | Set to false if a block correction is not needed. Default: True|
-|bezel| |Selects number of pixels around the fiducial mask for local shift correction|
-|localShiftTolerance | | Maximal tolerance in pixels to apply local correction |
 
+## Graph
 
 ```{mermaid}
 flowchart TD

@@ -7,7 +7,7 @@ Inside the folder with your input data, run:
 ```shell
 pyhim -C alignImages3D
 ```
-#image
+#image benchmark
 ## Inputs
 
 |Name shape|Quantity|Mandatory|Description|
@@ -28,6 +28,12 @@ To run, the value for ```localAlignment``` key should be ```block3D```. The othe
 
 ## Description
 
+short describe for avantage of this module
+
+Follow by a diagram
+
+Description step by step of diagram with all suptibilities
+
 None of the methods above takes into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This method will first apply the 2D drift obtained using methods 1 or 2 to the 3D stack of cycle _. Then it will background-substract and level-normalize the reference and cycle _fiducial images and will break them into 3D blocks (somewhat similar to method 2, which was breaking images into 2D blocks). Next, it will x-correlate every single 3D block in the reference image to the corresponding, pre-aligned block in the cycle _image to obtain a local 3D drift correction. The results are outputted as 3 matrices that indicate the correction applied to each block in z, x and y. In addition, a reassembled image made of XY, XZ and YZ projections is outputted to evaluate performance. Needless to say, this is the slowest but most performant method in the stack.
 
 ## Step by step
@@ -43,7 +49,7 @@ The following steps are implemented:
 - Store shifts in output Table that contains values for each block (columns shift_z, shift_x and shift_y).
 - Store quality of image superposition based on the normalized root mean square matrix for each block in output Table (columns quality_xy, quality_zy, quality_zx).
 
-## Graph (useless?)
+## Graph
 
 ```{mermaid}
 flowchart TD

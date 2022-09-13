@@ -2,7 +2,21 @@
 *Segments DAPI and sources in 2D*
 
 ## Invoke
-To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument. This fucnction will be applied when the parameter ```operation``` is set to ```2D```, in the section ```segmentedObjects``` of ```infoList.json```. 
+Inside the folder with your input data, run:
+```shell
+pyhim -C segmentMasks
+```
+
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
 
 
 ## Relevant options
@@ -21,7 +35,12 @@ To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks 
 |area_max| | Maximal area to keep object|
 |residual_max| | Maximum difference between axial spot intensity and gaussian fit| 
 
-## Outputs
+## (Invoke)
+To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument. This fucnction will be applied when the parameter ```operation``` is set to ```2D```, in the section ```segmentedObjects``` of ```infoList.json```. 
+
+
+
+## (Outputs)
 
 A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
 
@@ -35,6 +54,9 @@ The PNG file is a representation of the raw image and the segmented objects.
 The NPY file is a 2D labeled numpy array containing the segmented objects with a size identical to the original image. Background has the value _0_ and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
 
 _Warning_: This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
+
+## Graph
+
 ```{mermaid}
 flowchart TD
 

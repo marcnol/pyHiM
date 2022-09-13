@@ -2,8 +2,21 @@
 *Segment masks in 3D*
 
 ## Invoke
+Inside the folder with your input data, run:
+```shell
+pyhim -C segmentMasks3D
+```
 
-To run a 3D segmentation exclusively, run *pyHiM* using the ```-C segmentMasks3D``` argument. This function will be applied when the parameter ```operation``` is set to ```3D```, in the section ```segmentedObjects``` of ```infoList.json```.  
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
 
 ## Relevant options
 Most of the parameters are shared with ```segmentMasks```, except for the following:
@@ -13,7 +26,13 @@ Most of the parameters are shared with ```segmentMasks```, except for the follow
 |stardist_basename3D| | Folder containing 3D AI models|
 |stardist_network3D| | Name of the 3D network| 
 
-## Outputs
+## (Invoke)
+
+To run a 3D segmentation exclusively, run *pyHiM* using the ```-C segmentMasks3D``` argument. This function will be applied when the parameter ```operation``` is set to ```3D```, in the section ```segmentedObjects``` of ```infoList.json```.  
+
+
+
+## (Outputs)
 
 A 3D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
 

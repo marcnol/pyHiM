@@ -1,5 +1,42 @@
 # makeProjections
 *Projects 3D images in 2D*
+## Invoke
+Inside the folder with your input data, run:
+```shell
+pyhim -C alignImages
+```
+
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
+
+## Relevant options
+Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```
+
+
+|Name|Option|Description|
+|:-:|:-:|:-:|
+|mode|manual|Assign plans between *zmin* and *zmax* to "zRange"|
+||automatic|Estimates the focal plane using the maximum standard deviation plane by plane. Use *zwindows* to set "zRange" arround this focal plane.|
+||full|Assign all plans to "zRange"|
+||laplacian|Split 3D image into blocks of the size given by *blockSize*. Find Laplacian Variance maximum (blur estimation) for each block in order to estimate the focal plane. Rebuild block-by-block 2D image with optimal focal plane of each block. if *zwindows* option is activated, project each block with MIP option.|
+|windowSecurity||Used for *automatic* mode, removes the lowest and highest Z-plans.|
+|zwindows| | In automatic mode, selects the number of planes below and above the focal plane to be used for making the projection.
+|display| | Saves output 2D projections as png files
+|zProjectOption|sum|Sum plans in "zRange"|
+||MIP|Maximum Intensity Projection of plans in "zRange"|    
+|zmax| | Select ending plane to use for projection
+|zmin| | Select starting plane to use for projection
+
+## Description
+
 
 This function will take 3D stacks and project them into 2D.
 
@@ -24,28 +61,10 @@ There are many choices of how to do this:
     -   sum: sums all planes
     -   MIP: maximum intensity projection
 
-## Invoke
+## (Invoke)
 To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this module start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
-## Relevant options
-Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```
-
-
-|Name|Option|Description|
-|:-:|:-:|:-:|
-|mode|manual|Assign plans between *zmin* and *zmax* to "zRange"|
-||automatic|Estimates the focal plane using the maximum standard deviation plane by plane. Use *zwindows* to set "zRange" arround this focal plane.|
-||full|Assign all plans to "zRange"|
-||laplacian|Split 3D image into blocks of the size given by *blockSize*. Find Laplacian Variance maximum (blur estimation) for each block in order to estimate the focal plane. Rebuild block-by-block 2D image with optimal focal plane of each block. if *zwindows* option is activated, project each block with MIP option.|
-|windowSecurity||Used for *automatic* mode, removes the lowest and highest Z-plans.|
-|zwindows| | In automatic mode, selects the number of planes below and above the focal plane to be used for making the projection.
-|display| | Saves output 2D projections as png files
-|zProjectOption|sum|Sum plans in "zRange"|
-||MIP|Maximum Intensity Projection of plans in "zRange"|    
-|zmax| | Select ending plane to use for projection
-|zmin| | Select starting plane to use for projection
-
-## Outputs
+## Graph
 
 
 ```{mermaid}

@@ -2,7 +2,29 @@
 *Applies registration to DAPI and barcodes*
 
 ## Invoke
+Inside the folder with your input data, run:
+```shell
+pyhim -C appliesRegistrations
+```
+
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
+
+## Relevant options
+
+## Description
 To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder.  
+
+
+## Graph
 
 ```{mermaid}
 flowchart TD

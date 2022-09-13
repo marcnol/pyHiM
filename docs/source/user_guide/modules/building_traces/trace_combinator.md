@@ -1,8 +1,8 @@
 # trace_combinator
 
-The objective of trace_combinator is to combine traces from different ROIs or different experiments.
+*The objective of trace_combinator is to combine traces from different ROIs or different experiments.*
 
-**Invoke**
+## Invoke
 
 `trace_combinator` can be run from the command line in two manners: 
 
@@ -50,9 +50,22 @@ The objective of trace_combinator is to combine traces from different ROIs or di
 
 `trace_combinator` can also be used to combine traces with specific, user-provided  `labels`, which can be attributed using `trace_selector` (see above). These can be indicated by using the `--label` command-line argument. In addition, you need to indicate whether you want to use only the traces that contain the label (`labeled`), the traces that <u>do not</u> contain the label (`unlabeled`), or all the traces (`all`) irrespective of whether they contain or not the label. It is good practice to verify the `label` column of your output `Trace_` file to check that you selected the expected traces.
 
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
 
 
-**Relevant options**
+
+
+
+## Relevant options
 
 ```
 usage: trace_combinator.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]

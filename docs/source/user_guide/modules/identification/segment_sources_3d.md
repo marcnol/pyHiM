@@ -1,9 +1,29 @@
 # segmentSources3D
 *Segments sources in 3D*
 
-## Invoke
-To run this function exclusively, run *pyHiM* using the ``` -C segmentSources3D ``` argument.
 
+## Invoke
+Inside the folder with your input data, run:
+```shell
+pyhim -C segmentSources3D
+```
+
+## Inputs
+
+|Name shape|Quantity|Mandatory|Description|
+|---|---|---|---|
+|infoList.json|1|Yes|Parameter file.|
+
+## Outputs
+|Name shape|Quantity|Description|
+|---|---|---|
+||||
+
+## Relevant options
+
+## Description
+
+## Graph
 
 ```{mermaid}
 flowchart TD
