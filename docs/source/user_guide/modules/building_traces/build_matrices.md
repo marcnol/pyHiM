@@ -49,8 +49,8 @@ Output images:
 
 | method    | contact matrices                                             | **PWD matrix**                                               |
 | --------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 2D - mask | ![image-20220212093032574](../../_static/user_guide/image-20220212093032574.png) | ![image-20220212093119700](../../_static/user_guide/image-20220212093119700.png) |
-| 3D - mask | ![image-20220212093245315](../../_static/user_guide/image-20220212093245315.png) | ![image-20220212093210913](../../_static/user_guide/image-20220212093210913.png) |
-| KDtree 3D | ![image-20220213120843091](../../_static/user_guide/image-20220213120843091.png) | ![image-20220213120807698](../../_static/user_guide/image-20220213120807698.png) |
-| Nmatrices | Masking![image-20220212093324905](../../_static/user_guide/image-20220212093324905.png) | KDTREE![image-20220213120921749](../../_static/user_guide/image-20220213120921749.png) |
+| 2D - mask | ![image-20220212093032574](../../../_static/user_guide/image-20220212093032574.png) | ![image-20220212093119700](../../../_static/user_guide/image-20220212093119700.png) |
+| 3D - mask | ![image-20220212093245315](../../../_static/user_guide/image-20220212093245315.png) | ![image-20220212093210913](../../../_static/user_guide/image-20220212093210913.png) |
+| KDtree 3D | ![image-20220213120843091](../../../_static/user_guide/image-20220213120843091.png) | ![image-20220213120807698](../../../_static/user_guide/image-20220213120807698.png) |
+| Nmatrices | Masking![image-20220212093324905](../../../_static/user_guide/image-20220212093324905.png) | KDTREE![image-20220213120921749](../../../_static/user_guide/image-20220213120921749.png) |
 

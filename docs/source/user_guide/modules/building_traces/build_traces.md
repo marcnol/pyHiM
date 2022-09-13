@@ -44,6 +44,6 @@ Output images:
 
 |  | full image | zoomed images |
 | --- |   ---- | --- |
-| 3D **mask** | ![image-20220210221402082](../../_static/user_guide/image-20220210221402082.png) |![image-20220210221430543](../../_static/user_guide/image-20220210221430543.png)|
-| 3D **mask** | ![image-20220210222233148](../../_static/user_guide/image-20220210222233148.png) |![image-20220210222354093](../../_static/user_guide/image-20220210222354093.png)|
+| 3D **mask** | ![image-20220210221402082](../../../_static/user_guide/image-20220210221402082.png) |![image-20220210221430543](../../../_static/user_guide/image-20220210221430543.png)|
+| 3D **mask** | ![image-20220210222233148](../../../_static/user_guide/image-20220210222233148.png) |![image-20220210222354093](../../../_static/user_guide/image-20220210222354093.png)|
 | 3D **KDtree** |  ||

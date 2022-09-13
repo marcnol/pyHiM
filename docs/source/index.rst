@@ -43,7 +43,7 @@ How to proceed
     .. link-button:: getting_started/quick_install
             :type: ref
             :text: To the getting started guides
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
     .. image:: _static/index_user_guide.svg
@@ -60,7 +60,7 @@ How to proceed
     .. link-button:: user_guide/pyhim_presentation
             :type: ref
             :text: To the user guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
     .. image:: _static/index_api.svg
@@ -78,7 +78,7 @@ How to proceed
     .. link-button:: reference/pyhim_class_diagram
             :type: ref
             :text: To the reference guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
     .. image:: _static/index_contribute.svg
@@ -96,7 +96,7 @@ How to proceed
     .. link-button:: contributor/dev_env
             :type: ref
             :text: To the development guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
 
 

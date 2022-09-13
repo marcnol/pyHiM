@@ -41,5 +41,5 @@ outputs images:
 
 | statistics of registration                                   | localization map                                             |
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| ![image-20220210221852444](../../_static/user_guide/image-20220210221852444.png) | ![image-20220210221942291](../../_static/user_guide/image-20220210221942291.png) |
-| ![image-20220210222028835](../../_static/user_guide/image-20220210222028835.png) | ![image-20220210222006297](../../_static/user_guide/image-20220210222006297.png) |
+| ![image-20220210221852444](../../../_static/user_guide/image-20220210221852444.png) | ![image-20220210221942291](../../../_static/user_guide/image-20220210221942291.png) |
+| ![image-20220210222028835](../../../_static/user_guide/image-20220210222028835.png) | ![image-20220210222006297](../../../_static/user_guide/image-20220210222006297.png) |
