@@ -77,6 +77,16 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 #
 html_theme = 'sphinx_book_theme'
 
+html_theme_options = {
+    "repository_url": "https://github.com/marcnol/pyHiM",
+    "use_repository_button": True,
+    "use_edit_page_button": False,
+    "path_to_docs": "docs",
+    "logo_only": True
+}
+
+html_logo = "_static/logo-tempo.png"
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
