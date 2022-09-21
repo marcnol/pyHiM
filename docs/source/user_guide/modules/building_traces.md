@@ -56,7 +56,7 @@ Parameters to run this script will be read from the ```buildsPWDmatrix``` field 
 If you want to run this function exclusively, run *pyHiM* using the ```-C buildHiMmatrix``` argument.
 
 ```sh
-usage: pyHiM.py [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+usage: pyhim [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
 
 optional arguments:
   -h, --help            show this help message and exit

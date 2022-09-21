@@ -12,11 +12,12 @@ pyhim -C appliesRegistrations
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
+|alignImages.ecsv|1|Yes|XY alignment resulting from the XY alignment produced while running `alignImages`.|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-||||
+|2D_registered.npy|2..n|2D registered images|
 
 ## Relevant options
 

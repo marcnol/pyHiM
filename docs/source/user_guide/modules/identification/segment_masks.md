@@ -12,11 +12,13 @@ pyhim -C segmentMasks
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
+|<image_name>.tif|2..n|Yes|2D images|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-||||
+|segmented_barecode.ecsv|1|If it's barecode object|
+|segmented_mask.npy|2..n|If it's mask object|
 
 
 ## Relevant options
@@ -35,13 +37,8 @@ pyhim -C segmentMasks
 |area_max| | Maximal area to keep object|
 |residual_max| | Maximum difference between axial spot intensity and gaussian fit| 
 
-## (Invoke)
-To run a 2D segmentation exclusively, run *pyHiM* using the ``` -C segmentMasks ``` argument. This fucnction will be applied when the parameter ```operation``` is set to ```2D```, in the section ```segmentedObjects``` of ```infoList.json```. 
 
-
-
-## (Outputs)
-
+## Description
 A 2D mask segmentation produces two outputs saved in the `segmentedObjects` folder:
 
 ```

@@ -11,11 +11,12 @@ pyhim -C alignImages
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
+|<image_name>.tif|2..n|Yes|3D images to project in 2D.|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-||||
+|<image_name>.tif|2..n|2D images|
 
 ## Relevant options
 Parameters to run this scropt will be read from the ```zProject``` field of ```infoList.json```
@@ -61,8 +62,9 @@ There are many choices of how to do this:
     -   sum: sums all planes
     -   MIP: maximum intensity projection
 
-## (Invoke)
-To run this function exclusively, run *pyHiM* using the ``` -C makeProjections ``` argument. This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this module start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
+## Step by step
+
+This routine take all 3D images and project its in 2D. Depending on the chosen *mode*, this module start to find the good set of Z-plans, where there is the least noise. This step give a range centered on a focal plan, named *zRange*. After, projection is done on this range either by sum or by maximum intensity projection.
 
 ## Graph
 

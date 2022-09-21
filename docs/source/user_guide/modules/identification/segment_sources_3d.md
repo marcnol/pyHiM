@@ -13,11 +13,12 @@ pyhim -C segmentSources3D
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
+|<image_name>.tif|2..n|Yes|3D images|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-||||
+|3D_segmented_barcode.ecsv|1||
 
 ## Relevant options
 

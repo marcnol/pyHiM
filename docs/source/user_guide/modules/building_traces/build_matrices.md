@@ -28,15 +28,6 @@ Parameters to run this script will be read from the ```buildsPWDmatrix``` field 
 ```
 
 
-## (Invoke)
-
-To run this function exclusively, run *pyHiM* using the ```-C build_matrix``` argument. This function will find and process all the `Trace_` files in the `buildsPWDmatrix` folder. The outputs of `build_matrix` will be saved in the `buildsPWDmatrix` folder. Output files will be created with the root filename of `Trace_`files. They will contain Numpy arrays with single cell PWD matrices  (`_PWDscMatrix.npy`) and N-matrices (`_Nmatrix.npy`), and an `.ecsv` list of barcode names (`_unique_barcodes.ecsv`).
-
-
-
-
-
-
 Output images:
 
 - `_PWDhistograms.png`

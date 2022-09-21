@@ -12,11 +12,12 @@ pyhim -C alignImages
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
+|<image_name>.tif|2..n|Yes|2D images with a fiducial channel to align.|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-||||
+|alignImages.ecsv|1|X, Y shift for each image|
 
 ## Relevant options
 
@@ -40,9 +41,8 @@ There are several ways of correcting for drift within *pyHiM*:
 
 2.3 **2D Local drift correction.** This method will be applied after methods 2.1 and 2.2. It will iterate over the DAPI masks detected in the segmentation function (see below), extract a 2D region around each mask, and x-correlate the reference and cycle _fiducials in this 2D sub-region. Thus, this method is slower than methods 1 and 2, but provides for local corrections that account for deformations of the sample. The method will output images with the uncorrected and corrected overlaps for each DAPI mask sub-region so you can evaluate its performance. 
 
-## (Invoke)
+## Step by step
 
-To run this function exclusively, run *pyHiM* using the ``` -C alignImages ``` argument. 
 In the set of *fiducial* images, one is chosen by initialization parameters to be the reference. 
 The algorithm takes images one by one and align with the reference.
 There are several ways to compute the shift:

@@ -106,9 +106,7 @@ How to proceed
 
    getting_started/quick_install
    getting_started/typical_run
-   getting_started/configuration_file
-   getting_started/personalised_run
-   getting_started/full_pyHiM_run_2D
+   getting_started/tutorials
 
 .. toctree::
    :caption: User Guide

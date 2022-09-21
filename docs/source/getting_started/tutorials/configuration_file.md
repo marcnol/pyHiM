@@ -2,9 +2,9 @@
 
 All configuration parameters for running `pyHiM` are provided in a single configuration file called `infoList.json`.
 
-A detailed description of the configuration file and the analysis parameters can be found in the [user guide section](../user_guide/fundamental.md).
+A detailed description of the configuration file and the analysis parameters can be found in the [user guide section](../../user_guide/fundamental.md).
 
-You can find a global description of each parameter in the [reference guide](../reference/infoList_comprehension.md).
+You can find a global description of each parameter in the [reference guide](../../reference/infoList_comprehension.md).
 
 Find below an example extract of a section of the `infoList.json` file:
 ```json

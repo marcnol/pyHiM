@@ -14,12 +14,12 @@ pyhim -C alignImages3D
 |---|---|---|---|
 |infoList.json|1|Yes|Parameter file.|
 |<image_name>.tif|2..n|Yes|Images with a fiducial channel to align in 3D.|
-|alignImages.table|1|No|XY alignment resulting from the XY alignment produced while running `alignImages`.|
+|alignImages.ecsv|1|No|XY alignment resulting from the XY alignment produced while running `alignImages`.|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-|alignImages_block3D.dat|1|Shift block maps for X, Y and Z and quality matrices.|
+|alignImages_block3D.ecsv|1|Shift block maps for X, Y and Z and quality matrices.|
 
 ## Relevant options
 

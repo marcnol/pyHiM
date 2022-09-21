@@ -223,7 +223,7 @@ if __name__ == "__main__":
         print("Output logfile: {}".format(outputFile))
 
         pyHiM = (
-            "pyHiM.py -F "
+            "pyhim -F "
             + folder
             + CMD
             + threads
