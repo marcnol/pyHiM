@@ -277,14 +277,29 @@ class BuildTraces:
 
         printLog("$ Coordinates dimensions: {}".format(self.ndims))
 
-    def load_mask(self,TIF_files_in_folder,):
+    def load_mask(self,files_in_folder,):
+        """
+        searches and loads mask files for building chromatin trace
 
+        Parameters
+        ----------
+        files_in_folder : list of str
+            list of TIF files to be explored.
+
+        Returns
+        -------
+        bool
+            True: mask found and loaded
+            False: failed to find mask file
+
+        """
+        
         # finds files with cell masks
         channel = self.param.param["acquisition"][self.maskType+"_channel"]
-
+        
         fileList2Process = [
             file
-            for file in TIF_files_in_folder
+            for file in files_in_folder
             if self.param.decodesFileParts(file)["channel"] == channel # typically "ch00"
             and self.maskIdentifier in os.path.basename(file).split("_")
             and int(self.param.decodesFileParts(file)["roi"]) == self.nROI
@@ -299,9 +314,9 @@ class BuildTraces:
             if os.path.exists(fullFileNameROImasks):
 
                 # loads and initializes masks
-                #segmented_masks = np.load(fullFileNameROImasks)
                 segmented_masks = read_array(fullFileNameROImasks)
-
+                print(f"$ loaded mask file: {fullFileNameROImasks}")
+                
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.Masks= expand_labels(segmented_masks, distance = self.mask_expansion)
 
@@ -311,11 +326,13 @@ class BuildTraces:
 
             else:
                 # Could not find a file with masks to assign. Report and continue with next ROI
-                debug_mask_fileName(TIF_files_in_folder,fullFileNameROImasks,self.maskIdentifier,self.nROI,label=self.param.param["acquisition"]["label_channel"])
+                debug_mask_fileName(files_in_folder,fullFileNameROImasks,self.maskIdentifier,self.nROI,label=self.param.param["acquisition"]["label_channel"])
 
         else:
-            printLog(f"$ Did not identified any filename for mask: {self.maskIdentifier}, channel: {channel}","WARN")
+            printLog(f"$ Did not find any filename for mask: {self.maskIdentifier}, channel: {channel}","WARN")
             printLog("-"*80)
+            # Could not find a file with masks to assign. Report and continue with next ROI
+            debug_mask_fileName(files_in_folder,"None",self.maskIdentifier,self.nROI,label=self.param.param["acquisition"]["label_channel"])
 
         return False
 
