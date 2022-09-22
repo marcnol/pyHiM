@@ -17,14 +17,6 @@ import numpy as np
 from glob import glob
 import glob 
 
-def dataset_to_use(Root_folder,datatype):
-	if (datatype =='Full'):
-		Input_folder = Root_folder + 'Input_datatest_full/'
-	if (datatype =='Reduced'):
-		Input_folder = Root_folder + 'Input_datatest_subset/'
-	return Input_folder
-	
-
 def plot_zprojection(Input_folder,RTs_references,titles,datatype):
 
 	# Figure size in inches optional
@@ -55,7 +47,7 @@ def plot_zprojection(Input_folder,RTs_references,titles,datatype):
 		ax[x].set_title(titles[x])
 		ax[x].imshow(Image)
 	     
-def plot_alignement(Input_folder,RTs_references,titles):
+def plot_alignment(Input_folder,RTs_references,titles):
 
     # Figure size in inches optional
     rcParams['figure.figsize'] = 15 ,10
@@ -87,57 +79,59 @@ def plot_alignement(Input_folder,RTs_references,titles):
         ax[x].set_title(titles[x])
         ax[x].imshow(Image)    
     
+def show_plot(titles,imgs,files):
+    if len(imgs)>1:
+        fig, ax = plt.subplots(1,2)
+        for title, img, axis, file in zip(titles,imgs, ax, files):
+            axis.set_title(title)
+            axis.imshow(img)
+            print(f"showing {file}")
+    else:
+        plt.imshow(imgs[0])
+        plt.axis('off')
+
 def plot_segment_object(Input_folder,RTs_references,titles,datatype):
 
-	# Figure size in inches optional
-	rcParams['figure.figsize'] = 15 ,10
-	
-	if (datatype =='DAPI' or datatype =='RT'):
-		if (datatype == 'RT'):
+    # Figure size in inches optional
+    rcParams['figure.figsize'] = 15 ,10
 
-			# Create list of images
-			jpgFilenamesList_segmented = glob.glob(Input_folder + 'segmentedObjects/'+'*'+RTs_references+'*'+'_3Dmasks.png')
+    if (datatype =='DAPI' or datatype =='RT'):
+        if (datatype == 'RT'):
+            # Create list of images
+            files = glob.glob(Input_folder + 'segmentedObjects/'+'*'+RTs_references+'*'+'_3DimageNlocalizations.png')
+            imgs = [mpimg.imread(files[0])[500:4500,500:4500]]
             
-		if (datatype == 'DAPI'):
-		
-			# Create list of images
-			jpgFilenamesList_segmented = glob.glob(Input_folder + 'segmentedObjects/'+'*'+'DAPI'+'*'+'_3Dmasks.png')
+        if (datatype == 'DAPI'):
+            # Create list of images
+            files = glob.glob(Input_folder + 'segmentedObjects/'+'*'+'DAPI'+'*'+'_3Dmasks.png')
+            imgs = [mpimg.imread(files[0])[1500:3600,500:4500]]
+
+        print(f"$ Will plot: {files}")
+        show_plot(titles,imgs, files)
             
-		img_A = mpimg.imread(jpgFilenamesList_segmented[0])[2000:3000,1000:2000]
-		img_B = mpimg.imread(jpgFilenamesList_segmented[0])[2000:3000,3200:4200] # Zoom in the region of interest
-		
-			# Concatenates images
-		Concat_images = [img_A,img_B]
+    if (datatype =='TRACES'):
 
-		# Set titles
-		# titles = [RTs_references+' Segmented ',RTs_references+' Segmented Zoom']
+        # Create list of images
+        files = glob.glob(Input_folder + 'buildsPWDmatrix/'+'*'+'DAPI'+'*'+'_XYZ'+'*'+'.png')
+        imgs = [mpimg.imread(x) for x in files]
+        # Plot 
+        fig, ax = plt.subplots(1,2)
+        for title, img, axis, file in zip(titles,imgs,ax, files):
+            axis.set_title(title)
+            axis.imshow(img, cmap='terrain')
+            print(f"showing {file}")
+        #img_A = mpimg.imread(jpgFilenamesList_traces[0])[0:6000,0:6000]
+        #img_B = mpimg.imread(jpgFilenamesList_traces[0])[1000:1500,1000:1500] # Zoom in the region of interest
+        #Concat_images = [img_A,img_B]
 
-		# Plot 
-		fig, ax = plt.subplots(1,2)
-		for x, file in enumerate(titles):
-		    # Read images
-		    Image = Concat_images[x]
-		    # Display images
-		    ax[x].set_title(titles[x])
-		    ax[x].imshow(Image)
-
-	if (datatype =='TRACES'):
-	
-		# Create list of images
-		jpgFilenamesList_traces = glob.glob(Input_folder + 'buildsPWDmatrix/'+'*'+'DAPI'+'*'+'_XYZ'+'*'+'.png')
-			
-		img_A = mpimg.imread(jpgFilenamesList_traces[0])[0:6000,0:6000]
-		img_B = mpimg.imread(jpgFilenamesList_traces[0])[1000:1500,1000:1500] # Zoom in the region of interest
-		Concat_images = [img_A,img_B]
-		
-		# Plot 
-		fig, ax = plt.subplots(1,2)
-		for x, file in enumerate(titles):
-		    # Read images
-		    Image = Concat_images[x]
-		    # Display images
-		    ax[x].set_title(titles[x])
-		    ax[x].imshow(Image)
+        # Plot 
+        #fig, ax = plt.subplots(1,2)
+        #for x, file in enumerate(titles):
+        #    # Read images
+        #    Image = Concat_images[x]
+        #    # Display images
+        #    ax[x].set_title(titles[x])
+        #    ax[x].imshow(Image)
 
 def plot_matrix(Input_folder):
 	
