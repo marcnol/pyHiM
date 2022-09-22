@@ -47,7 +47,7 @@ def plot_zprojection(Input_folder,RTs_references,titles,datatype):
 		ax[x].set_title(titles[x])
 		ax[x].imshow(Image)
 	     
-def plot_alignement(Input_folder,RTs_references,titles):
+def plot_alignment(Input_folder,RTs_references,titles):
 
     # Figure size in inches optional
     rcParams['figure.figsize'] = 15 ,10
