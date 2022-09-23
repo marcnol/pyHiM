@@ -125,17 +125,19 @@ def plot_matrix(input_folder, data_type='proximity'):
 
     # figure size in inches optional
     rcParams['figure.figsize'] = 10 ,10
-    
+
     # Create list of images
     if data_type == 'PWD':
-        files = glob.glob(input_folder + 'buildsPWDmatrix/'+'*PWDmatrixKDE.png')
+        files = glob.glob(input_folder + 'buildsPWDmatrix/'+'*_PWDmatrixKDE.png')
     elif data_type == 'proximity':
         files = glob.glob(input_folder + 'buildsPWDmatrix/'+'*HiMmatrix.png')
-       
+    elif data_type.split(',')[0] == '3D_alignments':
+        files = glob.glob(input_folder + 'alignImages/*'+data_type.split(',')[1]+'*3Dalignments.png')
+        
     titles = [data_type]
-    
-    img = mpimg.imread(files[0])
 
-    show_plot(titles,[img],"-")
+    if len(files)>0:
+        img = mpimg.imread(files[0])
+        show_plot(titles,[img],"-")
 
 
