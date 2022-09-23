@@ -401,16 +401,20 @@ class BuildTraces:
 
                 # builds SCdistanceTable
                 self.buildsSCdistanceTable()
-                printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
-
-                # saves trace table with results per ROI
-                output_table_fileName = outputFileName + "_" + self.label + "_mask:" + str(self.maskIdentifier) + "_ROI:" + str(self.nROI) + ".ecsv"
-                self.trace_table.save(output_table_fileName, self.trace_table.data)
-
-                # plots results
-                self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"], Masks = self.Masks)
-
-                printLog(f"$ Saved output table as {output_table_fileName}")
+                printLog("$ number of entries in trace table: {}".format(len(self.trace_table.data)))
+                
+                if len(self.trace_table.data) > 0:
+                    # saves trace table with results per ROI
+                    output_table_fileName = outputFileName + "_" + self.label + "_mask:" + str(self.maskIdentifier) + "_ROI:" + str(self.nROI) + ".ecsv"
+                    self.trace_table.save(output_table_fileName, self.trace_table.data)
+    
+                    # plots results
+                    self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"], Masks = self.Masks)
+    
+                    printLog(f"$ Saved output table as {output_table_fileName}")
+                else:
+                    printLog(f"! Warning: table was empty therefore not saved!")
+                    
                 processingOrder += 1
 
     def build_trace_by_masking(self, barcodeMap):
@@ -470,10 +474,16 @@ class BuildTraces:
                                     pixelSize['z']*dataTable['zcentroid'].data.reshape(N,1)], axis = 1)
         elif self.ndims == 2:
             coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(N,1),
+                                    pixelSize['y']*dataTable['ycentroid'].data.reshape(N,1),
+                                    0.0*dataTable['zcentroid'].data.reshape(N,1)], axis = 1)
+        """ if this code above works and does not introduce bugs, we will remove the commented lines in future
+        elif self.ndims == 2:
+            coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(N,1),
                                     pixelSize['y']*dataTable['ycentroid'].data.reshape(N,1)], axis = 1)
-
+        """
+            
         # gets tree of coordinates
-        printLog('> Creating KDTree')
+        printLog(f'> Creating KDTree for {self.ndims} dimensions')
         x_tree = KDTree(coordinates)
 
         ## set distance thresold
@@ -513,8 +523,7 @@ class BuildTraces:
         numberROIs = len(barcodeMapROI.groups.keys)
 
         printLog("-"*80)
-        printLog("> Starting spatial clustering for {} ROIs".format(numberROIs))
-
+        printLog("> Starting spatial clustering for {} ROI in {} dimensions".format(numberROIs,self.ndims))
 
         tag = str(self.ndims) + 'D'
 
@@ -539,24 +548,27 @@ class BuildTraces:
 
             # builds SCdistanceTable
             self.buildsSCdistanceTable()
-            printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
+            if len(self.trace_table.data) > 0:
+                printLog("$ Number of entries in trace table: {}".format(len(self.trace_table.data)))
+    
+                # saves trace table with results per ROI
+                output_table_fileName = outputFileName + "_" + self.label + "_KDtree" + "_ROI:" + str(self.nROI) + ".ecsv"
+                self.trace_table.save(output_table_fileName, self.trace_table.data)
+    
+                # plots results
+                self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"])
 
-            # saves trace table with results per ROI
-            output_table_fileName = outputFileName + "_" + self.label + "_KDtree" + "_ROI:" + str(self.nROI) + ".ecsv"
-            self.trace_table.save(output_table_fileName, self.trace_table.data)
-
-            # plots results
-            self.trace_table.plots_traces([output_table_fileName.split(".")[0], "_traces_XYZ", ".png"])
-
-            printLog(f"$ Traces built. Saved output table as {output_table_fileName}")
-
+                printLog(f"$ Traces built. Saved output table as {output_table_fileName}")
+            else:
+                printLog(f"! Warning: table was empty therefore not saved!")
+                
     def launch_analysis(self,file):
 
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcodeMap, self.uniqueBarcodes = table.load(file)
 
-        if "3D" in file:
+        if "3D" in os.path.basename(file):
             self.ndims = 3
             self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": self.pixelSizeZ}
         else:
@@ -565,7 +577,9 @@ class BuildTraces:
 
         if "clustering" in self.tracing_method and self.ndims == 3: # for now it only runs for 3D data
             self.build_trace_by_clustering(barcodeMap)
-
+        elif self.ndims == 2:
+            printLog(f"! Warning: localization files in 2D will not be processed using clustering.\n")
+            
         if "masking" in self.tracing_method:
             self.build_trace_by_masking(barcodeMap)
 
