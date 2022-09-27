@@ -153,7 +153,7 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     run2Datasets = False
 
     rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
@@ -236,3 +236,6 @@ if __name__ == "__main__":
 
     plt.savefig(outputFileName)
     print("Output figure: {}".format(outputFileName))
+
+if __name__ == "__main__":
+    main()

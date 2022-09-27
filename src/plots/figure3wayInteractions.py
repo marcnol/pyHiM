@@ -131,7 +131,7 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     print(">>> Producing HiM 3-way matrices")
 
     # [parsing arguments
@@ -258,3 +258,6 @@ if __name__ == "__main__":
     print("Output figure: {}".format(outputFileName))
 
     print("\nDone\n\n")
+
+if __name__ == "__main__":
+    main()

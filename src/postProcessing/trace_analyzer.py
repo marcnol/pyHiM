@@ -210,7 +210,7 @@ def process_traces(folder, trace_files = list()):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
@@ -221,3 +221,6 @@ if __name__ == "__main__":
     process_traces(folder, trace_files = p["trace_files"])
 
     print("Finished execution")
+
+if __name__ == "__main__":
+    main()

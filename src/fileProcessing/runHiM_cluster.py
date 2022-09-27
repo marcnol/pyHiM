@@ -124,7 +124,7 @@ def readArguments():
 
     return runParameters
 
-if __name__ == "__main__":
+def main():
 
     runParameters = readArguments()
 
@@ -291,3 +291,6 @@ if __name__ == "__main__":
                 f.write("{}\n".format(item))
 
         print("\nTo run master bash script:\n$ bash {}".format(BASHscriptName))
+
+if __name__ == "__main__":
+    main()

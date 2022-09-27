@@ -23,7 +23,7 @@ import tarfile
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
@@ -107,3 +107,6 @@ if __name__ == "__main__":
     if os.path.exists(tarFileName):
         print("Zipping {}".format(tarFileName))
         os.system("gzip " + tarFileName)
+
+if __name__ == "__main__":
+    main()

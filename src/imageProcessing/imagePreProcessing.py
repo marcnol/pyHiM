@@ -133,7 +133,7 @@ def lauchDaskScheduler(requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=20
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines runParameters
@@ -212,3 +212,6 @@ if __name__ == "__main__":
         client.close()
 
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+if __name__ == "__main__":
+    main()

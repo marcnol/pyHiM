@@ -118,7 +118,7 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines runParameters
@@ -190,5 +190,6 @@ if __name__ == "__main__":
         outfile=outputFile + '.' + extension
         print("\n> Saving image : {}".format(outfile))
         imsave(outfile, newLabeledImage)
-
-            
+  
+if __name__ == "__main__":
+    main()
