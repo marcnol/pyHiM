@@ -49,7 +49,7 @@ def plot_zprojection(Input_folder,RTs_references,titles,datatype):
     fig, ax = plt.subplots(1,2)
     for x, file in enumerate(Concat_images):
         # Read images
-        Image = mpimg.imread(Input_folder + 'zProject/' + file[0])[500:800,0:300]
+        Image = mpimg.imread(Input_folder + 'zProject/' + file[0])[0:1000,0:1000]
         # Display images
         ax[x].set_title(titles[x])
         ax[x].imshow(Image)
@@ -65,7 +65,7 @@ def plot_alignment(Input_folder,RTs_references,titles):
 
     img_A = mpimg.imread(jpgFilenamesList_RTs_alignement_Difference[0])[1000:2000,1000:2000] # Zoom in the region of interest
     img_B = mpimg.imread(jpgFilenamesList_RTs_alignement_Difference[0])[1000:2000,3500:4500] # Zoom in the region of interest
-    img_C = mpimg.imread(jpgFilenamesList_RTs_alignement_overlay[0])[1000:2000,1000:2000]*5 # Zoom in the region of interest
+    img_C = mpimg.imread(jpgFilenamesList_RTs_alignement_overlay[0])[1000:2000,700:1700]*5 # Zoom in the region of interest
 
 
     # Concatenates images
@@ -124,7 +124,7 @@ def plot_segment_object(Input_folder,RTs_references,titles,datatype):
 def plot_matrix(input_folder, data_type='proximity'):
 
     # figure size in inches optional
-    rcParams['figure.figsize'] = 10 ,10
+    rcParams['figure.figsize'] = 15 ,15
 
     # Create list of images
     if data_type == 'PWD':
