@@ -168,7 +168,7 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     print(">>> Producing HiM matrix")
     rootFolder, outputFolder, runParameters = parseArguments()
@@ -327,3 +327,6 @@ if __name__ == "__main__":
     #     plotScalogram(matrix, outputFileNameScalogram)
 
     print("\nDone\n\n")
+
+if __name__ == "__main__":
+    main()

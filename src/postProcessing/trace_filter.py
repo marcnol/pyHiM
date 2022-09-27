@@ -104,7 +104,7 @@ def runtime(folder, N_barcodes = 2, trace_files = list()):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
@@ -115,3 +115,6 @@ if __name__ == "__main__":
 
     print(f"Processed <{n_traces_processed}> trace(s)")
     print("Finished execution")
+
+if __name__ == "__main__":
+    main()
