@@ -1,12 +1,12 @@
-# pyHiM installation
+# Developer installation
 
-## Clone pyHiM repository
+## Clone *pyHiM* repository
 
 Clone the repository into your local filesystem. The standard location is: ```$HOME/Repositories/pyHiM```
 
-### Clone pyHiM repository
+### Clone *pyHiM* repository
 
-1. Create a folder where you want to install pyHiM and go inside to clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
+1. Create a folder where you want to install *pyHiM* and go inside to clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
 ```bash
 mkdir $HOME/Repositories
@@ -42,7 +42,7 @@ export MPLBACKEND=agg
 ```
 
 ```{note}
-Make sure you change ```.../Repositories/...``` with your directory name (step 1.) if this is not where you put pyHiM !
+Make sure you change ```.../Repositories/...``` with your directory name (step 1.) if this is not where you put *pyHiM* !
 ```
 
 ### Set up enviroment using conda
@@ -76,7 +76,7 @@ bash installation.sh
 
 If you encounter problems, follow the manual installation (below).
 
-##### Semi-automatic configuration
+### Semi-automatic configuration
 
 Run this command in your terminal within the root 
 
@@ -91,7 +91,7 @@ If you get this error:
 You solve by running `pip install dask[complete] distributed --upgrade`.
 ```
 
-##### Manual configuration
+### Manual configuration
 
 To manually install the necessary packages using conda, run:
 
@@ -103,13 +103,13 @@ pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
 pip install --upgrade tensorflow
 ```
 
-Remember to activate the environment before running pyHiM:
+Remember to activate the environment before running *pyHiM*:
 
 ```sh
 conda activate pyHiM
 ```
 
-#### Upgrade scikit-image to development version
+### Upgrade scikit-image to development version
 
 Depending on whether you already had a version of scikit-image installed, you may need to upgrade it. For this, uninstall any existing installations:
 
@@ -185,7 +185,7 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
 
 ### Script installation for super-computer centers (e.g. Meso-LR)
 
-To access the private repository of pyHiM, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
+To access the private repository of *pyHiM*, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 
 Then run the following automatic script:
 
@@ -220,7 +220,7 @@ ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/clea
 
 ## Test run
 
-There are two ways to do a test run in this version of pyHiM
+There are two ways to do a test run in this version of *pyHiM*
 
 ### pytest
 
@@ -237,7 +237,7 @@ For instance if your debug dataset is in ```/mnt/grey/DATA/users/marcnol/test_Hi
 python create_testDataJSON.py -F /mnt/grey/DATA/users/marcnol/test_HiM/testDataset
 ```
 
-Now go to the pyHiM root directory (e.g. ```cd /home/marcnol/Repositories/pyHiM```) and run
+Now go to the *pyHiM* root directory (e.g. ```cd /home/marcnol/Repositories/pyHiM```) and run
 
 ```
 pytest
@@ -264,7 +264,7 @@ If you want to go for a test run, do the following:
 pyHiM.py -F .
 ```
 
-If you want to run it in your data directory, then copy the configuration files to the directory where you want to run pyHiM
+If you want to run it in your data directory, then copy the configuration files to the directory where you want to run *pyHiM*
 
 ```bash
 cp /home/rata/Repositories/pyHiM/modelParameterFiles_JSON/infoList*json path-to-your-directory

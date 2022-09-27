@@ -4,7 +4,7 @@
 Our documentation is structured as follows:
 
 1. Getting started: Step by step guide from installation to running an example.
-2. User guide: Detailed explanation of what pyHiM can do and how to do it step-by-step.
+2. User guide: Detailed explanation of what *pyHiM* can do and how to do it step-by-step.
 3. Reference guide: Technical description of software, including API documentation and architecture.
 4. Contributor's guide: Description of project conventions and development tips.
 
@@ -15,7 +15,7 @@ Our documentation is structured as follows:
 
 ## Build documentation
 
-To build pyHiM documentation locally, we use [Sphinx](https://www.sphinx-doc.org/en/master/) which generates static, local HTML pages (see *Sphinx* section below). The documentation is automatically rebuilt by `readthedocs` using the github pyHiM source documentation files. This build of the documentation is hosted at [Read the Docs](https://readthedocs.org/) and available online.
+To build *pyHiM* documentation locally, we use [Sphinx](https://www.sphinx-doc.org/en/master/) which generates static, local HTML pages (see *Sphinx* section below). The documentation is automatically rebuilt by `readthedocs` using the github *pyHiM* source documentation files. This build of the documentation is hosted at [Read the Docs](https://readthedocs.org/) and available online.
 
 The documentation is placed in the `/docs` directory. Two kinds of documentations are provided by the developer:
 - Pure text files (preferably written in [markdown](https://www.markdownguide.org/basic-syntax/)).

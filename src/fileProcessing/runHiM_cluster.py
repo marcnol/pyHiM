@@ -223,7 +223,7 @@ def main():
         print("Output logfile: {}".format(outputFile))
 
         pyHiM = (
-            "pyHiM.py -F "
+            "pyhim -F "
             + folder
             + CMD
             + threads

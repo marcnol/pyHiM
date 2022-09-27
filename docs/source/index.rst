@@ -6,19 +6,16 @@ pyHiM - Documentation
 
 `pyHiM` implements the analysis of multiplexed DNA-FISH data, as described in our `protocols paper <https://github.com/NollmannLab/HiM_protocol>`_.
 
-`pyHiM` is a software package developed by the `Nollmann Lab <http://www.nollmannlab.org>`_ at the `Center of Structural Biology <http://www.cbs.cnrs.fr>`_, a department of the `CNRS <http://www.cnrs.fr>`_ and the `INSERM <http://www.inserm.fr>`_. 
-
 =============
 Main features
 =============
 
-pyHiM is a software package designed to pre-process and analyze multiplexed DNA-FISH data (e.g. Hi-M), as well as to visualize the results. pyHiM has specific modules (called features) that allow the user to:
-
-* register nuclei and barcode images to remove or minimize drift.
-* segment nuclei
-* segment and localize barcodes
-* construct chromatin traces
-* build single-trace and ensemble pair-wise distance maps
+* Register nuclei and barcode images to remove or minimize drift
+* Segment nuclei
+* Localize barcodes
+* Construct chromatin traces
+* Build single-trace and ensemble pair-wise distance maps
+* Work with 2D or 3D images
 
 ==============
 How to proceed
@@ -30,7 +27,8 @@ How to proceed
     :column: col-lg-6 col-md-6 col-sm-6 col-xs-12 p-2
 
     ---
-    :img-top: _static/index_getting_started.svg
+    .. image:: _static/index_getting_started.svg
+       :width: 50
 
     Getting started
     ^^^^^^^^^^^^^^^
@@ -40,78 +38,84 @@ How to proceed
 
     +++
 
-    .. link-button:: getting_started/welcome
+    .. link-button:: getting_started/quick_install
             :type: ref
             :text: To the getting started guides
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
-    :img-top: _static/index_user_guide.svg
+    .. image:: _static/index_user_guide.svg
+       :width: 60
 
     User guide
     ^^^^^^^^^^
 
     The user guide provides in-depth information on the
-    key concepts of pyHiM with useful background information and explanation.
+    key concepts of *pyHiM* with background information and explanation.
 
     +++
 
     .. link-button:: user_guide/pyhim_presentation
             :type: ref
             :text: To the user guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
-    :img-top: _static/index_api.svg
+    .. image:: _static/index_api.svg
+       :width: 56
 
     API reference
     ^^^^^^^^^^^^^
 
     The reference guide contains a detailed description of
-    the pyHiM API. The reference describes how the methods work and which parameters can
-    be used. It assumes that you have an understanding of the key concepts.
+    the *pyHiM* API. The reference describes how the methods work and which parameters can
+    be used.
 
     +++
 
     .. link-button:: reference/pyhim_class_diagram
             :type: ref
             :text: To the reference guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
     ---
-    :img-top: _static/index_contribute.svg
+    .. image:: _static/index_contribute.svg
+       :width: 50
 
     Developer guide
     ^^^^^^^^^^^^^^^
 
     Saw a typo in the documentation? Want to improve
     existing functionalities? The contributing guidelines will guide
-    you through the process of improving pyHiM.
+    you through the process of improving *pyHiM*.
 
     +++
 
     .. link-button:: contributor/dev_env
             :type: ref
             :text: To the development guide
-            :classes: btn-block btn-secondary stretched-link
+            :classes: btn-block btn-info stretched-link text-white
 
+
+`pyHiM` is a software package developed by the `Nollmann Lab <http://www.nollmannlab.org>`_ at the `Center of Structural Biology <http://www.cbs.cnrs.fr>`_, a department of the `CNRS <http://www.cnrs.fr>`_ and the `INSERM <http://www.inserm.fr>`_. 
 
 
 .. toctree::
    :caption: Getting Started
    :hidden:
 
-   getting_started/welcome
+   getting_started/quick_install
+   getting_started/typical_run
+   getting_started/tutorials
 
 .. toctree::
    :caption: User Guide
    :hidden:
 
    user_guide/pyhim_presentation
-   user_guide/pyhim_installation
+   user_guide/pipeline_overview
    user_guide/fundamental
    user_guide/script
-   user_guide/tutorial
    user_guide/license
 
 .. toctree::
@@ -127,6 +131,7 @@ How to proceed
    :hidden:
 
    contributor/dev_env
+   contributor/dev_installation
    contributor/coding_style
    contributor/dev_process
    contributor/good_commit
