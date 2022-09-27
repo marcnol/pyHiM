@@ -39,8 +39,6 @@ import matplotlib.pylab as plt
 import numpy as np
 from datetime import datetime
 from skimage import io
-import resource
-# import pympler
 from pympler import tracker
 
 from astropy.table import Table, vstack
@@ -352,8 +350,6 @@ def _alignFiducials3Dfile(fileName2Process,
                                  dictShiftsAvailable,
                                  outputFolder):
 
-    baseMemory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000
-
     # - load  and preprocesses 3D fiducial file
     printLog("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi,label))
     image3D0, image3D = loadNpreprocessImage(fileName2Process,
@@ -478,13 +474,10 @@ def _alignFiducials3Dfile(fileName2Process,
                            ]
             alignmentResultsTable.add_row(Table_entry)
 
-    printLog("$ delta memory used: {} Mb".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
     printLog("Erasing {} variables\n".format(len(dir())-1))
     for var in dir():
         if var != "alignmentResultsTable":
             del var
-
-    printLog("$ Memory used after variables deleted: {} Mb".format(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1000-baseMemory))
 
     printLog("Variables still alive: {}".format(dir()))
 
