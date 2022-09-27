@@ -2,17 +2,21 @@
 
 |OS|Linux|Windows|Mac|
 |:-:|:-:|:-:|:-:|
-|**compatibility**|Yes|Beta|No| 
+|**compatibility**|Yes|No|No| 
 
-## Install conda and create environment
+## Install conda
 
-Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution).
+Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution) (**or** the light version [miniconda](https://docs.conda.io/en/latest/miniconda.html)).
 
-## Setup conda enviroment
+```{note}
+To be sure that we don't have any version problems for the software dependencies with other applications, we use conda environment.
+```
+
+## Create conda enviroment
 
 Create a conda environment and activate it:
-```bash
-conda create -n pyHiM
+```
+conda create -n pyHiM python=3.9
 conda activate pyHiM
 ```
 
@@ -22,7 +26,12 @@ conda activate pyHiM
 pip install pyhim
 ```
 
-## Using jupyter labs
+```{note}
+To check if pyHiM is well installed, run:
+`pyhim --help`
+```
+
+## For users of jupyter labs
 
 If you want to use *pyHiM* from jupyter labs, we recommend you also run the following commands:
 

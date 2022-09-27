@@ -1,4 +1,20 @@
 # Pipeline overview
+
+## Global structure
+
+*pyHiM* software is running as a pipeline, executing sequentially a series of pre-defined routines. The default pipeline is composed of 5 main features, each dedicated to a specific application:
+
+![diagram of visualization](../_static/diagrams/use_cases.png)
+
+1. **Preprocessing** = Organization and formatting of the input data before proceeding to the actual analysis (e.g. registration or calculation of 2D projection)
+2. **Identification** = image segmentation (e.g. detection of FISH spots, segmentation of nuclei or cells, etc.) and calculation of the 3D-coordinates
+3. **Matching** = address each detection to a specific mask
+4. **Postprocessing** = format output data to make post-analysis easier for the user
+5. **Visualization** = indicate live-progress and results to the user
+
+*Each step can be optimized with **parallel computations** using the Dask package.*
+
+
 ## Default *pyHiM* flow
 
 To run default pipeline, *pyHiM* need two kinds of data:

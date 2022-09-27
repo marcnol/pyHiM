@@ -1,6 +1,5 @@
 # General-use scripts
 
-
 ## File Processing, handling HPC runs, etc
 
 ### changeRT_infoList.py
@@ -394,7 +393,7 @@ Usage: figureSingleCell.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 		Default: 8
 ```
 
-## Matrix post-processing scripts
+## Post-processing scripts
 
 ### processHiMmatrix.py
 
@@ -500,6 +499,23 @@ Usage: trace_selector.py [-F ROOTFOLDER] [--pixel_size]
 		Folder with fimages
 	--pixel_size
 		Lateral pixel size in microns. Default = 0.1
+```
+
+### npy_to_tiff
+
+This script will convert Numpy array files into imageJ-readable TIFs. Images will be rescaled to (0, 2^14) range and will be histogram normalized using `skimage.exposure.equalize_adapthist()`.
+
+You can invoke by two ways:
+
+- Use `find` and send the list of files as arguments:
+
+```sh
+npy_to_tiff $(find -name "*ch0*_2d_registered.npy")
+```
+
+- Otherwise you can pipe the results as follows:
+```sh
+ls *ch0*_2d_registered.npy | npy_to_tiff
 ```
 
 
