@@ -114,13 +114,26 @@ git branch -d local_branch_name
 git push origin --delete remote_branch_name
 ```
 
+```{note}
+If you get the error below, it may mean that someone else has already deleted the branch.
+
+    error: unable to push to unqualified destination: remoteBranchName The destination refspec neither matches an existing ref on the remote nor begins with refs/, and we are unable to guess a prefix based on the source ref. error: failed to push some refs to 'git@repository_name'
+
+
+Try to synchronize your branch list using:
+
+    git fetch -p
+
+The `-p` flag means `prune`. After fetching, branches which no longer exist on the remote will be deleted.
+```
+
 ### Recover deleted branch
 
 - [Deleting and restoring branches in a pull request](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-branches-in-your-repository/deleting-and-restoring-branches-in-a-pull-request)
 
 -  [Recover deleted git branch from local](https://imran-ahmad.medium.com/how-to-recover-restore-deleted-git-branch-5a068c07bed2)
 
-Find the `SHA`for the commit at the tip of your deleted branch using: Use `git reflog` to do so:
+Find the `SHA` for the commit at the tip of your deleted branch using: Use `git reflog` to do so:
 
 ```shell
 git reflog
