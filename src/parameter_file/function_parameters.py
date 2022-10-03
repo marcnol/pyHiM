@@ -4,7 +4,7 @@ from tkinter import messagebox
 import json
 
 
-def convert_Dic_to_string(dic: dict):
+def convert_dic_to_string(dic: dict):
     """Convert a dictionnary {'nuclei':'DAPI','mask1':'mask0'} to a simple
     string: 'nuclei: DAPI, mask1: mask0'."""
     string = str(dic).replace("'", "").replace('{','').replace('}','')
@@ -17,24 +17,24 @@ def convert_list_to_string(liste: list):
     return string
 
 
-def import_parameters(scriptDir, currentDir=None):
+def import_parameters(script_dir, current_dir=None):
     """Function that imports the parameters from the infoList.json
     located in the script directory. If there is a current directory parameter
     the parameters are imported from the infoList.json located in priority from
     the current directory. Return the parameters are stored in a dictionary
     """
 
-    infolistScript_path = scriptDir + os.sep + "infoList.json"
-    if currentDir != None:
-        infolistCurrent_path = currentDir + os.sep + "infoList.json"
-        if os.path.exists(infolistCurrent_path):
-            with open(infolistCurrent_path, mode='r') as file:
+    infolist_script_path = script_dir + os.sep + "infoList.json"
+    if current_dir != None:
+        infolist_current_path = current_dir + os.sep + "infoList.json"
+        if os.path.exists(infolist_current_path):
+            with open(infolist_current_path, mode='r') as file:
                 dic_full = json.load(file)
         else:
-            with open(infolistScript_path, mode='r') as file:
+            with open(infolist_script_path, mode='r') as file:
                 dic_full = json.load(file)
     else:
-        with open(infolistScript_path, mode='r') as file:
+        with open(infolist_script_path, mode='r') as file:
             dic_full = json.load(file)
 
     dic = {}
@@ -46,29 +46,29 @@ def import_parameters(scriptDir, currentDir=None):
     dic["maskFid_ch"] = dic_full["common"]["acquisition"]["fiducialMask_channel"]
     dic["rna_ch"] = dic_full["common"]["acquisition"]["RNA_channel"]
     # dic["rnaFid_ch"] = dic_full["common"]["acquisition"][""]
-    dic["pixelSizeXY_Entry"] = dic_full["common"]["acquisition"]["pixelSizeXY"]
-    dic["pixelSizeZ_Entry"] = dic_full["common"]["acquisition"]["pixelSizeZ"]
-    dic["referenceFiducial_Entry"] = dic_full["common"]["alignImages"]["referenceFiducial"]
-    dic["blockSize_Entry"] = dic_full["common"]["alignImages"]["blockSize"]
-    dic["flux_min_Entry"] = dic_full["common"]["buildsPWDmatrix"]["flux_min"]
-    dic["flux_min_3D_Entry"] = dic_full["common"]["buildsPWDmatrix"]["flux_min_3D"]
-    dic["toleranceDrift_Entry"] = dic_full["common"]["buildsPWDmatrix"]["toleranceDrift"]
-    dic["mask_expansion_Entry"] = dic_full["common"]["buildsPWDmatrix"]["mask_expansion"]
-    dic["folder_Entry"] = dic_full["common"]["buildsPWDmatrix"]["folder"]
-    dic["masks2process_Entry"] = convert_Dic_to_string(dic_full["common"]["buildsPWDmatrix"]["masks2process"])
-    dic["tracing_method_Entry"] = convert_list_to_string(dic_full["common"]["buildsPWDmatrix"]["tracing_method"])
-    dic["KDtree_distance_threshold_mum_Entry"] = dic_full["common"]["buildsPWDmatrix"][
+    dic["pixelSizeXY_entry"] = dic_full["common"]["acquisition"]["pixelSizeXY"]
+    dic["pixelSizeZ_entry"] = dic_full["common"]["acquisition"]["pixelSizeZ"]
+    dic["referenceFiducial_entry"] = dic_full["common"]["alignImages"]["referenceFiducial"]
+    dic["blockSize_entry"] = dic_full["common"]["alignImages"]["blockSize"]
+    dic["flux_min_entry"] = dic_full["common"]["buildsPWDmatrix"]["flux_min"]
+    dic["flux_min_3D_entry"] = dic_full["common"]["buildsPWDmatrix"]["flux_min_3D"]
+    dic["toleranceDrift_entry"] = dic_full["common"]["buildsPWDmatrix"]["toleranceDrift"]
+    dic["mask_expansion_entry"] = dic_full["common"]["buildsPWDmatrix"]["mask_expansion"]
+    dic["folder_entry"] = dic_full["common"]["buildsPWDmatrix"]["folder"]
+    dic["masks2process_entry"] = convert_dic_to_string(dic_full["common"]["buildsPWDmatrix"]["masks2process"])
+    dic["tracing_method_entry"] = convert_list_to_string(dic_full["common"]["buildsPWDmatrix"]["tracing_method"])
+    dic["KDtree_distance_threshold_mum_entry"] = dic_full["common"]["buildsPWDmatrix"][
         "KDtree_distance_threshold_mum"]
-    dic["stardist_Entry"] = dic_full["common"]["segmentedObjects"]["stardist_basename"]
-    dic["brightest_Entry"] = dic_full["common"]["segmentedObjects"]["brightest"]
-    dic["aeraMax_dapi_SegObjt_Entry"] = dic_full["labels"]["DAPI"]["segmentedObjects"]["area_max"]
-    dic["aeraMin_dapi_SegObjt_Entry"] = dic_full["labels"]["DAPI"]["segmentedObjects"]["area_min"]
-    dic["zProject_Dapi_zmax_Entry"] = dic_full["labels"]["DAPI"]["zProject"]["zmax"]
-    dic["zProject_Dapi_zmin_Entry"] = dic_full["labels"]["DAPI"]["zProject"]["zmin"]
-    dic["zProject_Bcd_zmax_Entry"] = dic_full["labels"]["barcode"]["zProject"]["zmax"]
-    dic["zProject_Bcd_zmin_Entry"] = dic_full["labels"]["barcode"]["zProject"]["zmin"]
-    dic["zProject_Mask_zmax_Entry"] = dic_full["labels"]["mask"]["zProject"]["zmax"]
-    dic["zProject_Mask_zmin_Entry"] = dic_full["labels"]["mask"]["zProject"]["zmin"]
+    dic["stardist_entry"] = dic_full["common"]["segmentedObjects"]["stardist_basename"]
+    dic["brightest_entry"] = dic_full["common"]["segmentedObjects"]["brightest"]
+    dic["aeraMax_dapi_SegObjt_entry"] = dic_full["labels"]["DAPI"]["segmentedObjects"]["area_max"]
+    dic["aeraMin_dapi_SegObjt_entry"] = dic_full["labels"]["DAPI"]["segmentedObjects"]["area_min"]
+    dic["zProject_Dapi_zmax_entry"] = dic_full["labels"]["DAPI"]["zProject"]["zmax"]
+    dic["zProject_Dapi_zmin_entry"] = dic_full["labels"]["DAPI"]["zProject"]["zmin"]
+    dic["zProject_Bcd_zmax_entry"] = dic_full["labels"]["barcode"]["zProject"]["zmax"]
+    dic["zProject_Bcd_zmin_entry"] = dic_full["labels"]["barcode"]["zProject"]["zmin"]
+    dic["zProject_Mask_zmax_entry"] = dic_full["labels"]["mask"]["zProject"]["zmax"]
+    dic["zProject_Mask_zmin_entry"] = dic_full["labels"]["mask"]["zProject"]["zmin"]
     return dic, dic_full
 
 
@@ -138,7 +138,7 @@ def check_dict(string: str):
         return False
 
 
-def update_infoList(user_values_dic, infolist_dic_full, currentDir):
+def update_infolist(user_values_dic, infolist_dic_full, current_dir):
     """"
     1-Save old parameters from infolist_dic_full in infoList_preVersion.json in current directory.
     2-Save new parameters from user_values_dic in infoList.json in current directory.
@@ -151,47 +151,47 @@ def update_infoList(user_values_dic, infolist_dic_full, currentDir):
         "fiducialBarcode_channel": user_values_dic['barcodeFid_ch'],
         "fiducialMask_channel": user_values_dic['maskFid_ch'],
         "fiducialDAPI_channel": user_values_dic['dapiFid_ch'],
-        "pixelSizeXY": float(user_values_dic['pixelSizeXY_Entry']),
-        "pixelSizeZ": float(user_values_dic['pixelSizeZ_Entry'])
+        "pixelSizeXY": float(user_values_dic['pixelSizeXY_entry']),
+        "pixelSizeZ": float(user_values_dic['pixelSizeZ_entry'])
     }
     dic_comm_aligimg = {
-        "blockSize": int(user_values_dic['blockSize_Entry']),
-        "referenceFiducial": user_values_dic['referenceFiducial_Entry']
+        "blockSize": int(user_values_dic['blockSize_entry']),
+        "referenceFiducial": user_values_dic['referenceFiducial_entry']
     }
     dic_comm_buildmatrix = {
-        "tracing_method": user_values_dic['tracing_method_Entry'].replace(' ', '').split(","),
-        "mask_expansion": int(user_values_dic['mask_expansion_Entry']),
-        "flux_min": int(user_values_dic['flux_min_Entry']),
-        "flux_min_3D": int(user_values_dic['flux_min_3D_Entry']),
-        "KDtree_distance_threshold_mum": int(user_values_dic['KDtree_distance_threshold_mum_Entry']),
-        "folder": str(user_values_dic['folder_Entry']),
-        "masks2process": convert_string_to_dictionnary(user_values_dic['masks2process_Entry']),
-        "toleranceDrift": int(user_values_dic['toleranceDrift_Entry'])
+        "tracing_method": user_values_dic['tracing_method_entry'].replace(' ', '').split(","),
+        "mask_expansion": int(user_values_dic['mask_expansion_entry']),
+        "flux_min": int(user_values_dic['flux_min_entry']),
+        "flux_min_3D": int(user_values_dic['flux_min_3D_entry']),
+        "KDtree_distance_threshold_mum": int(user_values_dic['KDtree_distance_threshold_mum_entry']),
+        "folder": str(user_values_dic['folder_entry']),
+        "masks2process": convert_string_to_dictionnary(user_values_dic['masks2process_entry']),
+        "toleranceDrift": int(user_values_dic['toleranceDrift_entry'])
     }
-    dic_comm_segmObj = {
-        "stardist_basename": str(user_values_dic['stardist_Entry']),
-        "brightest": check_brightest(user_values_dic['brightest_Entry'])
+    dic_comm_segmobj = {
+        "stardist_basename": str(user_values_dic['stardist_entry']),
+        "brightest": check_brightest(user_values_dic['brightest_entry'])
     }
-    dic_labels_dapi_segmObj = {
-        "area_max": int(user_values_dic['aeraMax_dapi_SegObjt_Entry']),
-        "area_min": int(user_values_dic['aeraMin_dapi_SegObjt_Entry'])
+    dic_labels_dapi_segmobj = {
+        "area_max": int(user_values_dic['aeraMax_dapi_SegObjt_entry']),
+        "area_min": int(user_values_dic['aeraMin_dapi_SegObjt_entry'])
     }
     dic_labels_dapi_zpro = {
-        "zmax": int(user_values_dic['zProject_Dapi_zmax_Entry']),
-        "zmin": int(user_values_dic['zProject_Dapi_zmin_Entry'])
+        "zmax": int(user_values_dic['zProject_Dapi_zmax_entry']),
+        "zmin": int(user_values_dic['zProject_Dapi_zmin_entry'])
     }
     dic_labels_bcd_zpro = {
-        "zmax": int(user_values_dic['zProject_Bcd_zmax_Entry']),
-        "zmin": int(user_values_dic['zProject_Bcd_zmin_Entry'])
+        "zmax": int(user_values_dic['zProject_Bcd_zmax_entry']),
+        "zmin": int(user_values_dic['zProject_Bcd_zmin_entry'])
     }
     dic_labels_mask_zpro = {
-        "zmax": int(user_values_dic['zProject_Mask_zmax_Entry']),
-        "zmin": int(user_values_dic['zProject_Mask_zmin_Entry'])
+        "zmax": int(user_values_dic['zProject_Mask_zmax_entry']),
+        "zmin": int(user_values_dic['zProject_Mask_zmin_entry'])
     }
     # Save previous parameters contained in infolist_dic in infoList_preVersion.json file
     # in the current directory.
     
-    infolist_previous_path = currentDir + os.sep + "infoList_preVersion.json"
+    infolist_previous_path = current_dir + os.sep + "infoList_preVersion.json"
     with open(infolist_previous_path, mode='w') as file:
         json.dump(infolist_dic_full, file, indent=4)
 
@@ -199,13 +199,13 @@ def update_infoList(user_values_dic, infolist_dic_full, currentDir):
     infolist_dic_full["common"]["acquisition"].update(dic_comm_acqui)
     infolist_dic_full["common"]["alignImages"].update(dic_comm_aligimg)
     infolist_dic_full["common"]["buildsPWDmatrix"].update(dic_comm_buildmatrix)
-    infolist_dic_full["common"]["segmentedObjects"].update(dic_comm_segmObj)
-    infolist_dic_full["labels"]["DAPI"]["segmentedObjects"].update(dic_labels_dapi_segmObj)
+    infolist_dic_full["common"]["segmentedObjects"].update(dic_comm_segmobj)
+    infolist_dic_full["labels"]["DAPI"]["segmentedObjects"].update(dic_labels_dapi_segmobj)
     infolist_dic_full["labels"]["DAPI"]["zProject"].update(dic_labels_dapi_zpro)
     infolist_dic_full["labels"]["barcode"]["zProject"].update(dic_labels_bcd_zpro)
     infolist_dic_full["labels"]["mask"]["zProject"].update(dic_labels_mask_zpro)
 
-    infolist_new_path = currentDir + os.sep + "infoList.json"
+    infolist_new_path = current_dir + os.sep + "infoList.json"
     with open(infolist_new_path, mode='w') as file:
         json.dump(infolist_dic_full, file, indent=4)
 
@@ -216,26 +216,26 @@ def check_settings(entries_dic):
     # checks if the inputs correspond to what is expected, else show error window
     for key, list_values in entries_dic.items():
         entered_value = list_values[0].get()
-# test for values that would be normally integer (not string or float)
-        if key == 'brightest_Entry':
+        # test for values that would be normally integer (not string or float)
+        if key == 'brightest_entry':
             if entered_value != 'None' and not is_integer(entered_value):
                 messagebox.showerror("Input Error", f'The type of {key} input is not correct.\nPlease enter integer '
                                                     f'value or None.')
                 is_ok = False
-# test if masks2process_Entry is a string that can be converted in a dictionary
-        elif key == 'masks2process_Entry':
+        # test if masks2process_entry is a string that can be converted in a dictionary
+        elif key == 'masks2process_entry':
             if not check_dict(entered_value):
                 messagebox.showerror("Input Error", f'The type of {key} input is not correct.\nPlease enter string in '
                                                     f'the form "key1:value1, key2:value2".')
                 is_ok = False
-# test if number is an integer and a power of 2
-        elif key == 'blockSize_Entry':
+        # test if number is an integer and a power of 2
+        elif key == 'blockSize_entry':
             entered_value = float(entered_value)
             if not check_blocksize(int(entered_value)) or not is_integer(entered_value):
                 messagebox.showerror("Input Error", f'The type of {key} input is not correct.\nPlease enter an interger that is a power of 2.')
                 is_ok = False
-# test if name of RT/Barcode is in the form 'RT' + integer
-        elif key == 'referenceFiducial_Entry':
+        # test if name of RT/Barcode is in the form 'RT' + integer
+        elif key == 'referenceFiducial_entry':
             if not match_name('^RT[0-9][0-9]*', entered_value):
                 messagebox.showerror("Input Error", f'The name of Reference Fiducial is not correct.\nPlease enter a name starting with "RT" and followed only by numbers.')
                 is_ok = False
@@ -243,7 +243,7 @@ def check_settings(entries_dic):
             if not is_integer(entered_value):
                 messagebox.showerror("Input Error", f'The type of {key} input is not correct.\nPlease enter interger value.')
                 is_ok = False
-# test for values that would be normally float (not string)
+        # test for values that would be normally float (not string)
         elif list_values[2] is float:
             if not is_float(entered_value):
                 messagebox.showerror("Input Error", f'The type of {key} input is not correct.\nPlease enter float value.')
