@@ -12,7 +12,7 @@
 
     ^^^^^^^^^^^^^^^
 
-    Discover how personalise your configuration file.
+    Discover how personalise parameters.
 
     +++
 

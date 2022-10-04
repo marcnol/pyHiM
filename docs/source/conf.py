@@ -56,7 +56,7 @@ extensions = [
     'myst_parser',          # parse markdown files to be understood by sphinx
     "sphinxcontrib.mermaid",# mermaid extension for MyST
     "sphinx_panels",        # for creating panels like pandas or numpy main doc page
-    "nbsphinx",
+    "nbsphinx",             # include jupyter notebook file, WARNING: uncompatible with mermaid on ReadTheDocs
 ]
 
 mermaid_output_format = "png"
@@ -91,3 +91,10 @@ html_logo = "_static/logo_pyHiM.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# You can use header bookmark links, locally;
+# [](#header-anchor), or cross-file [](path/to/file.md#header-anchor). 
+# To achieve this, use the myst_heading_anchors = DEPTH configuration option, 
+# where DEPTH is the depth of header levels for which you wish to generate links.
+# https://myst-parser.readthedocs.io/en/latest/syntax/optional.html?highlight=anchor#auto-generated-header-anchors
+myst_heading_anchors = 2

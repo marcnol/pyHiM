@@ -1,38 +1,55 @@
 # Configuration file `(infoList.json)`
 
-All configuration parameters for running `pyHiM` are provided in a single configuration file called `infoList.json`.
-
-A detailed description of the configuration file and the analysis parameters can be found in the [user guide section](../../user_guide/fundamental.md).
+All configuration parameters for running `pyHiM` are provided in a single configuration file called `infoList.json`. This file is editable [manually](#manually) or with a [graphical user interface](#graphical-user-interface).
 
 You can find a global description of each parameter in the [reference guide](../../reference/infoList_comprehension.md).
 
-Find below an example extract of a section of the `infoList.json` file:
-```json
-"labels": {
-    "DAPI": {
-        "order": 3, 
-        "acquisition": {
-            "label_channel": "ch00",
-            "label_channel_fiducial": "ch01"            
-        },            
-        "segmentedObjects": {
-            "area_max": 3000,
-            "area_min": 150,
-            "background_method": "inhomogeneous",
-            "centroidDifference_max": 5,
-            "operation": "2D,3D",
-            "stardist_network": "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2",
-            "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
-            "tesselation": true,
-            "threshold_over_std": 1.0
-        },
-        "zProject": {
-            "mode": "full",
-            "zProjectOption": "sum",
-            "zmax": 59,
-            "zmin": 1,
-            "zwindows": 15
-        }
-    },
+## Manually
+
+Copy an `infoList.json` file in the folder where you want to run `pyHiM`. 
+
+```{note}
+A file model can be find on [GitHub](https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
 ```
 
+Modify with a text editor your parameters like the `referenceFiducial` number of your experience. 
+
+The `common` section is to set the default values for each label and you can personalize a different value just for one label by overwiting in the label section.
+
+```{note}
+On the example below, the Z projection will be realized by Maximum Intensity Projection (`MIP`) for all labels exept for barcode images, it will be by `sum`:
+
+```json
+{
+    "common": {
+        "zProject": {
+            "zProjectOption": "MIP",
+            "..."
+        },
+        "..."
+    },
+    "labels": {
+        "barcode": {
+            "order": 2,
+            "zProject": {
+                "zProjectOption": "sum",
+            }
+        },
+        "..."
+    }
+}
+```
+
+## Graphical user interface
+
+
+You can also create and modify `infoList.json` with an interface. In the folder where you want to run `pyHiM`, execute this script:
+```sh
+pyhim_parameters
+```
+
+A window will open up, modify your parameters and when you click on `Save settings`, an `infoList.json` file will be created inside your folder with your modified parameters.
+
+If you have modified an existing `infoList.json`, a copy of the previous version will be saved in the file named `infoList_preVersion.json`.
+
+![Screenshot of "standard settings" window](../../_static/standard_settings.png)
