@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.6.5-alpha15"
+version = "0.6.5-alpha17"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -81,9 +81,6 @@ pyhim_parameters = "parameter_file.pyhim_parameters:main"
 # By default, include-package-data is true in pyproject.toml, so you do
 # NOT have to specify this line.
 include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.setuptools.package-data]
 parameter_file = ["*.png", "*.json"]
