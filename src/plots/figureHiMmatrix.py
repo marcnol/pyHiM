@@ -70,8 +70,11 @@ def parseArguments():
     parser.add_argument("--proximity_threshold", help="proximity threshold in um")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
     parser.add_argument(
-        "--mode", help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median"
+        "--dist_calc_mode", help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median"
     )
+    parser.add_argument(
+        "--matrix_norm_mode", help="Matrix normalization mode. Can be nCells (default) or nonNANs")
+
 
     args = parser.parse_args()
 
@@ -156,11 +159,16 @@ def parseArguments():
     else:
         runParameters["cmap"] = "coolwarm"
 
-    if args.mode:
-        runParameters["mode"] = args.mode
+    if args.dist_calc_mode:
+        runParameters["dist_calc_mode"] = args.dist_calc_mode
     else:
-        runParameters["mode"] = "KDE"
+        runParameters["dist_calc_mode"] = "KDE"
 
+    if args.matrix_norm_mode:
+        runParameters["matrix_norm_mode"] = args.matrix_norm_mode
+    else:
+        runParameters["matrix_norm_mode"] = "nCells" # norm: nCells (default), nonNANs
+        
     return runParameters
 
 
@@ -226,8 +234,8 @@ if __name__ == "__main__":
     if runParameters["mode"]=='proximity':
         # calculates and plots contact probability matrix from merged samples/datasets
         SCmatrix, nCells = calculateContactProbabilityMatrix(
-            SCmatrix, uniqueBarcodes, runParameters["pixelSize"], norm="nCells",
-        )  # norm: nCells (default), nonNANs
+            SCmatrix, uniqueBarcodes, runParameters["pixelSize"], norm=runParameters["matrix_norm_mode"],
+        )  
 
     plotMatrix(
         SCmatrix,
