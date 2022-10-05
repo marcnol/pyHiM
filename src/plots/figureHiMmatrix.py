@@ -250,7 +250,7 @@ if __name__ == "__main__":
         nCells=nCells,
         cm=runParameters["cmap"],
         cmtitle="distance, um",
-        fileNameEnding="_"+runParameters["dist_calc_mode"]+"_"+runParameters["matrix_norm_mode"]+"_"+runParameters["cScale"]+runParameters["plottingFileExtension"],
+        fileNameEnding="_"+runParameters["dist_calc_mode"]+"_"+runParameters["matrix_norm_mode"]+"_"+str(runParameters["cScale"])+runParameters["plottingFileExtension"],
         )
     
     print("Output figure: {}".format(outputFileName))
