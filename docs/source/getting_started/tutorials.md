@@ -30,7 +30,7 @@
 
     +++
 
-    .. link-button:: tutorials/full_pyhim_run_3d
+    .. link-button:: tutorials/notebooks/full_pyHiM_run
             :type: ref
             :text: Full pyHiM run 3D
             :classes: btn-block btn-info stretched-link text-white
@@ -42,5 +42,5 @@
 
 
 tutorials/configuration_file
-tutorials/full_pyhim_run_3d.ipynb
+tutorials/notebooks/full_pyHiM_run.ipynb
 ```
