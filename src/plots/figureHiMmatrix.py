@@ -205,7 +205,7 @@ if __name__ == "__main__":
     uniqueBarcodes = [int(x) for x in uniqueBarcodes]
     print(f'$ unique barcodes loaded: {uniqueBarcodes}')
     
-    print(f'$ averaging method: {runParameters["mode"]}')
+    print(f'$ averaging method: {runParameters["dist_calc_mode"]}')
     
     if runParameters["cScale"] == 0:
         cScale = SCmatrix[~np.isnan(SCmatrix)].max() / runParameters["scalingParameter"]
@@ -231,7 +231,7 @@ if __name__ == "__main__":
         index = [int(i) for i in runParameters["shuffle"].split(",")]
         SCmatrix = shuffleMatrix(SCmatrix, index)
 
-    if runParameters["mode"]=='proximity':
+    if runParameters["dist_calc_mode"]=='proximity':
         # calculates and plots contact probability matrix from merged samples/datasets
         SCmatrix, nCells = calculateContactProbabilityMatrix(
             SCmatrix, uniqueBarcodes, runParameters["pixelSize"], norm=runParameters["matrix_norm_mode"],
@@ -244,13 +244,13 @@ if __name__ == "__main__":
         1,
         outputFileName,
         'log',
-        figtitle="Map: "+runParameters["mode"],
-        mode=runParameters["mode"],  # median or KDE
+        figtitle="Map: "+runParameters["dist_calc_mode"],
+        mode=runParameters["dist_calc_mode"],  # median or KDE
         clim=cScale,
         nCells=nCells,
         cm=runParameters["cmap"],
         cmtitle="distance, um",
-        fileNameEnding="_"+runParameters["mode"]+runParameters["plottingFileExtension"],
+        fileNameEnding="_"+runParameters["dist_calc_mode"]+runParameters["plottingFileExtension"],
         )
     
     print("Output figure: {}".format(outputFileName))
