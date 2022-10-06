@@ -60,7 +60,7 @@ def parseArguments():
         runParameters["rootFolder"] = args.rootFolder
     else:
         print("\n> rootFolder NOT FOUND, using PWD")
-        runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+        runParameters["rootFolder"] = os.getcwd()
 
     if args.outputFile:
         runParameters["outputFile"] = runParameters["rootFolder"] + os.sep + args.outputFile

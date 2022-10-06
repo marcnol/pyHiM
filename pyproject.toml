@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.6.5-alpha17"
+version = "0.6.5-alpha18"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
