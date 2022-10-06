@@ -1469,6 +1469,7 @@ def plotMatrix(
         # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
 
+    return meanSCmatrix
 
 def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells", minNumberContacts = 0):
 

@@ -61,7 +61,8 @@ def parseArguments():
     parser.add_argument(
         "--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter"
     )
-    parser.add_argument("--cScale", help="Colormap absolute scale")
+    parser.add_argument("--cMin", help="Colormap min cscale. Default: 0")
+    parser.add_argument("--cScale", help="Colormap max cScale. Default: automatic")
     parser.add_argument("--plottingFileExtension", help="By default: png. Other options: svg, pdf, png")
     parser.add_argument(
         "--shuffle",
@@ -141,6 +142,11 @@ def parseArguments():
         runParameters["cScale"] = float(args.cScale)
     else:
         runParameters["cScale"] = 0.0
+
+    if args.cMin:
+        runParameters["cMin"] = float(args.cMin)
+    else:
+        runParameters["cMin"] = 0.0
 
     if args.plottingFileExtension:
         runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
@@ -236,8 +242,10 @@ def main():
         SCmatrix, nCells = calculateContactProbabilityMatrix(
             SCmatrix, uniqueBarcodes, runParameters["pixelSize"], norm=runParameters["matrix_norm_mode"],
         )  
-
-    plotMatrix(
+    
+    fileNameEnding="_"+runParameters["dist_calc_mode"]+"_"+runParameters["matrix_norm_mode"]+"_"+str(runParameters["cScale"])
+    
+    meanSCmatrix = plotMatrix(
         SCmatrix,
         uniqueBarcodes,
         runParameters["pixelSize"],
@@ -247,13 +255,18 @@ def main():
         figtitle="Map: "+runParameters["dist_calc_mode"],
         mode=runParameters["dist_calc_mode"],  # median or KDE
         clim=cScale,
+        cMin=runParameters["cMin"],
         nCells=nCells,
         cm=runParameters["cmap"],
         cmtitle="distance, um",
-        fileNameEnding="_"+runParameters["dist_calc_mode"]+"_"+runParameters["matrix_norm_mode"]+"_"+str(runParameters["cScale"])+runParameters["plottingFileExtension"],
+        fileNameEnding=fileNameEnding+runParameters["plottingFileExtension"],
         )
-    
     print("Output figure: {}".format(outputFileName))
+    
+    # saves output matrix in NPY format
+    outputFileName = outputFileName + fileNameEnding
+    np.save(outputFileName,meanSCmatrix)
+    print("Output data: {}.npy".format(outputFileName))
 
     print("\nDone\n\n")
 
