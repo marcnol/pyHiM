@@ -9,9 +9,9 @@
 - Provide input parameters in a `folders2Load.json` dictionary (see example below) at execution folder or at a `rootFolder` provided as argument. The script will read ALL the `Trace` files in the paths  provided in `folders2Load.json` and will combine them into a unique  `Trace_` files. 
   The output of `trace_combinator` will be generated at the `rootFolder` in the directory `combined_traces` that will contain a new `Trace` file with the combined traces.
 
-  <u>*warning*</u>: `trace_combinator` will combine **ALL** traces found in the `buildPWDmatrix` folders within `folders2load.json`. If you want to filter which *Trace* files are used, we recommend you to use the second method described below. Alternatively, you can use the `--method` command-line argument to filter which `Trace` files are used. In that case, make sure to verify the terminal output so ensure the right *Trace* files have been used.
+  <u>*warning*</u>: `trace_combinator` will combine **ALL** traces found in the `buildPWDmatrix` folders within `folders2load.json`. If you want to filter which *Trace* files are used, we recommend you to use the second method described below. Alternatively, you can use the `--method` command-line argument to filter which `Trace` files are used. In that case, make sure to verify the terminal output to ensure the right `Trace` files have been used.
 
-- Al alternative way of using `trace_combinator` is by using pipes. In this case, a list of `Trace` files to process is piped into `trace_combinator` and the `--pipe` argument is invoked. Piping can be either done using a command or by sending a list in a file. See examples below.
+- An alternative way to use `trace_combinator` is to use pipes. In this case, a list of `Trace` files to process is piped into `trace_combinator` and the `--pipe` argument is invoked. Piping can be either done using a command or by sending a list in a file. See examples below.
 
   
 

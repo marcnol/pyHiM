@@ -48,7 +48,7 @@ scan_002_mask0_002_ROI_converted_decon_ch01_Masks.npy
 
 The PNG file is a representation of the raw image and the segmented objects.
 
-The NPY file is a 2D labeled numpy array containing the segmented objects with a size identical to the original image. Background has the value _0_ and then each mask contains a different integer. The maximum value in this matrix is identical to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
+The NPY file is a 2D labeled numpy array containing the segmented objects with an identical size to the original image. Background has a value of _0_ and each mask contains a different integer. The maximum value in this matrix corresponds to the number of masks detected. The file name is constructed using the original root filename with the tag `_Masks`.
 
 _Warning_: This mode operates in 2D, therefore the Startdist network provided **must be** in 2D.
 

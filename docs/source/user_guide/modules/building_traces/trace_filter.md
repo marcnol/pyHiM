@@ -1,8 +1,8 @@
 # trace_filter
 
-This script is intended to filter the traces with a low number of spots. It acts on a single or several trace files and takes as input the minimum number of spots a trace needs to have to be kept.
+This script is intended to filter the traces with a low number of spots. It acts on a single or several trace files and takes as input the minimum number of spots a trace needs to be kept.
 
-How to use:
+How to use it:
 
 - Example 1: Invoke from `rootFolder`
 
