@@ -3,17 +3,7 @@
 
 ## Global structure
 
-The most parameters are define by default in `common` part in its corresponding section. If you want to change a parameter just for one channel, go to `labels` and in the good channel you can overwrite parameter value.
-
-Each section in `common` represent a step of *pyHiM* processing. Find below a table of sections with the labels involved by their parameters:
-
-|Section name|fiducial|barcode|DAPI|RNA|mask|
-|:-:|:-:|:-:|:-:|:-:|:-:|
-|acquisition|Yes|Yes|Yes|Yes|Yes|
-|zProject|Yes|Yes|Yes|Yes|Yes|
-|alignImages|Yes|Yes|Yes|Yes|Yes|
-|segmentedObjects||Yes|Yes||Yes|
-|buildsPWDmatrix||Yes|Yes||Yes|
+Each section in `common` represents a step of pyHiM processing. Parameters are defined by default in `common` in their corresponding sections. If you want to change a parameter just for one channel, go to `labels` and you can overwrite the parameter value in the channel of your choice (an example [here](https://pyhim.readthedocs.io/en/latest/getting_started/tutorials/configuration_file.html#manually)).
 
 ## Parameter overview by section
 *Parameters are sort by alphabetical order.*
@@ -133,18 +123,6 @@ Each section in `common` represent a step of *pyHiM* processing. Find below a ta
 |toleranceDrift|Set tolerance used for block drift correction (in pixels)|
 |tracing_method|Set list of methods it will use|
 
-
-
-## Suggested modification
-
-### used to
-
-```python
-"stardist_network": "...", # network for 2D barcode segmentation
-    			=========> # network for 2D mask segmentation 
-"stardist_network3D": "...", # network for 3D barcode segmentation
-    			===========> # network for 3D barcode and mask segmentation
-```
 
 ### DEPRECATED
 

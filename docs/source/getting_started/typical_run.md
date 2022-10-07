@@ -4,7 +4,7 @@
 
 - Copy the TIFF images you want to process into a single folder. 
   ```{note}
-  This folder will be referred as the `input_directory`.
+  This folder will be called the `input_directory`.
   ```
 - Copy or create a model configuration file (called `infoList.json`) into your `input_directory`. 
   ```{note}

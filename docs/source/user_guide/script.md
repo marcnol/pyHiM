@@ -4,21 +4,22 @@
 
 ### changeRT_infoList.py
 
-This script is used to modify the reference fiducial signal to be used for shift correction in the parameter file
+*This script is used to modify the fiducial signal used as a reference for shift correction in the parameter file.*
 
-```
-usage: cahngeRT_infolist.py old_RT new_RT
-```
+
+Usage: `change_rt_infolist <old_RT> <new_RT>`
+
 Example: 
-
-changeRT_infolist.py RT33 RT1
+```sh
+change_rt_infolist RT33 RT1
+```
 
 ### cleanHiM_run.py
 
-Cleans the directories and log files created by *pyHiM* from a previous run. 
+*Cleans the directories and log files created by pyHiM in previous runs.* 
 
 ```
-Usage: cleanHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-A ALL]
+Usage: clean_him_run [-F ROOTFOLDER] [-P PARAMETERS] [-A ALL]
 
 optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
@@ -30,10 +31,10 @@ optional arguments:
 ```
 ### lndir.py
 
-Creates links for files in a directory into a second directory. Useful to analyze data in a new folder without copying the raw data files.
+*Creates link for files in a second directory (useful to analyze data in a new folder without copying raw data files).*
 
 ```
-Usage: lndir.py "/home/marcnol/Repositories/pyHiM/\*py" ~/Downloads/test
+Usage: lndir "/home/marcnol/Repositories/pyHiM/\*py" ~/Downloads/test
 ```
 
 Use quotation marks in the first argument if using wildcards.
@@ -43,7 +44,7 @@ Use quotation marks in the first argument if using wildcards.
 Zip all output files from a *pyHiM* run. It excludes .npy and .tif files. Useful to retrieve results from a run from an HPC cluster.
 
 ```
-Usage: zipHiM_run.py [-F ROOTFOLDER] [-P PARAMETERS] [-R RECURSIVE]
+Usage: zip_him_run [-F ROOTFOLDER] [-P PARAMETERS] [-R RECURSIVE]
 
 optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
@@ -59,7 +60,7 @@ optional arguments:
 Unzips HiM_run.tar.gz recursively. Useful to unzip the results from several folders retrieved from a run in an HPC cluster.
 
 ```
-Usage: unzipHiM_run.py [-F ROOTFOLDER] [-R RECURSIVE]
+Usage: unzip_him_run [-F ROOTFOLDER] [-R RECURSIVE]
 
 optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
@@ -73,7 +74,7 @@ optional arguments:
 Launches *pyHiM* on a cluster using slurm `srun`. 
 
 ```
-Usage: runHiM_cluster.py
+Usage: run_him_cluster
 ```
 
 ## Plotting scripts
@@ -84,7 +85,7 @@ Usage: runHiM_cluster.py
 Produces and plots a HiM matrix for a given dataset.
 
 ```
-Usage figureHiMmatrix.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
+Usage figure_him_matrix [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
 						 [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
 						 [--axisTicks] [--barcodes] [--scalingParameter]
 						 [--cScale] [--plottingFileExtension] [--shuffle]
@@ -137,7 +138,7 @@ Usage figureHiMmatrix.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 Creates proximity frequency 4M profiles from a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
 
 ```
-Usage: figure4Mmatrix.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
+Usage: figure_4_m_matrix [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
 						 [-P PARAMETERS] [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
 						 [-W2 ACTION2] [--fontsize] [--axisLabel] [--axisTicks]
 						 [--splines] [--cAxis] [--plottingFileExtension]
@@ -180,10 +181,10 @@ Usage: figure4Mmatrix.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
 ```
 
 ### figureCompare2Matrices.py
-Comparison of proximity matrices. Plots either the ratio between two HiM matrices, or the difference. It also plots both matrices together, with one in the upper triangle, and the other in the lower triangle.
+Comparison of proximity matrices. Plots either the ratio or the difference between two HiM matrices. It also plots both matrices together, with one in the upper triangle, and the other in the lower triangle.
 
 ```
-Usage: figureCompare2Matrices.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
+Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
 								 [-O OUTPUTFOLDER] [-P PARAMETERS]
 							     [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
 							     [-W2 ACTION2] [--fontsize] [--axisLabel] 
@@ -237,7 +238,7 @@ Usage: figureCompare2Matrices.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `processHiMmatrix.py` script. 
 
 ```
-Usage: figure3wayInteractions.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
+Usage: figure_3_way_interactions [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] 
 								 [-O OUTPUTFOLDER] [-P PARAMETERS]
 								 [-P2 PARAMETERS2] [-A1 LABEL1] [-A2 LABEL2]
 								 [-W1 ACTION1] [-W2 ACTION2] [--fontsize]
@@ -279,12 +280,12 @@ Usage: figure3wayInteractions.py [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 
 ### figureN_HiMmatrices.py
-Plots several (`N`) HiM matrices in the same plot, using `N` datasets specified in folders2Load.json.
+Plots several (`N`) HiM matrices in the same plot, using `N` datasets specified in `folders2Load.json`.
 
-It also plots a submatrix containing the difference of contact probability for a subset of barcodes with respect to a particular dataset. The subset of barcodes and the reference dataset are defined in folders2Load.json by the options "barcodes2plot" and "plotSegment_anchor" respectively. 
+It also plots a submatrix representing the difference in contact probability for a subset of barcodes compared to a particular dataset. The subset of barcodes and the reference dataset are defined in `folders2Load.json` by the options `barcodes2plot` and `plotSegment_anchor`, respectively.
 
 ```
-Usage figureN_HiMmatrices.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
+Usage figure_n_him_matrices [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
 							 [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
 							 [--axisTicks] [--barcodes] [--scalingParameter]
 							 [--plottingFileExtension] [--shuffle] [--scalogram]
@@ -340,7 +341,7 @@ This scripts:
 
 
 ```
-Usage: figureSingleCell.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
+Usage: figure_single_cell [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS] 
 						   [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
 						   [--axisTicks] [--barcodes] [--nRows] [--pixelSize]
 						   [--maxDistance] [--plottingFileExtension] [--shuffle]
@@ -397,19 +398,19 @@ Usage: figureSingleCell.py [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 
 ### processHiMmatrix.py
 
-This script performs the post-processing of one or more previously pyHiM-analysed datasets, defined in folders2Load.json file. 
+This script performs the post-processing of one or more datasets previously analysed with *pyHiM*, defined in the `folders2Load.json` file.
 
 It performs the following operations:
 - Merges datasets from different experiments.
 - Calculates and plots ensemble pairwise distance (PWD) matrix.
-- Calculates and plots the inverse of the PWD matrix. 
-- Calculates and plots the contact probability matrix for each dataset.
-- Calculates and plots the ensemble contact probability matrix.
-- Calcualtes and plots the ensemble 3-way contact probability matrix, for the set of anchors defined in folders2Load.json file. 
-- Optional: Read MATLAB single-cell PWD matrices, and perform all previous operations.
+- Calculates and plots the inverse of the PWD matrix.
+- Calculates and plots contact probability matrix for each dataset.
+- Calculates and plots ensemble contact probability matrix.
+- Calcualtes and plots tensemble 3-way contact probability matrix for the set of anchors defined in the `folders2Load.json` file.
+- Optional: Reads MATLAB single-cell PWD matrices and performs all previous operations.
 
 ```
-Usage: processHiMmatrix.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
+Usage: process_him_matrix [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
 						   [--matlab] [--saveMatrix] [--getStructure] [--pixelSize]
 						   [--HiMnormalization] [--d3]
 Optional arguments:
@@ -444,7 +445,7 @@ This script will:
 
 
 ```
-Usage: processSNDchannel.py [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
+Usage: process_snd_channel [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 
 	-F ROOTFOLDER, --rootFolder ROOTFOLDER
 		Folder with images
@@ -459,17 +460,16 @@ Usage: processSNDchannel.py [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 Script used to 2D-project the 3D-labeled numpy array images generated by segmentMasks3D. By running this script, you will replace the output files produced by segmentMasks (2D labeled masks).
 
 ```
-Usage: process_segmentMasks3D.py
+Usage: process_segment_masks_3d
 ```
 
 ### trace_combinator.py
-This script combines trace tables from different experiments/ROIs together into a single trace table.
-The folders containing the trace tables of the experiments to be combined are provided in as a JSON file. The possibility to selecting only a subset of trace tables within the folders provided is allowed using the `methods` parameter. Merged trace table is outputed to the buildPWDmatrix folder. 
+This script combines trace tables from different experiments/ROIs into a single trace table. The folders containing the trace tables of the experiments to be combined are provided as a JSON file. It is possible to select only a subset of trace tables within the folders provided using the `methods` parameter. Merged trace table is outputed in the buildPWDmatrix folder. 
 
-Outputs: ChromatinTraceTable() object, and output .ecsv formatted file with assembled trace tables.
+Outputs: ChromatinTraceTable() object and output .ecsv formatted file with assembled trace tables.
 
 ```
-Usage: trace_combinator.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
+Usage: trace_combinator [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
 						   [--saveMatrix] [--ndims] [--method]
 
 	-F ROOTFOLDER, --rootFolder ROOTFOLDER
@@ -493,7 +493,7 @@ Usage: trace_combinator.py [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION
 This scipt loads a trace file and a number of numpy masks, and assings them the labels produced by `processSNDchannel.py`.
 
 ```
-Usage: trace_selector.py [-F ROOTFOLDER] [--pixel_size]
+Usage: trace_selector [-F ROOTFOLDER] [--pixel_size]
 
 	-F ROOTFOLDER, --rootFolder ROOTFOLDER
 		Folder with fimages
@@ -505,7 +505,7 @@ Usage: trace_selector.py [-F ROOTFOLDER] [--pixel_size]
 
 This script will convert Numpy array files into imageJ-readable TIFs. Images will be rescaled to (0, 2^14) range and will be histogram normalized using `skimage.exposure.equalize_adapthist()`.
 
-You can invoke by two ways:
+You can invoke this in two ways:
 
 - Use `find` and send the list of files as arguments:
 
