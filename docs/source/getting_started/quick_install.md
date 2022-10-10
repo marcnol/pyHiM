@@ -2,7 +2,7 @@
 
 |OS|Linux|Windows|Mac|
 |:-:|:-:|:-:|:-:|
-|**compatibility**|Yes|No|No| 
+|**compatibility**|Yes|Yes|No| 
 
 ## Install conda
 
