@@ -9,7 +9,7 @@
 Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution) (**or** the light version [miniconda](https://docs.conda.io/en/latest/miniconda.html)).
 
 ```{note}
-To be sure that we don't have any version problems for the software dependencies with other applications, we use conda environment.
+It's not mandatory. But we use conda environment to be sure that we don't have any version problems for the software dependencies with other applications.
 ```
 
 ## Create conda enviroment
@@ -30,18 +30,6 @@ pip install pyhim
 To check if pyHiM is well installed, run:
 `pyhim --help`
 ```
-
-## For users of jupyter labs
-
-If you want to use *pyHiM* from jupyter labs, we recommend you also run the following commands:
-
-```
-conda install ipykernel matplotlib
-ipython kernel install --user --name=pyHiM-kernel
-```
-
-Once you spin up a jupyter lab from the `base` environment, select the `pyHiM-kernel` to be able to run *pyHiM* functions.
-
 
 
 
