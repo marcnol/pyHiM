@@ -34,6 +34,20 @@
             :type: ref
             :text: Full pyHiM run 3D
             :classes: btn-block btn-info stretched-link text-white
+
+    ---
+    .. image:: ../_static/jupyter_logo.svg
+
+    ^^^^^^^^^^
+
+    How run pyHiM tutorial with jupyter-notebook.
+
+    +++
+
+    .. link-button:: tutorials/run_pyhim_nb
+            :type: ref
+            :text: Jupyter notebook tutorial
+            :classes: btn-block btn-info stretched-link text-white
 ```
 
 ```{toctree}
@@ -43,4 +57,5 @@
 
 tutorials/configuration_file
 tutorials/notebooks/full_pyHiM_run.ipynb
+tutorials/run_pyhim_nb
 ```
