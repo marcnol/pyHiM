@@ -6,11 +6,12 @@
 
 ## Install conda
 
-Download anaconda following the steps in the official [Anaconda website](https://www.anaconda.com/products/distribution) (**or** the light version [miniconda](https://docs.conda.io/en/latest/miniconda.html)).
+*We use conda environment to be sure that we don't have any version problem for the software dependencies with other applications.*
 
-```{note}
-It's not mandatory. But we use conda environment to be sure that we don't have any version problems for the software dependencies with other applications.
-```
+We recommand to download the light version `miniconda` if you just want to use conda environment. But if you are developer, you can download `anaconda` (it's the full application including [spyder IDE](https://www.spyder-ide.org/)).
+
+- [Installing conda on Linux](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html)
+- [Installing conda on Windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 
 ## Create conda enviroment
 
