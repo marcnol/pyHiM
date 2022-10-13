@@ -10,7 +10,7 @@
   ```{note}
   This file contains all the input parameters required to run `pyHiM`. You can find an example in [pyHiM/modelParameterFiles_JSON folder](https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
   ```
-- Modify the `infoList.json` file to indicate the reference cycle used for drift correction. 
+- Modify the `infoList.json` file to indicate the **reference cycle** used for drift correction. 
   ```{note}
   This can be done by manually editing the `infoList.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
   ```
@@ -21,7 +21,7 @@
 
 ## Basic run
 
-- To run without any argument, type the following command in your `input_directory`:
+- To run without any option, type the following command in your `input_directory`:
 	```bash
 	pyhim
 	```
@@ -71,12 +71,20 @@ options:
 
 - ```-F ``` or ```--rootFolder``` indicates the rootFolder where *pyHiM* expects to find the dataset.
 
-- ```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a comma separated list. If you don't provide this argument, the full list of functions will be run and the mode of action will be determined from the ```infoList.json``` configuration file.
+- ```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a **comma separated list without space**. 
+  ```{note}
+  The mode of action will be determined from the `infoList.json` [configuration file](tutorials/configuration_file.md).
+  ```
 
-- ```--threads``` will ask *pyHiM* to run in parallel using multiple threads in your computer or computer cluster. To visualize the progress of your run,  open your browser in ```http://localhost:8787``` and make sure you connect by ```ssh -L 8787:localhost:8787 username@servername``` if you are not running `pyHiM` locally.
+- ```--threads``` will ask *pyHiM* to run in parallel using multiple threads in your computer or computer cluster. 
+  ```{note}
+  To visualize the progress of your run,  open your browser in `http://localhost:8787` and make sure you connect by 
+    
+    `ssh -L 8787:localhost:8787 username@servername`
+  ```
 
 ## Running in multiple folders
-To run `pyHiM` in multiple folders we recommend that you create a BASH script and provide the location of each `input_directory` that needs to be processed. For this, run `pyHiM`:
+To run `pyHiM` in multiple folders we recommend that you create a **BASH script** and provide the location of each `input_directory` that needs to be processed. For this, run `pyHiM` with this way:
 ```sh
 pyhim -F <input_directory>
 ```

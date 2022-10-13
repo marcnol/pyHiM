@@ -57,6 +57,7 @@ extensions = [
     "sphinxcontrib.mermaid",# mermaid extension for MyST
     "sphinx_panels",        # for creating panels like pandas or numpy main doc page
     "nbsphinx",             # include jupyter notebook file, WARNING: uncompatible with mermaid on ReadTheDocs
+    "IPython.sphinxext.ipython_console_highlighting", # Resolve highlighting "literal_block" bug
 ]
 
 mermaid_output_format = "png"
