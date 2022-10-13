@@ -6,25 +6,29 @@
   ```{note}
   This folder will be called the `input_directory`.
   ```
-- Copy or create a model configuration file (called `infoList.json`) into your `input_directory`. 
+  
+- Copy or create a file named `infoList.json` into your `input_directory`. 
   ```{note}
-  This file contains all the input parameters required to run `pyHiM`. You can find an example in [pyHiM/modelParameterFiles_JSON folder](https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
+   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip a model here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
   ```
+
 - Modify the `infoList.json` file to indicate the **reference cycle** used for drift correction. 
   ```{note}
   This can be done by manually editing the `infoList.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
   ```
+
+## Basic run
+
 - In the `input_directory` activate your conda environment by typing the following command in a terminal:
 	```bash
    conda activate pyHiM
 	```
 
-## Basic run
-
-- To run without any option, type the following command in your `input_directory`:
+- To run without any option, execute inside `input_directory`:
 	```bash
 	pyhim
 	```
+
   ```{note}
   The basic *pyHiM* pipeline will:
   1. Project 3D images

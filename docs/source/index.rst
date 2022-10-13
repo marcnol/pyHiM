@@ -4,7 +4,7 @@ pyHiM - Documentation
 
 **Date**: |today| **Version**: |release|
 
-`pyHiM` implements the analysis of multiplexed DNA-FISH data, as described in our `protocols paper <https://github.com/NollmannLab/HiM_protocol>`_.
+`pyHiM` implements the analysis of multiplexed DNA-FISH data, as described in our `protocols paper <https://www.nature.com/articles/s41596-019-0269-9>`_.
 
 =============
 Main features
