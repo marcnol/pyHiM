@@ -2,10 +2,6 @@
 
 ## Clone *pyHiM* repository
 
-Clone the repository into your local filesystem. The standard location is: ```$HOME/Repositories/pyHiM```
-
-### Clone *pyHiM* repository
-
 1. Create a folder where you want to install *pyHiM* and go inside to clone the repository. Standard location to do it is: ```$HOME/Repositories/pyHiM```
 
 ```bash
@@ -45,9 +41,7 @@ export MPLBACKEND=agg
 Make sure you change ```.../Repositories/...``` with your directory name (step 1.) if this is not where you put *pyHiM* !
 ```
 
-### Set up enviroment using conda
-
-#### Install conda
+## Install conda
 
 1. In the Downloads directory, run follow command (or download the package from [conda installation script](https://www.anaconda.com/products/individual)):
 ```
@@ -76,7 +70,7 @@ bash installation.sh
 
 If you encounter problems, follow the manual installation (below).
 
-### Semi-automatic configuration
+## Semi-automatic configuration
 
 Run this command in your terminal within the root 
 
@@ -91,7 +85,7 @@ If you get this error:
 You solve by running `pip install dask[complete] distributed --upgrade`.
 ```
 
-### Manual configuration
+## Manual configuration
 
 To manually install the necessary packages using conda, run:
 
@@ -109,7 +103,7 @@ Remember to activate the environment before running *pyHiM*:
 conda activate pyHiM
 ```
 
-### Upgrade scikit-image to development version
+## Upgrade scikit-image to development version
 
 Depending on whether you already had a version of scikit-image installed, you may need to upgrade it. For this, uninstall any existing installations:
 
@@ -140,7 +134,7 @@ pip install -e .  # Reinstall
 
 You should be set!
 
-### Install apifish module
+## Install apifish module
 
 1. Navigate where you want install apifish
 ```bash
@@ -167,7 +161,7 @@ cd apiFISH && git checkout development
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 ```
 
-### Additional installation to generate documentation
+## Additional installation to generate documentation
 
 ```sh
 conda install sphinx
@@ -183,7 +177,7 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
 ```
 
 
-### Script installation for super-computer centers (e.g. Meso-LR)
+## Script installation for super-computer centers (e.g. Meso-LR)
 
 To access the private repository of *pyHiM*, please first create an SSH key and put it in your keyring. Follow the steps described [here](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent).
 

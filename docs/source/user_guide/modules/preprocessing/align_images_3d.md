@@ -1,13 +1,17 @@
 
 # alignImages3D
+
 *Aligns fiducials in 3D.*
 
 ## Invoke
+
 Inside the folder with your input data, run:
 ```shell
 pyhim -C alignImages3D
 ```
-#image benchmark
+
+![align_3d](../../../_static/from_tuto/align_3d.png)
+
 ## Inputs
 
 |Name shape|Quantity|Mandatory|Description|
@@ -17,6 +21,7 @@ pyhim -C alignImages3D
 |alignImages.ecsv|1|No|XY alignment resulting from running `alignImages`.|
 
 ## Outputs
+
 |Name shape|Quantity|Description|
 |---|---|---|
 |alignImages_block3D.ecsv|1|Shift block maps for X, Y and Z and quality matrices.|
@@ -28,28 +33,6 @@ To run, the value for ```localAlignment``` key should be ```block3D```. The othe
 ## Description
 
 None of the methods above take into account the drift of the sample in the z-plane. While this is typically very small given the good performance of autofocus, it could be an issue in some instances. This is the slowest but most performant alignment method in the stack.
-
-You will find below its algorithmic process:
-
-```{mermaid}
-flowchart TD
-
-		subgraph A[INPUT]
-			A1([3D_Fiducials])
-			A2([reference list])
-		end
-		subgraph C[OUTPUT]
-			C1([ECSV table with all shifts])
-			C2([aligned_3D_Fiducials])
-		end
-		A --> B1
-		B1[["alignFiducials3Dfile()"]] --> B3
-		B1 --> B2
-		B2([shift]) --> B3
-		B3[["appliesXYshift3Dimages()"]] --> B4
-		B4[["imageBlockAlignment3D()"]] --> C
-	
-```
 
 **Step by step**
 

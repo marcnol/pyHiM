@@ -8,6 +8,8 @@ Inside the folder with your input data, run:
 pyhim -C build_matrix
 ```
 
+![build_matrix](../../../_static/from_tuto/build_matrix.png)
+
 ## Inputs
 
 |Name shape|Quantity|Mandatory|Description|

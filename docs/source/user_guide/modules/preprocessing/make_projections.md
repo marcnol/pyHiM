@@ -1,10 +1,15 @@
 # makeProjections
+
 *Projects 3D images in 2D*
+
 ## Invoke
+
 Inside the folder with your input data, run:
 ```shell
 pyhim -C alignImages
 ```
+
+![projection](../../../_static/from_tuto/projection.png)
 
 ## Inputs
 
@@ -63,43 +68,3 @@ There are some additional options that can be provided to indicate how projectio
 ## Step by step
 
 This routine takes all 3D images and projects them in 2D. Depending on the chosen `mode`, this module finds the good set of Z-plans, where there is the least noise. This step gives a range centered on a focal plan, named `zRange`. Projection is then done on this range either by sum or by maximum intensity projection.
-
-## Graph
-
-
-```{mermaid}
-flowchart TD
-
-		A1[["zProjectionRange()"]] --> A2
-		A1 --> A3
-		A1 --> A4
-		A1 --> A5
-		A2[manual] ---> A7
-		A3[automatic] --> A6
-		A4[full] ---> A7
-		A5[laplacian] --> A8
-		A6[["calculate_zrange()"]] --> A7
-		A7([zRange]) --> A9
-		A8[["reinterpolatesFocalPlane()"]] ----> A10
-		A8 ---> A9
-		A9[["projectsImage2D()"]] --> A14
-		A9 --> A15
-		subgraph OUTPUT
-			A10([focalPlaneMatrix])
-			subgraph common
-				A11([data_2D])
-				A12(["focusPlane"])
-				A13([zRange])
-			end
-		end
-		A14[MIP] --> common
-		A15[sum] --> common
-		subgraph INPUT
-			K([3D_DAPI])
-			M([3D_Fiducials])
-			N([3D_RNA])
-			L([3D_Barcodes])
-		end
-		INPUT --> A1
-
-```
