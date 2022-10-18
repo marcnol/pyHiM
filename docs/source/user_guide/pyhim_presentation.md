@@ -26,7 +26,7 @@ At the end of the analysis, *pyHiM* will output several files describing the com
 Optionally, pyHiM also provides a basic tool to detect **single RNA types** but does not support processing of multiple RNA species or proteins-FISH data.
 ```
 
-## Kind of data
+## Type of data
 
 A minimal Hi-M set of data contains:
 - Images of **nuclei** for a given Region Of Interest (ROI)

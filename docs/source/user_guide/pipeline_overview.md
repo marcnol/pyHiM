@@ -20,7 +20,7 @@ To use it, see [`--threads` argument](../getting_started/typical_run.md#optional
 
 ## Data set
 
-To run the default pipeline, *pyHiM* need two kinds of data:
+To run the default pipeline, *pyHiM* need two types of data:
 - A dictionary of initialization parameters, named `infoList.json`
 - 3D images in TIFF format (extension: `.tif` or `.tiff`). 
 

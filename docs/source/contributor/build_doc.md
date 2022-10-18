@@ -17,7 +17,7 @@ Our documentation is structured as follows:
 
 To build *pyHiM* documentation locally, we use [Sphinx](https://www.sphinx-doc.org/en/master/) which generates static, local HTML pages (see *Sphinx* section below). The documentation is automatically rebuilt by `readthedocs` using the github *pyHiM* source documentation files. This build of the documentation is hosted at [Read the Docs](https://readthedocs.org/) and available online.
 
-The documentation is placed in the `/docs` directory. Two kinds of documentations are provided by the developer:
+The documentation is placed in the `/docs` directory. Two types of documentations are provided by the developer:
 - Pure text files (preferably written in [markdown](https://www.markdownguide.org/basic-syntax/)).
 - [Docstring](https://www.python.org/dev/peps/pep-0257/) within the source code (using NumPy style). See section below for more information.
 
