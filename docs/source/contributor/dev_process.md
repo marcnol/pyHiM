@@ -51,13 +51,13 @@ Examples:
     git pull origin <your_branch>
     ```
     
-2. Choose files you want to commit, to add all :
+2. Choose files you want to commit, to add all:
 
     ```shell
     git add -A
     ```
 
-3. Commit your changes with a title with short description and a section with details :
+3. Commit your changes with a title with short description and a section with details:
     ```shell
     git commit -m "<type>(<scope>) - #<issue_number> Summary title" -m "- List of task or bugfix done in this commit"
     ```

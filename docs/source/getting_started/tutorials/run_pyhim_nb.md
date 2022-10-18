@@ -8,11 +8,11 @@ To run by yourself the [pyHiM tutorial](notebooks/full_pyHiM_run.ipynb), follow 
 
 1. Activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM:
 ```sh
-conda activate <environment_name>
+conda activate pyHiM
 ```
 
 ```{note}
-Replace `<environment_name>` by `pyHiM` if you have followed the installation steps. 
+Replace `pyHiM` by your `environment name` if you called it something else.
 ```
 
 2. Install a tool to manage jupyter notebook like [JupyterLab](https://jupyter.org/install#jupyterlab):
@@ -33,7 +33,7 @@ ipython kernel install --user --name=pyHiM-kernel
 
 2. Open a terminal inside your downloaded folder and activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM
 ```sh
-conda activate <environment_name>
+conda activate pyHiM
 ```
 
 3. Open pyHiM tutorial with JupiterLab (or jupyter notebook):

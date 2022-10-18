@@ -7,7 +7,7 @@ We apply an auto format for PEP8 using the [`black`](https://pypi.org/project/bl
 
 ### Names
 
-Never use these characters as single character variable names : 
+Never use these characters as single character variable names: 
 
 - 'l' (lowercase letter 'L' [el])
 - 'O' (uppercase letter 'o' [oh])

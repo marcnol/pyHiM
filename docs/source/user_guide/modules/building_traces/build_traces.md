@@ -6,6 +6,8 @@ Inside the folder with your input data, run:
 pyhim -C build_traces
 ```
 
+![build_traces](../../../_static/from_tuto/build_traces.png)
+
 ## Inputs
 
 |Name shape|Quantity|Mandatory|Description|

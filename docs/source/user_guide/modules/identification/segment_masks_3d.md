@@ -7,6 +7,8 @@ Inside the folder with your input data, run:
 pyhim -C segmentMasks3D
 ```
 
+![segmentation](../../../_static/from_tuto/segmentation.png)
+
 ## Inputs
 
 |Name shape|Quantity|Mandatory|Description|

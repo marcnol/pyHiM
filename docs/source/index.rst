@@ -115,8 +115,6 @@ How to proceed
    user_guide/pyhim_presentation
    user_guide/pipeline_overview
    user_guide/fundamental
-   user_guide/script
-   user_guide/license
 
 .. toctree::
    :caption: Reference
@@ -139,4 +137,5 @@ How to proceed
    contributor/issues
    contributor/work_with_apifish
    contributor/ressources
+   contributor/license
 
