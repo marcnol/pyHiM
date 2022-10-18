@@ -25,7 +25,7 @@ The documentation is placed in the `/docs` directory. Two kinds of documentation
 
 *Sphinx* is a documentation generator. It's goal is to translate source documentation files into HTML static webpages. The default format for the documentation files is [reStructuredText (reST)](https://docutils.sourceforge.io/rst.html), however, *markdown* can also be used (see section below).
 
-We use *Sphinx* with these main extensions :
+We use *Sphinx* with these main extensions:
 - [autodoc](https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html) to automatically include documentation from docstring
 - [napoleon](https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html) to support NumPy style docstring
 - [MyST](https://myst-parser.readthedocs.io/en/latest/sphinx/intro.html) to support Markdown-based documentation
@@ -82,7 +82,7 @@ When you comment code, be brief and focused.
 
 *[Docstring](https://www.python.org/dev/peps/pep-0257/) is documentation string that describes what a public object does.*
 
-This comment should appear after the `def` line, so at the beginning of :
+This comment should appear after the `def` line, so at the beginning of:
 
 - module
 - function
@@ -91,7 +91,7 @@ This comment should appear after the `def` line, so at the beginning of :
 
 It's the `__doc__` special attribute of that object. To print it, you can use `help()`function.
 
-Convention : always use `"""triple double quotes"""`.
+Convention: always use `"""triple double quotes"""`.
 
 There are two forms of docstrings: one-liners and multi-line docstrings.
 
@@ -113,7 +113,7 @@ def kos_root():
 
 *For a stand-alone program, the docstring should document the script's function and command line syntax, environment variables, and files... To be sufficient for a new user to use the command properly (or yourself in 2 years !).*
 
-- Structure :
+- Structure:
     1. A summary line just like a one-line docstring
     2. Followed by a blank line
     3. Followed by a more elaborate description
@@ -130,9 +130,9 @@ def extract_header(file_loc, print_cols=False):
 
     Parameters
     ----------
-    file_loc : str
+    file_loc: str
         The file location of the spreadsheet
-    print_cols : bool, optional
+    print_cols: bool, optional
         A flag used to print the columns to the console (default is False)
 
     Returns
