@@ -689,7 +689,7 @@ def makesPlotHistograms(
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     print(">>> Producing HiM matrix")
     root_folder, output_folder, run_parameters = parse_arguments()
@@ -813,3 +813,6 @@ if __name__ == "__main__":
         makesVideo(outputFileNameRoot, video_name, searchPattern)
 
     print("\nDone\n\n")
+
+if __name__ == "__main__":
+    main()

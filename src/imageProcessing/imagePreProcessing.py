@@ -77,7 +77,7 @@ def parse_arguments():
         run_parameters["rootFolder"] = args.rootFolder
     else:
         print("\n> rootFolder NOT FOUND, using PWD")
-        run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+        run_parameters["rootFolder"] = os.getcwd()
 
     if args.outputFile:
         run_parameters["outputFile"] = (
@@ -162,7 +162,7 @@ def lauch_dask_scheduler(
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines run_parameters
@@ -249,3 +249,6 @@ if __name__ == "__main__":
         client.close()
 
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+if __name__ == "__main__":
+    main()

@@ -30,7 +30,7 @@ from fileProcessing.fileManagement import Folders, Parameters
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
@@ -102,3 +102,6 @@ if __name__ == "__main__":
                 print("{} removed".format(new_folder))
             else:
                 print("{} does not exist".format(new_folder))
+
+if __name__ == "__main__":
+    main()

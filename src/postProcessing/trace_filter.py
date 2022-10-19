@@ -55,7 +55,7 @@ def parse_arguments():
         p["rootFolder"] = "."
 
     if args.N_barcodes:
-        p["N_barcodes"] = args.N_barcodes
+        p["N_barcodes"] = int(args.N_barcodes)
     else:
         p["N_barcodes"] = 2
 
@@ -116,7 +116,7 @@ def runtime(folder, N_barcodes=2, trace_files=[]):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
@@ -129,3 +129,6 @@ if __name__ == "__main__":
 
     print(f"Processed <{n_traces_processed}> trace(s)")
     print("Finished execution")
+
+if __name__ == "__main__":
+    main()

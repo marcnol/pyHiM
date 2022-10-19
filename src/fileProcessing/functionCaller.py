@@ -301,7 +301,7 @@ def him_parse_arguments():
             )
         else:
             print_log("\n\n# him_data: NOT FOUND")
-            run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+            run_parameters["rootFolder"] = os.getcwd()
 
     if args.threads:
         run_parameters["threads"] = int(args.threads)

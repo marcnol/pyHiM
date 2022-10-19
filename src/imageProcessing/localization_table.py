@@ -100,8 +100,12 @@ class LocalizationTable:
         except KeyError:
             barcode_map.meta["comments"] = [comments]
 
-        save_table_to_ecsv(barcode_map, file_name)
-
+        # save_table_to_ecsv(barcode_map, file_name)
+        barcode_map.write(
+            file_name,
+            format="ascii.ecsv",
+            overwrite=True,
+        )
 
     def plot_distribution_fluxes(self, barcode_map, filename_list):
         """
@@ -326,7 +330,7 @@ def plots_localization_projection(coord1, coord2, axis, colors, title="" * 3):
     colors : 1D Numpy array, float
         colorcode used in scatter plot.
     title : string, optional
-        title of subpanel. The default is ''*3.
+        title of subpanel. The default is ''\*3.
 
     Returns
     -------

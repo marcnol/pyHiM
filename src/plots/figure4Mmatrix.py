@@ -188,7 +188,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     run2Datasets = False
 
     rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
@@ -279,3 +279,6 @@ if __name__ == "__main__":
 
     plt.savefig(output_filename)
     print("Output figure: {}".format(output_filename))
+
+if __name__ == "__main__":
+    main()

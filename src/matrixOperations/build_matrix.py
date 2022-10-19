@@ -261,6 +261,7 @@ class BuildMatrix:
         output_filename = file.split(".")[0] + "_Matrix"
         clim_scale = 1.0  # factor to multiply the clim by. If 1, the clim will be the mean of the PWD distribution of the whole map
         pixel_size = 1  # this is 1 as coordinates are in microns.
+        n_cells = self.sc_matrix.shape[2]
 
         # plots PWD matrix
         # uses KDE
@@ -274,6 +275,7 @@ class BuildMatrix:
             figtitle="PWD matrix - KDE",
             mode="KDE",  # median or KDE
             clim=clim_scale * np.nanmean(self.sc_matrix),
+            n_cells=n_cells,
             c_m=self.colormaps["PWD_KDE"],
             cmtitle="distance, um",
             filename_ending="_PWDmatrixKDE.png",
@@ -291,6 +293,7 @@ class BuildMatrix:
             mode="median",  # median or KDE
             clim=clim_scale * np.nanmean(self.sc_matrix),
             cmtitle="distance, um",
+            n_cells=n_cells,
             c_m=self.colormaps["PWD_median"],
             filename_ending="_PWDmatrixMedian.png",
         )
@@ -311,6 +314,7 @@ class BuildMatrix:
             figtitle="Hi-M matrix",
             mode="counts",
             clim=c_scale,
+            n_cells=n_cells,
             c_m=self.colormaps["contact"],
             cmtitle="proximity frequency",
             filename_ending="_HiMmatrix.png",
@@ -326,6 +330,7 @@ class BuildMatrix:
             self.log_name_md,
             figtitle="N-matrix",
             mode="counts",
+            n_cells=n_cells,
             clim=np.max(self.n_matrix),
             c_m=self.colormaps["Nmatrix"],
             cmtitle="number of measurements",

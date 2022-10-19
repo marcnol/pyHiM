@@ -60,20 +60,7 @@ class ChromatinTraceTable:
                 "Barcode #",
                 "label",
             ),
-            dtype=(
-                "S2",
-                "S2",
-                "f4",
-                "f4",
-                "f4",
-                "S2",
-                "int",
-                "int",
-                "int",
-                "int",
-                "int",
-                "S2",
-            ),
+            dtype=("S2", "S2", "f4", "f4", "f4", "S2", "int", "int", "int", "int", "int", "S2",),
         )
 
         self.data.meta["comments"] = [
@@ -98,10 +85,7 @@ class ChromatinTraceTable:
 
         """
         if os.path.exists(file):
-            # trace_table = Table.read(file, format="ascii.ecsv")
-
             trace_table = read_table_from_ecsv(file)
-
             print_log("$ Successfully loaded chromatin trace table: {}".format(file))
         else:
             print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
@@ -196,10 +180,12 @@ class ChromatinTraceTable:
 
         for idx, trace in enumerate(trace_table_indexed.groups):
 
-            if len(trace["Trace_ID"].data) < minimum_number_barcodes:
+            number_unique_barcodes = len(list(set(trace["Barcode #"].data)))
+            
+            if number_unique_barcodes < minimum_number_barcodes:
                 barcodes_to_remove.append(list(trace["Spot_ID"].data))
 
-        print(f"$ Number of barcodes to remove: {len(barcodes_to_remove)}")
+        print(f"$ Number of traces to remove: {len(barcodes_to_remove)}")
 
         list_barcode_to_remove = []
         for barcodes in barcodes_to_remove:
@@ -215,10 +201,13 @@ class ChromatinTraceTable:
                 rows_to_remove.append(idx)
 
         trace_table.remove_rows(rows_to_remove)
-        trace_table_indexed = trace_table.group_by("Trace_ID")
-        print(
-            f"$ Number of spots / traces left: {len(trace_table)} / {len(trace_table_indexed.groups)}"
-        )
+        if len(trace_table) > 0:
+            trace_table_indexed = trace_table.group_by("Trace_ID")
+            number_traces_left = len(trace_table_indexed.groups)
+        else:
+            number_traces_left = 0
+            
+        print(f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}")
 
         self.data = trace_table
 

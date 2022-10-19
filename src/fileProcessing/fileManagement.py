@@ -541,9 +541,7 @@ class Parameters:
 
 
 class DaskCluster:
-    def __init__(
-        self, requested_number_nodes, maximum_load=0.6, memory_per_worker=2000
-    ):
+    def __init__(self, requested_number_nodes, maximum_load=0.6, memory_per_worker=12000):
         self.requested_number_nodes = requested_number_nodes
         # self.n_threads will be created after exetution of initialize_cluster()
         self.maximum_load = maximum_load  # max number of workers that I can take
@@ -556,7 +554,7 @@ class DaskCluster:
 
         number_cores_available = multiprocessing.cpu_count()
 
-        # we want at least 2 GB per worker
+        # we want at least 12 GB per worker
         _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
 
         max_number_threads = int(

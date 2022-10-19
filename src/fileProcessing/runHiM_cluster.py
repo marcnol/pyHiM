@@ -144,7 +144,7 @@ def read_arguments():
     return run_parameters
 
 
-if __name__ == "__main__":
+def main():
 
     run_parameters = read_arguments()
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
         print("Folder to run: {}".format(folder))
         print("Output logfile: {}".format(output_file))
 
-        pyHiM = "pyHiM.py -F " + folder + CMD + threads + " > " + output_file
+        pyHiM = "pyhim -F " + folder + CMD + threads + " > " + output_file
 
         if not run_parameters["sbatch"]:
             pyHiM = pyHiM + " &"
@@ -321,4 +321,11 @@ if __name__ == "__main__":
             for item in BATCH_file:
                 f.write("{}\n".format(item))
 
+<<<<<<< HEAD
         print("\nTo run master bash script:\n$ bash {}".format(bash_script_name))
+=======
+        print("\nTo run master bash script:\n$ bash {}".format(BASHscriptName))
+
+if __name__ == "__main__":
+    main()
+>>>>>>> development

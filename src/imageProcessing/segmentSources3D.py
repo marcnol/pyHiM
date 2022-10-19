@@ -666,7 +666,12 @@ def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10, n_to
 
         peak_list = peak0.copy()
         peak_list.sort()
-        last2keep = np.min([n_tolerance, len(peak_list)])
+
+        if n_tolerance == "None":
+            last2keep = len(peak_list)
+        else:
+            last2keep = np.min([n_tolerance,len(peak_list)])
+
         highest_peak_value = peak_list[-last2keep]
         selection = list(np.nonzero(peak0 > highest_peak_value)[0])
 

@@ -287,7 +287,7 @@ def run(p):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     # [parsing arguments]
     p = parse_arguments()
@@ -297,3 +297,6 @@ if __name__ == "__main__":
         print("\nNothing to process...\n")
     else:
         run(p)
+
+if __name__ == "__main__":
+    main()

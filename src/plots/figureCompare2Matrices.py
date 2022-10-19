@@ -216,7 +216,7 @@ def normalize_matrix(m1, m2, mode):
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
 
@@ -411,3 +411,6 @@ if __name__ == "__main__":
 
     else:
         print("Error: matrices do not have the same dimensions!")
+
+if __name__ == "__main__":
+    main()

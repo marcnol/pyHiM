@@ -190,16 +190,23 @@ class RegisterLocalizations:
                 if self.remove_uncorrected_localizations:
                     # will remove localizations that cannot be corrected
                     zxy_corrected = [np.nan, np.nan, np.nan]
+                    # print(f">>> Removed localization #{i} from barcode: {RTbarcode} to {zxy_corrected}")
                 else:
                     # will keep uncorrected localizations
                     pass
 
             # rewrites corrected XYZ values to Table
+            # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
+                # print(f" $ Before correction: {barcodeMap.groups[0][i]} ")
+
             barcode_map.groups[0]["ycentroid"][i] = zxy_corrected[1]
             barcode_map.groups[0]["xcentroid"][i] = zxy_corrected[2]
             if self.ndims > 2:
                 barcode_map.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
+            # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
+                # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
+            
         if self.remove_uncorrected_localizations:
             print_log(
                 f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcode_map.groups[0])} were removed."

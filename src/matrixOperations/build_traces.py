@@ -331,10 +331,23 @@ class BuildTraces:
 
         print_log("$ Coordinates dimensions: {}".format(self.ndims))
 
-    def load_mask(
-        self, tif_files_in_folder,
-    ):
+    def load_mask(self,files_in_folder,):
+        """
+        searches and loads mask files for building chromatin trace
 
+        Parameters
+        ----------
+        files_in_folder : list of str
+            list of TIF files to be explored.
+
+        Returns
+        -------
+        bool
+            True: mask found and loaded
+            False: failed to find mask file
+
+        """
+        
         # finds files with cell masks
         channel = self.current_param.param_dict["acquisition"][
             self.mask_type + "_channel"
@@ -342,7 +355,7 @@ class BuildTraces:
 
         files_to_process = [
             file
-            for file in tif_files_in_folder
+            for file in files_in_folder
             if self.current_param.decode_file_parts(file)["channel"]
             == channel  # typically "ch00"
             and self.mask_identifier in os.path.basename(file).split("_")
@@ -364,9 +377,9 @@ class BuildTraces:
             if os.path.exists(full_filename_roi_masks):
 
                 # loads and initializes masks
-                # segmented_masks = np.load(full_filename_roi_masks)
                 segmented_masks = read_array(full_filename_roi_masks)
-
+                print(f"$ loaded mask file: {full_filename_roi_masks}")
+                
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.masks = expand_labels(
                     segmented_masks, distance=self.mask_expansion
@@ -379,7 +392,7 @@ class BuildTraces:
             else:
                 # Could not find a file with masks to assign. Report and continue with next ROI
                 debug_mask_filename(
-                    tif_files_in_folder,
+                    files_in_folder,
                     full_filename_roi_masks,
                     self.mask_identifier,
                     self.n_roi,
@@ -387,11 +400,10 @@ class BuildTraces:
                 )
 
         else:
-            print_log(
-                f"$ Did not identified any filename for mask: {self.mask_identifier}, channel: {channel}",
-                "WARN",
-            )
-            print_log("-" * 80)
+            printLog(f"$ Did not find any filename for mask: {self.mask_identifier}, channel: {channel}","WARN")
+            printLog("-"*80)
+            # Could not find a file with masks to assign. Report and continue with next ROI
+            debug_mask_filename(files_in_folder,"None",self.mask_identifier,self.n_roi,label=self.current_param.param_dict["acquisition"]["label_channel"])
 
         return False
 
@@ -462,10 +474,8 @@ class BuildTraces:
                 self.trace_table.initialize()
 
                 # finds what barcodes are in each cell mask
-                self.align_by_masking()
-                print_log(
-                    f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1} out of {self.number_masks}\n"
-                )
+                self.alignByMasking()
+                printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1} out of {self.numberMasks}\n")
 
                 # builds sc_distance_table
                 self.builds_sc_distance_table()
@@ -475,26 +485,30 @@ class BuildTraces:
                     )
                 )
 
-                # saves trace table with results per ROI
-                output_table_filename = (
-                    output_filename
-                    + "_"
-                    + self.label
-                    + "_mask:"
-                    + str(self.mask_identifier)
-                    + "_ROI:"
-                    + str(self.n_roi)
-                    + ".ecsv"
-                )
-                self.trace_table.save(output_table_filename, self.trace_table.data)
+                if len(self.trace_table.data) > 0:
+                    # saves trace table with results per ROI
+                    output_table_filename = (
+                        output_filename
+                        + "_"
+                        + self.label
+                        + "_mask:"
+                        + str(self.mask_identifier)
+                        + "_ROI:"
+                        + str(self.n_roi)
+                        + ".ecsv"
+                    )
+                    self.trace_table.save(output_table_filename, self.trace_table.data)
 
-                # plots results
-                self.trace_table.plots_traces(
-                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
-                    masks=self.masks,
-                )
+                    # plots results
+                    self.trace_table.plots_traces(
+                        [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
+                        masks=self.masks,
+                    )
 
-                print_log(f"$ Saved output table as {output_table_filename}")
+                    print_log(f"$ Saved output table as {output_table_filename}")
+                else:
+                    print_log(f"! Warning: table was empty therefore not saved!")
+
                 processing_order += 1
 
     def build_trace_by_masking(self, barcode_map):
@@ -567,15 +581,21 @@ class BuildTraces:
             )
         elif self.ndims == 2:
             coordinates = np.concatenate(
-                [
-                    pixel_size["x"] * data_table["xcentroid"].data.reshape(len_data_table, 1),
-                    pixel_size["y"] * data_table["ycentroid"].data.reshape(len_data_table, 1),
-                ],
-                axis=1,
-            )
-
+                                    [
+                                        pixelSize['x']*dataTable['xcentroid'].data.reshape(len_data_table,1),
+                                        pixelSize['y']*dataTable['ycentroid'].data.reshape(len_data_table,1),
+                                        0.0*dataTable['zcentroid'].data.reshape(len_data_table,1),
+                                    ],
+                                    axis = 1,
+                                )
+        """ if this code above works and does not introduce bugs, we will remove the commented lines in future
+        elif self.ndims == 2:
+            coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(len_data_table,1),
+                                    pixelSize['y']*dataTable['ycentroid'].data.reshape(len_data_table,1)], axis = 1)
+        """
+            
         # gets tree of coordinates
-        print_log("> Creating KDTree")
+        print_log(f'> Creating KDTree for {self.ndims} dimensions')
         x_tree = KDTree(coordinates)
 
         ## set distance thresold
@@ -616,7 +636,7 @@ class BuildTraces:
         number_rois = len(barcode_map_roi.groups.keys)
 
         print_log("-" * 80)
-        print_log("> Starting spatial clustering for {} rois".format(number_rois))
+        print_log("> Starting spatial clustering for {} ROI in {} dimensions".format(number_rois,self.ndims))
 
         tag = str(self.ndims) + "D"
 
@@ -641,34 +661,38 @@ class BuildTraces:
 
             # build traces by spatial clustering
             self.group_localizations_by_coordinate()
-            print_log(f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1}\n")
+            printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1}\n")
 
             # builds sc_distance_table
             self.builds_sc_distance_table()
-            print_log(
-                "$ Number of entries in trace table: {}".format(
-                    len(self.trace_table.data)
+            if len(self.trace_table.data) > 0:
+                print_log(
+                    "$ Number of entries in trace table: {}".format(
+                        len(self.trace_table.data)
+                    )
                 )
-            )
 
-            # saves trace table with results per ROI
-            output_table_filename = (
-                output_filename
-                + "_"
-                + self.label
-                + "_KDtree"
-                + "_ROI:"
-                + str(self.n_roi)
-                + ".ecsv"
-            )
-            self.trace_table.save(output_table_filename, self.trace_table.data)
+                # saves trace table with results per ROI
+                output_table_filename = (
+                    output_filename
+                    + "_"
+                    + self.label
+                    + "_KDtree"
+                    + "_ROI:"
+                    + str(self.n_roi)
+                    + ".ecsv"
+                )
+                self.trace_table.save(output_table_filename, self.trace_table.data)
 
-            # plots results
-            self.trace_table.plots_traces(
-                [output_table_filename.split(".")[0], "_traces_XYZ", ".png"]
-            )
+                # plots results
+                self.trace_table.plots_traces(
+                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"]
+                )
 
-            print_log(f"$ Traces built. Saved output table as {output_table_filename}")
+                print_log(f"$ Traces built. Saved output table as {output_table_filename}")
+            else:
+                print_log(f"! Warning: table was empty therefore not saved!")
+                
 
     def launch_analysis(self, file):
 
@@ -676,7 +700,7 @@ class BuildTraces:
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
 
-        if "3D" in file:
+        if "3D" in os.path.basename(file):
             self.ndims = 3
             self.pixel_size = {
                 "x": self.pixel_size_xy,
@@ -685,13 +709,15 @@ class BuildTraces:
             }
         else:
             self.ndims = 2
-            self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
+            self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": 0}
 
         if (
             "clustering" in self.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
             self.build_trace_by_clustering(barcode_map)
-
+        elif self.ndims == 2:
+            print_log(f"! Warning: localization files in 2D will not be processed using clustering.\n")
+            
         if "masking" in self.tracing_method:
             self.build_trace_by_masking(barcode_map)
 

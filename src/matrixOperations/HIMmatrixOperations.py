@@ -533,6 +533,8 @@ def load_sc_data(list_data, dataset_name, p):
     if "d3" in p.keys():
         if p["d3"]:
             dim_tag = "_3D"
+        else:
+            dim_tag = "_2D"            
 
     sc_matrix_collated, unique_barcodes = [], []
     build_pwd_matrix_collated, run_name, sc_labeled_collated = [], [], []
@@ -543,9 +545,11 @@ def load_sc_data(list_data, dataset_name, p):
 
         # [makes list of files with Tables to load]
         # tries to load files from newer version of proceesingPipeline.py
-        files_to_process = glob.glob(
-            root_folder + "/buildsPWDmatrix" + dim_tag + "_order*ROI*.ecsv"
-        )
+        files_to_process_compatibility = glob.glob(root_folder + "/buildsPWDmatrix" + dim_tag + "_order*ROI*.ecsv")
+        files_to_process = files_to_process_compatibility + glob.glob(root_folder + "/Trace" + dim_tag + "_barcode_*ROI*.ecsv")
+        
+        print("files_to_process: {}".format(root_folder +"/Trace" + dim_tag + "_barcode_ROI.ecsv"))
+        
         if len(files_to_process) == 0:
             # it resorts to old format
             files_to_process = glob.glob(
@@ -1686,6 +1690,7 @@ def plot_matrix(
         # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
 
+    return meanSCmatrix
 
 def calculate_contact_probability_matrix(
     i_sc_matrix_collated,

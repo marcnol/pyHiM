@@ -21,7 +21,7 @@ import os
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
@@ -89,3 +89,6 @@ if __name__ == "__main__":
             os.system(tarcmd)
         else:
             print("Nothing to unzip in: {}".format(root_folder + os.sep + tar_filename))
+
+if __name__ == "__main__":
+    main()

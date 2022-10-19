@@ -431,9 +431,6 @@ def load_n_preprocess_image(
         parallel_execution=parallel_execution,
     )
 
-    return image_3d_0, image_3d
-
-
 def _align_fiducials_3d_file(
     filename_to_process,
     alignment_results_table,
@@ -447,8 +444,6 @@ def _align_fiducials_3d_file(
     dict_shifts_available,
     output_folder,
 ):
-
-    base_memory = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
 
     # - load  and preprocesses 3D fiducial file
     print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
@@ -607,21 +602,10 @@ def _align_fiducials_3d_file(
             ]
             alignment_results_table.add_row(table_entry)
 
-    print_log(
-        "$ delta memory used: {} Mb".format(
-            resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000 - base_memory
-        )
-    )
     print_log("Erasing {} variables\n".format(len(dir()) - 1))
     for var in dir():
         if var != "alignment_results_table":
             del var
-
-    print_log(
-        "$ Memory used after variables deleted: {} Mb".format(
-            resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000 - base_memory
-        )
-    )
 
     print_log("Variables still alive: {}".format(dir()))
 

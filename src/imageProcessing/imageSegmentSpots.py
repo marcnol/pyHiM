@@ -75,7 +75,7 @@ def parse_arguments():
         run_parameters["rootFolder"] = args.rootFolder
     else:
         print("\n> root_folder NOT FOUND, using PWD")
-        run_parameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+        run_parameters["rootFolder"] = os.getcwd()
 
     if args.outputFile:
         run_parameters["outputFile"] = (
@@ -142,7 +142,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines run_parameters
@@ -218,3 +218,6 @@ if __name__ == "__main__":
         outfile = output_file + "." + extension
         print("\n> Saving image : {}".format(outfile))
         imsave(outfile, newLabeledImage)
+  
+if __name__ == "__main__":
+    main()

@@ -27,7 +27,7 @@ from fileManagement import write_string_to_file
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     if len(sys.argv) < 3:
         raise SystemExit("Not enough arguments")
@@ -60,3 +60,6 @@ if __name__ == "__main__":
 
     else:
         print("File List is empty :(")
+
+if __name__ == "__main__":
+    main()

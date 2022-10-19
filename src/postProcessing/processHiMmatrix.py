@@ -155,7 +155,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
@@ -389,3 +389,6 @@ if __name__ == "__main__":
             spamwriter.writerow(run_name)
 
         print("Finished execution")
+
+if __name__ == "__main__":
+    main()

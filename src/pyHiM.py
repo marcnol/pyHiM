@@ -10,7 +10,7 @@ This file contains routines to process Hi-M datasets
 """
 # =============================================================================
 # IMPORTS
-# =============================================================================q
+# =============================================================================
 
 import os
 # to remove in a future version
@@ -29,8 +29,10 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # MAIN
 # =============================================================================
 
+def main():
+    begin_time = datetime.now()
 
-def old_main(run_parameters):
+    run_parameters = fc.him_parse_arguments()
 
     him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
     him.initialize()
@@ -43,8 +45,8 @@ def old_main(run_parameters):
     )
     labels = global_param.param_dict["labels"]
 
-    print_log("$ Started logging to: {}".format(him.log_file))
-    print_log("$ labels to process: {}\n".format(labels))
+    print_log(f"$ Started logging to: {him.log_file}")
+    print_log(f"$ labels to process: {labels}\n")
 
     for label in labels:
 
@@ -55,17 +57,9 @@ def old_main(run_parameters):
             file_name="infoList.json",
         )
 
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
-        print_log(
-            ">                  Analyzing label: {}           ".format(
-                current_param.param_dict["acquisition"]["label"]
-            )
-        )
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
+        print_log("--------------------------------------------------------------------------")
+        print_log(f">                  Analyzing label: {current_param.param_dict["acquisition"]["label"]}           ")
+        print_log("--------------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = him.parallel
         current_param.param_dict["fileNameMD"] = him.markdown_filename
@@ -123,9 +117,7 @@ def old_main(run_parameters):
 
     # exits
     him.current_session.save()
-    print_log(
-        "\n===================={}====================\n".format("Normal termination")
-    )
+    print_log("\n==================== Normal termination ====================\n")
 
     if run_parameters["parallel"]:
         him.cluster.close()
@@ -133,40 +125,8 @@ def old_main(run_parameters):
 
     del him
 
-
-def main(command_line_arguments=None):
-    """main function to run pyHiM
-
-    Parameters
-    ----------
-    command_line_arguments : List, optional
-        Used for test functions, by default None
-    """
-
-    run_args = RunArgs(command_line_arguments)
-
-    pipeline = Pipeline(run_args.cmd_list)
-
-    data = InputData(run_args.data_path)
-    data.check_consistency(pipeline)
-
-    # TODO
-    parameters = InputParameters(run_args.param_path)
-    parameters.check_consistency(pipeline, data)
-
-    pipeline.build_output_folders(run_args.output_path)
-    pipeline.fill(data, parameters)
-    pipeline.run()
+    print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
 
 if __name__ == "__main__":
-    begin_time = datetime.now()
-
-    run_parameters = fc.him_parse_arguments()
-
-    if "new" in run_parameters["cmd"]:
-        main()
-    else:
-        old_main(run_parameters)
-
-    print_log("Elapsed time: {}".format(datetime.now() - begin_time))
+    main()
