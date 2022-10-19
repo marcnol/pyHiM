@@ -1,6 +1,6 @@
 
 
-![](README.assets/website_illustration.png)
+![](docs/website_illustration.png)
 
 # pyHiM
 
