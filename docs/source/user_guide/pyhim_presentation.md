@@ -14,7 +14,7 @@ For more information on Hi-M, please see the following resources:
 
 ## Concept
 
-This software **calculate the 3D positions** of a set of DNA-loci, referred to as barcodes.
+This software **calculates the 3D positions** of a set of DNA-loci, referred to as barcodes.
 
 Data acquisition is performed sequentially, in a series of **cycles** combining the acquisition of a single barcode with a **fiducial marker** common to all cycles and later used for drift correction.
 
@@ -28,7 +28,8 @@ Optionally, pyHiM also provides a basic tool to detect **single RNA types** but 
 
 ## Type of data
 
-A minimal Hi-M set of data contains:
-- Images of **nuclei** for a given Region Of Interest (ROI)
-- Images of **DNA-FISH barcodes** acquired in different hybridization cycles for the same ROI as for the nuclei.
-- **Fiducial** images for both nuclei and barcodes acquired simultaneously with the images above (typically in a different color).
+For a given region of interest (ROI), a minimal Hi-M set of data contains:
+- Images of **nuclei** 
+- Images of **DNA-FISH barcodes** acquired during successive hybridization cycles 
+- **Fiducial** images for both nuclei and barcodes.
+

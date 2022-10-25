@@ -1,10 +1,8 @@
 # Tutorial for pyHiM notebook
 
-*A jupyter notebook is an interactive file where you can find both markdown text and executable code with its outputs dispayed.*
+*A jupyter notebook is an interactive file where you can find both markdown text and executable code with its outputs displayed.*
 
-To run by yourself the [pyHiM tutorial](notebooks/full_pyHiM_run.ipynb), follow these steps:
-
-## Install and configurate JupyterLab
+## Install and configure JupyterLab
 
 1. Activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM:
 ```sh
@@ -41,7 +39,7 @@ conda activate pyHiM
 jupyter-lab full_pyHiM_run.ipynb
 ```
 
-4. Once you spin up a jupyter lab from the `base` environment, select the `pyHiM-kernel` (click on panel Kernel > Change Kernel...) to be able to run *pyHiM* functions.
+4. Once you spin up a jupyter lab from the `pyHiM` environment, select the `pyHiM-kernel` (click on panel Kernel > Change Kernel...) to be able to run *pyHiM* functions.
 
 ![select_kernel_screenshot](../../_static/select_kernel.png)
 

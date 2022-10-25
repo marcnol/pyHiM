@@ -4,27 +4,37 @@
 
 - Copy the TIFF images you want to process into a single folder. 
   ```{note}
-  This folder will be called the `input_directory`.
+  This folder will be called the `input_directory`
   ```
   
 - Copy or create a file named `infoList.json` into your `input_directory`. 
+  
   ```{note}
-   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip a model here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
+   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip an example here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
   ```
-
-- Modify the `infoList.json` file to indicate the **reference cycle** used for drift correction. 
+  
+- Update the `infoList.json` file to indicate the **reference cycle** used for drift correction. 
   ```{note}
   This can be done by manually editing the `infoList.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
   ```
 
 ## Basic run
 
-- In the `input_directory` activate your conda environment by typing the following command in a terminal:
-	```bash
-   conda activate pyHiM
+- Open a terminal (Linux) or a conda-termincal (windows)
+	
+- Move to the input_directory :
+	
+  ```bash
+	cd input_directory
 	```
-
-- To run without any option, execute inside `input_directory`:
+	
+- Activate your conda environment:
+	
+  ```bash
+	conda activate pyHiM
+	```
+	
+- To run the basic pyHiM pipeline :
 	```bash
 	pyhim
 	```
@@ -33,18 +43,18 @@
   The basic *pyHiM* pipeline will:
   1. Project 3D images
   2. Calculate drift based on fiducial images
-  3. Apply drift to nuclei and barcode images (i.e. registration)
+  3. Correct drift for nuclei and barcode images (i.e. registration)
   4. Segment and localize barcode spots
   5. Segment nuclei and masks
   6. Match spots to masks to build chromatin traces
   7. Build single-trace and ensemble pairwise distance maps
   ```
 
-- Each module will store its results in a single dedicated folder in the `input_directory`. A summary of all outputs will also be provided as a markdown file `HiM_Analysis<DDMMYYYY_HHMMSS>.md` saved in the `input_directory`.
+- Each module will create and store its results in a single dedicated folder inside the `input_directory`. A summary of all outputs will also be provided as a markdown file `HiM_Analysis<DDMMYYYY_HHMMSS>.md` saved in the `input_directory`.
 
 ## Optional arguments
 
-If you require help, you can call `pyHiM` with the help option as follows: 
+If you require help, you can call `pyHiM` with the help option : 
 ```bash
 pyhim -h
 ```
