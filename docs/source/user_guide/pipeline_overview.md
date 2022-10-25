@@ -7,9 +7,9 @@ These routines can be classified into 5 groups:
 
 ![diagram of visualization](../_static/diagrams/use_cases.png)
 
-1. **Preprocessing:** Organization and formatting of the input data before proceeding to the actual analysis (e.g. registration or calculation of 2D projection).
+1. **Preprocessing:** Organization and formatting of the input data before proceeding wih the analysis (e.g. registration or calculation of 2D projection).
 2. **Identification:** Image segmentation (e.g. detection of FISH spots, segmentation of nuclei or cells, etc.) and calculation of the 3D-coordinates.
-3. **Matching:** Addressing each detection to a specific mask.
+3. **Matching:** Addressing each detection to a unique mask.
 4. **Postprocessing:** Formatting output data to make post-analysis easier for the user (ex: pairwise distance matrices).
 5. **Visualization:** Indicating live-progress and results to the user (as `.png` images and `.md` file).
 
@@ -20,7 +20,7 @@ To use it, see [`--threads` argument](../getting_started/typical_run.md#optional
 
 ## Data set
 
-To run the default pipeline, *pyHiM* need two types of data:
+To run the default pipeline, *pyHiM* needs two types of data:
 - A dictionary of initialization parameters, named `infoList.json`
 - 3D images in TIFF format (extension: `.tif` or `.tiff`). 
 
@@ -37,7 +37,7 @@ These types of images are called labels.
 
 ## Default *pyHiM* flow
 
-The default pipeline consists in a sequence of routines:
+The default pipeline is composed of the following routines:
 
 1. [**makeProjections:**](modules/preprocessing/make_projections.md) Projects all 3D images in 2D.
 2. [**alignImages:**](modules/preprocessing/align_images.md) Computes the best shift to align all 2D fiducials.
