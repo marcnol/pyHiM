@@ -53,12 +53,12 @@ def main():
     else:
         RECURSIVE = False
 
-    print("RootFolders: {}".format(root_folder))
+    print(f"RootFolders: {root_folder}")
 
     # opens tarfile
     os.chdir(root_folder)
     TAR_FILENAME = "HiMrun.tar"
-    print("creating archive: {} in {}".format(TAR_FILENAME, root_folder))
+    print(f"creating archive: {TAR_FILENAME} in {root_folder}")
 
     # tar files in root_folder
     markdown_files = [
@@ -90,7 +90,7 @@ def main():
     else:
         folders = [root_folder]
 
-    print("Folders to zip:\n{}".format(folders))
+    print(f"Folders to zip:\n{folders}")
     print("=" * 30)
     for current_folder in folders:
 
@@ -100,7 +100,7 @@ def main():
         folders2zip.append(current_folder + os.sep + "segmentedObjects")
         folders2zip.append(current_folder + os.sep + "buildsPWDmatrix")
 
-        print("sub-folders to zip:\n{}".format(folders2zip))
+        print(f"sub-folders to zip:\n{folders2zip}")
 
         for new_folder in folders2zip:
             if root_folder == ".":
@@ -116,12 +116,12 @@ def main():
                 if len(glob.glob(new_files)) > 0:
                     TARCMD = "tar -rf " + TAR_FILENAME + " " + new_files
                     os.system(TARCMD)
-                    print("Archiving: {}".format(new_files))
+                    print(f"Archiving: {new_files}")
 
         print("-" * 30)
 
     if os.path.exists(TAR_FILENAME):
-        print("Zipping {}".format(TAR_FILENAME))
+        print(f"Zipping {TAR_FILENAME}")
         os.system("gzip " + TAR_FILENAME)
 
 if __name__ == "__main__":

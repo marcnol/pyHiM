@@ -50,7 +50,7 @@ def main():
     else:
         root_folders = [root_folder_tempo]
 
-    print("RootFolders: {}".format(root_folders))
+    print(f"RootFolders: {root_folders}")
 
     for root_folder in root_folders:
 
@@ -60,7 +60,7 @@ def main():
 
         if os.path.exists(root_folder + os.sep + tar_filename):
 
-            print("Unzipping archive: {}".format(tar_filename))
+            print(f"Unzipping archive: {tar_filename}")
 
             # tar files in root_folder
             markdown_files = [
@@ -84,11 +84,11 @@ def main():
             ]
 
             tarcmd = "tar -xzvf " + tar_filename
-            print("cmd> {}".format(tarcmd))
+            print(f"cmd> {tarcmd}")
 
             os.system(tarcmd)
         else:
-            print("Nothing to unzip in: {}".format(root_folder + os.sep + tar_filename))
+            print(f"Nothing to unzip in: {root_folder + os.sep + tar_filename}")
 
 if __name__ == "__main__":
     main()

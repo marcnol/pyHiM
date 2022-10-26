@@ -139,7 +139,7 @@ def read_arguments():
     else:
         run_parameters["threads"] = None
 
-    print("Parameters loaded: {}\n".format(run_parameters))
+    print(f"Parameters loaded: {run_parameters}\n")
 
     return run_parameters
 
@@ -165,23 +165,19 @@ def main():
     folders.sort()
 
     print("*" * 50)
-    print("$ Dataset: {}".format(run_parameters["dataset"]))
-    print("$ Folder: {}".format(root_folder))
-    print("$ Number of CPUs: {}".format(run_parameters["nCPU"]))
-    print("$ Command: {}".format(run_parameters["cmd"]))
-    print("$ Account: {}".format(run_parameters["account"]))
-    print("$ Partition: {}".format(run_parameters["partition"]))
+    print(f"$ Dataset: {run_parameters['dataset']}")
+    print(f"$ Folder: {root_folder}")
+    print(f"$ Number of CPUs: {run_parameters['nCPU']}")
+    print(f"$ Command: {run_parameters['cmd']}")
+    print(f"$ Account: {run_parameters['account']}")
+    print(f"$ Partition: {run_parameters['partition']}")
 
     print("*" * 50)
 
-    print("\n\n$ Found {} folders in {}".format(len(folders0), root_folder))
-    print(
-        "$ Of these, {} contained an infoList.json file and will be processed".format(
-            len(folders)
-        )
-    )
-    print("Folders to process: {}".format(folders))
-    print("$ Scheduling {} jobs...".format(len(folders)))
+    print(f"\n\n$ Found {len(folders0)} folders in {root_folder}")
+    print(f"$ Of these, {len(folders)} contained an infoList.json file and will be processed")
+    print(f"Folders to process: {folders}")
+    print(f"$ Scheduling {len(folders)} jobs...")
     print("-" * 50)
 
     if run_parameters["memPerCPU"] is None:
@@ -261,8 +257,8 @@ def main():
         )
         job_name = os.path.basename(folder) + jobNameExt
 
-        print("Folder to run: {}".format(folder))
-        print("Output logfile: {}".format(output_file))
+        print(f"Folder to run: {folder}")
+        print(f"Output logfile: {output_file}")
 
         pyHiM = "pyhim -F " + folder + CMD + threads + " > " + output_file
 
@@ -288,9 +284,9 @@ def main():
         if run_parameters["sbatch"]:
             SBATCH_list = []
             SBATCH_list = SBATCH_list + SBATCH_header[0]
-            SBATCH_list.append("#SBATCH --job-name={}".format(job_name))
+            SBATCH_list.append(f"#SBATCH --job-name={job_name}")
             SBATCH_list = SBATCH_list + SBATCH_header[1]
-            SBATCH_list.append("\n# dataset: {}".format(job_name))
+            SBATCH_list.append(f"\n# dataset: {job_name}")
             SBATCH_list.append("srun " + pyHiM)
 
         if run_parameters["xrun"]:
@@ -299,33 +295,29 @@ def main():
             os.system(SRUN)
 
         if not run_parameters["sbatch"]:
-            print("Command to run: {}".format(SRUN))
+            print(f"Command to run: {SRUN}")
             print("-" * 50)
         elif run_parameters["sbatch"]:
             print("SBATCH script:\n{}".format("\n".join(SBATCH_list)))
             print("-" * 80)
 
-            file_name = "sbatch_script_{}.bash".format(job_name)
+            file_name = f"sbatch_script_{job_name}.bash"
             with open(file_name, mode="w", encoding="utf-8") as f:
                 for item in SBATCH_list:
-                    f.write("{}\n".format(item))
+                    f.write(f"{item}\n")
 
-            BATCH_file.append("sbatch {}".format(file_name))
+            BATCH_file.append(f"sbatch {file_name}")
 
     if run_parameters["sbatch"]:
 
         print("*" * 80)
         BATCH_file.append("\n")
-        bash_script_name = "batch_script_{}.bash".format(run_parameters["dataset"])
+        bash_script_name = f"batch_script_{run_parameters['dataset']}.bash"
         with open(bash_script_name, mode="w", encoding="utf-8") as f:
             for item in BATCH_file:
-                f.write("{}\n".format(item))
+                f.write(f"{item}\n")
 
-<<<<<<< HEAD
-        print("\nTo run master bash script:\n$ bash {}".format(bash_script_name))
-=======
-        print("\nTo run master bash script:\n$ bash {}".format(BASHscriptName))
+        print(f"\nTo run master bash script:\n$ bash {bash_script_name}")
 
 if __name__ == "__main__":
     main()
->>>>>>> development

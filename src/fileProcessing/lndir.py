@@ -11,7 +11,7 @@ In the command line, run as
 
 Example:
 
-$ lndir.py "/home/marcnol/Repositories/pyHiM/*py" ~/Downloads/test
+$ lndir.py "/home/marcnol/Repositories/pyHiM/\*py" ~/Downloads/test
 
 Make sure that the first argument has quotation marks if you use wildcards!
 
@@ -35,7 +35,7 @@ def main():
     file_list_string = sys.argv[1]
     dest_folder = sys.argv[2]
 
-    print("file_list = {} | destDir = {}".format(file_list_string, dest_folder))
+    print(f"file_list = {file_list_string} | destDir = {dest_folder}")
 
     file_list = list(glob.glob(file_list_string))
 
@@ -45,18 +45,14 @@ def main():
         for file in file_list:
 
             new_file = dest_folder + os.sep + os.path.basename(file)
-            print("{}-->{}".format(file, new_file))
+            print(f"{file}-->{new_file}")
 
             command = "ln -s " + file + " " + new_file
             os.system(command)
 
             write_string_to_file(file_name, command, attribute="a")
 
-        print(
-            "Linked {} files form {} to {}".format(
-                len(file_list), os.path.dirname(file_list[0]), dest_folder
-            )
-        )
+        print(f"Linked {len(file_list)} files form {os.path.dirname(file_list[0])} to {dest_folder}")
 
     else:
         print("File List is empty :(")

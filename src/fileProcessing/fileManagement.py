@@ -54,7 +54,7 @@ class Log:
             self.save("\n" + text)
 
     def add_simple_text(self, title):
-        print("{}".format(title))
+        print(title)
         write_string_to_file(self.file_name, title, "a")
 
 
@@ -178,12 +178,12 @@ class Session:
     # loads existing session
     def load(self):
         self.data = load_json(self.file_name)
-        print("Session information read: {}".format(self.file_name))
+        print(f"Session information read: {self.file_name}")
 
     # saves session to file
     def save(self):
         save_json(self.file_name, self.data)
-        info("Saved json session file to {}".format(self.file_name))
+        info(f"Saved json session file to {self.file_name}")
 
     # add new task to session
     def add(self, key, value):
@@ -345,11 +345,7 @@ class Parameters:
     def initialize_standard_parameters(self):
         with open(self.param_file, mode="w", encoding="utf-8") as f:
             json.dump(self.param_dict, f, ensure_ascii=False, sort_keys=True, indent=4)
-        print(
-            "$ Model parameters file saved to: {}".format(
-                os.getcwd() + os.sep + self.param_file
-            )
-        )
+        print(f"$ Model parameters file saved to: {os.getcwd()+os.sep+self.param_file}")
 
     def convert_parameter_file(self, param_file, label_selected):
         param_from_file = load_parameters_file(param_file)
@@ -383,15 +379,8 @@ class Parameters:
                             ][label_selected][key][key2]
                             number_keys_ammended += 1
                         else:
-                            print_log(
-                                "Did not find key <{}> in common dictionary".format(
-                                    key
-                                ),
-                                status="WARN",
-                            )
-            print_log(
-                "Amended {} keys for {}".format(number_keys_ammended, label_selected)
-            )
+                            print_log(f"Did not find key <{key}> in common dictionary", status="WARN",)
+            print_log(f"Amended {number_keys_ammended} keys for {label_selected}")
 
         # need to replace default keys by those in 'label' key
         converted_param["acquisition"]["label"] = label_selected
@@ -503,7 +492,7 @@ class Parameters:
 
         print_log(f"$ Files to process: {len(self.files_to_process)}")
         for i, file in enumerate(self.files_to_process):
-            print_log("{}\t{}".format(i, os.path.basename(file)))
+            print_log(f"{i}\t{os.path.basename(file)}")
 
     def decode_file_parts(self, file_name):
         """
@@ -568,11 +557,7 @@ class DaskCluster:
 
         self.n_threads = int(np.min([max_number_threads, self.requested_number_nodes]))
 
-        print(
-            "$ Cluster with {} workers started ({} requested)".format(
-                self.n_threads, self.requested_number_nodes
-            )
-        )
+        print(f"$ Cluster with {self.n_threads} workers started ({self.requested_number_nodes} requested)")
 
     def create_distributed_client(self):
         client = try_get_client()
@@ -596,31 +581,31 @@ class DaskCluster:
 
 # cmd line output only
 def info(text):
-    print(">{}".format(text))
+    print(f">{text}")
 
 
 # returns formatted line to be outputed
 def get_full_string(text=""):
-    return "{}".format(text)
+    return f"{text}"
 
 def create_single_folder(folder):
     if not path.exists(folder):
         os.mkdir(folder)
-        print("$ Folder created: {}".format(folder))
+        print(f"$ Folder created: {folder}")
 
 def load_parameters_file(file_name):
     if path.exists(file_name):
         with open(file_name, encoding="utf-8") as json_file:
             parameters = json.load(json_file)
 
-        print("$ Parameters file read: {}".format(file_name))
+        print(f"$ Parameters file read: {file_name}")
         return parameters
     else:
         return None
 
 def write_string_to_file(file_name, list_to_output, attribute="a"):
     with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
-        file_handle.write("{}\n".format(list_to_output))
+        file_handle.write(f"{list_to_output}\n")
 
 
 def save_json(file_name, data):
@@ -816,10 +801,10 @@ def load_alignment_dictionary(data_folder):
 
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
-        print_log("File with dictionary not found!: {}".format(dict_filename))
+        print_log(f"File with dictionary not found!: {dict_filename}")
         dict_shifts_available = False
     else:
-        print_log("Dictionary File loaded: {}".format(dict_filename))
+        print_log(f"Dictionary File loaded: {dict_filename}")
         dict_shifts_available = True
 
     return dict_shifts, dict_shifts_available
@@ -847,7 +832,7 @@ def print_dict(dictionary):
     print("\n$ Parameters loaded:")
     for key in dictionary.keys():
         spacer = "\t" * (3 - int(len(key) / 8))
-        print("\t{}{}{}".format(key, spacer, dictionary[key]))
+        print(f"\t{key}{spacer}{dictionary[key]}")
     print("\n")
 
 

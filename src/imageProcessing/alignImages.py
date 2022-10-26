@@ -77,10 +77,8 @@ def display_equalization_histograms(
     )
     plt.savefig(output_filename + "_intensityHist.png")
     write_string_to_file(
-        markdown_filename,
-        "{}\n ![]({})\n".format(
-            os.path.basename(output_filename), output_filename + "_intensityHist.png"
-        ),
+        markdown_filename, 
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n", 
         "a",
     )
 
@@ -120,9 +118,7 @@ def save_image_adjusted(file_name, markdown_filename, image1):
     plt.imsave(file_name + "_adjusted.png", image1, cmap="hot")
     write_string_to_file(
         markdown_filename,
-        "{}\n ![]({})\n".format(
-            os.path.basename(file_name), file_name + "_adjusted.png"
-        ),
+        f"{os.path.basename(file_name)}\n ![]({file_name}_adjusted.png)\n",
         "a",
     )
     plt.close()
@@ -279,10 +275,7 @@ def align_2_files(
 
         write_string_to_file(
             current_param.param_dict["fileNameMD"],
-            "{}\n ![]({})\n".format(
-                os.path.basename(output_filename),
-                output_filename + "_block_alignments.png",
-            ),
+            f"{os.path.basename(output_filename)}\n ![]({output_filename}_block_alignments.png)\n",
             "a",
         )
 
@@ -321,11 +314,7 @@ def align_2_files(
     # reports image in MD file
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        "{}\n ![]({})\n ![]({})\n".format(
-            os.path.basename(output_filename),
-            output_filename + "_overlay_corrected.png",
-            output_filename + "_referenceDifference.png",
-        ),
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_overlay_corrected.png)\n ![]({output_filename}_referenceDifference.png)\n",
         "a",
     )
 
@@ -386,10 +375,8 @@ def align_images_in_current_folder(
 
     # generates lists of files to process for current_folder
     current_param.find_files_to_process(files_folder)
-    print_log("> Processing Folder: {}".format(current_folder))
-    print_log(
-        "> About to process {} files\n".format(len(current_param.files_to_process))
-    )
+    print_log(f"> Processing Folder: {current_folder}")
+    print_log(f"> About to process {len(current_param.files_to_process)} files\n")
     write_string_to_file(
         data_folder.output_files["alignImages"],
         "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
@@ -398,7 +385,7 @@ def align_images_in_current_folder(
 
     # Finds and loads Reference fiducial information
     reference_barcode = current_param.param_dict["alignImages"]["referenceFiducial"]
-    print_log("$ Reference fiducial {}".format(reference_barcode))
+    print_log(f"$ Reference fiducial {reference_barcode}")
 
     # retrieves the list of fiducial image files to be aligned
     filenames_with_ref_barcode, roi_list = rt_to_filename(
@@ -416,7 +403,7 @@ def align_images_in_current_folder(
             img_reference.load_image_2d(
                 filename_reference, data_folder.output_folders["zProject"]
             )
-            print_log("> Loading reference Image {}".format(filename_reference))
+            print_log(f"> Loading reference Image {filename_reference}")
 
             # saves reference 2D image of fiducial
             if not os.path.exists(

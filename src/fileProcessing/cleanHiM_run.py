@@ -69,9 +69,9 @@ def main():
         for f in markdown_files + log_files + session_files + md_log_files:
             try:
                 os.remove(f)
-                print("File deleted: {} ".format(f))
+                print(f"File deleted: {f} ")
             except OSError as e:
-                print("Error: {} : {}".format(f, e.strerror))
+                print(f"Error: {f} : {e.strerror}")
 
     # Removes directories produced during previous runs
     current_param = Parameters(
@@ -99,9 +99,9 @@ def main():
         for new_folder in folders_to_remove:
             if os.path.isdir(new_folder):
                 shutil.rmtree(new_folder)
-                print("{} removed".format(new_folder))
+                print(f"{new_folder} removed")
             else:
-                print("{} does not exist".format(new_folder))
+                print(f"{new_folder} does not exist")
 
 if __name__ == "__main__":
     main()

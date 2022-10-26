@@ -55,18 +55,14 @@ class HiMFunctionCaller:
             "\n--------------------------------------------------------------------------"
         )
 
-        print_log("$ root_folder: {}".format(self.root_folder))
+        print_log(f"$ root_folder: {self.root_folder}")
 
         begin_time = datetime.now()
 
         #####################
         # setup markdown file
         #####################
-        print_log(
-            "\n======================{}======================\n".format(
-                self.session_name
-            )
-        )
+        print_log(f"\n======================{self.session_name}======================\n")
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
 
@@ -74,12 +70,10 @@ class HiMFunctionCaller:
         self.log_file = self.root_folder + os.sep + filename_root + date_time + ".log"
         self.markdown_filename = self.log_file.split(".")[0] + ".md"
 
-        print_log(
-            "$ Hi-M analysis will be written tos: {}".format(self.markdown_filename)
-        )
+        print_log(f"$ Hi-M analysis will be written tos: {self.markdown_filename}")
         write_string_to_file(
             self.markdown_filename,
-            "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")),
+            f"# Hi-M analysis {begin_time.strftime('%Y/%m/%d %H:%M:%S')}",
             "w",
         )  # initialises MD file
 
@@ -114,7 +108,7 @@ class HiMFunctionCaller:
 
     def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
-            print_log("$ Requested {} threads".format(threads_requested))
+            print_log(f"$ Requested {threads_requested} threads")
 
             dask_cluster_instance = DaskCluster(
                 threads_requested, maximum_load=maximum_load
@@ -138,7 +132,7 @@ class HiMFunctionCaller:
             label == "fiducial"
             and current_param.param_dict["acquisition"]["label"] == "fiducial"
         ):
-            print_log("> Making image registrations for label: {}".format(label))
+            print_log(f"> Making image registrations for label: {label}")
             if not self.parallel:
                 align_images(current_param, self.current_session)
             else:
@@ -152,7 +146,7 @@ class HiMFunctionCaller:
             label == "fiducial"
             and "block3D" in current_param.param_dict["alignImages"]["localAlignment"]
         ):
-            print_log("> Making 3D image registrations label: {}".format(label))
+            print_log(f"> Making 3D image registrations label: {label}")
             _drift_3d = Drift3D(
                 current_param, self.current_session, parallel=self.parallel
             )
@@ -163,7 +157,7 @@ class HiMFunctionCaller:
             label != "fiducial"
             and current_param.param_dict["acquisition"]["label"] != "fiducial"
         ):
-            print_log("> Applying image registrations for label: {}".format(label))
+            print_log(f"> Applying image registrations for label: {label}")
 
             if not self.parallel:
                 apply_registrations(current_param, self.current_session)
@@ -196,8 +190,8 @@ class HiMFunctionCaller:
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
         ]["operation"]:
-            print_log("Making 3D image segmentations for label: {}".format(label))
-            print_log(">>>>>>Label in functionCaller:{}".format(label))
+            print_log(f"Making 3D image segmentations for label: {label}")
+            print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = SegmentMasks3D(
                 current_param, self.current_session, parallel=self.parallel
@@ -209,8 +203,8 @@ class HiMFunctionCaller:
             label == "barcode"
             and "3D" in current_param.param_dict["segmentedObjects"]["operation"]
         ):
-            print_log("Making 3D image segmentations for label: {}".format(label))
-            print_log(">>>>>>Label in functionCaller:{}".format(label))
+            print_log(f"Making 3D image segmentations for label: {label}")
+            print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = SegmentSources3D(
                 current_param, self.current_session, parallel=self.parallel
@@ -245,7 +239,6 @@ def available_list_commands():
         "build_traces",
         "build_matrix",
         "buildHiMmatrix",
-        "new",
     ]
 
 
@@ -294,11 +287,7 @@ def him_parse_arguments():
         # pylint: disable-next=consider-iterating-dictionary
         if "docker" in os.environ.keys():
             run_parameters["rootFolder"] = "/data"
-            print_log(
-                "\n\n$ Running in docker, him_data: {}".format(
-                    run_parameters["rootFolder"]
-                )
-            )
+            print_log(f"\n\n$ Running in docker, him_data: {run_parameters['rootFolder']}")
         else:
             print_log("\n\n# him_data: NOT FOUND")
             run_parameters["rootFolder"] = os.getcwd()
@@ -317,12 +306,7 @@ def him_parse_arguments():
 
     for cmd in run_parameters["cmd"]:
         if cmd not in available_commands:
-            print_log(
-                "\n\n# ERROR: {} not found in list of available commands: {}\n".format(
-                    cmd, available_commands
-                ),
-                status="WARN",
-            )
+            print_log(f"\n\n# ERROR: {cmd} not found in list of available commands: {available_commands}\n", status="WARN")
             raise SystemExit
 
     print_dict(run_parameters)

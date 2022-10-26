@@ -58,7 +58,7 @@ def main():
         )
 
         print_log("--------------------------------------------------------------------------")
-        print_log(f">                  Analyzing label: {current_param.param_dict["acquisition"]["label"]}           ")
+        print_log(f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           ")
         print_log("--------------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = him.parallel

@@ -216,9 +216,9 @@ def main():
     
     uniqueBarcodes = list(np.loadtxt(run_parameters["uniqueBarcodes"], delimiter = " "))
     uniqueBarcodes = [int(x) for x in uniqueBarcodes]
-    print(f'$ unique barcodes loaded: {uniqueBarcodes}')
+    print(f"$ unique barcodes loaded: {uniqueBarcodes}")
     
-    print(f'$ averaging method: {run_parameters["dist_calc_mode"]}')
+    print(f"$ averaging method: {run_parameters['dist_calc_mode']}")
     
     if run_parameters["cScale"] == 0:
         cScale = sc_matrix[~np.isnan(sc_matrix)].max() / run_parameters["scalingParameter"]
