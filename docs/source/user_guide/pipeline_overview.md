@@ -7,7 +7,7 @@ These routines can be classified into 5 groups:
 
 ![diagram of visualization](../_static/diagrams/use_cases.png)
 
-1. **Preprocessing:** Organization and formatting of the input data before proceeding wih the analysis (e.g. registration or calculation of 2D projection).
+1. **Preprocessing:** Organization and formatting of the input data before proceeding with the analysis (e.g. registration or calculation of 2D projection).
 2. **Identification:** Image segmentation (e.g. detection of FISH spots, segmentation of nuclei or cells, etc.) and calculation of the 3D-coordinates.
 3. **Matching:** Addressing each detection to a unique mask.
 4. **Postprocessing:** Formatting output data to make post-analysis easier for the user (ex: pairwise distance matrices).
