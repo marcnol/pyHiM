@@ -1,8 +1,8 @@
 # Configuration file `(infoList.json)`
 
-*All configuration parameters for running `pyHiM` are provided in a single file called `infoList.json`.* 
+*All pyHiM parameters are gathered in a single configuration file called `infoList.json`.* 
 
-This file is editable [manually](#manually) or with a [graphical user interface](#graphical-user-interface).
+This file can be edited [manually](#manually) or using a [graphical user interface](#graphical-user-interface).
 You can find a global description of each parameter in the [reference guide](../../reference/infoList_comprehension.md).
 
 ## Manually
@@ -10,14 +10,14 @@ You can find a global description of each parameter in the [reference guide](../
 - Copy an `infoList.json` file in the folder where you want to run `pyHiM`. 
 
 ```{note}
-A file model can be find on [GitHub](https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
+A typical example can be find on [GitHub](https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
 ```
 
-- Modify with a text editor your parameters like the `referenceFiducial` number of your experience. 
+- With a text editor, update the relevant parameters. For example, the  name of the `referenceFiducial` needs to be changed according to your experiment settings. 
 
-- The `common` section is to set the default values for each label and you can personalize a different value just for one label by overwiting in the `label` section.
+- The `common` section defines the default parameters for each label. For each label, you can personalize the value of a parameter by  indicating its new value in the `label` section.
 
-**Example:** The Z projection will be realized by Maximum Intensity Projection (`MIP`) for all labels exept for barcode images, it will be by `sum`:
+**Example:** The Z projection will be done by Maximum Intensity Projection (`MIP`) for all labels except for the barcode images, which will use the `sum` method:
 
 ```json
     "common": {
@@ -39,13 +39,13 @@ A file model can be find on [GitHub](https://github.com/marcnol/pyHiM/blob/maste
 
 ## Graphical user interface
 
+You can also create and modify `infoList.json` with an interface. In the folder where your data are saved, launch the editor:
 
-You can also create and modify `infoList.json` with an interface. In the folder where you want to run `pyHiM`, execute this script:
 ```sh
 pyhim_parameters
 ```
 
-A window will open up, modify your parameters and when you click on `Save settings`, an `infoList.json` file will be created inside your folder with your modified parameters.
+Indicate your parameters and click on `Save settings`. An `infoList.json` file will be created inside your folder with the modified parameters.
 
 ```{note}
 If you have modified an existing `infoList.json`, a copy of the previous version will be saved in the file named `infoList_preVersion.json`.
