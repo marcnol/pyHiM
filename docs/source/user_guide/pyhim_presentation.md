@@ -7,7 +7,7 @@ In the context of structural biochemistry, *pyHiM* software provides tools to pr
 ```{note}
 For more information on Hi-M, please see the following resources:
 
-- [Hi-M protocol](https://github.com/NollmannLab/HiM_protocol)
+- [Hi-M protocol](https://www.nature.com/articles/s41596-019-0269-9)
 - [Hi-M method](https://www.cell.com/molecular-cell/fulltext/S1097-2765(19)30011-5)
 - [A recent Hi-M application](https://www.nature.com/articles/s41588-021-00816-z)
 ```
