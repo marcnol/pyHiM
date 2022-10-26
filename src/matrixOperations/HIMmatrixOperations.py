@@ -477,6 +477,8 @@ def loadsSCdata(ListData, datasetName, p):
     if "d3" in p.keys():
         if p["d3"]:
             dimTag="_3D"
+        else:
+            dimTag="_2D"            
 
     SCmatrixCollated, uniqueBarcodes = [], []
     buildsPWDmatrixCollated, runName, SClabeledCollated = [], [], []
@@ -487,7 +489,11 @@ def loadsSCdata(ListData, datasetName, p):
 
         # [makes list of files with Tables to load]
         # tries to load files from newer version of proceesingPipeline.py
-        files2Process = glob.glob(rootFolder + "/buildsPWDmatrix" + dimTag + "_order*ROI*.ecsv")
+        files2Process_compatibility = glob.glob(rootFolder + "/buildsPWDmatrix" + dimTag + "_order*ROI*.ecsv")
+        files2Process = files2Process_compatibility + glob.glob(rootFolder + "/Trace" + dimTag + "_barcode_*ROI*.ecsv")
+        
+        print("files2Process: {}".format(rootFolder +"/Trace" + dimTag + "_barcode_ROI.ecsv"))
+        
         if len(files2Process) == 0:
             # it resorts to old format
             files2Process = glob.glob(rootFolder + "/buildsPWDmatrix" + dimTag + "_*ROI*.ecsv")
@@ -1463,6 +1469,7 @@ def plotMatrix(
         # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
 
+    return meanSCmatrix
 
 def calculateContactProbabilityMatrix(iSCmatrixCollated, iuniqueBarcodes, pixelSize, threshold=0.25, norm="nCells", minNumberContacts = 0):
 

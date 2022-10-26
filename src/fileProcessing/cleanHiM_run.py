@@ -22,14 +22,14 @@ to erase also the output MD, Log, and Session files
 import os
 import glob
 import argparse
-from fileManagement import Parameters, folders
+from fileProcessing.fileManagement import Parameters, folders
 import shutil
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
@@ -83,3 +83,6 @@ if __name__ == "__main__":
                 print("{} removed".format(newFolder))
             else:
                 print("{} does not exist".format(newFolder))
+
+if __name__ == "__main__":
+    main()

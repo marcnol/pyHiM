@@ -217,8 +217,9 @@ class BuildMatrix:
         numberROIs = 1 # by default we plot one ROI at a time.
         outputFileName = file.split('.')[0] + '_Matrix'
         climScale = 1. # factor to multiply the clim by. If 1, the clim will be the mean of the PWD distribution of the whole map
-        pixelSize=1 # this is 1 as coordinates are in microns.
-
+        pixelSize = 1 # this is 1 as coordinates are in microns.
+        nCells = self.SCmatrix.shape[2]
+        
         # plots PWD matrix
         # uses KDE
         plotMatrix(
@@ -231,6 +232,7 @@ class BuildMatrix:
             figtitle="PWD matrix - KDE",
             mode="KDE",  # median or KDE
             clim=climScale *np.nanmean(self.SCmatrix),
+            nCells=nCells,
             cm=self.colormaps["PWD_KDE"],
             cmtitle="distance, um",
             fileNameEnding="_PWDmatrixKDE.png",
@@ -248,6 +250,7 @@ class BuildMatrix:
             mode="median",  # median or KDE
             clim=climScale *np.nanmean(self.SCmatrix),
             cmtitle="distance, um",
+            nCells=nCells,
             cm=self.colormaps["PWD_median"],
             fileNameEnding="_PWDmatrixMedian.png",
         )
@@ -268,6 +271,7 @@ class BuildMatrix:
             figtitle="Hi-M matrix",
             mode="counts",
             clim=cScale,
+            nCells=nCells,
             cm=self.colormaps["contact"],
             cmtitle="proximity frequency",
             fileNameEnding="_HiMmatrix.png",
@@ -283,6 +287,7 @@ class BuildMatrix:
             self.logNameMD,
             figtitle="N-matrix",
             mode="counts",
+            nCells=nCells,
             clim=np.max(self.Nmatrix),
             cm=self.colormaps["Nmatrix"],
             cmtitle="number of measurements",

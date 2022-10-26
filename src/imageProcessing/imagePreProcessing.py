@@ -13,7 +13,7 @@ Created on Sun Feb 28 13:44:47 2021
 
 Steps:
     - defines runParameters
-    - gets list of images in folder using wildcard, *tif by default
+    - gets list of images in folder using wildcard, \*tif by default
     - loads iteratively images and applies operations described above
     - saves output
 
@@ -28,7 +28,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
-from imageProcessing import (
+from imageProcessing.imageProcessing import (
     _removesInhomogeneousBackground,
     imageAdjust,
     savesImageAsBlocks,
@@ -60,7 +60,7 @@ def parseArguments():
         runParameters["rootFolder"] = args.rootFolder
     else:
         print("\n> rootFolder NOT FOUND, using PWD")
-        runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+        runParameters["rootFolder"] = os.getcwd()
 
     if args.outputFile:
         runParameters["outputFile"] = runParameters["rootFolder"] + os.sep + args.outputFile
@@ -133,7 +133,7 @@ def lauchDaskScheduler(requestedNumberNodes, maximumLoad=0.6, memoryPerWorker=20
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines runParameters
@@ -212,3 +212,6 @@ if __name__ == "__main__":
         client.close()
 
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
+if __name__ == "__main__":
+    main()

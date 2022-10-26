@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyhim"
+version = "0.7.0"
+description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
+readme = "README.md"
+authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
+license = { file = "LICENSE" }
+keywords = ["astropy",
+              "csbdeep",
+              "dask",
+              "matplotlib",
+              "numpy",
+              "opencv-python",
+              "numba",
+              "photutils",
+              "roipoly",
+              "scikit-learn",
+              "scikit-image",
+              "stardist",
+              "pympler",
+              "tqdm",
+              "scipy",
+              "tifffile"
+              ]
+dependencies = ["apifish",
+                "astropy >= 4.3.1",
+                "csbdeep >= 0.6.3",
+                "dask[distributed] >= 2021.10.0",
+                "matplotlib >= 3.5.1",
+                "numba >= 0.54.1",
+                "numpy >= 1.19.5",
+                "opencv-python >= 4.5.3.56",
+                "photutils == 1.1.0",
+                "pympler >= 1.0.1",
+                "roipoly >= 0.5.3",
+                "scikit-image >= 0.19.2",
+                "scikit-learn >= 1.1.1",
+                "scipy >= 1.7.3",
+                "stardist >= 0.7.3",
+                "tifffile >= 2021.10.10",
+                "tqdm >= 4.63.0"
+                ]
+requires-python = ">=3.9"
+
+[project.urls]
+Homepage = "https://github.com/marcnol/pyHiM"
+
+[project.scripts]
+pyhim = "pyHiM:main"
+train_stardist = "trainStarDist:main"
+change_rt_infolist = "fileProcessing.changeRT_infoList:main"
+clean_him_run = "fileProcessing.cleanHiM_run:main"
+lndir = "fileProcessing.lndir:main"
+run_him_cluster = "fileProcessing.runHiM_cluster:main"
+unzip_him_run = "fileProcessing.unzipHiM_run:main"
+zip_him_run = "fileProcessing.zipHiM_run:main"
+image_preprocessing = "imageProcessing.imagePreProcessing:main"
+image_segment_spots = "imageProcessing.imageSegmentSpots:main"
+figure_3_way_interactions = "plots.figure3wayInteractions:main"
+figure_4_m_matrix = "plots.figure4Mmatrix:main"
+figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
+figure_him_matrix = "plots.figureHiMmatrix:main"
+figure_n_him_matrices = "plots.figureN_HiMmatrices:main"
+figure_single_cell = "plots.figureSingleCell:main"
+process_segment_masks_3d = "postProcessing.process_segmentMasks3D:main"
+process_him_matrix = "postProcessing.processHiMmatrix:main"
+process_snd_channel = "postProcessing.processSNDchannel:main"
+trace_analyzer = "postProcessing.trace_analyzer:main"
+trace_combinator = "postProcessing.trace_combinator:main"
+trace_filter = "postProcessing.trace_filter:main"
+trace_selector = "postProcessing.trace_selector:main"
+pyhim_parameters = "parameter_file.pyhim_parameters:main"
+
+
+[tool.setuptools]
+# ...
+# By default, include-package-data is true in pyproject.toml, so you do
+# NOT have to specify this line.
+include-package-data = true
+
+[tool.setuptools.package-data]
+parameter_file = ["*.png", "*.json"]

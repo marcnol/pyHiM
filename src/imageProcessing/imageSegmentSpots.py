@@ -26,7 +26,7 @@ import numpy as np
 from tifffile import imsave
 from tqdm import tqdm, trange
 from skimage import exposure
-from imageProcessing import (
+from imageProcessing.imageProcessing import (
     _removesInhomogeneousBackground2D,
     imageAdjust,
     _segments3DvolumesByThresholding,
@@ -57,7 +57,7 @@ def parseArguments():
         runParameters["rootFolder"] = args.rootFolder
     else:
         print("\n> rootFolder NOT FOUND, using PWD")
-        runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+        runParameters["rootFolder"] = os.getcwd()
 
     if args.outputFile:
         runParameters["outputFile"] = runParameters["rootFolder"] + os.sep + args.outputFile
@@ -118,7 +118,7 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
     begin_time = datetime.now()
 
     # - defines runParameters
@@ -190,5 +190,6 @@ if __name__ == "__main__":
         outfile=outputFile + '.' + extension
         print("\n> Saving image : {}".format(outfile))
         imsave(outfile, newLabeledImage)
-
-            
+  
+if __name__ == "__main__":
+    main()

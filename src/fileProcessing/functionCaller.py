@@ -290,12 +290,11 @@ def HiM_parseArguments():
         runParameters["rootFolder"] = args.rootFolder
     else:
         if "docker" in os.environ.keys():
-            # runParameters["rootFolder"] = os.environ["HiMdata"] #os.getenv("PWD")
             runParameters["rootFolder"] = "/data"
             printLog("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
         else:
             printLog("\n\n# HiMdata: NOT FOUND")
-            runParameters["rootFolder"] = os.getenv("PWD")  # os.getcwd()
+            runParameters["rootFolder"] = os.getcwd()
 
     if args.threads:
         runParameters["threads"] = int(args.threads)

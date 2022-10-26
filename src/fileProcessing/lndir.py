@@ -11,7 +11,7 @@ In the command line, run as
 
 Example:
     
-$ lndir.py "/home/marcnol/Repositories/pyHiM/*py" ~/Downloads/test
+$ lndir.py "/home/marcnol/Repositories/pyHiM/\*py" ~/Downloads/test
 
 Make sure that the first argument has quotation marks if you use wildcards!
     
@@ -19,7 +19,7 @@ Make sure that the first argument has quotation marks if you use wildcards!
 import os
 import glob
 import argparse
-from fileManagement import Parameters, folders, writeString2File
+from fileProcessing.fileManagement import Parameters, folders, writeString2File
 import shutil
 import sys
 
@@ -28,7 +28,7 @@ import sys
 # MAIN
 # =============================================================================
 
-if __name__ == "__main__":
+def main():
 
     if len(sys.argv) < 3:
         raise SystemExit("Not enough arguments")
@@ -57,3 +57,6 @@ if __name__ == "__main__":
 
     else:
         print("File List is empty :(")
+
+if __name__ == "__main__":
+    main()
