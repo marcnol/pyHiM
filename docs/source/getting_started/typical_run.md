@@ -20,7 +20,7 @@
 
 ## Basic run
 
-- Open a terminal (Linux) or a conda-termincal (windows)
+- Open a terminal (Linux) or a Anaconda Prompt (windows)
 	
 - Move to the input_directory :
 	

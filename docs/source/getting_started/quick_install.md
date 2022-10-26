@@ -15,7 +15,7 @@ We recommend to download the lighter version `miniconda` if you only intend to u
 
 ## Create conda environment
 
-Open a terminal (or a conda terminal in windows). Create a conda environment and activate it:
+Open a **terminal** (for Windows user: from the Start menu, open the **Anaconda Prompt**). Create a conda environment and activate it:
 ```
 conda create -n pyHiM python=3.9
 conda activate pyHiM
