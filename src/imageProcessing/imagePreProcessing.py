@@ -13,7 +13,7 @@ Created on Sun Feb 28 13:44:47 2021
 
 Steps:
     - defines run_parameters
-    - gets list of images in folder using wildcard, *tif by default
+    - gets list of images in folder using wildcard, \*tif by default
     - loads iteratively images and applies operations described above
     - saves output
 

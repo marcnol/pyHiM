@@ -183,24 +183,13 @@ def _segment_source_inhomog_background(
 
     # estimates and removes inhomogeneous background
     bkg_estimator = MedianBackground()
-    bkg = Background2D(
-        im,
-        (64, 64),
-        filter_size=(3, 3),
-        sigma_clip=sigma_clip,
-        bkg_estimator=bkg_estimator,
-    )
+    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
 
     im1_bkg_substracted = im - bkg.background
-    _, _, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
+    mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
 
     # estimates sources
-    daofind = DAOStarFinder(
-        fwhm=fwhm,
-        threshold=threshold_over_std * std,
-        brightest=brightest,
-        exclude_border=True,
-    )
+    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest, exclude_border=True,)
     sources = daofind(im1_bkg_substracted)
 
     return sources, im1_bkg_substracted

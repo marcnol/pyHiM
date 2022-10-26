@@ -1690,7 +1690,7 @@ def plot_matrix(
         # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
 
-    return meanSCmatrix
+    return mean_sc_matrix
 
 def calculate_contact_probability_matrix(
     i_sc_matrix_collated,

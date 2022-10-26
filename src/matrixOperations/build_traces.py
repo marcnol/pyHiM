@@ -130,9 +130,6 @@ class BuildTraces:
             "mask_expansion",
             default=8,
         )
-        self.available_masks = self.current_param.param_dict["buildsPWDmatrix"][
-            "masks2process"
-        ]
         self.kd_tree_distance_threshold_mum = get_dictionary_value(
             self.current_param.param_dict["buildsPWDmatrix"],
             "kd_tree_distance_threshold_mum",
@@ -400,8 +397,8 @@ class BuildTraces:
                 )
 
         else:
-            printLog(f"$ Did not find any filename for mask: {self.mask_identifier}, channel: {channel}","WARN")
-            printLog("-"*80)
+            print_log(f"$ Did not find any filename for mask: {self.mask_identifier}, channel: {channel}","WARN")
+            print_log("-"*80)
             # Could not find a file with masks to assign. Report and continue with next ROI
             debug_mask_filename(files_in_folder,"None",self.mask_identifier,self.n_roi,label=self.current_param.param_dict["acquisition"]["label_channel"])
 
@@ -474,8 +471,8 @@ class BuildTraces:
                 self.trace_table.initialize()
 
                 # finds what barcodes are in each cell mask
-                self.alignByMasking()
-                printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1} out of {self.numberMasks}\n")
+                self.align_by_masking()
+                print_log(f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1} out of {self.number_masks}\n")
 
                 # builds sc_distance_table
                 self.builds_sc_distance_table()
@@ -582,16 +579,16 @@ class BuildTraces:
         elif self.ndims == 2:
             coordinates = np.concatenate(
                                     [
-                                        pixelSize['x']*dataTable['xcentroid'].data.reshape(len_data_table,1),
-                                        pixelSize['y']*dataTable['ycentroid'].data.reshape(len_data_table,1),
-                                        0.0*dataTable['zcentroid'].data.reshape(len_data_table,1),
+                                        pixel_size['x']*data_table['xcentroid'].data.reshape(len_data_table,1),
+                                        pixel_size['y']*data_table['ycentroid'].data.reshape(len_data_table,1),
+                                        0.0*data_table['zcentroid'].data.reshape(len_data_table,1),
                                     ],
                                     axis = 1,
                                 )
         """ if this code above works and does not introduce bugs, we will remove the commented lines in future
         elif self.ndims == 2:
-            coordinates = np.concatenate([pixelSize['x']*dataTable['xcentroid'].data.reshape(len_data_table,1),
-                                    pixelSize['y']*dataTable['ycentroid'].data.reshape(len_data_table,1)], axis = 1)
+            coordinates = np.concatenate([pixel_size['x']*data_table['xcentroid'].data.reshape(len_data_table,1),
+                                    pixel_size['y']*data_table['ycentroid'].data.reshape(len_data_table,1)], axis = 1)
         """
             
         # gets tree of coordinates
@@ -661,7 +658,7 @@ class BuildTraces:
 
             # build traces by spatial clustering
             self.group_localizations_by_coordinate()
-            printLog(f"$ ROI: {ROI}, N cells assigned: {self.NcellsAssigned - 1}\n")
+            print_log(f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1}\n")
 
             # builds sc_distance_table
             self.builds_sc_distance_table()
@@ -709,7 +706,7 @@ class BuildTraces:
             }
         else:
             self.ndims = 2
-            self.pixelSize = {"x": self.pixelSizeXY, "y": self.pixelSizeXY, "z": 0}
+            self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
 
         if (
             "clustering" in self.tracing_method and self.ndims == 3

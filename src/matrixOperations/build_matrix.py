@@ -105,9 +105,6 @@ class BuildMatrix:
             "mask_expansion",
             default=8,
         )
-        self.available_masks = self.current_param.param_dict["buildsPWDmatrix"][
-            "masks2process"
-        ]
         self.colormaps = self.current_param.param_dict["buildsPWDmatrix"]["colormaps"]
 
     def calculate_pwd_single_mask(self, x, y, z):
