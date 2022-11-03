@@ -19,28 +19,32 @@ outputs
 # IMPORTS
 # =============================================================================q
 
-import numpy as np
-import os, sys
-import json
-from datetime import datetime
 import argparse
 import csv
 import glob
+import json
+import os
 import select
+import sys
+from datetime import datetime
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+import numpy as np
+
 from imageProcessing.imageProcessing import Image
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================q
 
 
-def parseArguments():
+def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action = 'store_true')
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
 
     p = {}
 
@@ -55,10 +59,10 @@ def parseArguments():
     else:
         p["N_barcodes"] = 2
 
-    p["trace_files"] = list()
+    p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin, ], [], [], 0.0)[0]:
+        if select.select([sys.stdin,], [], [], 0.0)[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -68,14 +72,22 @@ def parseArguments():
     return p
 
 
-def runtime(folder, N_barcodes = 2, trace_files = list()):
+def runtime(folder, N_barcodes=2, trace_files=[]):
 
     # gets trace files from buildsPWDmatrix folder
     if len(trace_files) < 1:
         trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
-        trace_files = [x for x in glob.glob(trace_folder + "Trace*ecsv") if "uniqueBarcodes" not in x]
+        trace_files = [
+            x
+            for x in glob.glob(trace_folder + "Trace*ecsv")
+            if "uniqueBarcodes" not in x
+        ]
 
-    print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+    print(
+        "\n{} trace files to process= {}".format(
+            len(trace_files), "\n".join(map(str, trace_files))
+        )
+    )
 
     if len(trace_files) > 0:
 
@@ -89,7 +101,7 @@ def runtime(folder, N_barcodes = 2, trace_files = list()):
             trace.load(trace_file)
 
             # filters trace
-            trace.filter_traces_by_n(minimum_number_barcodes = N_barcodes)
+            trace.filter_traces_by_n(minimum_number_barcodes=N_barcodes)
 
             # saves output trace
             outputfile = trace_file.rstrip(".ecsv") + "_filtered" + ".ecsv"
@@ -104,17 +116,21 @@ def runtime(folder, N_barcodes = 2, trace_files = list()):
 # MAIN
 # =============================================================================
 
+
 def main():
     begin_time = datetime.now()
 
     # [parsing arguments]
-    p = parseArguments()
+    p = parse_arguments()
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
-    n_traces_processed = runtime(folder, N_barcodes=p["N_barcodes"], trace_files = p["trace_files"])
+    n_traces_processed = runtime(
+        folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"]
+    )
 
     print(f"Processed <{n_traces_processed}> trace(s)")
     print("Finished execution")
+
 
 if __name__ == "__main__":
     main()

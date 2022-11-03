@@ -10,8 +10,8 @@ Example changeRT_infolist.py RT33 RT95
 """
 
 import os
-import sys
 import re
+import sys
 
 # import argparse
 
@@ -20,54 +20,56 @@ import re
 # MAIN
 # =============================================================================
 
+
 def main():
 
-    labels2Process = [
+    labels_to_process = [
         {"label": "fiducial", "parameterFile": "infoList_fiducial.json"},
         {"label": "barcode", "parameterFile": "infoList_barcode.json"},
         {"label": "DAPI", "parameterFile": "infoList_DAPI.json"},
         {"label": "RNA", "parameterFile": "infoList_RNA.json"},
     ]
 
-    pattern = r"(.*)\"(?P<RT>RT\d{1,3})\""
+    PATTERN = r"(.*)\"(?P<RT>RT\d{1,3})\""
 
+    N_ARGS = len(sys.argv) - 1  # sys.argv[0] is base name
+    print(f"Total arguments passed: {N_ARGS}")
 
-    nArgs = len(sys.argv) - 1  # sys.argv[0] is base name
-    print("Total arguments passed: {}".format(nArgs))
-
-    if nArgs != 1:
+    if N_ARGS != 1:
         print("Wrong number of arguments!\n")
         print("Please specify the label of the new RT, as follows:\n")
         print("$ changeRT_infolist.py RT95\n")
         sys.exit(-1)
     else:
-        newRT = sys.argv[1]
+        new_rt = sys.argv[1]
 
+    for label_to_process in labels_to_process:
+        LABEL = label_to_process["label"]
+        LABEL_PARAMETER_FILE = label_to_process["parameterFile"]
+        print(f"**Modifying label {LABEL}: {LABEL_PARAMETER_FILE}**")
 
-    for ilabel in range(len(labels2Process)):
-        label = labels2Process[ilabel]["label"]
-        labelParameterFile = labels2Process[ilabel]["parameterFile"]
-        print("**Modifying label {}: {}**".format(label, labelParameterFile))
-
-        with open(labelParameterFile, "r") as f:
-            oldRT = ""
+        with open(LABEL_PARAMETER_FILE, mode="r", encoding="utf-8") as f:
+            # pylint: disable-next=invalid-name
+            old_rt = ""
             for line in f.readlines():
-                match = re.search(pattern, line)
+                match = re.search(PATTERN, line)
                 if match:
-                    # print('Match found:', match.group("RT"))
-                    oldRT = match.group("RT")
+                    old_rt = match.group("RT")
                     break
 
-        if oldRT == "":
-            print("Could not find a matching oldRT in file {}.".format(labelParameterFile))
+        if old_rt == "":
+            print(f"Could not find a matching old_rt in file {LABEL_PARAMETER_FILE}.")
             print("Aborting.")
             sys.exit(-1)
 
-        command2Run1 = "sed -i '" + "s+" + oldRT + "+" + newRT + "+g' " + labelParameterFile
-        print("Command: {}".format(command2Run1))
+        command_to_run_1 = (
+            "sed -i '" + "s+" + old_rt + "+" + new_rt + "+g' " + LABEL_PARAMETER_FILE
+        )
+        print(f"Command: {command_to_run_1}")
 
-        returnValue = os.system(command2Run1)
-        print("Changing {} to {}. returnValue {}.".format(oldRT, newRT, returnValue))
+        return_value = os.system(command_to_run_1)
+        print(f"Changing {old_rt} to {new_rt}. return_value {return_value}.")
+
 
 if __name__ == "__main__":
     main()

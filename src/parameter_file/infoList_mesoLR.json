@@ -16,7 +16,6 @@
         "alignImages": {
             "alignByBlock": true,
             "background_sigma": 3.0,
-            "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
             "lower_threshold": 0.999,
@@ -35,11 +34,6 @@
             "flux_min_3D": 0.1,
             "folder": "buildsPWDmatrix",
             "toleranceDrift": 1
-        },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
         },
         "segmentedObjects": {
             "Segment3D": "overwrite",

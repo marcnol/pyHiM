@@ -10,34 +10,34 @@ import os
 import pytest
 
 from fileProcessing.fileManagement import (
-    session, log, Parameters,folders,loadJSON)
+    Session, Parameters,Folders,load_json)
 
-from fileProcessing.functionCaller import HiMfunctionCaller
+from fileProcessing.functionCaller import HiMFunctionCaller
 
 
 def test_makeProjections():
 
     testDataFileName=os.getcwd()+os.sep+"tests"+os.sep+"standardTests"+os.sep+"testData.json"
     if os.path.exists(testDataFileName):
-        testData= loadJSON(testDataFileName)
+        testData= load_json(testDataFileName)
     else:
         raise FileNotFoundError()
         
-    rootFolder = testData["test_makeProjections"]["rootFolder"]
-    fileName2Process = testData["test_makeProjections"]["fileName2Process"]
+    root_folder = testData["test_makeProjections"]["rootFolder"]
+    filename_to_process = testData["test_makeProjections"]["filename_to_process"]
     expectedOutputs = testData["test_makeProjections"]["expectedOutputs"]
 
-    runParameters={}
-    runParameters["rootFolder"]=rootFolder
-    runParameters["parallel"]=False
+    run_parameters={}
+    run_parameters["rootFolder"]=root_folder
+    run_parameters["parallel"]=False
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
-    HiM.initialize()  
+    him = HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
+    him.initialize()  
      
     ilabel=2
     # sets parameters
-    param = Parameters(runParameters["rootFolder"], HiM.labels2Process[ilabel]["parameterFile"])
-    param.param['parallel']=HiM.parallel
+    current_param = Parameters(run_parameters["rootFolder"], him.labels_to_process[ilabel]["parameterFile"])
+    current_param.param_dict['parallel']=him.parallel
                 
     expectedOutputsTimeStamped={}
     for x in expectedOutputs:
@@ -45,7 +45,7 @@ def test_makeProjections():
             expectedOutputsTimeStamped[x]=os.path.getmtime(x)
 
     # [projects 3D images in 2d]
-    HiM.makeProjections(param)    
+    him.make_projections(current_param)    
 
     assert sum([os.path.exists(x) for x in expectedOutputs]) == len(expectedOutputs) 
     

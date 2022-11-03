@@ -40,4 +40,3 @@ help_dic = {
     "zProject_Mask_zmax": "Define the zmax plane to use for the zprojection of the mask\n\nDefault Value = 59",
     "zProject_Mask_zmin": "Define the zmax plane to use for the zprojection of the mask\n\nDefault Value = 1",
 }
-

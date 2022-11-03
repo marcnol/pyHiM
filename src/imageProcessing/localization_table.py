@@ -13,70 +13,73 @@ This class will contain methods to load, save, plot barcode localizations and st
 # IMPORTS
 # =============================================================================
 
-import os, sys
-import numpy as np
-import matplotlib.pyplot as plt
-
-from apifish.stack.io import save_table_to_ecsv
-from apifish.stack.io import read_table_from_ecsv
-
-from fileProcessing.fileManagement import (
-    printLog,
-)
+import os
+import sys
 
 # to remove in a future version
 import warnings
+
+import matplotlib.pyplot as plt
+import numpy as np
+from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
+
+from fileProcessing.fileManagement import print_log
 
 warnings.filterwarnings("ignore")
 
 
 class LocalizationTable:
-
     def __init__(self):
         self.a = 1
 
     def load(self, file):
         """
-        Loads barcodeMap
+        Loads barcode_map
 
         Parameters
         ----------
-        fileNameBarcodeCoordinates : string
-            filename with barcodeMap
+        filename_barcode_coordinates : string
+            filename with barcode_map
 
         Returns
         -------
-        barcodeMap : Table()
-        uniqueBarcodes: list
-            lis of unique barcodes read from barcodeMap
+        barcode_map : Table()
+        unique_barcodes: list
+            lis of unique barcodes read from barcode_map
 
         """
         if os.path.exists(file):
-            # barcodeMap = Table.read(fileNameBarcodeCoordinates, format="ascii.ecsv")
-            barcodeMap = read_table_from_ecsv(file)
+            # barcode_map = Table.read(filename_barcode_coordinates, format="ascii.ecsv")
+            barcode_map = read_table_from_ecsv(file)
 
-            printLog("$ Successfully loaded barcode localizations file: {}".format(file))
+            print_log(
+                "$ Successfully loaded barcode localizations file: {}".format(file)
+            )
 
-            uniqueBarcodes = np.unique(barcodeMap["Barcode #"].data)
-            numberUniqueBarcodes = uniqueBarcodes.shape[0]
+            unique_barcodes = np.unique(barcode_map["Barcode #"].data)
+            number_unique_barcodes = unique_barcodes.shape[0]
 
-            print("Number of barcodes read from barcodeMap: {}".format(numberUniqueBarcodes))
-            print("Unique Barcodes detected: {}".format(uniqueBarcodes))
+            print(
+                "Number of barcodes read from barcode_map: {}".format(
+                    number_unique_barcodes
+                )
+            )
+            print("Unique Barcodes detected: {}".format(unique_barcodes))
         else:
             print("\n\n# ERROR: could not find coordinates file: {}".format(file))
             sys.exit()
 
-        return barcodeMap, uniqueBarcodes
+        return barcode_map, unique_barcodes
 
-    def save(self, fileName, barcodeMap, comments=''):
+    def save(self, file_name, barcode_map, comments=""):
         """
         Saves output table
 
         Parameters
         ----------
-        fileNameBarcodeCoordinates : string
+        filename_barcode_coordinates : string
             filename of table.
-        barcodeMap : astropy Table
+        barcode_map : astropy Table
             Table to be written to file.
         tag : string, optional
             tag to be added to filename. The default is "_".
@@ -90,30 +93,27 @@ class LocalizationTable:
         None.
 
         """
-        print(f"Saving output table as {fileName} ...")
+        print(f"Saving output table as {file_name} ...")
 
         try:
-            barcodeMap.meta['comments'].append(comments)
+            barcode_map.meta["comments"].append(comments)
         except KeyError:
-            barcodeMap.meta['comments']=[comments]
+            barcode_map.meta["comments"] = [comments]
 
-        # save_table_to_ecsv(barcodeMap,fileName)
-        
-        barcodeMap.write(
-            fileName,
-            format="ascii.ecsv",
-            overwrite=True,
+        # save_table_to_ecsv(barcode_map, file_name)
+        barcode_map.write(
+            file_name, format="ascii.ecsv", overwrite=True,
         )
-        
-    def plots_distributionFluxes(self, barcodeMap, fileName_list):
+
+    def plot_distribution_fluxes(self, barcode_map, filename_list):
         """
         This function plots the distribution of fluxes, sharpness, roundness, magnitude and peak intensity from a Table
 
         Parameters
         ----------
-        barcodeMap : TYPE
+        barcode_map : TYPE
             DESCRIPTION.
-        fileName_list: list
+        filename_list: list
             filename
 
         Returns
@@ -128,46 +128,39 @@ class LocalizationTable:
         fig.set_size_inches((10, 5))
 
         # initializes variables
-        fluxes = barcodeMap["flux"]
-        sharpness = barcodeMap["sharpness"]
-        roundness = barcodeMap["roundness1"]
-        peak = barcodeMap["peak"]
-        mag = barcodeMap["mag"]
+        roundness = barcode_map["roundness1"]
+        peak = barcode_map["peak"]
+        mag = barcode_map["mag"]
 
         # plots data
-        p1 = ax[0].scatter(fluxes, sharpness, c=peak, cmap="terrain", alpha=0.5)
         ax[0].set_title("color: peak intensity")
         ax[0].set_xlabel("flux")
         ax[0].set_ylabel("sharpness")
 
-        p2 = ax[1].scatter(roundness, mag, c=peak, cmap="terrain", alpha=0.5)
+        p_2 = ax[1].scatter(roundness, mag, c=peak, cmap="terrain", alpha=0.5)
         ax[1].set_title("color: peak intensity")
         ax[1].set_xlabel("roundness")
         ax[1].set_ylabel("magnitude")
-        fig.colorbar(p2, ax=ax[1], fraction=0.046, pad=0.04)
+        fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
 
         # saves figure
-        fig.savefig("".join(fileName_list))
+        fig.savefig("".join(filename_list))
 
         plt.close(fig)
 
+    def build_color_dict(self, barcode_map, key="Barcode #"):
 
-    def build_color_dict(self,barcodeMap, key='Barcode #'):
+        color_dict = {}
 
-        color_dict = dict()
-
-        unique_barcodes = np.unique(barcodeMap[key])
+        unique_barcodes = np.unique(barcode_map[key])
         output_array = range(unique_barcodes.shape[0])
 
-        for barcode, output in zip(unique_barcodes,output_array):
-            color_dict[str(barcode)]=output
-
-
+        for barcode, output in zip(unique_barcodes, output_array):
+            color_dict[str(barcode)] = output
 
         return color_dict
 
-
-    def plots_localizations(self, barcodeMapFull, fileName_list):
+    def plots_localizations(self, barcode_map_full, filename_list):
 
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
@@ -181,71 +174,65 @@ class LocalizationTable:
         label : List of numpy ndarray (N-dimensional array)
             3D labeled image of format .tif
 
-        fileName_list: list
+        filename_list: list
             filename
         """
 
         # indexes table by ROI
-        barcodeMapROI,numberROIs = self.decode_ROIs(barcodeMapFull)
+        barcode_map_roi, number_rois = self.decode_rois(barcode_map_full)
 
-        for iROI in range(numberROIs):
+        for i_roi in range(number_rois):
 
             # creates sub Table for this ROI
-            barcodeMap = barcodeMapROI.groups[iROI]
-            nROI = barcodeMap['ROI #'][0]
-            print(f"Plotting barcode localization map for ROI: {nROI}")
-            color_dict = self.build_color_dict(barcodeMap, key='Barcode #')
-            Nbarcodes = np.unique(barcodeMap['Barcode #']).shape[0]
+            barcode_map = barcode_map_roi.groups[i_roi]
+            n_roi = barcode_map["ROI #"][0]
+            print(f"Plotting barcode localization map for ROI: {n_roi}")
+            color_dict = self.build_color_dict(barcode_map, key="Barcode #")
 
             # initializes figure
             fig = plt.figure(constrained_layout=False)
             im_size = 60
             fig.set_size_inches((im_size * 2, im_size))
             gs = fig.add_gridspec(2, 2)
-            ax = [fig.add_subplot(gs[:, 0]), fig.add_subplot(gs[0, 1]), fig.add_subplot(gs[1, 1])]
+            ax = [
+                fig.add_subplot(gs[:, 0]),
+                fig.add_subplot(gs[0, 1]),
+                fig.add_subplot(gs[1, 1]),
+            ]
 
             # defines variables
-            x = barcodeMap["xcentroid"]
-            y = barcodeMap["ycentroid"]
-            z = barcodeMap["zcentroid"]
-            colors =  [color_dict[str(x)] for x in barcodeMap["Barcode #"]]
+            x = barcode_map["xcentroid"]
+            y = barcode_map["ycentroid"]
+            z = barcode_map["zcentroid"]
+            colors = [color_dict[str(x)] for x in barcode_map["Barcode #"]]
             titles = ["Z-projection", "X-projection", "Y-projection"]
 
             # makes plot
-            plots_localization_projection(x,y,ax[0], colors, titles[0])
-            plots_localization_projection(x,z,ax[1], colors, titles[1])
-            plots_localization_projection(y,z,ax[2], colors, titles[2])
+            plots_localization_projection(x, y, ax[0], colors, titles[0])
+            plots_localization_projection(x, z, ax[1], colors, titles[1])
+            plots_localization_projection(y, z, ax[2], colors, titles[2])
 
             fig.tight_layout()
 
             # saves output figure
-            fileName_list_i=fileName_list.copy()
-            fileName_list_i.insert(-1,'_ROI' + str(nROI))
-            fig.savefig("".join(fileName_list_i))
+            filename_list_i = filename_list.copy()
+            filename_list_i.insert(-1, "_ROI" + str(n_roi))
+            fig.savefig("".join(filename_list_i))
 
-    def decode_ROIs(self, barcodeMap):
+    def decode_rois(self, barcode_map):
+        return decode_rois(barcode_map)
 
-        return decode_ROIs(barcodeMap)
-
-        '''
-        barcodeMapROI = barcodeMap.group_by("ROI #")
-
-        numberROIs = len(barcodeMapROI.groups.keys)
-
-        print("\n$ ROIs detected: {}".format(numberROIs))
-
-        return barcodeMapROI,numberROIs
-        '''
-
-    def compares_localizations(self,barcodeMap1,barcodeMap2,fileName_list, fontsize=20):
+    def compares_localizations(
+        self, barcode_map_1, barcode_map_2, filename_list, fontsize=20
+    ):
         """
         Compares the localizations of two barcode tables
 
         Parameters
         ----------
-        barcodeMap1 : astropy Table
+        barcode_map_1 : astropy Table
             localization table 1.
-        barcodeMap2 : astropy Table
+        barcode_map_2 : astropy Table
             localization table 2.
 
         Returns
@@ -254,22 +241,22 @@ class LocalizationTable:
 
         """
 
-        barcodeMap2.add_index('Buid')
-        number_localizations = len(barcodeMap1)
+        barcode_map_2.add_index("Buid")
+        number_localizations = len(barcode_map_1)
 
-        diffs = dict()
-        labels = ['xcentroid','ycentroid','zcentroid']
+        diffs = {}
+        labels = ["xcentroid", "ycentroid", "zcentroid"]
         for label in labels:
-            diffs[label]=[]
+            diffs[label] = []
 
-        # iterates over rows in barcodeMap1
+        # iterates over rows in barcode_map_1
         for row in range(number_localizations):
-            Buid_1 = barcodeMap2[row]['Buid']
+            buid_1 = barcode_map_2[row]["Buid"]
             barcode_found = True
 
-            # finds same Buid in barcodeMap2
+            # finds same Buid in barcode_map_2
             try:
-                barcodeMap2.loc[Buid_1]
+                barcode_map_2.loc[buid_1]
             except KeyError:
                 barcode_found = False
                 pass
@@ -277,7 +264,7 @@ class LocalizationTable:
             # collects differences in values between same localization in both tables
             if barcode_found:
                 for label in labels:
-                    diff = barcodeMap2.loc[Buid_1][label]-barcodeMap1[row][label]
+                    diff = barcode_map_2.loc[buid_1][label] - barcode_map_1[row][label]
                     if np.isnan(diff):
                         diff = 0
                     diffs[label].append(diff)
@@ -287,44 +274,46 @@ class LocalizationTable:
         ax = axes.ravel()
         fig.set_size_inches((30, 30))
 
-        for label, axis in zip(labels,ax):
+        for label, axis in zip(labels, ax):
             r = np.array(diffs[label])
             axis.hist(r, bins=20)
-            axis.set_xlabel(label+" correction, px", fontsize=fontsize)
+            axis.set_xlabel(label + " correction, px", fontsize=fontsize)
             axis.set_ylabel("counts", fontsize=fontsize)
 
-        ax[3].scatter(np.array(diffs['ycentroid']),np.array(diffs['xcentroid']),s=3, alpha=.8)
+        ax[3].scatter(
+            np.array(diffs["ycentroid"]), np.array(diffs["xcentroid"]), s=3, alpha=0.8
+        )
         ax[3].set_xlabel("dx-position, px", fontsize=fontsize)
         ax[3].set_ylabel("dy-position, px", fontsize=fontsize)
 
-        fig.savefig("".join(fileName_list))
+        fig.savefig("".join(filename_list))
 
 
-
-def decode_ROIs(data):
+def decode_rois(data):
 
     data_indexed = data.group_by("ROI #")
 
-    numberROIs = len(data_indexed.groups.keys)
+    number_rois = len(data_indexed.groups.keys)
 
-    print("\n$ ROIs detected: {}".format(numberROIs))
+    print("\n$ rois detected: {}".format(number_rois))
 
-    return data_indexed, numberROIs
+    return data_indexed, number_rois
 
 
-def build_color_dict(data, key='Barcode #'):
+def build_color_dict(data, key="Barcode #"):
 
-    color_dict = dict()
+    color_dict = {}
 
     unique_barcodes = np.unique(data[key])
     output_array = range(unique_barcodes.shape[0])
 
-    for barcode, output in zip(unique_barcodes,output_array):
-        color_dict[str(barcode)]=output
+    for barcode, output in zip(unique_barcodes, output_array):
+        color_dict[str(barcode)] = output
 
     return color_dict
 
-def plots_localization_projection(coord1, coord2, axis, colors, title=''*3):
+
+def plots_localization_projection(coord1, coord2, axis, colors, title="" * 3):
     """
     This function will produce the scatter plot and add title
 
@@ -346,5 +335,5 @@ def plots_localization_projection(coord1, coord2, axis, colors, title=''*3):
     None.
 
     """
-    axis.scatter(coord1,coord2, s=5, c=colors, alpha=.9, cmap = 'hsv') #nipy_spectral
+    axis.scatter(coord1, coord2, s=5, c=colors, alpha=0.9, cmap="hsv")  # nipy_spectral
     axis.set_title(title)
