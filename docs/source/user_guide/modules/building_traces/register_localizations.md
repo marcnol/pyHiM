@@ -3,7 +3,7 @@
 ## Invoke
 Inside the folder with your input data, run:
 ```shell
-pyhim -C alignImages
+pyhim -C register_localizations
 ```
 
 ## Inputs

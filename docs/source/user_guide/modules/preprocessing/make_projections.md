@@ -6,7 +6,7 @@
 
 Inside the folder with your input data, run:
 ```shell
-pyhim -C alignImages
+pyhim -C makeProjections
 ```
 
 ![projection](../../../_static/from_tuto/projection.png)

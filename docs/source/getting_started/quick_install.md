@@ -6,16 +6,16 @@
 
 ## Install conda
 
-*We use conda environment to be sure that we don't have any version problem for the software dependencies with other applications.*
+*We use conda environment to avoid version problem between pyHiM dependencies and other applications.*
 
-We recommand to download the light version `miniconda` if you just want to use conda environment. But if you are developer, you can download `anaconda` (it's the full application including [spyder IDE](https://www.spyder-ide.org/)).
+We recommend to download the lighter version `miniconda` if you only intend to use pyHiM without developing new applications.
 
 - [Installing conda on Linux](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 - [Installing conda on Windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 
-## Create conda enviroment
+## Create conda environment
 
-Create a conda environment and activate it:
+Open a **terminal** (for Windows user: from the Start menu, open the **Anaconda Prompt**). Create a conda environment and activate it:
 ```
 conda create -n pyHiM python=3.9
 conda activate pyHiM
