@@ -21,6 +21,7 @@ import os
 # MAIN
 # =============================================================================
 
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -123,6 +124,7 @@ def main():
     if os.path.exists(TAR_FILENAME):
         print(f"Zipping {TAR_FILENAME}")
         os.system("gzip " + TAR_FILENAME)
+
 
 if __name__ == "__main__":
     main()

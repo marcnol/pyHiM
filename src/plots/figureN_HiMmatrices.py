@@ -617,6 +617,7 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
 # MAIN
 # =============================================================================
 
+
 def main():
 
     print(">>> Producing HiM matrix")
@@ -651,6 +652,7 @@ def main():
     plotTADs(list_data, run_parameters)
 
     print("\nDone\n\n")
+
 
 if __name__ == "__main__":
     main()

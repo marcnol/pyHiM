@@ -20,6 +20,7 @@ import sys
 # MAIN
 # =============================================================================
 
+
 def main():
 
     labels_to_process = [
@@ -31,7 +32,6 @@ def main():
 
     PATTERN = r"(.*)\"(?P<RT>RT\d{1,3})\""
 
-
     N_ARGS = len(sys.argv) - 1  # sys.argv[0] is base name
     print(f"Total arguments passed: {N_ARGS}")
 
@@ -42,7 +42,6 @@ def main():
         sys.exit(-1)
     else:
         new_rt = sys.argv[1]
-
 
     for label_to_process in labels_to_process:
         LABEL = label_to_process["label"]
@@ -64,12 +63,13 @@ def main():
             sys.exit(-1)
 
         command_to_run_1 = (
-        "sed -i '" + "s+" + old_rt + "+" + new_rt + "+g' " + LABEL_PARAMETER_FILE
-    )
+            "sed -i '" + "s+" + old_rt + "+" + new_rt + "+g' " + LABEL_PARAMETER_FILE
+        )
         print(f"Command: {command_to_run_1}")
 
         return_value = os.system(command_to_run_1)
         print(f"Changing {old_rt} to {new_rt}. return_value {return_value}.")
+
 
 if __name__ == "__main__":
     main()

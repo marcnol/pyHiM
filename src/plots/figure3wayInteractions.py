@@ -164,6 +164,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
+
 def main():
     print(">>> Producing HiM 3-way matrices")
 
@@ -222,7 +223,9 @@ def main():
     )
 
     anchors = [
-        int(i.split(":")[1]) for i in list(him_data_1.data_files.keys()) if "anchor" in i
+        int(i.split(":")[1])
+        for i in list(him_data_1.data_files.keys())
+        if "anchor" in i
     ]
     fig2 = plt.figure(constrained_layout=True)
     nCols = np.ceil(len(anchors) / 2).astype(int)
@@ -247,11 +250,15 @@ def main():
     legendList = [False] * len(anchors)
     legendList[0] = True
 
-    for ifigure, i_fig_label, iyticks, ixticks in zip(FigList, FigLabels, Xticks, Yticks):
+    for ifigure, i_fig_label, iyticks, ixticks in zip(
+        FigList, FigLabels, Xticks, Yticks
+    ):
         if run_parameters["run2Datasets"]:
             # mixed matrices from 2 datasets
             if run_parameters["normalize"]:
-                matrix = him_data_1.data[i_fig_label] / him_data_1.data[i_fig_label].max()
+                matrix = (
+                    him_data_1.data[i_fig_label] / him_data_1.data[i_fig_label].max()
+                )
             else:
                 matrix = him_data_1.data[i_fig_label]
 
@@ -300,6 +307,7 @@ def main():
     print("Output figure: {}".format(output_filename))
 
     print("\nDone\n\n")
+
 
 if __name__ == "__main__":
     main()

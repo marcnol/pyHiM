@@ -102,9 +102,7 @@ class LocalizationTable:
 
         # save_table_to_ecsv(barcode_map, file_name)
         barcode_map.write(
-            file_name,
-            format="ascii.ecsv",
-            overwrite=True,
+            file_name, format="ascii.ecsv", overwrite=True,
         )
 
     def plot_distribution_fluxes(self, barcode_map, filename_list):

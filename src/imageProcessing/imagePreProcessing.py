@@ -162,6 +162,7 @@ def lauch_dask_scheduler(
 # MAIN
 # =============================================================================
 
+
 def main():
     begin_time = datetime.now()
 
@@ -249,6 +250,7 @@ def main():
         client.close()
 
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
 
 if __name__ == "__main__":
     main()

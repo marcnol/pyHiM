@@ -73,7 +73,6 @@ class FilterLocalizations:
     #     i : int
     #         index in barcode_map Table
 
-
     #     Returns
     #     -------
     #     keep_alignment : Boolean

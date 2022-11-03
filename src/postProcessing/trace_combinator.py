@@ -172,12 +172,7 @@ def appends_traces(traces, trace_files, label, action):
 
 
 def load_traces(
-    folders=[],
-    ndims=3,
-    method="mask",
-    label="none",
-    action="all",
-    trace_files=[],
+    folders=[], ndims=3, method="mask", label="none", action="all", trace_files=[],
 ):
 
     traces = ChromatinTraceTable()
@@ -287,6 +282,7 @@ def run(p):
 # MAIN
 # =============================================================================
 
+
 def main():
 
     # [parsing arguments]
@@ -297,6 +293,7 @@ def main():
         print("\nNothing to process...\n")
     else:
         run(p)
+
 
 if __name__ == "__main__":
     main()

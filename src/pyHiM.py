@@ -13,6 +13,7 @@ This file contains routines to process Hi-M datasets
 # =============================================================================
 
 import os
+
 # to remove in a future version
 import warnings
 from datetime import datetime
@@ -28,6 +29,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # =============================================================================
 # MAIN
 # =============================================================================
+
 
 def main():
     begin_time = datetime.now()
@@ -57,9 +59,15 @@ def main():
             file_name="infoList.json",
         )
 
-        print_log("--------------------------------------------------------------------------")
-        print_log(f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           ")
-        print_log("--------------------------------------------------------------------------")
+        print_log(
+            "--------------------------------------------------------------------------"
+        )
+        print_log(
+            f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           "
+        )
+        print_log(
+            "--------------------------------------------------------------------------"
+        )
 
         current_param.param_dict["parallel"] = him.parallel
         current_param.param_dict["fileNameMD"] = him.markdown_filename

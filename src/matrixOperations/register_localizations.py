@@ -116,9 +116,15 @@ class RegisterLocalizations:
         # finds the corresponding shift int the dictionary
 
         shifts = [
-            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j]["shift_z"],
-            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j]["shift_x"],
-            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j]["shift_y"],
+            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j][
+                "shift_z"
+            ],
+            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j][
+                "shift_x"
+            ],
+            self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j][
+                "shift_y"
+            ],
         ]
 
         if max(np.abs(shifts)) < self.tolerance_drift:
@@ -197,7 +203,7 @@ class RegisterLocalizations:
 
             # rewrites corrected XYZ values to Table
             # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
-                # print(f" $ Before correction: {barcodeMap.groups[0][i]} ")
+            # print(f" $ Before correction: {barcodeMap.groups[0][i]} ")
 
             barcode_map.groups[0]["ycentroid"][i] = zxy_corrected[1]
             barcode_map.groups[0]["xcentroid"][i] = zxy_corrected[2]
@@ -205,8 +211,8 @@ class RegisterLocalizations:
                 barcode_map.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
             # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
-                # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
-            
+            # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
+
         if self.remove_uncorrected_localizations:
             print_log(
                 f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcode_map.groups[0])} were removed."
@@ -311,7 +317,10 @@ class RegisterLocalizations:
             if n_block_i not in dict_error_block_masks[n_roi][n_barcode].keys():
                 dict_error_block_masks[n_roi][n_barcode][n_block_i] = {}
 
-            if n_block_j not in dict_error_block_masks[n_roi][n_barcode][n_block_i].keys():
+            if (
+                n_block_j
+                not in dict_error_block_masks[n_roi][n_barcode][n_block_i].keys()
+            ):
                 dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j] = {}
 
             dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j] = {

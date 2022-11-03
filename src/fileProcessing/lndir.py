@@ -27,6 +27,7 @@ from fileManagement import write_string_to_file
 # MAIN
 # =============================================================================
 
+
 def main():
 
     if len(sys.argv) < 3:
@@ -52,10 +53,13 @@ def main():
 
             write_string_to_file(file_name, command, attribute="a")
 
-        print(f"Linked {len(file_list)} files form {os.path.dirname(file_list[0])} to {dest_folder}")
+        print(
+            f"Linked {len(file_list)} files form {os.path.dirname(file_list[0])} to {dest_folder}"
+        )
 
     else:
         print("File List is empty :(")
+
 
 if __name__ == "__main__":
     main()

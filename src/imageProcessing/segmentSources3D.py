@@ -519,7 +519,9 @@ class SegmentSources3D:
                 ]
 
                 n_files_to_process = len(self.filenames_to_process_list)
-                print_log("$ Found {} files in ROI [{}]".format(n_files_to_process, roi))
+                print_log(
+                    "$ Found {} files in ROI [{}]".format(n_files_to_process, roi)
+                )
                 print_log(
                     "$ [roi:cycle] {}".format(
                         " | ".join(
@@ -629,11 +631,15 @@ class SegmentSources3D:
 
         return 0
 
+
 ##########################################
 # FUNCTIONS
 ##########################################
 
-def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000):
+
+def get_mask_properties(
+    segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000
+):
     """
     get object properties from labeled image and formats
     centroids in NPY array
@@ -670,7 +676,7 @@ def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10, n_to
         if n_tolerance == "None":
             last2keep = len(peak_list)
         else:
-            last2keep = np.min([n_tolerance,len(peak_list)])
+            last2keep = np.min([n_tolerance, len(peak_list)])
 
         highest_peak_value = peak_list[-last2keep]
         selection = list(np.nonzero(peak0 > highest_peak_value)[0])
@@ -739,6 +745,7 @@ def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10, n_to
     else:
         # creates output lists to return
         return [], [], [], [], [], [], [], [], []
+
 
 def create_output_table():
     output = Table(

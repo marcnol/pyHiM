@@ -175,7 +175,9 @@ def main():
     print("*" * 50)
 
     print(f"\n\n$ Found {len(folders0)} folders in {root_folder}")
-    print(f"$ Of these, {len(folders)} contained an infoList.json file and will be processed")
+    print(
+        f"$ Of these, {len(folders)} contained an infoList.json file and will be processed"
+    )
     print(f"Folders to process: {folders}")
     print(f"$ Scheduling {len(folders)} jobs...")
     print("-" * 50)
@@ -318,6 +320,7 @@ def main():
                 f.write(f"{item}\n")
 
         print(f"\nTo run master bash script:\n$ bash {bash_script_name}")
+
 
 if __name__ == "__main__":
     main()

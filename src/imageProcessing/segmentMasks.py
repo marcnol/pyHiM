@@ -28,6 +28,7 @@ import uuid
 
 # to remove in a future version
 import warnings
+
 # ---- stardist
 import matplotlib
 import matplotlib.pylab as plt
@@ -183,13 +184,24 @@ def _segment_source_inhomog_background(
 
     # estimates and removes inhomogeneous background
     bkg_estimator = MedianBackground()
-    bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
+    bkg = Background2D(
+        im,
+        (64, 64),
+        filter_size=(3, 3),
+        sigma_clip=sigma_clip,
+        bkg_estimator=bkg_estimator,
+    )
 
     im1_bkg_substracted = im - bkg.background
     mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
 
     # estimates sources
-    daofind = DAOStarFinder(fwhm=fwhm, threshold=threshold_over_std * std, brightest=brightest, exclude_border=True,)
+    daofind = DAOStarFinder(
+        fwhm=fwhm,
+        threshold=threshold_over_std * std,
+        brightest=brightest,
+        exclude_border=True,
+    )
     sources = daofind(im1_bkg_substracted)
 
     return sources, im1_bkg_substracted
@@ -571,7 +583,6 @@ def segment_mask_stardist(im, current_param):
 
     """
 
-
     np.random.seed(6)
 
     # removes background
@@ -730,9 +741,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         #######################################
         #           Segments Masks
         #######################################
-        elif (
-            label in ("DAPI", "mask")
-        ):  # and root_filename.split("_")[2] == "DAPI":
+        elif label in ("DAPI", "mask"):  # and root_filename.split("_")[2] == "DAPI":
             if (
                 current_param.param_dict["segmentedObjects"]["background_method"]
                 == "flat"
@@ -775,10 +784,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
                 )
 
             show_image_masks(
-                im,
-                output,
-                current_param.param_dict["fileNameMD"],
-                output_filename,
+                im, output, current_param.param_dict["fileNameMD"], output_filename,
             )
 
             # saves output 2d zProjection as matrix
@@ -903,7 +909,9 @@ def segment_masks(current_param, current_session, file_name=None):
 
                         # gathers results from different barcodes and rois
                         if label == "barcode":
-                            barcodes_coordinates = vstack([barcodes_coordinates, output])
+                            barcodes_coordinates = vstack(
+                                [barcodes_coordinates, output]
+                            )
                             barcodes_coordinates.write(
                                 output_file, format="ascii.ecsv", overwrite=True
                             )

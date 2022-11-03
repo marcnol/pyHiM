@@ -142,6 +142,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
+
 def main():
     begin_time = datetime.now()
 
@@ -218,6 +219,7 @@ def main():
         outfile = output_file + "." + extension
         print("\n> Saving image : {}".format(outfile))
         imsave(outfile, newLabeledImage)
-  
+
+
 if __name__ == "__main__":
     main()

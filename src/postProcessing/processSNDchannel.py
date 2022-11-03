@@ -322,6 +322,7 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information):
 # MAIN
 # =============================================================================
 
+
 def main():
     begin_time = datetime.now()
 
@@ -399,6 +400,7 @@ def main():
     print("\n===================={}====================\n".format("Normal termination"))
 
     print("Elapsed time: {}".format(datetime.now() - begin_time))
+
 
 if __name__ == "__main__":
     main()

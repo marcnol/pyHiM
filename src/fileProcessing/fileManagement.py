@@ -379,7 +379,10 @@ class Parameters:
                             ][label_selected][key][key2]
                             number_keys_ammended += 1
                         else:
-                            print_log(f"Did not find key <{key}> in common dictionary", status="WARN",)
+                            print_log(
+                                f"Did not find key <{key}> in common dictionary",
+                                status="WARN",
+                            )
             print_log(f"Amended {number_keys_ammended} keys for {label_selected}")
 
         # need to replace default keys by those in 'label' key
@@ -530,7 +533,9 @@ class Parameters:
 
 
 class DaskCluster:
-    def __init__(self, requested_number_nodes, maximum_load=0.6, memory_per_worker=12000):
+    def __init__(
+        self, requested_number_nodes, maximum_load=0.6, memory_per_worker=12000
+    ):
         self.requested_number_nodes = requested_number_nodes
         # self.n_threads will be created after exetution of initialize_cluster()
         self.maximum_load = maximum_load  # max number of workers that I can take
@@ -557,7 +562,9 @@ class DaskCluster:
 
         self.n_threads = int(np.min([max_number_threads, self.requested_number_nodes]))
 
-        print(f"$ Cluster with {self.n_threads} workers started ({self.requested_number_nodes} requested)")
+        print(
+            f"$ Cluster with {self.n_threads} workers started ({self.requested_number_nodes} requested)"
+        )
 
     def create_distributed_client(self):
         client = try_get_client()
@@ -588,10 +595,12 @@ def info(text):
 def get_full_string(text=""):
     return f"{text}"
 
+
 def create_single_folder(folder):
     if not path.exists(folder):
         os.mkdir(folder)
         print(f"$ Folder created: {folder}")
+
 
 def load_parameters_file(file_name):
     if path.exists(file_name):
@@ -602,6 +611,7 @@ def load_parameters_file(file_name):
         return parameters
     else:
         return None
+
 
 def write_string_to_file(file_name, list_to_output, attribute="a"):
     with open(file_name, mode=attribute, encoding="utf-8") as file_handle:

@@ -188,6 +188,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
+
 def main():
     run2Datasets = False
 
@@ -263,7 +264,9 @@ def main():
         anchors, FigList, FigLabels, Yticks, Xticks, legendList
     ):
         if not run2Datasets:
-            him_data_1.plot_1d_profile1dataset(ifigure, anchor, i_fig_label, yticks, xticks)
+            him_data_1.plot_1d_profile1dataset(
+                ifigure, anchor, i_fig_label, yticks, xticks
+            )
         else:
             plot_1d_profile2datasets(
                 ifigure,
@@ -279,6 +282,7 @@ def main():
 
     plt.savefig(output_filename)
     print("Output figure: {}".format(output_filename))
+
 
 if __name__ == "__main__":
     main()

@@ -433,6 +433,7 @@ def load_n_preprocess_image(
 
     return image_3d_0, image_3d
 
+
 def _align_fiducials_3d_file(
     filename_to_process,
     alignment_results_table,

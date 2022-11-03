@@ -216,6 +216,7 @@ def normalize_matrix(m1, m2, mode):
 # MAIN
 # =============================================================================
 
+
 def main():
 
     rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
@@ -284,8 +285,12 @@ def main():
     elif "iPWD" in run_parameters["inputMatrix"]:
         m1 = him_data_1.sc_matrix_selected
         m2 = him_data_2.sc_matrix_selected
-        cells2Plot1 = list_sc_to_keep(run_parameters, him_data_1.data["SClabeledCollated"])
-        cells2Plot2 = list_sc_to_keep(run_parameters, him_data_2.data["SClabeledCollated"])
+        cells2Plot1 = list_sc_to_keep(
+            run_parameters, him_data_1.data["SClabeledCollated"]
+        )
+        cells2Plot2 = list_sc_to_keep(
+            run_parameters, him_data_2.data["SClabeledCollated"]
+        )
         dataset1 = list(him_data_1.list_data.keys())[0]
         dataset2 = list(him_data_2.list_data.keys())[0]
         m1, _ = calculate_ensemble_pwd_matrix(
@@ -305,8 +310,12 @@ def main():
     elif "PWD" in run_parameters["inputMatrix"]:
         m1 = him_data_1.sc_matrix_selected
         m2 = him_data_2.sc_matrix_selected
-        cells2Plot1 = list_sc_to_keep(run_parameters, him_data_1.data["SClabeledCollated"])
-        cells2Plot2 = list_sc_to_keep(run_parameters, him_data_2.data["SClabeledCollated"])
+        cells2Plot1 = list_sc_to_keep(
+            run_parameters, him_data_1.data["SClabeledCollated"]
+        )
+        cells2Plot2 = list_sc_to_keep(
+            run_parameters, him_data_2.data["SClabeledCollated"]
+        )
         dataset1 = list(him_data_1.list_data.keys())[0]
         dataset2 = list(him_data_2.list_data.keys())[0]
         m1, _ = calculate_ensemble_pwd_matrix(
@@ -411,6 +420,7 @@ def main():
 
     else:
         print("Error: matrices do not have the same dimensions!")
+
 
 if __name__ == "__main__":
     main()

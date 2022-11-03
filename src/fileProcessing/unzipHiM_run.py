@@ -21,6 +21,7 @@ import os
 # MAIN
 # =============================================================================
 
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -89,6 +90,7 @@ def main():
             os.system(tarcmd)
         else:
             print(f"Nothing to unzip in: {root_folder + os.sep + tar_filename}")
+
 
 if __name__ == "__main__":
     main()

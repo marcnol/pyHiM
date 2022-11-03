@@ -385,7 +385,9 @@ def plotTrajectories(
     coordinatesEnsemble = get_coordinates_from_pwd_matrix(EnsembleMatrix)
 
     pwd_matrix[np.isnan(pwd_matrix)] = 0  # removes NaNs from matrix
-    coordinates = run_parameters["pixelSize"] * get_coordinates_from_pwd_matrix(pwd_matrix)
+    coordinates = run_parameters["pixelSize"] * get_coordinates_from_pwd_matrix(
+        pwd_matrix
+    )
     output_filename_pdb = (
         outputFileNameRoot + "_SingleCellTrajectory:" + str(cell_id) + ".pdb"
     )
@@ -507,7 +509,9 @@ def plotsSubplot_sc_matrices(him_data, nRows, output="subplotMatrices.png"):
 
     iplot = 0
     for i_cell in cell_id:
-        pos = ax[iplot].imshow(1 / sc_matrix[:, :, i_cell], cmap=cmap, vmin=0, vmax=vmax)
+        pos = ax[iplot].imshow(
+            1 / sc_matrix[:, :, i_cell], cmap=cmap, vmin=0, vmax=vmax
+        )
         ax[iplot].set_xticklabels(())
         ax[iplot].set_yticklabels(())
         ax[iplot].set_axis_off()
@@ -611,7 +615,9 @@ def plotsRgvalues(
         RgList.append(
             run_parameters["pixelSize"]
             * get_rg_from_pwd(
-                sc_matrix[:, :, cell_id], min_number_pwd=min_number_pwd, threshold=threshold
+                sc_matrix[:, :, cell_id],
+                min_number_pwd=min_number_pwd,
+                threshold=threshold,
             )
         )
 
@@ -689,6 +695,7 @@ def makesPlotHistograms(
 # MAIN
 # =============================================================================
 
+
 def main():
 
     print(">>> Producing HiM matrix")
@@ -727,7 +734,9 @@ def main():
     output = (
         outputFileNameRoot + "_scMatrices" + run_parameters["plottingFileExtension"]
     )
-    cellID_most_PWDs, sc_matrix = plotsSubplot_sc_matrices(him_data, nRows, output=output)
+    cellID_most_PWDs, sc_matrix = plotsSubplot_sc_matrices(
+        him_data, nRows, output=output
+    )
 
     # "calculates the number of barcodes per cell and makes histograms"
     print("\n>>>Calculating distribution of barcodes<<<\n")
@@ -813,6 +822,7 @@ def main():
         makesVideo(outputFileNameRoot, video_name, searchPattern)
 
     print("\nDone\n\n")
+
 
 if __name__ == "__main__":
     main()

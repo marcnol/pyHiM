@@ -62,7 +62,9 @@ class HiMFunctionCaller:
         #####################
         # setup markdown file
         #####################
-        print_log(f"\n======================{self.session_name}======================\n")
+        print_log(
+            f"\n======================{self.session_name}======================\n"
+        )
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
 
@@ -221,9 +223,11 @@ class HiMFunctionCaller:
                 )
                 _ = self.client.gather(result)
 
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
+
 
 def available_list_commands():
     return [
@@ -287,7 +291,9 @@ def him_parse_arguments():
         # pylint: disable-next=consider-iterating-dictionary
         if "docker" in os.environ.keys():
             run_parameters["rootFolder"] = "/data"
-            print_log(f"\n\n$ Running in docker, him_data: {run_parameters['rootFolder']}")
+            print_log(
+                f"\n\n$ Running in docker, him_data: {run_parameters['rootFolder']}"
+            )
         else:
             print_log("\n\n# him_data: NOT FOUND")
             run_parameters["rootFolder"] = os.getcwd()
@@ -306,12 +312,16 @@ def him_parse_arguments():
 
     for cmd in run_parameters["cmd"]:
         if cmd not in available_commands:
-            print_log(f"\n\n# ERROR: {cmd} not found in list of available commands: {available_commands}\n", status="WARN")
+            print_log(
+                f"\n\n# ERROR: {cmd} not found in list of available commands: {available_commands}\n",
+                status="WARN",
+            )
             raise SystemExit
 
     print_dict(run_parameters)
 
     return run_parameters
+
 
 # filters barcode localization table
 def filter_localizations(current_param, label):
@@ -319,17 +329,20 @@ def filter_localizations(current_param, label):
         filter_localizations_instance = FilterLocalizations(current_param)
         filter_localizations_instance.filter_folder()
 
+
 # filters barcode localization table
 def register_localizations(current_param, label):
     if label == "barcode":
         register_localizations_instance = RegisterLocalizations(current_param)
         register_localizations_instance.register()
 
+
 # build traces
 def build_traces(current_param, label):
     if label == "barcode":
         build_traces_instance = BuildTraces(current_param)
         build_traces_instance.run()
+
 
 # build matrices
 def build_matrix(current_param, label):

@@ -625,10 +625,18 @@ def save_image_differences(img_1, img_2, img_3, img_4, output_filename):
     img_1, img_2 = img_1 / img_1.max(), img_2 / img_2.max()
     img_3, img_4 = img_3 / img_3.max(), img_4 / img_4.max()
 
-    img_1, _, _, _, _ = image_adjust(img_1, lower_threshold=0.5, higher_threshold=0.9999)
-    img_2, _, _, _, _ = image_adjust(img_2, lower_threshold=0.5, higher_threshold=0.9999)
-    img_3, _, _, _, _ = image_adjust(img_3, lower_threshold=0.5, higher_threshold=0.9999)
-    img_4, _, _, _, _ = image_adjust(img_4, lower_threshold=0.5, higher_threshold=0.9999)
+    img_1, _, _, _, _ = image_adjust(
+        img_1, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_2, _, _, _, _ = image_adjust(
+        img_2, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_3, _, _, _, _ = image_adjust(
+        img_3, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_4, _, _, _, _ = image_adjust(
+        img_4, lower_threshold=0.5, higher_threshold=0.9999
+    )
 
     cmap = "seismic"
 
@@ -678,9 +686,7 @@ def _remove_inhomogeneous_background(
     """
     if len(im.shape) == 2:
         output = _remove_inhomogeneous_background_2d(
-            im,
-            filter_size=filter_size,
-            background=background,
+            im, filter_size=filter_size, background=background,
         )
     elif len(im.shape) == 3:
         output = _remove_inhomogeneous_background_3d(
@@ -1054,24 +1060,12 @@ def align_2_images_cross_correlation(
 
     """
 
-    (
-        image1_adjusted,
-        hist1_before,
-        hist1_after,
-        lower_cutoff1,
-        _,
-    ) = image_adjust(
+    (image1_adjusted, hist1_before, hist1_after, lower_cutoff1, _,) = image_adjust(
         image1_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
     )
-    (
-        image2_adjusted,
-        hist2_before,
-        hist2_after,
-        lower_cutoff2,
-        _,
-    ) = image_adjust(
+    (image2_adjusted, hist2_before, hist2_after, lower_cutoff2, _,) = image_adjust(
         image2_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
@@ -1224,7 +1218,9 @@ def align_images_by_blocks(
 
     # [calculates global shift, if it is better than the polled shift, or
     # if we do not have enough pollsters to fall back to then it does a global cross correlation!]
-    mean_shifts_global, _, _ = phase_cross_correlation(img_1, img_2, upsample_factor=100)
+    mean_shifts_global, _, _ = phase_cross_correlation(
+        img_1, img_2, upsample_factor=100
+    )
     img_2_aligned_global = shift_image(img_2, shift)
     mean_error_global = np.sum(np.sum(np.abs(img_1 - img_2_aligned_global), axis=1))
 
@@ -1967,8 +1963,12 @@ def save_2_images_rgb(img_1, img_2, output_filename):
     sz = img_1.shape
     img_1, img_2 = img_1 / img_1.max(), img_2 / img_2.max()
 
-    img_1, _, _, _, _ = image_adjust(img_1, lower_threshold=0.5, higher_threshold=0.9999)
-    img_2, _, _, _, _ = image_adjust(img_2, lower_threshold=0.5, higher_threshold=0.9999)
+    img_1, _, _, _, _ = image_adjust(
+        img_1, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_2, _, _, _, _ = image_adjust(
+        img_2, lower_threshold=0.5, higher_threshold=0.9999
+    )
 
     fig, ax1 = plt.subplots()
     fig.set_size_inches((30, 30))

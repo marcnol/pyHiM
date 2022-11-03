@@ -69,16 +69,12 @@ def display_equalization_histograms(
     ax4.plot(i_histogram["Im2"][1][1], i_histogram["Im2"][1][0])
     ax3.set_yscale("log")
     ax4.set_yscale("log")
-    ax1.vlines(
-        lower_threshold["Im1"], 0, i_histogram["Im1"][0][0].max(), colors="r"
-    )
-    ax2.vlines(
-        lower_threshold["Im2"], 0, i_histogram["Im2"][0][0].max(), colors="r"
-    )
+    ax1.vlines(lower_threshold["Im1"], 0, i_histogram["Im1"][0][0].max(), colors="r")
+    ax2.vlines(lower_threshold["Im2"], 0, i_histogram["Im2"][0][0].max(), colors="r")
     plt.savefig(output_filename + "_intensityHist.png")
     write_string_to_file(
-        markdown_filename, 
-        f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n", 
+        markdown_filename,
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n",
         "a",
     )
 
@@ -143,9 +139,7 @@ def remove_inhomogeneous_background(im, current_param):
     return im1_bkg_substracted
 
 
-def align_2_files(
-    file_name, img_reference, current_param, data_folder, verbose
-):
+def align_2_files(file_name, img_reference, current_param, data_folder, verbose):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
@@ -492,7 +486,9 @@ def align_images_in_current_folder(
                     roi = current_param.decode_file_parts(
                         os.path.basename(filename_to_process)
                     )["roi"]
-                    print_log("\n$ About to process file {} \\ {}".format(i_file, n_files))
+                    print_log(
+                        "\n$ About to process file {} \\ {}".format(i_file, n_files)
+                    )
 
                     if (filename_to_process not in filename_reference) and roi == roi:
                         if file_name is None or (
@@ -629,7 +625,9 @@ def apply_registrations_to_filename(
         shift = np.asarray(shift_array)
         # loads 2D image and applies registration
         im_obj = Image(current_param)
-        im_obj.load_image_2d(filename_to_process, data_folder.output_folders["zProject"])
+        im_obj.load_image_2d(
+            filename_to_process, data_folder.output_folders["zProject"]
+        )
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
         print_log(
             "$ Image registered using ROI:{}, label:{}, shift={}".format(
@@ -649,7 +647,9 @@ def apply_registrations_to_filename(
         and label == current_param.param_dict["alignImages"]["referenceFiducial"]
     ):
         im_obj = Image(current_param)
-        im_obj.load_image_2d(filename_to_process, data_folder.output_folders["zProject"])
+        im_obj.load_image_2d(
+            filename_to_process, data_folder.output_folders["zProject"]
+        )
         im_obj.save_image_2d(
             data_folder.output_folders["alignImages"], tag="_2d_registered",
         )

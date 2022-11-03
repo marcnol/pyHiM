@@ -30,6 +30,7 @@ from fileProcessing.fileManagement import Folders, Parameters
 # MAIN
 # =============================================================================
 
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -102,6 +103,7 @@ def main():
                 print(f"{new_folder} removed")
             else:
                 print(f"{new_folder} does not exist")
+
 
 if __name__ == "__main__":
     main()

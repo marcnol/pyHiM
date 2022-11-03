@@ -60,7 +60,20 @@ class ChromatinTraceTable:
                 "Barcode #",
                 "label",
             ),
-            dtype=("S2", "S2", "f4", "f4", "f4", "S2", "int", "int", "int", "int", "int", "S2",),
+            dtype=(
+                "S2",
+                "S2",
+                "f4",
+                "f4",
+                "f4",
+                "S2",
+                "int",
+                "int",
+                "int",
+                "int",
+                "int",
+                "S2",
+            ),
         )
 
         self.data.meta["comments"] = [
@@ -181,7 +194,7 @@ class ChromatinTraceTable:
         for idx, trace in enumerate(trace_table_indexed.groups):
 
             number_unique_barcodes = len(list(set(trace["Barcode #"].data)))
-            
+
             if number_unique_barcodes < minimum_number_barcodes:
                 barcodes_to_remove.append(list(trace["Spot_ID"].data))
 
@@ -206,8 +219,10 @@ class ChromatinTraceTable:
             number_traces_left = len(trace_table_indexed.groups)
         else:
             number_traces_left = 0
-            
-        print(f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}")
+
+        print(
+            f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}"
+        )
 
         self.data = trace_table
 

@@ -109,10 +109,13 @@ class AnalysisHiMMatrix:
         for i_data_file in data_files.keys():
             print(
                 "Loaded: {}: <{}>".format(
-                    i_data_file, os.path.basename(output_filename + data_files[i_data_file])
+                    i_data_file,
+                    os.path.basename(output_filename + data_files[i_data_file]),
                 )
             )
-            data[i_data_file] = np.load(output_filename + data_files[i_data_file]).squeeze()
+            data[i_data_file] = np.load(
+                output_filename + data_files[i_data_file]
+            ).squeeze()
 
         # loads datasets: lists
         run_name = load_list(output_filename + "_runName.csv")
@@ -273,7 +276,9 @@ class AnalysisHiMMatrix:
 
         """
         n_cells = self.n_cells_loaded()
-        sc_matrix_selected = np.zeros((self.number_barcodes, self.number_barcodes, n_cells))
+        sc_matrix_selected = np.zeros(
+            (self.number_barcodes, self.number_barcodes, n_cells)
+        )
 
         if self.run_parameters["action"] == "labeled":
             cells_with_label = [
@@ -405,7 +410,9 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
 
     sorted_snd_table = snd_table.group_by("MaskID #")
     list_keys = list(sorted_snd_table.groups.keys["MaskID #"].data)
-    index_key = [index for i, index in zip(list_keys, range(len(list_keys))) if i == label]
+    index_key = [
+        index for i, index in zip(list_keys, range(len(list_keys))) if i == label
+    ]
 
     # checks that there is at least one cell with the label
     if len(index_key) > 0:
@@ -426,7 +433,9 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
 
         print("rois to process: {}".format(pwd_table_sorted_roi.groups.keys))
 
-        for roi, group in zip(pwd_table_sorted_roi.groups.keys, pwd_table_sorted_roi.groups):
+        for roi, group in zip(
+            pwd_table_sorted_roi.groups.keys, pwd_table_sorted_roi.groups
+        ):
             # list of cellIDs in ROI
             cells_to_process = group["CellID #"].data.compressed()
             cells_to_process_uid = group["Cuid"]
@@ -440,7 +449,8 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
             index_rois = [
                 index
                 for i, index in zip(
-                    rois_in_snd_table_with_label, range(len(rois_in_snd_table_with_label))
+                    rois_in_snd_table_with_label,
+                    range(len(rois_in_snd_table_with_label)),
                 )
                 if i == roi["ROI #"]
             ]
@@ -534,7 +544,7 @@ def load_sc_data(list_data, dataset_name, p):
         if p["d3"]:
             dim_tag = "_3D"
         else:
-            dim_tag = "_2D"            
+            dim_tag = "_2D"
 
     sc_matrix_collated, unique_barcodes = [], []
     build_pwd_matrix_collated, run_name, sc_labeled_collated = [], [], []
@@ -545,11 +555,19 @@ def load_sc_data(list_data, dataset_name, p):
 
         # [makes list of files with Tables to load]
         # tries to load files from newer version of proceesingPipeline.py
-        files_to_process_compatibility = glob.glob(root_folder + "/buildsPWDmatrix" + dim_tag + "_order*ROI*.ecsv")
-        files_to_process = files_to_process_compatibility + glob.glob(root_folder + "/Trace" + dim_tag + "_barcode_*ROI*.ecsv")
-        
-        print("files_to_process: {}".format(root_folder +"/Trace" + dim_tag + "_barcode_ROI.ecsv"))
-        
+        files_to_process_compatibility = glob.glob(
+            root_folder + "/buildsPWDmatrix" + dim_tag + "_order*ROI*.ecsv"
+        )
+        files_to_process = files_to_process_compatibility + glob.glob(
+            root_folder + "/Trace" + dim_tag + "_barcode_*ROI*.ecsv"
+        )
+
+        print(
+            "files_to_process: {}".format(
+                root_folder + "/Trace" + dim_tag + "_barcode_ROI.ecsv"
+            )
+        )
+
         if len(files_to_process) == 0:
             # it resorts to old format
             files_to_process = glob.glob(
@@ -734,7 +752,9 @@ def load_sc_data_matlab(list_data, dataset_name, p):
         results_table = cell_attributes_matrix[0, :]
 
         sc_labeled = np.zeros(len(results_table))
-        index_cells_with_label = [i_row for i_row, row in enumerate(results_table) if row > 0]
+        index_cells_with_label = [
+            i_row for i_row, row in enumerate(results_table) if row > 0
+        ]
         sc_labeled[index_cells_with_label] = 1
         sc_labeled_collated.append(sc_labeled)
 
@@ -819,7 +839,10 @@ def plot_ensemble_3_way_contact_matrix(
             else:
                 if len(sc_matrix_all_datasets) > 0:
                     sc_matrix_all_datasets = np.concatenate(
-                        (sc_matrix_all_datasets, i_sc_matrix_collated[:, :, cells_to_plot]),
+                        (
+                            sc_matrix_all_datasets,
+                            i_sc_matrix_collated[:, :, cells_to_plot],
+                        ),
                         axis=2,
                     )
                 else:
@@ -926,7 +949,9 @@ def calculate_3_way_contact_matrix(
                 continue
 
             # print("current bait1", bait1, "bait2", bait2)
-            n_contacts, n_non_nan = get_multi_contact(mat, anchor, bait1, bait2, threshold)
+            n_contacts, n_non_nan = get_multi_contact(
+                mat, anchor, bait1, bait2, threshold
+            )
             if s_out == "Counts":
                 sc_matrix[bait1, bait2] = n_contacts
             elif s_out == "Probability":
@@ -1151,7 +1176,10 @@ def fuses_sc_matrix_collated_from_datasets(
             else:
                 if len(sc_matrix_all_datasets) > 0:
                     sc_matrix_all_datasets = np.concatenate(
-                        (sc_matrix_all_datasets, i_sc_matrix_collated[:, :, cells_to_plot]),
+                        (
+                            sc_matrix_all_datasets,
+                            i_sc_matrix_collated[:, :, cells_to_plot],
+                        ),
                         axis=2,
                     )
                 else:
@@ -1237,7 +1265,12 @@ def fuses_sc_matrix_collated_from_datasets(
         )
         write_xyz_2_pdb(output_filename_pdb, xyz)
 
-    return sc_matrix_all_datasets, common_set_unique_barcodes, cells_to_plot, n_cells_total
+    return (
+        sc_matrix_all_datasets,
+        common_set_unique_barcodes,
+        cells_to_plot,
+        n_cells_total,
+    )
 
 
 def plot_ensemble_contact_probability_matrix(
@@ -1692,6 +1725,7 @@ def plot_matrix(
 
     return mean_sc_matrix
 
+
 def calculate_contact_probability_matrix(
     i_sc_matrix_collated,
     i_unique_barcodes,
@@ -1731,7 +1765,9 @@ def calculate_contact_probability_matrix(
 
                     # normalizes # of contacts by the # of PWD detected in each bin
                     elif norm == "nonNANs":
-                        number_nans = len(np.nonzero(np.isnan(distance_distribution))[0])
+                        number_nans = len(
+                            np.nonzero(np.isnan(distance_distribution))[0]
+                        )
                         if n_cells == number_nans:
                             probability = np.nan
                         else:
@@ -2073,7 +2109,9 @@ def calculate_ensemble_pwd_matrix(sc_matrix, pixel_size, cells_to_plot, mode="me
             )
             keep_plotting = False
         else:
-            mean_sc_matrix = pixel_size * np.nanmedian(sc_matrix[:, :, cells_to_plot], axis=2)
+            mean_sc_matrix = pixel_size * np.nanmedian(
+                sc_matrix[:, :, cells_to_plot], axis=2
+            )
             keep_plotting = True
 
     elif mode == "KDE":

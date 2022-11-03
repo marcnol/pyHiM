@@ -198,7 +198,7 @@ class SegmentMasks3D:
         figure handle
 
         """
-        
+
         fig1 = plot_raw_images_and_labels(image_3d, masks)
 
         return fig1
@@ -374,7 +374,9 @@ class SegmentMasks3D:
                     )
                 ]
                 n_files_to_process = len(self.filenames_to_process_list)
-                print_log("$ Found {} files in ROI [{}]".format(n_files_to_process, roi))
+                print_log(
+                    "$ Found {} files in ROI [{}]".format(n_files_to_process, roi)
+                )
                 print_log(
                     "$ [roi:cycle] {}".format(
                         " | ".join(
@@ -402,7 +404,9 @@ class SegmentMasks3D:
                     self.filenames_to_process_list
                 ):
                     print_log(
-                        "\n\n>>>Iteration: {}/{}<<<".format(file_index, n_files_to_process)
+                        "\n\n>>>Iteration: {}/{}<<<".format(
+                            file_index, n_files_to_process
+                        )
                     )
                     self.segment_masks_3d_file(filename_to_process)
 
@@ -445,11 +449,15 @@ class SegmentMasks3D:
 
         return 0
 
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
-def get_mask_properties(segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000):
+
+def get_mask_properties(
+    segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000
+):
     """
     get object properties from labeled image and formats
     centroids in NPY array

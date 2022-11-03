@@ -155,6 +155,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
+
 def main():
     begin_time = datetime.now()
 
@@ -371,7 +372,10 @@ def main():
         # saves lists
         if "SCmatrixCollatedEnsemble" in locals():
             with open(
-                output_filename + "_uniqueBarcodes.csv", mode="w", newline="", encoding="utf-8"
+                output_filename + "_uniqueBarcodes.csv",
+                mode="w",
+                newline="",
+                encoding="utf-8",
             ) as csvfile:
                 spamwriter = csv.writer(
                     csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL
@@ -379,16 +383,21 @@ def main():
                 spamwriter.writerow(common_set_unique_barcodes)
 
         p["SClabeledCollated"] = []
-        with open(output_filename + "_parameters.json", mode="w", encoding="utf-8") as f:
+        with open(
+            output_filename + "_parameters.json", mode="w", encoding="utf-8"
+        ) as f:
             json.dump(p, f, ensure_ascii=False, sort_keys=True, indent=4)
 
-        with open(output_filename + "_runName.csv", mode="w", newline="", encoding="utf-8") as csvfile:
+        with open(
+            output_filename + "_runName.csv", mode="w", newline="", encoding="utf-8"
+        ) as csvfile:
             spamwriter = csv.writer(
                 csvfile, delimiter=" ", quotechar="|", quoting=csv.QUOTE_MINIMAL
             )
             spamwriter.writerow(run_name)
 
         print("Finished execution")
+
 
 if __name__ == "__main__":
     main()
