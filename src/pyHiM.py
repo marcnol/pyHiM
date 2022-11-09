@@ -57,7 +57,7 @@ def main(command_line_arguments=None):
             root_folder=run_parameters["rootFolder"],
             label=label,
             file_name="infoList.json",
-            stardist_basename = runParameters["stardist_basename"],
+            stardist_basename = run_parameters["stardist_basename"],
         )
 
         print_log(

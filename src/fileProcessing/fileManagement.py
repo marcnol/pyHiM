@@ -334,7 +334,7 @@ class Parameters:
         self.param_file = root_folder + os.sep + file_name
         self.convert_parameter_file(self.param_file, self.label)
         if stardist_basename is not None :
-            self.param["segmentedObjects"]["stardist_basename"] = stardist_basename
+            self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 

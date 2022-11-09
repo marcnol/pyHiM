@@ -294,9 +294,9 @@ def him_parse_arguments(command_line_arguments):
             run_parameters["rootFolder"] = os.getcwd()
 
     if args.stardist_basename:
-        runParameters["stardist_basename"] = args.stardist_basename
+        run_parameters["stardist_basename"] = args.stardist_basename
     else:
-        runParameters["stardist_basename"] = None
+        run_parameters["stardist_basename"] = None
 
     if args.threads:
         run_parameters["threads"] = int(args.threads)
