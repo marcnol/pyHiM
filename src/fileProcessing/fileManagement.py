@@ -208,7 +208,7 @@ class FileHandling:
 
 
 class Parameters:
-    def __init__(self, root_folder="./", label="", file_name="infoList.json"):
+    def __init__(self, root_folder="./", label="", file_name="infoList.json", stardist_basename = None):
         self.file_name = file_name
         self.label = label
         self.param_file = "infoList_model.json"
@@ -333,6 +333,8 @@ class Parameters:
         self.initialize_standard_parameters()
         self.param_file = root_folder + os.sep + file_name
         self.convert_parameter_file(self.param_file, self.label)
+        if stardist_basename is not None :
+            self.param["segmentedObjects"]["stardist_basename"] = stardist_basename
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 

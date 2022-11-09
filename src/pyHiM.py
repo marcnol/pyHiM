@@ -31,10 +31,10 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 # =============================================================================
 
 
-def main():
+def main(command_line_arguments=None):
     begin_time = datetime.now()
 
-    run_parameters = fc.him_parse_arguments()
+    run_parameters = fc.him_parse_arguments(command_line_arguments)
 
     him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
     him.initialize()
@@ -57,6 +57,7 @@ def main():
             root_folder=run_parameters["rootFolder"],
             label=label,
             file_name="infoList.json",
+            stardist_basename = runParameters["stardist_basename"],
         )
 
         print_log(
