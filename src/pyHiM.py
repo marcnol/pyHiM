@@ -27,10 +27,10 @@ from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
 # MAIN
 # =============================================================================
 
-def main():
+def main(command_line_arguments=None):
     begin_time = datetime.now()
 
-    runParameters=HiM_parseArguments()
+    runParameters=HiM_parseArguments(command_line_arguments)
 
     HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
     HiM.initialize()
@@ -46,7 +46,7 @@ def main():
     for label in labels:#range(len(HiM.labels2Process)):
 
         # sets parameters
-        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json')
+        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json', stardist_basename = runParameters["stardist_basename"])
 
         printLog("--------------------------------------------------------------------------")
         printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))

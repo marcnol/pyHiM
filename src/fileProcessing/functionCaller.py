@@ -268,13 +268,14 @@ def defaultListCommands():
     return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
                 "segmentMasks3D", "segmentSources3D","buildHiMmatrix"]
 
-def HiM_parseArguments():
+def HiM_parseArguments(command_line_arguments):
     parser = argparse.ArgumentParser()
 
     availableCommands=availableListCommands()
     defaultCommands=defaultListCommands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-S", "--stardist_basename", help="Replace all stardist_basename from infoList.json")
     parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
@@ -282,7 +283,7 @@ def HiM_parseArguments():
                         # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
 
     parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
-    args = parser.parse_args()
+    args = parser.parse_args(command_line_arguments)
 
     printLog("\n--------------------------------------------------------------------------")
     runParameters = {}
@@ -295,6 +296,11 @@ def HiM_parseArguments():
         else:
             printLog("\n\n# HiMdata: NOT FOUND")
             runParameters["rootFolder"] = os.getcwd()
+
+    if args.stardist_basename:
+        runParameters["stardist_basename"] = args.stardist_basename
+    else:
+        runParameters["stardist_basename"] = None
 
     if args.threads:
         runParameters["threads"] = int(args.threads)
