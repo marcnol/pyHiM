@@ -51,7 +51,7 @@ def extract_files(root: str):
 
     return files
 
-def compare_npy_files(first_file, second_file):
+def compare_npy_files(first_file, second_file, shuffled_plans=False):
     """Load both files as numpy array and compare them.
 
     Args:
@@ -63,25 +63,30 @@ def compare_npy_files(first_file, second_file):
     """
     first_npy = np.load(first_file)
     second_npy = np.load(second_file)
-    comparison = first_npy == second_npy
     is_same = np.array_equal(first_npy, second_npy, equal_nan=True)
-    if not is_same:
-        print("May be it's just a shuffle, TODO: implement an 'if shuffled_lines:' like compare_ecsv_files()")
-        is_same = np.nansum(first_npy) == np.nansum(second_npy)
+    if not is_same and shuffled_plans:
+        reverse_first = np.swapaxes(first_npy,0,2)
+        reverse_second = np.swapaxes(second_npy,0,2)
+        is_same = True
+        for plan in reverse_first:
+            is_inside = (np.equal(plan,reverse_second) | np.isnan(reverse_second)).all((1,2)).any()
+            is_same = is_same and is_inside
     return is_same
 
-def compare_ecsv_files(first_file, second_file, column_to_remove = None, shuffled_lines = False):
+def compare_ecsv_files(first_file, second_file, columns_to_remove=[], shuffled_lines=False):
     first_ecsv = Table.read(first_file, format="ascii.ecsv")
     second_ecsv = Table.read(second_file, format="ascii.ecsv")
-    if column_to_remove:
-        first_ecsv.remove_column(column_to_remove)
-        second_ecsv.remove_column(column_to_remove)
+
+    for col in columns_to_remove:
+        first_ecsv.remove_column(col)
+        second_ecsv.remove_column(col)
     first_npy = first_ecsv.as_array()
     second_npy = second_ecsv.as_array()
     is_same = True
     if shuffled_lines:
         for line in first_npy:
             if not line in second_npy:
+                print(f"SHUFFLE: At line {line}\n from {first_file}\n\n")
                 is_same = False
                 break
     else:
@@ -89,7 +94,7 @@ def compare_ecsv_files(first_file, second_file, column_to_remove = None, shuffle
         is_same = comparison.all()
     return is_same
 
-def compare_line_by_line(first_file, second_file, shuffled_lines = False):
+def compare_line_by_line(first_file, second_file, shuffled_lines=False):
     with open(first_file) as f1:
         with open(second_file) as f2:
             f1_lines = f1.read().splitlines()
@@ -199,7 +204,7 @@ def test_segment_sources_3d():
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_segmented_objects, filename)
         out_file = os.path.join(out_segmented_objects, filename)
-        assert compare_ecsv_files(tmp_file, out_file,column_to_remove= "Buid", shuffled_lines=True)
+        assert compare_ecsv_files(tmp_file, out_file,columns_to_remove= ["Buid","id"], shuffled_lines=True)
 
 
 def test_build_traces():
@@ -212,7 +217,7 @@ def test_build_traces():
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_builds_pwd_matrix, filename)
         out_file = os.path.join(out_builds_pwd_matrix, filename)
-        assert compare_ecsv_files(tmp_file, out_file, column_to_remove="Trace_ID")
+        assert compare_ecsv_files(tmp_file, out_file, columns_to_remove=["Trace_ID"])
 
 def test_build_matrix():
     """Check build_matrix"""
@@ -225,6 +230,6 @@ def test_build_matrix():
         tmp_file = os.path.join(tmp_builds_pwd_matrix, filename)
         out_file = os.path.join(out_builds_pwd_matrix, filename)
         if extension == "npy":
-            assert compare_npy_files(tmp_file, out_file)
+            assert compare_npy_files(tmp_file, out_file, shuffled_plans=True)
         elif extension == "ecsv":
             assert compare_line_by_line(tmp_file, out_file)
