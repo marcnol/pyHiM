@@ -259,27 +259,22 @@ def default_list_commands():
     ]
 
 
-def him_parse_arguments():
+def him_parse_arguments(command_line_arguments):
     parser = argparse.ArgumentParser()
 
     available_commands = available_list_commands()
     default_commands = default_list_commands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument(
-        "-C",
-        "--cmd",
-        help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
+    parser.add_argument("-S", "--stardist_basename", help="Replace all stardist_basename from infoList.json")
+    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix \
                         optional: [ filter_localizations register_localizations build_traces build_matrix]",
     )
 
-    parser.add_argument(
-        "--threads",
-        help="Number of threads to run in parallel mode. If none, then it will run with one thread.",
-    )
-    args = parser.parse_args()
+    parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
+    args = parser.parse_args(command_line_arguments)
 
     print_log(
         "\n--------------------------------------------------------------------------"
@@ -297,6 +292,11 @@ def him_parse_arguments():
         else:
             print_log("\n\n# him_data: NOT FOUND")
             run_parameters["rootFolder"] = os.getcwd()
+
+    if args.stardist_basename:
+        run_parameters["stardist_basename"] = args.stardist_basename
+    else:
+        run_parameters["stardist_basename"] = None
 
     if args.threads:
         run_parameters["threads"] = int(args.threads)
