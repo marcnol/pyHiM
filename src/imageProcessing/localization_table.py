@@ -130,17 +130,20 @@ class LocalizationTable:
         # initializes variables
         roundness = barcode_map["roundness1"]
         peak = barcode_map["peak"]
+        zcentroid = barcode_map["zcentroid"]
+        flux= barcode_map["flux"]
         mag = barcode_map["mag"]
 
         # plots data
+        p_1 = ax[0].scatter(peak, zcentroid, c=peak, cmap="Reds", alpha=0.5)
         ax[0].set_title("color: peak intensity")
-        ax[0].set_xlabel("flux")
-        ax[0].set_ylabel("sharpness")
+        ax[0].set_ylabel("zcentroid")
+        ax[0].set_xlabel("peak intensity")
 
-        p_2 = ax[1].scatter(roundness, mag, c=peak, cmap="terrain", alpha=0.5)
+        p_2 = ax[1].scatter(roundness, flux, c=peak, cmap="Reds", alpha=0.5)
         ax[1].set_title("color: peak intensity")
         ax[1].set_xlabel("roundness")
-        ax[1].set_ylabel("magnitude")
+        ax[1].set_ylabel("flux")
         fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
 
         # saves figure
