@@ -242,7 +242,7 @@ def set_of_commands():
         "register_localizations",
         "build_traces",
         "build_matrix",
-        "buildHiMmatrix", # DEPRECATED
+        "buildHiMmatrix",   # DEPRECATED
     })
 
 def default_2d_commands():
@@ -317,7 +317,12 @@ def him_parse_arguments(command_line_arguments):
         run_parameters["parallel"] = False
 
     if args.cmd:
-        run_parameters["cmd"] = args.cmd.split(",")
+        if args.cmd == "2D":
+            run_parameters["cmd"] = default_2d_commands()
+        elif args.cmd == "3D":
+            run_parameters["cmd"] = default_3d_commands()
+        else:
+            run_parameters["cmd"] = args.cmd.split(",")
     else:
         run_parameters["cmd"] = default_commands
 
