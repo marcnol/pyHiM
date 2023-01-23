@@ -1,3 +1,6 @@
 [submodule "pyhim-small-dataset"]
 	path = pyhim-small-dataset
 	url = git@github.com:XDevos/pyhim-small-dataset.git
+[submodule "apiFISH"]
+	path = apiFISH
+	url = git@github.com:XDevos/apiFISH.git
