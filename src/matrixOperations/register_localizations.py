@@ -336,7 +336,7 @@ class RegisterLocalizations:
 
     def register_barcode_map_file(self, file):
 
-        if "3D" in file:
+        if "3D" in os.path.basename(file):
             self.ndims = 3
         else:
             self.ndims = 2
