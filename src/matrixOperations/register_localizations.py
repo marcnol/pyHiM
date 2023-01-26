@@ -17,6 +17,7 @@ Remember that global alignments have already been corrected.
 
 import glob
 import os
+import sys
 
 # to remove in a future version
 import warnings
@@ -114,7 +115,6 @@ class RegisterLocalizations:
         n_block_j = "block_j:" + str(zxy_block[2])
 
         # finds the corresponding shift int the dictionary
-
         shifts = [
             self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j][
                 "shift_z"
@@ -191,7 +191,6 @@ class RegisterLocalizations:
                     if self.remove_uncorrected_localizations:
                         # will remove localizations that cannot be corrected
                         zxy_corrected = [np.nan, np.nan, np.nan]
-                        # print(f">>> Removed localization #{i} from barcode: {RTbarcode} to {zxy_corrected}")
                     else:
                         # will keep uncorrected localizations
                         pass
@@ -237,16 +236,16 @@ class RegisterLocalizations:
 
     def _load_local_alignment(self):
         mode = self.current_param.param_dict["alignImages"]["localAlignment"]
-        local_alignment_filename = (
+        self.local_alignment_filename = (
             self.data_folder.output_files["alignImages"].split(".")[0]
             + "_"
             + mode
             + ".dat"
         )
-
-        if os.path.exists(local_alignment_filename):
+        
+        if os.path.exists(self.local_alignment_filename):
             self.alignment_results_table = Table.read(
-                local_alignment_filename, format="ascii.ecsv"
+                self.local_alignment_filename, format="ascii.ecsv"
             )
             self.alignment_results_table_read = True
 
@@ -255,7 +254,7 @@ class RegisterLocalizations:
 
             print_log(
                 "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
-                    local_alignment_filename, mode
+                    self.local_alignment_filename, mode
                 )
             )
             print_log(
@@ -264,7 +263,7 @@ class RegisterLocalizations:
         else:
             print_log(
                 "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-                    local_alignment_filename
+                    self.local_alignment_filename
                 )
             )
             self.alignment_results_table_read = False
@@ -418,14 +417,14 @@ class RegisterLocalizations:
         self.data_folder.create_folders(current_folder, self.current_param)
         print_log("> Processing Folder: {}".format(current_folder))
 
-        # Loads localAlignment if it exists
+        # Loads localAlignment if it exists otherwise it exits with error
         self.load_local_alignment()
 
         if not self.alignment_results_table_read:
             print_log(
-                f"Unable to find aligment table.\nDid you run alignImages3D?\n\n Aborted."
+                "Unable to find aligment table.\nDid you run alignImages3D?\n\n "
             )
-            return
+            sys.exit("ERROR: Expected to find: {}--> Aborting.".format(self.local_alignment_filename))
 
         # iterates over barcode localization tables in the current folder
         files = [
