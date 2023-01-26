@@ -229,8 +229,8 @@ class HiMFunctionCaller:
 # =============================================================================
 
 
-def available_list_commands():
-    return [
+def set_of_commands():
+    return frozenset({
         "makeProjections",
         "appliesRegistrations",
         "alignImages",
@@ -242,38 +242,49 @@ def available_list_commands():
         "register_localizations",
         "build_traces",
         "build_matrix",
-        "buildHiMmatrix",
-    ]
+        "buildHiMmatrix",   # DEPRECATED
+    })
 
-
-def default_list_commands():
-    return [
+def default_2d_commands():
+    return frozenset({
         "makeProjections",
-        "appliesRegistrations",
         "alignImages",
-        "alignImages3D",
+        "appliesRegistrations",
         "segmentMasks",
+        "filter_localizations",
+        "build_traces",
+        "build_matrix",
+    })
+
+def default_3d_commands():
+    return frozenset({
+        "makeProjections",
+        "alignImages",
+        "appliesRegistrations",
+        "alignImages3D",
         "segmentMasks3D",
         "segmentSources3D",
-        "buildHiMmatrix",
-    ]
-
+        "filter_localizations",
+        "register_localizations",
+        "build_traces",
+        "build_matrix",
+    })
 
 def him_parse_arguments(command_line_arguments):
     parser = argparse.ArgumentParser()
 
-    available_commands = available_list_commands()
-    default_commands = default_list_commands()
+    available_commands = set_of_commands()
+    default_commands = default_3d_commands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-S", "--stardist_basename", help="Replace all stardist_basename from infoList.json")
-    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
+    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (without space !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentMasks3D segmentSources3D buildHiMmatrix \
-                        optional: [ filter_localizations register_localizations build_traces build_matrix]",
+                        segmentMasks3D segmentSources3D buildHiMmatrix (DEPRECATED) \
+                        filter_localizations register_localizations build_traces build_matrix",
     )
 
-    parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
+    parser.add_argument("-T", "--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
     args = parser.parse_args(command_line_arguments)
 
     print_log(
@@ -306,7 +317,12 @@ def him_parse_arguments(command_line_arguments):
         run_parameters["parallel"] = False
 
     if args.cmd:
-        run_parameters["cmd"] = args.cmd.split(",")
+        if args.cmd == "2D":
+            run_parameters["cmd"] = default_2d_commands()
+        elif args.cmd == "3D":
+            run_parameters["cmd"] = default_3d_commands()
+        else:
+            run_parameters["cmd"] = args.cmd.split(",")
     else:
         run_parameters["cmd"] = default_commands
 

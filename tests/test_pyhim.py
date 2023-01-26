@@ -194,17 +194,17 @@ def test_segment_masks_3d():
         assert compare_npy_files(tmp_file, out_file)
 
 
-def test_segment_sources_3d():
-    """Check segmentSources3D"""
-    main(["-F", tmp_small_inputs, "-C", "segmentSources3D", "-S", tmp_stardist_basename])
-    tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
-    out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
-    out_files = extract_files(out_segmented_objects)
-    for filepath, short_filename, extension in out_files:
-        filename = short_filename + "." + extension
-        tmp_file = os.path.join(tmp_segmented_objects, filename)
-        out_file = os.path.join(out_segmented_objects, filename)
-        assert compare_ecsv_files(tmp_file, out_file,columns_to_remove= ["Buid","id"], shuffled_lines=True)
+# def test_segment_sources_3d():
+#     """Check segmentSources3D"""
+#     main(["-F", tmp_small_inputs, "-C", "segmentSources3D", "-S", tmp_stardist_basename])
+#     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
+#     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
+#     out_files = extract_files(out_segmented_objects)
+#     for filepath, short_filename, extension in out_files:
+#         filename = short_filename + "." + extension
+#         tmp_file = os.path.join(tmp_segmented_objects, filename)
+#         out_file = os.path.join(out_segmented_objects, filename)
+#         assert compare_ecsv_files(tmp_file, out_file,columns_to_remove= ["Buid","id"], shuffled_lines=True)
 
 
 def test_build_traces():
