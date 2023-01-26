@@ -6,9 +6,9 @@ Created on Thu Jan 26 21:04:10 2023
 @author: marcnol
 
 script to compare PWD matrices from two experiments
-- pearson correlation in ensemble
-- map barcodes to allow for experiments with different barcode combinations
-- same but single cell
+*- pearson correlation in ensemble *
+- make sure to map barcodes to allow for experiments with different barcode combinations [TODO]
+- same but single cell [TODO]
 
 
 """
