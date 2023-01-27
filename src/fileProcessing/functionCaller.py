@@ -260,7 +260,6 @@ def default_3d_commands():
     return frozenset({
         "makeProjections",
         "alignImages",
-        "appliesRegistrations",
         "alignImages3D",
         "segmentMasks3D",
         "segmentSources3D",
