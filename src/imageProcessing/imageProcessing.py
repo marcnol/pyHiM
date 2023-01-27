@@ -31,7 +31,6 @@ from numpy import linalg as LA
 from photutils import Background2D, MedianBackground, deblend_sources, detect_sources
 from scipy import ndimage as ndi
 from scipy.ndimage import shift as shift_image
-from scipy.stats import sigmaclip
 from skimage import color, exposure, io, measure
 from skimage.feature import peak_local_max
 from skimage.metrics import mean_squared_error, normalized_root_mse
@@ -46,6 +45,8 @@ from tqdm import tqdm, trange
 from stardist import random_label_cmap
 
 from fileProcessing.fileManagement import print_log, try_get_client
+
+from apifish.stack import projection
 
 warnings.filterwarnings("ignore")
 
@@ -247,65 +248,7 @@ class Image:
 # =============================================================================
 
 
-def fit_1d_gaussian_scipy(x, y, title="", verbose=False):
-    """
-    Fits a function using a 1D Gaussian and returns parameters if successfull.
-    Otherwise will return an empty dict
-    Uses scipy spo package
 
-    Parameters
-    ----------
-    x : numpy 1D array
-        x data.
-    y : numpy 1D array
-        y data.
-    title : str, optional
-        figure title. The default is ''.
-    verbose : Boolean, optional
-        whether fig and results will be shown. The default is True.
-
-    Returns
-    -------
-    {}
-        dictionary with fitting parameters.
-    fig
-        matplotlib figure for saving
-
-    """
-    fit_result = {}
-
-    try:
-        fitgauss = spo.curve_fit(gaussian, x, y)
-        fit_result["gauss1d.pos"] = fitgauss[0][1]
-        fit_result["gauss1d.ampl"] = fitgauss[0][0]
-        fit_result["gauss1d.fwhm"] = 2.355 * fitgauss[0][2]
-    except RuntimeError:
-        return {}, []
-    except ValueError:
-        fit_result["gauss1d.pos"] = np.mean(x)
-        fit_result["gauss1d.ampl"] = 0.0
-        fit_result["gauss1d.fwhm"] = 0.0
-        print_log("Warning: returned middle plane!")
-        return fit_result, []
-
-    if verbose:
-        fig = plt.figure()
-        ax = fig.add_subplot(1, 1, 1)
-
-        print_log("<<Fitting successful>>")
-
-        ax.plot(x, y, "ko", label="data")
-        ax.plot(
-            x,
-            gaussian(x, fitgauss[0][0], fitgauss[0][1], fitgauss[0][2]),
-            linewidth=2,
-            label="gaussian fit",
-        )
-        ax.legend(loc=2)
-        ax.set_title(title)
-        return fit_result, fig
-
-    return fit_result, []
 
 
 def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
@@ -351,18 +294,16 @@ def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
 
 
 def project_image_2d(img, z_range, mode):
-
     # sums images
     image_size = img.shape
     i_collapsed = np.zeros((image_size[1], image_size[2]))
 
     if "MIP" in mode:
         # Max projection of selected planes
-        i_collapsed = np.max(img[z_range[1][0] : z_range[1][-1]], axis=0)
+        i_collapsed = projection.maximum_projection(img[z_range[1][0] : z_range[1][-1]])
     elif "sum" in mode:
         # Sums selected planes
-        for i in z_range[1]:
-            i_collapsed += img[i]
+        i_collapsed = projection.sum_projection(img[z_range[1][0] : z_range[1][-1]])
     else:
         print_log(
             "ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode)
@@ -1257,175 +1198,6 @@ def align_images_by_blocks(
 # FOCAL PLANE INTERPOLATION
 # =============================================================================
 
-
-def focal_plane(data, threshold_fwhm=20, verbose=False):
-    """
-    This function will find the focal plane of a 3D image
-    - calculates the laplacian variance of the image for each z plane
-    - fits 1D gaussian profile on the laplacian variance
-    - to get the maximum (focal plane) and the full width at half maximum
-    - it returns nan if the fwhm > threshold_fwhm (means fit did not converge)
-    - threshold_fwhm should represend the width of the laplacian variance curve
-    - which is often 5-10 planes depending on sample.
-
-    Parameters
-    ----------
-    data : numpy array
-        input 3D image ZYX.
-    threshold_fwhm : float, optional
-        threshold fwhm used to remove outliers. The default is 20.
-
-    Returns
-    -------
-    focal_plane : float
-        focal plane: max of fitted z-profile.
-    fwhm : float
-        full width hald maximum of fitted z-profile.
-
-    """
-    # finds focal plane
-    raw_images = [data[i, :, :] for i in range(data.shape[0])]
-    laplacian_variance = [cv2.Laplacian(img, cv2.CV_64F).var() for img in raw_images]
-    laplacian_variance = laplacian_variance / max(laplacian_variance)
-    x_coord = range(len(laplacian_variance))
-    fit_result, _ = fit_1d_gaussian_scipy(
-        x_coord,
-        laplacian_variance,
-        title="laplacian variance z-profile",
-        verbose=verbose,
-    )
-
-    if len(fit_result) > 0:
-        focal_plane = fit_result["gauss1d.pos"]
-        fwhm = fit_result["gauss1d.fwhm"]
-
-        if fwhm > threshold_fwhm:
-            fwhm, focal_plane = np.nan, np.nan
-    else:
-        fwhm, focal_plane = np.nan, np.nan
-
-    if verbose:
-        print_log("Focal plane found: {} with fwhm: {}".format(focal_plane, fwhm))
-
-    return focal_plane, fwhm
-
-
-def calculate_focus_per_block(data, block_size_xy=128):
-    """
-    Calculates the most likely focal plane of an image by breaking into blocks and calculating
-    the focal plane in each block
-
-    - breaks image into blocks
-    - returns the focal plane + fwhm for each block
-
-    Parameters
-    ----------
-    data : TYPE
-        DESCRIPTION.
-    block_size_xy : TYPE, optional
-        DESCRIPTION. The default is 512.
-
-    Returns
-    -------
-    focal_plane_matrix: np array
-        matrix containing the maximum of the laplacian variance per block
-    fwhm: np array
-        matrix containing the fwhm of the laplacian variance per block
-    block: np array
-        3D block reconstruction of matrix
-
-    """
-    n_planes = data.shape[0]
-
-    block_size = (n_planes, block_size_xy, block_size_xy)
-
-    block = view_as_blocks(data, block_size).squeeze()
-    focal_plane_matrix = np.zeros(block.shape[0:2])
-    fwhm = np.zeros(block.shape[0:2])
-
-    fwhm = {}
-
-    for i in trange(block.shape[0]):
-        # fwhm[str(i)] = {}
-        for j in range(block.shape[1]):
-            focal_plane_matrix[i, j], fwhm[i, j] = focal_plane(block[i, j])
-
-    return focal_plane_matrix, fwhm, block
-
-
-# Program to find most frequent
-# element in a list
-def most_frequent(elt_list):
-    return max(set(elt_list), key=elt_list.count)
-
-
-def reassemble_images(focal_plane_matrix, block, window=0):
-    """
-    Makes 2D image from 3D stack by reassembling sub-blocks
-    For each sub-block we know the optimal focal plane, which is
-    selected for the assembly of the while image
-
-    Parameters
-    ----------
-    focal_plane_matrix : numpy 2D array
-        matrix containing the focal plane selected for each block.
-    block : numpy matrix
-        original 3D image sorted by blocks.
-
-    Returns
-    -------
-    output : numpy 2D array
-        output 2D projection
-
-    """
-    # gets image size from block image
-    number_blocks = block.shape[0]
-    block_size_xy = block.shape[3]
-    im_size = number_blocks * block_size_xy
-
-    # gets ranges for slicing
-    slice_coordinates = [
-        range(x * block_size_xy, (x + 1) * block_size_xy) for x in range(number_blocks)
-    ]
-
-    # creates output image
-    output = np.zeros((im_size, im_size))
-
-    # gets more common plane
-    focal_planes = []
-    for i, i_slice in enumerate(slice_coordinates):
-        for j, j_slice in enumerate(slice_coordinates):
-            focal_planes.append(int(focal_plane_matrix[i, j]))
-    most_common_focal_plane = most_frequent(focal_planes)
-
-    # reassembles image
-    if window == 0:
-        # takes one plane block
-        for i, i_slice in enumerate(slice_coordinates):
-            for j, j_slice in enumerate(slice_coordinates):
-                focus = int(focal_plane_matrix[i, j])
-                if np.abs(focus - most_common_focal_plane) > 1:
-                    focus = int(most_common_focal_plane)
-                output[
-                    i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1
-                ] = block[i, j][focus, :, :]
-    else:
-        # takes neighboring planes by projecting
-        for i, i_slice in enumerate(slice_coordinates):
-            for j, j_slice in enumerate(slice_coordinates):
-                focus = int(focal_plane_matrix[i, j])
-                if np.abs(focus - most_common_focal_plane) > 1:
-                    focus = int(most_common_focal_plane)
-                zmin = np.max((0, focus - round(window / 2)))
-                zmax = np.min((block[i, j].shape[0], focus + round(window / 2)))
-                z_range = (focus, range(zmin, zmax))
-                output[
-                    i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1
-                ] = project_image_2d(block[i, j][:, :, :], z_range, "MIP")
-
-    return output
-
-
 def reinterpolate_focal_plane(data, param_dict):
 
     if "blockSize" in param_dict["zProject"]:
@@ -1438,65 +1210,14 @@ def reinterpolate_focal_plane(data, param_dict):
     else:
         window = 0
 
-    focal_plane_matrix, z_range, block = _reinterpolate_focal_plane(
+    focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
         data, block_size_xy=block_size_xy, window=window
     )
 
     # reassembles image
-    output = reassemble_images(focal_plane_matrix, block, window=window)
+    output = projection.reassemble_images(focal_plane_matrix, block, window=window)
 
     return output, focal_plane_matrix, z_range
-
-
-def _reinterpolate_focal_plane(data, block_size_xy=256, window=10):
-    """
-    Reinterpolates the focal plane of a 3D image by breking it into blocks
-    - Calculates the focal_plane and fwhm matrices by block
-    - removes outliers
-    - calculates the focal plane for each block using sigmaClip statistics
-    - returns a tuple with focal plane and the range to use
-
-    Parameters
-    ----------
-    data : numpy array
-        input 3D image.
-    block_size_xy : int
-        size of blocks in XY, typically 256.
-    window : int, optional
-        number of planes before and after the focal plane to construct the z_range. The default is 0.
-
-    Returns
-    -------
-    focal_plane_matrix : numpy array
-        focal plane matrix.
-    z_range : tuple
-        focus_plane, z_range.
-    block : numpy array
-        block representation of 3D image.
-
-    """
-    print_log("> Reducing 3D image size by slicing around focal plane")
-    # breaks into subplanes, iterates over them and calculates the focal_plane in each subplane.
-
-    focal_plane_matrix, _, block = calculate_focus_per_block(
-        data, block_size_xy=block_size_xy
-    )
-
-    focal_planes_to_process = focal_plane_matrix[~np.isnan(focal_plane_matrix)]
-
-    focal_plane, _, _ = sigmaclip(focal_planes_to_process, high=3, low=3)
-    focus_plane = np.mean(focal_plane)
-    if np.isnan(focus_plane):
-        print_log("# focus_plane detection failed. Using full stack.")
-        focus_plane = data.shape[0] // 2
-        z_range = focus_plane, range(0, data.shape[0])
-    else:
-        focus_plane = np.mean(focal_plane).astype("int64")
-        zmin = np.max([focus_plane - window, 0])
-        zmax = np.min([focus_plane + window, data.shape[0]])
-        z_range = focus_plane, range(zmin, zmax)
-
-    return focal_plane_matrix, z_range, block
 
 
 def _remove_z_planes(image_3d, z_range):
