@@ -9,7 +9,7 @@ Created on Mon Feb  7 16:45:44 2022
 # IMPORTS
 # =============================================================================
 
-import glob
+import glob, os
 
 # to remove in a future version
 import warnings
@@ -226,7 +226,7 @@ class FilterLocalizations:
 
                 for file in files:
 
-                    if "3D" in file:
+                    if "3D" in os.path.basename(file):
                         self.ndims = 3
                     else:
                         self.ndims = 2

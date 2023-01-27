@@ -17,6 +17,7 @@ Remember that global alignments have already been corrected.
 
 import glob
 import os
+import sys
 
 # to remove in a future version
 import warnings
@@ -44,6 +45,11 @@ class RegisterLocalizations:
         self.current_param = param
         self.alignment_results_table_read = False
         self.found_match = []
+        self.local_alignment_filename = None
+        self.alignment_results_table = None
+        self.dict_error_block_masks = None
+        self.ndims = None
+        self.data_folder = None
 
         if "toleranceDrift" in self.current_param.param_dict["buildsPWDmatrix"]:
             self.tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
@@ -75,8 +81,8 @@ class RegisterLocalizations:
         if self.alignment_results_table_read:
             return self.search_local_shift_block_3d(roi, barcode, zxy_uncorrected)
         else:  # no correction was applied because the localAlignmentTable was not found
-            return zxy_uncorrected, {"below_tolerance": False}
             print("ERROR> did not found alignment_results_table")
+            return zxy_uncorrected, {"below_tolerance": False}
 
     def search_local_shift_block_3d(self, roi, barcode, zxy_uncorrected):
         """
@@ -114,7 +120,6 @@ class RegisterLocalizations:
         n_block_j = "block_j:" + str(zxy_block[2])
 
         # finds the corresponding shift int the dictionary
-
         shifts = [
             self.dict_error_block_masks[n_roi][n_barcode][n_block_i][n_block_j][
                 "shift_z"
@@ -160,7 +165,6 @@ class RegisterLocalizations:
             f"\n$ Parameters:\n Blocksize = {block_size}\n Tolerance = {self.tolerance_drift}\n Reference barcode = {reference_fiducial}"
         )
 
-        n_barcodes_roi = [], [], 0
         list_uncorrected_barcodes = []
 
         # loops over barcode Table rows in a given roi
@@ -191,11 +195,10 @@ class RegisterLocalizations:
                     if self.remove_uncorrected_localizations:
                         # will remove localizations that cannot be corrected
                         zxy_corrected = [np.nan, np.nan, np.nan]
-                        # print(f">>> Removed localization #{i} from barcode: {RTbarcode} to {zxy_corrected}")
                     else:
                         # will keep uncorrected localizations
                         pass
-                    
+
             else:
                 # if it is the reference cycle, then it does not correct coordinates
                 zxy_corrected = zxy_uncorrected
@@ -237,16 +240,16 @@ class RegisterLocalizations:
 
     def _load_local_alignment(self):
         mode = self.current_param.param_dict["alignImages"]["localAlignment"]
-        local_alignment_filename = (
+        self.local_alignment_filename = (
             self.data_folder.output_files["alignImages"].split(".")[0]
             + "_"
             + mode
             + ".dat"
         )
 
-        if os.path.exists(local_alignment_filename):
+        if os.path.exists(self.local_alignment_filename):
             self.alignment_results_table = Table.read(
-                local_alignment_filename, format="ascii.ecsv"
+                self.local_alignment_filename, format="ascii.ecsv"
             )
             self.alignment_results_table_read = True
 
@@ -255,7 +258,7 @@ class RegisterLocalizations:
 
             print_log(
                 "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
-                    local_alignment_filename, mode
+                    self.local_alignment_filename, mode
                 )
             )
             print_log(
@@ -264,7 +267,7 @@ class RegisterLocalizations:
         else:
             print_log(
                 "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-                    local_alignment_filename
+                    self.local_alignment_filename
                 )
             )
             self.alignment_results_table_read = False
@@ -296,9 +299,6 @@ class RegisterLocalizations:
         else:
             alignment_results_table = self.alignment_results_table
 
-        # gets block_size
-        block_size_xy = alignment_results_table[0]["blockXY"]
-
         dict_error_block_masks = {}
 
         for row in alignment_results_table:
@@ -307,7 +307,7 @@ class RegisterLocalizations:
             n_block_i = "block_i:" + str(row["block_i"])
             n_block_j = "block_j:" + str(row["block_j"])
 
-            if n_roi not in dict_error_block_masks.keys():
+            if n_roi not in dict_error_block_masks:
                 dict_error_block_masks[n_roi] = {}
 
             if n_barcode not in dict_error_block_masks[n_roi].keys():
@@ -336,14 +336,14 @@ class RegisterLocalizations:
 
     def register_barcode_map_file(self, file):
 
-        if "3D" in file:
+        if "3D" in os.path.basename(file):
             self.ndims = 3
         else:
             self.ndims = 2
 
         # loads barcode coordinate Tables
         table = LocalizationTable()
-        barcode_map_full, unique_barcodes = table.load(file)
+        barcode_map_full, _ = table.load(file) # barcode_map_full, unique_barcodes = table.load(file)
 
         # checks that everything is OK
         if len(barcode_map_full) < 1:
@@ -418,25 +418,17 @@ class RegisterLocalizations:
         self.data_folder.create_folders(current_folder, self.current_param)
         print_log("> Processing Folder: {}".format(current_folder))
 
-        # Loads localAlignment if it exists
+        # Loads localAlignment if it exists otherwise it exits with error
         self.load_local_alignment()
 
         if not self.alignment_results_table_read:
             print_log(
-                f"Unable to find aligment table.\nDid you run alignImages3D?\n\n Aborted."
+                "Unable to find aligment table.\nDid you run alignImages3D?\n\n "
             )
-            return
+            sys.exit("ERROR: Expected to find: {}--> Aborting.".format(self.local_alignment_filename))
 
         # iterates over barcode localization tables in the current folder
-        files = [
-            x
-            for x in glob.glob(
-                self.data_folder.output_files["segmentedObjects"]
-                + "_*"
-                + label
-                + ".dat"
-            )
-        ]
+        files = list(glob.glob(self.data_folder.output_files["segmentedObjects"]+"_*"+label+".dat"))
 
         if len(files) < 1:
             print_log("No localization table found to process!")
