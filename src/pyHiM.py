@@ -13,6 +13,8 @@ This file contains routines to process Hi-M datasets
 # =============================================================================
 
 import os
+import sys
+import apifish
 
 # to remove in a future version
 import warnings
@@ -138,4 +140,7 @@ def main(command_line_arguments=None):
 
 
 if __name__ == "__main__":
-    main()
+    if apifish.__version__ < "0.6.4" :
+        sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
+    else:
+        main()
