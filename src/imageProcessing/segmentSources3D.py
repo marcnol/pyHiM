@@ -53,7 +53,6 @@ from fileProcessing.fileManagement import (
 )
 from imageProcessing.imageProcessing import (
     _plot_image_3d,
-    _reinterpolate_focal_plane,
     _segment_3d_volumes_by_thresholding,
     _segment_3d_volumes_stardist,
     apply_xy_shift_3d_images,
@@ -61,6 +60,8 @@ from imageProcessing.imageProcessing import (
     preprocess_3d_image,
     reinterpolate_z,
 )
+from apifish.stack import projection
+
 
 # =============================================================================
 # CLASSES
@@ -283,7 +284,7 @@ class SegmentSources3D:
 
         # restricts analysis to a sub volume containing sources
         if p["reducePlanes"]:
-            _, z_range, _ = _reinterpolate_focal_plane(
+            _, z_range, _ = projection.reinterpolate_focal_plane(
                 image_3d_0, block_size_xy=p["blockSizeXY"], window=p["zWindow"]
             )
             z_offset = z_range[1][0]
