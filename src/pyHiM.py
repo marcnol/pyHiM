@@ -140,7 +140,7 @@ def main(command_line_arguments=None):
 
 
 if __name__ == "__main__":
-    if apifish.__version__ < "0.6.4" :
+    if apifish.__version__ < "0.6.4dev" :
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
     else:
         main()
