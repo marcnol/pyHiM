@@ -131,8 +131,9 @@ def test_make_projections():
     """Check makeProjections"""
     main(["-F", tmp_small_inputs, "-C", "makeProjections", "-S", tmp_stardist_basename])
     tmp_z_project = os.path.join(tmp_small_inputs, "zProject")
-    out_z_project = "pyhim-small-dataset/resources/small_dataset/OUT/zProject/"
+    out_z_project = "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/"
     out_files = extract_files(out_z_project)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_z_project, filename)
@@ -145,6 +146,7 @@ def test_align_images():
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/"
     out_files = extract_files(out_align_images)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         if extension:
             filename = short_filename + "." + extension
@@ -157,12 +159,14 @@ def test_align_images():
         else:
             assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
+
 def test_applies_registrations():
     """Check appliesRegistrations"""
     main(["-F", tmp_small_inputs, "-C", "appliesRegistrations", "-S", tmp_stardist_basename])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/"
     out_files = extract_files(out_align_images)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_align_images, filename)
@@ -175,6 +179,7 @@ def test_align_images_3d():
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/"
     out_files = extract_files(out_align_images)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_align_images, filename)
@@ -187,6 +192,7 @@ def test_segment_masks_3d():
     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/"
     out_files = extract_files(out_segmented_objects)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_segmented_objects, filename)
@@ -200,6 +206,7 @@ def test_segment_masks_3d():
 #     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
 #     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
 #     out_files = extract_files(out_segmented_objects)
+#     assert len(out_files) > 0
 #     for filepath, short_filename, extension in out_files:
 #         filename = short_filename + "." + extension
 #         tmp_file = os.path.join(tmp_segmented_objects, filename)
@@ -213,6 +220,7 @@ def test_build_traces():
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
     out_builds_pwd_matrix = "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/"
     out_files = extract_files(out_builds_pwd_matrix)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_builds_pwd_matrix, filename)
@@ -225,6 +233,7 @@ def test_build_matrix():
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
     out_builds_pwd_matrix = "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/"
     out_files = extract_files(out_builds_pwd_matrix)
+    assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_builds_pwd_matrix, filename)

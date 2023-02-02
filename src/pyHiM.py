@@ -8,6 +8,9 @@ Created on Sat Apr  4 09:11:01 2020
 This file contains routines to process Hi-M datasets
 
 """
+
+__version__ = "0.7.1"
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -26,6 +29,7 @@ import fileProcessing.functionCaller as fc
 warnings.filterwarnings("ignore")
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 
 
 # =============================================================================

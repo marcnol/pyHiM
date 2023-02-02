@@ -295,15 +295,14 @@ def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
 
 def project_image_2d(img, z_range, mode):
     # sums images
-    image_size = img.shape
-    i_collapsed = np.zeros((image_size[1], image_size[2]))
+    i_collapsed = None
 
     if "MIP" in mode:
         # Max projection of selected planes
         i_collapsed = projection.maximum_projection(img[z_range[1][0] : z_range[1][-1]])
     elif "sum" in mode:
         # Sums selected planes
-        i_collapsed = projection.sum_projection(img[z_range[1][0] : z_range[1][-1]])
+        i_collapsed = projection.sum_projection(img[z_range[1][0] : (z_range[1][-1] + 1)])
     else:
         print_log(
             "ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode)
