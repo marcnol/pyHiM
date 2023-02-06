@@ -272,22 +272,34 @@ class SegmentMasks3D:
         print_log("$ Number of masks detected: {}".format(number_masks))
 
         if number_masks > 0:
-            output_extension = "_3Dmasks"
+            output_extension = {"2D":"_Masks","3D":"_3Dmasks"}          
             npy_labeled_image_filename = (
                 self.data_folder.output_folders["segmentedObjects"]
                 + os.sep
                 + os.path.basename(filename_to_process)
             )
-            npy_labeled_image_filename = (
+            npy_labeled_image_filename_2D = (
                 npy_labeled_image_filename.split(".")[0]
                 + "."
-                + output_extension
+                + output_extension['2D']
+                + ".npy"
+            )
+            npy_labeled_image_filename_3D = (
+                npy_labeled_image_filename.split(".")[0]
+                + "."
+                + output_extension['3D']
                 + ".npy"
             )
             print_log(
-                " > Saving output labeled image: {}".format(npy_labeled_image_filename)
+                " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(npy_labeled_image_filename_2D,npy_labeled_image_filename_3D)
             )
-            np.save(npy_labeled_image_filename, segmented_image_3d)
+
+            # saves 2D image
+            np.save(npy_labeled_image_filename_3D, segmented_image_3d)
+
+            # saves 2D image
+            segmented_image_2d = np.max(segmented_image_3d, axis=0)
+            np.save(npy_labeled_image_filename_2D, segmented_image_2d)
 
             # represents image in 3D with localizations
             print_log("> plotting outputs...")
