@@ -346,7 +346,7 @@ class SegmentSources3D:
 ##################################################### DEBUG #####################################################
 ##################################################### DEBUG #####################################################
 ##################################################### DEBUG #####################################################
-        np.save(self.data_folder.output_folders["segmentedObjects"] + os.sep + filename_to_process + "_segmented_3D_volumes", segmented_image_3d)
+        np.save(self.data_folder.output_folders["segmentedObjects"] + os.sep + os.path.basename(filename_to_process) + "_segmented_3D_volumes", segmented_image_3d)
 
         # gets centroids and converts to spot int64 NPY array
         (
@@ -410,7 +410,7 @@ class SegmentSources3D:
                 mag[i],
             ]
             raw_output.add_row(table_entry)
-        raw_output.write(self.data_folder.output_folders["segmentedObjects"] + os.sep + "DEBUG" + filename_to_process + "DEBUG", format="ascii.ecsv")
+        raw_output.write(self.data_folder.output_folders["segmentedObjects"] + os.sep + "DEBUG" + os.path.basename(filename_to_process) + "DEBUG", format="ascii.ecsv")
 ##################################################### DEBUG #####################################################
 ##################################################### DEBUG #####################################################
 ##################################################### DEBUG #####################################################
