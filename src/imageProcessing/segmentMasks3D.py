@@ -294,7 +294,7 @@ class SegmentMasks3D:
                 " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(npy_labeled_image_filename_2D,npy_labeled_image_filename_3D)
             )
 
-            # saves 2D image
+            # saves 3D image
             np.save(npy_labeled_image_filename_3D, segmented_image_3d)
 
             # saves 2D image
@@ -308,7 +308,7 @@ class SegmentMasks3D:
             figures.append(
                 [
                     self.plot_image_3d(image_3d_aligned, segmented_image_3d,),
-                    output_extension + ".png",
+                    output_extension['3D'] + ".png",
                 ]
             )
 
