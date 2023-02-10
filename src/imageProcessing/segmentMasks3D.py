@@ -182,27 +182,6 @@ class SegmentMasks3D:
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
         self.p["windowDisplay"] = 10
 
-    def plot_image_3d(self, image_3d, masks, normalize=False):
-        """
-        makes list with XY, XZ and ZY projections and sends for plotting
-
-        Parameters
-        ----------
-        image_3d : numpy array
-            image in 3D.
-        localizations : list
-            list of localizations to overlay onto 3D image. The default is None.
-
-        Returns
-        -------
-        figure handle
-
-        """
-
-        fig1 = plot_raw_images_and_labels(image_3d, masks)
-
-        return fig1
-
     def _segment_3d_volumes(self, image_3d_aligned):
         p = self.p
 
@@ -272,22 +251,34 @@ class SegmentMasks3D:
         print_log("$ Number of masks detected: {}".format(number_masks))
 
         if number_masks > 0:
-            output_extension = "_3Dmasks"
+            output_extension = {"2D":"_Masks","3D":"_3Dmasks"}          
             npy_labeled_image_filename = (
                 self.data_folder.output_folders["segmentedObjects"]
                 + os.sep
                 + os.path.basename(filename_to_process)
             )
-            npy_labeled_image_filename = (
+            npy_labeled_image_filename_2d = (
                 npy_labeled_image_filename.split(".")[0]
                 + "."
-                + output_extension
+                + output_extension['2D']
+                + ".npy"
+            )
+            npy_labeled_image_filename_3d = (
+                npy_labeled_image_filename.split(".")[0]
+                + "."
+                + output_extension['3D']
                 + ".npy"
             )
             print_log(
-                " > Saving output labeled image: {}".format(npy_labeled_image_filename)
+                " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(npy_labeled_image_filename_2d,npy_labeled_image_filename_3d)
             )
-            np.save(npy_labeled_image_filename, segmented_image_3d)
+
+            # saves 3D image
+            np.save(npy_labeled_image_filename_3d, segmented_image_3d)
+
+            # saves 2D image
+            segmented_image_2d = np.max(segmented_image_3d, axis=0)
+            np.save(npy_labeled_image_filename_2d, segmented_image_2d)
 
             # represents image in 3D with localizations
             print_log("> plotting outputs...")
@@ -295,8 +286,8 @@ class SegmentMasks3D:
             figures = []
             figures.append(
                 [
-                    self.plot_image_3d(image_3d_aligned, segmented_image_3d,),
-                    output_extension + ".png",
+                    plot_image_3d(image_3d_aligned, segmented_image_3d),
+                    output_extension['3D'] + ".png",
                 ]
             )
 
@@ -454,6 +445,27 @@ class SegmentMasks3D:
 # FUNCTIONS
 # =============================================================================
 
+
+def plot_image_3d(image_3d, masks):
+    """
+    makes list with XY, XZ and ZY projections and sends for plotting
+
+    Parameters
+    ----------
+    image_3d : numpy array
+        image in 3D.
+    localizations : list
+        list of localizations to overlay onto 3D image. The default is None.
+
+    Returns
+    -------
+    figure handle
+
+    """
+
+    fig1 = plot_raw_images_and_labels(image_3d, masks)
+
+    return fig1
 
 def get_mask_properties(
     segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000
