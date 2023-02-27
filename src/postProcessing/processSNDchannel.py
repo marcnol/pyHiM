@@ -163,7 +163,7 @@ def processesUserMasks(current_param, current_log, processingList):
 
                     # [assigns cells to exsting masks]
                     resultsTable = assignsSNDmask2Cells(
-                        files_to_process, position_roi_information
+                        files_to_process, position_roi_information, current_log
                     )
                     allresultsTable = vstack([allresultsTable, resultsTable])
 
@@ -245,7 +245,7 @@ def processesUserMasks(current_param, current_log, processingList):
         return 0
 
 
-def assignsSNDmask2Cells(files_to_process, position_roi_information):
+def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log):
     resultsTable = Table()
 
     numberFilesProcessed = 0
