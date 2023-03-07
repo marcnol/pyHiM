@@ -1,0 +1,10 @@
+name: napari-projection
+display_name: projection
+contributions:
+  commands:
+    - id: napari-projection.make_projection
+      python_name: napari_projection._widget:do_projection
+      title: Make projection
+  widgets:
+    - command: napari-projection.make_projection
+      display_name: Projection
