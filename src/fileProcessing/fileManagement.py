@@ -277,7 +277,7 @@ class Parameters:
                         "contact": "coolwarm",
                         "Nmatrix": "Blues",
                     },  # colormaps used for plotting matrices
-                    "toleranceDrift": 1,  # tolerance used for block drift correction, in px
+                    "toleranceDrift": [3,1,1],  # zxy tolerance used for block drift correction, in px
                     "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.
                 },
                 "segmentedObjects": {
