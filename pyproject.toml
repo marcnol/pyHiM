@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.7.0"
+version = "0.7.1"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -30,14 +30,14 @@ dependencies = ["apifish",
                 "astropy >= 4.3.1",
                 "csbdeep >= 0.6.3",
                 "dask[distributed] >= 2021.10.0",
-                "matplotlib >= 3.5.1",
+                "matplotlib == 3.5.1",
                 "numba >= 0.54.1",
                 "numpy >= 1.19.5",
                 "opencv-python >= 4.5.3.56",
                 "photutils == 1.1.0",
                 "pympler >= 1.0.1",
                 "roipoly >= 0.5.3",
-                "scikit-image >= 0.19.2",
+                "scikit-image == 0.19.2",
                 "scikit-learn >= 1.1.1",
                 "scipy >= 1.7.3",
                 "stardist >= 0.7.3",
@@ -51,7 +51,6 @@ Homepage = "https://github.com/marcnol/pyHiM"
 
 [project.scripts]
 pyhim = "pyHiM:main"
-train_stardist = "trainStarDist:main"
 change_rt_infolist = "fileProcessing.changeRT_infoList:main"
 clean_him_run = "fileProcessing.cleanHiM_run:main"
 lndir = "fileProcessing.lndir:main"

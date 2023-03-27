@@ -166,20 +166,18 @@ class RegisterLocalizations:
 
             if RTbarcode not in self.param.param["alignImages"]["referenceFiducial"]:
                 zxy_corrected, quality_correction = self.searchLocalShift(ROI, barcode, zxy_uncorrected)
+                if not quality_correction['below_tolerance']:
+                    list_uncorrected_barcodes.append(i) 
+                    if self.remove_uncorrected_localizations:
+                        # will remove localizations that cannot be corrected
+                        zxy_corrected = [np.nan, np.nan, np.nan]
+                        # print(f">>> Removed localization #{i} from barcode: {RTbarcode} to {zxy_corrected}")
+                    else:
+                        # will keep uncorrected localizations
+                        pass
             else:
                 # if it is the reference cycle, then it does not correct coordinates
                 zxy_corrected = zxy_uncorrected
-
-            if not quality_correction['below_tolerance']:
-                list_uncorrected_barcodes.append(i) 
-
-                if self.remove_uncorrected_localizations:
-                    # will remove localizations that cannot be corrected
-                    zxy_corrected = [np.nan, np.nan, np.nan]
-                    # print(f">>> Removed localization #{i} from barcode: {RTbarcode} to {zxy_corrected}")
-                else:
-                    # will keep uncorrected localizations
-                    pass
                 
             # rewrites corrected XYZ values to Table
             # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
