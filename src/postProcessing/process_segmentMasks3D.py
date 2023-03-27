@@ -63,7 +63,7 @@ def parse_arguments():
 
     return files
 
-def _main():
+def main():
 
     begin_time = datetime.now()
 
@@ -87,4 +87,4 @@ def _main():
 # =============================================================================
 
 if __name__ == "__main__":
-    _main()
+    main()
