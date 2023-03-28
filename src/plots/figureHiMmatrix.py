@@ -98,7 +98,6 @@ def parse_arguments():
         help="Scaling parameter. Dafault: 1",
     )
 
-
     args = parser.parse_args()
 
     run_parameters = {}
@@ -142,6 +141,10 @@ def parse_arguments():
     else:
         run_parameters["axisLabel"] = False
 
+    if args.scalingParameter:
+        run_parameters["scalingParameter"] = float(args.scalingParameter)
+    else:
+        run_parameters["scalingParameter"] = 1.0
 
     if args.proximity_threshold:
         run_parameters["proximity_threshold"] = float(args.proximity_threshold)
@@ -285,7 +288,7 @@ def main():
         + str(run_parameters["cScale"])
     )
 
-    meansc_matrix = plotMatrix(
+    meansc_matrix = plot_matrix(
         sc_matrix,
         uniqueBarcodes,
         run_parameters["pixelSize"],
@@ -295,11 +298,11 @@ def main():
         figtitle="Map: " + run_parameters["dist_calc_mode"],
         mode=run_parameters["dist_calc_mode"],  # median or KDE
         clim=cScale,
-        cMin=run_parameters["cMin"],
+        c_min=run_parameters["cMin"],
         n_cells=n_cells,
-        cm=run_parameters["cmap"],
+        c_m=run_parameters["cmap"],
         cmtitle="distance, um",
-        fileNameEnding=fileNameEnding + run_parameters["plottingFileExtension"],
+        filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
     )
     print("Output figure: {}".format(outputFileName))
 
