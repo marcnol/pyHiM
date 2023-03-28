@@ -56,7 +56,7 @@ class RegisterLocalizations:
                 "toleranceDrift"
             ]
         else:
-            self.tolerance_drift = 1
+            self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift
             print_log(
                 "# toleranceDrift not found. Set to {}!".format(self.tolerance_drift)
             )
@@ -132,7 +132,16 @@ class RegisterLocalizations:
             ],
         ]
 
-        if max(np.abs(shifts)) < self.tolerance_drift:
+        accepts_localization= False
+        if isinstance(self.tolerance_drift, tuple):
+            c=[np.abs(shift)<tol for shift,tol in zip(shifts,self.tolerance_drift)] # makes list with comparisons per axis
+            if all(c):
+                accepts_localization = True # only if tolerance is passed in all axes the localization is kept
+        else: # defaults to previous usage with isotropic tolerance
+            if max(np.abs(shifts)) < self.tolerance_drift:
+                accepts_localization = True
+                
+        if accepts_localization:
             zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
             quality_correction = {"below_tolerance": True}
         else:
