@@ -93,6 +93,11 @@ def parse_arguments():
         "--matrix_norm_mode",
         help="Matrix normalization mode. Can be n_cells (default) or nonNANs",
     )
+    parser.add_argument(
+        "--scalingParameter",
+        help="Scaling parameter. Dafault: 1",
+    )
+
 
     args = parser.parse_args()
 
@@ -137,20 +142,6 @@ def parse_arguments():
     else:
         run_parameters["axisLabel"] = False
 
-    if args.axisTicks:
-        run_parameters["axisTicks"] = args.axisTicks
-    else:
-        run_parameters["axisTicks"] = False
-
-    if args.barcodes:
-        run_parameters["barcodes"] = args.barcodes
-    else:
-        run_parameters["barcodes"] = False
-
-    if args.scalingParameter:
-        run_parameters["scalingParameter"] = float(args.scalingParameter)
-    else:
-        run_parameters["scalingParameter"] = 1.0
 
     if args.proximity_threshold:
         run_parameters["proximity_threshold"] = float(args.proximity_threshold)
@@ -195,6 +186,13 @@ def parse_arguments():
         run_parameters[
             "matrix_norm_mode"
         ] = "n_cells"  # norm: n_cells (default), nonNANs
+
+    if args.scalingParameter:
+        run_parameters["scalingParameter"] = args.scalingParameter
+    else:
+        run_parameters["scalingParameter"] = 1
+
+
 
     return run_parameters
 
