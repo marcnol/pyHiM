@@ -210,7 +210,7 @@ def main():
 
     print(">>> Producing HiM matrix")
 
-    run_parameters = parseArguments()
+    run_parameters = parse_arguments()
 
     if os.path.exists(run_parameters["scPWDMatrix_filename"]):
         sc_matrix = np.load(run_parameters["scPWDMatrix_filename"])
