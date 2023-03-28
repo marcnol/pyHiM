@@ -95,7 +95,7 @@ def parse_arguments():
     )
     parser.add_argument(
         "--scalingParameter",
-        help="Scaling. Default = 1",
+        help="Scaling parameter. Dafault: 1",
     )
 
     args = parser.parse_args()
@@ -189,6 +189,13 @@ def parse_arguments():
         run_parameters[
             "matrix_norm_mode"
         ] = "n_cells"  # norm: n_cells (default), nonNANs
+
+    if args.scalingParameter:
+        run_parameters["scalingParameter"] = args.scalingParameter
+    else:
+        run_parameters["scalingParameter"] = 1
+
+
 
     return run_parameters
 
