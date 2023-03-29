@@ -55,8 +55,11 @@ class RegisterLocalizations:
             self.tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
                 "toleranceDrift"
             ]
+            if not isinstance(self.tolerance_drift, tuple):
+                # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
+                tolerance_drift = (tolerance_drift,tolerance_drift,tolerance_drift)
         else:
-            self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift
+            self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
             print_log(
                 "# toleranceDrift not found. Set to {}!".format(self.tolerance_drift)
             )
@@ -132,10 +135,11 @@ class RegisterLocalizations:
             ],
         ]
 
-        accepts_localization= False
+        accepts_localization = False
         if isinstance(self.tolerance_drift, tuple):
-            c=[np.abs(shift)<tol for shift,tol in zip(shifts,self.tolerance_drift)] # makes list with comparisons per axis
-            if all(c):
+            # makes list with comparisons per axis
+            check = [np.abs(shift)<tol for shift,tol in zip(shifts,self.tolerance_drift)]
+            if all(check):
                 accepts_localization = True # only if tolerance is passed in all axes the localization is kept
         else: # defaults to previous usage with isotropic tolerance
             if max(np.abs(shifts)) < self.tolerance_drift:
