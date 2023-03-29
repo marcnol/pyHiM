@@ -109,7 +109,7 @@ class CellID:
             [],
         )
 
-    def filter_localizations__quality(self, i, flux_min):
+    def filter_localizations_quality(self, i, flux_min):
         """
         [filters barcode localizations either by brigthness or 3D localization accuracy]
 
@@ -147,7 +147,7 @@ class CellID:
         ----------
         i : int
             index in barcode_map Table
-        tolerance_drift : float
+        tolerance_drift : Tuple(float,float,float)
             tolerance to keep barcode localization, in pixel units
         block_size : int
             size of blocks used for blockAlignment.
@@ -175,12 +175,13 @@ class CellID:
                         error_mask = self.dict_error_block_masks[barcode_roi][
                             barcode_id
                         ]
+                        # TODO: Change conditions to adapt with tolerance_drift type update (from Float to Tuple)
                         keep_alignment = (
                             error_mask[
                                 int(np.floor(x_int / block_size)),
                                 int(np.floor(y_int / block_size)),
                             ]
-                            < tolerance_drift
+                            < max(tolerance_drift)
                         )
 
             # keeps it always if barcode is fiducial
@@ -330,8 +331,11 @@ class CellID:
             tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
                 "toleranceDrift"
             ]
+            if not isinstance(self.tolerance_drift, tuple):
+                # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
+                tolerance_drift = (tolerance_drift,tolerance_drift,tolerance_drift)
         else:
-            tolerance_drift = 1
+            tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
             print_log("# toleranceDrift not found. Set to {}!".format(tolerance_drift))
 
         if "blockSize" in self.current_param.param_dict["alignImages"]:
@@ -363,7 +367,7 @@ class CellID:
             roi = self.barcode_map_roi.groups[0]["ROI #"][i]
 
             # [filters barcode localizations either by]
-            keep_quality = self.filter_localizations__quality(i, flux_min)
+            keep_quality = self.filter_localizations_quality(i, flux_min)
 
             # [filters barcode per blockAlignmentMask, if existing]
             keep_alignment = self.filter_localizations_block_alignment(
@@ -455,7 +459,7 @@ class CellID:
         )
 
     def search_local_shift(
-        self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift=1
+        self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift= (3,1,1)
     ):
 
         if "mask2D" in self.current_param.param_dict["alignImages"]["localAlignment"]:
@@ -471,7 +475,7 @@ class CellID:
             return zxy_uncorrected
 
     def search_local_shift_block_3d(
-        self, roi, barcode, zxy_uncorrected, tolerance_drift=1
+        self, roi, barcode, zxy_uncorrected, tolerance_drift=(3,1,1)
     ):
         """
         Searches for local drift for a specific barcode in a given ROI.
@@ -517,8 +521,11 @@ class CellID:
                 _found_match = True
                 shifts = [row["shift_z"], row["shift_x"], row["shift_y"]]
 
+                
+                # makes list with comparisons per axis
+                check = [np.abs(shift)<tol for shift,tol in zip(shifts,tolerance_drift)]
                 # checks that drifts > tolerance_drift are not applied
-                if max(shifts) < tolerance_drift:
+                if all(check):
                     zxy_corrected = [
                         a + shift for a, shift in zip(zxy_uncorrected, shifts)
                     ]
