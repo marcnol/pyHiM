@@ -57,7 +57,7 @@ class RegisterLocalizations:
             ]
             if not isinstance(self.tolerance_drift, tuple):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
-                tolerance_drift = (tolerance_drift,tolerance_drift,tolerance_drift)
+                self.tolerance_drift = (self.tolerance_drift,self.tolerance_drift,self.tolerance_drift)
         else:
             self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
             print_log(
