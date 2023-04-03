@@ -55,9 +55,13 @@ class RegisterLocalizations:
             self.tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
                 "toleranceDrift"
             ]
-            if not isinstance(self.tolerance_drift, tuple):
+            if isinstance(self.tolerance_drift, int):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
                 self.tolerance_drift = (self.tolerance_drift,self.tolerance_drift,self.tolerance_drift)
+            elif len(self.tolerance_drift) != 3:
+                self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
+            elif isinstance(self.tolerance_drift, list):
+                self.tolerance_drift = tuple(self.tolerance_drift)
         else:
             self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
             print_log(
