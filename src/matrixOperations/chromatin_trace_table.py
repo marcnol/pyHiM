@@ -313,23 +313,10 @@ class ChromatinTraceTable:
                     / pixel_size[0]
                 )
 
-                # plots circles for each trace
-                ax[0].scatter(
-                    x_trace,
-                    y_trace,
-                    s=s_trace,
-                    c=color,
-                    marker="$\u25EF$",
-                    cmap="nipy_spectral",
-                    linewidths=1,
-                    alpha=0.7,
-                )
-
                 # Plots polygons for each trace
                 poly_coord = np.array([(trace["x"].data) / pixel_size[0],(trace["y"].data) / pixel_size[1]]).T
-                polygon = Polygon(poly_coord, closed=True)
-                collection = PatchCollection([polygon], color = cmap_traces(color),edgecolor="black",linewidth=1, alpha=1)
-                ax[0].add_collection(collection)
+                polygon = Polygon(poly_coord, closed=False, fill=False, edgecolor=cmap_traces(color),linewidth=1, alpha=1)
+                ax[0].add_patch(polygon)
 
 
             # saves output figure
