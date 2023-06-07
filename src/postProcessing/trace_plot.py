@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jun  7 13:39:06 2023
+
+@author: marcnol
+
+trace_plot
+
+script to plot one or multiple traces in 3D
+
+Takes a trace file and either:
+    - ranks traces and plots a selection
+    - plots a user-selected trace
+    - saves output coordinates for selected traces in pdb format so they can be loaded by other means
+    including pymol, or nglviewer    
+    
+future:
+    - options for 3D plotting in 3D: colors, backbone, background, etc
+    
+installs:
+    pip install nglview, pdbparser
+
+"""
+
+
+# =============================================================================
+# IMPORTS
+# =============================================================================q
+
+import argparse
+import csv
+import glob
+import json
+import os
+import select
+import sys
+from datetime import datetime
+from astropy.io import ascii
+
+import numpy as np
+
+from imageProcessing.imageProcessing import Image
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from pdbparser.pdbparser import pdbparser
+
+# =============================================================================
+# FUNCTIONS
+# =============================================================================q
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-n", "--number_traces", help="Number of traces treated")
+    parser.add_argument("-N","--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument("--selected_trace", help="Selected trace for analysis")
+
+    p = {}
+
+    args = parser.parse_args()
+    if args.rootFolder:
+        p["rootFolder"] = args.rootFolder
+    else:
+        p["rootFolder"] = "."
+
+    if args.N_barcodes:
+        p["N_barcodes"] = int(args.N_barcodes)
+    else:
+        p["N_barcodes"] = 2
+
+    if args.number_traces:
+        p["number_traces"] = int(args.number_traces)
+    else:
+        p["number_traces"] = 2
+
+    if args.selected_trace:
+        p["selected_trace"] = args.selected_trace
+    else:
+        p["selected_trace"] = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776'
+        
+    p["trace_files"] = []
+    if select.select([sys.stdin,], [], [], 0.0)[0]:
+        p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
+    else:
+        print("Nothing in stdin. Please provide the list of files to treat using piping.")
+
+    return p
+
+def convert_trace_to_pdb(single_trace, export=None):
+
+    #natoms = int(lines[0])
+    # skip first 2 lines and build records
+    records = []
+    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
+
+    center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
+    unit_conversion = 10.0 # converts from nm to Angstroms
+
+    for barcode,x,y,z in zip(barcodes, X,Y,Z):
+
+        records.append( { "record_name"       : 'ATOM',
+                          "serial_number"     : len(records)+1,
+                          "atom_name"         : str(barcode),# 'C', 
+                          "location_indicator": '',
+                          "residue_name"      : 'XYZ',#str(barcode),
+                          "chain_identifier"  : '',
+                          "sequence_number"   : len(records)+1,
+                          "code_of_insertion" : '',
+                          "coordinates_x"     : unit_conversion*float(x - center_of_mass[0]),
+                          "coordinates_y"     : unit_conversion*float(y - center_of_mass[1]),
+                          "coordinates_z"     : unit_conversion*float(z - center_of_mass[2]),
+                          "occupancy"         : 1.0,
+                          "temperature_factor": 0.0,
+                          "segment_identifier": '',
+                          "element_symbol"    : str(barcode),
+                          "charge"            : '',
+                          } )
+    # create and return pdb
+    pdb = pdbparser(filePath = None)
+    pdb.records = records
+    # export
+    if export is not None:
+        pdb.export_pdb(export)
+    # return
+    return pdb
+
+def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776'):
+
+    # gets trace files
+
+    if len(trace_files) > 0:
+
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
+
+        # iterates over traces in folder
+        for trace_file in trace_files:
+
+            trace = ChromatinTraceTable()
+            trace.initialize()
+
+            # reads new trace
+            trace.load(trace_file)
+
+            # filters trace
+            trace.filter_traces_by_n(minimum_number_barcodes=N_barcodes)
+
+            # saves output trace
+            outputfile = trace_file.rstrip(".ecsv") + "_selected_traces" + ".xyz"
+
+            # indexes traces by Trace_ID
+            trace_table = trace.data
+            trace_table_indexed = trace_table.group_by("Trace_ID")
+            print("$ number of traces to process: {}".format(len(trace_table_indexed)))
+
+            # iterates over traces
+            for idx, single_trace in enumerate(trace_table_indexed.groups):
+                trace_id = single_trace["Trace_ID"][0]
+                if trace_id == selected_trace:
+                    print("Converting trace ID: {}".format(trace_id))
+                    
+                    # sorts by barcode
+                    new_trace = single_trace.copy()
+                    new_trace = new_trace.group_by('Barcode #')
+                    ascii.write(new_trace['Barcode #', 'x','y','z'], 'values.ecsv', overwrite=True)  
+                    convert_trace_to_pdb(new_trace, export=selected_trace+'.pdb')
+    else:
+        print("No trace file found to process!")
+
+    return len(trace_files)
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+
+def main():
+    begin_time = datetime.now()
+
+    # [parsing arguments]
+    p = parse_arguments()
+    # [loops over lists of datafolders]
+    folder = p["rootFolder"]
+    n_traces_processed = runtime(
+        folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"],
+        selected_trace=p["selected_trace"]
+    )
+
+    print(f"Processed <{n_traces_processed}> trace file(s)")
+    print("Finished execution")
+
+
+if __name__ == "__main__":
+    main()
+
+
+
