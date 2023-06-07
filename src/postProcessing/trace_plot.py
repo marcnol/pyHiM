@@ -11,15 +11,22 @@ script to plot one or multiple traces in 3D
 
 Takes a trace file and either:
     - ranks traces and plots a selection
-    - plots a user-selected trace
+    - plots a user-selected trace in .ecsv (barcode, xyz) and PDF formats. The output files contain the trace name.
     - saves output coordinates for selected traces in pdb format so they can be loaded by other means
-    including pymol, or nglviewer    
+    including https://www.rcsb.org/3d-view, pymol, or nglviewer.
     
 future:
     - options for 3D plotting in 3D: colors, backbone, background, etc
+    - need to find how connectivites are made in the PDB to enforce them
     
 installs:
     pip install nglview, pdbparser
+    
+example usage:
+    
+ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
+
+this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
 
 """
 
@@ -166,7 +173,7 @@ def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abc
                     # sorts by barcode
                     new_trace = single_trace.copy()
                     new_trace = new_trace.group_by('Barcode #')
-                    ascii.write(new_trace['Barcode #', 'x','y','z'], 'values.ecsv', overwrite=True)  
+                    ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)  
                     convert_trace_to_pdb(new_trace, export=selected_trace+'.pdb')
     else:
         print("No trace file found to process!")
