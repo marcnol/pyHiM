@@ -186,7 +186,7 @@ def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abc
                     ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)  
  
                     #convert_trace_to_pdb(new_trace, export=selected_trace+'_v1.pdb')
-                    write_xyz_2_pdb(selected_trace+'_v2.pdb', new_trace, barcode_type)
+                    write_xyz_2_pdb(selected_trace+'.pdb', new_trace, barcode_type)
     else:
         print("No trace file found to process!")
 
