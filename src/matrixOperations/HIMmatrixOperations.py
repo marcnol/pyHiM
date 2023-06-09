@@ -1513,18 +1513,79 @@ def plot_scalogram(matrix2plot, output_filename=""):
         print("Output scalogram: {}".format(output_filename))
 
 
-def write_xyz_2_pdb(file_name, xyz):
+def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
     # writes xyz coordinates to a PDB file wth pseudoatoms
     # file_name : string of output file path, e.g. '/foo/bar/test2.pdb'
     # xyz      : n-by-3 numpy array with atom coordinates
+    
+    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
+    trace_name = single_trace['Trace_ID'][0][0:3]
+    default_atom_name = 'xxx'
+    
+    # calculates center of mass
+    center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
 
+    # builds NP array 
+    xyz=np.transpose(np.array([X,Y,Z]))
+    
+    # recenters and converts to A
+    unit_conversion = 10.0 # converts from nm to Angstroms
+    xyz = unit_conversion*(xyz-center_of_mass)
+
+    # writes PDB file
     n_atoms = xyz.shape[0]
+    
+    # defines atom names from barcode properties
+    if len(barcode_type)<1:
+        # all atoms have the same identity
+        print('did not find barcode_type dictionnary')
+        for i,barcode in enumerate(barcodes):
+            barcode_type['{}'.format(barcode)] = default_atom_name
+    else:
+        # adds missing keys
+        print("$ keys: {}".format(barcode_type.keys()))
+        for barcode in barcodes:
+            if str(barcode) not in barcode_type.keys():
+                barcode_type['{}'.format(barcode)] = default_atom_name   
+                print('$ fixing key {} as not found in dict'.format(barcode))
+
+        '''            
+        print(barcode_type)
+        barcode_type['13'] = 'C  '
+        barcode_type['9'] = 'H  '
+        '''
+        
+
+    '''
+        COLUMNS        DATA TYPE       CONTENTS                            
+    --------------------------------------------------------------------------------
+     1 -  6        Record name     "ATOM  "                                            
+     7 - 11        Integer         Atom serial number.                   
+    13 - 16        Atom            Atom name.                            
+    17             Character       Alternate location indicator.         
+    18 - 20        Residue name    Residue name.                         
+    22             Character       Chain identifier.                     
+    23 - 26        Integer         Residue sequence number.              
+    27             AChar           Code for insertion of residues.       
+    31 - 38        Real(8.3)       Orthogonal coordinates for X in Angstroms.                       
+    39 - 46        Real(8.3)       Orthogonal coordinates for Y in Angstroms.                            
+    47 - 54        Real(8.3)       Orthogonal coordinates for Z in Angstroms.                            
+    55 - 60        Real(6.2)       Occupancy.                            
+    61 - 66        Real(6.2)       Temperature factor (Default = 0.0).                   
+    73 - 76        LString(4)      Segment identifier, left-justified.   
+    77 - 78        LString(2)      Element symbol, right-justified.      
+    79 - 80        LString(2)      Charge on the atom.   
+    '''
+
     with open(file_name, mode="w+", encoding="utf-8") as fid:
         ## atom coordinates
-        txt = "HETATM  {: 3d}  C{:02d} PSD P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
+        #txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
+        #txt = "HETATM  {: 3d}  C{:02d} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
+        txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
         for i in range(n_atoms):
-            fid.write(txt.format(i + 1, i + 1, xyz[i, 0], xyz[i, 1], xyz[i, 2]))
-
+            atom_name = barcode_type[str(barcodes[i])]
+            #fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+            fid.write(txt.format(i + 1, atom_name, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
         txt2 = "CONECT  {: 3d}  {: 3d}  {: 3d}\n"

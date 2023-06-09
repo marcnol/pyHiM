@@ -28,6 +28,9 @@ ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --selected_trace 5b1e6f89-
 
 this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
 
+format for json dict:
+    {"12": "C  ", "18": "C  ", "9": "P  "}
+keys provide barcode names in the trace file, these should be attributed to 3 character codes
 """
 
 
@@ -49,6 +52,7 @@ import numpy as np
 
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from matrixOperations.HIMmatrixOperations import  write_xyz_2_pdb
 from pdbparser.pdbparser import pdbparser
 
 # =============================================================================
@@ -62,6 +66,7 @@ def parse_arguments():
     parser.add_argument("-n", "--number_traces", help="Number of traces treated")
     parser.add_argument("-N","--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument("--selected_trace", help="Selected trace for analysis")
+    parser.add_argument("--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). ")
 
     p = {}
 
@@ -85,6 +90,11 @@ def parse_arguments():
         p["selected_trace"] = args.selected_trace
     else:
         p["selected_trace"] = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776'
+
+    if args.barcode_type_dict:
+        p["barcode_type_dict"] = args.barcode_type_dict
+    else:
+        p["barcode_type_dict"] = 'barcode_type_dict.json'
         
     p["trace_files"] = []
     if select.select([sys.stdin,], [], [], 0.0)[0]:
@@ -132,7 +142,7 @@ def convert_trace_to_pdb(single_trace, export=None):
     # return
     return pdb
 
-def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776'):
+def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776',barcode_type=dict()):
 
     # gets trace files
 
@@ -174,7 +184,9 @@ def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abc
                     new_trace = single_trace.copy()
                     new_trace = new_trace.group_by('Barcode #')
                     ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)  
-                    convert_trace_to_pdb(new_trace, export=selected_trace+'.pdb')
+ 
+                    #convert_trace_to_pdb(new_trace, export=selected_trace+'_v1.pdb')
+                    write_xyz_2_pdb(selected_trace+'_v2.pdb', new_trace, barcode_type)
     else:
         print("No trace file found to process!")
 
@@ -184,7 +196,21 @@ def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abc
 # =============================================================================
 # MAIN
 # =============================================================================
+def loads_barcode_type(p):
+    import json
 
+    filename = p["barcode_type_dict"]
+    # Opening JSON file
+    f = open(filename)
+      
+    # returns JSON object as a dictionary
+    barcode_type = json.load(f)
+      
+    # Closing file
+    f.close()
+
+    print("$ {} barcode dictionary loaded")
+    return barcode_type
 
 def main():
     begin_time = datetime.now()
@@ -193,9 +219,12 @@ def main():
     p = parse_arguments()
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
+    barcode_type = loads_barcode_type(p)
+    
     n_traces_processed = runtime(
         folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"],
-        selected_trace=p["selected_trace"]
+        selected_trace=p["selected_trace"],
+        barcode_type=barcode_type,
     )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")
