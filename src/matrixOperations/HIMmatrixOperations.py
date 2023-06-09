@@ -1547,14 +1547,7 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
         for barcode in barcodes:
             if str(barcode) not in barcode_type.keys():
                 barcode_type['{}'.format(barcode)] = default_atom_name   
-                print('$ fixing key {} as not found in dict'.format(barcode))
-
-        '''            
-        print(barcode_type)
-        barcode_type['13'] = 'C  '
-        barcode_type['9'] = 'H  '
-        '''
-        
+                print('$ fixing key {} as not found in dict'.format(barcode))       
 
     '''
         COLUMNS        DATA TYPE       CONTENTS                            
@@ -1580,20 +1573,23 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
     with open(file_name, mode="w+", encoding="utf-8") as fid:
         ## atom coordinates
         #txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
-        #txt = "HETATM  {: 3d}  C{:02d} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
         txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
         for i in range(n_atoms):
             atom_name = barcode_type[str(barcodes[i])]
             #fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
             fid.write(txt.format(i + 1, atom_name, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+        
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
         txt2 = "CONECT  {: 3d}  {: 3d}  {: 3d}\n"
+        
         # first line of connectivity
         fid.write(txt1.format(1, 2))
+
         # consecutive lines
         for i in range(2, n_atoms):
             fid.write(txt2.format(i, i - 1, i + 1))
+
         # last line
         fid.write(txt1.format(i + 1, i))
 
