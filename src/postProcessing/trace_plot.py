@@ -16,21 +16,31 @@ Takes a trace file and either:
     including https://www.rcsb.org/3d-view, pymol, or nglviewer.
     
 future:
-    - options for 3D plotting in 3D: colors, backbone, background, etc
-    - need to find how connectivites are made in the PDB to enforce them
+    - output PDBs for all the traces in a trace file
     
+--------    
 installs:
     pip install nglview, pdbparser
-    
+
+--------    
 example usage:
     
 ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
 
 this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
 
+--------
 format for json dict:
     {"12": "C  ", "18": "C  ", "9": "P  "}
 keys provide barcode names in the trace file, these should be attributed to 3 character codes
+
+--------
+some useful pymol commands:
+    
+set grid_mode,1
+color green,  (name C*)
+color red, (name P*)
+
 """
 
 
