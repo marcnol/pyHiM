@@ -62,7 +62,7 @@ import numpy as np
 
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
-from matrixOperations.HIMmatrixOperations import  write_xyz_2_pdb
+from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
 from pdbparser.pdbparser import pdbparser
 
 # =============================================================================
@@ -74,9 +74,12 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("-n", "--number_traces", help="Number of traces treated")
-    parser.add_argument("-N","--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument("-N", "--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument("--selected_trace", help="Selected trace for analysis")
-    parser.add_argument("--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). ")
+    parser.add_argument(
+        "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
+    )
+    parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
 
     p = {}
 
@@ -99,13 +102,18 @@ def parse_arguments():
     if args.selected_trace:
         p["selected_trace"] = args.selected_trace
     else:
-        p["selected_trace"] = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776'
+        p["selected_trace"] = "fa9f0eb5-abcc-4730-bcc7-ba1da682d776"
 
     if args.barcode_type_dict:
         p["barcode_type_dict"] = args.barcode_type_dict
     else:
-        p["barcode_type_dict"] = 'barcode_type_dict.json'
-        
+        p["barcode_type_dict"] = "barcode_type_dict.json"
+
+    if args.all:
+        p["select_traces"] = "all"
+    else:
+        p["select_traces"] = "selected"
+
     p["trace_files"] = []
     if select.select([sys.stdin,], [], [], 0.0)[0]:
         p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
@@ -114,55 +122,22 @@ def parse_arguments():
 
     return p
 
-def convert_trace_to_pdb(single_trace, export=None):
 
-    #natoms = int(lines[0])
-    # skip first 2 lines and build records
-    records = []
-    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
-
-    center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
-    unit_conversion = 10.0 # converts from nm to Angstroms
-
-    for barcode,x,y,z in zip(barcodes, X,Y,Z):
-
-        records.append( { "record_name"       : 'ATOM',
-                          "serial_number"     : len(records)+1,
-                          "atom_name"         : str(barcode),# 'C', 
-                          "location_indicator": '',
-                          "residue_name"      : 'XYZ',#str(barcode),
-                          "chain_identifier"  : '',
-                          "sequence_number"   : len(records)+1,
-                          "code_of_insertion" : '',
-                          "coordinates_x"     : unit_conversion*float(x - center_of_mass[0]),
-                          "coordinates_y"     : unit_conversion*float(y - center_of_mass[1]),
-                          "coordinates_z"     : unit_conversion*float(z - center_of_mass[2]),
-                          "occupancy"         : 1.0,
-                          "temperature_factor": 0.0,
-                          "segment_identifier": '',
-                          "element_symbol"    : str(barcode),
-                          "charge"            : '',
-                          } )
-    # create and return pdb
-    pdb = pdbparser(filePath = None)
-    pdb.records = records
-    # export
-    if export is not None:
-        pdb.export_pdb(export)
-    # return
-    return pdb
-
-def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abcc-4730-bcc7-ba1da682d776',barcode_type=dict()):
+def runtime(
+    folder,
+    N_barcodes=2,
+    trace_files=[],
+    selected_trace="fa9f0eb5-abcc-4730-bcc7-ba1da682d776",
+    barcode_type=dict(),
+    folder_path="./PDBs",
+    select_traces="one",
+):
 
     # gets trace files
 
     if len(trace_files) > 0:
 
-        print(
-            "\n{} trace files to process= {}".format(
-                len(trace_files), "\n".join(map(str, trace_files))
-            )
-        )
+        print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
 
         # iterates over traces in folder
         for trace_file in trace_files:
@@ -187,40 +162,57 @@ def runtime(folder, N_barcodes=2, trace_files=[], selected_trace = 'fa9f0eb5-abc
             # iterates over traces
             for idx, single_trace in enumerate(trace_table_indexed.groups):
                 trace_id = single_trace["Trace_ID"][0]
-                if trace_id == selected_trace:
-                    print("Converting trace ID: {}".format(trace_id))
+                flag = False
+
+                if select_traces == 'selected' and trace_id == selected_trace:
+                    flag = True
+                elif select_traces == 'all':
+                    flag = True
                     
+                if flag:
+                    print("Converting trace ID: {}".format(trace_id))
+
                     # sorts by barcode
                     new_trace = single_trace.copy()
-                    new_trace = new_trace.group_by('Barcode #')
-                    ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)  
- 
-                    #convert_trace_to_pdb(new_trace, export=selected_trace+'_v1.pdb')
-                    write_xyz_2_pdb(selected_trace+'.pdb', new_trace, barcode_type)
+                    new_trace = new_trace.group_by("Barcode #")
+                    # ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)
+
+                    write_xyz_2_pdb(folder_path + os.sep + trace_id + ".pdb", new_trace, barcode_type)
     else:
         print("No trace file found to process!")
 
     return len(trace_files)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+def create_folder(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"Folder '{folder_path}' created successfully.")
+    else:
+        print(f"Folder '{folder_path}' already exists.")
+
+
 def loads_barcode_type(p):
     import json
 
     filename = p["barcode_type_dict"]
     # Opening JSON file
     f = open(filename)
-      
+
     # returns JSON object as a dictionary
     barcode_type = json.load(f)
-      
+
     # Closing file
     f.close()
 
     print("$ {} barcode dictionary loaded")
     return barcode_type
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
 
 def main():
     begin_time = datetime.now()
@@ -230,11 +222,21 @@ def main():
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
     barcode_type = loads_barcode_type(p)
-    
+
+    # creates output folder
+    output_folder = "PDBs"
+    folder_path = os.path.join(os.getcwd(), output_folder)  # Specify the folder path here
+
+    create_folder(folder_path)
+
     n_traces_processed = runtime(
-        folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"],
+        folder,
+        N_barcodes=p["N_barcodes"],
+        trace_files=p["trace_files"],
         selected_trace=p["selected_trace"],
         barcode_type=barcode_type,
+        folder_path=folder_path,
+        select_traces=p["select_traces"],
     )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")
@@ -243,6 +245,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
