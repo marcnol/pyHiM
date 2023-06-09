@@ -27,7 +27,11 @@ example usage:
     
 ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
 
-this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
+>> this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
+
+ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --all
+
+>> this plots all traces in the trace file.
 
 --------
 format for json dict:
