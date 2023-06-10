@@ -42,6 +42,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -53,6 +54,11 @@ def parse_arguments():
         p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
+
+    if args.input:
+        p["input"] = args.input
+    else:
+        p["input"] = None
 
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
@@ -68,7 +74,8 @@ def parse_arguments():
             print("Nothing in stdin")
     else:
         p["pipe"] = False
-
+        p["trace_files"] = [p["input"]]
+        
     return p
 
 
@@ -76,18 +83,16 @@ def runtime(folder, N_barcodes=2, trace_files=[]):
 
     # gets trace files from buildsPWDmatrix folder
     if len(trace_files) < 1:
-        trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
-        trace_files = [
-            x
-            for x in glob.glob(trace_folder + "Trace*ecsv")
-            if "uniqueBarcodes" not in x
-        ]
-
-    print(
-        "\n{} trace files to process= {}".format(
-            len(trace_files), "\n".join(map(str, trace_files))
+        print("! Error: no trace file provided. Please either use pipe or the --input option to provide a filename.")
+        return 0
+    elif len(trace_files) == 1:
+        print("\n$ trace files to process= {}".format(trace_files))
+    else:
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
         )
-    )
 
     if len(trace_files) > 0:
 

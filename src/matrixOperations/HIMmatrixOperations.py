@@ -1543,7 +1543,7 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
             barcode_type['{}'.format(barcode)] = default_atom_name
     else:
         # adds missing keys
-        print("$ keys: {}".format(barcode_type.keys()))
+        # print("$ keys: {}".format(barcode_type.keys()))
         for barcode in barcodes:
             if str(barcode) not in barcode_type.keys():
                 barcode_type['{}'.format(barcode)] = default_atom_name   

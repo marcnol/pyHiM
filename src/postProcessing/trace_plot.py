@@ -25,11 +25,11 @@ installs:
 --------    
 example usage:
     
-ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
+ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --pipe --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
 
 >> this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
 
-ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --all
+trace_plot.py --input Trace_3D_barcode_KDtree_ROI:1.ecsv --all
 
 >> this plots all traces in the trace file.
 
@@ -77,6 +77,7 @@ from pdbparser.pdbparser import pdbparser
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("-n", "--number_traces", help="Number of traces treated")
     parser.add_argument("-N", "--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument("--selected_trace", help="Selected trace for analysis")
@@ -84,6 +85,9 @@ def parse_arguments():
         "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
     )
     parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
 
     p = {}
 
@@ -93,6 +97,11 @@ def parse_arguments():
     else:
         p["rootFolder"] = "."
 
+    if args.input:
+        p["input"] = args.input
+    else:
+        p["input"] = None
+        
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
     else:
@@ -119,11 +128,16 @@ def parse_arguments():
         p["select_traces"] = "selected"
 
     p["trace_files"] = []
-    if select.select([sys.stdin,], [], [], 0.0)[0]:
-        p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
+    if args.pipe:
+        p["pipe"] = True
+        if select.select([sys.stdin,], [], [], 0.0)[0]:
+            p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
+        else:
+            print("Nothing in stdin")
     else:
-        print("Nothing in stdin. Please provide the list of files to treat using piping.")
-
+        p["pipe"] = False
+        p["trace_files"] = [p["input"]]
+        
     return p
 
 

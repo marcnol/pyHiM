@@ -54,6 +54,7 @@ matplotlib.rc("font", **font)
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -66,7 +67,12 @@ def parseArguments():
     else:
         p["rootFolder"] = "."
 
-    p["trace_files"] = list()
+    if args.input:
+        p["input"] = args.input
+    else:
+        p["input"] = None
+    
+    p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
         if select.select([sys.stdin,], [], [], 0.0)[0]:
@@ -75,7 +81,8 @@ def parseArguments():
             print("Nothing in stdin")
     else:
         p["pipe"] = False
-
+        p["trace_files"] = [p["input"]]
+        
     return p
 
 
@@ -191,25 +198,15 @@ def process_traces(folder, trace_files=list()):
     None.
 
     """
-    trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
-
-    if len(trace_files) < 1:
-        trace_files = [
-            x
-            for x in glob.glob(trace_folder + "Trace*ecsv")
-            if "uniqueBarcodes" not in x
-        ]
-
-    # removes already labeled trace files
-    trace_files = [x for x in trace_files if "labeled" not in x]
-
-    print(
-        "\n{} trace files to process= {}".format(
-            len(trace_files), "\n".join(map(str, trace_files))
-        )
-    )
 
     if len(trace_files) > 0:
+    
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
+
         # iterates over traces in folder
         for trace_file in trace_files:
 
@@ -227,7 +224,8 @@ def process_traces(folder, trace_files=list()):
             analyze_trace(trace, trace_file)
 
             # outputfile = trace_file.rstrip(".ecsv") + "_labeled" + ".ecsv"
-
+    else:
+        print("! Error: did not find any trace file to analyze. Please provide one using --input or --pipe.")
 
 # =============================================================================
 # MAIN
