@@ -856,3 +856,33 @@ def get_dictionary_value(dictionary, key, default=""):
         value = default
 
     return value
+
+
+def create_folder(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print(f"Folder '{folder_path}' created successfully.")
+    else:
+        print(f"Folder '{folder_path}' already exists.")
+
+
+def loads_barcode_dict(file_name):
+    import json
+
+    # Check if the file exists
+    if not os.path.exists(file_name):
+        print("File does not exist")
+        return dict()
+    else:
+
+        # Opening JSON file
+        f = open(file_name)
+    
+        # returns JSON object as a dictionary
+        barcode_type = json.load(f)
+    
+        # Closing file
+        f.close()
+    
+        print("$ {} barcode dictionary loaded")
+        return barcode_type

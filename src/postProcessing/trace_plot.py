@@ -67,6 +67,8 @@ import numpy as np
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
+from fileProcessing.fileManagement import create_folder, loads_barcode_dict
+
 from pdbparser.pdbparser import pdbparser
 
 # =============================================================================
@@ -202,29 +204,7 @@ def runtime(
     return len(trace_files)
 
 
-def create_folder(folder_path):
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print(f"Folder '{folder_path}' created successfully.")
-    else:
-        print(f"Folder '{folder_path}' already exists.")
 
-
-def loads_barcode_type(p):
-    import json
-
-    filename = p["barcode_type_dict"]
-    # Opening JSON file
-    f = open(filename)
-
-    # returns JSON object as a dictionary
-    barcode_type = json.load(f)
-
-    # Closing file
-    f.close()
-
-    print("$ {} barcode dictionary loaded")
-    return barcode_type
 
 
 # =============================================================================
@@ -239,7 +219,7 @@ def main():
     p = parse_arguments()
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
-    barcode_type = loads_barcode_type(p)
+    barcode_type = loads_barcode_dict(p["barcode_type_dict"])
 
     # creates output folder
     output_folder = "PDBs"

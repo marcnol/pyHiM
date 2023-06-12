@@ -268,7 +268,7 @@ def main():
         index = range(sc_matrix.shape[0])
     else:
         index = [int(i) for i in run_parameters["shuffle"].split(",")]
-        sc_matrix = shuffleMatrix(sc_matrix, index)
+        sc_matrix = shuffle_matrix(sc_matrix, index)
 
     if run_parameters["dist_calc_mode"] == "proximity":
         # calculates and plots contact probability matrix from merged samples/datasets

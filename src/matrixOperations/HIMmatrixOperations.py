@@ -32,6 +32,8 @@ from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
 
+import numpy.linalg as npl
+
 from fileProcessing.fileManagement import is_notebook, write_string_to_file
 
 # =============================================================================
@@ -1513,20 +1515,40 @@ def plot_scalogram(matrix2plot, output_filename=""):
         print("Output scalogram: {}".format(output_filename))
 
 
+def decodes_trace(single_trace):
+    '''
+    from a trace entry, provides Numpy array with coordinates, barcode and trace names
+
+    Parameters
+    ----------
+    single_trace : astropy table
+        astropy table for a single trace.
+
+    Returns
+    -------
+    list of barcodes
+    x, y and z coordinates as numpy arrays, 
+    trace name as string
+
+    '''
+    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
+    trace_name = single_trace['Trace_ID'][0][0:3]
+  
+    return barcodes, X, Y, Z, trace_name 
+    
 def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
     # writes xyz coordinates to a PDB file wth pseudoatoms
     # file_name : string of output file path, e.g. '/foo/bar/test2.pdb'
     # xyz      : n-by-3 numpy array with atom coordinates
-    
-    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
-    trace_name = single_trace['Trace_ID'][0][0:3]
-    default_atom_name = 'xxx'
-    
-    # calculates center of mass
-    center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
 
+    default_atom_name = 'xxx'
+    barcodes, X, Y, Z, trace_name = decodes_trace(single_trace)    
+    
     # builds NP array 
     xyz=np.transpose(np.array([X,Y,Z]))
+
+    # calculates center of mass
+    center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
     
     # recenters and converts to A
     unit_conversion = 10.0 # converts from nm to Angstroms
@@ -1573,11 +1595,54 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
     with open(file_name, mode="w+", encoding="utf-8") as fid:
         ## atom coordinates
         #txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
-        txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
+        #txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
+        #for i in range(n_atoms):
+        #    atom_name = barcode_type[str(barcodes[i])]
+            #fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+        #    fid.write(txt.format(i + 1, atom_name, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+
+        ## fills fields with correct spacing
+        field_record = "HETATM"
+        field_atom_number = " {:4d}"
+        field_atom_name = "  {}"
+        field_alternative_location_indicator = " "
+        field_res_name = trace_name + " "
+        field_chain_identifier = " "
+        field_residue_seq_number = "{:4d}"
+        field_code_insertion = "    "
+        field_X = "{}"
+        field_Y = "{}"
+        field_Z = "{}" #" {:0<7.3f}"
+        field_occupancy = "   0.0"
+        field_temp_factor = "   0.0"
+        field_segment_identifier = "      " + "PSDO"
+        field_element_symbol = " X"
+        field_charge_atom = " X"
+        txt = (
+            field_record
+            + field_atom_number
+            + field_atom_name
+            + field_alternative_location_indicator
+            + field_res_name
+            + field_chain_identifier
+            + field_residue_seq_number
+            + field_code_insertion
+            + field_X
+            + field_Y
+            + field_Z
+            + field_occupancy
+            + field_temp_factor
+            + field_segment_identifier
+            + field_element_symbol
+            + field_charge_atom
+            + "\n"
+        )
+
+        # txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
         for i in range(n_atoms):
             atom_name = barcode_type[str(barcodes[i])]
-            #fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
-            fid.write(txt.format(i + 1, atom_name, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+            fid.write(txt.format(i + 1, atom_name, int(barcodes[i]), " {:0<7.3f}".format(xyz[i, 0])[0:8], " {:0<7.3f}".format(xyz[i, 1])[0:8], " {:0<7.3f}".format(xyz[i, 2])[0:8] ))
+
         
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
@@ -1595,6 +1660,69 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
 
         print("Done writing {:s} with {:d} atoms.".format(file_name, n_atoms))
 
+
+def distances_2_coordinates(distances):
+    """ Infer coordinates from distances
+    """
+    N = distances.shape[0]
+    d_0 = []
+
+    # pre-caching
+    cache = {}
+    for j in range(N):
+        sumi = sum([distances[j, k]**2 for k in range(j+1, N)])
+        cache[j] = sumi
+
+    # compute distances from center of mass
+    sum2 = sum([cache[j] for j in range(N)])
+    for i in range(N):
+        sum1 = cache[i] + sum([distances[j, i]**2 for j in range(i+1)])
+
+        val = 1/N * sum1 - 1/N**2 * sum2
+        d_0.append(val)
+
+    # generate gram matrix
+    gram = np.zeros(distances.shape)
+    for row in range(distances.shape[0]):
+        for col in range(distances.shape[1]):
+            dists = d_0[row]**2 + d_0[col]**2 - distances[row, col]**2
+            gram[row, col] = 1/2 * dists
+
+    # extract coordinates from gram matrix
+    coordinates = []
+    vals, vecs = npl.eigh(gram)
+
+    vals = vals[N-3:]
+    vecs = vecs.T[N-3:]
+
+    #print('eigvals:', vals) # must all be positive for PSD (positive semidefinite) matrix
+
+    # same eigenvalues might be small -> exact embedding does not exist
+    # fix by replacing all but largest 3 eigvals by 0
+    # better if three largest eigvals are separated by large spectral gap
+
+    for val, vec in zip(vals, vecs):
+        coord = vec * np.sqrt(val)
+        coordinates.append(coord)
+
+    return np.array(coordinates).T
+
+def coord_2_distances(coordinates):
+    """ Derive distance matrix from given set of coordinates
+    """
+    dimension = coordinates.shape[1]
+
+    # get distances
+    distances = np.zeros(2 * [coordinates.shape[0]])
+    for row in range(coordinates.shape[0]):
+        for col in range(coordinates.shape[0]):
+            comp_sum = sum(
+                [(coordinates[row, d] - coordinates[col, d])**2
+                    for d in range(dimension)]
+            )
+            distances[row, col] = np.sqrt(comp_sum)
+
+    return distances
 
 def plot_distance_histograms(
     sc_matrix_collated,
@@ -1717,7 +1845,7 @@ def plot_matrix(
 
     else:
 
-        # matrix is 2D and does not need further treatment
+        # already an ensemble matrix --> no need for further treatment
         if mode == "counts":
             mean_sc_matrix = sc_matrix_collated
             keep_plotting = True
