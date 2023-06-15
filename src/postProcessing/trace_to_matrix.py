@@ -1,37 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr  3 09:57:36 2022
+Created on Thu Jun 15 08:42:12 2023
 
 @author: marcnol
 
-This script will load a trace file and a filter traces based on a series of user arguments
-
-$ trace_filter.py
-
-outputs
-
-.ecsv trace table file.
+uses the core routines of pyHiM to convert a trace file to a matrix in a standalone script
 
 """
+
 
 # =============================================================================
 # IMPORTS
 # =============================================================================q
 
 import argparse
-import csv
-import glob
-import json
-import os
 import select
 import sys
 from datetime import datetime
-
 import numpy as np
 
-from imageProcessing.imageProcessing import Image
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from matrixOperations.build_matrix import BuildMatrix
 
 # =============================================================================
 # FUNCTIONS
@@ -40,8 +29,7 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument("-F", "--outputFolder", help="Output folder, Default: PWD")
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
@@ -50,20 +38,15 @@ def parse_arguments():
     p = {}
 
     args = parser.parse_args()
-    if args.rootFolder:
-        p["rootFolder"] = args.rootFolder
+    if args.outputFolder:
+        p["rootFolder"] = args.outputFolder
     else:
-        p["rootFolder"] = "."
+        p["rootFolder"] = "./"
 
     if args.input:
         p["input"] = args.input
     else:
         p["input"] = None
-
-    if args.N_barcodes:
-        p["N_barcodes"] = int(args.N_barcodes)
-    else:
-        p["N_barcodes"] = 2
 
     p["trace_files"] = []
     if args.pipe:
@@ -75,18 +58,22 @@ def parse_arguments():
     else:
         p["pipe"] = False
         p["trace_files"] = [p["input"]]
+
+    p["colormaps"] = {"Nmatrix": "Blues",
+                "PWD_KDE": "terrain",
+                "PWD_median": "terrain",
+                "contact": "coolwarm"}
         
     return p
 
 
-def runtime(folder, N_barcodes=2, trace_files=[]):
+def runtime(folder, N_barcodes=2, trace_files=[], colormaps = dict()):
 
-    # gets trace files from buildsPWDmatrix folder
     if len(trace_files) < 1:
         print("! Error: no trace file provided. Please either use pipe or the --input option to provide a filename.")
         return 0
     elif len(trace_files) == 1:
-        print("\n$ trace files to process= {}".format(trace_files))
+        print("\n$ trace file to process= {}".format(trace_files))
     else:
         print(
             "\n{} trace files to process= {}".format(
@@ -99,23 +86,12 @@ def runtime(folder, N_barcodes=2, trace_files=[]):
         # iterates over traces in folder
         for trace_file in trace_files:
 
-            trace = ChromatinTraceTable()
-            trace.initialize()
-
-            # reads new trace
-            trace.load(trace_file)
-
-            # filters trace
-            trace.filter_traces_by_n(minimum_number_barcodes=N_barcodes)
-
-            # saves output trace
-            outputfile = trace_file.rstrip(".ecsv") + "_filtered" + ".ecsv"
-            trace.save(outputfile, trace.data, comments="filtered")
-    else:
-        print("No trace file found to process!")
+            # converts trace to matrix 
+            param = dict()
+            new_matrix = BuildMatrix(param, colormaps = colormaps)
+            new_matrix.launch_analysis(trace_file)
 
     return len(trace_files)
-
 
 # =============================================================================
 # MAIN
@@ -127,11 +103,10 @@ def main():
 
     # [parsing arguments]
     p = parse_arguments()
+    
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
-    n_traces_processed = runtime(
-        folder, N_barcodes=p["N_barcodes"], trace_files=p["trace_files"]
-    )
+    n_traces_processed = runtime(folder, trace_files=p["trace_files"], colormaps = p["colormaps"])
 
     print(f"Processed <{n_traces_processed}> trace(s)")
     print("Finished execution")
@@ -139,3 +114,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -2,7 +2,22 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thur Jan 20 2023
-@author: jb
+@author: jb, marcnol
+
+--> Usage
+
+$ trace_filter.py --input Trace.ecsv --N_barcodes 3 --fraction_missing_barcodes -0.5 --overlapping_threshold 0.03
+
+will analyze 'Trace.ecsv' and remove traces with
+    - less than 3 barcodes
+    - fraction of missing barcodes < 0.5
+    - barcodes closer than 0.03 um will be merged.
+
+--> outputs
+
+.ecsv trace table file with the '_filtered' tag appended.
+
+
 """
 
 import matplotlib
@@ -27,15 +42,23 @@ import argparse
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
     parser.add_argument("--fraction_missing_barcodes", help="fraction of missing barcodes. Default = 0.5")
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("--overlapping_threshold", help="overlapping threshold. Default = 0.030")
+    parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
 
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
 
     p = {}
+
+    args = parser.parse_args()
+    if args.output:
+        p["output"] = args.output
+    else:
+        p["output"] = "filtered"
 
     args = parser.parse_args()
     if args.rootFolder:
@@ -57,6 +80,16 @@ def parse_arguments():
         p["overlapping_threshold"] = args.overlapping_threshold
     else:
         p["overlapping_threshold"] = 0.030
+
+    if args.overlapping_threshold:
+        p["overlapping_threshold"] = args.overlapping_threshold
+    else:
+        p["overlapping_threshold"] = 0.030
+       
+    if args.N_barcodes:
+        p["N_barcodes"] = int(args.N_barcodes)
+    else:
+        p["N_barcodes"] = 2
         
     p["trace_files"] = []
     if args.pipe:
@@ -102,10 +135,10 @@ def plot_repeated_barcodes(trace_data):
 
 class FilterTraces:
 
-    def __init__(self, data_path, data_files, dest_path, threshold=0, verbose=False):
-        self.data_folder: str = data_path
-        self.data_files: str = data_files
-        self.saving_path: str = dest_path
+    def __init__(self, data_folder, data_file, dest_folder, threshold=0, verbose=False):
+        self.data_folder: str = data_folder
+        self.data_file: str = data_file
+        self.dest_folder: str = dest_folder
         self.overlapping_threshold: float = threshold  # in µm
         self.verbose: bool = verbose
         self.data = None
@@ -127,33 +160,24 @@ class FilterTraces:
         """
 
         # define the path to the trace file
-        paths = glob(os.path.join(self.data_folder, '**', self.data_files), recursive=True)
         # check a file was found, else exit the method
-        if len(paths) == 0:
+
+        file_path = self.data_folder+os.sep+self.data_file
+        if len(file_path) == 0:
             print('No trace file was found. The loading of the traces is aborted')
             return
-        elif len(paths) == 1:
-            self.trace_filename = os.path.basename(paths[0])
-        else:
-            self.trace_filename = "concatenated_traces.ecsv"
+        else: 
 
-        # load the trace files and eventually concatenate them together
-        dataframe = []
-        for file_path in paths:
+            # load the trace files and eventually concatenate them together
+            dataframe = []
             try:
                 data = ascii.read(file_path, format='ecsv', delimiter=' ')
                 data = data.to_pandas()
                 dataframe.append(data)
             except Exception as err:
-                print(f"Unexpected {err} for file {os.path.basename(file)}")
-
-        self.data = pd.concat(dataframe)
-
-        # # depending on the type of analysis, the structure of the dataframe may change (for example a column label
-        # # can be added). Below, only a subset of the columns is kept.
-        # self.data = self.data[
-        #     ['Spot_ID', 'Trace_ID', 'x', 'y', 'z', 'Chrom', 'Chrom_Start', 'Chrom_End', 'ROI #', 'Mask_id',
-        #      'Barcode #']]
+                print(f"Unexpected {err} for file {file_path}")
+    
+            self.data = pd.concat(dataframe)
 
     def hard_filtering(self):
         """ Filtering the originally loaded traces by removing all the trace with at least one duplicated barcode.
@@ -172,7 +196,7 @@ class FilterTraces:
         return new_dataframe
 
     @staticmethod
-    def select_traces_wo_duplicates(data):
+    def select_traces_wo_duplicates(data, N_barcodes=2):
         """ Analyze the trace dataframe and select only the traces with no duplicates and containing at least 2
         barcodes.
 
@@ -186,7 +210,7 @@ class FilterTraces:
             single_trace = data.loc[data['Trace_ID'] == id]
             n_barcodes = len(single_trace['Barcode #'])
             n_unique_barcodes = len(single_trace['Barcode #'].drop_duplicates())
-            if (n_barcodes == n_unique_barcodes) and (n_unique_barcodes > 1):
+            if (n_barcodes == n_unique_barcodes) and (n_unique_barcodes >= N_barcodes):
                 id_wo_duplicates.append(id)
 
         return id_wo_duplicates
@@ -201,6 +225,7 @@ class FilterTraces:
         @return: p95 and p99 (float) for the values of the 95% and 99% quantiles
         """
         pwd_distribution = []
+        print(f"$ Will process {len(trace_id)} traces")
         for id in trace_id:
             trace = self.data[self.data['Trace_ID'] == id]
             pos = trace[['x', 'y', 'z']].to_numpy()
@@ -208,7 +233,7 @@ class FilterTraces:
                 distance = pairwise_distances(pos)
                 distance_flatten = self.him_map_2d_to_1d(distance)
                 pwd_distribution.append(distance_flatten)
-
+                
         pwd_distribution = [item for sublist in pwd_distribution for item in sublist]
         pwd_distribution = np.asarray(pwd_distribution, dtype=object)
         n_bin = (np.max(pwd_distribution) - np.min(pwd_distribution)) * 1000 / 10  # in order to get ~10nm / bin
@@ -225,7 +250,7 @@ class FilterTraces:
             plt.ylabel('number of occurrences')
             plt.title(f'Median={med}µm - quantile 95%={self.p95}µm - quantile 99%={self.p99}µm')
             if save:
-                fig_path = os.path.join(self.saving_path, 'pairwise_distance_stat.png')
+                fig_path = os.path.join(self.dest_folder, 'pairwise_distance_stat.png')
                 plt.savefig(fig_path, dpi=200, format='png')
             else:
                 plt.show()
@@ -299,7 +324,7 @@ class FilterTraces:
         ax2.legend()
 
         if save:
-            fig_path = os.path.join(self.saving_path, f'trace_stat_{tag}.png')
+            fig_path = os.path.join(self.dest_folder, f'trace_stat_{tag}.png')
             plt.savefig(fig_path, dpi=200, format='png')
         else:
             plt.show()
@@ -320,7 +345,7 @@ class FilterTraces:
 
         # for each single trace, launch the clusterization algorithm
         # ---------------------------------------------------------
-        print('cluterization ...')
+        print('\n$ Performing clusterization ...')
         for trace_id in tqdm(self.trace_id):
             single_trace = self.data.loc[self.data['Trace_ID'] == trace_id]
             kept_id, out_id = self.clustering(single_trace, self.p95, self.p99, verbose=False)
@@ -544,7 +569,7 @@ class FilterTraces:
             plt.ylabel('number of occurrences')
             plt.title('distribution of pwd for the repeated barcodes')
             if save:
-                fig_path = os.path.join(self.saving_path, 'duplicated_bc_pwd_stat.png')
+                fig_path = os.path.join(self.dest_folder, 'duplicated_bc_pwd_stat.png')
                 plt.savefig(fig_path, dpi=200, format='png')
             else:
                 plt.show()
@@ -620,14 +645,14 @@ class FilterTraces:
         @param tag: (str) indicate the tag to add to the filename
         """
         if tag is None:
-            path = os.path.join(self.saving_path, self.trace_filename)
-        else:
-            file_name = f'{os.path.splitext(self.trace_filename)[0]}_{tag}.ecsv'
-            path = os.path.join(self.saving_path, file_name)
-
+            tag = '_bck' 
+            
+        outputfile= self.dest_folder + os.sep + self.data_file.split('.')[0] + tag + '.ecsv' 
+            
         trace_data = Table.from_pandas(trace_data)
-        trace_data.write(path, overwrite=True)
+        trace_data.write(outputfile, overwrite=True)
 
+        return outputfile
     def save_individual_labels(self, trace, tag=None):
         """ helper function used to sort individual traces based on label value and save them in individual ecsv file.
 
@@ -661,9 +686,9 @@ class FilterTraces:
 def create_folder(folder_path):
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-        print(f"Folder '{folder_path}' created successfully.")
+        print(f"$ Folder '{folder_path}' created successfully.")
     else:
-        print(f"Folder '{folder_path}' already exists.")
+        print(f"! Folder '{folder_path}' already exists.")
 
 if __name__ == "__main__":
 
@@ -675,56 +700,63 @@ if __name__ == "__main__":
     # ------------------------------------------------------------
     data_folder = p["rootFolder"]
     data_files = p["trace_files"]
-    dest_folder = data_folder + os.sep + 'Filtered'
+    dest_folder = data_folder + os.sep + p["output"]
     overlapping_threshold = p["overlapping_threshold"]  # in µm
     fraction_missing_barcodes = p["fraction_missing_barcodes"]  # a fraction of 0.5 means that a maximum of 50% missing barcodes is allowed
 
+    print(f"\n$ Will process the following trace files: {data_files}\n")
     create_folder(dest_folder)
 
     for file in data_files:
 
+        print(f"$ processing{file}")
         # instantiate the class
         # ---------------------
-        _trace = FilterTraces(data_folder, file, dest_folder, overlapping_threshold)
+        _trace = FilterTraces(data_folder, file, dest_folder, threshold=overlapping_threshold)
         n_traces_total = _trace.data.shape[0]
 
         # perform a "hard" filtering where all the traces with at least one duplicated barcode are discarded
         # --------------------------------------------------------------------------------------------------
         hard_filtered_traces = _trace.hard_filtering()
-        saving_name = os.path.splitext(file)[0] + 'hard_filtered.ecsv'
-        saving_path = os.path.join(dest_folder, saving_name)
-        _trace.save_to_astropy(hard_filtered_traces, saving_name) #saving_path
+        _trace.save_to_astropy(hard_filtered_traces, tag = "_hard_filtered") #saving_path
 
         # select the traces with no duplicates (and at least 2 barcodes) and calculate the distance threshold used
         # later to filter the traces. Plot also the statistics for the selected traces
         # --------------------
-        trace_wo_duplicates = _trace.select_traces_wo_duplicates(_trace.data)
-        pwd_min, pwd_max = _trace.calculate_pwd_threshold(trace_wo_duplicates, verbose=True, save=True)
-        print(f'Initial analysis returned {len(trace_wo_duplicates)}/{n_traces_total} traces with no duplicates & at '
-              f'least 2 barcodes')
+        trace_wo_duplicates = _trace.select_traces_wo_duplicates(_trace.data, N_barcodes = p["N_barcodes"])
+        if len(trace_wo_duplicates)>0:
+            
+            pwd_min, pwd_max = _trace.calculate_pwd_threshold(trace_wo_duplicates, verbose=True, save=True)
+            print(f'\n$ Initial analysis returned {len(trace_wo_duplicates)} out of {n_traces_total} traces with no duplicates & at '
+                  f'least {p["N_barcodes"]} barcodes')
+            _trace.trace_statistics(save=True)
+    
+            # based on the threshold defines above, analyze each trace in order to remove unspecific detections & separate
+            # traces that have been clustered together
+            # ----------------------------------------
+            filtered_traces = _trace.filter_traces(verbose=False)
+            trace_wo_duplicates = _trace.select_traces_wo_duplicates(filtered_traces, N_barcodes = p["N_barcodes"])
+            print(f'\n$ After filtering, {len(trace_wo_duplicates)} traces are found with no duplicates & at least 2 barcodes')
+    
+            # filter the traces by removing duplicated barcodes and checking the number of barcodes is above the threshold
+            # mentioned in the parameters
+            # ---------------------------
+            filtered_traces, n_overlapping_bc = _trace.detect_overlapping_barcodes(filtered_traces, verbose=True, save=True)
+            trace_wo_duplicates = _trace.select_traces_wo_duplicates(filtered_traces, N_barcodes = p["N_barcodes"])
+            print(f'\n$ A total of {n_overlapping_bc} overlapping barcodes were found. In total, {len(trace_wo_duplicates)} '
+                  f'traces are now found without duplicates and at least 2 barcodes')
+    
+            final_traces, stat = _trace.remove_duplicates(filtered_traces)
+            print(f'\n$ After completion of the procedure: \n\t {stat[0]} traces were discarded \n\t {stat[1]} traces with '
+                  f'duplicated barcodes were kept \n\t {stat[2]} were found without any duplicates.')
+    
+            # saving_name = dest_folder + os.sep + file.split('.')[0] + '_filtered.ecsv'
+            # saving_path = os.path.join(dest_folder, saving_name)
+            outputfile = _trace.save_to_astropy(final_traces, tag = "_" + p["output"])
+            print(f"\n$ output trace file: {outputfile}")
+        else:
+            print("! Sorry, all traces seem to contain duplicate barcodes")            
 
-        _trace.trace_statistics(save=True)
 
-        # based on the threshold defines above, analyze each trace in order to remove unspecific detections & separate
-        # traces that have been clustered together
-        # ----------------------------------------
-        filtered_traces = _trace.filter_traces(verbose=False)
-        trace_wo_duplicates = _trace.select_traces_wo_duplicates(filtered_traces)
-        print(f'After filtering, {len(trace_wo_duplicates)} traces are found with no duplicates & at least 2 barcodes')
 
-        # filter the traces by removing duplicated barcodes and checking the number of barcodes is above the threshold
-        # mentioned in the parameters
-        # ---------------------------
-        filtered_traces, n_overlapping_bc = _trace.detect_overlapping_barcodes(filtered_traces, verbose=True, save=True)
-        trace_wo_duplicates = _trace.select_traces_wo_duplicates(filtered_traces)
-        print(f'A total of {n_overlapping_bc} overlapping barcodes were found. In total, {len(trace_wo_duplicates)} '
-              f'traces are now found without duplicates and at least 2 barcodes')
-
-        final_traces, stat = _trace.remove_duplicates(filtered_traces, fraction_missing_barcodes)
-        print(f'After completion of the procedure, {stat[0]} traces were discarded, {stat[1]} traces were kept after '
-              f'removing the duplicated barcodes and {stat[2]} were found without any duplicates.')
-
-        saving_name = os.path.splitext(file)[0] + '_filtered.ecsv'
-        saving_path = os.path.join(dest_folder, saving_name)
-        _trace.save_to_astropy(final_traces, saving_path)
 

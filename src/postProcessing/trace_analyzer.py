@@ -18,7 +18,8 @@ trace_stats.csv
 
 trace_ID, number of barcodes, number of duplications, Rg, 
 
-
+    
+    
 """
 
 # =============================================================================
@@ -86,7 +87,48 @@ def parseArguments():
     return p
 
 
-def get_barcode_statistics(trace, output_filename="test.png"):
+def get_xyz_statistics(trace, output_filename="test_coor.png"):
+    """
+    Function that calculates the 
+        - distribution of localizations in x y z 
+    
+    Parameters
+    ----------
+    trace : TYPE
+        Trace table in ASTROPY Table format.
+    output_filename : TYPE, optional
+        Output figure in PNG. The default is 'test.png'.
+
+    Returns
+    -------
+    None.
+
+    """
+    coords = ['x','y', 'z']
+
+    fig = plt.figure(constrained_layout=True)
+    im_size, number_plots = 10, 3
+    fig.set_size_inches((im_size * number_plots, im_size))
+    gs = fig.add_gridspec(1, number_plots)
+    axes = [fig.add_subplot(gs[0, i]) for i in range(number_plots)]
+
+    for axis, coor in zip(axes, coords):
+        print(f"$ processing coordinate: {coor}")
+        coordinates = trace[coor].data
+        axis.hist(coordinates, alpha=0.3, bins = 20)
+        axis.set_xlabel(coor)
+        axis.set_ylabel("counts")
+        axis.set_title(
+            "n = "
+            + str(len(coordinates))
+            + " | median = "
+            + str(np.median(coordinates))
+        )
+
+    plt.savefig(output_filename)
+
+
+def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
     """
     Function that calculates the 
         - number of barcodes per trace
@@ -177,12 +219,14 @@ def analyze_trace(trace, trace_file):
 
     print(f"$ Number of lines in trace: {len(trace_table)}")
 
-    output_filename = [trace_file.split(".")[0], "_trace_statistics", ".png"]
+    output_filename = [trace_file.split(".")[0], "_xyz_statistics", ".png"]
+    get_xyz_statistics(trace_table, "".join(output_filename))
 
+    output_filename = [trace_file.split(".")[0], "_trace_statistics", ".png"]
     get_barcode_statistics(trace_table, "".join(output_filename))
 
 
-def process_traces(folder, trace_files=list()):
+def process_traces(trace_files=list()):
     """
     Processes list of trace files and sends each to get analyzed individually
 
@@ -223,7 +267,6 @@ def process_traces(folder, trace_files=list()):
 
             analyze_trace(trace, trace_file)
 
-            # outputfile = trace_file.rstrip(".ecsv") + "_labeled" + ".ecsv"
     else:
         print("! Error: did not find any trace file to analyze. Please provide one using --input or --pipe.")
 
@@ -239,8 +282,7 @@ def main():
     p = parseArguments()
 
     # [loops over lists of datafolders]
-    folder = p["rootFolder"]
-    process_traces(folder, trace_files=p["trace_files"])
+    process_traces(trace_files=p["trace_files"])
 
     print("Finished execution")
 
