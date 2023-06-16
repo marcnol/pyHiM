@@ -88,7 +88,6 @@ html_theme_options = {
     "use_edit_page_button": False,
     "path_to_docs": "docs",
     "logo_only": True,
-    "navbar_end": ["navbar-icon-links"]
 }
 
 html_logo = "_static/logo_pyHiM.png"
