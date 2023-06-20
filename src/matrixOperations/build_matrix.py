@@ -80,7 +80,8 @@ class BuildMatrix:
     def initialize_parameters(self):
         # initializes parameters from current_param
 
-        if len(self.current_param)>0:
+        if type(self.current_param) is not dict:
+            # if len(self.current_param.param_dict)>0:
             self.tracing_method = get_dictionary_value(
                 self.current_param.param_dict["buildsPWDmatrix"],
                 "tracing_method",

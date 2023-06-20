@@ -87,6 +87,7 @@ def runtime(folder, N_barcodes=2, trace_files=[], colormaps = dict()):
         for trace_file in trace_files:
 
             # converts trace to matrix 
+            
             param = dict()
             new_matrix = BuildMatrix(param, colormaps = colormaps)
             new_matrix.launch_analysis(trace_file)
