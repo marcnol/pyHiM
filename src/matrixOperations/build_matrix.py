@@ -66,46 +66,51 @@ warnings.filterwarnings("ignore")
 
 
 class BuildMatrix:
-    def __init__(self, param):
+    def __init__(self, param, colormaps = dict()):
 
         self.current_param = param
+        self.colormaps = colormaps
 
         self.initialize_parameters()
 
         # initialize with default values
         self.current_folder = []
-
+        self.log_name_md = 'trace_to_matrix.log'
+        
     def initialize_parameters(self):
         # initializes parameters from current_param
 
-        self.tracing_method = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "tracing_method",
-            default="masking",
-        )
-        self.z_binning = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "zBinning", default=1
-        )
-        self.pixel_size_xy = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
-        )
-        self.pixel_size_z_0 = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
-        )
-        self.pixel_size_z = self.z_binning * self.pixel_size_z_0
-        self.pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
-        self.available_masks = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "masks2process",
-            default={"nuclei": "DAPI"},
-        )
-        self.log_name_md = self.current_param.param_dict["fileNameMD"]
-        self.mask_expansion = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "mask_expansion",
-            default=8,
-        )
-        self.colormaps = self.current_param.param_dict["buildsPWDmatrix"]["colormaps"]
+        if type(self.current_param) is not dict:
+            # if len(self.current_param.param_dict)>0:
+            self.tracing_method = get_dictionary_value(
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "tracing_method",
+                default="masking",
+            )
+            self.z_binning = get_dictionary_value(
+                self.current_param.param_dict["acquisition"], "zBinning", default=1
+            )
+            self.pixel_size_xy = get_dictionary_value(
+                self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
+            )
+            self.pixel_size_z_0 = get_dictionary_value(
+                self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
+            )
+            self.pixel_size_z = self.z_binning * self.pixel_size_z_0
+            self.pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
+            self.available_masks = get_dictionary_value(
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "masks2process",
+                default={"nuclei": "DAPI"},
+            )
+            self.log_name_md = self.current_param.param_dict["fileNameMD"]
+            self.mask_expansion = get_dictionary_value(
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "mask_expansion",
+                default=8,
+            )
+            
+            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"]["colormaps"]
 
     def calculate_pwd_single_mask(self, x, y, z):
         """

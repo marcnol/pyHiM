@@ -18,7 +18,8 @@ trace_stats.csv
 
 trace_ID, number of barcodes, number of duplications, Rg, 
 
-
+    
+    
 """
 
 # =============================================================================
@@ -54,6 +55,7 @@ matplotlib.rc("font", **font)
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -66,7 +68,12 @@ def parseArguments():
     else:
         p["rootFolder"] = "."
 
-    p["trace_files"] = list()
+    if args.input:
+        p["input"] = args.input
+    else:
+        p["input"] = None
+    
+    p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
         if select.select([sys.stdin,], [], [], 0.0)[0]:
@@ -75,11 +82,53 @@ def parseArguments():
             print("Nothing in stdin")
     else:
         p["pipe"] = False
-
+        p["trace_files"] = [p["input"]]
+        
     return p
 
 
-def get_barcode_statistics(trace, output_filename="test.png"):
+def get_xyz_statistics(trace, output_filename="test_coor.png"):
+    """
+    Function that calculates the 
+        - distribution of localizations in x y z 
+    
+    Parameters
+    ----------
+    trace : TYPE
+        Trace table in ASTROPY Table format.
+    output_filename : TYPE, optional
+        Output figure in PNG. The default is 'test.png'.
+
+    Returns
+    -------
+    None.
+
+    """
+    coords = ['x','y', 'z']
+
+    fig = plt.figure(constrained_layout=True)
+    im_size, number_plots = 10, 3
+    fig.set_size_inches((im_size * number_plots, im_size))
+    gs = fig.add_gridspec(1, number_plots)
+    axes = [fig.add_subplot(gs[0, i]) for i in range(number_plots)]
+
+    for axis, coor in zip(axes, coords):
+        print(f"$ processing coordinate: {coor}")
+        coordinates = trace[coor].data
+        axis.hist(coordinates, alpha=0.3, bins = 20)
+        axis.set_xlabel(coor)
+        axis.set_ylabel("counts")
+        axis.set_title(
+            "n = "
+            + str(len(coordinates))
+            + " | median = "
+            + str(np.median(coordinates))
+        )
+
+    plt.savefig(output_filename)
+
+
+def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
     """
     Function that calculates the 
         - number of barcodes per trace
@@ -170,12 +219,14 @@ def analyze_trace(trace, trace_file):
 
     print(f"$ Number of lines in trace: {len(trace_table)}")
 
-    output_filename = [trace_file.split(".")[0], "_trace_statistics", ".png"]
+    output_filename = [trace_file.split(".")[0], "_xyz_statistics", ".png"]
+    get_xyz_statistics(trace_table, "".join(output_filename))
 
+    output_filename = [trace_file.split(".")[0], "_trace_statistics", ".png"]
     get_barcode_statistics(trace_table, "".join(output_filename))
 
 
-def process_traces(folder, trace_files=list()):
+def process_traces(trace_files=list()):
     """
     Processes list of trace files and sends each to get analyzed individually
 
@@ -191,25 +242,15 @@ def process_traces(folder, trace_files=list()):
     None.
 
     """
-    trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
-
-    if len(trace_files) < 1:
-        trace_files = [
-            x
-            for x in glob.glob(trace_folder + "Trace*ecsv")
-            if "uniqueBarcodes" not in x
-        ]
-
-    # removes already labeled trace files
-    trace_files = [x for x in trace_files if "labeled" not in x]
-
-    print(
-        "\n{} trace files to process= {}".format(
-            len(trace_files), "\n".join(map(str, trace_files))
-        )
-    )
 
     if len(trace_files) > 0:
+    
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
+
         # iterates over traces in folder
         for trace_file in trace_files:
 
@@ -226,8 +267,8 @@ def process_traces(folder, trace_files=list()):
 
             analyze_trace(trace, trace_file)
 
-            # outputfile = trace_file.rstrip(".ecsv") + "_labeled" + ".ecsv"
-
+    else:
+        print("! Error: did not find any trace file to analyze. Please provide one using --input or --pipe.")
 
 # =============================================================================
 # MAIN
@@ -241,8 +282,7 @@ def main():
     p = parseArguments()
 
     # [loops over lists of datafolders]
-    folder = p["rootFolder"]
-    process_traces(folder, trace_files=p["trace_files"])
+    process_traces(trace_files=p["trace_files"])
 
     print("Finished execution")
 

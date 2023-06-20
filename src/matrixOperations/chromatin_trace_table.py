@@ -22,6 +22,7 @@ import numpy as np
 from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 from astropy.table import Table, vstack
 from stardist import random_label_cmap
+import matplotlib
 
 from fileProcessing.fileManagement import print_log
 from imageProcessing.localization_table import (
@@ -31,6 +32,8 @@ from imageProcessing.localization_table import (
 )
 
 lbl_cmap = random_label_cmap()
+font = {"weight": "normal", "size": 18}
+matplotlib.rc("font", **font)
 
 # to remove in a future version
 import warnings
@@ -160,6 +163,65 @@ class ChromatinTraceTable:
 
         self.data = vstack([self.data, table])
 
+    def filter_traces_by_coordinate(self, coor = 'z', coor_min = 0., coor_max = np.inf):
+        """
+        This function will remove the spots that are outside coordinate limits
+
+        Parameters
+        ----------
+        coor : string, optional
+            which coordinate to process ('x','y' or 'z'). The default is 'z'.
+        coor_min : float, optional
+            minimum value. The default is 0..
+        coor_max : float, optional
+            maximum value. The default is np.inf.
+
+        Returns
+        -------
+        updated trace table is kept in self.data
+
+        """
+        trace_table = self.data
+
+        if len(trace_table)>0:
+        
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Trace_ID")
+    
+            # iterates over traces
+            print(f"\n$ Will keep localizations with {coor_min} < {coor} < {coor_max}.")
+            print(
+                f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}"
+            )
+    
+            coordinates=[]
+            rows_to_remove = []
+            for idx, row in enumerate(trace_table):
+                coordinate = float(row[coor])
+    
+                if coordinate < coor_min or coordinate > coor_max:
+                    rows_to_remove.append(idx)
+                    # coordinates.append(coordinate)
+    
+            print(f"$ Number of spots to remove: {len(rows_to_remove)}")
+    
+            trace_table.remove_rows(rows_to_remove)
+    
+            if len(trace_table) > 0:
+                trace_table_indexed = trace_table.group_by("Trace_ID")
+                number_traces_left = len(trace_table_indexed.groups)
+            else:
+                number_traces_left = 0
+    
+            print(
+                f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}"
+            )
+            
+        else:
+            print("! Error: you are trying to filter an empty trace table!")
+        self.data = trace_table
+
+
     def filter_traces_by_n(self, minimum_number_barcodes=2):
         """
         Removes rows in trace table with less than `minimum_number_barcodes` barcodes
@@ -184,7 +246,7 @@ class ChromatinTraceTable:
         trace_table_indexed = trace_table.group_by("Trace_ID")
 
         # iterates over traces
-        print(f"\n$ WIll keep traces with {minimum_number_barcodes } spots")
+        print(f"\n$ Will keep traces with {minimum_number_barcodes } spots")
         print(
             f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}"
         )
@@ -227,7 +289,7 @@ class ChromatinTraceTable:
         self.data = trace_table
 
     def plots_traces(
-        self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[0.1, 0.1, 0.25]
+        self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[.1, .1, .25]
     ):
 
         """
@@ -257,7 +319,7 @@ class ChromatinTraceTable:
 
             # initializes figure
             fig = plt.figure(constrained_layout=False)
-            im_size = 60
+            im_size = 20
             fig.set_size_inches((im_size * 2, im_size))
             gs = fig.add_gridspec(2, 2)
             ax = [
@@ -267,9 +329,9 @@ class ChromatinTraceTable:
             ]
 
             # defines variables
-            x = data_roi["x"] / pixel_size[0]
-            y = data_roi["y"] / pixel_size[1]
-            z = data_roi["z"] / pixel_size[2]
+            x = data_roi["x"]
+            y = data_roi["y"]
+            z = data_roi["z"]
 
             colors = [color_dict[str(x)] for x in data_roi["Barcode #"]]
             titles = ["Z-projection", "X-projection", "Y-projection"]
@@ -278,7 +340,7 @@ class ChromatinTraceTable:
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
             # makes plot
-            plots_localization_projection(x, y, ax[0], colors, titles[0])
+            plots_localization_projection(x/pixel_size[0], y/pixel_size[1], ax[0], colors, titles[0])
             plots_localization_projection(x, z, ax[1], colors, titles[1])
             plots_localization_projection(y, z, ax[2], colors, titles[2])
 
