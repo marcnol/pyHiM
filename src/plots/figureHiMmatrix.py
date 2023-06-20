@@ -272,6 +272,7 @@ def main():
 
     if run_parameters["dist_calc_mode"] == "proximity":
         # calculates and plots contact probability matrix from merged samples/datasets
+        print('$ calculating proximity matrix')
         sc_matrix, n_cells = calculate_contact_probability_matrix(
             sc_matrix,
             uniqueBarcodes,
