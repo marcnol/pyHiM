@@ -256,7 +256,8 @@ def main():
     outputFileName = (
         run_parameters["outputFolder"]
         + os.sep
-        + "Fig_HiMmatrix"
+        + "Fig_"
+        + os.path.basename(run_parameters["scPWDMatrix_filename"]).split('.')[0]
         + "_label:"
         + run_parameters["label"]
         + "_action:"
