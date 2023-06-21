@@ -50,7 +50,7 @@ matplotlib.rc("font", **font)
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    #parser.add_argument( "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true" )
+    # parser.add_argument( "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true" )
 
     p = {}
 
@@ -112,14 +112,10 @@ def get_barcode_statistics(barcode_map, output_filename="localization_analysis.p
         axis.hist(distribution, alpha=0.3)
         axis.set_xlabel(xlabel)
         axis.set_ylabel("Number of barcodes")
-        axis.set_title(
-            "n = "
-            + str(len(distribution))
-            + " | median = "
-            + str(np.median(distribution))
-        )
+        axis.set_title("n = " + str(len(distribution)) + " | median = " + str(np.median(distribution)))
 
     plt.savefig(output_filename)
+
 
 def get_number_localization_per_barcode(barcode_map, output_filename="localization_analysis.png"):
     """
@@ -148,7 +144,7 @@ def get_number_localization_per_barcode(barcode_map, output_filename="localizati
         barcode_name.append(str(unique_barcode_name[0]))
 
     print("Barcodes detected: \n{}".format(barcode_name))
-    
+
     distributions = [barcode_lengths]
     axis_x_labels = [
         "barcode #",
@@ -163,17 +159,14 @@ def get_number_localization_per_barcode(barcode_map, output_filename="localizati
     axes = [fig.add_subplot(gs[0, i]) for i in range(number_plots)]
 
     for axis, distribution, xlabel in zip(axes, distributions, axis_x_labels):
-        axis.bar(barcode_name,distribution, alpha=0.5)
+        axis.bar(barcode_name, distribution, alpha=0.5)
         axis.set_xlabel(xlabel)
         axis.set_ylabel("Number of localizations")
-        axis.set_title(
-            "n = "
-            + str(len(distribution))
-            + " | median = "
-            + str(np.median(distribution))
-        )
+        axis.set_title("n = " + str(len(distribution)) + " | median = " + str(np.median(distribution)))
 
     plt.savefig(output_filename)
+
+
 def analyze_table(table, localization_file, barcode_map, unique_barcodes):
     """
     Launcher function that will perform different kinds of trace analyses
@@ -194,21 +187,22 @@ def analyze_table(table, localization_file, barcode_map, unique_barcodes):
     print(f"$ Number of lines in localization table: {len(barcode_map)}.")
 
     localization_stats_file = [localization_file.split(".")[0], "localization_table_stats", ".png"]
-    print("\n$ Stats: {}",format("".join(localization_stats_file)))
+    print("\n$ Stats: {}", format("".join(localization_stats_file)))
 
     localizations_file = [localization_file.split(".")[0], "_XYZ_localizations", ".png"]
-    print("\n$ XYZ Localizations: {}",format("".join(localizations_file)))
-    
-    localization_stats_perBarcode_file= [localization_file.split(".")[0], "_localization_stats_perBarcode", ".png"]
-    print("\n$ localization stats per Barcode: {}",format("".join(localization_stats_perBarcode_file)))
+    print("\n$ XYZ Localizations: {}", format("".join(localizations_file)))
 
-    table.plot_distribution_fluxes(barcode_map,localization_stats_file)
+    localization_stats_perBarcode_file = [localization_file.split(".")[0], "_localization_stats_perBarcode", ".png"]
+    print("\n$ localization stats per Barcode: {}", format("".join(localization_stats_perBarcode_file)))
+
+    table.plot_distribution_fluxes(barcode_map, localization_stats_file)
     table.plots_localizations(barcode_map, localizations_file)
 
-    #get_barcode_statistics(barcode_map, "".join(localization_stats_perBarcode_file))
+    # get_barcode_statistics(barcode_map, "".join(localization_stats_perBarcode_file))
 
     get_number_localization_per_barcode(barcode_map, "".join(localization_stats_perBarcode_file))
-    
+
+
 def process_localizations(folder, localization_files=list()):
     """
     Processes list of trace files and sends each to get analyzed individually
@@ -226,14 +220,10 @@ def process_localizations(folder, localization_files=list()):
 
     """
 
-    print(
-        "\n{} trace files to process= {}".format(
-            len(localization_files), "\n".join(map(str, localization_files))
-        )
-    )
+    print("\n{} trace files to process= {}".format(len(localization_files), "\n".join(map(str, localization_files))))
 
     if len(localization_files) > 0:
-        
+
         # iterates over traces in folder
         for localization_file in localization_files:
 

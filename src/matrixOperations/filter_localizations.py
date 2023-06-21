@@ -54,9 +54,7 @@ class FilterLocalizations:
         """
         if self.ndims == 3:  # and  "3DfitKeep" in barcode_map.keys()
             # [reading the flag in barcode_map_roi assigned by the 3D localization routine]
-            keep = (
-                barcode_map["flux"][i] > self.flux_min
-            )  # and barcode_map["3DfitKeep"][i]
+            keep = barcode_map["flux"][i] > self.flux_min  # and barcode_map["3DfitKeep"][i]
         else:
             # [or by reading the flux from 2D localization]
             keep = barcode_map["flux"][i] > self.flux_min
@@ -142,9 +140,7 @@ class FilterLocalizations:
         # removes rows from table
         barcode_map.remove_rows(rows_to_remove)
 
-        print(
-            f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}."
-        )
+        print(f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}.")
 
         return barcode_map
 
@@ -190,9 +186,7 @@ class FilterLocalizations:
         print_log("\n===================={}====================\n".format(session_name))
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
-            "a",
+            self.current_param.param_dict["fileNameMD"], "## {}\n".format(session_name), "a",
         )
         label = "barcode"
 
@@ -200,15 +194,7 @@ class FilterLocalizations:
             self.data_folder.create_folders(current_folder, self.current_param)
             print_log("> Processing Folder: {}".format(current_folder))
 
-            files = [
-                x
-                for x in glob.glob(
-                    self.data_folder.output_files["segmentedObjects"]
-                    + "_*"
-                    + label
-                    + ".dat"
-                )
-            ]
+            files = [x for x in glob.glob(self.data_folder.output_files["segmentedObjects"] + "_*" + label + ".dat")]
 
             if len(files) > 0:
 
@@ -230,12 +216,10 @@ class FilterLocalizations:
                         new_file = get_file_table_new_name(file)
                         table.save(new_file, barcode_map)
                         table.plot_distribution_fluxes(
-                            barcode_map,
-                            [new_file.split(".")[0], "_barcode_stats", ".png"],
+                            barcode_map, [new_file.split(".")[0], "_barcode_stats", ".png"],
                         )
                         table.plots_localizations(
-                            barcode_map,
-                            [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map, [new_file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                         # processes tables
@@ -248,12 +232,9 @@ class FilterLocalizations:
 
                         # saves and plots filtered barcode coordinate Tables
                         table.save(file, barcode_map, comments="filtered")
-                        table.plot_distribution_fluxes(
-                            barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
-                        )
+                        table.plot_distribution_fluxes(barcode_map, [file.split(".")[0], "_barcode_stats", ".png"])
                         table.plots_localizations(
-                            barcode_map,
-                            [file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map, [file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                     else:
@@ -272,9 +253,7 @@ def get_file_table_new_name(file):
     if len(existing_versions) < 1:
         new_version = 0
     else:
-        version_numbers = [
-            int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
-        ]
+        version_numbers = [int(x.split("_version_")[1].split("_")[0]) for x in existing_versions]
 
         if len(version_numbers) > 0:
             new_version = max(version_numbers) + 1
