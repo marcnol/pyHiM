@@ -34,11 +34,6 @@ from imageProcessing.imageProcessing import Image
 def make_2d_projections_file(file_name, current_param, current_session, data_folder):
 
     if file_name in current_session.data:
-        # creates image object
-        im_obj = Image(current_param)
-        im_obj.load_image_2d(file_name, data_folder.output_folders["zProject"])
-        if current_param.param_dict["zProject"]["display"]:
-            im_obj.show_image()
         print_log("# File already projected: {}".format(os.path.basename(file_name)))
     else:
 
