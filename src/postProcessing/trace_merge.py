@@ -85,7 +85,7 @@ def appends_traces(traces, trace_files):
 
         print(f" $ appended trace file with {len(new_trace.data)} traces")
 
-    print(f" $ Merge trace file will contain {len(traces.data)} traces")
+    print(f" $ Merged trace file will contain {len(traces.data)} traces")
 
     return traces
 
