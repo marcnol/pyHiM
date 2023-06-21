@@ -94,7 +94,7 @@ class Image:
         file_name = self.get_image_filename(master_folder, tag) + ".npy"
 
         self.data_2d = np.load(file_name)
-        print_log("$ Loading from disk:{}".format(os.path.basename(file_name)))
+        print_log(f"$ Loading from disk:{os.path.basename(file_name)}")
 
     # max intensity projection using all z planes
     def max_intensity_projection(self):
@@ -128,10 +128,8 @@ class Image:
 
     # Outputs image properties to command line
     def print_image_properties(self):
-        # print_log("Image Name={}".format(self.file_name))
-        print_log("$ Image Size={}".format(self.image_size))
-        # self.log.report("Stage position={}".format(self.stage_coordinates))
-        print_log("$ Focal plane={}".format(self.focus_plane))
+        print_log(f"$ Image Size={self.image_size}")
+        print_log(f"$ Focal plane={self.focus_plane}")
 
     # processes sum image in axial direction given range
     # @jit(nopython=True)
@@ -179,7 +177,7 @@ class Image:
             self.focus_plane = z_range[0]
             self.z_range = z_range[1]
 
-        print_log("> Processing z_range:{}".format(self.z_range))
+        print_log(f"> Processing z_range:{self.z_range}")
 
     # displays image and shows it
     def show_image(
@@ -236,7 +234,7 @@ class Image:
     def image_show_with_values(self, output_name):
         image_show_with_values(
             [self.focal_plane_matrix],
-            title="focal plane = " + "{:.2f}".format(self.focus_plane),
+            title="focal plane = " + f"{self.focus_plane:.2f}",
             output_name=output_name,
         )
 
@@ -277,7 +275,6 @@ def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
         )
     )
     for _ax, m in enumerate(shift_matrices):
-        # print_log("size={}".format(m.shape))
         for i in range(number_blocks):
             for j in range(number_blocks):
                 shift_matrix[
@@ -301,9 +298,7 @@ def project_image_2d(img, z_range, mode):
             img[z_range[1][0] : (z_range[1][-1] + 1)]
         )
     else:
-        print_log(
-            "ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode)
-        )
+        print_log(f"ERROR: mode not recognized. Expected: MIP or sum. Read: {mode}")
 
     return i_collapsed
 
@@ -446,7 +441,7 @@ def reassemble_3d_image(client, futures, output_shape):
 
     """
     results = client.gather(futures)
-    print_log(" > Retrieving {} results from cluster".format(len(results)))
+    print_log(f" > Retrieving {len(results)} results from cluster")
 
     output = np.zeros(output_shape)
     for z, result in enumerate(results):
@@ -721,9 +716,7 @@ def _remove_inhomogeneous_background_3d(
     bkg_estimator = MedianBackground()
     if client is not None:
         print_log(
-            "> Removing inhomogeneous background from {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Removing inhomogeneous background from {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
         image_list = [image_3d[z, :, :] for z in range(number_planes)]
         # image_list_scattered = client.scatter(image_list)
@@ -741,7 +734,7 @@ def _remove_inhomogeneous_background_3d(
         ]
 
         results = client.gather(futures)
-        print_log(" > Retrieving {} results from cluster".format(len(results)))
+        print_log(f" > Retrieving {len(results)} results from cluster")
 
         for z, img, bkg in zip(range(number_planes), image_list, results):
             output[z, :, :] = img - bkg.background
@@ -750,9 +743,7 @@ def _remove_inhomogeneous_background_3d(
 
     else:
         print_log(
-            "> Removing inhomogeneous background from {} planes using 1 worker...".format(
-                number_planes
-            )
+            f"> Removing inhomogeneous background from {number_planes} planes using 1 worker..."
         )
         z_range = trange(number_planes)
         for z in z_range:
@@ -799,15 +790,13 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     number_planes = image.shape[0]
 
     if client is None:
-        print_log("> Shifting {} planes with 1 thread...".format(number_planes))
+        print_log(f"> Shifting {number_planes} planes with 1 thread...")
         shift_3d = np.zeros((3))
         shift_3d[0], shift_3d[1], shift_3d[2] = 0, shift[0], shift[1]
         output = shift_image(image, shift_3d)
     else:
         print_log(
-            "> Shifting {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Shifting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
 
         image_list_scattered = scatter_3d_image(image)
@@ -829,7 +818,7 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     # sanity checks
     if len(images) < 2:
-        sys.exit("# Error, number of images must be 2, not {}".format(len(images)))
+        sys.exit(f"# Error, number of images must be 2, not {len(images)}")
 
     # - break in blocks
     num_planes = images[0].shape[0]
@@ -844,7 +833,6 @@ def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     # - loop thru blocks and calculates block shift in xyz:
     shift_matrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
 
-    # print_log("$ Aligning {} blocks".format(len(block_ref.shape[0])))
     for i in trange(block_ref.shape[0]):
         for j in range(block_ref.shape[1]):
             # - cross correlate in 3D to find 3D shift
@@ -1173,9 +1161,7 @@ def align_images_by_blocks(
     mean_error_global = np.sum(np.sum(np.abs(img_1 - img_2_aligned_global), axis=1))
 
     print_log(
-        "Block alignment error: {}, global alignment error: {}".format(
-            mean_error, mean_error_global
-        )
+        f"Block alignment error: {mean_error}, global alignment error: {mean_error_global}"
     )
 
     if (
@@ -1188,14 +1174,10 @@ def align_images_by_blocks(
         print_log("Falling back to global registration")
 
     print_log(
-        "*** Global XY shifts: {:.2f} px | {:.2f} px".format(
-            mean_shifts_global[0], mean_shifts_global[1]
-        )
+        f"*** Global XY shifts: {mean_shifts_global[0]:.2f} px | {mean_shifts_global[1]:.2f} px"
     )
     print_log(
-        "*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(
-            mean_shifts[0], std_shifts[0], mean_shifts[1], std_shifts[1]
-        )
+        f"*** Mean polled XY shifts: {mean_shifts[0]:.2f}({std_shifts[0]:.2f}) px | {mean_shifts[1]:.2f}({std_shifts[1]:.2f}) px"
     )
 
     return np.array(mean_shifts), mean_error, relative_shifts, rms_image, contour
@@ -1349,9 +1331,7 @@ def reinterpolate_z(image_3d, z_range, mode="average"):
     elif "average" in mode:
         output = _average_z_planes(image_3d, z_range)
 
-    print_log(
-        "$ Reduced Z-planes from {} to {}".format(image_3d.shape[0], output.shape[0])
-    )
+    print_log(f"$ Reduced Z-planes from {image_3d.shape[0]} to {output.shape[0]}")
 
     return output
 
@@ -1433,8 +1413,8 @@ def _segment_3d_volumes_stardist(
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
-    print_log("> Loading model {} from {}...".format(model_name, model_dir))
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     model = StarDist3D(None, name=model_name, basedir=model_dir)
@@ -1498,10 +1478,10 @@ def _segment_3d_volumes_by_thresholding(
             parallel = False
             print_log("# Failed getting workers. Report of scheduler:")
             for key in client.scheduler_info().keys():
-                print_log("{}:{}".format(key, client.scheduler_info()[key]))
+                print_log(f"{key}:{client.scheduler_info()[key]}")
 
     if not parallel:
-        print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
+        print_log(f"> Segmenting {number_planes} planes using 1 worker...")
 
         output = np.zeros(image_3d.shape)
 
@@ -1520,9 +1500,7 @@ def _segment_3d_volumes_by_thresholding(
 
     else:
         print_log(
-            "> Segmenting {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Segmenting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
 
         image_list_scattered = scatter_3d_image(image_3d)
@@ -1615,8 +1593,8 @@ def _segment_3d_masks(
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
-    print_log("> Loading model {} from {}...".format(model_name, model_dir))
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
 
     # Load the model
@@ -1715,8 +1693,7 @@ def save_2_images_rgb(img_1, img_2, output_filename):
 def save_image_2d_cmd(image, file_name):
     if image.shape > (1, 1):
         np.save(file_name, image)
-        # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(file_name)),'info')
-        print_log("$ Image saved to disk: {}".format(file_name + ".npy"), "info")
+        print_log(f"$ Image saved to disk: {file_name}.npy", "info")
     else:
         print_log("# Warning, image is empty", "Warning")
 
@@ -1725,16 +1702,14 @@ def save_image_as_blocks(img, full_filename, block_size_xy=256, label="raw_image
     num_planes = img.shape[0]
     block_size = (num_planes, block_size_xy, block_size_xy)
     blocks = view_as_blocks(img, block_shape=block_size).squeeze()
-    print_log(
-        "\nDecomposing image into {} blocks".format(blocks.shape[0] * blocks.shape[1])
-    )
+    print_log(f"\nDecomposing image into {blocks.shape[0] * blocks.shape[1]} blocks")
 
     folder = full_filename.split(".")[0]
     file_name = os.path.basename(full_filename).split(".")[0]
 
     if not os.path.exists(folder):
         os.mkdir(folder)
-        print_log("Folder created: {}".format(folder))
+        print_log(f"Folder created: {folder}")
 
     for i in trange(blocks.shape[0]):
         for j in range(blocks.shape[1]):
@@ -1758,7 +1733,7 @@ def save_image_as_blocks(img, full_filename, block_size_xy=256, label="raw_image
 def image_show_with_values_single(
     ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"
 ):
-    row = ["".format(x) for x in range(matrix.shape[0])]
+    row = [str(x) for x in range(matrix.shape[0])]
     im, _ = heatmap(
         matrix,
         row,
