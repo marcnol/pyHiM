@@ -87,9 +87,7 @@ def parse_arguments():
         "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
     )
     parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
-    parser.add_argument(
-        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
-    )
+    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
 
     p = {}
 
@@ -103,7 +101,7 @@ def parse_arguments():
         p["input"] = args.input
     else:
         p["input"] = None
-        
+
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
     else:
@@ -139,7 +137,7 @@ def parse_arguments():
     else:
         p["pipe"] = False
         p["trace_files"] = [p["input"]]
-        
+
     return p
 
 
@@ -184,11 +182,11 @@ def runtime(
                 trace_id = single_trace["Trace_ID"][0]
                 flag = False
 
-                if select_traces == 'selected' and trace_id == selected_trace:
+                if select_traces == "selected" and trace_id == selected_trace:
                     flag = True
-                elif select_traces == 'all':
+                elif select_traces == "all":
                     flag = True
-                    
+
                 if flag:
                     print("Converting trace ID: {}".format(trace_id))
 
@@ -202,9 +200,6 @@ def runtime(
         print("No trace file found to process!")
 
     return len(trace_files)
-
-
-
 
 
 # =============================================================================
