@@ -1653,7 +1653,7 @@ def plot_matrix(
             mean_sc_matrix = np.reciprocal(mean_sc_matrix)
 
         # plots figure
-        fig = plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(15, 15))
         pos = plt.imshow(mean_sc_matrix, cmap=c_m)  # colormaps RdBu seismic
         plt.xlabel("barcode #")
         plt.ylabel("barcode #")
@@ -1663,7 +1663,7 @@ def plot_matrix(
             + str(mean_sc_matrix.shape[0])
             + " barcodes | n="
             + str(n_cells)
-            + " | rois="
+            + " | FOVs="
             + str(number_rois)
         )
         # print("matrix size: {} | barcodes:{}".format(sc_matrix_collated.shape[0],list(unique_barcodes)))

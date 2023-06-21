@@ -390,6 +390,59 @@ class ChromatinTraceTable:
             print("! Error: you are trying to filter an empty trace table!")
         self.data = trace_table_new
 
+    def remove_barcode(self, remove_barcode = None):
+        """
+        Removes a specific barcode from a trace table        
+
+        Returns
+        -------
+        trace_table : ASTROPY Table
+            output trace table.
+        """
+        
+        if remove_barcode is not None:
+
+            print("\n$ Removing barcode <{}>".format(remove_barcode))
+            
+            trace_table = self.data
+            trace_table_new = trace_table.copy()
+
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Barcode #")
+            number_barcodes_before = len(trace_table_indexed.groups)
+            
+            # iterates over traces
+            spots_to_remove = list()
+            for idx, sub_table_barcode in enumerate(tqdm(trace_table_indexed.groups)):
+                barcode_name =  list(set(sub_table_barcode["Barcode #"]))
+                if int(remove_barcode) in barcode_name:
+                    print("$ Found barcode: {}".format(barcode_name))
+
+                    for row in sub_table_barcode:
+                        spots_to_remove.append(row["Spot_ID"])
+
+            print(f"$ Number of spots to remove: {len(spots_to_remove)}")
+
+            # builds the list with the rows to remove
+            rows_to_remove = list()
+            for idx, row in enumerate(trace_table):
+                spot_id = row["Spot_ID"]
+
+                if spot_id in spots_to_remove:
+                    rows_to_remove.append(idx)
+                    
+            # removes targetted spots
+            trace_table_new.remove_rows(rows_to_remove)
+            
+            # provides statistics
+            trace_table_indexed_new = trace_table_new.group_by("Barcode #")
+            number_barcodes_left = len(trace_table_indexed_new.groups)
+            print(f"\n$ Number of barcodes \n\t original: {number_barcodes_before} \n\t after: {number_barcodes_left}")
+
+        self.data = trace_table_new
+
+
+        
     def filter_traces_by_n(self, minimum_number_barcodes=2):
         """
         Removes rows in trace table with less than `minimum_number_barcodes` barcodes
