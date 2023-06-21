@@ -13,7 +13,9 @@ $ trace_filter.py --input Trace.ecsv --z_min 4 --z_max 5 --y_max 175 --output 'z
 
 will analyze 'Trace.ecsv' and remove spots with 4>z>5 amd z>175 and less than 3 barcodes
 
-the option --clean_spots will remove barcode spots that are repeated within a trace
+--clean_spots will remove barcode spots that are repeated within a trace
+
+--remove_barcode will remove the barcode name provided. This needs to be an integer
 
 --> outputs
 
@@ -54,6 +56,7 @@ def parse_arguments():
     parser.add_argument("--y_max", help="Y maximum for a localization. Default = np.inf")
     parser.add_argument("--x_min", help="X minimum for a localization. Default = 0")
     parser.add_argument("--x_max", help="X maximum for a localization. Default = np.inf")
+    parser.add_argument("--remove_barcode", help="name of barcode to remove")
 
     p = {}
 
@@ -108,6 +111,11 @@ def parse_arguments():
     else:
         p["x_max"] = np.inf
 
+    if args.remove_barcode:
+        p["remove_barcode"] = args.remove_barcode
+    else:
+        p["remove_barcode"] = None
+        
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
@@ -122,7 +130,7 @@ def parse_arguments():
     return p
 
 
-def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", remove_duplicate_spots=False):
+def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", remove_duplicate_spots=False,remove_barcode=None):
 
     # checks number of trace files
     if len(trace_files) < 1:
@@ -161,6 +169,9 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", re
             if remove_duplicate_spots:
                 trace.filter_repeated_barcodes(trace_file)
 
+            if remove_barcode is not None:
+                trace.remove_barcode(remove_barcode)
+                
             # saves output trace
             outputfile = os.path.basename(trace_file).split(".")[0] + "_" + tag + ".ecsv"
             trace.save(outputfile, trace.data, comments=", ".join(comments))
@@ -187,6 +198,7 @@ def main():
         coor_limits=p,
         tag=p["output"],
         remove_duplicate_spots=p["clean_spots"],
+        remove_barcode = p["remove_barcode"],
     )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")

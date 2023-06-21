@@ -330,11 +330,17 @@ class BuildMatrix:
 
         # saves output
         np.save(output_filename + "_PWDscMatrix.npy", self.sc_matrix)
+        print("$ saved: {}".format(output_filename + "_PWDscMatrix.npy"))
+
         np.savetxt(
             output_filename + "_uniqueBarcodes.ecsv", self.unique_barcodes, delimiter=" ", fmt="%d",
         )
-        np.save(output_filename + "_Nmatrix.npy", self.n_matrix)
 
+        print("$ saved: {}".format(output_filename + "_uniqueBarcodes.ecsv"))
+
+        np.save(output_filename + "_Nmatrix.npy", self.n_matrix)
+        print("$ saved: {}".format(output_filename + "_Nmatrix.npy"))
+        
     def launch_analysis(self, file):
         """
         run analysis for a chromatin trace table.
