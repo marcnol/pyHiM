@@ -211,26 +211,6 @@ class Image:
             fig.savefig(output_name)
             plt.close(fig)
 
-    def remove_background_2d(self, normalize=False):
-        sigma_clip = SigmaClip(sigma=3.0)
-        bkg_estimator = MedianBackground()
-        bkg = Background2D(
-            self.data_2d,
-            (64, 64),
-            filter_size=(3, 3),
-            sigma_clip=sigma_clip,
-            bkg_estimator=bkg_estimator,
-        )
-
-        im_bkg_substracted = self.data_2d - bkg.background
-
-        if normalize:
-            im_bkg_substracted = (im_bkg_substracted - im_bkg_substracted.min()) / (
-                im_bkg_substracted.max()
-            )
-
-        return im_bkg_substracted
-
     def image_show_with_values(self, output_name):
         image_show_with_values(
             [self.focal_plane_matrix],
@@ -531,11 +511,11 @@ def image_adjust(image, lower_threshold=0.3, higher_threshold=0.9999):
     # calculates histogram of intensities
     hist1_before = exposure.histogram(image1)
 
-    sum = np.zeros(len(hist1_before[0]))
+    hist_sum = np.zeros(len(hist1_before[0]))
     for i in range(len(hist1_before[0]) - 1):
-        sum[i + 1] = sum[i] + hist1_before[0][i]
+        hist_sum[i + 1] = hist_sum[i] + hist1_before[0][i]
 
-    sum_normalized = sum / sum.max()
+    sum_normalized = hist_sum / hist_sum.max()
     lower_cutoff = np.where(sum_normalized > lower_threshold)[0][0] / 255
     higher_cutoff = np.where(sum_normalized > higher_threshold)[0][0] / 255
 
@@ -593,7 +573,6 @@ def _remove_inhomogeneous_background(
     im,
     box_size=(32, 32),
     filter_size=(3, 3),
-    verbose=True,
     parallel_execution=True,
     background=False,
 ):
@@ -608,8 +587,6 @@ def _remove_inhomogeneous_background(
         size of box_size used for block decomposition. The default is (32, 32).
     filter_size : tuple of ints, optional
         Size of gaussian filter used for smoothing results. The default is (3, 3).
-    verbose : boolean, optional
-        The default is True.
 
     Returns
     -------
@@ -1842,7 +1819,7 @@ def display_3d(
 
     percent = 99.5
     symbols = ["+", "o", "*", "^"]
-    colors = ["r", "b", "g", "y"]
+    colors_rbgy = ["r", "b", "g", "y"]
 
     fig, axes = plt.subplots(1, len(images))
     fig.set_size_inches(len(images) * 50, 50)
@@ -1858,17 +1835,17 @@ def display_3d(
         if labels is not None:
             axis.imshow(color.label2rgb(segm, bg_label=0), alpha=0.3)
         if localizations_list is not None:
-            for i_loc_list, symbol, color in zip(
-                range(len(localized_list)), symbols, colors
+            for i_loc_list, symbol, color_rbgy in zip(
+                range(len(localized_list)), symbols, colors_rbgy
             ):
                 locs = localized_list[i_loc_list][i_plane]
-                axis.plot(locs[:, 0], locs[:, 1], symbol, color=color, alpha=0.7)
+                axis.plot(locs[:, 0], locs[:, 1], symbol, color=color_rbgy, alpha=0.7)
 
     return fig
 
 
 def display_3d_assembled(
-    images, localizations=None, plotting_range=None, normalize=True, masks=None
+    images, localizations=None, plotting_range=None, normalize_b=True, masks=None
 ):
     wspace = 25
 
@@ -1887,7 +1864,7 @@ def display_3d_assembled(
         1
     ].transpose()
 
-    if normalize:
+    if normalize_b:
         norm = simple_norm(display_image[:, :], "sqrt", percent=99)
         axis.imshow(display_image[:, :], cmap="Greys", alpha=1, norm=norm)
     else:
@@ -1905,11 +1882,11 @@ def display_3d_assembled(
 
         axis.imshow(color.label2rgb(display_mask[:, :], bg_label=0), alpha=0.3)
 
-    colors = ["r", "g", "b", "y"]
+    colors_rbgy = ["r", "g", "b", "y"]
     markersizes = [2, 1, 1, 1, 1]
     if localizations is not None:
         for i, loc in enumerate(localizations):
-            axis.plot(loc[:, 2], loc[:, 1], "+", color=colors[i], markersize=1)
+            axis.plot(loc[:, 2], loc[:, 1], "+", color=colors_rbgy[i], markersize=1)
             if plotting_range is not None:
                 selections = [
                     np.abs(loc[:, a] - plotting_range[0]) < plotting_range[1]
@@ -1919,7 +1896,7 @@ def display_3d_assembled(
                     loc[selections[0], 0] + cols_xy + wspace,
                     loc[selections[0], 1],
                     "+",
-                    color=colors[i],
+                    color=colors_rbgy[i],
                     markersize=markersizes[i],
                     alpha=0.9,
                 )
@@ -1927,13 +1904,17 @@ def display_3d_assembled(
                     loc[selections[1], 2],
                     loc[selections[1], 0] + rows_xy + wspace,
                     "+",
-                    color=colors[i],
+                    color=colors_rbgy[i],
                     markersize=markersizes[i],
                     alpha=0.9,
                 )
             else:
                 axis.plot(
-                    loc[:, 0] + cols_xy, loc[:, 1], "+", color=colors[i], markersize=1
+                    loc[:, 0] + cols_xy,
+                    loc[:, 1],
+                    "+",
+                    color=colors_rbgy[i],
+                    markersize=1,
                 )
 
     axis.axes.yaxis.set_visible(False)
@@ -1943,7 +1924,9 @@ def display_3d_assembled(
     return fig
 
 
-def _plot_image_3d(image_3d, localizations=None, masks=None, normalize=True, window=3):
+def _plot_image_3d(
+    image_3d, localizations=None, masks=None, normalize_b=True, window=3
+):
     """
     makes list with XY, XZ and ZY projections and sends for plotting
 
@@ -1980,7 +1963,7 @@ def _plot_image_3d(image_3d, localizations=None, masks=None, normalize=True, win
         localizations=localizations,
         masks=labels,
         plotting_range=[center, window],
-        normalize=normalize,
+        normalize_b=normalize_b,
     )
 
     return fig1
@@ -2016,7 +1999,6 @@ def plot_4_images(
     ax = axes.ravel()
 
     for axis, img, title in zip(ax, allimages, titles):
-        # im = np.sum(img, axis=0)
         axis.imshow(img, cmap="Greys")
         axis.set_title(title)
     fig.tight_layout()
