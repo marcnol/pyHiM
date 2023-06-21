@@ -19,6 +19,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize as spo
+from apifish.stack import projection
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import SigmaClip
 from astropy.visualization import SqrtStretch, simple_norm
@@ -39,14 +40,12 @@ from skimage.registration import phase_cross_correlation
 from skimage.segmentation import watershed
 from skimage.util.apply_parallel import apply_parallel
 from skimage.util.shape import view_as_blocks
+from stardist import random_label_cmap
 from stardist.models import StarDist3D
 from tifffile import imsave
 from tqdm import tqdm, trange
-from stardist import random_label_cmap
 
 from fileProcessing.fileManagement import print_log, try_get_client
-
-from apifish.stack import projection
 
 warnings.filterwarnings("ignore")
 
@@ -137,7 +136,6 @@ class Image:
     # processes sum image in axial direction given range
     # @jit(nopython=True)
     def z_projection_range(self):
-
         # find the correct range for the projection
         if self.current_param.param_dict["zProject"]["zmax"] > self.image_size[0]:
             print_log("$ Setting z max to the last plane")
@@ -248,9 +246,6 @@ class Image:
 # =============================================================================
 
 
-
-
-
 def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
     """
     Reinterpolates a block matrix to the full size of a larger image
@@ -302,7 +297,9 @@ def project_image_2d(img, z_range, mode):
         i_collapsed = projection.maximum_projection(img[z_range[1][0] : z_range[1][-1]])
     elif "sum" in mode:
         # Sums selected planes
-        i_collapsed = projection.sum_projection(img[z_range[1][0] : (z_range[1][-1] + 1)])
+        i_collapsed = projection.sum_projection(
+            img[z_range[1][0] : (z_range[1][-1] + 1)]
+        )
     else:
         print_log(
             "ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode)
@@ -322,6 +319,7 @@ def gaussian(x, a=1, mean=0, std=0.5):
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
+
 
 # @jit(nopython=True)
 def calculate_zrange(idata, parameters):
@@ -626,7 +624,9 @@ def _remove_inhomogeneous_background(
     """
     if len(im.shape) == 2:
         output = _remove_inhomogeneous_background_2d(
-            im, filter_size=filter_size, background=background,
+            im,
+            filter_size=filter_size,
+            background=background,
         )
     elif len(im.shape) == 3:
         output = _remove_inhomogeneous_background_3d(
@@ -827,7 +827,6 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
 
 
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
-
     # sanity checks
     if len(images) < 2:
         sys.exit("# Error, number of images must be 2, not {}".format(len(images)))
@@ -1000,12 +999,24 @@ def align_2_images_cross_correlation(
 
     """
 
-    (image1_adjusted, hist1_before, hist1_after, lower_cutoff1, _,) = image_adjust(
+    (
+        image1_adjusted,
+        hist1_before,
+        hist1_after,
+        lower_cutoff1,
+        _,
+    ) = image_adjust(
         image1_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
     )
-    (image2_adjusted, hist2_before, hist2_after, lower_cutoff2, _,) = image_adjust(
+    (
+        image2_adjusted,
+        hist2_before,
+        hist2_after,
+        lower_cutoff2,
+        _,
+    ) = image_adjust(
         image2_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
@@ -1043,7 +1054,6 @@ def align_2_images_cross_correlation(
 
 
 def align_cv2(im1, im2, warp_mode):
-
     # Define 2x3 or 3x3 matrices and initialize the matrix to identity
     if warp_mode == cv2.MOTION_HOMOGRAPHY:
         warp_matrix = np.eye(3, 3, dtype=np.float32)
@@ -1081,7 +1091,6 @@ def align_cv2(im1, im2, warp_mode):
 
 
 def apply_correction(im2, warp_matrix):
-
     sz = im2.shape
 
     # Use warpAffine for Translation, Euclidean and Affine
@@ -1102,7 +1111,6 @@ def align_images_by_blocks(
     use_cv2=False,
     shift_error_tolerance=5,
 ):
-
     block_1 = view_as_blocks(img_1, block_size)
     block_2 = view_as_blocks(img_2, block_size)
 
@@ -1197,8 +1205,8 @@ def align_images_by_blocks(
 # FOCAL PLANE INTERPOLATION
 # =============================================================================
 
-def reinterpolate_focal_plane(data, param_dict):
 
+def reinterpolate_focal_plane(data, param_dict):
     if "blockSize" in param_dict["zProject"]:
         block_size_xy = param_dict["zProject"]["blockSize"]
     else:
@@ -1362,13 +1370,17 @@ def _segment_2d_image_by_thresholding(
     contrast=0.001,
     kernel=None,
 ):
-
     # makes threshold matrix
     threshold = np.zeros(image_2d.shape)
     threshold[:] = threshold_over_std * image_2d.max() / 100
 
     # segments objects
-    segm = detect_sources(image_2d, threshold, npixels=area_min, filter_kernel=kernel,)
+    segm = detect_sources(
+        image_2d,
+        threshold,
+        npixels=area_min,
+        filter_kernel=kernel,
+    )
 
     if segm.nlabels > 0:
         # removes masks too close to border
@@ -1418,7 +1430,6 @@ def _segment_3d_volumes_stardist(
     model_dir="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
     model_name="stardist_18032021_single_loci",
 ):
-
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
@@ -1508,7 +1519,6 @@ def _segment_3d_volumes_by_thresholding(
             output[z, :, :] = image_2d_segmented
 
     else:
-
         print_log(
             "> Segmenting {} planes using {} workers...".format(
                 number_planes, len(client.scheduler_info()["workers"])
@@ -1586,7 +1596,6 @@ def _segment_3d_masks(
     model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
     model_name="stardist_20210625_deconvolved",
 ):
-
     """
     Parameters
     ----------
@@ -1637,7 +1646,6 @@ def _segment_3d_masks(
 
 
 def plot_raw_images_and_labels(image, label):
-
     """
     Parameters
     ----------
@@ -1828,7 +1836,6 @@ def display_3d(
     norm=True,
     cmap="Greys",
 ):
-
     if image_3d is not None:
         images = []
         images.append(image_3d[z, :, :])
@@ -2005,7 +2012,6 @@ def _plot_image_3d(image_3d, localizations=None, masks=None, normalize=True, win
 
 
 def plot_3d_shift_matrices(shift_matrices, fontsize=8, log=False, valfmt="{x:.1f}"):
-
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
     cbar_kw["pad"] = 0.04
@@ -2030,7 +2036,6 @@ def plot_4_images(
     allimages,
     titles=["reference", "cycle <i>", "processed reference", "processed cycle <i>"],
 ):
-
     fig, axes = plt.subplots(2, 2)
     fig.set_size_inches((10, 10))
     ax = axes.ravel()
@@ -2047,7 +2052,6 @@ def plot_4_images(
 def plotting_block_alignment_results(
     relative_shifts, rms_image, contour, file_name="BlockALignmentResults.png"
 ):
-
     # plotting
     fig, axes = plt.subplots(1, 2)
     ax = axes.ravel()
@@ -2082,7 +2086,7 @@ def heatmap(
     cbar_kw=None,
     cbarlabel="",
     fontsize=12,
-    **kwargs
+    **kwargs,
 ):
     """
     Create a heatmap from a numpy array and two lists of labels.
@@ -2150,7 +2154,7 @@ def annotate_heatmap(
     valfmt="{x:.1f}",
     textcolors=("black", "white"),
     threshold=None,
-    **textkw
+    **textkw,
 ):
     """
     A function to annotate a heatmap.
