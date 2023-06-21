@@ -259,13 +259,11 @@ class SegmentMasks3D:
             )
             npy_labeled_image_filename_2d = (
                 npy_labeled_image_filename.split(".")[0]
-                + "."
                 + output_extension['2D']
                 + ".npy"
             )
             npy_labeled_image_filename_3d = (
                 npy_labeled_image_filename.split(".")[0]
-                + "."
                 + output_extension['3D']
                 + ".npy"
             )
