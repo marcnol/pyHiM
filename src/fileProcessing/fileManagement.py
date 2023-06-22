@@ -1,16 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr  3 11:16:58 2020
-
-@author: marcnol
-
 Classes and functions for file management
-
 """
-# =============================================================================
-# IMPORTS
-# =============================================================================
 
 import glob
 import json
@@ -25,63 +17,11 @@ from warnings import warn
 import numpy as np
 from dask.distributed import Client, LocalCluster, get_client
 
+from core.pyhim_logging import print_log
+
 # =============================================================================
 # CLASSES
 # =============================================================================
-
-
-class Log:
-    def __init__(self, root_folder="./", parallel=False):
-        now = datetime.now()
-        date_time = now.strftime("%d%m%Y_%H%M%S")
-        self.file_name = root_folder + os.sep + "logfile" + date_time + ".log"
-        self.markdown_filename = self.file_name.split(".")[0] + ".md"
-        self.parallel = parallel
-
-    def erase_file(self):
-        write_string_to_file(self.file_name, "", "w")
-
-    # saves to logfile, no display to cmd line
-    def save(self, text=""):
-        write_string_to_file(self.file_name, get_full_string(text), "a")
-
-    # this function will output to cmd line and save in logfile
-    def report(self, text, status="info"):
-        if not self.parallel or status.lower() == "error":
-            print(get_full_string(text))
-            self.save("\n" + text)
-        else:
-            self.save("\n" + text)
-
-    def add_simple_text(self, title):
-        print(title)
-        write_string_to_file(self.file_name, title, "a")
-
-
-def print_log(message, status="INFO"):
-    """
-    Shows message to terminal and logs it to file
-
-    Parameters
-    ----------
-    message : str
-        message.
-    status : str, optional
-        either DEBUG, INFO or WARN. The default is 'INFO'.
-
-    Returns
-    -------
-    None.
-
-    """
-    # print(message)
-
-    if status == "INFO":
-        logging.info(message)
-    elif status == "WARN":
-        logging.warning(message)
-    elif status == "DEBUG":
-        logging.debug(message)
 
 
 class Folders:
@@ -409,7 +349,6 @@ class Parameters:
 
     # method returns label-specific filenames from filename list
     def find_files_to_process(self, files_folder):
-
         # defines channel for DAPI, fiducials and barcodes
         channel_dapi = self.set_channel("DAPI_channel", "ch00")
         channel_barcode = self.set_channel("barcode_channel", "ch01")
@@ -555,7 +494,6 @@ class DaskCluster:
         self.client = None
 
     def initialize_cluster(self):
-
         number_cores_available = multiprocessing.cpu_count()
 
         # we want at least 12 GB per worker
@@ -585,7 +523,9 @@ class DaskCluster:
             print("$ No running cluster detected. Will start one.")
 
         self.cluster = LocalCluster(
-            n_workers=self.n_threads, threads_per_worker=1, memory_limit="64GB",
+            n_workers=self.n_threads,
+            threads_per_worker=1,
+            memory_limit="64GB",
         )
         self.client = Client(self.cluster)
 
@@ -596,14 +536,10 @@ class DaskCluster:
 # FUNCTIONS
 # =============================================================================
 
+
 # cmd line output only
 def info(text):
     print(f">{text}")
-
-
-# returns formatted line to be outputed
-def get_full_string(text=""):
-    return f"{text}"
 
 
 def create_single_folder(folder):
@@ -621,11 +557,6 @@ def load_parameters_file(file_name):
         return parameters
     else:
         return None
-
-
-def write_string_to_file(file_name, list_to_output, attribute="a"):
-    with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
-        file_handle.write(f"{list_to_output}\n")
 
 
 def save_json(file_name, data):
@@ -742,7 +673,7 @@ def roi_to_fiducial_filename(current_param, file, barcode_name):
 
 
 def unique(list1):
-    """ function to get unique values"""
+    """function to get unique values"""
     # intilize a null list
     unique_list = []
 
@@ -814,7 +745,6 @@ def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
 
 
 def load_alignment_dictionary(data_folder):
-
     dict_filename = (
         os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
@@ -857,7 +787,6 @@ def print_dict(dictionary):
 
 
 def get_dictionary_value(dictionary, key, default=""):
-
     if key in dictionary.keys():
         value = dictionary[key]
     else:
@@ -882,7 +811,6 @@ def loads_barcode_dict(file_name):
         print("File does not exist")
         return dict()
     else:
-
         # Opening JSON file
         f = open(file_name)
 

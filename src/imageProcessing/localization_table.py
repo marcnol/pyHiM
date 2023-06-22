@@ -15,6 +15,7 @@ This class will contain methods to load, save, plot barcode localizations and st
 
 import os
 import sys
+
 # to remove in a future version
 import warnings
 
@@ -22,7 +23,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 
-from fileProcessing.fileManagement import print_log
+from core.pyhim_logging import print_log
 
 warnings.filterwarnings("ignore")
 
@@ -51,9 +52,7 @@ class LocalizationTable:
             # barcode_map = Table.read(filename_barcode_coordinates, format="ascii.ecsv")
             barcode_map = read_table_from_ecsv(file)
 
-            print_log(
-                "$ Successfully loaded barcode localizations file: {}".format(file)
-            )
+            print_log(f"$ Successfully loaded barcode localizations file: {file}")
 
             unique_barcodes = np.unique(barcode_map["Barcode #"].data)
             number_unique_barcodes = unique_barcodes.shape[0]
@@ -101,7 +100,9 @@ class LocalizationTable:
 
         # save_table_to_ecsv(barcode_map, file_name)
         barcode_map.write(
-            file_name, format="ascii.ecsv", overwrite=True,
+            file_name,
+            format="ascii.ecsv",
+            overwrite=True,
         )
 
     def plot_distribution_fluxes(self, barcode_map, filename_list):
@@ -151,7 +152,6 @@ class LocalizationTable:
         plt.close(fig)
 
     def build_color_dict(self, barcode_map, key="Barcode #"):
-
         color_dict = {}
 
         unique_barcodes = np.unique(barcode_map[key])
@@ -163,7 +163,6 @@ class LocalizationTable:
         return color_dict
 
     def plots_localizations(self, barcode_map_full, filename_list):
-
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
         One figure is produced per ROI.
@@ -184,7 +183,6 @@ class LocalizationTable:
         barcode_map_roi, number_rois = self.decode_rois(barcode_map_full)
 
         for i_roi in range(number_rois):
-
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
@@ -292,7 +290,6 @@ class LocalizationTable:
 
 
 def decode_rois(data):
-
     data_indexed = data.group_by("ROI #")
 
     number_rois = len(data_indexed.groups.keys)
@@ -303,7 +300,6 @@ def decode_rois(data):
 
 
 def build_color_dict(data, key="Barcode #"):
-
     color_dict = {}
 
     unique_barcodes = np.unique(data[key])

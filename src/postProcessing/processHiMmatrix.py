@@ -38,11 +38,16 @@ csv.field_size_limit(sys.maxsize)
 # to remove in a future version
 import warnings
 
-from fileProcessing.fileManagement import write_string_to_file
+from core.pyhim_logging import write_string_to_file
 from matrixOperations.HIMmatrixOperations import (
-    load_sc_data, load_sc_data_matlab, plot_ensemble_3_way_contact_matrix,
-    plot_ensemble_contact_probability_matrix, plot_inverse_pwd_matrix,
-    plot_single_contact_probability_matrix, plot_single_pwd_matrice)
+    load_sc_data,
+    load_sc_data_matlab,
+    plot_ensemble_3_way_contact_matrix,
+    plot_ensemble_contact_probability_matrix,
+    plot_inverse_pwd_matrix,
+    plot_single_contact_probability_matrix,
+    plot_single_pwd_matrice,
+)
 
 # warnings.filterwarnings("ignore")
 
@@ -187,7 +192,6 @@ def main():
 
     # [loops over lists of datafolders]
     for dataset_name in list(list_data.keys()):
-
         # [loads SC matrices]
         if p["format"] == "pyHiM":
             print(">>> Loading pyHiM-formatted dataset")
@@ -224,7 +228,7 @@ def main():
         )
         write_string_to_file(
             markdown_filename,
-            "**dataset: {}** - **Cells: {}**".format(dataset_name, p["action"]),
+            f"""**dataset: {dataset_name}** - **Cells: {p["action"]}**""",
             "a",
         )
         p["SClabeledCollated"] = sc_labeled_collated

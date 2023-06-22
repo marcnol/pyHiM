@@ -31,8 +31,8 @@ from astropy.visualization import simple_norm
 from matplotlib import pyplot as plt
 from roipoly import MultiRoi
 
-from fileProcessing.fileManagement import (Folders, Log, Parameters, Session,
-                                           write_string_to_file)
+from core.pyhim_logging import Log, write_string_to_file
+from fileProcessing.fileManagement import Folders, Parameters, Session
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================
@@ -57,7 +57,6 @@ def show_image(data_2d, normalization="simple", size=(10, 10)):
 
 
 def createsUserMask(current_param, current_log, file_name, output_filename):
-
     # loads image
 
     # displays image
@@ -97,9 +96,7 @@ def createsUserMask(current_param, current_log, file_name, output_filename):
 
 
 def processesUserMasks(current_param, current_log, processingList):
-
     if current_param.param_dict["segmentedObjects"]["operation"] == "overwrite":
-
         # session
         session_name = "processesUserMasks"
 
@@ -118,7 +115,6 @@ def processesUserMasks(current_param, current_log, processingList):
 
         allresultsTable = Table()
         for current_folder in data_folder.list_folders:
-
             files_folder = glob.glob(current_folder + os.sep + "*.tif")
             data_folder.create_folders(current_folder, current_param)
             current_log.report("-------> Processing Folder: {}".format(current_folder))
@@ -141,7 +137,6 @@ def processesUserMasks(current_param, current_log, processingList):
                 ]
 
                 if processingList["cleanAllMasks"]:
-
                     # [clears all SND masks]
                     numberMaskedFiles = len(files_to_process)
                     for file_name in files_to_process:
@@ -155,7 +150,6 @@ def processesUserMasks(current_param, current_log, processingList):
                     processingList["addMask"] == ""
                     and not processingList["cleanAllMasks"]
                 ):
-
                     # [assigns cells to exsting masks]
                     resultsTable = assignsSNDmask2Cells(
                         files_to_process, position_roi_information, current_log
@@ -168,10 +162,8 @@ def processesUserMasks(current_param, current_log, processingList):
                     not processingList["cleanAllMasks"]
                     and len(processingList["addMask"]) > 0
                 ):
-
                     # [makes new set of masks]
                     for file_name in current_param.files_to_process:
-
                         # gets filename information
                         ROI = os.path.basename(file_name).split("_")[
                             position_roi_information
@@ -261,7 +253,6 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log
         print(f"\nWill search masks in: {fileNameDAPImask}")
 
         if os.path.exists(fileNameDAPImask) and file_name.split(".")[-1] == "npy":
-
             # load DAPI mask
             maskDAPI = Image()
             maskDAPI.data_2d = np.load(fileNameDAPImask).squeeze()
@@ -276,7 +267,6 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log
             cellsWithinMask = np.unique(new_matrix)
 
             if len(cellsWithinMask) > 0:
-
                 newTable = Table()
                 colMask = Column(
                     [file_name.split("_")[-1].split(".")[0]] * len(cellsWithinMask),
@@ -367,12 +357,11 @@ def main():
     )
     write_string_to_file(
         current_log.markdown_filename,
-        "# Process SND channel {}".format(now.strftime("%d/%m/%Y %H:%M:%S")),
+        f"""# Process SND channel {now.strftime("%d/%m/%Y %H:%M:%S")}""",
         "w",
     )  # initialises MD file
 
     for label in labels:
-
         # sets parameters
         current_param = Parameters(
             root_folder=root_folder, label=label, file_name="infoList.json"

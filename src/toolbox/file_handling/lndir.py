@@ -21,7 +21,7 @@ import glob
 import os
 import sys
 
-from fileManagement import write_string_to_file
+from core.pyhim_logging import write_string_to_file
 
 # =============================================================================
 # MAIN
@@ -29,7 +29,6 @@ from fileManagement import write_string_to_file
 
 
 def main():
-
     if len(sys.argv) < 3:
         raise SystemExit("Not enough arguments")
 
@@ -44,7 +43,6 @@ def main():
         file_name = os.path.dirname(file_list[0]) + os.sep + "lndir.log"
 
         for file in file_list:
-
             new_file = dest_folder + os.sep + os.path.basename(file)
             print(f"{file}-->{new_file}")
 

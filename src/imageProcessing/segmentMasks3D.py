@@ -27,15 +27,20 @@ import numpy as np
 from skimage import io
 from skimage.measure import regionprops
 
-from fileProcessing.fileManagement import (Folders, get_dictionary_value,
-                                           load_alignment_dictionary,
-                                           print_dict, print_log,
-                                           retrieve_number_rois_folder,
-                                           write_string_to_file)
-from imageProcessing.imageProcessing import (_segment_3d_masks,
-                                             apply_xy_shift_3d_images,
-                                             plot_raw_images_and_labels,
-                                             reinterpolate_z)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import (
+    Folders,
+    get_dictionary_value,
+    load_alignment_dictionary,
+    print_dict,
+    retrieve_number_rois_folder,
+)
+from imageProcessing.imageProcessing import (
+    _segment_3d_masks,
+    apply_xy_shift_3d_images,
+    plot_raw_images_and_labels,
+    reinterpolate_z,
+)
 
 # =============================================================================
 # CLASSES
@@ -191,7 +196,6 @@ class SegmentMasks3D:
         return binary, segmented_image_3d
 
     def segment_masks_3d_file(self, filename_to_process):
-
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -337,10 +341,8 @@ class SegmentMasks3D:
         )
 
         if self.number_rois > 0:
-
             # loops over rois
             for roi in self.roi_list:
-
                 # loads reference fiducial image for this ROI
                 self.filenames_to_process_list = [
                     x
@@ -414,7 +416,7 @@ class SegmentMasks3D:
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
 

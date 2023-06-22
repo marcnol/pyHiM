@@ -33,7 +33,8 @@ from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
 
-from fileProcessing.fileManagement import is_notebook, write_string_to_file
+from core.pyhim_logging import write_string_to_file
+from fileProcessing.fileManagement import is_notebook
 
 # =============================================================================
 # CLASSES
@@ -160,7 +161,6 @@ class AnalysisHiMMatrix:
         show_title=False,
         fig_title="",
     ):
-
         pos = ifigure.imshow(matrix, cmap=c_m)  # colormaps RdBu seismic
 
         if show_title:
@@ -210,7 +210,6 @@ class AnalysisHiMMatrix:
             ax.set_clim(vmin=c_min, vmax=c_max)
 
     def plot_1d_profile1dataset(self, ifigure, anchor, i_fig_label, yticks, xticks):
-
         prop_cycle = plt.rcParams["axes.prop_cycle"]
         colors = prop_cycle.by_key()["color"]
         lwbase = plt.rcParams["lines.linewidth"]
@@ -313,7 +312,6 @@ class AnalysisHiMMatrix:
 
 
 def normalize_profile(profile1, profile2, run_parameters):
-
     print("Normalization: {}".format(run_parameters["normalize"]))
 
     mode = run_parameters["normalize"]
@@ -343,7 +341,6 @@ def plot_1d_profile2datasets(
     xticks,
     legend=False,
 ):
-
     prop_cycle = plt.rcParams["axes.prop_cycle"]
     colors = prop_cycle.by_key()["color"]
     lwbase = plt.rcParams["lines.linewidth"]
@@ -408,7 +405,6 @@ def load_list(file_name):
 
 
 def attributes_labels2cells(snd_table, results_table, label="doc"):
-
     sorted_snd_table = snd_table.group_by("MaskID #")
     list_keys = list(sorted_snd_table.groups.keys["MaskID #"].data)
     index_key = [
@@ -417,7 +413,6 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
 
     # checks that there is at least one cell with the label
     if len(index_key) > 0:
-
         snd_table_with_label = sorted_snd_table.groups[index_key[0]]
         print("\n>>> Matching labels")
         print(
@@ -714,7 +709,6 @@ def load_sc_data(list_data, dataset_name, p):
 
 
 def load_sc_data_matlab(list_data, dataset_name, p):
-
     print("Dataset to load: {}\n\n".format(list(list_data.keys())[0]))
 
     sc_matrix_collated, unique_barcodes = [], []
@@ -823,7 +817,6 @@ def plot_ensemble_3_way_contact_matrix(
     markdown_filename="tmp.md",
     dataset_name="",
 ):
-
     # combines matrices from different samples and calculates integrated contact probability matrix
     sc_matrix_all_datasets = []  # np.zeros((n_barcodes,n_barcodes))
     for i_sc_matrix_collated, i_unique_barcodes, mask, i_tag in zip(
@@ -889,7 +882,7 @@ def plot_ensemble_3_way_contact_matrix(
         output_filename += "_anchor_" + str(anchor)
         write_string_to_file(
             markdown_filename,
-            "![]({})\n".format(output_filename + "_HiMmatrix.png"),
+            f"![]({output_filename}_HiMmatrix.png)\n",
             "a",
         )
 
@@ -936,7 +929,6 @@ def calculate_3_way_contact_matrix(
     threshold=0.25,
     norm="nonNANs",
 ):
-
     n_x = n_y = i_sc_matrix_collated.shape[0]
     sc_matrix = np.zeros((n_x, n_y))
 
@@ -1025,7 +1017,7 @@ def plot_single_pwd_matrice(
         )  # twilight_shifted_r 1.4, mode: median KDE coolwarm terrain
         write_string_to_file(
             markdown_filename,
-            "![]({})\n".format(output_filename + "_HiMmatrix.png"),
+            f"![]({output_filename}_HiMmatrix.png)\n",
             "a",
         )
 
@@ -1072,7 +1064,7 @@ def plot_inverse_pwd_matrix(
         )  # twilight_shifted_r, mode: median KDE
         write_string_to_file(
             markdown_filename,
-            "![]({})\n".format(output_filename + "_HiMmatrix.png"),
+            f"![]({output_filename}_HiMmatrix.png)\n",
             "a",
         )
 
@@ -1146,7 +1138,7 @@ def plot_single_contact_probability_matrix(
             )  # twilight_shifted_r terrain coolwarm
             write_string_to_file(
                 markdown_filename,
-                "![]({})\n".format(output_filename + "_HiMmatrix.png"),
+                f"![]({output_filename}_HiMmatrix.png)\n",
                 "a",
             )
 
@@ -1283,7 +1275,6 @@ def plot_ensemble_contact_probability_matrix(
     markdown_filename="tmp.md",
     dataset_name="",
 ):
-
     if "minNumberContacts" in i_list_data.keys():
         min_number_contacts = i_list_data["minNumberContacts"]
     else:
@@ -1326,7 +1317,7 @@ def plot_ensemble_contact_probability_matrix(
         + "_ensembleContactProbability"
     )
     write_string_to_file(
-        markdown_filename, "![]({})\n".format(output_filename + "_HiMmatrix.png"), "a"
+        markdown_filename, f"![]({output_filename}_HiMmatrix.png)\n", "a"
     )
 
     # plots results
@@ -1387,7 +1378,6 @@ def plot_ensemble_contact_probability_matrix(
 
 
 def shuffle_matrix(matrix, index):
-
     new_size = len(index)
     new_matrix = np.zeros((new_size, new_size))
 
@@ -1526,7 +1516,7 @@ def decodes_trace(single_trace):
     Returns
     -------
     list of barcodes
-    x, y and z coordinates as numpy arrays, 
+    x, y and z coordinates as numpy arrays,
     trace name as string
 
     """
@@ -1675,8 +1665,7 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type=dict()):
 
 
 def distances_2_coordinates(distances):
-    """ Infer coordinates from distances
-    """
+    """Infer coordinates from distances"""
     N = distances.shape[0]
     d_0 = []
 
@@ -1691,7 +1680,7 @@ def distances_2_coordinates(distances):
     for i in range(N):
         sum1 = cache[i] + sum([distances[j, i] ** 2 for j in range(i + 1)])
 
-        val = 1 / N * sum1 - 1 / N ** 2 * sum2
+        val = 1 / N * sum1 - 1 / N**2 * sum2
         d_0.append(val)
 
     # generate gram matrix
@@ -1722,8 +1711,7 @@ def distances_2_coordinates(distances):
 
 
 def coord_2_distances(coordinates):
-    """ Derive distance matrix from given set of coordinates
-    """
+    """Derive distance matrix from given set of coordinates"""
     dimension = coordinates.shape[1]
 
     # get distances
@@ -1752,7 +1740,6 @@ def plot_distance_histograms(
     optimize_kernel_width=False,
     max_distance=4.0,
 ):
-
     if not is_notebook():
         n_plots_x = n_plots_y = sc_matrix_collated.shape[0]
     else:
@@ -1821,7 +1808,7 @@ def plot_distance_histograms(
         plt.close()
 
     write_string_to_file(
-        log_name_md, "![]({})\n".format(output_filename + "_PWDhistograms.png"), "a"
+        log_name_md, f"![]({output_filename}_PWDhistograms.png)\n", "a"
     )
 
 
@@ -1843,7 +1830,6 @@ def plot_matrix(
     cells_to_plot=[],
     filename_ending="_HiMmatrix.png",
 ):
-
     n_barcodes = sc_matrix_collated.shape[0]
 
     ######################################################
@@ -1851,7 +1837,6 @@ def plot_matrix(
     ######################################################
 
     if len(sc_matrix_collated.shape) == 3:
-
         # matrix is 3D and needs combining SC matrices into an ensemble matrix
         if len(cells_to_plot) == 0:
             cells_to_plot = range(sc_matrix_collated.shape[2])
@@ -1861,7 +1846,6 @@ def plot_matrix(
         )
 
     else:
-
         # already an ensemble matrix --> no need for further treatment
         if mode == "counts":
             mean_sc_matrix = sc_matrix_collated
@@ -1920,7 +1904,7 @@ def plot_matrix(
             plt.close()
         if "png" not in out_fn:
             out_fn += ".png"
-        write_string_to_file(log_name_md, "![]({})\n".format(out_fn), "a")
+        write_string_to_file(log_name_md, f"![]({out_fn})\n", "a")
     else:
         # errors during pre-processing
         print("Error plotting figure. Not executing script to avoid crash.")
@@ -1936,7 +1920,6 @@ def calculate_contact_probability_matrix(
     norm="n_cells",
     min_number_contacts=0,
 ):
-
     n_x = n_y = i_sc_matrix_collated.shape[0]
     n_cells = i_sc_matrix_collated.shape[2]
     sc_matrix = np.zeros((n_x, n_y))
@@ -2244,7 +2227,6 @@ def get_coordinates_from_pwd_matrix(matrix):
 
 
 def sort_cells_by_number_pwd(him_data):
-
     # sc_matrix = him_data.data["SCmatrixCollated"]
     sc_matrix = him_data.sc_matrix_selected
 
@@ -2269,7 +2251,6 @@ def sort_cells_by_number_pwd(him_data):
 
 
 def kde_fit(x, x_d, bandwidth=0.2, kernel="gaussian"):
-
     kde = KernelDensity(bandwidth=bandwidth, kernel="gaussian")
     kde.fit(x[:, None])
 

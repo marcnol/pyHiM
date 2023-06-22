@@ -17,6 +17,7 @@ __version__ = "0.7.2"
 
 import os
 import sys
+
 # to remove in a future version
 import warnings
 from datetime import datetime
@@ -24,7 +25,8 @@ from datetime import datetime
 import apifish
 
 import fileProcessing.functionCaller as fc
-from fileProcessing.fileManagement import Parameters, print_log
+from core.pyhim_logging import print_log
+from fileProcessing.fileManagement import Parameters
 
 warnings.filterwarnings("ignore")
 
@@ -56,7 +58,6 @@ def main(command_line_arguments=None):
     print_log(f"$ labels to process: {labels}\n")
 
     for label in labels:
-
         # sets parameters
         current_param = Parameters(
             root_folder=run_parameters["rootFolder"],

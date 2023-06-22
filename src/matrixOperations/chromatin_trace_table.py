@@ -24,9 +24,12 @@ from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 from astropy.table import Table, vstack
 from stardist import random_label_cmap
 
-from fileProcessing.fileManagement import print_log
-from imageProcessing.localization_table import (build_color_dict, decode_rois,
-                                                plots_localization_projection)
+from core.pyhim_logging import print_log
+from imageProcessing.localization_table import (
+    build_color_dict,
+    decode_rois,
+    plots_localization_projection,
+)
 
 lbl_cmap = random_label_cmap()
 font = {"weight": "normal", "size": 18}
@@ -99,9 +102,9 @@ class ChromatinTraceTable:
         """
         if os.path.exists(file):
             trace_table = read_table_from_ecsv(file)
-            print_log("$ Successfully loaded chromatin trace table: {}".format(file))
+            print_log(f"$ Successfully loaded chromatin trace table: {file}")
         else:
-            print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
+            print(f"\n\n# ERROR: could not find chromatin trace table: {file}")
             sys.exit()
 
         self.data = trace_table
@@ -181,7 +184,6 @@ class ChromatinTraceTable:
         trace_table = self.data
 
         if len(trace_table) > 0:
-
             # indexes trace file
             trace_table_indexed = trace_table.group_by("Trace_ID")
 
@@ -250,7 +252,6 @@ class ChromatinTraceTable:
         barcodes_to_remove = []
 
         for idx, trace in enumerate(trace_table_indexed.groups):
-
             number_unique_barcodes = len(list(set(trace["Barcode #"].data)))
 
             if number_unique_barcodes < minimum_number_barcodes:
@@ -287,7 +288,6 @@ class ChromatinTraceTable:
     def plots_traces(
         self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[0.1, 0.1, 0.25]
     ):
-
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
         One figure is produced per ROI.
@@ -305,7 +305,6 @@ class ChromatinTraceTable:
         data_indexed, number_rois = decode_rois(data)
 
         for i_roi in range(number_rois):
-
             # creates sub Table for this ROI
             data_roi = data_indexed.groups[i_roi]
             n_roi = data_roi["ROI #"][0]

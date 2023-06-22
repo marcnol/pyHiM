@@ -18,6 +18,7 @@ Remember that global alignments have already been corrected.
 import glob
 import os
 import sys
+
 # to remove in a future version
 import warnings
 
@@ -25,8 +26,8 @@ import numpy as np
 from astropy.table import Table
 from tqdm import trange
 
-from fileProcessing.fileManagement import (Folders, print_log,
-                                           write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.filter_localizations import get_file_table_new_name
 
@@ -96,7 +97,6 @@ class RegisterLocalizations:
             print_log("# Uncorrected localizations will be kept!!")
 
     def search_local_shift(self, roi, barcode, zxy_uncorrected):
-
         if self.alignment_results_table_read:
             return self.search_local_shift_block_3d(roi, barcode, zxy_uncorrected)
         else:  # no correction was applied because the localAlignmentTable was not found
@@ -258,7 +258,6 @@ class RegisterLocalizations:
         return barcode_map
 
     def load_local_alignment(self):
-
         if "None" in self.current_param.param_dict["alignImages"]["localAlignment"]:
             print_log(
                 "\n\n$ localAlignment option set to {}".format(
@@ -366,7 +365,6 @@ class RegisterLocalizations:
         return True
 
     def register_barcode_map_file(self, file):
-
         if "3D" in os.path.basename(file):
             self.ndims = 3
         else:
@@ -399,7 +397,6 @@ class RegisterLocalizations:
         barcode_map_roi, number_rois = table.decode_rois(barcode_map_full)
 
         for i_roi in range(number_rois):
-
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
@@ -424,7 +421,6 @@ class RegisterLocalizations:
         )
 
     def register(self):
-
         """
         Function that registers barcodes using a local drift correction table produced by *alignImages3D*
 
@@ -442,7 +438,7 @@ class RegisterLocalizations:
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
         label = "barcode"

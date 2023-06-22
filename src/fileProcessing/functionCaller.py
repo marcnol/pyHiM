@@ -12,9 +12,8 @@ import logging
 import os
 from datetime import datetime
 
-from fileProcessing.fileManagement import (DaskCluster, Log, Session,
-                                           print_dict, print_log,
-                                           write_string_to_file)
+from core.pyhim_logging import Log, print_log, write_string_to_file
+from fileProcessing.fileManagement import DaskCluster, Session, print_dict
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import make_projections
@@ -45,7 +44,6 @@ class HiMFunctionCaller:
         self.cluster = None
 
     def initialize(self):
-
         print_log(
             "\n--------------------------------------------------------------------------"
         )
@@ -70,7 +68,7 @@ class HiMFunctionCaller:
         print_log(f"$ Hi-M analysis will be written tos: {self.markdown_filename}")
         write_string_to_file(
             self.markdown_filename,
-            f"# Hi-M analysis {begin_time.strftime('%Y/%m/%d %H:%M:%S')}",
+            f"""# Hi-M analysis {begin_time.strftime("%Y/%m/%d %H:%M:%S")}""",
             "w",
         )  # initialises MD file
 

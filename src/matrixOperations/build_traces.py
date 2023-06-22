@@ -44,6 +44,7 @@ import os
 import re
 import sys
 import uuid
+
 # to remove in a future version
 import warnings
 
@@ -57,14 +58,16 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import (Folders, get_dictionary_value,
-                                           print_log, write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders, get_dictionary_value
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.filter_localizations import get_file_table_new_name
 from matrixOperations.HIMmatrixOperations import (
-    calculate_contact_probability_matrix, plot_distance_histograms,
-    plot_matrix)
+    calculate_contact_probability_matrix,
+    plot_distance_histograms,
+    plot_matrix,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -288,7 +291,6 @@ class BuildTraces:
             barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups
         ):
             if key["CellID #"] > 1:  # excludes trace 0 as this is background
-
                 group_keys, cell_id, roi = (
                     group.keys(),
                     key["CellID #"],
@@ -326,7 +328,8 @@ class BuildTraces:
         print_log("$ Coordinates dimensions: {}".format(self.ndims))
 
     def load_mask(
-        self, files_in_folder,
+        self,
+        files_in_folder,
     ):
         """
         searches and loads mask files for building chromatin trace
@@ -359,7 +362,6 @@ class BuildTraces:
         ]
 
         if len(files_to_process) > 0:
-
             # loads file with cell masks
             filename_roi_masks = (
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
@@ -371,7 +373,6 @@ class BuildTraces:
             )
 
             if os.path.exists(full_filename_roi_masks):
-
                 # loads and initializes masks
                 segmented_masks = read_array(full_filename_roi_masks)
                 print(f"$ loaded mask file: {full_filename_roi_masks}")
@@ -413,7 +414,9 @@ class BuildTraces:
         return False
 
     def assign_masks(
-        self, output_filename, barcode_map,
+        self,
+        output_filename,
+        barcode_map,
     ):
         """
         Main function that:
@@ -470,9 +473,10 @@ class BuildTraces:
             ]  # need to iterate over the first index
             self.barcode_map_roi = barcode_map.group_by("ROI #").groups[roi]
 
-            mask_loaded = self.load_mask(tif_files_in_folder,)
+            mask_loaded = self.load_mask(
+                tif_files_in_folder,
+            )
             if mask_loaded:
-
                 print_log("> Processing ROI# {}".format(self.n_roi))
 
                 # initializes trace table
@@ -519,11 +523,9 @@ class BuildTraces:
                 processing_order += 1
 
     def build_trace_by_masking(self, barcode_map):
-
         print_log("> Masks labels: {}".format(self.available_masks))
 
         for mask_label in self.available_masks.keys():
-
             self.mask_identifier = self.available_masks[mask_label]
             if "DAPI" in self.mask_identifier:
                 self.mask_type = "DAPI"
@@ -543,7 +545,8 @@ class BuildTraces:
             self.trace_table = ChromatinTraceTable()
 
             self.assign_masks(
-                output_filename, barcode_map,
+                output_filename,
+                barcode_map,
             )
 
             print_log(
@@ -553,7 +556,9 @@ class BuildTraces:
                 "info",
             )
 
-    def group_localizations_by_coordinate(self,):
+    def group_localizations_by_coordinate(
+        self,
+    ):
         """
         Uses a KDTree to group detections by it's coordinates, given a certain distance threshold
         Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.dat)
@@ -627,7 +632,6 @@ class BuildTraces:
 
         # iterates over traces
         for trace_id, trace in enumerate(group_list):
-
             # iterates over localizations in trace
             for i in range(len(trace)):
                 # gets index of localization in data_table
@@ -639,9 +643,9 @@ class BuildTraces:
         self.barcode_map_roi = data_table
 
     def build_trace_by_clustering(
-        self, barcode_map,
+        self,
+        barcode_map,
     ):
-
         # decompose by ROI!
         # indexes localization tables by ROI
         barcode_map_roi = barcode_map.group_by("ROI #")
@@ -712,7 +716,6 @@ class BuildTraces:
                 print_log(f"! Warning: table was empty therefore not saved!")
 
     def launch_analysis(self, file):
-
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
@@ -792,7 +795,6 @@ class BuildTraces:
 
 
 def initialize_module(current_param, module_name="build_traces", label="barcode"):
-
     session_name = module_name
 
     # processes folders and files
@@ -800,7 +802,9 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
     print_log("\n" + "=" * 35 + f"{session_name}" + "=" * 35 + "\n")
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["fileNameMD"], "## {}\n".format(session_name), "a",
+        current_param.param_dict["fileNameMD"],
+        f"## {session_name}\n",
+        "a",
     )
 
     current_folder = current_param.param_dict["rootFolder"]
@@ -813,7 +817,6 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
 def debug_mask_filename(
     files_in_folder, full_filename_roi_masks, mask_identifier, n_roi, label=""
 ):
-
     print_log(f"# Error, no mask file found for ROI: {n_roi}\n")
     print_log("# File I was searching for: {}".format(full_filename_roi_masks))
     print_log("# Debug: ")
