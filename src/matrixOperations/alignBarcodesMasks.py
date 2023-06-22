@@ -36,7 +36,6 @@ import os
 import re
 import sys
 import uuid
-
 # to remove in a future version
 import warnings
 
@@ -48,12 +47,11 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from fileProcessing.fileManagement import (Folders, print_log,
+                                           write_string_to_file)
 from matrixOperations.HIMmatrixOperations import (
-    calculate_contact_probability_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-)
+    calculate_contact_probability_matrix, plot_distance_histograms,
+    plot_matrix)
 
 warnings.filterwarnings("ignore")
 
@@ -176,13 +174,10 @@ class CellID:
                             barcode_id
                         ]
                         # TODO: Change conditions to adapt with tolerance_drift type update (from Float to Tuple)
-                        keep_alignment = (
-                            error_mask[
-                                int(np.floor(x_int / block_size)),
-                                int(np.floor(y_int / block_size)),
-                            ]
-                            < max(tolerance_drift)
-                        )
+                        keep_alignment = error_mask[
+                            int(np.floor(x_int / block_size)),
+                            int(np.floor(y_int / block_size)),
+                        ] < max(tolerance_drift)
 
             # keeps it always if barcode is fiducial
             if (
@@ -333,9 +328,13 @@ class CellID:
             ]
             if not isinstance(self.tolerance_drift, tuple):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
-                tolerance_drift = (tolerance_drift,tolerance_drift,tolerance_drift)
+                tolerance_drift = (tolerance_drift, tolerance_drift, tolerance_drift)
         else:
-            tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
+            tolerance_drift = (
+                3,
+                1,
+                1,
+            )  # defines default anisotropic tolerance_drift (z,x,y)
             print_log("# toleranceDrift not found. Set to {}!".format(tolerance_drift))
 
         if "blockSize" in self.current_param.param_dict["alignImages"]:
@@ -459,7 +458,7 @@ class CellID:
         )
 
     def search_local_shift(
-        self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift= (3,1,1)
+        self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)
     ):
 
         if "mask2D" in self.current_param.param_dict["alignImages"]["localAlignment"]:
@@ -475,7 +474,7 @@ class CellID:
             return zxy_uncorrected
 
     def search_local_shift_block_3d(
-        self, roi, barcode, zxy_uncorrected, tolerance_drift=(3,1,1)
+        self, roi, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)
     ):
         """
         Searches for local drift for a specific barcode in a given ROI.
@@ -521,9 +520,10 @@ class CellID:
                 _found_match = True
                 shifts = [row["shift_z"], row["shift_x"], row["shift_y"]]
 
-                
                 # makes list with comparisons per axis
-                check = [np.abs(shift)<tol for shift,tol in zip(shifts,tolerance_drift)]
+                check = [
+                    np.abs(shift) < tol for shift, tol in zip(shifts, tolerance_drift)
+                ]
                 # checks that drifts > tolerance_drift are not applied
                 if all(check):
                     zxy_corrected = [

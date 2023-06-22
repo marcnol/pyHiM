@@ -26,22 +26,22 @@ trace_ID, number of barcodes, number of duplications, Rg,
 # IMPORTS
 # =============================================================================q
 
-import numpy as np
-import os, sys
-import json
-from datetime import datetime
 import argparse
+import collections
 import csv
 import glob
+import json
+import os
 import select
+import sys
+from datetime import datetime
 
-import collections
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from imageProcessing.imageProcessing import Image
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 font = {"weight": "normal", "size": 30}
 
@@ -72,7 +72,7 @@ def parseArguments():
         p["input"] = args.input
     else:
         p["input"] = None
-    
+
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
@@ -83,7 +83,7 @@ def parseArguments():
     else:
         p["pipe"] = False
         p["trace_files"] = [p["input"]]
-        
+
     return p
 
 
@@ -104,7 +104,7 @@ def get_xyz_statistics(trace, output_filename="test_coor.png"):
     None.
 
     """
-    coords = ['x','y', 'z']
+    coords = ["x", "y", "z"]
 
     fig = plt.figure(constrained_layout=True)
     im_size, number_plots = 10, 3
@@ -115,7 +115,7 @@ def get_xyz_statistics(trace, output_filename="test_coor.png"):
     for axis, coor in zip(axes, coords):
         print(f"$ processing coordinate: {coor}")
         coordinates = trace[coor].data
-        axis.hist(coordinates, alpha=0.3, bins = 20)
+        axis.hist(coordinates, alpha=0.3, bins=20)
         axis.set_xlabel(coor)
         axis.set_ylabel("counts")
         axis.set_title(
@@ -244,7 +244,7 @@ def process_traces(trace_files=list()):
     """
 
     if len(trace_files) > 0:
-    
+
         print(
             "\n{} trace files to process= {}".format(
                 len(trace_files), "\n".join(map(str, trace_files))
@@ -268,7 +268,10 @@ def process_traces(trace_files=list()):
             analyze_trace(trace, trace_file)
 
     else:
-        print("! Error: did not find any trace file to analyze. Please provide one using --input or --pipe.")
+        print(
+            "! Error: did not find any trace file to analyze. Please provide one using --input or --pipe."
+        )
+
 
 # =============================================================================
 # MAIN

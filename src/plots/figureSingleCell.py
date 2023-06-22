@@ -10,13 +10,11 @@ produces movies and structures from single cell PWD matrices
 """
 
 import argparse
-
 #%% imports and plotting settings
 import os
 
 import cv2
 import matplotlib
-
 # from mayavi.mlab import *
 # import matplotlib as plt
 import matplotlib.pyplot as plt
@@ -27,16 +25,9 @@ from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 
 from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix,
-    get_barcodes_per_cell,
-    get_detection_eff_barcodes,
-    get_rg_from_pwd,
-    get_coordinates_from_pwd_matrix,
-    kde_fit,
-    plot_distance_histograms,
-    sort_cells_by_number_pwd,
-    write_xyz_2_pdb,
-)
+    AnalysisHiMMatrix, get_barcodes_per_cell, get_coordinates_from_pwd_matrix,
+    get_detection_eff_barcodes, get_rg_from_pwd, kde_fit,
+    plot_distance_histograms, sort_cells_by_number_pwd, write_xyz_2_pdb)
 
 font = {"family": "DejaVu Sans", "weight": "normal", "size": 22}
 

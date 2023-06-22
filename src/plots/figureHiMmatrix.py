@@ -30,27 +30,19 @@ Left to do:
 import argparse
 import csv
 import json
-
 #%% imports and plotting settings
-import os, sys
+import os
+import sys
 
 import matplotlib.gridspec as gridspec
-
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
 
 from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix,
-    calculate_ensemble_pwd_matrix,
-    list_sc_to_keep,
-    normalize_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-    plot_scalogram,
-    shuffle_matrix,
-    calculate_contact_probability_matrix,
-)
+    AnalysisHiMMatrix, calculate_contact_probability_matrix,
+    calculate_ensemble_pwd_matrix, list_sc_to_keep, normalize_matrix,
+    plot_distance_histograms, plot_matrix, plot_scalogram, shuffle_matrix)
 
 #%% define and loads datasets
 
@@ -94,8 +86,7 @@ def parse_arguments():
         help="Matrix normalization mode. Can be n_cells (default) or nonNANs",
     )
     parser.add_argument(
-        "--scalingParameter",
-        help="Scaling parameter. Dafault: 1",
+        "--scalingParameter", help="Scaling parameter. Dafault: 1",
     )
 
     args = parser.parse_args()
@@ -195,8 +186,6 @@ def parse_arguments():
     else:
         run_parameters["scalingParameter"] = 1
 
-
-
     return run_parameters
 
 
@@ -257,7 +246,7 @@ def main():
         run_parameters["outputFolder"]
         + os.sep
         + "Fig_"
-        + os.path.basename(run_parameters["scPWDMatrix_filename"]).split('.')[0]
+        + os.path.basename(run_parameters["scPWDMatrix_filename"]).split(".")[0]
         + "_label:"
         + run_parameters["label"]
         + "_action:"
@@ -273,7 +262,7 @@ def main():
 
     if run_parameters["dist_calc_mode"] == "proximity":
         # calculates and plots contact probability matrix from merged samples/datasets
-        print('$ calculating proximity matrix')
+        print("$ calculating proximity matrix")
         sc_matrix, n_cells = calculate_contact_probability_matrix(
             sc_matrix,
             uniqueBarcodes,

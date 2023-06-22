@@ -42,7 +42,9 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--output_file", help="Output File name. Default = merged_traces.ecsv")
+    parser.add_argument(
+        "-o", "--output_file", help="Output File name. Default = merged_traces.ecsv"
+    )
     parser.add_argument("-O", "--output_folder", help="Output File name. Default = ./")
     p = {}
 
@@ -69,6 +71,7 @@ def parse_arguments():
 
     return p
 
+
 def appends_traces(traces, trace_files):
 
     new_trace = ChromatinTraceTable()
@@ -78,7 +81,7 @@ def appends_traces(traces, trace_files):
 
         # reads new trace
         new_trace.load(trace_file)
-        
+
         # adds it to existing trace collection
         traces.append(new_trace.data)
         traces.number_traces += 1
@@ -114,9 +117,8 @@ def run(p):
         os.mkdir(p["outputFolder"])
         print("Folder created: {}".format(p["outputFolder"]))
 
-    #loads and merges traces
+    # loads and merges traces
     traces = load_traces(trace_files=p["trace_files"])
-
 
     # saves merged trace table
     output_file = p["output_file"]

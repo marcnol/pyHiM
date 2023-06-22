@@ -29,7 +29,8 @@ from csbdeep.utils import normalize
 from csbdeep.utils.tf import limit_gpu_memory
 from matplotlib import ticker
 from numpy import linalg as LA
-from photutils import Background2D, MedianBackground, deblend_sources, detect_sources
+from photutils import (Background2D, MedianBackground, deblend_sources,
+                       detect_sources)
 from scipy import ndimage as ndi
 from scipy.ndimage import shift as shift_image
 from skimage import color, exposure, io, measure
@@ -596,9 +597,7 @@ def _remove_inhomogeneous_background(
     """
     if len(im.shape) == 2:
         output = _remove_inhomogeneous_background_2d(
-            im,
-            filter_size=filter_size,
-            background=background,
+            im, filter_size=filter_size, background=background,
         )
     elif len(im.shape) == 3:
         output = _remove_inhomogeneous_background_3d(
@@ -964,24 +963,12 @@ def align_2_images_cross_correlation(
 
     """
 
-    (
-        image1_adjusted,
-        hist1_before,
-        hist1_after,
-        lower_cutoff1,
-        _,
-    ) = image_adjust(
+    (image1_adjusted, hist1_before, hist1_after, lower_cutoff1, _,) = image_adjust(
         image1_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
     )
-    (
-        image2_adjusted,
-        hist2_before,
-        hist2_after,
-        lower_cutoff2,
-        _,
-    ) = image_adjust(
+    (image2_adjusted, hist2_before, hist2_after, lower_cutoff2, _,) = image_adjust(
         image2_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
@@ -1332,12 +1319,7 @@ def _segment_2d_image_by_thresholding(
     threshold[:] = threshold_over_std * image_2d.max() / 100
 
     # segments objects
-    segm = detect_sources(
-        image_2d,
-        threshold,
-        npixels=area_min,
-        filter_kernel=kernel,
-    )
+    segm = detect_sources(image_2d, threshold, npixels=area_min, filter_kernel=kernel,)
 
     if segm.nlabels > 0:
         # removes masks too close to border

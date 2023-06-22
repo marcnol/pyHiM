@@ -42,30 +42,19 @@ from datetime import datetime
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.table import Table, vstack
-
 from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    load_alignment_dictionary,
-    print_dict,
-    print_log,
-    rt_to_filename,
-    try_get_client,
-    write_string_to_file,
-)
+from fileProcessing.fileManagement import (Folders, get_dictionary_value,
+                                           load_alignment_dictionary,
+                                           print_dict, print_log,
+                                           rt_to_filename, try_get_client,
+                                           write_string_to_file)
 from imageProcessing.imageProcessing import (
-    apply_xy_shift_3d_images,
-    combine_blocks_image_by_reprojection,
-    image_block_alignment_3d,
-    plot_3d_shift_matrices,
-    plot_4_images,
-    preprocess_3d_image,
-    reinterpolate_z,
-)
+    apply_xy_shift_3d_images, combine_blocks_image_by_reprojection,
+    image_block_alignment_3d, plot_3d_shift_matrices, plot_4_images,
+    preprocess_3d_image, reinterpolate_z)
 
 # =============================================================================
 # CLASSES

@@ -40,18 +40,26 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
+    parser.add_argument(
+        "-O", "--output", help="Tag to add to the output file. Default = filtered"
+    )
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument("--z_min", help="Z minimum for a localization. Default = 0")
-    parser.add_argument("--z_max", help="Z maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--z_max", help="Z maximum for a localization. Default = np.inf"
+    )
     parser.add_argument("--y_min", help="Y minimum for a localization. Default = 0")
-    parser.add_argument("--y_max", help="Y maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--y_max", help="Y maximum for a localization. Default = np.inf"
+    )
     parser.add_argument("--x_min", help="X minimum for a localization. Default = 0")
-    parser.add_argument("--x_max", help="X maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--x_max", help="X maximum for a localization. Default = np.inf"
+    )
 
     p = {}
 
@@ -95,13 +103,12 @@ def parse_arguments():
         p["x_min"] = float(args.x_min)
     else:
         p["x_min"] = 0
-        
+
     if args.x_max:
         p["x_max"] = float(args.x_max)
     else:
         p["x_max"] = np.inf
-        
-        
+
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
@@ -112,15 +119,17 @@ def parse_arguments():
     else:
         p["pipe"] = False
         p["trace_files"] = [p["input"]]
-        
+
     return p
 
 
-def runtime(trace_files=[], N_barcodes=2, coor_limits = dict(), tag = "filtered"):
+def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered"):
 
     # checks number of trace files
     if len(trace_files) < 1:
-        print("! Error: no trace file provided. Please either use pipe or the --input option to provide a filename.")
+        print(
+            "! Error: no trace file provided. Please either use pipe or the --input option to provide a filename."
+        )
         return 0
     elif len(trace_files) == 1:
         print("\n$ trace files to process= {}".format(trace_files))
@@ -131,10 +140,10 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits = dict(), tag = "filtered"
             )
         )
 
-    coors = ['x','y','z']
+    coors = ["x", "y", "z"]
     if len(trace_files) > 0:
 
-        # iterates over traces 
+        # iterates over traces
         for trace_file in trace_files:
 
             trace = ChromatinTraceTable()
@@ -148,7 +157,11 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits = dict(), tag = "filtered"
 
             # filters trace by coordinate
             for coor in coors:
-                trace.filter_traces_by_coordinate(coor = coor, coor_min = coor_limits[coor+'_min'], coor_max = coor_limits[coor+'_max'])
+                trace.filter_traces_by_coordinate(
+                    coor=coor,
+                    coor_min=coor_limits[coor + "_min"],
+                    coor_max=coor_limits[coor + "_max"],
+                )
 
             # saves output trace
             outputfile = trace_file.rstrip(".ecsv") + "_" + tag + ".ecsv"
@@ -171,7 +184,10 @@ def main():
     p = parse_arguments()
     # [loops over lists of datafolders]
     n_traces_processed = runtime(
-        trace_files=p["trace_files"], N_barcodes=p["N_barcodes"], coor_limits = p, tag=p["output"]
+        trace_files=p["trace_files"],
+        N_barcodes=p["N_barcodes"],
+        coor_limits=p,
+        tag=p["output"],
     )
 
     print(f"Processed <{n_traces_processed}> trace(s)")

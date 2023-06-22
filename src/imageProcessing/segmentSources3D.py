@@ -37,31 +37,21 @@ from datetime import datetime
 
 import numpy as np
 from apifish.detection.spot_modeling import fit_subpixel
+from apifish.stack import projection
 from astropy.table import Table, vstack
 from skimage import exposure, io
 from skimage.measure import regionprops
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    load_alignment_dictionary,
-    print_dict,
-    print_log,
-    retrieve_number_rois_folder,
-    try_get_client,
-    write_string_to_file,
-)
+from fileProcessing.fileManagement import (Folders, get_dictionary_value,
+                                           load_alignment_dictionary,
+                                           print_dict, print_log,
+                                           retrieve_number_rois_folder,
+                                           try_get_client,
+                                           write_string_to_file)
 from imageProcessing.imageProcessing import (
-    _plot_image_3d,
-    _segment_3d_volumes_by_thresholding,
-    _segment_3d_volumes_stardist,
-    apply_xy_shift_3d_images,
-    image_adjust,
-    preprocess_3d_image,
-    reinterpolate_z,
-)
-from apifish.stack import projection
-
+    _plot_image_3d, _segment_3d_volumes_by_thresholding,
+    _segment_3d_volumes_stardist, apply_xy_shift_3d_images, image_adjust,
+    preprocess_3d_image, reinterpolate_z)
 
 # =============================================================================
 # CLASSES

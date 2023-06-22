@@ -30,9 +30,7 @@ from tifffile import imsave
 from tqdm import tqdm
 
 from imageProcessing.imageProcessing import (
-    _segment_3d_volumes_by_thresholding,
-    save_image_as_blocks,
-)
+    _segment_3d_volumes_by_thresholding, save_image_as_blocks)
 
 
 def parse_arguments():

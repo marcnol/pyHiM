@@ -208,7 +208,13 @@ class FileHandling:
 
 
 class Parameters:
-    def __init__(self, root_folder="./", label="", file_name="infoList.json", stardist_basename = None):
+    def __init__(
+        self,
+        root_folder="./",
+        label="",
+        file_name="infoList.json",
+        stardist_basename=None,
+    ):
         self.file_name = file_name
         self.label = label
         self.param_file = root_folder + os.sep + file_name
@@ -217,7 +223,7 @@ class Parameters:
 
         self.initialize_standard_parameters()
         self.convert_parameter_file(self.param_file, self.label)
-        if stardist_basename is not None :
+        if stardist_basename is not None:
             self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
@@ -293,7 +299,11 @@ class Parameters:
                         "contact": "coolwarm",
                         "Nmatrix": "Blues",
                     },  # colormaps used for plotting matrices
-                    "toleranceDrift": [3,1,1],  # zxy tolerance used for block drift correction, in px
+                    "toleranceDrift": [
+                        3,
+                        1,
+                        1,
+                    ],  # zxy tolerance used for block drift correction, in px
                     "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.
                 },
                 "segmentedObjects": {
@@ -875,12 +885,12 @@ def loads_barcode_dict(file_name):
 
         # Opening JSON file
         f = open(file_name)
-    
+
         # returns JSON object as a dictionary
         barcode_type = json.load(f)
-    
+
         # Closing file
         f.close()
-    
+
         print("$ {} barcode dictionary loaded")
         return barcode_type

@@ -31,13 +31,8 @@ from astropy.visualization import simple_norm
 from matplotlib import pyplot as plt
 from roipoly import MultiRoi
 
-from fileProcessing.fileManagement import (
-    Folders,
-    Log,
-    Parameters,
-    Session,
-    write_string_to_file,
-)
+from fileProcessing.fileManagement import (Folders, Log, Parameters, Session,
+                                           write_string_to_file)
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================

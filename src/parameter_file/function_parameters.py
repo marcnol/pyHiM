@@ -1,7 +1,7 @@
-import re
-import os
-from tkinter import messagebox
 import json
+import os
+import re
+from tkinter import messagebox
 
 
 def convert_dic_to_string(dic: dict):

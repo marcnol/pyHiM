@@ -9,15 +9,16 @@ Created on Mon Feb  7 16:45:44 2022
 # IMPORTS
 # =============================================================================
 
-import glob, os
-
+import glob
+import os
 # to remove in a future version
 import warnings
 
 import numpy as np
 from tqdm import trange
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from fileProcessing.fileManagement import (Folders, print_log,
+                                           write_string_to_file)
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")

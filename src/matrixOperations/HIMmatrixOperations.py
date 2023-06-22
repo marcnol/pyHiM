@@ -22,6 +22,7 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.linalg as npl
 from astropy.table import Table, vstack
 from numba import jit
 from pylab import colorbar, contourf
@@ -31,8 +32,6 @@ from sklearn import manifold
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
-
-import numpy.linalg as npl
 
 from fileProcessing.fileManagement import is_notebook, write_string_to_file
 
@@ -1516,7 +1515,7 @@ def plot_scalogram(matrix2plot, output_filename=""):
 
 
 def decodes_trace(single_trace):
-    '''
+    """
     from a trace entry, provides Numpy array with coordinates, barcode and trace names
 
     Parameters
@@ -1530,48 +1529,54 @@ def decodes_trace(single_trace):
     x, y and z coordinates as numpy arrays, 
     trace name as string
 
-    '''
-    barcodes, X, Y, Z= single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
-    trace_name = single_trace['Trace_ID'][0][0:3]
-  
-    return barcodes, X, Y, Z, trace_name 
-    
-def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
+    """
+    barcodes, X, Y, Z = (
+        single_trace["Barcode #"],
+        single_trace["x"],
+        single_trace["y"],
+        single_trace["z"],
+    )
+    trace_name = single_trace["Trace_ID"][0][0:3]
+
+    return barcodes, X, Y, Z, trace_name
+
+
+def write_xyz_2_pdb(file_name, single_trace, barcode_type=dict()):
     # writes xyz coordinates to a PDB file wth pseudoatoms
     # file_name : string of output file path, e.g. '/foo/bar/test2.pdb'
     # xyz      : n-by-3 numpy array with atom coordinates
 
-    default_atom_name = 'xxx'
-    barcodes, X, Y, Z, trace_name = decodes_trace(single_trace)    
-    
-    # builds NP array 
-    xyz=np.transpose(np.array([X,Y,Z]))
+    default_atom_name = "xxx"
+    barcodes, X, Y, Z, trace_name = decodes_trace(single_trace)
+
+    # builds NP array
+    xyz = np.transpose(np.array([X, Y, Z]))
 
     # calculates center of mass
     center_of_mass = np.mean(X), np.mean(Y), np.mean(Z)
-    
+
     # recenters and converts to A
-    unit_conversion = 10.0 # converts from nm to Angstroms
-    xyz = unit_conversion*(xyz-center_of_mass)
+    unit_conversion = 10.0  # converts from nm to Angstroms
+    xyz = unit_conversion * (xyz - center_of_mass)
 
     # writes PDB file
     n_atoms = xyz.shape[0]
-    
+
     # defines atom names from barcode properties
-    if len(barcode_type)<1:
+    if len(barcode_type) < 1:
         # all atoms have the same identity
-        print('did not find barcode_type dictionnary')
-        for i,barcode in enumerate(barcodes):
-            barcode_type['{}'.format(barcode)] = default_atom_name
+        print("did not find barcode_type dictionnary")
+        for i, barcode in enumerate(barcodes):
+            barcode_type["{}".format(barcode)] = default_atom_name
     else:
         # adds missing keys
         # print("$ keys: {}".format(barcode_type.keys()))
         for barcode in barcodes:
             if str(barcode) not in barcode_type.keys():
-                barcode_type['{}'.format(barcode)] = default_atom_name   
-                print('$ fixing key {} as not found in dict'.format(barcode))       
+                barcode_type["{}".format(barcode)] = default_atom_name
+                print("$ fixing key {} as not found in dict".format(barcode))
 
-    '''
+    """
         COLUMNS        DATA TYPE       CONTENTS                            
     --------------------------------------------------------------------------------
      1 -  6        Record name     "ATOM  "                                            
@@ -1590,15 +1595,15 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
     73 - 76        LString(4)      Segment identifier, left-justified.   
     77 - 78        LString(2)      Element symbol, right-justified.      
     79 - 80        LString(2)      Charge on the atom.   
-    '''
+    """
 
     with open(file_name, mode="w+", encoding="utf-8") as fid:
         ## atom coordinates
-        #txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
-        #txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"        
-        #for i in range(n_atoms):
+        # txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
+        # txt = "HETATM  {: 3d}  {} {} P{: 3d}      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
+        # for i in range(n_atoms):
         #    atom_name = barcode_type[str(barcodes[i])]
-            #fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+        # fid.write(txt.format(i + 1, i + 1, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
         #    fid.write(txt.format(i + 1, atom_name, trace_name, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
 
         ## fills fields with correct spacing
@@ -1612,7 +1617,7 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
         field_code_insertion = "    "
         field_X = "{}"
         field_Y = "{}"
-        field_Z = "{}" #" {:0<7.3f}"
+        field_Z = "{}"  # " {:0<7.3f}"
         field_occupancy = "   0.0"
         field_temp_factor = "   0.0"
         field_segment_identifier = "      " + "PSDO"
@@ -1641,13 +1646,21 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type = dict()):
         # txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
         for i in range(n_atoms):
             atom_name = barcode_type[str(barcodes[i])]
-            fid.write(txt.format(i + 1, atom_name, int(barcodes[i]), " {:0<7.3f}".format(xyz[i, 0])[0:8], " {:0<7.3f}".format(xyz[i, 1])[0:8], " {:0<7.3f}".format(xyz[i, 2])[0:8] ))
+            fid.write(
+                txt.format(
+                    i + 1,
+                    atom_name,
+                    int(barcodes[i]),
+                    " {:0<7.3f}".format(xyz[i, 0])[0:8],
+                    " {:0<7.3f}".format(xyz[i, 1])[0:8],
+                    " {:0<7.3f}".format(xyz[i, 2])[0:8],
+                )
+            )
 
-        
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
         txt2 = "CONECT  {: 3d}  {: 3d}  {: 3d}\n"
-        
+
         # first line of connectivity
         fid.write(txt1.format(1, 2))
 
@@ -1670,32 +1683,32 @@ def distances_2_coordinates(distances):
     # pre-caching
     cache = {}
     for j in range(N):
-        sumi = sum([distances[j, k]**2 for k in range(j+1, N)])
+        sumi = sum([distances[j, k] ** 2 for k in range(j + 1, N)])
         cache[j] = sumi
 
     # compute distances from center of mass
     sum2 = sum([cache[j] for j in range(N)])
     for i in range(N):
-        sum1 = cache[i] + sum([distances[j, i]**2 for j in range(i+1)])
+        sum1 = cache[i] + sum([distances[j, i] ** 2 for j in range(i + 1)])
 
-        val = 1/N * sum1 - 1/N**2 * sum2
+        val = 1 / N * sum1 - 1 / N ** 2 * sum2
         d_0.append(val)
 
     # generate gram matrix
     gram = np.zeros(distances.shape)
     for row in range(distances.shape[0]):
         for col in range(distances.shape[1]):
-            dists = d_0[row]**2 + d_0[col]**2 - distances[row, col]**2
-            gram[row, col] = 1/2 * dists
+            dists = d_0[row] ** 2 + d_0[col] ** 2 - distances[row, col] ** 2
+            gram[row, col] = 1 / 2 * dists
 
     # extract coordinates from gram matrix
     coordinates = []
     vals, vecs = npl.eigh(gram)
 
-    vals = vals[N-3:]
-    vecs = vecs.T[N-3:]
+    vals = vals[N - 3 :]
+    vecs = vecs.T[N - 3 :]
 
-    #print('eigvals:', vals) # must all be positive for PSD (positive semidefinite) matrix
+    # print('eigvals:', vals) # must all be positive for PSD (positive semidefinite) matrix
 
     # same eigenvalues might be small -> exact embedding does not exist
     # fix by replacing all but largest 3 eigvals by 0
@@ -1707,6 +1720,7 @@ def distances_2_coordinates(distances):
 
     return np.array(coordinates).T
 
+
 def coord_2_distances(coordinates):
     """ Derive distance matrix from given set of coordinates
     """
@@ -1717,12 +1731,15 @@ def coord_2_distances(coordinates):
     for row in range(coordinates.shape[0]):
         for col in range(coordinates.shape[0]):
             comp_sum = sum(
-                [(coordinates[row, d] - coordinates[col, d])**2
-                    for d in range(dimension)]
+                [
+                    (coordinates[row, d] - coordinates[col, d]) ** 2
+                    for d in range(dimension)
+                ]
             )
             distances[row, col] = np.sqrt(comp_sum)
 
     return distances
+
 
 def plot_distance_histograms(
     sc_matrix_collated,

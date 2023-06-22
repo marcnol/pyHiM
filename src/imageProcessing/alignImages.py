@@ -19,7 +19,6 @@ image cross correlation
 
 import glob
 import os
-
 # to remove in a future version
 import warnings
 
@@ -33,24 +32,17 @@ from scipy.ndimage import shift as shift_image
 from skimage.exposure import match_histograms
 from skimage.registration._phase_cross_correlation import _upsampled_dft
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    load_json,
-    print_log,
-    rt_to_filename,
-    save_json,
-    write_string_to_file,
-)
-from imageProcessing.imageProcessing import (
-    Image,
-    align_2_images_cross_correlation,
-    align_images_by_blocks,
-    plotting_block_alignment_results,
-    save_2_images_rgb,
-    save_image_2d_cmd,
-    save_image_differences,
-)
+from fileProcessing.fileManagement import (Folders, get_dictionary_value,
+                                           load_json, print_log,
+                                           rt_to_filename, save_json,
+                                           write_string_to_file)
+from imageProcessing.imageProcessing import (Image,
+                                             align_2_images_cross_correlation,
+                                             align_images_by_blocks,
+                                             plotting_block_alignment_results,
+                                             save_2_images_rgb,
+                                             save_image_2d_cmd,
+                                             save_image_differences)
 
 warnings.filterwarnings("ignore")
 # =============================================================================

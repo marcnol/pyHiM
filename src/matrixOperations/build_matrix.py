@@ -34,7 +34,6 @@ import os
 import re
 import sys
 import uuid
-
 # to remove in a future version
 import warnings
 
@@ -46,17 +45,12 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import (
-    get_dictionary_value,
-    print_log,
-)
+from fileProcessing.fileManagement import get_dictionary_value, print_log
 from matrixOperations.build_traces import initialize_module
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (
-    calculate_contact_probability_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-)
+    calculate_contact_probability_matrix, plot_distance_histograms,
+    plot_matrix)
 
 warnings.filterwarnings("ignore")
 
@@ -66,7 +60,7 @@ warnings.filterwarnings("ignore")
 
 
 class BuildMatrix:
-    def __init__(self, param, colormaps = dict()):
+    def __init__(self, param, colormaps=dict()):
 
         self.current_param = param
         self.colormaps = colormaps
@@ -75,8 +69,8 @@ class BuildMatrix:
 
         # initialize with default values
         self.current_folder = []
-        self.log_name_md = 'trace_to_matrix.log'
-        
+        self.log_name_md = "trace_to_matrix.log"
+
     def initialize_parameters(self):
         # initializes parameters from current_param
 
@@ -97,7 +91,11 @@ class BuildMatrix:
                 self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
             )
             self.pixel_size_z = self.z_binning * self.pixel_size_z_0
-            self.pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
+            self.pixel_size = [
+                self.pixel_size_xy,
+                self.pixel_size_xy,
+                self.pixel_size_z,
+            ]
             self.available_masks = get_dictionary_value(
                 self.current_param.param_dict["buildsPWDmatrix"],
                 "masks2process",
@@ -109,8 +107,10 @@ class BuildMatrix:
                 "mask_expansion",
                 default=8,
             )
-            
-            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"]["colormaps"]
+
+            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"][
+                "colormaps"
+            ]
 
     def calculate_pwd_single_mask(self, x, y, z):
         """
