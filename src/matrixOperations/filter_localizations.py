@@ -11,14 +11,15 @@ Created on Mon Feb  7 16:45:44 2022
 
 import glob
 import os
+
 # to remove in a future version
 import warnings
 
 import numpy as np
 from tqdm import trange
 
-from fileProcessing.fileManagement import (Folders, print_log,
-                                           write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")
@@ -55,7 +56,9 @@ class FilterLocalizations:
         """
         if self.ndims == 3:  # and  "3DfitKeep" in barcode_map.keys()
             # [reading the flag in barcode_map_roi assigned by the 3D localization routine]
-            keep = barcode_map["flux"][i] > self.flux_min  # and barcode_map["3DfitKeep"][i]
+            keep = (
+                barcode_map["flux"][i] > self.flux_min
+            )  # and barcode_map["3DfitKeep"][i]
         else:
             # [or by reading the flux from 2D localization]
             keep = barcode_map["flux"][i] > self.flux_min
@@ -127,7 +130,6 @@ class FilterLocalizations:
         n_barcodes = len(barcode_map)
         print(f"$ Minimum flux: {self.flux_min}")
         for i in trange(n_barcodes):  # i is the index of the barcode in barcode_map_roi
-
             # [filters barcode localizations either by]
             keep_quality = self.filter_localizations__quality(barcode_map, i)
 
@@ -141,7 +143,9 @@ class FilterLocalizations:
         # removes rows from table
         barcode_map.remove_rows(rows_to_remove)
 
-        print(f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}.")
+        print(
+            f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}."
+        )
 
         return barcode_map
 
@@ -187,7 +191,9 @@ class FilterLocalizations:
         print_log("\n===================={}====================\n".format(session_name))
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["fileNameMD"], "## {}\n".format(session_name), "a",
+            self.current_param.param_dict["fileNameMD"],
+            f"## {session_name}\n",
+            "a",
         )
         label = "barcode"
 
@@ -195,12 +201,18 @@ class FilterLocalizations:
             self.data_folder.create_folders(current_folder, self.current_param)
             print_log("> Processing Folder: {}".format(current_folder))
 
-            files = [x for x in glob.glob(self.data_folder.output_files["segmentedObjects"] + "_*" + label + ".dat")]
+            files = [
+                x
+                for x in glob.glob(
+                    self.data_folder.output_files["segmentedObjects"]
+                    + "_*"
+                    + label
+                    + ".dat"
+                )
+            ]
 
             if len(files) > 0:
-
                 for file in files:
-
                     if "3D" in os.path.basename(file):
                         self.ndims = 3
                     else:
@@ -217,10 +229,12 @@ class FilterLocalizations:
                         new_file = get_file_table_new_name(file)
                         table.save(new_file, barcode_map)
                         table.plot_distribution_fluxes(
-                            barcode_map, [new_file.split(".")[0], "_barcode_stats", ".png"],
+                            barcode_map,
+                            [new_file.split(".")[0], "_barcode_stats", ".png"],
                         )
                         table.plots_localizations(
-                            barcode_map, [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map,
+                            [new_file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                         # processes tables
@@ -233,9 +247,12 @@ class FilterLocalizations:
 
                         # saves and plots filtered barcode coordinate Tables
                         table.save(file, barcode_map, comments="filtered")
-                        table.plot_distribution_fluxes(barcode_map, [file.split(".")[0], "_barcode_stats", ".png"])
+                        table.plot_distribution_fluxes(
+                            barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
+                        )
                         table.plots_localizations(
-                            barcode_map, [file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map,
+                            [file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                     else:
@@ -248,13 +265,14 @@ class FilterLocalizations:
 
 
 def get_file_table_new_name(file):
-
     existing_versions = glob.glob(file.split(".")[0] + "_version_*.dat")
 
     if len(existing_versions) < 1:
         new_version = 0
     else:
-        version_numbers = [int(x.split("_version_")[1].split("_")[0]) for x in existing_versions]
+        version_numbers = [
+            int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
+        ]
 
         if len(version_numbers) > 0:
             new_version = max(version_numbers) + 1

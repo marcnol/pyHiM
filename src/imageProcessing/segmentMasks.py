@@ -19,13 +19,13 @@ after image segmentation.
 # =============================================================================
 
 # ---- stardist
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import glob
 import os
 import time
 import uuid
+
 # to remove in a future version
 import warnings
 
@@ -34,16 +34,21 @@ import matplotlib
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel
-from astropy.stats import (SigmaClip, gaussian_fwhm_to_sigma,
-                           sigma_clipped_stats)
+from astropy.stats import SigmaClip, gaussian_fwhm_to_sigma, sigma_clipped_stats
 from astropy.table import Column, Table, vstack
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
 from csbdeep.utils import normalize
 from dask.distributed import get_client
 from matplotlib.path import Path
-from photutils import (Background2D, DAOStarFinder, MedianBackground,
-                       deblend_sources, detect_sources, detect_threshold)
+from photutils import (
+    Background2D,
+    DAOStarFinder,
+    MedianBackground,
+    deblend_sources,
+    detect_sources,
+    detect_threshold,
+)
 from photutils.segmentation.core import SegmentationImage
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import Voronoi
@@ -51,8 +56,8 @@ from skimage.measure import regionprops
 from stardist import random_label_cmap
 from stardist.models import StarDist2D
 
-from fileProcessing.fileManagement import (Folders, print_log,
-                                           write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from imageProcessing.imageProcessing import Image, save_image_2d_cmd
 
 matplotlib.rcParams["image.interpolation"] = None
@@ -68,7 +73,6 @@ warnings.filterwarnings("ignore")
 def _show_image_sources(
     im, im1_bkg_substracted, x, y, flux, percent=99.5, vmin=0, vmax=2000
 ):
-
     fig, ax = plt.subplots()
     fig.set_size_inches((50, 50))
 
@@ -97,7 +101,6 @@ def _show_image_sources(
 def show_image_sources(
     im, im1_bkg_substracted, sources, markdown_filename, output_filename
 ):
-
     percent = 99.5
     flux = sources["flux"]
     x = sources["xcentroid"] + 0.5
@@ -109,15 +112,12 @@ def show_image_sources(
 
     write_string_to_file(
         markdown_filename,
-        "{}\n ![]({})\n".format(
-            os.path.basename(output_filename), output_filename + "_segmentedSources.png"
-        ),
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_segmentedSources.png)\n",
         "a",
     )
 
 
 def show_image_masks(im, segm_deblend, markdown_filename, output_filename):
-
     lbl_cmap = random_label_cmap()
 
     norm = ImageNormalize(stretch=SqrtStretch())
@@ -131,9 +131,7 @@ def show_image_masks(im, segm_deblend, markdown_filename, output_filename):
     plt.close()
     write_string_to_file(
         markdown_filename,
-        "{}\n ![]({})\n".format(
-            os.path.basename(output_filename), output_filename + "_segmentedMasks.png"
-        ),
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_segmentedMasks.png)\n",
         "a",
     )
 
@@ -636,7 +634,6 @@ def segment_mask_stardist(im, current_param):
 
 
 def make_segmentations(file_name, current_param, current_session, data_folder):
-
     root_filename = os.path.basename(file_name).split(".")[0]
     output_filename = (
         data_folder.output_folders["segmentedObjects"] + os.sep + root_filename
@@ -650,7 +647,6 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
 
     print_log("> searching for {}".format(filename_2d_aligned))
     if os.path.exists(filename_2d_aligned):  # file exists
-
         roi = os.path.basename(file_name).split("_")[
             current_param.param_dict["acquisition"]["positionROIinformation"]
         ]
@@ -659,7 +655,9 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         # loading registered 2D projection
         im_obj = Image(current_param)
         im_obj.load_image_2d(
-            file_name, data_folder.output_folders["alignImages"], tag="_2d_registered",
+            file_name,
+            data_folder.output_folders["alignImages"],
+            tag="_2d_registered",
         )
         im = im_obj.data_2d
         print_log(
@@ -777,7 +775,10 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
                 )
 
             show_image_masks(
-                im, output, current_param.param_dict["fileNameMD"], output_filename,
+                im,
+                output,
+                current_param.param_dict["fileNameMD"],
+                output_filename,
             )
 
             # saves output 2d zProjection as matrix
@@ -812,9 +813,7 @@ def segment_masks(current_param, current_session, file_name=None):
     print_log("> folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        "## {}: {}\n".format(
-            session_name, current_param.param_dict["acquisition"]["label"]
-        ),
+        f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
         "a",
     )
     barcodes_coordinates = Table()
@@ -883,7 +882,6 @@ def segment_masks(current_param, current_session, file_name=None):
                 )
 
         else:
-
             for filename_to_process in current_param.files_to_process:
                 if file_name is None or (
                     file_name is not None
@@ -891,7 +889,6 @@ def segment_masks(current_param, current_session, file_name=None):
                     == os.path.basename(filename_to_process)
                 ):
                     if label != "fiducial":
-
                         # running in sequential mode
                         output = make_segmentations(
                             filename_to_process,

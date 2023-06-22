@@ -46,15 +46,24 @@ from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
-from fileProcessing.fileManagement import (Folders, get_dictionary_value,
-                                           load_alignment_dictionary,
-                                           print_dict, print_log,
-                                           rt_to_filename, try_get_client,
-                                           write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import (
+    Folders,
+    get_dictionary_value,
+    load_alignment_dictionary,
+    print_dict,
+    rt_to_filename,
+    try_get_client,
+)
 from imageProcessing.imageProcessing import (
-    apply_xy_shift_3d_images, combine_blocks_image_by_reprojection,
-    image_block_alignment_3d, plot_3d_shift_matrices, plot_4_images,
-    preprocess_3d_image, reinterpolate_z)
+    apply_xy_shift_3d_images,
+    combine_blocks_image_by_reprojection,
+    image_block_alignment_3d,
+    plot_3d_shift_matrices,
+    plot_4_images,
+    preprocess_3d_image,
+    reinterpolate_z,
+)
 
 # =============================================================================
 # CLASSES
@@ -286,10 +295,8 @@ class Drift3D:
             client = try_get_client()
 
         if self.number_rois > 0:
-
             # loops over rois
             for filename_reference in self.filenames_with_ref_barcode:
-
                 # loads reference fiducial image for this ROI
                 self.load_reference_fiducial(filename_reference)
                 number_files = len(self.filenames_to_process_list)
@@ -301,7 +308,6 @@ class Drift3D:
                     for file_index, filename_to_process in enumerate(
                         self.filenames_to_process_list
                     ):
-
                         print_log(
                             "\n\n>>>Iteration: {}/{}<<<".format(
                                 file_index, number_files
@@ -346,7 +352,9 @@ class Drift3D:
             self.data_folder.output_files["alignImages"].split(".")[0] + "_block3D.dat"
         )
         alignment_results_table_global.write(
-            output_filename, format="ascii.ecsv", overwrite=True,
+            output_filename,
+            format="ascii.ecsv",
+            overwrite=True,
         )
 
         print_log("$ alignImages3D procesing time: {}".format(datetime.now() - now))
@@ -369,7 +377,7 @@ class Drift3D:
         print_log("folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
 
@@ -403,7 +411,6 @@ def load_n_preprocess_image(
     higher_threshold,
     parallel_execution=True,
 ):
-
     print_log("$ File:{}".format(os.path.basename(filename_to_process)))
 
     image_3d_0 = io.imread(filename_to_process).squeeze()
@@ -436,7 +443,6 @@ def _align_fiducials_3d_file(
     dict_shifts_available,
     output_folder,
 ):
-
     # - load  and preprocesses 3D fiducial file
     print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
     image_3d_0, image_3d = load_n_preprocess_image(

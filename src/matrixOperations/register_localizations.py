@@ -26,7 +26,8 @@ import numpy as np
 from astropy.table import Table
 from tqdm import trange
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.filter_localizations import get_file_table_new_name
 
@@ -438,7 +439,7 @@ class RegisterLocalizations:
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
         label = "barcode"

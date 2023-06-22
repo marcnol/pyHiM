@@ -48,7 +48,8 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_distance_histograms,
@@ -228,9 +229,7 @@ class CellID:
 
         write_string_to_file(
             self.log_name_md,
-            "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(
-                self.n_roi, self.ndims, file_name
-            ),
+            f"Barcode stats for ROI:{self.n_roi}, dims:{self.ndims} \n![]({file_name})\n",
             "a",
         )
 
@@ -295,9 +294,7 @@ class CellID:
 
         write_string_to_file(
             self.log_name_md,
-            "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(
-                self.n_roi, self.ndims, file_name
-            ),
+            f"Barcode stats for ROI:{self.n_roi}, dims:{self.ndims} \n![]({file_name})\n",
             "a",
         )
 
@@ -1385,7 +1382,7 @@ def process_pwd_matrices(current_param, current_session):
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        "## {}\n".format(session_name),
+        f"## {session_name}\n",
         "a",
     )
     label = "barcode"

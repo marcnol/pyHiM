@@ -31,8 +31,8 @@ from astropy.visualization import simple_norm
 from matplotlib import pyplot as plt
 from roipoly import MultiRoi
 
-from fileProcessing.fileManagement import (Folders, Log, Parameters, Session,
-                                           write_string_to_file)
+from core.pyhim_logging import Log, write_string_to_file
+from fileProcessing.fileManagement import Folders, Parameters, Session
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================
@@ -57,7 +57,6 @@ def show_image(data_2d, normalization="simple", size=(10, 10)):
 
 
 def createsUserMask(current_param, current_log, file_name, output_filename):
-
     # loads image
 
     # displays image
@@ -97,64 +96,78 @@ def createsUserMask(current_param, current_log, file_name, output_filename):
 
 
 def processesUserMasks(current_param, current_log, processingList):
-
     if current_param.param_dict["segmentedObjects"]["operation"] == "overwrite":
-
         # session
         session_name = "processesUserMasks"
 
         # processes folders and files
         data_folder = Folders(current_param.param_dict["rootFolder"])
         data_folder.set_folders()
-        current_log.add_simple_text("\n===================={}====================\n".format(session_name))
+        current_log.add_simple_text(
+            "\n===================={}====================\n".format(session_name)
+        )
         current_log.report("folders read: {}".format(len(data_folder.list_folders)))
 
-        position_roi_information = current_param.param_dict["acquisition"]["positionROIinformation"]
+        position_roi_information = current_param.param_dict["acquisition"][
+            "positionROIinformation"
+        ]
         numberMaskedFiles = 0
 
         allresultsTable = Table()
         for current_folder in data_folder.list_folders:
-
             files_folder = glob.glob(current_folder + os.sep + "*.tif")
             data_folder.create_folders(current_folder, current_param)
             current_log.report("-------> Processing Folder: {}".format(current_folder))
 
             # generates lists of files to process
             current_param.find_files_to_process(files_folder)
-            current_log.report("About to process {} files\n".format(len(current_param.files_to_process)))
+            current_log.report(
+                "About to process {} files\n".format(
+                    len(current_param.files_to_process)
+                )
+            )
 
             if len(current_param.files_to_process) > 0:
                 files_to_process = [
                     file
-                    for file in glob.glob(data_folder.output_folders["segmentedObjects"] + os.sep + "*")
+                    for file in glob.glob(
+                        data_folder.output_folders["segmentedObjects"] + os.sep + "*"
+                    )
                     if "SNDmask" in file.split("_")
                 ]
 
                 if processingList["cleanAllMasks"]:
-
                     # [clears all SND masks]
                     numberMaskedFiles = len(files_to_process)
                     for file_name in files_to_process:
                         os.remove(file_name)
                         current_log.report(
-                            "Removing SND mask: {}".format(os.path.basename(file_name)), "info",
+                            "Removing SND mask: {}".format(os.path.basename(file_name)),
+                            "info",
                         )
 
-                elif processingList["addMask"] == "" and not processingList["cleanAllMasks"]:
-
+                elif (
+                    processingList["addMask"] == ""
+                    and not processingList["cleanAllMasks"]
+                ):
                     # [assigns cells to exsting masks]
-                    resultsTable = assignsSNDmask2Cells(files_to_process, position_roi_information, current_log)
+                    resultsTable = assignsSNDmask2Cells(
+                        files_to_process, position_roi_information, current_log
+                    )
                     allresultsTable = vstack([allresultsTable, resultsTable])
 
                     current_log.report("assigning masks", "info")
 
-                elif not processingList["cleanAllMasks"] and len(processingList["addMask"]) > 0:
-
+                elif (
+                    not processingList["cleanAllMasks"]
+                    and len(processingList["addMask"]) > 0
+                ):
                     # [makes new set of masks]
                     for file_name in current_param.files_to_process:
-
                         # gets filename information
-                        ROI = os.path.basename(file_name).split("_")[position_roi_information]
+                        ROI = os.path.basename(file_name).split("_")[
+                            position_roi_information
+                        ]
 
                         # checks that SND channel was projected and aligned
                         registeredFileName = (
@@ -175,28 +188,44 @@ def processesUserMasks(current_param, current_log, processingList):
                                 + ".npy"
                             )
                             createsUserMask(
-                                current_param, current_log, registeredFileName, output_filename,
+                                current_param,
+                                current_log,
+                                registeredFileName,
+                                output_filename,
                             )
                             numberMaskedFiles += 1
                             current_log.report(
-                                "Segmented image for SND channel ROI#{}: {}".format(ROI, output_filename), "info",
+                                "Segmented image for SND channel ROI#{}: {}".format(
+                                    ROI, output_filename
+                                ),
+                                "info",
                             )
                         else:
                             current_log.report(
-                                "Could not find registered image for SND channel:{}".format(registeredFileName),
+                                "Could not find registered image for SND channel:{}".format(
+                                    registeredFileName
+                                ),
                                 "error",
                             )
 
-        tableOutputFileName = data_folder.output_folders["segmentedObjects"] + os.sep + "snd_assigned_cells.ecsv"
+        tableOutputFileName = (
+            data_folder.output_folders["segmentedObjects"]
+            + os.sep
+            + "snd_assigned_cells.ecsv"
+        )
         print(f"\n>Number of cells found: {len(allresultsTable)}")
         print("\n>Saving output to: {}".format(tableOutputFileName))
         if os.path.exists(tableOutputFileName):
             print("\Results appended to {}".format(tableOutputFileName))
-            previousresultsTable = Table.read(tableOutputFileName, format="ascii.ecsv")  # ascii.ecsv
+            previousresultsTable = Table.read(
+                tableOutputFileName, format="ascii.ecsv"
+            )  # ascii.ecsv
             allresultsTable = vstack([previousresultsTable, allresultsTable])
         if len(allresultsTable) > 0:
             print("\nTable written")
-            allresultsTable.write(tableOutputFileName, format="ascii.ecsv", overwrite=True)
+            allresultsTable.write(
+                tableOutputFileName, format="ascii.ecsv", overwrite=True
+            )
 
         return numberMaskedFiles
     else:
@@ -224,7 +253,6 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log
         print(f"\nWill search masks in: {fileNameDAPImask}")
 
         if os.path.exists(fileNameDAPImask) and file_name.split(".")[-1] == "npy":
-
             # load DAPI mask
             maskDAPI = Image()
             maskDAPI.data_2d = np.load(fileNameDAPImask).squeeze()
@@ -239,12 +267,15 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log
             cellsWithinMask = np.unique(new_matrix)
 
             if len(cellsWithinMask) > 0:
-
                 newTable = Table()
                 colMask = Column(
-                    [file_name.split("_")[-1].split(".")[0]] * len(cellsWithinMask), name="MaskID #", dtype=str,
+                    [file_name.split("_")[-1].split(".")[0]] * len(cellsWithinMask),
+                    name="MaskID #",
+                    dtype=str,
                 )
-                col_roi = Column(int(ROI) * np.ones(len(cellsWithinMask)), name="ROI #", dtype=int)
+                col_roi = Column(
+                    int(ROI) * np.ones(len(cellsWithinMask)), name="ROI #", dtype=int
+                )
                 col_cell_id = Column(cellsWithinMask, name="CellID #", dtype=int)
                 newTable.add_column(col_roi, index=0)
                 newTable.add_column(col_cell_id, index=1)
@@ -255,7 +286,10 @@ def assignsSNDmask2Cells(files_to_process, position_roi_information, current_log
 
             # outputs list of cells within (1) and outside SND mask (0)
             current_log.report(
-                "Matched DAPI and SND masks: \n SND: {}\n DAPI: {}\n".format(file_name, fileNameDAPImask), "info",
+                "Matched DAPI and SND masks: \n SND: {}\n DAPI: {}\n".format(
+                    file_name, fileNameDAPImask
+                ),
+                "info",
             )
             numberFilesProcessed += 1
 
@@ -284,7 +318,9 @@ def main():
 
     args = parser.parse_args()
 
-    print("\n--------------------------------------------------------------------------")
+    print(
+        "\n--------------------------------------------------------------------------"
+    )
     processingList = {}
 
     if args.rootFolder:
@@ -311,21 +347,32 @@ def main():
 
     # setup logs
     current_log = Log(root_folder)
-    current_log.add_simple_text("\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(session_name))
-    current_log.report("Process SND channel MD: {}".format(current_log.markdown_filename))
+    current_log.add_simple_text(
+        "\n^^^^^^^^^^^^^^^^^^^^^^^^^^{}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n".format(
+            session_name
+        )
+    )
+    current_log.report(
+        "Process SND channel MD: {}".format(current_log.markdown_filename)
+    )
     write_string_to_file(
-        current_log.markdown_filename, "# Process SND channel {}".format(now.strftime("%d/%m/%Y %H:%M:%S")), "w",
+        current_log.markdown_filename,
+        f"""# Process SND channel {now.strftime("%d/%m/%Y %H:%M:%S")}""",
+        "w",
     )  # initialises MD file
 
     for label in labels:
-
         # sets parameters
-        current_param = Parameters(root_folder=root_folder, label=label, file_name="infoList.json")
+        current_param = Parameters(
+            root_folder=root_folder, label=label, file_name="infoList.json"
+        )
         print("**Analyzing label: {}**".format(label))
 
         # processes Secondary masks
         if label == "RNA":
-            numberMaskedFiles = processesUserMasks(current_param, current_log, processingList)
+            numberMaskedFiles = processesUserMasks(
+                current_param, current_log, processingList
+            )
             if numberMaskedFiles > 0:
                 print("Files processed: {}".format(numberMaskedFiles), "info")
             else:

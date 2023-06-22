@@ -46,7 +46,8 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import get_dictionary_value, print_log
+from core.pyhim_logging import print_log
+from fileProcessing.fileManagement import get_dictionary_value
 from matrixOperations.build_traces import initialize_module
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (

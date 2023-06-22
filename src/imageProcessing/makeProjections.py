@@ -23,8 +23,8 @@ import os
 
 from dask.distributed import get_client, wait
 
-from fileProcessing.fileManagement import (Folders, print_log,
-                                           write_string_to_file)
+from core.pyhim_logging import print_log, write_string_to_file
+from fileProcessing.fileManagement import Folders
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================
@@ -33,11 +33,9 @@ from imageProcessing.imageProcessing import Image
 
 
 def make_2d_projections_file(file_name, current_param, current_session, data_folder):
-
     if file_name in current_session.data:
         print_log("# File already projected: {}".format(os.path.basename(file_name)))
     else:
-
         print_log("\n> Analysing file: {}".format(os.path.basename(file_name)))
 
         # creates image object
@@ -67,7 +65,7 @@ def make_2d_projections_file(file_name, current_param, current_session, data_fol
             )
             write_string_to_file(
                 current_param.param_dict["fileNameMD"],
-                "{}\n ![]({})\n".format(os.path.basename(file_name), png_file_name),
+                f"{os.path.basename(file_name)}\n ![]({png_file_name})\n",
                 "a",
             )  # initialises MD file
 
@@ -79,7 +77,7 @@ def make_2d_projections_file(file_name, current_param, current_session, data_fol
 
                 write_string_to_file(
                     current_param.param_dict["fileNameMD"],
-                    "{}\n ![]({})\n".format(os.path.basename(file_name), output_name),
+                    f"{os.path.basename(file_name)}\n ![]({output_name})\n",
                     "a",
                 )  # initialises MD file
         # saves output 2d zProjection as matrix
@@ -97,9 +95,7 @@ def make_projections(current_param, current_session, file_name=None):
     print_log("> Folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        "## {}: {}\n".format(
-            session_name, current_param.param_dict["acquisition"]["label"]
-        ),
+        f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
         "a",
     )  # initialises MD file
 
@@ -148,9 +144,7 @@ def make_projections(current_param, current_session, file_name=None):
                     wait(threads)
 
         else:
-
             for _, filename_to_process in enumerate(current_param.files_to_process):
-
                 if (file_name is None) or (
                     file_name is not None
                     and (

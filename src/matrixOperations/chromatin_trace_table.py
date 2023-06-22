@@ -27,7 +27,7 @@ from matplotlib.patches import Polygon
 from stardist import random_label_cmap
 from tqdm import tqdm
 
-from fileProcessing.fileManagement import print_log
+from core.pyhim_logging import print_log
 from imageProcessing.localization_table import (
     build_color_dict,
     decode_rois,
@@ -105,9 +105,9 @@ class ChromatinTraceTable:
         """
         if os.path.exists(file):
             trace_table = read_table_from_ecsv(file)
-            print_log("$ Successfully loaded chromatin trace table: {}".format(file))
+            print_log(f"$ Successfully loaded chromatin trace table: {file}")
         else:
-            print("\n\n# ERROR: could not find chromatin trace table: {}".format(file))
+            print(f"\n\n# ERROR: could not find chromatin trace table: {file}")
             sys.exit()
 
         self.data = trace_table
