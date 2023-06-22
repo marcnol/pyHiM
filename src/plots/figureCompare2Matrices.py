@@ -10,27 +10,19 @@ Created on Fri Jun  5 09:24:51 2020
 import argparse
 import csv
 import json
-
 #%% imports and plotting settings
 import os
 
 import matplotlib.gridspec as gridspec
-
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
 
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix,
-    calculate_3_way_contact_matrix,
-    calculate_ensemble_pwd_matrix,
-    get_multi_contact,
-    list_sc_to_keep,
-    plot_distance_histograms,
-    plot_matrix,
-    plot_ensemble_3_way_contact_matrix,
-)
+    AnalysisHiMMatrix, calculate_3_way_contact_matrix,
+    calculate_ensemble_pwd_matrix, get_multi_contact, list_sc_to_keep,
+    plot_distance_histograms, plot_ensemble_3_way_contact_matrix, plot_matrix)
 
 #%% define and loads datasets
 

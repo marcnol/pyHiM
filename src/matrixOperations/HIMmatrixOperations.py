@@ -22,6 +22,7 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.linalg as npl
 from astropy.table import Table, vstack
 from numba import jit
 from pylab import colorbar, contourf
@@ -31,8 +32,6 @@ from sklearn import manifold
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
-
-import numpy.linalg as npl
 
 from fileProcessing.fileManagement import is_notebook, write_string_to_file
 
@@ -1327,7 +1326,12 @@ def decodes_trace(single_trace):
     trace name as string
 
     """
-    barcodes, X, Y, Z = single_trace["Barcode #"], single_trace["x"], single_trace["y"], single_trace["z"]
+    barcodes, X, Y, Z = (
+        single_trace["Barcode #"],
+        single_trace["x"],
+        single_trace["y"],
+        single_trace["z"],
+    )
     trace_name = single_trace["Trace_ID"][0][0:3]
 
     return barcodes, X, Y, Z, trace_name
@@ -1522,7 +1526,12 @@ def coord_2_distances(coordinates):
     distances = np.zeros(2 * [coordinates.shape[0]])
     for row in range(coordinates.shape[0]):
         for col in range(coordinates.shape[0]):
-            comp_sum = sum([(coordinates[row, d] - coordinates[col, d]) ** 2 for d in range(dimension)])
+            comp_sum = sum(
+                [
+                    (coordinates[row, d] - coordinates[col, d]) ** 2
+                    for d in range(dimension)
+                ]
+            )
             distances[row, col] = np.sqrt(comp_sum)
 
     return distances

@@ -28,19 +28,14 @@ import sys
 from datetime import datetime
 
 import numpy as np
-from dask.distributed import (
-    Client,
-    LocalCluster,
-)
+from dask.distributed import Client, LocalCluster
 from skimage import exposure, io
 from tifffile import imsave
 from tqdm import tqdm
 
-from imageProcessing.imageProcessing import (
-    _remove_inhomogeneous_background,
-    image_adjust,
-    save_image_as_blocks,
-)
+from imageProcessing.imageProcessing import (_remove_inhomogeneous_background,
+                                             image_adjust,
+                                             save_image_as_blocks)
 
 
 def parse_arguments():

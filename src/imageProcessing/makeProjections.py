@@ -23,7 +23,8 @@ import os
 
 from dask.distributed import get_client, wait
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from fileProcessing.fileManagement import (Folders, print_log,
+                                           write_string_to_file)
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================

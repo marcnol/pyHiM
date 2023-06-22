@@ -12,14 +12,9 @@ import logging
 import os
 from datetime import datetime
 
-from fileProcessing.fileManagement import (
-    DaskCluster,
-    Log,
-    Session,
-    print_dict,
-    print_log,
-    write_string_to_file,
-)
+from fileProcessing.fileManagement import (DaskCluster, Log, Session,
+                                           print_dict, print_log,
+                                           write_string_to_file)
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import make_projections
@@ -230,44 +225,53 @@ class HiMFunctionCaller:
 
 
 def set_of_commands():
-    return frozenset({
-        "makeProjections",
-        "appliesRegistrations",
-        "alignImages",
-        "alignImages3D",
-        "segmentMasks",
-        "segmentMasks3D",
-        "segmentSources3D",
-        "filter_localizations",
-        "register_localizations",
-        "build_traces",
-        "build_matrix",
-        "buildHiMmatrix",   # DEPRECATED
-    })
+    return frozenset(
+        {
+            "makeProjections",
+            "appliesRegistrations",
+            "alignImages",
+            "alignImages3D",
+            "segmentMasks",
+            "segmentMasks3D",
+            "segmentSources3D",
+            "filter_localizations",
+            "register_localizations",
+            "build_traces",
+            "build_matrix",
+            "buildHiMmatrix",  # DEPRECATED
+        }
+    )
+
 
 def default_2d_commands():
-    return frozenset({
-        "makeProjections",
-        "alignImages",
-        "appliesRegistrations",
-        "segmentMasks",
-        "filter_localizations",
-        "build_traces",
-        "build_matrix",
-    })
+    return frozenset(
+        {
+            "makeProjections",
+            "alignImages",
+            "appliesRegistrations",
+            "segmentMasks",
+            "filter_localizations",
+            "build_traces",
+            "build_matrix",
+        }
+    )
+
 
 def default_3d_commands():
-    return frozenset({
-        "makeProjections",
-        "alignImages",
-        "alignImages3D",
-        "segmentMasks3D",
-        "segmentSources3D",
-        "filter_localizations",
-        "register_localizations",
-        "build_traces",
-        "build_matrix",
-    })
+    return frozenset(
+        {
+            "makeProjections",
+            "alignImages",
+            "alignImages3D",
+            "segmentMasks3D",
+            "segmentSources3D",
+            "filter_localizations",
+            "register_localizations",
+            "build_traces",
+            "build_matrix",
+        }
+    )
+
 
 def him_parse_arguments(command_line_arguments):
     parser = argparse.ArgumentParser()
@@ -276,14 +280,25 @@ def him_parse_arguments(command_line_arguments):
     default_commands = default_3d_commands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-S", "--stardist_basename", help="Replace all stardist_basename from infoList.json")
-    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (without space !): makeProjections alignImages \
+    parser.add_argument(
+        "-S",
+        "--stardist_basename",
+        help="Replace all stardist_basename from infoList.json",
+    )
+    parser.add_argument(
+        "-C",
+        "--cmd",
+        help="Comma-separated list of routines to run (without space !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentMasks3D segmentSources3D buildHiMmatrix (DEPRECATED) \
                         filter_localizations register_localizations build_traces build_matrix",
     )
 
-    parser.add_argument("-T", "--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
+    parser.add_argument(
+        "-T",
+        "--threads",
+        help="Number of threads to run in parallel mode. If none, then it will run with one thread.",
+    )
     args = parser.parse_args(command_line_arguments)
 
     print_log(

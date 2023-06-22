@@ -15,7 +15,6 @@ This class will contain methods to load, save, plot barcode localizations and st
 
 import os
 import sys
-
 # to remove in a future version
 import warnings
 
@@ -131,7 +130,7 @@ class LocalizationTable:
         roundness = barcode_map["roundness1"]
         peak = barcode_map["peak"]
         zcentroid = barcode_map["zcentroid"]
-        flux= barcode_map["flux"]
+        flux = barcode_map["flux"]
         mag = barcode_map["mag"]
 
         # plots data

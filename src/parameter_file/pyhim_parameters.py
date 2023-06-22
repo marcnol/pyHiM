@@ -2,15 +2,12 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-
 import tkinter as tk
-from tkinter import ttk
-from tkinter import END
-from tkinter import messagebox
 from functools import partial
+from tkinter import END, messagebox, ttk
 
-from parameter_file.info_parameters import *
 from parameter_file.function_parameters import *
+from parameter_file.info_parameters import *
 
 
 def main():

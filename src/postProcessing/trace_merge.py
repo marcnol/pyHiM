@@ -42,7 +42,9 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-o", "--output_file", help="Output File name. Default = merged_traces.ecsv")
+    parser.add_argument(
+        "-o", "--output_file", help="Output File name. Default = merged_traces.ecsv"
+    )
     parser.add_argument("-O", "--output_folder", help="Output File name. Default = ./")
     p = {}
 

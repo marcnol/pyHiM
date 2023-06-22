@@ -17,33 +17,29 @@ import os
 import select
 import sys
 
+import matplotlib.pyplot as plt
 import numpy as np
-
-from imageProcessing.imageProcessing import Image
+import numpy.linalg as npl
+from mpl_toolkits.mplot3d import Axes3D
 from pdbparser.pdbparser import pdbparser
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-
-import numpy.linalg as npl
-
-from matrixOperations.HIMmatrixOperations import (
-    write_xyz_2_pdb,
-    distances_2_coordinates,
-    coord_2_distances,
-    calculate_ensemble_pwd_matrix,
-)
 from fileProcessing.fileManagement import create_folder, loads_barcode_dict
-
+from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from matrixOperations.HIMmatrixOperations import (
+    calculate_ensemble_pwd_matrix, coord_2_distances, distances_2_coordinates,
+    write_xyz_2_pdb)
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", help="Name of input matrix files in NPY.")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
     parser.add_argument(
-        "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
+    parser.add_argument(
+        "--barcode_type_dict",
+        help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). ",
     )
     p = {}
 
@@ -131,7 +127,11 @@ def xyz_2_pdb(file_name, xyz, barcode_type=dict()):
 
         # txt = "HETATM  {: 3d}  C{:02d} {} P   1      {: 5.3f}  {: 5.3f}  {: 5.3f}  0.00  0.00      PSDO C  \n"
         for i in range(n_atoms):
-            fid.write(txt.format(i + 1, i + 1, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]))
+            fid.write(
+                txt.format(
+                    i + 1, i + 1, int(barcodes[i]), xyz[i, 0], xyz[i, 1], xyz[i, 2]
+                )
+            )
 
         ## connectivity
         txt1 = "CONECT  {: 3d}  {: 3d}\n"
@@ -172,12 +172,16 @@ def remove_nans(ensemble_matrix, min_number_nans=3):
     return ensemble_matrix_no_nans
 
 
-def matrix_2_pdb(sc_matrix, folder_path, barcode_type=dict(), output_file="ensemble_pwd_matrix"):
+def matrix_2_pdb(
+    sc_matrix, folder_path, barcode_type=dict(), output_file="ensemble_pwd_matrix"
+):
 
     # gets ensemble matrix from list of single matrices
     pixel_size = 1
     cells_to_plot = range(sc_matrix.shape[2])
-    ensemble_matrix, _ = calculate_ensemble_pwd_matrix(sc_matrix, pixel_size, cells_to_plot, mode="median")
+    ensemble_matrix, _ = calculate_ensemble_pwd_matrix(
+        sc_matrix, pixel_size, cells_to_plot, mode="median"
+    )
     ensemble_matrix = remove_nans(ensemble_matrix, min_number_nans=3)
 
     np.save(folder_path + os.sep + output_file + ".npy", ensemble_matrix)
@@ -185,7 +189,9 @@ def matrix_2_pdb(sc_matrix, folder_path, barcode_type=dict(), output_file="ensem
     coords = distances_2_coordinates(ensemble_matrix)
 
     # converts to PDB and outputs
-    xyz_2_pdb(folder_path + os.sep + output_file + ".pdb", coords, barcode_type=barcode_type)
+    xyz_2_pdb(
+        folder_path + os.sep + output_file + ".pdb", coords, barcode_type=barcode_type
+    )
 
 
 def runtime(
@@ -221,11 +227,17 @@ def main():
 
     # creates output folder
     output_folder = "ensemble_structure"
-    folder_path = os.path.join(os.getcwd(), output_folder)  # Specify the folder path here
+    folder_path = os.path.join(
+        os.getcwd(), output_folder
+    )  # Specify the folder path here
 
     create_folder(folder_path)
 
-    n_traces_processed = runtime(matrix_files=p["matrix_files"], folder_path=folder_path, barcode_type=barcode_type,)
+    n_traces_processed = runtime(
+        matrix_files=p["matrix_files"],
+        folder_path=folder_path,
+        barcode_type=barcode_type,
+    )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")
     print("Finished execution")

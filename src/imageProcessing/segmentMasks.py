@@ -19,13 +19,13 @@ after image segmentation.
 # =============================================================================
 
 # ---- stardist
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import glob
 import os
 import time
 import uuid
-
 # to remove in a future version
 import warnings
 
@@ -34,32 +34,25 @@ import matplotlib
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel
-from astropy.stats import SigmaClip, gaussian_fwhm_to_sigma, sigma_clipped_stats
+from astropy.stats import (SigmaClip, gaussian_fwhm_to_sigma,
+                           sigma_clipped_stats)
 from astropy.table import Column, Table, vstack
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
+from csbdeep.utils import normalize
 from dask.distributed import get_client
 from matplotlib.path import Path
-from photutils import (
-    Background2D,
-    DAOStarFinder,
-    MedianBackground,
-    deblend_sources,
-    detect_sources,
-    detect_threshold,
-)
-from csbdeep.utils import normalize
-from stardist.models import StarDist2D
+from photutils import (Background2D, DAOStarFinder, MedianBackground,
+                       deblend_sources, detect_sources, detect_threshold)
 from photutils.segmentation.core import SegmentationImage
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import Voronoi
 from skimage.measure import regionprops
 from stardist import random_label_cmap
-from fileProcessing.fileManagement import (
-    Folders,
-    print_log,
-    write_string_to_file,
-)
+from stardist.models import StarDist2D
+
+from fileProcessing.fileManagement import (Folders, print_log,
+                                           write_string_to_file)
 from imageProcessing.imageProcessing import Image, save_image_2d_cmd
 
 matplotlib.rcParams["image.interpolation"] = None

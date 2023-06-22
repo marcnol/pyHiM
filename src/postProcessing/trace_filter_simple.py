@@ -45,18 +45,34 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
-    parser.add_argument("--clean_spots", help="remove barcode spots repeated in a single trace", action="store_true")
+    parser.add_argument(
+        "-O", "--output", help="Tag to add to the output file. Default = filtered"
+    )
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
+    parser.add_argument(
+        "--clean_spots",
+        help="remove barcode spots repeated in a single trace",
+        action="store_true",
+    )
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
-    parser.add_argument("--dist_max", help="Maximum distance threshold. Default = np.inf")
+    parser.add_argument(
+        "--dist_max", help="Maximum distance threshold. Default = np.inf"
+    )
     parser.add_argument("--z_min", help="Z minimum for a localization. Default = 0")
-    parser.add_argument("--z_max", help="Z maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--z_max", help="Z maximum for a localization. Default = np.inf"
+    )
     parser.add_argument("--y_min", help="Y minimum for a localization. Default = 0")
-    parser.add_argument("--y_max", help="Y maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--y_max", help="Y maximum for a localization. Default = np.inf"
+    )
     parser.add_argument("--x_min", help="X minimum for a localization. Default = 0")
-    parser.add_argument("--x_max", help="X maximum for a localization. Default = np.inf")
+    parser.add_argument(
+        "--x_max", help="X maximum for a localization. Default = np.inf"
+    )
     parser.add_argument("--remove_barcode", help="name of barcode to remove")
 
     p = {}
@@ -86,7 +102,7 @@ def parse_arguments():
         p["dist_max"] = float(args.dist_max)
     else:
         p["dist_max"] = np.inf
-        
+
     if args.z_min:
         p["z_min"] = float(args.z_min)
     else:
@@ -121,11 +137,18 @@ def parse_arguments():
         p["remove_barcode"] = args.remove_barcode
     else:
         p["remove_barcode"] = None
-        
+
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -136,24 +159,34 @@ def parse_arguments():
     return p
 
 
-def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", remove_duplicate_spots=False,remove_barcode=None,
-            dist_max = np.inf):
-
+def runtime(
+    trace_files=[],
+    N_barcodes=2,
+    coor_limits=dict(),
+    tag="filtered",
+    remove_duplicate_spots=False,
+    remove_barcode=None,
+    dist_max=np.inf,
+):
     # checks number of trace files
     if len(trace_files) < 1:
-        print("! Error: no trace file provided. Please either use pipe or the --input option to provide a filename.")
+        print(
+            "! Error: no trace file provided. Please either use pipe or the --input option to provide a filename."
+        )
         return 0
     elif len(trace_files) == 1:
         print("\n$ trace files to process= {}".format(trace_files))
     else:
-        print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
 
     coors = ["x", "y", "z"]
     if len(trace_files) > 0:
-
         # iterates over traces
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
             comments = list()
@@ -163,7 +196,7 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", re
 
             # remove duplicated barcodes
             trace.remove_duplicates()
-            
+
             # filters trace by minimum number of barcodes
             trace.filter_traces_by_n(minimum_number_barcodes=N_barcodes)
             comments.append("filt:N_barcodes>" + str(N_barcodes))
@@ -171,9 +204,15 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", re
             # filters trace by coordinate
             for coor in coors:
                 trace.filter_traces_by_coordinate(
-                    coor=coor, coor_min=coor_limits[coor + "_min"], coor_max=coor_limits[coor + "_max"]
+                    coor=coor,
+                    coor_min=coor_limits[coor + "_min"],
+                    coor_max=coor_limits[coor + "_max"],
                 )
-                comments.append("filt:{}<{}>{}".format(coor_limits[coor + "_min"], coor, coor_limits[coor + "_max"]))
+                comments.append(
+                    "filt:{}<{}>{}".format(
+                        coor_limits[coor + "_min"], coor, coor_limits[coor + "_max"]
+                    )
+                )
 
             # removes barcodes in traces where they are repeated
             if remove_duplicate_spots:
@@ -181,9 +220,11 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", re
 
             if remove_barcode is not None:
                 trace.remove_barcode(remove_barcode)
-                
+
             # saves output trace
-            outputfile = os.path.basename(trace_file).split(".")[0] + "_" + tag + ".ecsv"
+            outputfile = (
+                os.path.basename(trace_file).split(".")[0] + "_" + tag + ".ecsv"
+            )
             trace.save(outputfile, trace.data, comments=", ".join(comments))
     else:
         print("No trace file found to process!")
@@ -208,8 +249,8 @@ def main():
         coor_limits=p,
         tag=p["output"],
         remove_duplicate_spots=p["clean_spots"],
-        remove_barcode = p["remove_barcode"],
-        dist_max = p['dist_max'],
+        remove_barcode=p["remove_barcode"],
+        dist_max=p["dist_max"],
     )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")

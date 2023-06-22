@@ -60,16 +60,15 @@ import os
 import select
 import sys
 from datetime import datetime
-from astropy.io import ascii
 
 import numpy as np
+from astropy.io import ascii
+from pdbparser.pdbparser import pdbparser
 
+from fileProcessing.fileManagement import create_folder, loads_barcode_dict
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
-from fileProcessing.fileManagement import create_folder, loads_barcode_dict
-
-from pdbparser.pdbparser import pdbparser
 
 # =============================================================================
 # FUNCTIONS
@@ -81,14 +80,26 @@ def parse_arguments():
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("-n", "--number_traces", help="Number of traces treated")
-    parser.add_argument("-N", "--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument(
+        "-N", "--N_barcodes", help="minimum_number_barcodes. Default = 2"
+    )
     parser.add_argument("--selected_trace", help="Selected trace for analysis")
     parser.add_argument(
-        "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
+        "--barcode_type_dict",
+        help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). ",
     )
-    parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
-    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
+    parser.add_argument(
+        "--all", help="plots all traces in trace file", action="store_true"
+    )
+    parser.add_argument(
+        "--all", help="plots all traces in trace file", action="store_true"
+    )
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
+    parser.add_argument(
+        "-O", "--output", help="Tag to add to the output file. Default = filtered"
+    )
 
     p = {}
 
@@ -107,7 +118,7 @@ def parse_arguments():
         p["output"] = args.output
     else:
         p["output"] = "PDBs"
-        
+
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
     else:
@@ -136,7 +147,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -156,16 +174,17 @@ def runtime(
     folder_path="./PDBs",
     select_traces="one",
 ):
-
     # gets trace files
 
     if len(trace_files) > 0:
-
-        print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
 
         # iterates over traces in folder
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 
@@ -201,7 +220,11 @@ def runtime(
                     new_trace = new_trace.group_by("Barcode #")
                     # ascii.write(new_trace['Barcode #', 'x','y','z'], selected_trace+'.ecsv', overwrite=True)
 
-                    write_xyz_2_pdb(folder_path + os.sep + trace_id + ".pdb", new_trace, barcode_type)
+                    write_xyz_2_pdb(
+                        folder_path + os.sep + trace_id + ".pdb",
+                        new_trace,
+                        barcode_type,
+                    )
     else:
         print("No trace file found to process!")
 
@@ -211,6 +234,7 @@ def runtime(
 # =============================================================================
 # MAIN
 # =============================================================================
+
 
 def main():
     begin_time = datetime.now()
@@ -222,8 +246,10 @@ def main():
     barcode_type = loads_barcode_dict(p["barcode_type_dict"])
 
     # creates output folder
-    output_folder = p['output']
-    folder_path = os.path.join(os.getcwd(), output_folder)  # Specify the folder path here
+    output_folder = p["output"]
+    folder_path = os.path.join(
+        os.getcwd(), output_folder
+    )  # Specify the folder path here
 
     create_folder(folder_path)
 

@@ -26,22 +26,22 @@ trace_ID, number of barcodes, number of duplications, Rg,
 # IMPORTS
 # =============================================================================q
 
-import numpy as np
-import os, sys
-import json
-from datetime import datetime
 import argparse
+import collections
 import csv
 import glob
+import json
+import os
 import select
+import sys
+from datetime import datetime
 
-import collections
-import matplotlib.pyplot as plt
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from imageProcessing.imageProcessing import Image
+from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 font = {"weight": "normal", "size": 22}
 
@@ -56,7 +56,9 @@ def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument("--input", help="Name of input trace file.")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
 
     p = {}
 
@@ -74,7 +76,14 @@ def parseArguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -87,9 +96,9 @@ def parseArguments():
 
 def get_xyz_statistics(trace, output_filename="test_coor.png"):
     """
-    Function that calculates the 
-        - distribution of localizations in x y z 
-    
+    Function that calculates the
+        - distribution of localizations in x y z
+
     Parameters
     ----------
     trace : TYPE
@@ -116,18 +125,23 @@ def get_xyz_statistics(trace, output_filename="test_coor.png"):
         axis.hist(coordinates, alpha=0.3, bins=20)
         axis.set_xlabel(coor)
         axis.set_ylabel("counts")
-        axis.set_title("n = " + str(len(coordinates)) + " | median = " + str(np.median(coordinates)))
+        axis.set_title(
+            "n = "
+            + str(len(coordinates))
+            + " | median = "
+            + str(np.median(coordinates))
+        )
 
     plt.savefig(output_filename)
 
 
 def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
     """
-    Function that calculates the 
+    Function that calculates the
         - number of barcodes per trace
         - number of unique barcodes per trace
         - number of repeated barcodes per trace
-    
+
     Parameters
     ----------
     trace : TYPE
@@ -156,7 +170,9 @@ def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
         number_unique_barcodes.append(len(unique_barcodes))
 
         repeated_barcodes = [
-            item for item, count in collections.Counter(sub_trace_table["Barcode #"]).items() if count > 1
+            item
+            for item, count in collections.Counter(sub_trace_table["Barcode #"]).items()
+            if count > 1
         ]
         trace_repeated_barcodes.append(repeated_barcodes)
         number_repeated_barcodes.append(len(repeated_barcodes))
@@ -179,7 +195,12 @@ def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
         axis.hist(distribution, alpha=0.3)
         axis.set_xlabel(xlabel)
         axis.set_ylabel("counts")
-        axis.set_title("n = " + str(len(distribution)) + " | median = " + str(np.median(distribution)))
+        axis.set_title(
+            "n = "
+            + str(len(distribution))
+            + " | median = "
+            + str(np.median(distribution))
+        )
 
     plt.savefig(output_filename)
 
@@ -213,7 +234,9 @@ def analyze_trace(trace, trace_file):
 
     # plots statistics of barcodes and saves in file
     collective_barcode_stats = trace.barcode_statistics(trace_table)
-    trace.plots_barcode_statistics(collective_barcode_stats, file_name=trace_file + "_stats", kind="matrix")
+    trace.plots_barcode_statistics(
+        collective_barcode_stats, file_name=trace_file + "_stats", kind="matrix"
+    )
 
 
 def process_traces(trace_files=list()):
@@ -234,12 +257,14 @@ def process_traces(trace_files=list()):
     """
 
     if len(trace_files) > 0:
-
-        print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+        print(
+            "\n{} trace files to process= {}".format(
+                len(trace_files), "\n".join(map(str, trace_files))
+            )
+        )
 
         # iterates over traces in folder
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 
@@ -254,7 +279,9 @@ def process_traces(trace_files=list()):
             analyze_trace(trace, trace_file)
 
     else:
-        print("! Error: did not find any trace file to analyze. Please provide one using --input or --pipe.")
+        print(
+            "! Error: did not find any trace file to analyze. Please provide one using --input or --pipe."
+        )
 
 
 # =============================================================================

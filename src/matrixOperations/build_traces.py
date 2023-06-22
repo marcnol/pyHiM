@@ -44,7 +44,6 @@ import os
 import re
 import sys
 import uuid
-
 # to remove in a future version
 import warnings
 
@@ -58,20 +57,14 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    print_log,
-    write_string_to_file,
-)
+from fileProcessing.fileManagement import (Folders, get_dictionary_value,
+                                           print_log, write_string_to_file)
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.filter_localizations import get_file_table_new_name
 from matrixOperations.HIMmatrixOperations import (
-    calculate_contact_probability_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-)
+    calculate_contact_probability_matrix, plot_distance_histograms,
+    plot_matrix)
 
 warnings.filterwarnings("ignore")
 
