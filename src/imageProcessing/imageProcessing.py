@@ -19,6 +19,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.optimize as spo
+from apifish.stack import projection
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import SigmaClip
 from astropy.visualization import SqrtStretch, simple_norm
@@ -39,14 +40,12 @@ from skimage.registration import phase_cross_correlation
 from skimage.segmentation import watershed
 from skimage.util.apply_parallel import apply_parallel
 from skimage.util.shape import view_as_blocks
+from stardist import random_label_cmap
 from stardist.models import StarDist3D
 from tifffile import imsave
 from tqdm import tqdm, trange
-from stardist import random_label_cmap
 
 from fileProcessing.fileManagement import print_log, try_get_client
-
-from apifish.stack import projection
 
 warnings.filterwarnings("ignore")
 
@@ -95,7 +94,7 @@ class Image:
         file_name = self.get_image_filename(master_folder, tag) + ".npy"
 
         self.data_2d = np.load(file_name)
-        print_log("$ Loading from disk:{}".format(os.path.basename(file_name)))
+        print_log(f"$ Loading from disk:{os.path.basename(file_name)}")
 
     # max intensity projection using all z planes
     def max_intensity_projection(self):
@@ -129,15 +128,12 @@ class Image:
 
     # Outputs image properties to command line
     def print_image_properties(self):
-        # print_log("Image Name={}".format(self.file_name))
-        print_log("$ Image Size={}".format(self.image_size))
-        # self.log.report("Stage position={}".format(self.stage_coordinates))
-        print_log("$ Focal plane={}".format(self.focus_plane))
+        print_log(f"$ Image Size={self.image_size}")
+        print_log(f"$ Focal plane={self.focus_plane}")
 
     # processes sum image in axial direction given range
     # @jit(nopython=True)
     def z_projection_range(self):
-
         # find the correct range for the projection
         if self.current_param.param_dict["zProject"]["zmax"] > self.image_size[0]:
             print_log("$ Setting z max to the last plane")
@@ -181,7 +177,7 @@ class Image:
             self.focus_plane = z_range[0]
             self.z_range = z_range[1]
 
-        print_log("> Processing z_range:{}".format(self.z_range))
+        print_log(f"> Processing z_range:{self.z_range}")
 
     # displays image and shows it
     def show_image(
@@ -215,30 +211,10 @@ class Image:
             fig.savefig(output_name)
             plt.close(fig)
 
-    def remove_background_2d(self, normalize=False):
-        sigma_clip = SigmaClip(sigma=3.0)
-        bkg_estimator = MedianBackground()
-        bkg = Background2D(
-            self.data_2d,
-            (64, 64),
-            filter_size=(3, 3),
-            sigma_clip=sigma_clip,
-            bkg_estimator=bkg_estimator,
-        )
-
-        im_bkg_substracted = self.data_2d - bkg.background
-
-        if normalize:
-            im_bkg_substracted = (im_bkg_substracted - im_bkg_substracted.min()) / (
-                im_bkg_substracted.max()
-            )
-
-        return im_bkg_substracted
-
     def image_show_with_values(self, output_name):
         image_show_with_values(
             [self.focal_plane_matrix],
-            title="focal plane = " + "{:.2f}".format(self.focus_plane),
+            title="focal plane = " + f"{self.focus_plane:.2f}",
             output_name=output_name,
         )
 
@@ -246,9 +222,6 @@ class Image:
 # =============================================================================
 # GENERAL FUNCTIONS
 # =============================================================================
-
-
-
 
 
 def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
@@ -282,7 +255,6 @@ def make_shift_matrix_hi_res(shift_matrices, block_ref_shape):
         )
     )
     for _ax, m in enumerate(shift_matrices):
-        # print_log("size={}".format(m.shape))
         for i in range(number_blocks):
             for j in range(number_blocks):
                 shift_matrix[
@@ -302,11 +274,11 @@ def project_image_2d(img, z_range, mode):
         i_collapsed = projection.maximum_projection(img[z_range[1][0] : z_range[1][-1]])
     elif "sum" in mode:
         # Sums selected planes
-        i_collapsed = projection.sum_projection(img[z_range[1][0] : (z_range[1][-1] + 1)])
-    else:
-        print_log(
-            "ERROR: mode not recognized. Expected: MIP or sum. Read: {}".format(mode)
+        i_collapsed = projection.sum_projection(
+            img[z_range[1][0] : (z_range[1][-1] + 1)]
         )
+    else:
+        print_log(f"ERROR: mode not recognized. Expected: MIP or sum. Read: {mode}")
 
     return i_collapsed
 
@@ -322,6 +294,7 @@ def gaussian(x, a=1, mean=0, std=0.5):
 
 
 # Finds best focal plane by determining the max of the std deviation vs z curve
+
 
 # @jit(nopython=True)
 def calculate_zrange(idata, parameters):
@@ -448,7 +421,7 @@ def reassemble_3d_image(client, futures, output_shape):
 
     """
     results = client.gather(futures)
-    print_log(" > Retrieving {} results from cluster".format(len(results)))
+    print_log(f" > Retrieving {len(results)} results from cluster")
 
     output = np.zeros(output_shape)
     for z, result in enumerate(results):
@@ -538,11 +511,11 @@ def image_adjust(image, lower_threshold=0.3, higher_threshold=0.9999):
     # calculates histogram of intensities
     hist1_before = exposure.histogram(image1)
 
-    sum = np.zeros(len(hist1_before[0]))
+    hist_sum = np.zeros(len(hist1_before[0]))
     for i in range(len(hist1_before[0]) - 1):
-        sum[i + 1] = sum[i] + hist1_before[0][i]
+        hist_sum[i + 1] = hist_sum[i] + hist1_before[0][i]
 
-    sum_normalized = sum / sum.max()
+    sum_normalized = hist_sum / hist_sum.max()
     lower_cutoff = np.where(sum_normalized > lower_threshold)[0][0] / 255
     higher_cutoff = np.where(sum_normalized > higher_threshold)[0][0] / 255
 
@@ -600,7 +573,6 @@ def _remove_inhomogeneous_background(
     im,
     box_size=(32, 32),
     filter_size=(3, 3),
-    verbose=True,
     parallel_execution=True,
     background=False,
 ):
@@ -615,8 +587,6 @@ def _remove_inhomogeneous_background(
         size of box_size used for block decomposition. The default is (32, 32).
     filter_size : tuple of ints, optional
         Size of gaussian filter used for smoothing results. The default is (3, 3).
-    verbose : boolean, optional
-        The default is True.
 
     Returns
     -------
@@ -626,7 +596,9 @@ def _remove_inhomogeneous_background(
     """
     if len(im.shape) == 2:
         output = _remove_inhomogeneous_background_2d(
-            im, filter_size=filter_size, background=background,
+            im,
+            filter_size=filter_size,
+            background=background,
         )
     elif len(im.shape) == 3:
         output = _remove_inhomogeneous_background_3d(
@@ -721,9 +693,7 @@ def _remove_inhomogeneous_background_3d(
     bkg_estimator = MedianBackground()
     if client is not None:
         print_log(
-            "> Removing inhomogeneous background from {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Removing inhomogeneous background from {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
         image_list = [image_3d[z, :, :] for z in range(number_planes)]
         # image_list_scattered = client.scatter(image_list)
@@ -741,7 +711,7 @@ def _remove_inhomogeneous_background_3d(
         ]
 
         results = client.gather(futures)
-        print_log(" > Retrieving {} results from cluster".format(len(results)))
+        print_log(f" > Retrieving {len(results)} results from cluster")
 
         for z, img, bkg in zip(range(number_planes), image_list, results):
             output[z, :, :] = img - bkg.background
@@ -750,9 +720,7 @@ def _remove_inhomogeneous_background_3d(
 
     else:
         print_log(
-            "> Removing inhomogeneous background from {} planes using 1 worker...".format(
-                number_planes
-            )
+            f"> Removing inhomogeneous background from {number_planes} planes using 1 worker..."
         )
         z_range = trange(number_planes)
         for z in z_range:
@@ -799,15 +767,13 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     number_planes = image.shape[0]
 
     if client is None:
-        print_log("> Shifting {} planes with 1 thread...".format(number_planes))
+        print_log(f"> Shifting {number_planes} planes with 1 thread...")
         shift_3d = np.zeros((3))
         shift_3d[0], shift_3d[1], shift_3d[2] = 0, shift[0], shift[1]
         output = shift_image(image, shift_3d)
     else:
         print_log(
-            "> Shifting {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Shifting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
 
         image_list_scattered = scatter_3d_image(image)
@@ -827,10 +793,9 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
 
 
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
-
     # sanity checks
     if len(images) < 2:
-        sys.exit("# Error, number of images must be 2, not {}".format(len(images)))
+        sys.exit(f"# Error, number of images must be 2, not {len(images)}")
 
     # - break in blocks
     num_planes = images[0].shape[0]
@@ -845,7 +810,6 @@ def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     # - loop thru blocks and calculates block shift in xyz:
     shift_matrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
 
-    # print_log("$ Aligning {} blocks".format(len(block_ref.shape[0])))
     for i in trange(block_ref.shape[0]):
         for j in range(block_ref.shape[1]):
             # - cross correlate in 3D to find 3D shift
@@ -1000,12 +964,24 @@ def align_2_images_cross_correlation(
 
     """
 
-    (image1_adjusted, hist1_before, hist1_after, lower_cutoff1, _,) = image_adjust(
+    (
+        image1_adjusted,
+        hist1_before,
+        hist1_after,
+        lower_cutoff1,
+        _,
+    ) = image_adjust(
         image1_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
     )
-    (image2_adjusted, hist2_before, hist2_after, lower_cutoff2, _,) = image_adjust(
+    (
+        image2_adjusted,
+        hist2_before,
+        hist2_after,
+        lower_cutoff2,
+        _,
+    ) = image_adjust(
         image2_uncorrected,
         lower_threshold=lower_threshold,
         higher_threshold=higher_threshold,
@@ -1043,7 +1019,6 @@ def align_2_images_cross_correlation(
 
 
 def align_cv2(im1, im2, warp_mode):
-
     # Define 2x3 or 3x3 matrices and initialize the matrix to identity
     if warp_mode == cv2.MOTION_HOMOGRAPHY:
         warp_matrix = np.eye(3, 3, dtype=np.float32)
@@ -1081,7 +1056,6 @@ def align_cv2(im1, im2, warp_mode):
 
 
 def apply_correction(im2, warp_matrix):
-
     sz = im2.shape
 
     # Use warpAffine for Translation, Euclidean and Affine
@@ -1102,7 +1076,6 @@ def align_images_by_blocks(
     use_cv2=False,
     shift_error_tolerance=5,
 ):
-
     block_1 = view_as_blocks(img_1, block_size)
     block_2 = view_as_blocks(img_2, block_size)
 
@@ -1165,9 +1138,7 @@ def align_images_by_blocks(
     mean_error_global = np.sum(np.sum(np.abs(img_1 - img_2_aligned_global), axis=1))
 
     print_log(
-        "Block alignment error: {}, global alignment error: {}".format(
-            mean_error, mean_error_global
-        )
+        f"Block alignment error: {mean_error}, global alignment error: {mean_error_global}"
     )
 
     if (
@@ -1180,14 +1151,10 @@ def align_images_by_blocks(
         print_log("Falling back to global registration")
 
     print_log(
-        "*** Global XY shifts: {:.2f} px | {:.2f} px".format(
-            mean_shifts_global[0], mean_shifts_global[1]
-        )
+        f"*** Global XY shifts: {mean_shifts_global[0]:.2f} px | {mean_shifts_global[1]:.2f} px"
     )
     print_log(
-        "*** Mean polled XY shifts: {:.2f}({:.2f}) px | {:.2f}({:.2f}) px".format(
-            mean_shifts[0], std_shifts[0], mean_shifts[1], std_shifts[1]
-        )
+        f"*** Mean polled XY shifts: {mean_shifts[0]:.2f}({std_shifts[0]:.2f}) px | {mean_shifts[1]:.2f}({std_shifts[1]:.2f}) px"
     )
 
     return np.array(mean_shifts), mean_error, relative_shifts, rms_image, contour
@@ -1197,8 +1164,8 @@ def align_images_by_blocks(
 # FOCAL PLANE INTERPOLATION
 # =============================================================================
 
-def reinterpolate_focal_plane(data, param_dict):
 
+def reinterpolate_focal_plane(data, param_dict):
     if "blockSize" in param_dict["zProject"]:
         block_size_xy = param_dict["zProject"]["blockSize"]
     else:
@@ -1341,9 +1308,7 @@ def reinterpolate_z(image_3d, z_range, mode="average"):
     elif "average" in mode:
         output = _average_z_planes(image_3d, z_range)
 
-    print_log(
-        "$ Reduced Z-planes from {} to {}".format(image_3d.shape[0], output.shape[0])
-    )
+    print_log(f"$ Reduced Z-planes from {image_3d.shape[0]} to {output.shape[0]}")
 
     return output
 
@@ -1362,13 +1327,17 @@ def _segment_2d_image_by_thresholding(
     contrast=0.001,
     kernel=None,
 ):
-
     # makes threshold matrix
     threshold = np.zeros(image_2d.shape)
     threshold[:] = threshold_over_std * image_2d.max() / 100
 
     # segments objects
-    segm = detect_sources(image_2d, threshold, npixels=area_min, filter_kernel=kernel,)
+    segm = detect_sources(
+        image_2d,
+        threshold,
+        npixels=area_min,
+        filter_kernel=kernel,
+    )
 
     if segm.nlabels > 0:
         # removes masks too close to border
@@ -1418,12 +1387,11 @@ def _segment_3d_volumes_stardist(
     model_dir="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
     model_name="stardist_18032021_single_loci",
 ):
-
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
-    print_log("> Loading model {} from {}...".format(model_name, model_dir))
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     model = StarDist3D(None, name=model_name, basedir=model_dir)
@@ -1487,10 +1455,10 @@ def _segment_3d_volumes_by_thresholding(
             parallel = False
             print_log("# Failed getting workers. Report of scheduler:")
             for key in client.scheduler_info().keys():
-                print_log("{}:{}".format(key, client.scheduler_info()[key]))
+                print_log(f"{key}:{client.scheduler_info()[key]}")
 
     if not parallel:
-        print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
+        print_log(f"> Segmenting {number_planes} planes using 1 worker...")
 
         output = np.zeros(image_3d.shape)
 
@@ -1508,11 +1476,8 @@ def _segment_3d_volumes_by_thresholding(
             output[z, :, :] = image_2d_segmented
 
     else:
-
         print_log(
-            "> Segmenting {} planes using {} workers...".format(
-                number_planes, len(client.scheduler_info()["workers"])
-            )
+            f"> Segmenting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
         )
 
         image_list_scattered = scatter_3d_image(image_3d)
@@ -1586,7 +1551,6 @@ def _segment_3d_masks(
     model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
     model_name="stardist_20210625_deconvolved",
 ):
-
     """
     Parameters
     ----------
@@ -1606,8 +1570,8 @@ def _segment_3d_masks(
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
-    print_log("> Segmenting {} planes using 1 worker...".format(number_planes))
-    print_log("> Loading model {} from {}...".format(model_name, model_dir))
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
     os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
 
     # Load the model
@@ -1637,7 +1601,6 @@ def _segment_3d_masks(
 
 
 def plot_raw_images_and_labels(image, label):
-
     """
     Parameters
     ----------
@@ -1707,8 +1670,7 @@ def save_2_images_rgb(img_1, img_2, output_filename):
 def save_image_2d_cmd(image, file_name):
     if image.shape > (1, 1):
         np.save(file_name, image)
-        # log.report("Saving 2d projection to disk:{}\n".format(os.path.basename(file_name)),'info')
-        print_log("$ Image saved to disk: {}".format(file_name + ".npy"), "info")
+        print_log(f"$ Image saved to disk: {file_name}.npy", "info")
     else:
         print_log("# Warning, image is empty", "Warning")
 
@@ -1717,16 +1679,14 @@ def save_image_as_blocks(img, full_filename, block_size_xy=256, label="raw_image
     num_planes = img.shape[0]
     block_size = (num_planes, block_size_xy, block_size_xy)
     blocks = view_as_blocks(img, block_shape=block_size).squeeze()
-    print_log(
-        "\nDecomposing image into {} blocks".format(blocks.shape[0] * blocks.shape[1])
-    )
+    print_log(f"\nDecomposing image into {blocks.shape[0] * blocks.shape[1]} blocks")
 
     folder = full_filename.split(".")[0]
     file_name = os.path.basename(full_filename).split(".")[0]
 
     if not os.path.exists(folder):
         os.mkdir(folder)
-        print_log("Folder created: {}".format(folder))
+        print_log(f"Folder created: {folder}")
 
     for i in trange(blocks.shape[0]):
         for j in range(blocks.shape[1]):
@@ -1750,7 +1710,7 @@ def save_image_as_blocks(img, full_filename, block_size_xy=256, label="raw_image
 def image_show_with_values_single(
     ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"
 ):
-    row = ["".format(x) for x in range(matrix.shape[0])]
+    row = [str(x) for x in range(matrix.shape[0])]
     im, _ = heatmap(
         matrix,
         row,
@@ -1828,7 +1788,6 @@ def display_3d(
     norm=True,
     cmap="Greys",
 ):
-
     if image_3d is not None:
         images = []
         images.append(image_3d[z, :, :])
@@ -1860,7 +1819,7 @@ def display_3d(
 
     percent = 99.5
     symbols = ["+", "o", "*", "^"]
-    colors = ["r", "b", "g", "y"]
+    colors_rbgy = ["r", "b", "g", "y"]
 
     fig, axes = plt.subplots(1, len(images))
     fig.set_size_inches(len(images) * 50, 50)
@@ -1876,17 +1835,17 @@ def display_3d(
         if labels is not None:
             axis.imshow(color.label2rgb(segm, bg_label=0), alpha=0.3)
         if localizations_list is not None:
-            for i_loc_list, symbol, color in zip(
-                range(len(localized_list)), symbols, colors
+            for i_loc_list, symbol, color_rbgy in zip(
+                range(len(localized_list)), symbols, colors_rbgy
             ):
                 locs = localized_list[i_loc_list][i_plane]
-                axis.plot(locs[:, 0], locs[:, 1], symbol, color=color, alpha=0.7)
+                axis.plot(locs[:, 0], locs[:, 1], symbol, color=color_rbgy, alpha=0.7)
 
     return fig
 
 
 def display_3d_assembled(
-    images, localizations=None, plotting_range=None, normalize=True, masks=None
+    images, localizations=None, plotting_range=None, normalize_b=True, masks=None
 ):
     wspace = 25
 
@@ -1905,7 +1864,7 @@ def display_3d_assembled(
         1
     ].transpose()
 
-    if normalize:
+    if normalize_b:
         norm = simple_norm(display_image[:, :], "sqrt", percent=99)
         axis.imshow(display_image[:, :], cmap="Greys", alpha=1, norm=norm)
     else:
@@ -1923,11 +1882,11 @@ def display_3d_assembled(
 
         axis.imshow(color.label2rgb(display_mask[:, :], bg_label=0), alpha=0.3)
 
-    colors = ["r", "g", "b", "y"]
+    colors_rbgy = ["r", "g", "b", "y"]
     markersizes = [2, 1, 1, 1, 1]
     if localizations is not None:
         for i, loc in enumerate(localizations):
-            axis.plot(loc[:, 2], loc[:, 1], "+", color=colors[i], markersize=1)
+            axis.plot(loc[:, 2], loc[:, 1], "+", color=colors_rbgy[i], markersize=1)
             if plotting_range is not None:
                 selections = [
                     np.abs(loc[:, a] - plotting_range[0]) < plotting_range[1]
@@ -1937,7 +1896,7 @@ def display_3d_assembled(
                     loc[selections[0], 0] + cols_xy + wspace,
                     loc[selections[0], 1],
                     "+",
-                    color=colors[i],
+                    color=colors_rbgy[i],
                     markersize=markersizes[i],
                     alpha=0.9,
                 )
@@ -1945,13 +1904,17 @@ def display_3d_assembled(
                     loc[selections[1], 2],
                     loc[selections[1], 0] + rows_xy + wspace,
                     "+",
-                    color=colors[i],
+                    color=colors_rbgy[i],
                     markersize=markersizes[i],
                     alpha=0.9,
                 )
             else:
                 axis.plot(
-                    loc[:, 0] + cols_xy, loc[:, 1], "+", color=colors[i], markersize=1
+                    loc[:, 0] + cols_xy,
+                    loc[:, 1],
+                    "+",
+                    color=colors_rbgy[i],
+                    markersize=1,
                 )
 
     axis.axes.yaxis.set_visible(False)
@@ -1961,7 +1924,9 @@ def display_3d_assembled(
     return fig
 
 
-def _plot_image_3d(image_3d, localizations=None, masks=None, normalize=True, window=3):
+def _plot_image_3d(
+    image_3d, localizations=None, masks=None, normalize_b=True, window=3
+):
     """
     makes list with XY, XZ and ZY projections and sends for plotting
 
@@ -1998,14 +1963,13 @@ def _plot_image_3d(image_3d, localizations=None, masks=None, normalize=True, win
         localizations=localizations,
         masks=labels,
         plotting_range=[center, window],
-        normalize=normalize,
+        normalize_b=normalize_b,
     )
 
     return fig1
 
 
 def plot_3d_shift_matrices(shift_matrices, fontsize=8, log=False, valfmt="{x:.1f}"):
-
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
     cbar_kw["pad"] = 0.04
@@ -2030,13 +1994,11 @@ def plot_4_images(
     allimages,
     titles=["reference", "cycle <i>", "processed reference", "processed cycle <i>"],
 ):
-
     fig, axes = plt.subplots(2, 2)
     fig.set_size_inches((10, 10))
     ax = axes.ravel()
 
     for axis, img, title in zip(ax, allimages, titles):
-        # im = np.sum(img, axis=0)
         axis.imshow(img, cmap="Greys")
         axis.set_title(title)
     fig.tight_layout()
@@ -2047,7 +2009,6 @@ def plot_4_images(
 def plotting_block_alignment_results(
     relative_shifts, rms_image, contour, file_name="BlockALignmentResults.png"
 ):
-
     # plotting
     fig, axes = plt.subplots(1, 2)
     ax = axes.ravel()
@@ -2082,7 +2043,7 @@ def heatmap(
     cbar_kw=None,
     cbarlabel="",
     fontsize=12,
-    **kwargs
+    **kwargs,
 ):
     """
     Create a heatmap from a numpy array and two lists of labels.
@@ -2150,7 +2111,7 @@ def annotate_heatmap(
     valfmt="{x:.1f}",
     textcolors=("black", "white"),
     threshold=None,
-    **textkw
+    **textkw,
 ):
     """
     A function to annotate a heatmap.
