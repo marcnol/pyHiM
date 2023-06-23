@@ -18,8 +18,8 @@ import warnings
 import numpy as np
 from tqdm import trange
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import Folders
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")

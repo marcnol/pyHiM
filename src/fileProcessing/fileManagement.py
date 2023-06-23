@@ -24,95 +24,6 @@ from core.pyhim_logging import print_log
 # =============================================================================
 
 
-class Folders:
-    def __init__(self, master_folder=r"/home/marcnol/Documents/Images"):
-        self.master_folder = master_folder
-        self.list_folders = []
-
-        # list of sub-folders in rootFilder with images
-        self.z_project_folder = ""
-        self.output_folders = {}
-        self.output_files = {}
-
-        self.set_folders()
-
-    # returns list of directories
-    def set_folders(self):
-        self.list_folders = [self.master_folder]
-
-    def create_single_folder(self, folder_key_name: str):
-        folder = self.output_folders[folder_key_name]
-        if not path.exists(folder):
-            os.mkdir(folder)
-            print(f"$ Folder created: {folder}")
-
-    # creates folders for outputs
-    def create_folders(self, files_folder, current_param):
-        """
-        this function will create all the folders required for processingPipeline
-
-        Parameters
-        ----------
-        files_folder : string
-            root_folder
-        current_param : Parameters Class
-            with filenames of folders to be created
-
-        Returns
-        -------
-        None.
-
-        """
-        self.output_folders["zProject"] = (
-            files_folder + os.sep + current_param.param_dict["zProject"]["folder"]
-        )
-        self.create_single_folder("zProject")
-
-        self.output_folders["alignImages"] = (
-            files_folder + os.sep + current_param.param_dict["alignImages"]["folder"]
-        )
-        self.create_single_folder("alignImages")
-        self.output_files["alignImages"] = (
-            self.output_folders["alignImages"]
-            + os.sep
-            + current_param.param_dict["alignImages"]["outputFile"]
-        )
-        self.output_files["dictShifts"] = (
-            self.output_folders["alignImages"]
-            + os.sep
-            + current_param.param_dict["alignImages"]["outputFile"]
-        )
-
-        if "segmentedObjects" in current_param.param_dict.keys():
-            self.output_folders["segmentedObjects"] = (
-                files_folder
-                + os.sep
-                + current_param.param_dict["segmentedObjects"]["folder"]
-            )
-            self.create_single_folder("segmentedObjects")
-            self.output_files["segmentedObjects"] = (
-                self.output_folders["segmentedObjects"]
-                + os.sep
-                + current_param.param_dict["segmentedObjects"]["outputFile"]
-            )
-
-        # backwards compatibility
-        if "buildsPWDmatrix" in current_param.param_dict.keys():
-            self.output_folders["buildsPWDmatrix"] = (
-                files_folder
-                + os.sep
-                + current_param.param_dict["buildsPWDmatrix"]["folder"]
-            )
-        else:
-            self.output_folders["buildsPWDmatrix"] = (
-                files_folder + os.sep + "buildsPWDmatrix"
-            )
-        self.create_single_folder("buildsPWDmatrix")
-        self.output_files["buildsPWDmatrix"] = (
-            self.output_folders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
-        )
-
-
 class Session:
     def __init__(self, root_folder, name="dummy"):
         now = datetime.now()
@@ -656,78 +567,6 @@ def roi_to_fiducial_filename(current_param, file, barcode_name):
     return candidates
 
 
-def unique(list1):
-    """function to get unique values"""
-    # intilize a null list
-    unique_list = []
-
-    # traverse for all elements
-    for x in list1:
-        # check if exists in unique_list or not
-        if x not in unique_list:
-            unique_list.append(x)
-
-    return unique_list
-
-
-def retrieve_number_unique_barcodes_root_folder(root_folder, parameter_file, ext="tif"):
-    """
-    given a directory and a Parameter object, it returns the number of unique cycles/barcodes detected
-
-    Parameters
-    ----------
-    root_folder : string
-    current_param : string
-        parameter_file
-    ext : string, optional
-        File extension. The default is 'tif'.
-
-    Returns
-    -------
-    int
-        number of unique cycles.
-
-    """
-
-    all_files_in_root_folder = glob.glob(root_folder + os.sep + "*" + ext)
-
-    current_param = Parameters(root_folder, root_folder + parameter_file)
-
-    rois, rts = [], []
-    for x in all_files_in_root_folder:
-        file_parts = current_param.decode_file_parts(x)
-        rois.append(file_parts["roi"])
-        rts.append(file_parts["cycle"])
-
-    number_unique_cycles = len(unique(rts))
-
-    return number_unique_cycles
-
-
-def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
-    """
-    given a directory and a Parameter object, it returns the number of unique rois detected
-
-    Parameters
-    ----------
-    root_folder : string
-    ext : string, optional
-        File extension. The default is 'tif'.
-
-    Returns
-    -------
-    list
-        list of unique rois.
-
-    """
-
-    files = glob.glob(root_folder + os.sep + "*" + ext)
-
-    rois = [re.search(reg_exp, x)["roi"] for x in files]
-
-    return unique(rois)
-
-
 def load_alignment_dictionary(data_folder):
     dict_filename = (
         os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
@@ -777,14 +616,6 @@ def get_dictionary_value(dictionary, key, default=""):
         value = default
 
     return value
-
-
-def create_folder(folder_path):
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print(f"Folder '{folder_path}' created successfully.")
-    else:
-        print(f"Folder '{folder_path}' already exists.")
 
 
 def loads_barcode_dict(file_name):

@@ -46,9 +46,9 @@ from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
 from fileProcessing.fileManagement import (
-    Folders,
     get_dictionary_value,
     load_alignment_dictionary,
     print_dict,

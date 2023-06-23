@@ -23,12 +23,16 @@ import numpy.linalg as npl
 from mpl_toolkits.mplot3d import Axes3D
 from pdbparser.pdbparser import pdbparser
 
-from fileProcessing.fileManagement import create_folder, loads_barcode_dict
+from core.folder import create_single_folder
+from fileProcessing.fileManagement import loads_barcode_dict
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (
-    calculate_ensemble_pwd_matrix, coord_2_distances, distances_2_coordinates,
-    write_xyz_2_pdb)
+    calculate_ensemble_pwd_matrix,
+    coord_2_distances,
+    distances_2_coordinates,
+    write_xyz_2_pdb,
+)
 
 
 def parse_arguments():
@@ -57,7 +61,14 @@ def parse_arguments():
     p["matrix_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["matrix_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -69,7 +80,6 @@ def parse_arguments():
 
 
 def xyz_2_pdb(file_name, xyz, barcode_type=dict()):
-
     n_atoms = xyz.shape[0]
     barcodes = [x for x in range(n_atoms)]
     default_atom_name = "xxx"
@@ -151,7 +161,6 @@ def xyz_2_pdb(file_name, xyz, barcode_type=dict()):
 
 
 def remove_nans(ensemble_matrix, min_number_nans=3):
-
     ensemble_matrix_no_nans = ensemble_matrix.copy()
 
     # nan_matrix = np.isnan(ensemble_matrix_no_nans)
@@ -175,7 +184,6 @@ def remove_nans(ensemble_matrix, min_number_nans=3):
 def matrix_2_pdb(
     sc_matrix, folder_path, barcode_type=dict(), output_file="ensemble_pwd_matrix"
 ):
-
     # gets ensemble matrix from list of single matrices
     pixel_size = 1
     cells_to_plot = range(sc_matrix.shape[2])
@@ -195,11 +203,11 @@ def matrix_2_pdb(
 
 
 def runtime(
-    matrix_files=[], folder_path="./ensemble_structure", barcode_type=dict(),
+    matrix_files=[],
+    folder_path="./ensemble_structure",
+    barcode_type=dict(),
 ):
-
     if len(matrix_files) > 0:
-
         for matrix_file in matrix_files:
             if os.path.exists(matrix_file):
                 sc_matrix = np.load(matrix_file)
@@ -218,8 +226,7 @@ def runtime(
 
 
 def main():
-    """ Main function
-    """
+    """Main function"""
 
     # [parsing arguments]
     p = parse_arguments()
@@ -231,7 +238,7 @@ def main():
         os.getcwd(), output_folder
     )  # Specify the folder path here
 
-    create_folder(folder_path)
+    create_single_folder(folder_path)
 
     n_traces_processed = runtime(
         matrix_files=p["matrix_files"],

@@ -37,6 +37,8 @@ from sklearn.metrics import pairwise_distances
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
+from core.folder import create_single_folder
+
 # matplotlib.use('TkAgg')
 
 
@@ -102,7 +104,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -114,7 +123,7 @@ def parse_arguments():
 
 
 def plot_repeated_barcodes(trace_data):
-    """ Plot a 3d graph with all the localizations. For the repeated barcodes, the localizations are plotted with a
+    """Plot a 3d graph with all the localizations. For the repeated barcodes, the localizations are plotted with a
     specific legend.
 
     @param (pandas dataframe) input data with all the traces & detections
@@ -177,8 +186,7 @@ class FilterTraces:
         self.unique_labels = self.data["label"].drop_duplicates()
 
     def open_him_traces(self):
-        """ Open HiM trace file and convert it to panda dataframe.
-        """
+        """Open HiM trace file and convert it to panda dataframe."""
 
         # define the path to the trace file
         # check a file was found, else exit the method
@@ -188,7 +196,6 @@ class FilterTraces:
             print("No trace file was found. The loading of the traces is aborted")
             return
         else:
-
             # load the trace files and eventually concatenate them together
             dataframe = []
             try:
@@ -201,7 +208,7 @@ class FilterTraces:
             self.data = pd.concat(dataframe)
 
     def hard_filtering(self):
-        """ Filtering the originally loaded traces by removing all the trace with at least one duplicated barcode.
+        """Filtering the originally loaded traces by removing all the trace with at least one duplicated barcode.
 
         @return: (panda dataframe) filtered traces
         """
@@ -220,7 +227,7 @@ class FilterTraces:
 
     @staticmethod
     def select_traces_wo_duplicates(data, N_barcodes=2):
-        """ Analyze the trace dataframe and select only the traces with no duplicates and containing at least 2
+        """Analyze the trace dataframe and select only the traces with no duplicates and containing at least 2
         barcodes.
 
         @type data: (dataframe) input trace on which the analysis is performed
@@ -239,7 +246,7 @@ class FilterTraces:
         return id_wo_duplicates
 
     def calculate_pwd_threshold(self, trace_id, verbose=False, save=False):
-        """ For all the traces, calculated the pairwise distance between all the detections. From the distribution,
+        """For all the traces, calculated the pairwise distance between all the detections. From the distribution,
         calculate the 95% and 99% quantiles.
 
         @param trace_id: (list) list of all the ID of the traces without duplicated barcodes
@@ -285,7 +292,7 @@ class FilterTraces:
         return self.p95, self.p99
 
     def trace_statistics(self, save=True, tag=""):
-        """ plot the statistics for the selected traces. Two plots are displayed :
+        """plot the statistics for the selected traces. Two plots are displayed :
         1- for each barcode, indicate the number of detected spots as well as the proportion of duplicated barcodes
         2- the detection efficiency, that is the number of traces with a given proportion of detected barcodes. Again,
         the proportion of traces with duplicated barcodes is indicated
@@ -299,7 +306,6 @@ class FilterTraces:
         barcode_detection_duplicated = []
         drop_out = 0
         for id in tqdm(self.trace_id):
-
             # select all the detections belonging to the trace with id and calculate the detection efficiency for this
             # trace as well as the number of duplicated barcodes. If the trace contains a single detection, it is
             # counted as a dropout.
@@ -385,7 +391,7 @@ class FilterTraces:
             plt.show()
 
     def filter_traces(self, verbose=False):
-        """ All the traces are analyzed based on their ID. Using a clustering algorithm and the threshold calculated
+        """All the traces are analyzed based on their ID. Using a clustering algorithm and the threshold calculated
         based on the pwd distribution, each trace is redefined as a list of spot_ID and kept in "updated_spot_id". That
         way, traces composed of multiple duplicated barcodes can now be separated into multiple sub-traces, each
         represented as a single list of spot_ID. All the isolated detections (not associated to a trace) are discarded.
@@ -445,7 +451,7 @@ class FilterTraces:
 
     @staticmethod
     def clustering(trace_data, radius_min, radius_max, verbose=False):
-        """ For each single trace, a KDTree is first calculated based on the 3d localizations. Using the lower-bound
+        """For each single trace, a KDTree is first calculated based on the 3d localizations. Using the lower-bound
         threshold, a "query-radius" is launched and the neighbors associated to each localization are found.
         An iterative process is launched in order to reconstruct the different clusters aggregated in the initial trace.
 
@@ -566,7 +572,7 @@ class FilterTraces:
 
     @staticmethod
     def reformat_dataframe(dataframe, in_spot_id, out_spot_id):
-        """ Based on the list of spot_ID selected for the trace, reformat the dataframe by reassigning to all the new
+        """Based on the list of spot_ID selected for the trace, reformat the dataframe by reassigning to all the new
         traces a unique ID. All the detections not associated to a trace are removed from the dataframe.
 
         @param dataframe: (pandas dataframe) input data with all the traces & detections
@@ -594,7 +600,7 @@ class FilterTraces:
         return new_dataframe
 
     def detect_overlapping_barcodes(self, trace_data, verbose=False, save=True):
-        """ Detect barcodes that are duplicated within the same trace. If the distance between two barcodes is lower
+        """Detect barcodes that are duplicated within the same trace. If the distance between two barcodes is lower
         than a specific threshold d_min (overlapping_threshold), they are replaced by their average localization.
 
         @param trace_data: (pandas dataframe) input data with all the traces & detections
@@ -690,7 +696,7 @@ class FilterTraces:
 
     @staticmethod
     def remove_duplicates(trace_data):
-        """ For each individual trace, the duplicated barcodes are removed. If the remaining trace contains enough
+        """For each individual trace, the duplicated barcodes are removed. If the remaining trace contains enough
         barcodes (above the minimal fraction p) the trace is saved, else it is discarded.
 
         @param trace_data: (pandas dataframe) input data with all the traces & detections
@@ -740,7 +746,7 @@ class FilterTraces:
         return new_trace_data, [n_discarded, n_kept_w_correction, n_kept_wo_correction]
 
     def save_to_astropy(self, trace_data, tag=None):
-        """ save panda dataframe into astropy table
+        """save panda dataframe into astropy table
 
         @param trace_data: (pd dataframe) contains all the traces
         @param tag: (str) indicate the tag to add to the filename
@@ -758,7 +764,7 @@ class FilterTraces:
         return outputfile
 
     def save_individual_labels(self, trace, tag=None):
-        """ helper function used to sort individual traces based on label value and save them in individual ecsv file.
+        """helper function used to sort individual traces based on label value and save them in individual ecsv file.
 
         @param trace: (pd dataframe) input trace data
         @param tag: (str) tag to add to all individual files
@@ -774,7 +780,7 @@ class FilterTraces:
 
     @staticmethod
     def him_map_2d_to_1d(map_2d):
-        """ Flatten a him 2d-map (either contact or distance) into a single vector. Since the map is symmetric along the
+        """Flatten a him 2d-map (either contact or distance) into a single vector. Since the map is symmetric along the
         first diagonal, only the first half is kept.
 
         @param map_2d: (numpy array) 2d him map
@@ -789,16 +795,7 @@ class FilterTraces:
         return distance_flatten
 
 
-def create_folder(folder_path):
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print(f"$ Folder '{folder_path}' created successfully.")
-    else:
-        print(f"! Folder '{folder_path}' already exists.")
-
-
 if __name__ == "__main__":
-
     # [parsing arguments]
     p = parse_arguments()
 
@@ -813,10 +810,9 @@ if __name__ == "__main__":
     ]  # a fraction of 0.5 means that a maximum of 50% missing barcodes is allowed
 
     print(f"\n$ Will process the following trace files: {data_files}\n")
-    create_folder(dest_folder)
+    create_single_folder(dest_folder)
 
     for file in data_files:
-
         print(f"$ processing{file}")
         # instantiate the class
         # ---------------------
@@ -839,7 +835,6 @@ if __name__ == "__main__":
             _trace.data, N_barcodes=p["N_barcodes"]
         )
         if len(trace_wo_duplicates) > 0:
-
             pwd_min, pwd_max = _trace.calculate_pwd_threshold(
                 trace_wo_duplicates, verbose=True, save=True
             )

@@ -27,13 +27,12 @@ import numpy as np
 from skimage import io
 from skimage.measure import regionprops
 
+from core.folder import Folders, retrieve_number_rois_folder
 from core.pyhim_logging import print_log, write_string_to_file
 from fileProcessing.fileManagement import (
-    Folders,
     get_dictionary_value,
     load_alignment_dictionary,
     print_dict,
-    retrieve_number_rois_folder,
 )
 from imageProcessing.imageProcessing import (
     _segment_3d_masks,

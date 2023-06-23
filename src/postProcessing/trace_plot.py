@@ -65,7 +65,8 @@ import numpy as np
 from astropy.io import ascii
 from pdbparser.pdbparser import pdbparser
 
-from fileProcessing.fileManagement import create_folder, loads_barcode_dict
+from core.folder import create_single_folder
+from fileProcessing.fileManagement import loads_barcode_dict
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
@@ -136,7 +137,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -156,11 +164,9 @@ def runtime(
     folder_path="./PDBs",
     select_traces="one",
 ):
-
     # gets trace files
 
     if len(trace_files) > 0:
-
         print(
             "\n{} trace files to process= {}".format(
                 len(trace_files), "\n".join(map(str, trace_files))
@@ -169,7 +175,6 @@ def runtime(
 
         # iterates over traces in folder
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 
@@ -236,7 +241,7 @@ def main():
         os.getcwd(), output_folder
     )  # Specify the folder path here
 
-    create_folder(folder_path)
+    create_single_folder(folder_path)
 
     n_traces_processed = runtime(
         folder,
