@@ -26,8 +26,8 @@ import numpy as np
 from astropy.table import Table
 from tqdm import trange
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import Folders
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.filter_localizations import get_file_table_new_name
 

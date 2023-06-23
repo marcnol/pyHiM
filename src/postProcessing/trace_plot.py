@@ -65,7 +65,8 @@ import numpy as np
 from astropy.io import ascii
 from pdbparser.pdbparser import pdbparser
 
-from fileProcessing.fileManagement import create_folder, loads_barcode_dict
+from core.folder import create_single_folder
+from fileProcessing.fileManagement import loads_barcode_dict
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
@@ -251,7 +252,7 @@ def main():
         os.getcwd(), output_folder
     )  # Specify the folder path here
 
-    create_folder(folder_path)
+    create_single_folder(folder_path)
 
     n_traces_processed = runtime(
         folder,

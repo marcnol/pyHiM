@@ -56,8 +56,8 @@ from skimage.measure import regionprops
 from stardist import random_label_cmap
 from stardist.models import StarDist2D
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import Folders
 from imageProcessing.imageProcessing import Image, save_image_2d_cmd
 
 matplotlib.rcParams["image.interpolation"] = None
@@ -810,7 +810,7 @@ def segment_masks(current_param, current_session, file_name=None):
         )
     )
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_log("> folders read: {}".format(len(data_folder.list_folders)))
+    print_log(f"> folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",

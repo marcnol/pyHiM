@@ -48,8 +48,8 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import Folders
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_distance_histograms,

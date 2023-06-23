@@ -58,8 +58,9 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
+from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import Folders, get_dictionary_value
+from fileProcessing.fileManagement import get_dictionary_value
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.filter_localizations import get_file_table_new_name
