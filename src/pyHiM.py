@@ -25,8 +25,8 @@ from datetime import datetime
 import apifish
 
 import fileProcessing.functionCaller as fc
+from core.parameters import Parameters
 from core.pyhim_logging import print_log
-from fileProcessing.fileManagement import Parameters
 
 warnings.filterwarnings("ignore")
 

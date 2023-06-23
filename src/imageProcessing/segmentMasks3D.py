@@ -28,12 +28,8 @@ from skimage import io
 from skimage.measure import regionprops
 
 from core.folder import Folders, retrieve_number_rois_folder
+from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import (
-    get_dictionary_value,
-    load_alignment_dictionary,
-    print_dict,
-)
 from imageProcessing.imageProcessing import (
     _segment_3d_masks,
     apply_xy_shift_3d_images,
@@ -335,7 +331,7 @@ class SegmentMasks3D:
         )
 
         # loads dicShifts with shifts for all rois and all labels
-        self.dict_shifts, self.dict_shifts_available = load_alignment_dictionary(
+        self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             self.data_folder
         )
 

@@ -12,8 +12,9 @@ import logging
 import os
 from datetime import datetime
 
+from core.dask_cluster import DaskCluster
+from core.parameters import load_json, print_dict, save_json
 from core.pyhim_logging import Log, print_log, write_string_to_file
-from fileProcessing.fileManagement import DaskCluster, Session, print_dict
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import make_projections
@@ -25,6 +26,35 @@ from matrixOperations.build_matrix import BuildMatrix
 from matrixOperations.build_traces import BuildTraces
 from matrixOperations.filter_localizations import FilterLocalizations
 from matrixOperations.register_localizations import RegisterLocalizations
+
+
+class Session:
+    def __init__(self, root_folder, name="dummy"):
+        now = datetime.now()
+        session_root_name = now.strftime("%d%m%Y_%H%M%S")
+        self.file_name = root_folder + os.sep + "Session_" + session_root_name + ".json"
+        self.name = name
+        self.data = {}
+
+    # loads existing session
+    def load(self):
+        self.data = load_json(self.file_name)
+        print(f"Session information read: {self.file_name}")
+
+    # saves session to file
+    def save(self):
+        save_json(self.file_name, self.data)
+        print(f"> Saved json session file to {self.file_name}")
+
+    # add new task to session
+    def add(self, key, value):
+        if key not in self.data:
+            self.data[key] = value
+        else:
+            self.data[key] = [self.data[key], value]
+
+    def clear_data(self):
+        self.data = {}
 
 
 class HiMFunctionCaller:
