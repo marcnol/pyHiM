@@ -34,7 +34,6 @@ from sklearn.neighbors import KernelDensity
 from tqdm import trange
 
 from core.pyhim_logging import write_string_to_file
-from fileProcessing.fileManagement import is_notebook
 
 # =============================================================================
 # CLASSES
@@ -1727,6 +1726,30 @@ def coord_2_distances(coordinates):
             distances[row, col] = np.sqrt(comp_sum)
 
     return distances
+
+
+def is_notebook():
+    """
+    This function detects if you are running on an ipython console or in the shell.
+    It is used to either kill plots or leave them open.
+
+    Returns
+    -------
+    TYPE Boolean
+        true if running in Jupyter or Ipython consoles within spyder.
+        false otherwise (terminal)
+
+    """
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == "ZMQInteractiveShell":
+            return True  # Jupyter notebook or qtconsole
+        elif shell == "TerminalInteractiveShell":
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
 
 
 def plot_distance_histograms(

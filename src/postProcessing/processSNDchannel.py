@@ -32,8 +32,8 @@ from matplotlib import pyplot as plt
 from roipoly import MultiRoi
 
 from core.folder import Folders
+from core.parameters import Parameters
 from core.pyhim_logging import Log, write_string_to_file
-from fileProcessing.fileManagement import Parameters, Session
 from imageProcessing.imageProcessing import Image
 
 # =============================================================================

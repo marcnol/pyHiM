@@ -46,15 +46,15 @@ from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
+from core.dask_cluster import try_get_client
 from core.folder import Folders
-from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import (
+from core.parameters import (
     get_dictionary_value,
-    load_alignment_dictionary,
+    load_alignment_dict,
     print_dict,
     rt_to_filename,
-    try_get_client,
 )
+from core.pyhim_logging import print_log, write_string_to_file
 from imageProcessing.imageProcessing import (
     apply_xy_shift_3d_images,
     combine_blocks_image_by_reprojection,
@@ -261,7 +261,7 @@ class Drift3D:
         print_log("\nDetected {} rois".format(self.number_rois))
 
         # loads dicShifts with shifts for all rois and all labels
-        self.dict_shifts, self.dict_shifts_available = load_alignment_dictionary(
+        self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             self.data_folder
         )
 

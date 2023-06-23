@@ -45,8 +45,8 @@ from stardist.models import StarDist3D
 from tifffile import imsave
 from tqdm import tqdm, trange
 
+from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
-from fileProcessing.fileManagement import try_get_client
 
 warnings.filterwarnings("ignore")
 

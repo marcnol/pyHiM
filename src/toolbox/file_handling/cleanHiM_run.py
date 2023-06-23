@@ -25,7 +25,7 @@ import os
 import shutil
 
 from core.folder import Folders
-from fileProcessing.fileManagement import Parameters
+from core.parameters import Parameters
 
 # =============================================================================
 # MAIN

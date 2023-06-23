@@ -66,7 +66,7 @@ from astropy.io import ascii
 from pdbparser.pdbparser import pdbparser
 
 from core.folder import create_single_folder
-from fileProcessing.fileManagement import loads_barcode_dict
+from core.parameters import loads_barcode_dict
 from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb

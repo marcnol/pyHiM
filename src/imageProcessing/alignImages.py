@@ -34,13 +34,8 @@ from skimage.exposure import match_histograms
 from skimage.registration._phase_cross_correlation import _upsampled_dft
 
 from core.folder import Folders
+from core.parameters import get_dictionary_value, load_json, rt_to_filename, save_json
 from core.pyhim_logging import print_log, write_string_to_file
-from fileProcessing.fileManagement import (
-    get_dictionary_value,
-    load_json,
-    rt_to_filename,
-    save_json,
-)
 from imageProcessing.imageProcessing import (
     Image,
     align_2_images_cross_correlation,
