@@ -40,6 +40,12 @@ class Folders:
     def set_folders(self):
         self.list_folders = [self.master_folder]
 
+    def create_single_folder(self, folder_key_name: str):
+        folder = self.output_folders[folder_key_name]
+        if not path.exists(folder):
+            os.mkdir(folder)
+            print(f"$ Folder created: {folder}")
+
     # creates folders for outputs
     def create_folders(self, files_folder, current_param):
         """
@@ -60,12 +66,12 @@ class Folders:
         self.output_folders["zProject"] = (
             files_folder + os.sep + current_param.param_dict["zProject"]["folder"]
         )
-        create_single_folder(self.output_folders["zProject"])
+        self.create_single_folder("zProject")
 
         self.output_folders["alignImages"] = (
             files_folder + os.sep + current_param.param_dict["alignImages"]["folder"]
         )
-        create_single_folder(self.output_folders["alignImages"])
+        self.create_single_folder("alignImages")
         self.output_files["alignImages"] = (
             self.output_folders["alignImages"]
             + os.sep
@@ -83,7 +89,7 @@ class Folders:
                 + os.sep
                 + current_param.param_dict["segmentedObjects"]["folder"]
             )
-            create_single_folder(self.output_folders["segmentedObjects"])
+            self.create_single_folder("segmentedObjects")
             self.output_files["segmentedObjects"] = (
                 self.output_folders["segmentedObjects"]
                 + os.sep
@@ -101,7 +107,7 @@ class Folders:
             self.output_folders["buildsPWDmatrix"] = (
                 files_folder + os.sep + "buildsPWDmatrix"
             )
-        create_single_folder(self.output_folders["buildsPWDmatrix"])
+        self.create_single_folder("buildsPWDmatrix")
         self.output_files["buildsPWDmatrix"] = (
             self.output_folders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
         )
@@ -123,7 +129,7 @@ class Session:
     # saves session to file
     def save(self):
         save_json(self.file_name, self.data)
-        info(f"Saved json session file to {self.file_name}")
+        print(f"> Saved json session file to {self.file_name}")
 
     # add new task to session
     def add(self, key, value):
@@ -134,17 +140,6 @@ class Session:
 
     def clear_data(self):
         self.data = {}
-
-
-class FileHandling:
-    def __init__(self, file_name):
-        self.file_name = file_name
-        self.position_roi_information = 3
-
-    def get_roi(self):
-        return os.path.basename(self.file_name).split("_")[
-            self.position_roi_information
-        ]
 
 
 class Parameters:
@@ -536,17 +531,6 @@ class DaskCluster:
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
-
-
-# cmd line output only
-def info(text):
-    print(f">{text}")
-
-
-def create_single_folder(folder):
-    if not path.exists(folder):
-        os.mkdir(folder)
-        print(f"$ Folder created: {folder}")
 
 
 def load_parameters_file(file_name):
