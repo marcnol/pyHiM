@@ -13,100 +13,118 @@ $ zipHiM_run.py
 to zip all the directories recursively
 
 """
-import os
-import glob
 import argparse
-import shutil
-import tarfile
+import glob
+import os
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
+
 def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    parser.add_argument("-P", "--fileParameters", help="parameters file, default: infoList_barcode.json")
-    parser.add_argument("-R", "--recursive", help="One more depth of folders will be explored and zipped", action="store_true")
+    parser.add_argument(
+        "-P", "--fileParameters", help="parameters file, default: infoList_barcode.json"
+    )
+    parser.add_argument(
+        "-R",
+        "--recursive",
+        help="One more depth of folders will be explored and zipped",
+        action="store_true",
+    )
 
     args = parser.parse_args()
 
     if args.rootFolder:
-        rootFolder = args.rootFolder
+        root_folder = args.rootFolder
     else:
-        rootFolder = os.getcwd()
+        root_folder = os.getcwd()
 
+    # UNUSED?
     if args.fileParameters:
-        fileParameters = args.fileParameters
+        file_parameters = args.fileParameters
     else:
-        fileParameters = "infoList.json"
+        file_parameters = "infoList.json"
 
     if args.recursive:
-        recursive= args.recursive
+        RECURSIVE = args.recursive
     else:
-        recursive= False
+        RECURSIVE = False
 
-    print("RootFolders: {}".format(rootFolder))
+    print(f"RootFolders: {root_folder}")
 
     # opens tarfile
-    os.chdir(rootFolder)
-    tarFileName = "HiMrun.tar"
-    print("creating archive: {} in {}".format(tarFileName,rootFolder))
+    os.chdir(root_folder)
+    TAR_FILENAME = "HiMrun.tar"
+    print(f"creating archive: {TAR_FILENAME} in {root_folder}")
 
-    # tar files in rootFolder
-    filesMD = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "*.md")]
-    filesLOG = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "*.log")]
-    filesSession = [os.path.basename(f) for f in glob.glob(rootFolder + os.sep + "*.json")]
+    # tar files in root_folder
+    markdown_files = [
+        os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.md")
+    ]
+    log_files = [os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.log")]
+    session_files = [
+        os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.json")
+    ]
 
-    tarcmd = "tar -cvf " + tarFileName + " " + " ".join(filesMD + filesLOG + filesSession)
-    print("Archiving:\n{}".format("\n".join(filesMD + filesLOG + filesSession )))
+    TARCMD = (
+        "tar -cvf "
+        + TAR_FILENAME
+        + " "
+        + " ".join(markdown_files + log_files + session_files)
+    )
+    print(
+        "Archiving:\n{}".format("\n".join(markdown_files + log_files + session_files))
+    )
 
-    os.system(tarcmd)
+    os.system(TARCMD)
 
     # tars directories produced during previous runs
-    if recursive:
-        folders = glob.glob(rootFolder + os.sep + "*")
-        folders = [x for x in folders if os.path.isdir(x)] # keeps only folders
-        folders = [x for x in folders if os.path.exists(x+os.sep+"infoList.json")]
+    if RECURSIVE:
+        folders = glob.glob(root_folder + os.sep + "*")
+        folders = [x for x in folders if os.path.isdir(x)]  # keeps only folders
+        folders = [x for x in folders if os.path.exists(x + os.sep + "infoList.json")]
 
     else:
-        folders  = [rootFolder]
+        folders = [root_folder]
 
-    print("Folders to zip:\n{}".format(folders))
-    print("="*30)
-    for currentFolder in folders:
+    print(f"Folders to zip:\n{folders}")
+    print("=" * 30)
+    for current_folder in folders:
 
         folders2zip = []
-        folders2zip.append(currentFolder + os.sep + "zProject")
-        folders2zip.append(currentFolder + os.sep + "alignImages")
-        folders2zip.append(currentFolder + os.sep + "segmentedObjects")
-        folders2zip.append(currentFolder + os.sep + "buildsPWDmatrix")
-        folders2zip.append(currentFolder + os.sep + "projectsBarcodes")
+        folders2zip.append(current_folder + os.sep + "zProject")
+        folders2zip.append(current_folder + os.sep + "alignImages")
+        folders2zip.append(current_folder + os.sep + "segmentedObjects")
+        folders2zip.append(current_folder + os.sep + "buildsPWDmatrix")
 
-        print("sub-folders to zip:\n{}".format(folders2zip))
+        print(f"sub-folders to zip:\n{folders2zip}")
 
-        for newFolder in folders2zip:
-            if rootFolder == ".":
-                newFolderRelative = "." + newFolder.split(os.getcwd())[1]
+        for new_folder in folders2zip:
+            if root_folder == ".":
+                new_folder_relative = "." + new_folder.split(os.getcwd())[1]
             else:
-                newFolderRelative = "." + newFolder.split(rootFolder)[1]
+                new_folder_relative = "." + new_folder.split(root_folder)[1]
 
-            fileExtensions = ["/*.png", "/*.dat", "/*.ecsv", "/buildsPWDmatrix*.npy"]
-            for newFileExtension in fileExtensions:
+            file_extensions = ["/*.png", "/*.dat", "/*.ecsv", "/buildsPWDmatrix*.npy"]
+            for new_file_extensions in file_extensions:
 
-                newFiles = newFolderRelative + newFileExtension
+                new_files = new_folder_relative + new_file_extensions
 
-                if len(glob.glob(newFiles)) > 0:
-                    tarcmd = "tar -rf " + tarFileName + " " + newFiles
-                    os.system(tarcmd)
-                    print("Archiving: {}".format(newFiles))
+                if len(glob.glob(new_files)) > 0:
+                    TARCMD = "tar -rf " + TAR_FILENAME + " " + new_files
+                    os.system(TARCMD)
+                    print(f"Archiving: {new_files}")
 
-        print("-"*30)
+        print("-" * 30)
 
-    if os.path.exists(tarFileName):
-        print("Zipping {}".format(tarFileName))
-        os.system("gzip " + tarFileName)
+    if os.path.exists(TAR_FILENAME):
+        print(f"Zipping {TAR_FILENAME}")
+        os.system("gzip " + TAR_FILENAME)
+
 
 if __name__ == "__main__":
     main()

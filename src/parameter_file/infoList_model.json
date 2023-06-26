@@ -2,7 +2,7 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch01",
+            "RNA_channel": "ch02",
             "barcode_channel": "ch01",
             "mask_channel": "ch01",                
             "fiducialBarcode_channel": "ch00",
@@ -20,7 +20,6 @@
         "alignImages": {
             "alignByBlock": true,
             "background_sigma": 3.0,
-            "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
             "higher_threshold": 0.9999999,
@@ -45,11 +44,6 @@
 			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},            	
             "remove_uncorrected_localizations": true,
             "toleranceDrift": 1
-        },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
         },
         "segmentedObjects": {
             "Segment3D": "overwrite",

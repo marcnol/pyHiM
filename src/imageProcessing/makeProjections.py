@@ -18,115 +18,148 @@ Operation will be defined in the parameters file. Options are:
 # IMPORTS
 # =============================================================================
 
-import glob, os
+import glob
+import os
 
 from dask.distributed import get_client, wait
 
+from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
 from imageProcessing.imageProcessing import Image
-
-from fileProcessing.fileManagement import folders, writeString2File, printLog
 
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
 
 
-def makes2DProjectionsFile(fileName, param, session1, dataFolder):
+def make_2d_projections_file(file_name, current_param, current_session, data_folder):
 
-    if fileName in session1.data:
-        # creates image object
-        Im = Image(param)
-        Im.loadImage2D(fileName, dataFolder.outputFolders["zProject"])
-        if param.param["zProject"]["display"]:
-            Im.imageShow()
-        printLog("# File already projected: {}".format(os.path.basename(fileName)))
+    if file_name in current_session.data:
+        print_log("# File already projected: {}".format(os.path.basename(file_name)))
     else:
 
-        printLog("\n> Analysing file: {}".format(os.path.basename(fileName)))
+        print_log("\n> Analysing file: {}".format(os.path.basename(file_name)))
 
         # creates image object
-        Im = Image(param)
+        im_obj = Image(current_param)
 
         # loads image
-        Im.loadImage(fileName)
+        im_obj.load_image(file_name)
 
         # makes actual 2d projection
-        Im.zProjectionRange()
+        im_obj.z_projection_range()
 
         # outputs information from file
-        if Im.fileName:
-            Im.printImageProperties()
+        if im_obj.file_name:
+            im_obj.print_image_properties()
 
         # saves output 2d zProjection as png
-        if param.param["zProject"]["display"]:
-            pngFileName = dataFolder.outputFolders["zProject"] + os.sep + os.path.basename(fileName) + "_2d.png"
-            Im.imageShow(save=param.param["zProject"]["saveImage"], outputName=pngFileName)
-            writeString2File(
-                param.param['fileNameMD'], "{}\n ![]({})\n".format(os.path.basename(fileName), pngFileName), "a",
+        if current_param.param_dict["zProject"]["display"]:
+            png_file_name = (
+                data_folder.output_folders["zProject"]
+                + os.sep
+                + os.path.basename(file_name)
+                + "_2d.png"
+            )
+            im_obj.show_image(
+                save=current_param.param_dict["zProject"]["saveImage"],
+                output_name=png_file_name,
+            )
+            write_string_to_file(
+                current_param.param_dict["fileNameMD"],
+                "{}\n ![]({})\n".format(os.path.basename(file_name), png_file_name),
+                "a",
             )  # initialises MD file
 
-            if param.param["zProject"]["mode"] == "laplacian":
-                outputName = Im.getImageFileName(dataFolder.outputFolders["zProject"], "_focalPlaneMatrix.png")
-                Im.imageShowWithValues(outputName)
+            if current_param.param_dict["zProject"]["mode"] == "laplacian":
+                output_name = im_obj.get_image_filename(
+                    data_folder.output_folders["zProject"], "_focalPlaneMatrix.png"
+                )
+                im_obj.image_show_with_values(output_name)
 
-                writeString2File(
-                    param.param['fileNameMD'], "{}\n ![]({})\n".format(os.path.basename(fileName), outputName), "a",
+                write_string_to_file(
+                    current_param.param_dict["fileNameMD"],
+                    "{}\n ![]({})\n".format(os.path.basename(file_name), output_name),
+                    "a",
                 )  # initialises MD file
         # saves output 2d zProjection as matrix
-        Im.saveImage2D(dataFolder.outputFolders["zProject"])
+        im_obj.save_image_2d(data_folder.output_folders["zProject"])
 
-        del Im
+        del im_obj
 
 
-def makeProjections(param, session1, fileName=None):
-    sessionName = "makesProjections"
+def make_projections(current_param, current_session, file_name=None):
+    session_name = "makesProjections"
 
     # processes folders and files
-    printLog("\n===================={}====================\n".format(sessionName))
-    dataFolder = folders(param.param["rootFolder"])
-    printLog("> Folders read: {}".format(len(dataFolder.listFolders)))
-    writeString2File(
-        param.param['fileNameMD'], "## {}: {}\n".format(sessionName, param.param["acquisition"]["label"]), "a",
+    print_log("\n===================={}====================\n".format(session_name))
+    data_folder = Folders(current_param.param_dict["rootFolder"])
+    print_log("> Folders read: {}".format(len(data_folder.list_folders)))
+    write_string_to_file(
+        current_param.param_dict["fileNameMD"],
+        "## {}: {}\n".format(
+            session_name, current_param.param_dict["acquisition"]["label"]
+        ),
+        "a",
     )  # initialises MD file
 
-    for currentFolder in dataFolder.listFolders:
-        filesFolder = glob.glob(currentFolder + os.sep + "*.tif")
-        dataFolder.createsFolders(currentFolder, param)
+    for current_folder in data_folder.list_folders:
+        files_folder = glob.glob(current_folder + os.sep + "*.tif")
+        data_folder.create_folders(current_folder, current_param)
 
         # generates lists of files to process
-        param.files2Process(filesFolder)
-        printLog("> Processing Folder: {}".format(currentFolder))
-        printLog("> About to process {} files\n".format(len(param.fileList2Process)))
+        current_param.find_files_to_process(files_folder)
+        print_log("> Processing Folder: {}".format(current_folder))
+        print_log(
+            "> About to process {} files\n".format(len(current_param.files_to_process))
+        )
 
-        if param.param["parallel"]:
-            threads = list()
-            files2ProcessFiltered = [
+        if current_param.param_dict["parallel"]:
+            threads = []
+            files_to_process_filtered = [
                 x
-                for x in param.fileList2Process
-                if (fileName == None)
-                or (fileName != None and (os.path.basename(x) in [os.path.basename(x1) for x1 in fileName]))
+                for x in current_param.files_to_process
+                if (file_name is None)
+                or (
+                    file_name is not None
+                    and (
+                        os.path.basename(x)
+                        in [os.path.basename(x1) for x1 in file_name]
+                    )
+                )
             ]
 
-            if len(files2ProcessFiltered) > 0:
+            if len(files_to_process_filtered) > 0:
                 # dask
                 client = get_client()
                 threads = [
-                    client.submit(makes2DProjectionsFile, x, param, session1, dataFolder)
-                    for x in files2ProcessFiltered
+                    client.submit(
+                        make_2d_projections_file,
+                        x,
+                        current_param,
+                        current_session,
+                        data_folder,
+                    )
+                    for x in files_to_process_filtered
                 ]
 
-                printLog("$ Waiting for {} threads to complete ".format(len(threads)))
-                for index, thread in enumerate(threads):
+                print_log("$ Waiting for {} threads to complete ".format(len(threads)))
+                for _, _ in enumerate(threads):
                     wait(threads)
 
         else:
 
-            for index, fileName2Process in enumerate(param.fileList2Process):
+            for _, filename_to_process in enumerate(current_param.files_to_process):
 
-                if (fileName == None) or (
-                    fileName != None and (os.path.basename(fileName2Process) in [os.path.basename(x) for x in fileName])
+                if (file_name is None) or (
+                    file_name is not None
+                    and (
+                        os.path.basename(filename_to_process)
+                        in [os.path.basename(x) for x in file_name]
+                    )
                 ):
-                    makes2DProjectionsFile(fileName2Process, param, session1, dataFolder)
-                    session1.add(fileName2Process, sessionName)
+                    make_2d_projections_file(
+                        filename_to_process, current_param, current_session, data_folder
+                    )
+                    current_session.add(filename_to_process, session_name)
                 else:
                     pass

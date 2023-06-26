@@ -7,71 +7,76 @@ Created on Tue Sep 22 15:26:00 2020
 """
 
 
-import os
 import argparse
-from datetime import datetime
 import logging
-
-from dask.distributed import Client, LocalCluster, get_client, as_completed, fire_and_forget
+import os
+from datetime import datetime
 
 from fileProcessing.fileManagement import (
-    daskCluster,
-    writeString2File,
-    log,
-    session,
-    printDict,
-    retrieveNumberUniqueBarcodesRootFolder,
-    printLog,
+    DaskCluster,
+    Log,
+    Session,
+    print_dict,
+    print_log,
+    write_string_to_file,
 )
-
-from imageProcessing.alignImages import alignImages, appliesRegistrations
-from imageProcessing.makeProjections import makeProjections
-from imageProcessing.segmentMasks import segmentMasks
-from imageProcessing.localDriftCorrection import localDriftCorrection
-from imageProcessing.projectsBarcodes import projectsBarcodes
-from matrixOperations.alignBarcodesMasks import processesPWDmatrices
-from imageProcessing.refitBarcodes3D import refitBarcodesClass
-from imageProcessing.alignImages3D import drift3D
-from imageProcessing.segmentSources3D import segmentSources3D
-from imageProcessing.segmentMasks3D import segmentMasks3D
+from imageProcessing.alignImages import align_images, apply_registrations
+from imageProcessing.alignImages3D import Drift3D
+from imageProcessing.makeProjections import make_projections
+from imageProcessing.segmentMasks import segment_masks
+from imageProcessing.segmentMasks3D import SegmentMasks3D
+from imageProcessing.segmentSources3D import SegmentSources3D
+from matrixOperations.alignBarcodesMasks import process_pwd_matrices
+from matrixOperations.build_matrix import BuildMatrix
+from matrixOperations.build_traces import BuildTraces
 from matrixOperations.filter_localizations import FilterLocalizations
 from matrixOperations.register_localizations import RegisterLocalizations
-from matrixOperations.build_traces import BuildTraces
-from matrixOperations.build_matrix import BuildMatrix
 
-class HiMfunctionCaller:
-    def __init__(self, runParameters, sessionName="HiM_analysis"):
-        self.runParameters = runParameters
-        self.rootFolder = runParameters["rootFolder"]
-        self.parallel = runParameters["parallel"]
-        self.sessionName = sessionName
 
-        self.log1 = log(rootFolder=self.rootFolder, parallel=self.parallel)
+class HiMFunctionCaller:
+    def __init__(self, run_parameters, session_name="HiM_analysis"):
+        self.run_parameters = run_parameters
+        self.root_folder = run_parameters["rootFolder"]
+        self.parallel = run_parameters["parallel"]
+        self.session_name = session_name
 
-        self.session1 = session(self.rootFolder, self.sessionName)
+        self.current_log = Log(root_folder=self.root_folder, parallel=self.parallel)
+
+        self.current_session = Session(self.root_folder, self.session_name)
+
+        self.log_file = ""
+        self.markdown_filename = ""
+        self.client = None
+        self.cluster = None
 
     def initialize(self):
 
-        printLog("\n--------------------------------------------------------------------------")
+        print_log(
+            "\n--------------------------------------------------------------------------"
+        )
 
-        printLog("$ rootFolder: {}".format(self.rootFolder))
+        print_log(f"$ root_folder: {self.root_folder}")
 
         begin_time = datetime.now()
 
         #####################
         # setup markdown file
         #####################
-        printLog("\n======================{}======================\n".format(self.sessionName))
+        print_log(
+            f"\n======================{self.session_name}======================\n"
+        )
         now = datetime.now()
-        dateTime = now.strftime("%d%m%Y_%H%M%S")
+        date_time = now.strftime("%d%m%Y_%H%M%S")
 
-        fileNameRoot="HiM_analysis"
-        self.logFile = self.rootFolder + os.sep + fileNameRoot + dateTime + ".log"
-        self.fileNameMD = self.logFile.split(".")[0] + ".md"
+        filename_root = "HiM_analysis"
+        self.log_file = self.root_folder + os.sep + filename_root + date_time + ".log"
+        self.markdown_filename = self.log_file.split(".")[0] + ".md"
 
-        printLog("$ Hi-M analysis will be written tos: {}".format(self.fileNameMD))
-        writeString2File(
-            self.fileNameMD, "# Hi-M analysis {}".format(begin_time.strftime("%Y/%m/%d %H:%M:%S")), "w",
+        print_log(f"$ Hi-M analysis will be written tos: {self.markdown_filename}")
+        write_string_to_file(
+            self.markdown_filename,
+            f"# Hi-M analysis {begin_time.strftime('%Y/%m/%d %H:%M:%S')}",
+            "w",
         )  # initialises MD file
 
         ##############
@@ -86,11 +91,11 @@ class HiMfunctionCaller:
         logger = logging.getLogger()
         logger.handlers = []
         for hdlr in logger.handlers[:]:
-            if isinstance(hdlr,logging.FileHandler):
+            if isinstance(hdlr, logging.FileHandler):
                 logger.removeHandler(hdlr)
 
         # initializes handlers for terminal and file
-        filehandler = logging.FileHandler(self.logFile, 'w')
+        filehandler = logging.FileHandler(self.log_file, "w")
         ch = logging.StreamHandler()
 
         filehandler.setLevel(logging.INFO)
@@ -103,216 +108,259 @@ class HiMfunctionCaller:
         filehandler.setFormatter(formatter1)
         ch.setFormatter(formatter2)
 
-    def lauchDaskScheduler(self,threadsRequested=25,maximumLoad=0.8):
+    def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
-            printLog("$ Requested {} threads".format(threadsRequested))
+            print_log(f"$ Requested {threads_requested} threads")
 
-            daskClusterInstance = daskCluster(threadsRequested,maximumLoad=maximumLoad)
+            dask_cluster_instance = DaskCluster(
+                threads_requested, maximum_load=maximum_load
+            )
 
-            daskClusterInstance.createDistributedClient()
-            self.client = daskClusterInstance.client
-            self.cluster = daskClusterInstance.cluster
+            dask_cluster_instance.create_distributed_client()
+            self.client = dask_cluster_instance.client
+            self.cluster = dask_cluster_instance.cluster
 
-    def makeProjections(self, param):
-        if not self.runParameters["parallel"]:
-            makeProjections(param, self.session1)
+    def make_projections(self, current_param):
+        if not self.run_parameters["parallel"]:
+            make_projections(current_param, self.current_session)
         else:
-            result = self.client.submit(makeProjections, param, self.session1)
+            result = self.client.submit(
+                make_projections, current_param, self.current_session
+            )
             _ = self.client.gather(result)
 
-    def alignImages(self, param, label):
-        if label == "fiducial" and param.param["acquisition"]["label"] == "fiducial":
-            printLog(
-                "> Making image registrations for label: {}".format(label))
+    def align_images(self, current_param, label):
+        if (
+            label == "fiducial"
+            and current_param.param_dict["acquisition"]["label"] == "fiducial"
+        ):
+            print_log(f"> Making image registrations for label: {label}")
             if not self.parallel:
-                alignImages(param, self.session1)
+                align_images(current_param, self.current_session)
             else:
-                result = self.client.submit(alignImages, param, self.session1)
+                result = self.client.submit(
+                    align_images, current_param, self.current_session
+                )
                 _ = self.client.gather(result)
 
-    def alignImages3D(self, param, label):
-        if label == "fiducial" and "block3D" in param.param["alignImages"]["localAlignment"]:
-            printLog(
-                "> Making 3D image registrations label: {}".format(label))
-            _drift3D = drift3D(param, self.session1, parallel=self.parallel)
-            _drift3D.alignFiducials3D()
+    def align_images_3d(self, current_param, label):
+        if (
+            label == "fiducial"
+            and "block3D" in current_param.param_dict["alignImages"]["localAlignment"]
+        ):
+            print_log(f"> Making 3D image registrations label: {label}")
+            _drift_3d = Drift3D(
+                current_param, self.current_session, parallel=self.parallel
+            )
+            _drift_3d.align_fiducials_3d()
 
-    def appliesRegistrations(self, param, label):
-        if label != "fiducial" and param.param["acquisition"]["label"] != "fiducial":
-            printLog(
-                "> Applying image registrations for label: {}".format(label))
+    def apply_registrations(self, current_param, label):
+        if (
+            label != "fiducial"
+            and current_param.param_dict["acquisition"]["label"] != "fiducial"
+        ):
+            print_log(f"> Applying image registrations for label: {label}")
 
             if not self.parallel:
-                appliesRegistrations(param, self.session1)
+                apply_registrations(current_param, self.current_session)
             else:
-                result = self.client.submit(appliesRegistrations, param, self.session1)
+                result = self.client.submit(
+                    apply_registrations, current_param, self.current_session
+                )
                 _ = self.client.gather(result)
 
-    def segmentMasks(self, param, label):
-        if "segmentedObjects" in param.param.keys():
-            operation = param.param["segmentedObjects"]["operation"]
+    def segment_masks(self, current_param, label):
+        if "segmentedObjects" in current_param.param_dict.keys():
+            operation = current_param.param_dict["segmentedObjects"]["operation"]
         else:
             operation = [""]
 
         if (
             label != "RNA"
-            and param.param["acquisition"]["label"] != "RNA"
+            and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
             if not self.parallel:
-                segmentMasks(param, self.session1)
+                segment_masks(current_param, self.current_session)
             else:
-                result = self.client.submit(segmentMasks, param, self.session1)
+                result = self.client.submit(
+                    segment_masks, current_param, self.current_session
+                )
                 _ = self.client.gather(result)
 
+    def segment_masks_3d(self, current_param, label):
+        if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
+            "segmentedObjects"
+        ]["operation"]:
+            print_log(f"Making 3D image segmentations for label: {label}")
+            print_log(f">>>>>>Label in functionCaller:{label}")
 
+            _segment_sources_3d = SegmentMasks3D(
+                current_param, self.current_session, parallel=self.parallel
+            )
+            _segment_sources_3d.segment_masks_3d()
 
-    def segmentMasks3D(self, param, label):
-        if (
-            (label == "DAPI" or label == 'mask')
-            and "3D" in param.param["segmentedObjects"]["operation"]
-        ):
-            printLog("Making 3D image segmentations for label: {}".format(label))
-            printLog(">>>>>>Label in functionCaller:{}".format(label))
-
-            _segmentSources3D = segmentMasks3D(param, self.session1, parallel=self.parallel)
-            _segmentSources3D.segmentMasks3D()
-
-
-    def segmentSources3D(self, param, label):
+    def segment_sources_3d(self, current_param, label):
         if (
             label == "barcode"
-            and "3D" in param.param["segmentedObjects"]["operation"]
+            and "3D" in current_param.param_dict["segmentedObjects"]["operation"]
         ):
-            printLog("Making 3D image segmentations for label: {}".format(label))
-            printLog(">>>>>>Label in functionCaller:{}".format(label))
+            print_log(f"Making 3D image segmentations for label: {label}")
+            print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segmentSources3D = segmentSources3D(param, self.session1, parallel=self.parallel)
-            _segmentSources3D.segmentSources3D()
+            _segment_sources_3d = SegmentSources3D(
+                current_param, self.current_session, parallel=self.parallel
+            )
+            _segment_sources_3d.segment_sources_3d()
 
-
-    # This function will be removed in new release
-    def projectsBarcodes(self, param, label):
-        if label == "barcode":
+    def process_pwd_matrices(self, current_param, label):
+        if label in ("DAPI", "mask"):
             if not self.parallel:
-                projectsBarcodes(param, self.log1, self.session1)
+                process_pwd_matrices(current_param, self.current_session)
             else:
-                result = self.client.submit(projectsBarcodes, param, self.log1, self.session1)
+                result = self.client.submit(
+                    process_pwd_matrices, current_param, self.current_session
+                )
                 _ = self.client.gather(result)
 
-    # This function will be removed in new release
-    def refitBarcodes(self, param, label):
-        if label == "barcode":
-            fittingSession = refitBarcodesClass(param, self.log1, self.session1, parallel=self.parallel)
-            if not self.parallel:
-                fittingSession.refitFolders()
-            else:
-                result = self.client.submit(fittingSession.refitFolders)
-                _ = self.client.gather(result)
 
-    # filters barcode localization table
-    def filter_localizations(self, param, label):
-        if label == "barcode":
-            filter_localizations_instance = FilterLocalizations(param)
-            filter_localizations_instance.filter_folder()
-
-    # filters barcode localization table
-    def register_localizations(self, param, label):
-        if label == "barcode":
-            register_localizations_instance = RegisterLocalizations(param)
-            register_localizations_instance.register()
-
-    # build traces
-    def build_traces(self, param, label):
-        if label == "barcode":
-            build_traces_instance = BuildTraces(param)
-            build_traces_instance.run()
-
-    # build matrices
-    def build_matrix(self, param, label):
-        if label == "barcode":
-            build_matrix_instance = BuildMatrix(param)
-            build_matrix_instance.run()
-
-    # This function will be removed in new release
-    def localDriftCorrection(self, param, label):
-
-        # runs mask 2D aligment
-        if label == "DAPI" and ("mask2D" in param.param["alignImages"]["localAlignment"]):
-
-            if not self.parallel:
-                errorCode, _, _ = localDriftCorrection(param, self.log1, self.session1)
-            else:
-                result = self.client.submit(localDriftCorrection, param, self.log1, self.session1)
-                errorCode, _, _ = self.client.gather(result)
-
-    def processesPWDmatrices(self, param, label):
-        if (label == "DAPI" or label == 'mask'):
-            if not self.parallel:
-                processesPWDmatrices(param, self.session1)
-            else:
-                result = self.client.submit(processesPWDmatrices, param, self.session1)
-                _ = self.client.gather(result)
-
-    def getLabel(self, ilabel):
-        return self.labels2Process[ilabel]["label"]
+# =============================================================================
+# FUNCTIONS
+# =============================================================================
 
 
-def availableListCommands():
-    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentMasks3D","segmentSources3D","refitBarcodes3D","localDriftCorrection",\
-                "projectBarcodes","filter_localizations","register_localizations","build_traces","build_matrix","buildHiMmatrix"]
+def set_of_commands():
+    return frozenset({
+        "makeProjections",
+        "appliesRegistrations",
+        "alignImages",
+        "alignImages3D",
+        "segmentMasks",
+        "segmentMasks3D",
+        "segmentSources3D",
+        "filter_localizations",
+        "register_localizations",
+        "build_traces",
+        "build_matrix",
+        "buildHiMmatrix",   # DEPRECATED
+    })
 
+def default_2d_commands():
+    return frozenset({
+        "makeProjections",
+        "alignImages",
+        "appliesRegistrations",
+        "segmentMasks",
+        "filter_localizations",
+        "build_traces",
+        "build_matrix",
+    })
 
-def defaultListCommands():
-    return ["makeProjections", "appliesRegistrations","alignImages","alignImages3D", "segmentMasks",\
-                "segmentMasks3D", "segmentSources3D","buildHiMmatrix"]
+def default_3d_commands():
+    return frozenset({
+        "makeProjections",
+        "alignImages",
+        "alignImages3D",
+        "segmentMasks3D",
+        "segmentSources3D",
+        "filter_localizations",
+        "register_localizations",
+        "build_traces",
+        "build_matrix",
+    })
 
-def HiM_parseArguments():
+def him_parse_arguments(command_line_arguments):
     parser = argparse.ArgumentParser()
 
-    availableCommands=availableListCommands()
-    defaultCommands=defaultListCommands()
+    available_commands = set_of_commands()
+    default_commands = default_3d_commands()
 
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
+    parser.add_argument("-S", "--stardist_basename", help="Replace all stardist_basename from infoList.json")
+    parser.add_argument("-C", "--cmd", help="Comma-separated list of routines to run (without space !): makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
-                        segmentMasks3D segmentSources3D buildHiMmatrix \
-                        optional: [ filter_localizations register_localizations build_traces build_matrix]")
-                        # to be removed: refitBarcodes3D localDriftCorrection projectBarcodes
+                        segmentMasks3D segmentSources3D buildHiMmatrix (DEPRECATED) \
+                        filter_localizations register_localizations build_traces build_matrix",
+    )
 
-    parser.add_argument("--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
-    args = parser.parse_args()
+    parser.add_argument("-T", "--threads", help="Number of threads to run in parallel mode. If none, then it will run with one thread.")
+    args = parser.parse_args(command_line_arguments)
 
-    printLog("\n--------------------------------------------------------------------------")
-    runParameters = {}
+    print_log(
+        "\n--------------------------------------------------------------------------"
+    )
+    run_parameters = {}
     if args.rootFolder:
-        runParameters["rootFolder"] = args.rootFolder
+        run_parameters["rootFolder"] = args.rootFolder
     else:
+        # pylint: disable-next=consider-iterating-dictionary
         if "docker" in os.environ.keys():
-            runParameters["rootFolder"] = "/data"
-            printLog("\n\n$ Running in docker, HiMdata: {}".format(runParameters["rootFolder"]))
+            run_parameters["rootFolder"] = "/data"
+            print_log(
+                f"\n\n$ Running in docker, him_data: {run_parameters['rootFolder']}"
+            )
         else:
-            printLog("\n\n# HiMdata: NOT FOUND")
-            runParameters["rootFolder"] = os.getcwd()
+            print_log("\n\n# him_data: NOT FOUND")
+            run_parameters["rootFolder"] = os.getcwd()
+
+    if args.stardist_basename:
+        run_parameters["stardist_basename"] = args.stardist_basename
+    else:
+        run_parameters["stardist_basename"] = None
 
     if args.threads:
-        runParameters["threads"] = int(args.threads)
-        runParameters["parallel"] = True
+        run_parameters["threads"] = int(args.threads)
+        run_parameters["parallel"] = True
     else:
-        runParameters["threads"] = 1
-        runParameters["parallel"] = False
+        run_parameters["threads"] = 1
+        run_parameters["parallel"] = False
 
     if args.cmd:
-        runParameters["cmd"] = args.cmd.split(",")
+        if args.cmd == "2D":
+            run_parameters["cmd"] = default_2d_commands()
+        elif args.cmd == "3D":
+            run_parameters["cmd"] = default_3d_commands()
+        else:
+            run_parameters["cmd"] = args.cmd.split(",")
     else:
-        runParameters["cmd"] = defaultCommands
+        run_parameters["cmd"] = default_commands
 
-    for cmd in runParameters["cmd"]:
-        if cmd not in availableCommands:
-            printLog("\n\n# ERROR: {} not found in list of available commands: {}\n".format(cmd,availableCommands),status='WARN')
+    for cmd in run_parameters["cmd"]:
+        if cmd not in available_commands:
+            print_log(
+                f"\n\n# ERROR: {cmd} not found in list of available commands: {available_commands}\n",
+                status="WARN",
+            )
             raise SystemExit
 
-    printDict(runParameters)
+    print_dict(run_parameters)
 
-    return runParameters
+    return run_parameters
+
+
+# filters barcode localization table
+def filter_localizations(current_param, label):
+    if label == "barcode":
+        filter_localizations_instance = FilterLocalizations(current_param)
+        filter_localizations_instance.filter_folder()
+
+
+# filters barcode localization table
+def register_localizations(current_param, label):
+    if label == "barcode":
+        register_localizations_instance = RegisterLocalizations(current_param)
+        register_localizations_instance.register()
+
+
+# build traces
+def build_traces(current_param, label):
+    if label == "barcode":
+        build_traces_instance = BuildTraces(current_param)
+        build_traces_instance.run()
+
+
+# build matrices
+def build_matrix(current_param, label):
+    if label == "barcode":
+        build_matrix_instance = BuildMatrix(current_param)
+        build_matrix_instance.run()

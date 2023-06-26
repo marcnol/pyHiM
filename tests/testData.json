@@ -11,13 +11,6 @@
         "label": 1,
         "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
-    "test_localDriftCorrection": {
-        "expectedOutputs": [
-            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/alignImages/LocalShiftsViolinPlot_ROI:001.png"
-        ],
-        "labels": 2,
-        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
-    },
     "test_makeProjections": {
         "expectedOutputs": [
             "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/zProject/scan_006_DAPI_001_ROI_converted_decon_ch00_2d.npy"
@@ -30,16 +23,6 @@
             "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/buildsPWDmatrix/buildsPWDmatrix_HiMscMatrix.npy"
         ],
         "labels": 2,
-        "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
-    },
-    "test_refitBarcodes3D": {
-        "expectedOutputs": [
-            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:27.png",
-            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:29.png",
-            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_3Drefit_ROI:1_barcode:37.png",
-            "/home/marcnol/data/Embryo_debug_dataset/Experiment_18/segmentedObjects/segmentedObjects_barcode2D.dat"
-        ],
-        "labels": 1,
         "rootFolder": "/home/marcnol/data/Embryo_debug_dataset/Experiment_18"
     },
     "test_segmentsMasks": {

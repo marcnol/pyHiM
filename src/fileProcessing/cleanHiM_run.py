@@ -19,70 +19,91 @@ $ cleanHiM_run.py --all
 to erase also the output MD, Log, and Session files
 
 """
-import os
-import glob
 import argparse
-from fileProcessing.fileManagement import Parameters, folders
+import glob
+import os
 import shutil
+
+from fileProcessing.fileManagement import Folders, Parameters
 
 # =============================================================================
 # MAIN
 # =============================================================================
 
+
 def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    parser.add_argument("-P", "--fileParameters", help="parameters file, default: infoList.json")
-    parser.add_argument("-A", "--all", help="Deletes folders, MD files, LOG files", action="store_true")
+    parser.add_argument(
+        "-P", "--fileParameters", help="parameters file, default: infoList.json"
+    )
+    parser.add_argument(
+        "-A", "--all", help="Deletes folders, MD files, LOG files", action="store_true"
+    )
 
     args = parser.parse_args()
 
     if args.rootFolder:
-        rootFolder = args.rootFolder
+        ROOT_FOLDER = args.rootFolder
     else:
-        rootFolder = "."
-        # rootFolder='/home/marcnol/Documents/Images/Embryo_debug_dataset'
+        ROOT_FOLDER = "."
 
     if args.fileParameters:
-        fileParameters = args.fileParameters
+        FILE_PARAMETERS = args.fileParameters
     else:
-        fileParameters = "infoList.json"
+        FILE_PARAMETERS = "infoList.json"
 
     # removes files in rootFolder
     if args.all:
-        filesMD = glob.glob(rootFolder + os.sep + "HiM_analysis*.md", recursive=True)
-        filesLOGMD = glob.glob(rootFolder + os.sep + "HiM_analysis*.log", recursive=True)
-        filesLOG = glob.glob(rootFolder + os.sep + "log*.txt", recursive=True)
-        filesSession = glob.glob(rootFolder + os.sep + "Session*.json", recursive=True)
+        markdown_files = glob.glob(
+            ROOT_FOLDER + os.sep + "HiM_analysis*.md", recursive=True
+        )
+        md_log_files = glob.glob(
+            ROOT_FOLDER + os.sep + "HiM_analysis*.log", recursive=True
+        )
+        log_files = glob.glob(ROOT_FOLDER + os.sep + "log*.txt", recursive=True)
+        session_files = glob.glob(
+            ROOT_FOLDER + os.sep + "Session*.json", recursive=True
+        )
 
-        for f in filesMD + filesLOG + filesSession + filesLOGMD:
+        for f in markdown_files + log_files + session_files + md_log_files:
             try:
                 os.remove(f)
-                print("File deleted: {} ".format(f))
+                print(f"File deleted: {f} ")
             except OSError as e:
-                print("Error: {} : {}".format(f, e.strerror))
+                print(f"Error: {f} : {e.strerror}")
 
     # Removes directories produced during previous runs
-    param = Parameters(rootFolder=rootFolder, label='', fileName = fileParameters)
+    current_param = Parameters(
+        root_folder=ROOT_FOLDER, label="", file_name=FILE_PARAMETERS
+    )
 
-    dataFolder = folders(param.param["rootFolder"])
+    data_folder = Folders(current_param.param_dict["rootFolder"])
 
-    for currentFolder in dataFolder.listFolders:
+    for current_folder in data_folder.list_folders:
 
-        folders2Remove = []
-        folders2Remove.append(currentFolder + os.sep + param.param["zProject"]["folder"])
-        folders2Remove.append(currentFolder + os.sep + param.param["alignImages"]["folder"])
-        folders2Remove.append(currentFolder + os.sep + param.param["segmentedObjects"]["folder"])
-        folders2Remove.append(currentFolder + os.sep + "buildsPWDmatrix")
-        folders2Remove.append(currentFolder + os.sep + param.param["projectsBarcodes"]["folder"])
+        folders_to_remove = []
+        folders_to_remove.append(
+            current_folder + os.sep + current_param.param_dict["zProject"]["folder"]
+        )
+        folders_to_remove.append(
+            current_folder + os.sep + current_param.param_dict["alignImages"]["folder"]
+        )
+        folders_to_remove.append(
+            current_folder
+            + os.sep
+            + current_param.param_dict["segmentedObjects"]["folder"]
+        )
+        folders_to_remove.append(current_folder + os.sep + "buildsPWDmatrix")
 
-        for newFolder in folders2Remove:
-            if os.path.isdir(newFolder):
-                shutil.rmtree(newFolder)
-                print("{} removed".format(newFolder))
+        for new_folder in folders_to_remove:
+            if os.path.isdir(new_folder):
+                shutil.rmtree(new_folder)
+                print(f"{new_folder} removed")
             else:
-                print("{} does not exist".format(newFolder))
+                print(f"{new_folder} does not exist")
+
 
 if __name__ == "__main__":
     main()

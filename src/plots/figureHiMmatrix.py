@@ -10,7 +10,7 @@ This script calculates and plots matrices (PWD and proximity) from:
 
 
 Example:
-$ figureHiMmatrix.py -T Trace_3D_barcode_KDtree_ROI:4_Matrix_PWDscMatrix.npy -U Trace_3D_barcode_KDtree_ROI:4_Matrix_uniqueBarcodes.ecsv
+$ figureHiMmatrix.py -T Trace_3D_barcode_KDtree_ROI:4_Matrix_PWDsc_matrix.npy -U Trace_3D_barcode_KDtree_ROI:4_Matrix_uniqueBarcodes.ecsv
 
 Options:
     - plottingFileExtension: format of figure
@@ -27,43 +27,58 @@ Left to do:
 """
 
 
+import argparse
+import csv
+import json
+
 #%% imports and plotting settings
 import os, sys
+
+import matplotlib.gridspec as gridspec
+
+# import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
-import argparse
 
 from matrixOperations.HIMmatrixOperations import (
-    plotMatrix,
-    analysisHiMmatrix,
-    normalizeMatrix,
-    shuffleMatrix,
-    plotScalogram,
-    calculatesEnsemblePWDmatrix,
-    calculateContactProbabilityMatrix,
+    AnalysisHiMMatrix,
+    calculate_ensemble_pwd_matrix,
+    list_sc_to_keep,
+    normalize_matrix,
+    plot_distance_histograms,
+    plot_matrix,
+    plot_scalogram,
+    shuffle_matrix,
+    calculate_contact_probability_matrix,
 )
 
 #%% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-T", "--scPWDMatrix", help="Filename of single-cell PWD matrices in Numpy")
-    parser.add_argument("-U", "--uniqueBarcodes", help="csv file with list of unique barcodes")
+    parser.add_argument(
+        "-T", "--scPWDMatrix", help="Filename of single-cell PWD matrices in Numpy"
+    )
+    parser.add_argument(
+        "-U", "--uniqueBarcodes", help="csv file with list of unique barcodes"
+    )
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument("-A", "--label", help="Add name of label (e.g. doc)")
-    parser.add_argument("-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted ")
-    parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--barcodes", help="Use if you want barcode images to be displayed", action="store_true")
     parser.add_argument(
-        "--scalingParameter", help="Normalizing scaling parameter of colormap. Max will matrix.max()/scalingParameter"
+        "-W", "--action", help="Select: [all], [labeled] or [unlabeled] cells plotted "
+    )
+    parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
     )
     parser.add_argument("--cMin", help="Colormap min cscale. Default: 0")
     parser.add_argument("--cScale", help="Colormap max cScale. Default: automatic")
-    parser.add_argument("--plottingFileExtension", help="By default: png. Other options: svg, pdf, png")
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: png. Other options: svg, pdf, png"
+    )
     parser.add_argument(
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
@@ -71,111 +86,118 @@ def parseArguments():
     parser.add_argument("--proximity_threshold", help="proximity threshold in um")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
     parser.add_argument(
-        "--dist_calc_mode", help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median"
+        "--dist_calc_mode",
+        help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median",
     )
     parser.add_argument(
-        "--matrix_norm_mode", help="Matrix normalization mode. Can be nCells (default) or nonNANs")
-
+        "--matrix_norm_mode",
+        help="Matrix normalization mode. Can be n_cells (default) or nonNANs",
+    )
+    parser.add_argument(
+        "--scalingParameter",
+        help="Scaling parameter. Dafault: 1",
+    )
 
     args = parser.parse_args()
 
-    runParameters = {}
+    run_parameters = {}
 
     if args.scPWDMatrix:
-        runParameters["scPWDMatrix_filename"] = args.scPWDMatrix
+        run_parameters["scPWDMatrix_filename"] = args.scPWDMatrix
     else:
-        print('>> ERROR: you must provide a filename with the single cell PWD matrices in Numpy format')
+        print(
+            ">> ERROR: you must provide a filename with the single cell PWD matrices in Numpy format"
+        )
         sys.exit(-1)
 
     if args.uniqueBarcodes:
-        runParameters["uniqueBarcodes"] = args.uniqueBarcodes
+        run_parameters["uniqueBarcodes"] = args.uniqueBarcodes
     else:
-        print('>> ERROR: you must provide a CSV file with the unique barcodes used')
+        print(">> ERROR: you must provide a CSV file with the unique barcodes used")
         sys.exit(-1)
 
     if args.outputFolder:
-        runParameters["outputFolder"] = args.outputFolder
+        run_parameters["outputFolder"] = args.outputFolder
     else:
-        runParameters["outputFolder"] = "plots"
+        run_parameters["outputFolder"] = "plots"
 
     if args.label:
-        runParameters["label"] = args.label
+        run_parameters["label"] = args.label
     else:
-        runParameters["label"] = "doc"
+        run_parameters["label"] = "doc"
 
     if args.action:
-        runParameters["action"] = args.action
+        run_parameters["action"] = args.action
     else:
-        runParameters["action"] = "labeled"
+        run_parameters["action"] = "labeled"
 
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
-
-    if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
-    else:
-        runParameters["axisTicks"] = False
-
-    if args.barcodes:
-        runParameters["barcodes"] = args.barcodes
-    else:
-        runParameters["barcodes"] = False
+        run_parameters["axisLabel"] = False
 
     if args.scalingParameter:
-        runParameters["scalingParameter"] = float(args.scalingParameter)
+        run_parameters["scalingParameter"] = float(args.scalingParameter)
     else:
-        runParameters["scalingParameter"] = 1.0
+        run_parameters["scalingParameter"] = 1.0
 
     if args.proximity_threshold:
-        runParameters["proximity_threshold"] = float(args.proximity_threshold)
+        run_parameters["proximity_threshold"] = float(args.proximity_threshold)
     else:
-        runParameters["proximity_threshold"] = 0.5
+        run_parameters["proximity_threshold"] = 0.5
 
     if args.cScale:
-        runParameters["cScale"] = float(args.cScale)
+        run_parameters["cScale"] = float(args.cScale)
     else:
-        runParameters["cScale"] = 0.0
+        run_parameters["cScale"] = 0.0
 
     if args.cMin:
-        runParameters["cMin"] = float(args.cMin)
+        run_parameters["cMin"] = float(args.cMin)
     else:
-        runParameters["cMin"] = 0.0
+        run_parameters["cMin"] = 0.0
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".png"
+        run_parameters["plottingFileExtension"] = ".png"
 
     if args.shuffle:
-        runParameters["shuffle"] = args.shuffle
+        run_parameters["shuffle"] = args.shuffle
     else:
-        runParameters["shuffle"] = 0
+        run_parameters["shuffle"] = 0
 
-    runParameters["pixelSize"] = 1
+    run_parameters["pixelSize"] = 1
 
     if args.cmap:
-        runParameters["cmap"] = args.cmap
+        run_parameters["cmap"] = args.cmap
     else:
-        runParameters["cmap"] = "coolwarm"
+        run_parameters["cmap"] = "coolwarm"
 
     if args.dist_calc_mode:
-        runParameters["dist_calc_mode"] = args.dist_calc_mode
+        run_parameters["dist_calc_mode"] = args.dist_calc_mode
     else:
-        runParameters["dist_calc_mode"] = "KDE"
+        run_parameters["dist_calc_mode"] = "KDE"
 
     if args.matrix_norm_mode:
-        runParameters["matrix_norm_mode"] = args.matrix_norm_mode
+        run_parameters["matrix_norm_mode"] = args.matrix_norm_mode
     else:
-        runParameters["matrix_norm_mode"] = "nCells" # norm: nCells (default), nonNANs
-        
-    return runParameters
+        run_parameters[
+            "matrix_norm_mode"
+        ] = "n_cells"  # norm: n_cells (default), nonNANs
+
+    if args.scalingParameter:
+        run_parameters["scalingParameter"] = args.scalingParameter
+    else:
+        run_parameters["scalingParameter"] = 1
+
+
+
+    return run_parameters
 
 
 #%%
@@ -184,91 +206,115 @@ def parseArguments():
 # MAIN
 # =============================================================================
 
+
 def main():
 
     print(">>> Producing HiM matrix")
-    
-    runParameters = parseArguments()
 
-    if os.path.exists(runParameters["scPWDMatrix_filename"]):
-        SCmatrix = np.load(runParameters["scPWDMatrix_filename"])
+    run_parameters = parse_arguments()
+
+    if os.path.exists(run_parameters["scPWDMatrix_filename"]):
+        sc_matrix = np.load(run_parameters["scPWDMatrix_filename"])
     else:
-        print("*** Error: could not find {}".format(runParameters["scPWDMatrix_filename"]))
+        print(
+            "*** Error: could not find {}".format(
+                run_parameters["scPWDMatrix_filename"]
+            )
+        )
         sys.exit(-1)
 
-    if not os.path.exists(runParameters["outputFolder"]):
-        os.mkdir(runParameters["outputFolder"])
-        print("Folder created: {}".format(runParameters["outputFolder"]))
+    if not os.path.exists(run_parameters["outputFolder"]):
+        os.mkdir(run_parameters["outputFolder"])
+        print("Folder created: {}".format(run_parameters["outputFolder"]))
 
-    nCells = SCmatrix.shape[2]
+    n_cells = sc_matrix.shape[2]
 
-    cells2Plot = range(nCells)
-    # cells2Plot = listsSCtoKeep(runParameters, HiMdata.data["SClabeledCollated"])
-    
-    print("$ N traces to plot: {}/{}".format(len(cells2Plot), SCmatrix.shape[2]))
-    
-    uniqueBarcodes = list(np.loadtxt(runParameters["uniqueBarcodes"], delimiter = " "))
+    cells2Plot = range(n_cells)
+    # cells2Plot = listsSCtoKeep(run_parameters, HiMdata.data["SClabeledCollated"])
+
+    print("$ N traces to plot: {}/{}".format(len(cells2Plot), sc_matrix.shape[2]))
+
+    uniqueBarcodes = list(np.loadtxt(run_parameters["uniqueBarcodes"], delimiter=" "))
     uniqueBarcodes = [int(x) for x in uniqueBarcodes]
-    print(f'$ unique barcodes loaded: {uniqueBarcodes}')
-    
-    print(f'$ averaging method: {runParameters["dist_calc_mode"]}')
-    
-    if runParameters["cScale"] == 0:
-        cScale = SCmatrix[~np.isnan(SCmatrix)].max() / runParameters["scalingParameter"]
+    print(f"$ unique barcodes loaded: {uniqueBarcodes}")
+
+    print(f"$ averaging method: {run_parameters['dist_calc_mode']}")
+
+    if run_parameters["cScale"] == 0:
+        cScale = (
+            sc_matrix[~np.isnan(sc_matrix)].max() / run_parameters["scalingParameter"]
+        )
     else:
-        cScale = runParameters["cScale"]
+        cScale = run_parameters["cScale"]
 
-    print("$ loaded cScale: {} | used cScale: {}".format(runParameters["scalingParameter"], cScale))
-
-    outputFileName = (
-        runParameters["outputFolder"]
-        + os.sep
-        + "Fig_HiMmatrix"
-        + "_label:"
-        + runParameters["label"]
-        + "_action:"
-        + runParameters["action"]
-        + runParameters["plottingFileExtension"]
+    print(
+        "$ loaded cScale: {} | used cScale: {}".format(
+            run_parameters["scalingParameter"], cScale
+        )
     )
 
-    if runParameters["shuffle"] == 0:
-        index = range(SCmatrix.shape[0])
-    else:
-        index = [int(i) for i in runParameters["shuffle"].split(",")]
-        SCmatrix = shuffleMatrix(SCmatrix, index)
+    outputFileName = (
+        run_parameters["outputFolder"]
+        + os.sep
+        + "Fig_"
+        + os.path.basename(run_parameters["scPWDMatrix_filename"]).split('.')[0]
+        + "_label:"
+        + run_parameters["label"]
+        + "_action:"
+        + run_parameters["action"]
+        + run_parameters["plottingFileExtension"]
+    )
 
-    if runParameters["dist_calc_mode"]=='proximity':
+    if run_parameters["shuffle"] == 0:
+        index = range(sc_matrix.shape[0])
+    else:
+        index = [int(i) for i in run_parameters["shuffle"].split(",")]
+        sc_matrix = shuffle_matrix(sc_matrix, index)
+
+    if run_parameters["dist_calc_mode"] == "proximity":
         # calculates and plots contact probability matrix from merged samples/datasets
-        SCmatrix, nCells = calculateContactProbabilityMatrix(
-            SCmatrix, uniqueBarcodes, runParameters["pixelSize"], norm=runParameters["matrix_norm_mode"],
-        )  
-    
-    fileNameEnding="_"+runParameters["dist_calc_mode"]+"_"+runParameters["matrix_norm_mode"]+"_"+str(runParameters["cScale"])
-    
-    meanSCmatrix = plotMatrix(
-        SCmatrix,
+        print('$ calculating proximity matrix')
+        sc_matrix, n_cells = calculate_contact_probability_matrix(
+            sc_matrix,
+            uniqueBarcodes,
+            run_parameters["pixelSize"],
+            norm=run_parameters["matrix_norm_mode"],
+        )
+
+    fileNameEnding = (
+        "_"
+        + run_parameters["dist_calc_mode"]
+        + "_"
+        + run_parameters["matrix_norm_mode"]
+        + "_"
+        + str(run_parameters["cScale"])
+    )
+
+    meansc_matrix = plot_matrix(
+        sc_matrix,
         uniqueBarcodes,
-        runParameters["pixelSize"],
+        run_parameters["pixelSize"],
         1,
         outputFileName,
-        'log',
-        figtitle="Map: "+runParameters["dist_calc_mode"],
-        mode=runParameters["dist_calc_mode"],  # median or KDE
+        "log",
+        figtitle="Map: " + run_parameters["dist_calc_mode"],
+        mode=run_parameters["dist_calc_mode"],  # median or KDE
         clim=cScale,
-        cMin=runParameters["cMin"],
-        nCells=nCells,
-        cm=runParameters["cmap"],
+        c_min=run_parameters["cMin"],
+        n_cells=n_cells,
+        c_m=run_parameters["cmap"],
         cmtitle="distance, um",
-        fileNameEnding=fileNameEnding+runParameters["plottingFileExtension"],
-        )
+        filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
+    )
     print("Output figure: {}".format(outputFileName))
-    
+
     # saves output matrix in NPY format
     outputFileName = outputFileName + fileNameEnding
-    np.save(outputFileName,meanSCmatrix)
+    np.save(outputFileName, meansc_matrix)
     print("Output data: {}.npy".format(outputFileName))
 
     print("\nDone\n\n")
+
 
 if __name__ == "__main__":
     main()

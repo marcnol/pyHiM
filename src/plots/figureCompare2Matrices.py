@@ -7,30 +7,35 @@ Created on Fri Jun  5 09:24:51 2020
 """
 
 
+import argparse
+import csv
+import json
+
 #%% imports and plotting settings
 import os
-import numpy as np
-import argparse
+
+import matplotlib.gridspec as gridspec
 
 # import matplotlib as plt
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
+import numpy as np
 
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
-    plotsEnsemble3wayContactMatrix,
-    calculate3wayContactMatrix,
-    getMultiContact,
+    AnalysisHiMMatrix,
+    calculate_3_way_contact_matrix,
+    calculate_ensemble_pwd_matrix,
+    get_multi_contact,
+    list_sc_to_keep,
+    plot_distance_histograms,
+    plot_matrix,
+    plot_ensemble_3_way_contact_matrix,
 )
-
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, listsSCtoKeep, calculatesEnsemblePWDmatrix
 
 #%% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
     parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
@@ -38,26 +43,52 @@ def parseArguments():
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
 
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-P",
+        "--parameters",
+        help="Provide name of parameter files. folders_to_load.json assumed as default",
     )
-    parser.add_argument("-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)")
-    parser.add_argument("-W1", "--action1", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
-    parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
-    parser.add_argument("-W2", "--action2", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
+    parser.add_argument(
+        "-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)"
+    )
+    parser.add_argument(
+        "-W1",
+        "--action1",
+        help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ",
+    )
+    parser.add_argument(
+        "-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)"
+    )
+    parser.add_argument(
+        "-W2",
+        "--action2",
+        help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ",
+    )
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
+    )
+    parser.add_argument(
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
+    )
+    parser.add_argument(
+        "--ratio",
+        help="Does ratio between matrices. Default: difference",
+        action="store_true",
+    )
     parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
-    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
+    )
     parser.add_argument(
         "--normalize",
         help="Matrix normalization factor: maximum, none, single value (normalize 2nd matrix by), bin pair e.g. 1,2",
     )
-    parser.add_argument("--inputMatrix", help="Source of input matrix: contact (default), PWD, iPWD")
+    parser.add_argument(
+        "--inputMatrix", help="Source of input matrix: contact (default), PWD, iPWD"
+    )
     parser.add_argument("--pixelSize", help="pixelSize in microns")
 
-    runParameters = {}
+    run_parameters = {}
 
     args = parser.parse_args()
 
@@ -68,93 +99,93 @@ def parseArguments():
 
     if args.rootFolder2:
         rootFolder2 = args.rootFolder2
-        runParameters["run2Datasets"] = True
+        run_parameters["run2Datasets"] = True
     else:
         rootFolder2 = "."
-        runParameters["run2Datasets"] = False
+        run_parameters["run2Datasets"] = False
 
     if args.outputFolder:
-        outputFolder = args.outputFolder
+        output_folder = args.outputFolder
     else:
-        outputFolder = "none"
+        output_folder = "none"
 
     if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
+        run_parameters["parametersFileName"] = args.parameters
     else:
-        runParameters["parametersFileName"] = "folders2Load.json"
+        run_parameters["parametersFileName"] = "folders_to_load.json"
 
     if args.label1:
-        runParameters["label1"] = args.label1
+        run_parameters["label1"] = args.label1
     else:
-        runParameters["label1"] = "doc"
+        run_parameters["label1"] = "doc"
 
     if args.label2:
-        runParameters["label2"] = args.label2
+        run_parameters["label2"] = args.label2
     else:
-        runParameters["label2"] = "NE"
+        run_parameters["label2"] = "NE"
 
     if args.action1:
-        runParameters["action1"] = args.action1
+        run_parameters["action1"] = args.action1
     else:
-        runParameters["action1"] = "labeled"
+        run_parameters["action1"] = "labeled"
 
     if args.action2:
-        runParameters["action2"] = args.action2
+        run_parameters["action2"] = args.action2
     else:
-        runParameters["action2"] = "labeled"
+        run_parameters["action2"] = "labeled"
 
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.pixelSize:
-        runParameters["pixelSize"] = args.pixelSize
+        run_parameters["pixelSize"] = args.pixelSize
     else:
-        runParameters["pixelSize"] = 0.1
+        run_parameters["pixelSize"] = 0.1
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
+        run_parameters["axisLabel"] = False
 
     if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
+        run_parameters["axisTicks"] = args.axisTicks
     else:
-        runParameters["axisTicks"] = False
+        run_parameters["axisTicks"] = False
 
     if args.ratio:
-        runParameters["ratio"] = args.ratio
+        run_parameters["ratio"] = args.ratio
     else:
-        runParameters["ratio"] = False
+        run_parameters["ratio"] = False
 
     if args.cAxis:
-        runParameters["cAxis"] = [float(i) for i in args.cAxis.split(",")]
+        run_parameters["cAxis"] = [float(i) for i in args.cAxis.split(",")]
     else:
-        runParameters["cAxis"] = 0.6
+        run_parameters["cAxis"] = 0.6
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".svg"
+        run_parameters["plottingFileExtension"] = ".svg"
 
     if args.normalize:
-        runParameters["normalize"] = args.normalize
+        run_parameters["normalize"] = args.normalize
     else:
-        runParameters["normalize"] = "none"
+        run_parameters["normalize"] = "none"
 
     if args.inputMatrix:
-        runParameters["inputMatrix"] = args.inputMatrix
+        run_parameters["inputMatrix"] = args.inputMatrix
     else:
-        runParameters["inputMatrix"] = "contact"
+        run_parameters["inputMatrix"] = "contact"
 
     print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
-    print("Input parameters:{}".format(runParameters))
+    print("Input parameters:{}".format(run_parameters))
 
-    return rootFolder1, rootFolder2, outputFolder, runParameters
+    return rootFolder1, rootFolder2, output_folder, run_parameters
 
 
-def normalizeMatrix(m1, m2, mode):
+def normalize_matrix(m1, m2, mode):
 
     print("Normalization: {}".format(mode))
 
@@ -169,9 +200,9 @@ def normalizeMatrix(m1, m2, mode):
         m1_norm = 1
         m2_norm = 1
     else:  # normalizes by given factor
-        normFactor = float(mode)
+        norm_factor = float(mode)
         m1_norm = 1
-        m2_norm = normFactor
+        m2_norm = norm_factor
 
     print("Normalizations: m1= {} | m2={}".format(m1_norm, m2_norm))
 
@@ -185,141 +216,162 @@ def normalizeMatrix(m1, m2, mode):
 # MAIN
 # =============================================================================
 
+
 def main():
 
-    rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
+    rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
 
-    HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
-    HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
-    HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
-    HiMdata1.loadData()
-    nCells = HiMdata1.nCellsLoaded()
-    HiMdata1.retrieveSCmatrix()
+    him_data_1 = AnalysisHiMMatrix(run_parameters, rootFolder1)
+    him_data_1.run_parameters["action"] = him_data_1.run_parameters["action1"]
+    him_data_1.run_parameters["label"] = him_data_1.run_parameters["label1"]
+    him_data_1.load_data()
+    n_cells = him_data_1.n_cells_loaded()
+    him_data_1.retrieve_sc_matrix()
 
-    HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
-    HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
-    HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
-    HiMdata2.loadData()
-    nCells2 = HiMdata2.nCellsLoaded()
-    HiMdata2.retrieveSCmatrix()
+    him_data_2 = AnalysisHiMMatrix(run_parameters, rootFolder2)
+    him_data_2.run_parameters["action"] = him_data_2.run_parameters["action2"]
+    him_data_2.run_parameters["label"] = him_data_2.run_parameters["label2"]
+    him_data_2.load_data()
+    n_cells_2 = him_data_2.n_cells_loaded()
+    him_data_2.retrieve_sc_matrix()
 
-    # cScale1 = HiMdata1.data['ensembleContactProbability'].max() / runParameters['cAxis']
-    # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
-    # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
+    # cScale1 = him_data_1.data['ensembleContactProbability'].max() / run_parameters['cAxis']
+    # cScale2 = him_data_2.data['ensembleContactProbability'].max() / run_parameters['scalingParameter']
+    # print('scalingParameters={}'.format(run_parameters["scalingParameter"] ))
 
-    if outputFolder == "none":
-        outputFolder = HiMdata1.dataFolder
+    if output_folder == "none":
+        output_folder = him_data_1.data_folder
 
     outputFileName1 = (
-        outputFolder
+        output_folder
         + os.sep
         + "Fig_ratio2HiMmatrices"
         + "_dataset1:"
-        + HiMdata1.datasetName
+        + him_data_1.dataset_name
         + "_label1:"
-        + runParameters["label1"]
+        + run_parameters["label1"]
         + "_action1:"
-        + runParameters["action1"]
+        + run_parameters["action1"]
         + "_dataset2:"
-        + HiMdata2.datasetName
+        + him_data_2.dataset_name
         + "_label2:"
-        + runParameters["label2"]
+        + run_parameters["label2"]
         + "_action2:"
-        + runParameters["action2"]
-        + runParameters["plottingFileExtension"]
+        + run_parameters["action2"]
+        + run_parameters["plottingFileExtension"]
     )
 
     outputFileName2 = (
-        outputFolder
+        output_folder
         + os.sep
         + "Fig_mixedHiMmatrices"
         + "_dataset1:"
-        + HiMdata1.datasetName
+        + him_data_1.dataset_name
         + "_label1:"
-        + runParameters["label1"]
+        + run_parameters["label1"]
         + "_action1:"
-        + runParameters["action1"]
+        + run_parameters["action1"]
         + "_dataset2:"
-        + HiMdata2.datasetName
+        + him_data_2.dataset_name
         + "_label2:"
-        + runParameters["label2"]
+        + run_parameters["label2"]
         + "_action2:"
-        + runParameters["action2"]
+        + run_parameters["action2"]
     )
 
-    if "contact" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.data["ensembleContactProbability"]
-        m2 = HiMdata2.data["ensembleContactProbability"]
-    elif "iPWD" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.SCmatrixSelected
-        m2 = HiMdata2.SCmatrixSelected
-        cells2Plot1 = listsSCtoKeep(runParameters, HiMdata1.data["SClabeledCollated"])
-        cells2Plot2 = listsSCtoKeep(runParameters, HiMdata2.data["SClabeledCollated"])
-        dataset1 = list(HiMdata1.ListData.keys())[0]
-        dataset2 = list(HiMdata2.ListData.keys())[0]
-        m1, _ = calculatesEnsemblePWDmatrix(
-            m1, runParameters["pixelSize"], cells2Plot1, mode=HiMdata1.ListData[dataset1]["PWD_mode"]
+    if "contact" in run_parameters["inputMatrix"]:
+        m1 = him_data_1.data["ensembleContactProbability"]
+        m2 = him_data_2.data["ensembleContactProbability"]
+    elif "iPWD" in run_parameters["inputMatrix"]:
+        m1 = him_data_1.sc_matrix_selected
+        m2 = him_data_2.sc_matrix_selected
+        cells2Plot1 = list_sc_to_keep(
+            run_parameters, him_data_1.data["SClabeledCollated"]
         )
-        m2, _ = calculatesEnsemblePWDmatrix(
-            m2, runParameters["pixelSize"], cells2Plot2, mode=HiMdata2.ListData[dataset2]["PWD_mode"]
+        cells2Plot2 = list_sc_to_keep(
+            run_parameters, him_data_2.data["SClabeledCollated"]
+        )
+        dataset1 = list(him_data_1.list_data.keys())[0]
+        dataset2 = list(him_data_2.list_data.keys())[0]
+        m1, _ = calculate_ensemble_pwd_matrix(
+            m1,
+            run_parameters["pixelSize"],
+            cells2Plot1,
+            mode=him_data_1.list_data[dataset1]["PWD_mode"],
+        )
+        m2, _ = calculate_ensemble_pwd_matrix(
+            m2,
+            run_parameters["pixelSize"],
+            cells2Plot2,
+            mode=him_data_2.list_data[dataset2]["PWD_mode"],
         )
         m1 = np.reciprocal(m1)
         m2 = np.reciprocal(m2)
-    elif "PWD" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.SCmatrixSelected
-        m2 = HiMdata2.SCmatrixSelected
-        cells2Plot1 = listsSCtoKeep(runParameters, HiMdata1.data["SClabeledCollated"])
-        cells2Plot2 = listsSCtoKeep(runParameters, HiMdata2.data["SClabeledCollated"])
-        dataset1 = list(HiMdata1.ListData.keys())[0]
-        dataset2 = list(HiMdata2.ListData.keys())[0]
-        m1, _ = calculatesEnsemblePWDmatrix(
-            m1, runParameters["pixelSize"], cells2Plot1, mode=HiMdata1.ListData[dataset1]["PWD_mode"]
+    elif "PWD" in run_parameters["inputMatrix"]:
+        m1 = him_data_1.sc_matrix_selected
+        m2 = him_data_2.sc_matrix_selected
+        cells2Plot1 = list_sc_to_keep(
+            run_parameters, him_data_1.data["SClabeledCollated"]
         )
-        m2, _ = calculatesEnsemblePWDmatrix(
-            m2, runParameters["pixelSize"], cells2Plot2, mode=HiMdata2.ListData[dataset2]["PWD_mode"]
+        cells2Plot2 = list_sc_to_keep(
+            run_parameters, him_data_2.data["SClabeledCollated"]
+        )
+        dataset1 = list(him_data_1.list_data.keys())[0]
+        dataset2 = list(him_data_2.list_data.keys())[0]
+        m1, _ = calculate_ensemble_pwd_matrix(
+            m1,
+            run_parameters["pixelSize"],
+            cells2Plot1,
+            mode=him_data_1.list_data[dataset1]["PWD_mode"],
+        )
+        m2, _ = calculate_ensemble_pwd_matrix(
+            m2,
+            run_parameters["pixelSize"],
+            cells2Plot2,
+            mode=him_data_2.list_data[dataset2]["PWD_mode"],
         )
 
     if m1.shape == m2.shape:
 
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f1 = fig1.add_subplot(spec1[0, 0])  # 16
+        f_1 = fig1.add_subplot(spec1[0, 0])  # 16
 
-        if "none" in runParameters["normalize"]:  # sets default operation
+        if "none" in run_parameters["normalize"]:  # sets default operation
             mode = "maximum"
         else:
-            mode = runParameters["normalize"]
+            mode = run_parameters["normalize"]
 
         _m1, _m2 = m1.copy(), m2.copy()
 
-        _m1, _m2 = normalizeMatrix(_m1, _m2, mode)
+        _m1, _m2 = normalize_matrix(_m1, _m2, mode)
 
-        if runParameters["ratio"] == True:
+        if run_parameters["ratio"] == True:
             matrix = np.log(_m1 / _m2)
             cmtitle = "log(ratio)"
         else:
             matrix = _m1 - _m2
             cmtitle = "difference"
 
-        if len(runParameters["cAxis"]) == 2:
-            cScale = runParameters["cAxis"][1]
+        if len(run_parameters["cAxis"]) == 2:
+            c_scale = run_parameters["cAxis"][1]
         else:
-            cScale = runParameters["cAxis"][0]
-        print("Clim used: {}\n".format(cScale))
+            c_scale = run_parameters["cAxis"][0]
+        print("Clim used: {}\n".format(c_scale))
 
-        f1_ax1_im = HiMdata1.plot2DMatrixSimple(
-            f1,
+        f1_ax1_im = him_data_1.plot_2d_matrix_simple(
+            f_1,
             matrix,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
+            list(him_data_1.data["uniqueBarcodes"]),
+            run_parameters["axisLabel"],
+            run_parameters["axisLabel"],
             cmtitle=cmtitle,
-            cMin=-cScale,
-            cMax=cScale,
-            fontsize=runParameters["fontsize"],
+            c_min=-c_scale,
+            c_max=c_scale,
+            fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="RdBu",
+            axis_ticks=run_parameters["axisTicks"],
+            c_m="RdBu",
         )
         plt.savefig(outputFileName1)
         print("Output figure: {}".format(outputFileName1))
@@ -333,37 +385,42 @@ def main():
         # plots mixed matrix
         _m1, _m2 = m1.copy(), m2.copy()
 
-        if "none" in runParameters["normalize"]:  # sets default operation
+        if "none" in run_parameters["normalize"]:  # sets default operation
             mode = "none"
         else:
-            mode = runParameters["normalize"]
-        _m1, _m2 = normalizeMatrix(_m1, _m2, mode)
+            mode = run_parameters["normalize"]
+        _m1, _m2 = normalize_matrix(_m1, _m2, mode)
         matrix2 = _m1
 
         for i in range(matrix2.shape[0]):
             for j in range(0, i):
                 matrix2[i, j] = _m2[i, j]
 
-        HiMdata1.plot2DMatrixSimple(
+        him_data_1.plot_2d_matrix_simple(
             f2,
             matrix2,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
+            list(him_data_1.data["uniqueBarcodes"]),
+            run_parameters["axisLabel"],
+            run_parameters["axisLabel"],
             cmtitle="probability",
-            cMin=0,
-            cMax=runParameters["cAxis"][0],
-            fontsize=runParameters["fontsize"],
+            c_min=0,
+            c_max=run_parameters["cAxis"][0],
+            fontsize=run_parameters["fontsize"],
             colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="coolwarm",
+            axis_ticks=run_parameters["axisTicks"],
+            c_m="coolwarm",
         )
-        plt.savefig(outputFileName2 + runParameters["plottingFileExtension"])
+        plt.savefig(outputFileName2 + run_parameters["plottingFileExtension"])
         np.save(outputFileName2 + ".npy", matrix2)
-        print("Output figure: {}".format(outputFileName2 + runParameters["plottingFileExtension"]))
+        print(
+            "Output figure: {}".format(
+                outputFileName2 + run_parameters["plottingFileExtension"]
+            )
+        )
 
     else:
         print("Error: matrices do not have the same dimensions!")
+
 
 if __name__ == "__main__":
     main()
