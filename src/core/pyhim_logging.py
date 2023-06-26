@@ -4,9 +4,50 @@
 Classes and functions for pyHiM logging
 """
 
+import json
 import logging
 import os
 from datetime import datetime
+
+
+class Session:
+    """Used to log planned tasks on this run"""
+
+    def __init__(self, root_folder, name="dummy"):
+        now = datetime.now()
+        session_root_name = now.strftime("%d%m%Y_%H%M%S")
+        self.file_name = root_folder + os.sep + "Session_" + session_root_name + ".json"
+        self.name = name
+        self.data = {}
+
+    def load(self):
+        """Loads existing session"""
+        self.data = load_json(self.file_name)
+        print(f"Session information read: {self.file_name}")
+
+    def save(self):
+        """Saves session to file"""
+        save_json(self.file_name, self.data)
+        print(f"> Saved json session file to {self.file_name}")
+
+    def add(self, key, value):
+        """Add new task to session
+
+        Parameters
+        ----------
+        key : str
+            Task name
+        value : str
+            Task description
+        """
+        if key not in self.data:
+            self.data[key] = value
+        else:
+            self.data[key] = [self.data[key], value]
+
+    def clear_data(self):
+        """Reset data attribute with an empty dict"""
+        self.data = {}
 
 
 class Log:
@@ -98,3 +139,38 @@ def write_string_to_file(file_name, text_to_output, attribute="a"):
     """
     with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
         file_handle.write(f"{text_to_output}\n")
+
+
+def save_json(file_name, data):
+    """Save a python dict as a JSON file
+
+    Parameters
+    ----------
+    file_name : str
+        Output JSON file name
+    data : dict
+        Data to save
+    """
+    with open(file_name, mode="w", encoding="utf-8") as json_f:
+        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
+
+
+def load_json(file_name):
+    """Load a JSON file like a python dict
+
+    Parameters
+    ----------
+    file_name : str
+        JSON file name
+
+    Returns
+    -------
+    dict
+        Python dict
+    """
+    if os.path.exists(file_name):
+        with open(file_name, encoding="utf-8") as json_file:
+            data = json.load(json_file)
+    else:
+        data = {}
+    return data
