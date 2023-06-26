@@ -41,20 +41,15 @@ Method 1:
 
 import glob
 import os
-import re
-import sys
 import uuid
 
 # to remove in a future version
 import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
 from apifish.stack.io import read_array
-from astropy.table import Table
 from scipy.spatial import KDTree
 from skimage.segmentation import expand_labels
-from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
@@ -63,12 +58,6 @@ from core.parameters import get_dictionary_value
 from core.pyhim_logging import print_log, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
-from matrixOperations.filter_localizations import get_file_table_new_name
-from matrixOperations.HIMmatrixOperations import (
-    calculate_contact_probability_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-)
 
 warnings.filterwarnings("ignore")
 

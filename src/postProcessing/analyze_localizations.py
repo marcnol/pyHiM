@@ -22,20 +22,13 @@ Planned features:
 # =============================================================================q
 
 import argparse
-import collections
-import csv
-import glob
-import json
-import os
 import select
 import sys
-from datetime import datetime
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imageProcessing.imageProcessing import Image
 from imageProcessing.localization_table import LocalizationTable
 
 font = {"weight": "normal", "size": 12}
@@ -62,7 +55,14 @@ def parseArguments():
 
     p["localization_files"] = list()
 
-    if select.select([sys.stdin,], [], [], 0.0)[0]:
+    if select.select(
+        [
+            sys.stdin,
+        ],
+        [],
+        [],
+        0.0,
+    )[0]:
         p["localization_files"] = [line.rstrip("\n") for line in sys.stdin]
     else:
         print("Nothing in stdin. Please provide list of localization files to process.")
@@ -72,10 +72,10 @@ def parseArguments():
 
 def get_barcode_statistics(barcode_map, output_filename="localization_analysis.png"):
     """
-    Function that calculates the 
+    Function that calculates the
         - histogram of number of localizations per barcode
 
-    
+
     Parameters
     ----------
     trace : TYPE
@@ -126,9 +126,9 @@ def get_number_localization_per_barcode(
     barcode_map, output_filename="localization_analysis.png"
 ):
     """
-    Function that calculates the 
+    Function that calculates the
         - number of localizations per barcode
-    
+
     Parameters
     ----------
     trace : TYPE
@@ -252,10 +252,8 @@ def process_localizations(folder, localization_files=list()):
     )
 
     if len(localization_files) > 0:
-
         # iterates over traces in folder
         for localization_file in localization_files:
-
             table = LocalizationTable()
 
             # reads new trace
@@ -274,7 +272,6 @@ def process_localizations(folder, localization_files=list()):
 
 
 def main():
-
     # [parsing arguments]
     p = parseArguments()
 

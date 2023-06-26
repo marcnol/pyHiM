@@ -21,8 +21,6 @@ import matplotlib
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-from sklearn import manifold
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 

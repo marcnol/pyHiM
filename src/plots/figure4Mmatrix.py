@@ -14,25 +14,25 @@ Can work with up to two datasets
 
 
 import argparse
-import csv
-import json
-#%% imports and plotting settings
+
+# %% imports and plotting settings
 import os
 
 import matplotlib.gridspec as gridspec
+
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matrixOperations.HIMmatrixOperations import (AnalysisHiMMatrix,
-                                                  plot_1d_profile2datasets,
-                                                  plot_distance_histograms,
-                                                  plot_matrix)
+from matrixOperations.HIMmatrixOperations import (
+    AnalysisHiMMatrix,
+    plot_1d_profile2datasets,
+)
 
 # import scaleogram as scg
 
 
-#%% define and loads datasets
+# %% define and loads datasets
 
 
 def parse_arguments():

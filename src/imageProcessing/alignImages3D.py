@@ -36,7 +36,6 @@ During buildMatrix this database is loaded, if available.
 
 import glob
 import os
-import resource
 from datetime import datetime
 
 import matplotlib.pylab as plt

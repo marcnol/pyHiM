@@ -9,7 +9,6 @@ plots N Hi-M matrices in a subplot
 
 
 import argparse
-import csv
 import json
 
 # %% imports and plotting settings
@@ -25,10 +24,6 @@ from matrixOperations.HIMmatrixOperations import (
     AnalysisHiMMatrix,
     calculate_contact_probability_matrix,
     list_sc_to_keep,
-    normalize_matrix,
-    plot_distance_histograms,
-    plot_matrix,
-    plot_scalogram,
     shuffle_matrix,
 )
 

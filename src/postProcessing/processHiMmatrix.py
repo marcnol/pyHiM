@@ -32,12 +32,6 @@ from datetime import datetime
 
 import numpy as np
 
-# Olivier
-csv.field_size_limit(sys.maxsize)
-
-# to remove in a future version
-import warnings
-
 from core.pyhim_logging import write_string_to_file
 from matrixOperations.HIMmatrixOperations import (
     load_sc_data,
@@ -49,7 +43,8 @@ from matrixOperations.HIMmatrixOperations import (
     plot_single_pwd_matrice,
 )
 
-# warnings.filterwarnings("ignore")
+# Olivier
+csv.field_size_limit(sys.maxsize)
 
 # =============================================================================
 # FUNCTIONS

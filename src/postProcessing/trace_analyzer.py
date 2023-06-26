@@ -28,10 +28,6 @@ trace_ID, number of barcodes, number of duplications, Rg,
 
 import argparse
 import collections
-import csv
-import glob
-import json
-import os
 import select
 import sys
 from datetime import datetime
@@ -40,7 +36,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 font = {"weight": "normal", "size": 30}
@@ -76,7 +71,14 @@ def parseArguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -89,9 +91,9 @@ def parseArguments():
 
 def get_xyz_statistics(trace, output_filename="test_coor.png"):
     """
-    Function that calculates the 
-        - distribution of localizations in x y z 
-    
+    Function that calculates the
+        - distribution of localizations in x y z
+
     Parameters
     ----------
     trace : TYPE
@@ -130,11 +132,11 @@ def get_xyz_statistics(trace, output_filename="test_coor.png"):
 
 def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
     """
-    Function that calculates the 
+    Function that calculates the
         - number of barcodes per trace
         - number of unique barcodes per trace
         - number of repeated barcodes per trace
-    
+
     Parameters
     ----------
     trace : TYPE
@@ -244,7 +246,6 @@ def process_traces(trace_files=list()):
     """
 
     if len(trace_files) > 0:
-
         print(
             "\n{} trace files to process= {}".format(
                 len(trace_files), "\n".join(map(str, trace_files))
@@ -253,7 +254,6 @@ def process_traces(trace_files=list()):
 
         # iterates over traces in folder
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 

@@ -25,9 +25,7 @@ import os
 import select
 import sys
 import uuid
-from glob import glob
 
-import matplotlib
 import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd

@@ -10,28 +10,17 @@ from a set of coordinates it calculates the PWD matrix, and from it it gets back
 
 """
 import argparse
-import csv
-import glob
-import json
 import os
 import select
 import sys
 
-import matplotlib.pyplot as plt
 import numpy as np
-import numpy.linalg as npl
-from mpl_toolkits.mplot3d import Axes3D
-from pdbparser.pdbparser import pdbparser
 
 from core.folder import create_single_folder
 from core.parameters import loads_barcode_dict
-from imageProcessing.imageProcessing import Image
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (
     calculate_ensemble_pwd_matrix,
-    coord_2_distances,
     distances_2_coordinates,
-    write_xyz_2_pdb,
 )
 
 

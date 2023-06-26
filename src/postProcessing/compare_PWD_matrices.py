@@ -25,7 +25,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
-import seaborn as sns
 
 # =============================================================================
 # FUNCTIONS
@@ -61,7 +60,14 @@ def parse_arguments():
 
     p["input_files"] = list()
 
-    if select.select([sys.stdin,], [], [], 0.0)[0]:
+    if select.select(
+        [
+            sys.stdin,
+        ],
+        [],
+        [],
+        0.0,
+    )[0]:
         p["input_files"] = [line.rstrip("\n") for line in sys.stdin]
     else:
         print("Nothing in stdin. Please provide list of localization files to process.")
@@ -74,7 +80,6 @@ def parse_arguments():
 
 
 def plot_result(x, y, p):
-
     plt.figure(figsize=(15, 15))
     plt.rcParams.update({"font.size": 20})
 
@@ -106,7 +111,6 @@ def plot_result(x, y, p):
 
 
 def calculates_pearson_correlation(x, y):
-
     r, p = scipy.stats.pearsonr(x, y)
 
     return r
@@ -145,7 +149,6 @@ def main_script(p):
 
 
 def main():
-
     usage()
 
     # [parsing arguments]

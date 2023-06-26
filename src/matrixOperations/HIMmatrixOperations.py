@@ -24,7 +24,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as npl
 from astropy.table import Table, vstack
-from numba import jit
 from pylab import colorbar, contourf
 from scipy import interpolate
 from scipy.io import loadmat

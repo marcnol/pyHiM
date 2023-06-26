@@ -19,8 +19,6 @@ import select
 import sys
 from datetime import datetime
 
-import numpy as np
-
 from matrixOperations.build_matrix import BuildMatrix
 
 # =============================================================================
@@ -52,7 +50,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -71,7 +76,6 @@ def parse_arguments():
 
 
 def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict()):
-
     if len(trace_files) < 1:
         print(
             "! Error: no trace file provided. Please either use pipe or the --input option to provide a filename."
@@ -87,10 +91,8 @@ def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict()):
         )
 
     if len(trace_files) > 0:
-
         # iterates over traces in folder
         for trace_file in trace_files:
-
             # converts trace to matrix
 
             param = dict()

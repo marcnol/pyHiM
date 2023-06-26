@@ -24,7 +24,6 @@ will analyze 'Trace.ecsv' and remove spots with 4>z>5 amd z>175 and less than 3 
 # =============================================================================q
 
 import argparse
-import os
 import select
 import sys
 from datetime import datetime
@@ -112,7 +111,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -124,7 +130,6 @@ def parse_arguments():
 
 
 def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered"):
-
     # checks number of trace files
     if len(trace_files) < 1:
         print(
@@ -142,10 +147,8 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered"):
 
     coors = ["x", "y", "z"]
     if len(trace_files) > 0:
-
         # iterates over traces
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 
