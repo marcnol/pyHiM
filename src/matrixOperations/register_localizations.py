@@ -57,13 +57,25 @@ class RegisterLocalizations:
             ]
             if isinstance(self.tolerance_drift, int):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
-                self.tolerance_drift = (self.tolerance_drift,self.tolerance_drift,self.tolerance_drift)
+                self.tolerance_drift = (
+                    self.tolerance_drift,
+                    self.tolerance_drift,
+                    self.tolerance_drift,
+                )
             elif len(self.tolerance_drift) != 3:
-                self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
+                self.tolerance_drift = (
+                    3,
+                    1,
+                    1,
+                )  # defines default anisotropic tolerance_drift (z,x,y)
             elif isinstance(self.tolerance_drift, list):
                 self.tolerance_drift = tuple(self.tolerance_drift)
         else:
-            self.tolerance_drift = (3,1,1) # defines default anisotropic tolerance_drift (z,x,y)
+            self.tolerance_drift = (
+                3,
+                1,
+                1,
+            )  # defines default anisotropic tolerance_drift (z,x,y)
             print_log(
                 "# toleranceDrift not found. Set to {}!".format(self.tolerance_drift)
             )
@@ -84,7 +96,6 @@ class RegisterLocalizations:
             print_log("# Uncorrected localizations will be kept!!")
 
     def search_local_shift(self, roi, barcode, zxy_uncorrected):
-
         if self.alignment_results_table_read:
             return self.search_local_shift_block_3d(roi, barcode, zxy_uncorrected)
         else:  # no correction was applied because the localAlignmentTable was not found
@@ -142,13 +153,15 @@ class RegisterLocalizations:
         accepts_localization = False
         if isinstance(self.tolerance_drift, tuple):
             # makes list with comparisons per axis
-            check = [np.abs(shift)<tol for shift,tol in zip(shifts,self.tolerance_drift)]
+            check = [
+                np.abs(shift) < tol for shift, tol in zip(shifts, self.tolerance_drift)
+            ]
             if all(check):
-                accepts_localization = True # only if tolerance is passed in all axes the localization is kept
-        else: # defaults to previous usage with isotropic tolerance
+                accepts_localization = True  # only if tolerance is passed in all axes the localization is kept
+        else:  # defaults to previous usage with isotropic tolerance
             if max(np.abs(shifts)) < self.tolerance_drift:
                 accepts_localization = True
-                
+
         if accepts_localization:
             zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
             quality_correction = {"below_tolerance": True}
@@ -244,7 +257,6 @@ class RegisterLocalizations:
         return barcode_map
 
     def load_local_alignment(self):
-
         if "None" in self.current_param.param_dict["alignImages"]["localAlignment"]:
             print_log(
                 "\n\n$ localAlignment option set to {}".format(
@@ -352,7 +364,6 @@ class RegisterLocalizations:
         return True
 
     def register_barcode_map_file(self, file):
-
         if "3D" in os.path.basename(file):
             self.ndims = 3
         else:
@@ -360,7 +371,9 @@ class RegisterLocalizations:
 
         # loads barcode coordinate Tables
         table = LocalizationTable()
-        barcode_map_full, _ = table.load(file) # barcode_map_full, unique_barcodes = table.load(file)
+        barcode_map_full, _ = table.load(
+            file
+        )  # barcode_map_full, unique_barcodes = table.load(file)
 
         # checks that everything is OK
         if len(barcode_map_full) < 1:
@@ -383,7 +396,6 @@ class RegisterLocalizations:
         barcode_map_roi, number_rois = table.decode_rois(barcode_map_full)
 
         for i_roi in range(number_rois):
-
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
@@ -408,7 +420,6 @@ class RegisterLocalizations:
         )
 
     def register(self):
-
         """
         Function that registers barcodes using a local drift correction table produced by *alignImages3D*
 
@@ -439,13 +450,22 @@ class RegisterLocalizations:
         self.load_local_alignment()
 
         if not self.alignment_results_table_read:
-            print_log(
-                "Unable to find aligment table.\nDid you run alignImages3D?\n\n "
+            print_log("Unable to find aligment table.\nDid you run alignImages3D?\n\n ")
+            sys.exit(
+                "ERROR: Expected to find: {}--> Aborting.".format(
+                    self.local_alignment_filename
+                )
             )
-            sys.exit("ERROR: Expected to find: {}--> Aborting.".format(self.local_alignment_filename))
 
         # iterates over barcode localization tables in the current folder
-        files = list(glob.glob(self.data_folder.output_files["segmentedObjects"]+"_*"+label+".dat"))
+        files = list(
+            glob.glob(
+                self.data_folder.output_files["segmentedObjects"]
+                + "_*"
+                + label
+                + ".dat"
+            )
+        )
 
         if len(files) < 1:
             print_log("No localization table found to process!")
