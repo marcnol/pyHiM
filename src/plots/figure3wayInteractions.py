@@ -289,11 +289,6 @@ def main():
         ticklabs = cbar.ax.get_yticklabels()
         cbar.ax.set_yticklabels(ticklabs, fontsize=12)
 
-    # for ifigure in FigList:
-    #     him_data_1.update_clims(0, c_max, ifigure)
-
-    # update_clims(0, c_max, FigList)
-
     plt.savefig(output_filename)
     print("Output figure: {}".format(output_filename))
 

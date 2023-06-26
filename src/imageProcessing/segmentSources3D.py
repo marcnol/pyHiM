@@ -46,14 +46,13 @@ from core.dask_cluster import try_get_client
 from core.folder import Folders, retrieve_number_rois_folder
 from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
 from core.pyhim_logging import print_log, write_string_to_file
-from imageProcessing.imageProcessing import (
-    _plot_image_3d,
+from core.saving import _plot_image_3d
+from imageProcessing.alignImages import apply_xy_shift_3d_images
+from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image
+from imageProcessing.makeProjections import reinterpolate_z
+from imageProcessing.segmentMasks import (
     _segment_3d_volumes_by_thresholding,
     _segment_3d_volumes_stardist,
-    apply_xy_shift_3d_images,
-    image_adjust,
-    preprocess_3d_image,
-    reinterpolate_z,
 )
 
 # =============================================================================

@@ -5,12 +5,12 @@ import tkinter as tk
 from functools import partial
 from tkinter import END, messagebox, ttk
 
-from core.parameter_file.function_parameters import (
+from toolbox.parameter_file.function_parameters import (
     check_settings,
     import_parameters,
     update_infolist,
 )
-from core.parameter_file.info_parameters import help_dic
+from toolbox.parameter_file.info_parameters import help_dic
 
 
 def main():

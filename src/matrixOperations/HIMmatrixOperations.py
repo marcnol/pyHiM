@@ -19,12 +19,10 @@ import glob
 import json
 import os
 
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.linalg as npl
 from astropy.table import Table, vstack
-from pylab import colorbar, contourf
 from scipy import interpolate
 from scipy.io import loadmat
 from sklearn import manifold
@@ -202,10 +200,6 @@ class AnalysisHiMMatrix:
         pos.set_clim(vmin=c_min, vmax=c_max)
 
         return pos
-
-    def update_clims(self, c_min, c_max, axes):
-        for ax in axes:
-            ax.set_clim(vmin=c_min, vmax=c_max)
 
     def plot_1d_profile1dataset(self, ifigure, anchor, i_fig_label, yticks, xticks):
         prop_cycle = plt.rcParams["axes.prop_cycle"]
@@ -1429,77 +1423,6 @@ def comp_func(mat_a, n_w):
 
     signal1 = somme_short
     return signal1
-
-
-def plot_scalogram(matrix2plot, output_filename=""):
-    matrix_size = matrix2plot.shape[0]
-
-    scales = range(0, 6)
-    comp_scale1 = np.zeros((len(scales), matrix_size))
-    for i_i, n_w in enumerate(scales):
-        c = comp_func(matrix2plot, n_w)
-        comp_scale1[i_i,] = c.T
-
-    # definitions for the axes
-    left, width = 0.065, 0.65
-    bottom, height = 0.1, 0.8
-    bottom_h = left_h = left + width + 0.02
-
-    ax1_ = [0, 0.4, width, height]
-    ax2_ = [left, bottom, width, 0.2]
-
-    # fig = plt.figure()
-    fig1 = plt.figure(constrained_layout=True)
-    spec1 = gridspec.GridSpec(ncols=1, nrows=3, figure=fig1)
-    f_1 = fig1.add_subplot(spec1[1, 0])  # 16
-    # ax2 = plt.axes(ax2_)#,sharex=ax1)
-    f_1.contourf(
-        comp_scale1,
-        vmin=0.0,
-        vmax=1.0,
-        levels=[0, 0.15, 0.30, 0.45, 0.6, 0.75, 1.0],
-        extent=[0, matrix2plot.shape[0], 0, 400],
-        cmap="rainbow",
-    )
-    im_color_bar = contourf(
-        comp_scale1,
-        vmin=0.0,
-        vmax=1.0,
-        levels=[0, 0.15, 0.30, 0.45, 0.6, 0.75, 1.0],
-        extent=[0, matrix2plot.shape[0], 0, 400],
-        cmap="rainbow",
-    )
-    f_1.set_xlim([0, matrix_size])  # list(data['unique_barcodes']))
-    f_1.set_ylabel("Scales")
-    bounds = [0.0, 0.5, 1.0]
-    cb1 = colorbar(
-        im_color_bar,
-        shrink=1,
-        orientation="vertical",
-        ticks=bounds,
-        spacing="proportional",
-        pad=0.04,
-    )
-
-    # ax1 = plt.axes(ax1_)
-    # pos=ax1.imshow(matrix2plot,cmap='coolwarm')
-    # ax1.set_xlabel("barcode #")
-    # ax1.set_ylabel("barcode #")
-    # ax1.set_xlim([-0.5 , matrix_size-.5])#list(data['unique_barcodes']))
-    # ax1.set_ylim([matrix_size-.5,-0.5])#list(data['unique_barcodes']))
-    # cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-
-    # ax2 = plt.axes(ax2_)#,sharex=ax1)
-    # ax2.contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
-    # im_color_bar=contourf(  comp_scale1, vmin=0.0, vmax= 1.0,levels=[0, .15, .30, .45, 0.6,0.75, 1.0],extent=[0,matrix2plot.shape[0],0,400],cmap="rainbow");
-    # ax2.set_xlim([-.5,matrix_size-.5])#list(data['unique_barcodes']))
-    # ax2.set_ylabel("Scales");
-    # bounds = [0.,0.5, 1.0];
-    # cb1 = colorbar(im_color_bar,shrink = 1, orientation="vertical",ticks=bounds, spacing='proportional',pad=0.04);
-
-    if output_filename:
-        plt.savefig(output_filename)
-        print("Output scalogram: {}".format(output_filename))
 
 
 def decodes_trace(single_trace):

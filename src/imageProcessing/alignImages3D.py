@@ -54,15 +54,14 @@ from core.parameters import (
     rt_to_filename,
 )
 from core.pyhim_logging import print_log, write_string_to_file
-from imageProcessing.imageProcessing import (
+from core.saving import plot_3d_shift_matrices, plot_4_images
+from imageProcessing.alignImages import (
     apply_xy_shift_3d_images,
     combine_blocks_image_by_reprojection,
     image_block_alignment_3d,
-    plot_3d_shift_matrices,
-    plot_4_images,
-    preprocess_3d_image,
-    reinterpolate_z,
 )
+from imageProcessing.imageProcessing import preprocess_3d_image
+from imageProcessing.makeProjections import reinterpolate_z
 
 # =============================================================================
 # CLASSES
@@ -126,18 +125,6 @@ class Drift3D:
             ]
         else:
             self.p["parallelizePlanes"] = 1
-
-    def find_file_to_process(self, n_barcode, n_roi):
-        barcode = "RT" + str(n_barcode)
-        roi = str(n_roi) + "_ROI"
-        channelbarcode = self.current_param.set_channel("barcode_channel", "ch01")
-
-        files_folder = glob.glob(self.data_folder.master_folder + os.sep + "*.tif")
-        image_file = [
-            x for x in files_folder if roi in x and barcode in x and channelbarcode in x
-        ]
-
-        return image_file
 
     def align_fiducials_3d_file(self, filename_to_process):
         """
