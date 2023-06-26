@@ -218,6 +218,7 @@ def runtime(
                 print("! ERROR: could not find {}".format(matrix_file))
     else:
         print("! ERROR: no matrix file provided.")
+    return len(matrix_files)
 
 
 # =============================================================================

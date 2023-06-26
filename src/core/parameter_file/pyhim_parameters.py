@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import os
-import sys
 import tkinter as tk
 from functools import partial
 from tkinter import END, messagebox, ttk
 
-from parameter_file.function_parameters import *
-from parameter_file.info_parameters import *
+from core.parameter_file.function_parameters import (
+    check_settings,
+    import_parameters,
+    update_infolist,
+)
+from core.parameter_file.info_parameters import help_dic
 
 
 def main():
-
     # initialised when entries are created, dictionary that store the class entry for the parameter,
     # the value and the type of the value
     entries_dic = {}
