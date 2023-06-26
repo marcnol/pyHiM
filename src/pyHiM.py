@@ -13,7 +13,7 @@ from datetime import datetime
 
 import apifish
 
-import fileProcessing.functionCaller as fc
+import core.function_caller as fc
 from core.parameters import Parameters
 from core.pyhim_logging import print_log
 from core.run_args import him_parse_arguments
