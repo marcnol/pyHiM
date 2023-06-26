@@ -20,11 +20,6 @@ class Session:
         self.name = name
         self.data = {}
 
-    def load(self):
-        """Loads existing session"""
-        self.data = load_json(self.file_name)
-        print(f"Session information read: {self.file_name}")
-
     def save(self):
         """Saves session to file"""
         save_json(self.file_name, self.data)
@@ -44,10 +39,6 @@ class Session:
             self.data[key] = value
         else:
             self.data[key] = [self.data[key], value]
-
-    def clear_data(self):
-        """Reset data attribute with an empty dict"""
-        self.data = {}
 
 
 class Log:

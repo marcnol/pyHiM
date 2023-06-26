@@ -150,17 +150,6 @@ class LocalizationTable:
 
         plt.close(fig)
 
-    def build_color_dict(self, barcode_map, key="Barcode #"):
-        color_dict = {}
-
-        unique_barcodes = np.unique(barcode_map[key])
-        output_array = range(unique_barcodes.shape[0])
-
-        for barcode, output in zip(unique_barcodes, output_array):
-            color_dict[str(barcode)] = output
-
-        return color_dict
-
     def plots_localizations(self, barcode_map_full, filename_list):
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
@@ -179,14 +168,14 @@ class LocalizationTable:
         """
 
         # indexes table by ROI
-        barcode_map_roi, number_rois = self.decode_rois(barcode_map_full)
+        barcode_map_roi, number_rois = decode_rois(barcode_map_full)
 
         for i_roi in range(number_rois):
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
             print(f"Plotting barcode localization map for ROI: {n_roi}")
-            color_dict = self.build_color_dict(barcode_map, key="Barcode #")
+            color_dict = build_color_dict(barcode_map, key="Barcode #")
 
             # initializes figure
             fig = plt.figure(constrained_layout=False)
@@ -217,9 +206,6 @@ class LocalizationTable:
             filename_list_i = filename_list.copy()
             filename_list_i.insert(-1, "_ROI" + str(n_roi))
             fig.savefig("".join(filename_list_i))
-
-    def decode_rois(self, barcode_map):
-        return decode_rois(barcode_map)
 
     def compares_localizations(
         self, barcode_map_1, barcode_map_2, filename_list, fontsize=20

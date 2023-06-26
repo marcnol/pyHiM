@@ -30,6 +30,7 @@ from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.filter_localizations import get_file_table_new_name
+from src.imageProcessing.localization_table import decode_rois
 
 warnings.filterwarnings("ignore")
 
@@ -394,7 +395,7 @@ class RegisterLocalizations:
         barcode_map_full_unregistered = barcode_map_full.copy()
 
         # indexes table by ROI
-        barcode_map_roi, number_rois = table.decode_rois(barcode_map_full)
+        barcode_map_roi, number_rois = decode_rois(barcode_map_full)
 
         for i_roi in range(number_rois):
             # creates sub Table for this ROI

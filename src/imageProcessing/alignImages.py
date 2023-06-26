@@ -19,32 +19,43 @@ image cross correlation
 
 import glob
 import os
+import sys
 
 # to remove in a future version
 import warnings
 
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from dask.distributed import get_client
+from numpy import linalg as LA
 from photutils import Background2D, MedianBackground
 from scipy.ndimage import shift as shift_image
+from skimage import exposure, measure
 from skimage.exposure import match_histograms
-from skimage.registration._phase_cross_correlation import _upsampled_dft
+from skimage.metrics import mean_squared_error, normalized_root_mse
+from skimage.metrics import structural_similarity as ssim
+from skimage.registration import phase_cross_correlation
+from skimage.util.shape import view_as_blocks
+from tqdm import tqdm, trange
 
+from core.dask_cluster import try_get_client
 from core.folder import Folders
 from core.parameters import get_dictionary_value, rt_to_filename
 from core.pyhim_logging import load_json, print_log, save_json, write_string_to_file
 from imageProcessing.imageProcessing import (
     Image,
-    align_2_images_cross_correlation,
-    align_images_by_blocks,
-    plotting_block_alignment_results,
-    save_2_images_rgb,
-    save_image_2d_cmd,
-    save_image_differences,
+    image_adjust,
+    reassemble_3d_image,
+    scatter_3d_image,
 )
+from src.core.saving import plotting_block_alignment_results, save_image_2d_cmd
+
+warnings.filterwarnings("ignore")
+
+np.seterr(divide="ignore", invalid="ignore")
 
 warnings.filterwarnings("ignore")
 # =============================================================================
@@ -76,44 +87,6 @@ def display_equalization_histograms(
         plt.close(fig)
 
 
-def show_cc_image(
-    image1_uncorrected, image2_uncorrected, output_filename, shift, verbose=False
-):
-    image_product = (
-        np.fft.fft2(image1_uncorrected) * np.fft.fft2(image2_uncorrected).conj()
-    )
-    cc_image = _upsampled_dft(image_product, 150, 100, (shift * 100) + 75).conj()
-    if verbose:
-        plt.figure(figsize=(60, 30))
-        ax1 = plt.subplot(1, 2, 1)
-        ax2 = plt.subplot(1, 2, 2)
-        rgb_falsecolor_image = np.dstack(
-            [image1_uncorrected, image2_uncorrected, np.zeros([2048, 2048])]
-        )
-        ax1.imshow(rgb_falsecolor_image, origin="lower", interpolation="nearest")
-        ax1.set_axis_off()
-        ax1.set_title("Super-imposed images")
-
-        ax2.imshow(cc_image.real)
-        ax2.set_axis_off()
-        ax2.set_title("Supersampled XC sub-area")
-    else:
-        plt.figure(figsize=(30, 30))
-        plt.imsave(output_filename + "_CC.png", cc_image)
-        plt.close()
-
-
-def save_image_adjusted(file_name, markdown_filename, image1):
-    plt.figure(figsize=(30, 30))
-    plt.imsave(file_name + "_adjusted.png", image1, cmap="hot")
-    write_string_to_file(
-        markdown_filename,
-        f"{os.path.basename(file_name)}\n ![]({file_name}_adjusted.png)\n",
-        "a",
-    )
-    plt.close()
-
-
 def remove_inhomogeneous_background(im, current_param):
     sigma_clip = SigmaClip(
         sigma=current_param.param_dict["alignImages"]["background_sigma"]
@@ -130,6 +103,168 @@ def remove_inhomogeneous_background(im, current_param):
     im1_bkg_substracted = im - bkg.background
 
     return im1_bkg_substracted
+
+
+def save_image_differences(img_1, img_2, img_3, img_4, output_filename):
+    """
+    Overlays two images as R and B and saves them to output file
+    """
+
+    img_1, img_2 = img_1 / img_1.max(), img_2 / img_2.max()
+    img_3, img_4 = img_3 / img_3.max(), img_4 / img_4.max()
+
+    img_1, _, _, _, _ = image_adjust(
+        img_1, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_2, _, _, _, _ = image_adjust(
+        img_2, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_3, _, _, _, _ = image_adjust(
+        img_3, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_4, _, _, _, _ = image_adjust(
+        img_4, lower_threshold=0.5, higher_threshold=0.9999
+    )
+
+    cmap = "seismic"
+
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig.set_size_inches((60, 30))
+
+    ax1.imshow(img_1 - img_2, cmap=cmap)
+    ax1.axis("off")
+    ax1.set_title("uncorrected")
+
+    ax2.imshow(img_3 - img_4, cmap=cmap)
+    ax2.axis("off")
+    ax2.set_title("corrected")
+
+    fig.savefig(output_filename)
+
+    plt.close(fig)
+
+
+def align_images_by_blocks(
+    img_1,
+    img_2,
+    block_size,
+    upsample_factor=100,
+    min_number_pollsters=4,
+    tolerance=0.1,
+    use_cv2=False,
+    shift_error_tolerance=5,
+):
+    block_1 = view_as_blocks(img_1, block_size)
+    block_2 = view_as_blocks(img_2, block_size)
+
+    if use_cv2:
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
+        warp_mode = cv2.MOTION_TRANSLATION
+
+    shift_image_norm = np.zeros((block_1.shape[0], block_1.shape[1]))
+    shifted_image = np.zeros((block_1.shape[0], block_1.shape[1], 2))
+    rms_image = np.zeros((block_1.shape[0], block_1.shape[1]))
+
+    for i in trange(block_1.shape[0]):
+        for j in range(block_1.shape[1]):
+            if not use_cv2:
+                # using Scimage registration functions
+                shift, _, _ = phase_cross_correlation(
+                    block_1[i, j], block_2[i, j], upsample_factor=upsample_factor
+                )
+                shift_image_norm[i, j] = LA.norm(shift)
+                shifted_image[i, j, 0], shifted_image[i, j, 1] = shift[0], shift[1]
+                img_2_aligned = shift_image(img_2, shift)
+            else:
+                # uses CV2 cause it is 20 times faster than Scimage
+                _, warp_matrix = align_cv2(block_1[i, j], block_2[i, j], warp_mode)
+                shift_image_norm[i, j] = LA.norm(warp_matrix[:, 2])
+                shifted_image[i, j, 0], shifted_image[i, j, 1] = (
+                    warp_matrix[:, 2][0],
+                    warp_matrix[:, 2][1],
+                )
+                img_2_aligned = apply_correction(img_2, warp_matrix)
+
+            rms_image[i, j] = np.sum(np.sum(np.abs(img_1 - img_2_aligned), axis=1))
+
+    # [calculates optimal shifts by polling blocks showing the best RMS]
+
+    # threshold = filters.threshold_otsu(rms_image)
+    threshold = (1 + tolerance) * np.min(rms_image)
+    mask = rms_image < threshold
+
+    contours = measure.find_contours(rms_image, threshold)
+
+    try:
+        contour = sorted(contours, key=lambda x: len(x))[-1]
+    except IndexError:
+        contour = np.array([0, 0])
+
+    # [Averages shifts and errors from regions within the tolerated blocks]
+    mean_shifts = [np.mean(shifted_image[mask, 0]), np.mean(shifted_image[mask, 1])]
+    std_shifts = [np.std(shifted_image[mask, 0]), np.std(shifted_image[mask, 1])]
+    mean_shift_norm = np.mean(shift_image_norm[mask])
+    mean_error = np.mean(rms_image[mask])
+    relative_shifts = np.abs(shift_image_norm - mean_shift_norm)
+
+    # [calculates global shift, if it is better than the polled shift, or
+    # if we do not have enough pollsters to fall back to then it does a global cross correlation!]
+    mean_shifts_global, _, _ = phase_cross_correlation(
+        img_1, img_2, upsample_factor=100
+    )
+    img_2_aligned_global = shift_image(img_2, shift)
+    mean_error_global = np.sum(np.sum(np.abs(img_1 - img_2_aligned_global), axis=1))
+
+    print_log(
+        f"Block alignment error: {mean_error}, global alignment error: {mean_error_global}"
+    )
+
+    if (
+        np.sum(mask) < min_number_pollsters
+        or mean_error_global < mean_error
+        or np.max(std_shifts) > shift_error_tolerance
+    ):
+        mean_shifts = mean_shifts_global
+        mean_error = mean_error_global
+        print_log("Falling back to global registration")
+
+    print_log(
+        f"*** Global XY shifts: {mean_shifts_global[0]:.2f} px | {mean_shifts_global[1]:.2f} px"
+    )
+    print_log(
+        f"*** Mean polled XY shifts: {mean_shifts[0]:.2f}({std_shifts[0]:.2f}) px | {mean_shifts[1]:.2f}({std_shifts[1]:.2f}) px"
+    )
+
+    return np.array(mean_shifts), mean_error, relative_shifts, rms_image, contour
+
+
+def save_2_images_rgb(img_1, img_2, output_filename):
+    """
+    Overlays two images as R and B and saves them to output file
+    """
+
+    sz = img_1.shape
+    img_1, img_2 = img_1 / img_1.max(), img_2 / img_2.max()
+
+    img_1, _, _, _, _ = image_adjust(
+        img_1, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    img_2, _, _, _, _ = image_adjust(
+        img_2, lower_threshold=0.5, higher_threshold=0.9999
+    )
+
+    fig, ax1 = plt.subplots()
+    fig.set_size_inches((30, 30))
+
+    null_image = np.zeros(sz)
+
+    rgb = np.dstack([img_1, img_2, null_image])
+    ax1.imshow(rgb)
+    ax1.axis("off")
+
+    fig.savefig(output_filename)
+
+    plt.close(fig)
 
 
 def align_2_files(file_name, img_reference, current_param, data_folder, verbose):
@@ -481,7 +616,7 @@ def align_images_in_current_folder(
                         "\n$ About to process file {} \\ {}".format(i_file, n_files)
                     )
 
-                    if (filename_to_process not in filename_reference) and roi == roi:
+                    if filename_to_process not in filename_reference:
                         if file_name is None or (
                             file_name is not None
                             and os.path.basename(file_name)
@@ -736,3 +871,329 @@ def apply_registrations(current_param, current_session, file_name=None):
         )
 
     del data_folder
+
+
+# =============================================================================
+# IMAGE ALIGNMENT
+# =============================================================================
+
+
+def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
+    """
+    Applies XY shift to a 3D stack
+
+    Parameters
+    ----------
+    images : 3D numpy array
+        image to process.
+
+    Returns
+    -------
+    shifted 3D image.
+
+    """
+    if parallel_execution:
+        client = try_get_client()
+    else:
+        client = None
+
+    number_planes = image.shape[0]
+
+    if client is None:
+        print_log(f"> Shifting {number_planes} planes with 1 thread...")
+        shift_3d = np.zeros((3))
+        shift_3d[0], shift_3d[1], shift_3d[2] = 0, shift[0], shift[1]
+        output = shift_image(image, shift_3d)
+    else:
+        print_log(
+            f"> Shifting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
+        )
+
+        image_list_scattered = scatter_3d_image(image)
+
+        futures = [
+            client.submit(shift_image, img, shift) for img in image_list_scattered
+        ]
+
+        output = reassemble_3d_image(client, futures, image.shape)
+
+        del futures
+        del image_list_scattered
+
+    print_log("$ Done shifting 3D image.")
+
+    return output
+
+
+def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
+    # sanity checks
+    if len(images) < 2:
+        sys.exit(f"# Error, number of images must be 2, not {len(images)}")
+
+    # - break in blocks
+    num_planes = images[0].shape[0]
+    block_size = (num_planes, block_size_xy, block_size_xy)
+
+    print_log("$ Breaking images into blocks")
+    blocks = [view_as_blocks(x, block_shape=block_size).squeeze() for x in images]
+
+    block_ref = blocks[0]
+    block_target = blocks[1]
+
+    # - loop thru blocks and calculates block shift in xyz:
+    shift_matrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
+
+    for i in trange(block_ref.shape[0]):
+        for j in range(block_ref.shape[1]):
+            # - cross correlate in 3D to find 3D shift
+            shifts_xyz, _, _ = phase_cross_correlation(
+                block_ref[i, j], block_target[i, j], upsample_factor=upsample_factor
+            )
+            for matrix, _shift in zip(shift_matrices, shifts_xyz):
+                matrix[i, j] = _shift
+
+    return shift_matrices, block_ref, block_target
+
+
+def combine_blocks_image_by_reprojection(
+    block_ref, block_target, shift_matrices=None, axis1=0
+):
+    """
+    This routine will overlap block_ref and block_target images block by block.
+    block_ref will be used as a template.
+    - block_target will be first translated in ZXY using the corresponding values in shift_matrices
+    to realign each block
+    - then an rgb image will be created with block_ref in the red channel, and the reinterpolated
+    block_target block in the green channel.
+    - the Blue channel is used for the grid to improve visualization of blocks.
+
+
+    Parameters
+    ----------
+    block_ref : npy array
+        return of view_as_blocks()
+    block_target : npy array
+        return of view_as_blocks()
+    shift_matrices : list of npy arrays
+        index 0 contains Z, index 1 X and index 2 Y
+    axis1 : int
+        axis used for the reprojection: The default is 0.
+        - 0 means an XY projection
+        - 1 an ZX projection
+        - 2 an ZY projection
+
+    Returns
+    -------
+    output : NPY array of size im_size x im_size x 3
+        rgb image.
+    ssim_as_blocks = NPY array of size number_blocks x number_blocks
+        Structural similarity index between ref and target blocks
+    """
+    number_blocks = block_ref.shape[0]
+    block_sizes = list(block_ref.shape[2:])
+    block_sizes.pop(axis1)
+    img_sizes = [x * number_blocks for x in block_sizes]
+
+    # gets ranges for slicing
+    slice_coordinates = []
+    for block_size in block_sizes:
+        slice_coordinates.append(
+            [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
+        )
+
+    # creates output images
+    output = np.zeros((img_sizes[0], img_sizes[1], 3))
+    ssim_as_blocks = np.zeros((number_blocks, number_blocks))
+    mse_as_blocks = np.zeros((number_blocks, number_blocks))
+    nrmse_as_blocks = np.zeros((number_blocks, number_blocks))
+
+    # blank image for blue channel to show borders between blocks
+    blue = np.zeros(block_sizes)
+    blue[0, :], blue[:, 0], blue[:, -1], blue[-1, :] = [0.5] * 4
+
+    # reassembles image
+    # takes one plane block
+    for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
+        for j, j_slice in enumerate(slice_coordinates[1]):
+            imgs = []
+            imgs.append(block_ref[i, j])  # appends reference image to image list
+
+            if shift_matrices is not None:
+                shift_3d = np.array(
+                    [x[i, j] for x in shift_matrices]
+                )  # gets 3D shift from block decomposition
+                imgs.append(
+                    shift_image(block_target[i, j], shift_3d)
+                )  # realigns and appends to image list
+            else:
+                imgs.append(
+                    block_target[i, j]
+                )  # appends original target with no re-alignment
+
+            imgs = [np.sum(x, axis=axis1) for x in imgs]  # projects along axis1
+            imgs = [
+                exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs
+            ]  # rescales intensity values
+            imgs = [
+                image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0]
+                for x in imgs
+            ]  # adjusts pixel intensities
+
+            nrmse_as_blocks[i, j] = normalized_root_mse(
+                imgs[0], imgs[1], normalization="euclidean"
+            )
+            mse_as_blocks[i, j] = mean_squared_error(imgs[0], imgs[1])
+            ssim_as_blocks[i, j] = ssim(
+                imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()
+            )
+
+            imgs.append(blue)  # appends last channel with grid
+
+            rgb = np.dstack(imgs)  # makes block rgb image
+
+            output[
+                i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :
+            ] = rgb  # inserts block into final rgb stack
+
+    return output, ssim_as_blocks, mse_as_blocks, nrmse_as_blocks
+
+
+def align_2_images_cross_correlation(
+    image1_uncorrected,
+    image2_uncorrected,
+    lower_threshold=0.999,
+    higher_threshold=0.9999999,
+    upsample_factor=100,
+):
+    """
+    Aligns 2 images by contrast adjust and cross correlation
+    Parameters
+    ----------
+    img_reference : TYPE
+        DESCRIPTION.
+    img_2 : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    shift : TYPE
+        DESCRIPTION.
+    error : TYPE
+        DESCRIPTION.
+    diffphase : TYPE
+        DESCRIPTION.
+    lower_threshold : TYPE
+        DESCRIPTION.
+    i_histogram : TYPE
+        DESCRIPTION.
+    image2_corrected : TYPE
+        DESCRIPTION.
+    image1_adjusted : TYPE
+        DESCRIPTION.
+    image2_adjusted : TYPE
+        DESCRIPTION.
+    image2_corrected_raw : TYPE
+        DESCRIPTION.
+
+    """
+
+    (
+        image1_adjusted,
+        hist1_before,
+        hist1_after,
+        lower_cutoff1,
+        _,
+    ) = image_adjust(
+        image1_uncorrected,
+        lower_threshold=lower_threshold,
+        higher_threshold=higher_threshold,
+    )
+    (
+        image2_adjusted,
+        hist2_before,
+        hist2_after,
+        lower_cutoff2,
+        _,
+    ) = image_adjust(
+        image2_uncorrected,
+        lower_threshold=lower_threshold,
+        higher_threshold=higher_threshold,
+    )
+
+    # zips histograms
+    lower_threshold = {"Im1": lower_cutoff1, "Im2": lower_cutoff2}
+    i_histogram = {
+        "Im1": (hist1_before, hist1_after),
+        "Im2": (hist2_before, hist2_after),
+    }
+
+    # calculates shift
+    shift, error, diffphase = phase_cross_correlation(
+        image1_adjusted, image2_adjusted, upsample_factor=upsample_factor
+    )
+
+    # corrects image
+    # The shift corresponds to the pixel offset relative to the reference image
+    image2_corrected = shift_image(image2_adjusted, shift)
+    image2_corrected = exposure.rescale_intensity(image2_corrected, out_range=(0, 1))
+
+    results = (
+        shift,
+        error,
+        diffphase,
+        lower_threshold,
+        i_histogram,
+        image2_corrected,
+        image1_adjusted,
+        image2_adjusted,
+    )
+
+    return results
+
+
+def align_cv2(im1, im2, warp_mode):
+    # Define 2x3 or 3x3 matrices and initialize the matrix to identity
+    if warp_mode == cv2.MOTION_HOMOGRAPHY:
+        warp_matrix = np.eye(3, 3, dtype=np.float32)
+    else:
+        warp_matrix = np.eye(2, 3, dtype=np.float32)
+
+    # Specify the number of iterations.
+    number_of_iterations = 1000  # 5000
+
+    # Specify the threshold of the increment
+    # in the correlation coefficient between two iterations
+    termination_eps = 1e-10
+
+    # Define termination criteria
+    criteria = (
+        cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
+        number_of_iterations,
+        termination_eps,
+    )
+
+    # Run the ECC algorithm. The results are stored in warp_matrix.
+    try:
+        cc, warp_matrix = cv2.findTransformECC(
+            im1, im2, warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1
+        )
+    except TypeError:
+        cc, warp_matrix = cv2.findTransformECC(
+            im1, im2, warp_matrix, warp_mode, criteria
+        )
+    except cv2.error:
+        cc = 0
+        # print_log('Warning: find transform failed. Set warp as identity')
+
+    return cc, warp_matrix
+
+
+def apply_correction(im2, warp_matrix):
+    sz = im2.shape
+
+    # Use warpAffine for Translation, Euclidean and Affine
+    im2_aligned = cv2.warpAffine(
+        im2, warp_matrix, (sz[1], sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
+    )
+
+    return im2_aligned

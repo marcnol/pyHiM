@@ -33,10 +33,10 @@ from skimage import exposure, io
 from tifffile import imsave
 from tqdm import tqdm
 
+from core.saving import save_image_as_blocks
 from imageProcessing.imageProcessing import (
     _remove_inhomogeneous_background,
     image_adjust,
-    save_image_as_blocks,
 )
 
 

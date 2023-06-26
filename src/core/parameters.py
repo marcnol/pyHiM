@@ -36,23 +36,6 @@ class Parameters:
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 
-    def get_param_section(self, param_section=""):
-        """Returns parameter dict or its sub-section if it's specified
-
-        Parameters
-        ----------
-        param_section : str, optional
-            Sub-section key of the dict, by default ""
-
-        Returns
-        -------
-        dict
-            Parameter dict
-        """
-        if not param_section:
-            return self.param_dict
-        return self.param_dict[param_section]
-
     def initialize_standard_parameters(self):
         """Reference of the standard parameters"""
         self.param_dict = {

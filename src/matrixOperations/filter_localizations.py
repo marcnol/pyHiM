@@ -37,7 +37,7 @@ class FilterLocalizations:
 
         self.current_param = param
 
-    def filter_localizations__quality(self, barcode_map, i):
+    def filter_localizations_quality(self, barcode_map, i):
         """
         [filters barcode localizations either by brigthness or 3D localization accuracy]
 
@@ -64,52 +64,6 @@ class FilterLocalizations:
 
         return keep
 
-    # def filter_localizations_block_alignment(self, barcode_map, i):
-    #     """
-    #     [filters barcode per blockAlignmentMask, if existing]
-    #     runs only if localAligment was not run!
-
-    #     Parameters
-    #     ----------
-    #     i : int
-    #         index in barcode_map Table
-
-    #     Returns
-    #     -------
-    #     keep_alignment : Boolean
-    #         True if the test is passed.
-
-    #     """
-    #     y_int = int(barcode_map["xcentroid"][i])
-    #     x_int = int(barcode_map["ycentroid"][i])
-    #     keep_alignment = True
-    #     if (
-    #         not self.alignment_results_table_read
-    #     ):  # only proceeds if localAlignment was not performed
-    #         barcode_id = "barcode:" + str(barcode_map["Barcode #"][i])
-    #         barcode_roi = "ROI:" + str(barcode_map["ROI #"][i])
-
-    #         if len(self.dict_error_block_masks) > 0:
-    #             if barcode_roi in self.dict_error_block_masks.keys():
-    #                 if barcode_id in self.dict_error_block_masks[barcode_roi].keys():
-    #                     error_mask = self.dict_error_block_masks[barcode_roi][barcode_id]
-    #                     keep_alignment = (
-    #                         error_mask[
-    #                             int(np.floor(x_int / self.block_size)),
-    #                             int(np.floor(y_int / self.block_size)),
-    #                         ]
-    #                         < self.tolerance_drift
-    #                     )
-
-    #         # keeps it always if barcode is fiducial
-    #         if (
-    #             "RT" + str(barcode_map["Barcode #"][i])
-    #             in self.current_param.param_dict["alignImages"]["referenceFiducial"]
-    #         ):
-    #             keep_alignment = True
-
-    #     return keep_alignment
-
     def filter_barcode_table(self, barcode_map):
         """
         iterates over rows of a barcode localization table and filters unwanted rows
@@ -130,7 +84,7 @@ class FilterLocalizations:
         print(f"$ Minimum flux: {self.flux_min}")
         for i in trange(n_barcodes):  # i is the index of the barcode in barcode_map_roi
             # [filters barcode localizations either by]
-            keep_quality = self.filter_localizations__quality(barcode_map, i)
+            keep_quality = self.filter_localizations_quality(barcode_map, i)
 
             # [filters barcode per blockAlignmentMask, if existing]
             # keep_alignment = self.filter_localizations_block_alignment(barcode_map, i)
@@ -150,8 +104,6 @@ class FilterLocalizations:
 
     def setup_filter_values(self):
         """
-
-
         Returns
         -------
         self.block_size : int

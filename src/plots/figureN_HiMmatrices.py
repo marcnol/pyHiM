@@ -591,7 +591,6 @@ def plotMultipleHiMmatrices(list_data, run_parameters, data_sets):
             run_parameters["type"], fontsize=1.2 * float(run_parameters["fontsize"])
         )
 
-        # him_data.update_clims(0, c_scale, f_1)
         print("Output written to {}".format(run_parameters["outputFileName"]))
         plt.savefig(run_parameters["outputFileName"])
         title_text = "N = {} | n = {}".format(n_cells, n_datasets)

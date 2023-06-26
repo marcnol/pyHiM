@@ -32,13 +32,16 @@ import warnings
 # ---- stardist
 import matplotlib
 import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel
 from astropy.stats import SigmaClip, gaussian_fwhm_to_sigma, sigma_clipped_stats
 from astropy.table import Column, Table, vstack
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
+from csbdeep.data import PadAndCropResizer
 from csbdeep.utils import normalize
+from csbdeep.utils.tf import limit_gpu_memory
 from dask.distributed import get_client
 from matplotlib.path import Path
 from photutils import (
@@ -50,20 +53,33 @@ from photutils import (
     detect_threshold,
 )
 from photutils.segmentation.core import SegmentationImage
+from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import Voronoi
+from skimage import measure
+from skimage.feature import peak_local_max
 from skimage.measure import regionprops
+from skimage.segmentation import watershed
+from skimage.util.apply_parallel import apply_parallel
 from stardist import random_label_cmap
-from stardist.models import StarDist2D
+from stardist.models import StarDist2D, StarDist3D
+from tqdm import trange
 
+from core.dask_cluster import try_get_client
 from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from imageProcessing.imageProcessing import Image, save_image_2d_cmd
+from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
+from src.core.saving import save_image_2d_cmd
+
+warnings.filterwarnings("ignore")
+
+np.seterr(divide="ignore", invalid="ignore")
 
 matplotlib.rcParams["image.interpolation"] = None
 
 
 warnings.filterwarnings("ignore")
+
 
 # =============================================================================
 # FUNCTIONS
@@ -910,3 +926,290 @@ def segment_masks(current_param, current_session, file_name=None):
                         current_session.add(filename_to_process, session_name)
 
     return 0
+
+
+# =============================================================================
+# SEGMENTATION FUNCTIONS
+# =============================================================================
+
+
+def _segment_2d_image_by_thresholding(
+    image_2d,
+    threshold_over_std=10,
+    area_min=3,
+    area_max=1000,
+    nlevels=64,
+    contrast=0.001,
+    kernel=None,
+):
+    # makes threshold matrix
+    threshold = np.zeros(image_2d.shape)
+    threshold[:] = threshold_over_std * image_2d.max() / 100
+
+    # segments objects
+    segm = detect_sources(
+        image_2d,
+        threshold,
+        npixels=area_min,
+        filter_kernel=kernel,
+    )
+
+    if segm.nlabels > 0:
+        # removes masks too close to border
+        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+
+        if segm.nlabels > 0:
+            segm_deblend = deblend_sources(
+                image_2d,
+                segm,
+                npixels=area_min,  # watch out, this is per plane!
+                filter_kernel=kernel,
+                nlevels=nlevels,
+                contrast=contrast,
+                relabel=True,
+                mode="exponential",
+            )
+            if segm_deblend.nlabels > 0:
+                # removes Masks too big or too small
+                for label in segm_deblend.labels:
+                    # take regions with large enough areas
+                    area = segm_deblend.get_area(label)
+                    if area < area_min or area > area_max:
+                        segm_deblend.remove_label(label=label)
+
+                # relabel so masks numbers are consecutive
+                # segm_deblend.relabel_consecutive()
+
+            # image_2d_segmented = segm.data % changed during recoding function
+            image_2d_segmented = segm_deblend.data
+
+            image_2d_segmented[image_2d_segmented > 0] = 1
+            return image_2d_segmented
+
+        else:
+            # returns empty image as no objects were detected
+            return segm.data
+
+    else:
+        # returns empty image as no objects were detected
+        return segm.data
+
+
+def _segment_3d_volumes_stardist(
+    image_3d,
+    deblend_3d=False,
+    axis_norm=(0, 1, 2),
+    model_dir="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
+    model_name="stardist_18032021_single_loci",
+):
+    number_planes = image_3d.shape[0]
+
+    print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+    model = StarDist3D(None, name=model_name, basedir=model_dir)
+    limit_gpu_memory(None, allow_growth=True)
+
+    im = normalize(image_3d, 1, 99.8, axis=axis_norm)
+    l_x = im.shape[1]
+
+    if l_x < 1000:
+        labels, _ = model.predict_instances(im)
+
+    else:
+        resizer = PadAndCropResizer()
+        axes = "ZYX"
+
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, _ = model.predict_instances(im, n_tiles=(1, 8, 8))
+        labels = resizer.after(labels, axes)
+
+    mask = np.array(labels > 0, dtype=int)
+
+    # Now we want to separate objects in 3D using watersheding
+    if deblend_3d:
+        labeled_image = _deblend_3d_segmentation(mask)
+    else:
+        labeled_image = labels
+
+    return mask, labeled_image
+
+
+def _segment_3d_volumes_by_thresholding(
+    image_3d,
+    threshold_over_std=10,
+    sigma=3,
+    box_size=(32, 32),
+    filter_size=(3, 3),
+    area_min=3,
+    area_max=1000,
+    nlevels=64,
+    contrast=0.001,
+    deblend_3d=False,
+    parallel_execution=True,
+):
+    if parallel_execution:
+        client = try_get_client()
+    else:
+        client = None
+
+    number_planes = image_3d.shape[0]
+
+    kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
+    kernel.normalize()
+
+    print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+
+    parallel = True
+    if client is None:
+        parallel = False
+    else:
+        if len(client.scheduler_info()["workers"]) < 1:
+            parallel = False
+            print_log("# Failed getting workers. Report of scheduler:")
+            for key in client.scheduler_info().keys():
+                print_log(f"{key}:{client.scheduler_info()[key]}")
+
+    if not parallel:
+        print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+
+        output = np.zeros(image_3d.shape)
+
+        for z in trange(number_planes):
+            image_2d = image_3d[z, :, :]
+            image_2d_segmented = _segment_2d_image_by_thresholding(
+                image_2d,
+                threshold_over_std=threshold_over_std,
+                area_min=area_min,
+                area_max=area_max,
+                nlevels=nlevels,
+                contrast=contrast,
+                kernel=kernel,
+            )
+            output[z, :, :] = image_2d_segmented
+
+    else:
+        print_log(
+            f"> Segmenting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
+        )
+
+        image_list_scattered = scatter_3d_image(image_3d)
+
+        futures = [
+            client.submit(
+                _segment_2d_image_by_thresholding,
+                img,
+                threshold_over_std=threshold_over_std,
+                sigma=sigma,
+                box_size=box_size,
+                filter_size=filter_size,
+                area_min=area_min,
+                area_max=area_max,
+                nlevels=nlevels,
+                contrast=contrast,
+                deblend_3d=deblend_3d,
+                kernel=kernel,
+            )
+            for img in image_list_scattered
+        ]
+
+        output = reassemble_3d_image(client, futures, image_3d.shape)
+
+        del futures, image_list_scattered
+
+    labels = measure.label(output)
+
+    # Now we want to separate objects in 3D using watersheding
+    if deblend_3d:
+        labels = _deblend_3d_segmentation(output)
+
+    return output, labels
+
+
+def _deblend_3d_segmentation(binary):
+    """
+    Deblends objects in 3D using watersheding
+
+    Parameters
+    ----------
+    binary : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+
+    binary = binary > 0
+    print_log(" > Constructing distance matrix from 3D binary mask...")
+
+    distance = apply_parallel(ndi.distance_transform_edt, binary)
+
+    print_log(" > Deblending sources in 3D by watersheding...")
+    coords = peak_local_max(distance, footprint=np.ones((10, 10, 25)), labels=binary)
+    mask = np.zeros(distance.shape, dtype=bool)
+    mask[tuple(coords.T)] = True
+    markers, _ = ndi.label(mask)
+
+    labels = watershed(-distance, markers, mask=binary)
+    return labels
+
+
+def _segment_3d_masks(
+    image_3d,
+    axis_norm=(0, 1, 2),
+    pmin=1,
+    pmax=99.8,
+    model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+    model_name="stardist_20210625_deconvolved",
+):
+    """
+    Parameters
+    ----------
+    image_3d : numpy ndarray (N-dimensional array)
+        3D raw image to be segmented
+
+    model_dir : List of strings, optional
+        paths of all models directory, the default is ["/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"]
+
+    model_name : List of strings, optional
+        names of all models, the default is ['stardist_20210625_deconvolved']
+
+    """
+
+    np.random.seed(6)
+
+    number_planes = image_3d.shape[0]
+
+    print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+    print_log(f"> Segmenting {number_planes} planes using 1 worker...")
+    print_log(f"> Loading model {model_name} from {model_dir}...")
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
+
+    # Load the model
+    # --------------
+
+    model = StarDist3D(None, name=model_name, basedir=model_dir)
+    limit_gpu_memory(None, allow_growth=True)
+
+    im = normalize(image_3d, pmin=pmin, pmax=pmax, axis=axis_norm)
+    l_x = im.shape[1]
+
+    if l_x < 351:  # what is this value? should it be a k-arg?
+        labels, _ = model.predict_instances(im)
+
+    else:
+        resizer = PadAndCropResizer()
+        axes = "ZYX"
+
+        im = resizer.before(im, axes, model._axes_div_by(axes))
+        labels, _ = model.predict_instances(im, n_tiles=(1, 8, 8))
+        labels = resizer.after(labels, axes)
+
+    mask = np.array(labels > 0, dtype=int)
+    mask[mask > 0] = 1
+
+    return mask, labels

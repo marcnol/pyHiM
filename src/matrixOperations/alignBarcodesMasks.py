@@ -864,40 +864,6 @@ def _load_local_alignment(data_folder, mode):
     return alignment_results_table, alignment_results_table_read
 
 
-# def load_local_alignment(data_folder):
-#     """
-#     reads and returns localAlignmentTable, if it exists
-
-#     Parameters
-#     ----------
-#     data_folder : folder()
-#         DESCRIPTION.
-
-#     Returns
-#     -------
-#     alignment_results_table : Table()
-#         DESCRIPTION.
-#     alignment_results_table_read : Boolean
-#         DESCRIPTION.
-
-#     """
-#     local_alignment_filename = data_folder.output_files["alignImages"].split(".")[0] + "_localAlignment.dat"
-#     if os.path.exists(local_alignment_filename):
-#         alignment_results_table = Table.read(local_alignment_filename, format="ascii.ecsv")
-#         alignment_results_table_read = True
-#         print_log("LocalAlignment file loaded !\nWill correct coordinates in XY")
-#     else:
-#         print_log(
-#             "\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-#                 local_alignment_filename
-#             )
-#         )
-#         alignment_results_table_read = False
-#         alignment_results_table = Table()
-
-#     return alignment_results_table, alignment_results_table_read
-
-
 def load_barcode_map(filename_barcode_coordinates, ndims):
     """
     Loads barcode_map

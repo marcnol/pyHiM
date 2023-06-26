@@ -19,11 +19,10 @@ import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Polygon
 import numpy as np
 from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 from astropy.table import Table, vstack
+from matplotlib.patches import Polygon
 from stardist import random_label_cmap
 
 from core.pyhim_logging import print_log
@@ -351,7 +350,7 @@ class ChromatinTraceTable:
             color_dict_traces = build_color_dict(data_traces, key="Trace_ID")
             colors_traces = [color_dict_traces[str(x)] for x in data_traces["Trace_ID"]]
             cmap_traces = plt.cm.get_cmap("hsv", np.max(colors_traces))
-            
+
             for trace, color, trace_id in zip(
                 data_traces.groups, colors_traces, data_traces.groups.keys
             ):
@@ -373,10 +372,21 @@ class ChromatinTraceTable:
                 )
 
                 # Plots polygons for each trace
-                poly_coord = np.array([(trace["x"].data) / pixel_size[0],(trace["y"].data) / pixel_size[1]]).T
-                polygon = Polygon(poly_coord, closed=False, fill=False, edgecolor=cmap_traces(color),linewidth=1, alpha=1)
+                poly_coord = np.array(
+                    [
+                        (trace["x"].data) / pixel_size[0],
+                        (trace["y"].data) / pixel_size[1],
+                    ]
+                ).T
+                polygon = Polygon(
+                    poly_coord,
+                    closed=False,
+                    fill=False,
+                    edgecolor=cmap_traces(color),
+                    linewidth=1,
+                    alpha=1,
+                )
                 ax[0].add_patch(polygon)
-
 
             # saves output figure
             filename_list_i = filename_list.copy()
