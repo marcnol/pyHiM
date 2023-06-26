@@ -29,7 +29,6 @@ will analyze 'Trace.ecsv' and remove spots with 4>z>5 amd z>175 and less than 3 
 # =============================================================================q
 
 import argparse
-import os
 import select
 import sys
 from datetime import datetime

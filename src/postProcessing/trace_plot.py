@@ -53,21 +53,13 @@ color red, (name P*)
 # =============================================================================q
 
 import argparse
-import csv
-import glob
-import json
 import os
 import select
 import sys
 from datetime import datetime
 
-import numpy as np
-from astropy.io import ascii
-from pdbparser.pdbparser import pdbparser
-
 from core.folder import create_single_folder
 from core.parameters import loads_barcode_dict
-from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
 

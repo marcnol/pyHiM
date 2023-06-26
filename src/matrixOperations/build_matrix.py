@@ -28,22 +28,15 @@ This script:
 # IMPORTS
 # =============================================================================
 
-import ast
 import glob
 import os
-import re
-import sys
-import uuid
 
 # to remove in a future version
 import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
-from astropy.table import Table, unique
-from photutils.segmentation import SegmentationImage
+from astropy.table import unique
 from sklearn.metrics import pairwise_distances
-from tqdm import trange
 from tqdm.contrib import tzip
 
 from core.parameters import get_dictionary_value

@@ -22,20 +22,13 @@ Planned features:
 # =============================================================================q
 
 import argparse
-import collections
-import csv
-import glob
-import json
-import os
 import select
 import sys
-from datetime import datetime
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imageProcessing.imageProcessing import Image
 from imageProcessing.localization_table import LocalizationTable
 
 font = {"weight": "normal", "size": 12}

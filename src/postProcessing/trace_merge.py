@@ -23,15 +23,9 @@ ChromatinTraceTable() object and output .ecsv formatted file with assembled trac
 # =============================================================================q
 
 import argparse
-import csv
-import glob
-import json
 import os
 import select
 import sys
-from datetime import datetime
-
-import numpy as np
 
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
@@ -60,7 +54,14 @@ def parse_arguments():
         p["output_file"] = "merged_traces.ecsv"
 
     p["trace_files"] = []
-    if select.select([sys.stdin,], [], [], 0.0)[0]:
+    if select.select(
+        [
+            sys.stdin,
+        ],
+        [],
+        [],
+        0.0,
+    )[0]:
         p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
     else:
         print("Nothing in stdin!\n")
@@ -73,12 +74,10 @@ def parse_arguments():
 
 
 def appends_traces(traces, trace_files):
-
     new_trace = ChromatinTraceTable()
 
     # iterates over traces in folder
     for trace_file in trace_files:
-
         # reads new trace
         new_trace.load(trace_file)
 
@@ -94,7 +93,6 @@ def appends_traces(traces, trace_files):
 
 
 def load_traces(trace_files=[]):
-
     traces = ChromatinTraceTable()
     traces.initialize()
     traces.number_traces = 0
@@ -109,7 +107,6 @@ def load_traces(trace_files=[]):
 
 
 def run(p):
-
     print("\n" + "-" * 80)
 
     # [ creates output folder]
@@ -136,7 +133,6 @@ def run(p):
 
 
 def main():
-
     # [parsing arguments]
     p = parse_arguments()
 

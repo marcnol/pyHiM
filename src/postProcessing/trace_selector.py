@@ -21,9 +21,7 @@ ChromatinTraceTable() object and output .ecsv trace table file .
 # =============================================================================q
 
 import argparse
-import csv
 import glob
-import json
 import os
 import select
 import sys
@@ -61,7 +59,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin")
@@ -72,7 +77,6 @@ def parse_arguments():
 
 
 def assign_masks(trace, folder_masks, pixel_size=0.1):
-
     # [checks if DAPI mask exists for the file to process]
     mask_files = glob.glob(folder_masks.rstrip("/") + os.sep + "*.npy")
     mask_files = [x for x in mask_files if "SNDmask" in x.split("_")]
@@ -114,7 +118,6 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
 
 
 def process_traces(folder, pixel_size=0.1, trace_files=[]):
-
     trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
     masks_folder = folder.rstrip("/") + os.sep + "segmentedObjects" + os.sep
 
@@ -129,7 +132,6 @@ def process_traces(folder, pixel_size=0.1, trace_files=[]):
     if len(trace_files) > 0:
         # iterates over traces in folder
         for trace_file in trace_files:
-
             trace = ChromatinTraceTable()
             trace.initialize()
 

@@ -25,7 +25,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
-import seaborn as sns
 
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,

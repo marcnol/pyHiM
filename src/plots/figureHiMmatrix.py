@@ -28,23 +28,20 @@ Left to do:
 
 
 import argparse
-import csv
-import json
-#%% imports and plotting settings
+
+# %% imports and plotting settings
 import os
 import sys
 
-import matplotlib.gridspec as gridspec
-# import matplotlib as plt
-import matplotlib.pyplot as plt
 import numpy as np
 
 from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix, calculate_contact_probability_matrix,
-    calculate_ensemble_pwd_matrix, list_sc_to_keep, normalize_matrix,
-    plot_distance_histograms, plot_matrix, plot_scalogram, shuffle_matrix)
+    calculate_contact_probability_matrix,
+    plot_matrix,
+    shuffle_matrix,
+)
 
-#%% define and loads datasets
+# %% define and loads datasets
 
 
 def parse_arguments():
@@ -86,7 +83,8 @@ def parse_arguments():
         help="Matrix normalization mode. Can be n_cells (default) or nonNANs",
     )
     parser.add_argument(
-        "--scalingParameter", help="Scaling parameter. Dafault: 1",
+        "--scalingParameter",
+        help="Scaling parameter. Dafault: 1",
     )
 
     args = parser.parse_args()
@@ -189,7 +187,7 @@ def parse_arguments():
     return run_parameters
 
 
-#%%
+# %%
 
 # =============================================================================
 # MAIN
@@ -197,7 +195,6 @@ def parse_arguments():
 
 
 def main():
-
     print(">>> Producing HiM matrix")
 
     run_parameters = parse_arguments()

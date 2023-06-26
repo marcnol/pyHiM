@@ -15,7 +15,6 @@ import os
 # to remove in a future version
 import warnings
 
-import numpy as np
 from tqdm import trange
 
 from core.folder import Folders

@@ -21,7 +21,7 @@ import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
-from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
+from apifish.stack.io import read_table_from_ecsv
 
 from core.pyhim_logging import print_log
 
@@ -98,7 +98,6 @@ class LocalizationTable:
         except KeyError:
             barcode_map.meta["comments"] = [comments]
 
-        # save_table_to_ecsv(barcode_map, file_name)
         barcode_map.write(
             file_name,
             format="ascii.ecsv",

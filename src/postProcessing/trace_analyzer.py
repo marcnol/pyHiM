@@ -28,10 +28,6 @@ trace_ID, number of barcodes, number of duplications, Rg,
 
 import argparse
 import collections
-import csv
-import glob
-import json
-import os
 import select
 import sys
 from datetime import datetime
@@ -40,7 +36,6 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-from imageProcessing.imageProcessing import Image
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 font = {"weight": "normal", "size": 22}
