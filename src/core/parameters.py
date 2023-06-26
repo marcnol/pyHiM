@@ -10,7 +10,7 @@ import re
 from os import path
 from warnings import warn
 
-from core.pyhim_logging import print_log
+from core.pyhim_logging import load_json, print_log
 
 
 class Parameters:
@@ -446,41 +446,6 @@ def load_parameters_file(file_name):
         print(f"$ Parameters file read: {file_name}")
 
     return parameters
-
-
-def save_json(file_name, data):
-    """Save a python dict as a JSON file
-
-    Parameters
-    ----------
-    file_name : str
-        Output JSON file name
-    data : dict
-        Data to save
-    """
-    with open(file_name, mode="w", encoding="utf-8") as json_f:
-        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
-
-
-def load_json(file_name):
-    """Load a JSON file like a python dict
-
-    Parameters
-    ----------
-    file_name : str
-        JSON file name
-
-    Returns
-    -------
-    dict
-        Python dict
-    """
-    if path.exists(file_name):
-        with open(file_name, encoding="utf-8") as json_file:
-            data = json.load(json_file)
-    else:
-        data = {}
-    return data
 
 
 def load_alignment_dict(data_folder):
