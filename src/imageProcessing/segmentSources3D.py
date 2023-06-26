@@ -195,7 +195,7 @@ class SegmentSources3D:
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
         self.p["windowDisplay"] = 10
 
-    def plot_image_3d(self, image_3d, localizations=None, masks=None, normalize=None):
+    def plot_image_3d(self, image_3d, localizations=None, masks=None, normalize_b=None):
         """
         makes list with XY, XZ and ZY projections and sends for plotting
 
@@ -216,7 +216,7 @@ class SegmentSources3D:
             image_3d,
             localizations=localizations,
             masks=masks,
-            normalize=normalize,
+            normalize_b=normalize_b,
             window=window,
         )
         return fig1

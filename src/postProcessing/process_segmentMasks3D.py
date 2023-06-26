@@ -53,7 +53,6 @@ def projects_3D_volumes(data, files):
 
 
 def parse_arguments():
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     args = parser.parse_args()
@@ -73,8 +72,7 @@ def parse_arguments():
     return files
 
 
-def _main():
-
+def main():
     begin_time = datetime.now()
 
     # parses input files
@@ -98,4 +96,4 @@ def _main():
 # =============================================================================
 
 if __name__ == "__main__":
-    _main()
+    main()
