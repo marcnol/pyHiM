@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 22 15:26:00 2020
-
-@author: marcnol
+Module for high level function calling
 """
 
 
-import argparse
 import logging
 import os
 from datetime import datetime
@@ -28,6 +25,8 @@ from matrixOperations.register_localizations import RegisterLocalizations
 
 
 class HiMFunctionCaller:
+    """Class for high level function calling"""
+
     def __init__(self, run_parameters, session_name="HiM_analysis"):
         self.run_parameters = run_parameters
         self.root_folder = run_parameters["rootFolder"]
@@ -89,17 +88,17 @@ class HiMFunctionCaller:
 
         # initializes handlers for terminal and file
         filehandler = logging.FileHandler(self.log_file, "w")
-        ch = logging.StreamHandler()
+        stream_handler = logging.StreamHandler()
 
         filehandler.setLevel(logging.INFO)
         logger.setLevel(logging.INFO)
-        ch.setLevel(logging.INFO)
+        stream_handler.setLevel(logging.INFO)
 
-        logger.addHandler(ch)
+        logger.addHandler(stream_handler)
         logger.addHandler(filehandler)
 
         filehandler.setFormatter(formatter1)
-        ch.setFormatter(formatter2)
+        stream_handler.setFormatter(formatter2)
 
     def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
@@ -222,29 +221,61 @@ class HiMFunctionCaller:
 # =============================================================================
 
 
-# filters barcode localization table
 def filter_localizations(current_param, label):
+    """Filters barcode localization table
+
+    Parameters
+    ----------
+    current_param : Parameters
+        _description_
+    label : str
+        Only 'barcode' are accepted
+    """
     if label == "barcode":
         filter_localizations_instance = FilterLocalizations(current_param)
         filter_localizations_instance.filter_folder()
 
 
-# filters barcode localization table
 def register_localizations(current_param, label):
+    """Registers barcode localization table
+
+    Parameters
+    ----------
+    current_param : Parameters
+        _description_
+    label : str
+        Only 'barcode' are accepted
+    """
     if label == "barcode":
         register_localizations_instance = RegisterLocalizations(current_param)
         register_localizations_instance.register()
 
 
-# build traces
 def build_traces(current_param, label):
+    """Build traces
+
+    Parameters
+    ----------
+    current_param : Parameters
+        _description_
+    label : str
+        Only 'barcode' are accepted
+    """
     if label == "barcode":
         build_traces_instance = BuildTraces(current_param)
         build_traces_instance.run()
 
 
-# build matrices
 def build_matrix(current_param, label):
+    """Build matrices
+
+    Parameters
+    ----------
+    current_param : Parameters
+        _description_
+    label : str
+        Only 'barcode' are accepted
+    """
     if label == "barcode":
         build_matrix_instance = BuildMatrix(current_param)
         build_matrix_instance.run()
