@@ -11,23 +11,31 @@ plots N Hi-M matrices in a subplot
 import argparse
 import csv
 import json
-#%% imports and plotting settings
+
+# %% imports and plotting settings
 import os
 
 import matplotlib.gridspec as gridspec
+
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
 
 from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix, calculate_contact_probability_matrix, list_sc_to_keep,
-    normalize_matrix, plot_distance_histograms, plot_matrix, plot_scalogram,
-    shuffle_matrix)
+    AnalysisHiMMatrix,
+    calculate_contact_probability_matrix,
+    list_sc_to_keep,
+    normalize_matrix,
+    plot_distance_histograms,
+    plot_matrix,
+    plot_scalogram,
+    shuffle_matrix,
+)
 
 # import scaleogram as scg
 
 
-#%% define and loads datasets
+# %% define and loads datasets
 
 
 def parse_arguments():
@@ -191,8 +199,7 @@ def parse_arguments():
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
-def plotTADs(list_data, run_parameters):
-
+def plotTADs(list_data, run_parameters, data_sets):
     if len(run_parameters["cAxis"]) == 2:
         c_scale = run_parameters["cAxis"][1]
     else:
@@ -200,19 +207,17 @@ def plotTADs(list_data, run_parameters):
     print("--------\nClim used: {}\n--------------\n".format(c_scale))
     fontsize = run_parameters["fontsize"]
 
-    for idataSet in dataSets:
-
+    for idata_set in data_sets:
         if (
             run_parameters["type"] == "contact"
-            and "TAD2plot" in list_data[idataSet].keys()
+            and "TAD2plot" in list_data[idata_set].keys()
         ):
+            Samples = list_data[idata_set]["Folders"]
+            c_m = list_data[idata_set]["ContactProbability_cm"]
 
-            Samples = list_data[idataSet]["Folders"]
-            c_m = list_data[idataSet]["ContactProbability_cm"]
-
-            TAD2plot = list_data[idataSet]["TAD2plot"]
-            segmentLabels = list_data[idataSet]["segmentLabels"]
-            segment2plot = list_data[idataSet]["segment2plot"]
+            TAD2plot = list_data[idata_set]["TAD2plot"]
+            segmentLabels = list_data[idata_set]["segmentLabels"]
+            segment2plot = list_data[idata_set]["segment2plot"]
             Nplots = len(Samples)
 
             him_data = AnalysisHiMMatrix(
@@ -263,7 +268,6 @@ def plotTADs(list_data, run_parameters):
             for isample, ifigure, i_fig_label, yticks, xticks, legend, icolorbar in zip(
                 Samples, FigList, FigLabels, Yticks, Xticks, legendList, colorbar
             ):
-
                 him_data = AnalysisHiMMatrix(run_parameters, os.path.dirname(isample))
                 him_data.load_data()
 
@@ -274,8 +278,8 @@ def plotTADs(list_data, run_parameters):
                 if run_parameters["normalizeMatrix"]:
                     subMatrix = subMatrix / subMatrix.max()
 
-                if "ContactProbability_cm" in list_data[idataSet].keys():
-                    colormap = list_data[idataSet]["ContactProbability_cm"]
+                if "ContactProbability_cm" in list_data[idata_set].keys():
+                    colormap = list_data[idata_set]["ContactProbability_cm"]
 
                 if run_parameters["ratio"] == True:
                     subMatrixNormalized = np.log(submatrixReference / subMatrix)
@@ -339,7 +343,6 @@ def makesplotHiMLineProfile(
     c_m="RdBu",
     fontsize=8,
 ):
-
     numberSegments = matrixSegmentAnchor.shape[1]
 
     fig1 = plt.figure(constrained_layout=True)
@@ -363,7 +366,7 @@ def makesplotHiMLineProfile(
     return fig1
 
 
-def plotHiMLineProfile(list_data, run_parameters):
+def plotHiMLineProfile(list_data, run_parameters, data_sets):
     if len(run_parameters["cAxis"]) == 2:
         c_scale = run_parameters["cAxis"][1]
     else:
@@ -371,18 +374,17 @@ def plotHiMLineProfile(list_data, run_parameters):
     print("--------\nClim used: {}\n--------------\n".format(c_scale))
     fontsize = run_parameters["fontsize"]
 
-    for idataSet in dataSets:
+    for idata_set in data_sets:
         if (
             run_parameters["type"] == "contact"
-            and "plotSegment_anchor" in list_data[idataSet].keys()
+            and "plotSegment_anchor" in list_data[idata_set].keys()
         ):
+            Samples = list_data[idata_set]["Folders"]
 
-            Samples = list_data[idataSet]["Folders"]
-
-            plotSegment_anchor = list_data[idataSet]["plotSegment_anchor"]
-            segmentLabels = list_data[idataSet]["segmentLabels"]
-            segment2plot = list_data[idataSet]["segment2plot"]
-            c_m = list_data[idataSet]["ContactProbability_cm"]
+            plotSegment_anchor = list_data[idata_set]["plotSegment_anchor"]
+            segmentLabels = list_data[idata_set]["segmentLabels"]
+            segment2plot = list_data[idata_set]["segment2plot"]
+            c_m = list_data[idata_set]["ContactProbability_cm"]
 
             him_data = AnalysisHiMMatrix(
                 run_parameters, os.path.dirname(Samples[segment2plot])
@@ -407,7 +409,6 @@ def plotHiMLineProfile(list_data, run_parameters):
             matrixSegmentAnchor = np.zeros((number_barcodes, numberSegments))
 
             for iSample, sample in enumerate(Samples):
-
                 him_data = AnalysisHiMMatrix(run_parameters, os.path.dirname(sample))
                 him_data.load_data()
 
@@ -449,8 +450,8 @@ def plotHiMLineProfile(list_data, run_parameters):
             print("Output written to {}".format(outputFileName1))
             fig1.savefig(outputFileName1)
 
-            if "barcodes2plot" in list_data[idataSet].keys():
-                barcodes2plot = list_data[idataSet]["barcodes2plot"]
+            if "barcodes2plot" in list_data[idata_set].keys():
+                barcodes2plot = list_data[idata_set]["barcodes2plot"]
                 fig2 = makesplotHiMLineProfile(
                     matrixSegmentAnchor[np.arange(barcodes2plot[0], barcodes2plot[1])],
                     unique_barcodes[barcodes2plot[0] : barcodes2plot[1]],
@@ -466,10 +467,9 @@ def plotHiMLineProfile(list_data, run_parameters):
                 fig2.savefig(outputFileName2)
 
 
-def plotMultipleHiMmatrices(list_data, run_parameters):
-    for idataSet in dataSets:
-
-        Samples = list_data[idataSet]["Folders"]
+def plotMultipleHiMmatrices(list_data, run_parameters, data_sets):
+    for idata_set in data_sets:
+        Samples = list_data[idata_set]["Folders"]
 
         Nplots = len(Samples)
 
@@ -506,7 +506,6 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
         for isample, ifigure, i_fig_label, yticks, xticks, legend, icolorbar in zip(
             Samples, FigList, FigLabels, Yticks, Xticks, legendList, colorbar
         ):
-
             him_data = AnalysisHiMMatrix(run_parameters, os.path.dirname(isample))
             him_data.load_data()
 
@@ -514,8 +513,8 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                 matrix = him_data.data["ensembleContactProbability"]
                 # matrix=normalize_matrix(matrix)
                 c_scale = matrix.max() / run_parameters["scalingParameter"]
-                if "ContactProbability_cm" in list_data[idataSet].keys():
-                    colormap = list_data[idataSet]["ContactProbability_cm"]
+                if "ContactProbability_cm" in list_data[idata_set].keys():
+                    colormap = list_data[idata_set]["ContactProbability_cm"]
 
             elif run_parameters["type"] == "PWD":
                 matrix_sc = him_data.data["SCmatrixCollated"]
@@ -526,8 +525,8 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                     matrix_sc[:, :, cells_to_plot], axis=2
                 )
                 c_scale = 3 * np.nanmedian(matrix) / run_parameters["scalingParameter"]
-                if "PWD_cm" in list_data[idataSet].keys():
-                    colormap = list_data[idataSet]["PWD_cm"]
+                if "PWD_cm" in list_data[idata_set].keys():
+                    colormap = list_data[idata_set]["PWD_cm"]
                 del matrix_sc
 
             elif run_parameters["type"] == "iPWD":
@@ -544,8 +543,8 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
                     * np.reciprocal(np.nanmedian(matrix))
                     / run_parameters["scalingParameter"]
                 )
-                if "iPWD_cm" in list_data[idataSet].keys():
-                    colormap = list_data[idataSet]["iPWD_cm"]
+                if "iPWD_cm" in list_data[idata_set].keys():
+                    colormap = list_data[idata_set]["iPWD_cm"]
                 del matrixPWD, matrix_sc
 
             print(
@@ -611,7 +610,6 @@ def plotMultipleHiMmatrices(list_data, run_parameters):
 
 
 def main():
-
     print(">>> Producing HiM matrix")
     run_parameters = parse_arguments()
 
@@ -622,7 +620,7 @@ def main():
     with open(filename_list_data_json, encoding="utf-8") as json_file:
         list_data = json.load(json_file)
 
-    dataSets = list(list_data.keys())
+    data_sets = list(list_data.keys())
     if run_parameters["outputFolder"] == "none":
         run_parameters["outputFolder"] = run_parameters["rootFolder"]
 
@@ -637,11 +635,11 @@ def main():
         + run_parameters["plottingFileExtension"]
     )
 
-    plotMultipleHiMmatrices(list_data, run_parameters)
+    plotMultipleHiMmatrices(list_data, run_parameters, data_sets)
 
-    plotHiMLineProfile(list_data, run_parameters)
+    plotHiMLineProfile(list_data, run_parameters, data_sets)
 
-    plotTADs(list_data, run_parameters)
+    plotTADs(list_data, run_parameters, data_sets)
 
     print("\nDone\n\n")
 

@@ -325,7 +325,7 @@ class CellID:
             tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
                 "toleranceDrift"
             ]
-            if not isinstance(self.tolerance_drift, tuple):
+            if not isinstance(tolerance_drift, tuple):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
                 tolerance_drift = (tolerance_drift, tolerance_drift, tolerance_drift)
         else:
