@@ -1,19 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Apr  4 09:11:01 2020
-
-@author: marcnol
-
-This file contains routines to process Hi-M datasets
-
-"""
+"""Main file of pyHiM, include the top-level mechanism."""
 
 __version__ = "0.7.2"
-
-# =============================================================================
-# IMPORTS
-# =============================================================================
 
 import os
 import sys
@@ -27,21 +16,26 @@ import apifish
 import fileProcessing.functionCaller as fc
 from core.parameters import Parameters
 from core.pyhim_logging import print_log
+from core.run_args import him_parse_arguments
 
 warnings.filterwarnings("ignore")
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
-
-
 def main(command_line_arguments=None):
+    """Main function of pyHiM
+
+    Parameters
+    ----------
+    command_line_arguments : List[str], optional
+        Used to give inputs for the runtime when you call this function like a module.
+        For example, to test the pyHiM run from tests folder.
+        By default None.
+    """
     begin_time = datetime.now()
 
-    run_parameters = fc.him_parse_arguments(command_line_arguments)
+    run_parameters = him_parse_arguments(command_line_arguments)
 
     him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
     him.initialize()
