@@ -16,14 +16,14 @@ from photutils import Background2D, MedianBackground
 from skimage import exposure, io
 from tqdm import trange
 
-from core.dask_cluster import try_get_client
-from core.pyhim_logging import print_log
-from core.saving import save_image_2d_cmd
-from imageProcessing.makeProjections import (
+from api_him.projection import (
     calculate_zrange,
     project_image_2d,
     reinterpolate_focal_plane,
 )
+from core.dask_cluster import try_get_client
+from core.pyhim_logging import print_log
+from core.saving import save_image_2d_cmd
 
 warnings.filterwarnings("ignore")
 
