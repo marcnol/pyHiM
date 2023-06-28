@@ -268,7 +268,7 @@ class LocalizationTable:
             if barcode_found:
                 for label in labels:
                     a, b = barcode_map_2.loc[buid_1][label], barcode_map_1[row][label]
-                    if ~np.isnan(a) and ~np.isnan(b):
+                    if ~np.isnan(a).any() and ~np.isnan(b).any():
                         #diff = a - b 
                         #if np.isnan(diff):
                         #    diff = 0
