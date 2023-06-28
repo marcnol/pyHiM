@@ -267,10 +267,12 @@ class LocalizationTable:
             # collects differences in values between same localization in both tables
             if barcode_found:
                 for label in labels:
-                    diff = barcode_map_2.loc[buid_1][label] - barcode_map_1[row][label]
-                    if np.isnan(diff):
-                        diff = 0
-                    diffs[label].append(diff)
+                    a, b = barcode_map_2.loc[buid_1][label], barcode_map_1[row][label]
+                    if ~np.isnan(a) and ~np.isnan(b):
+                        #diff = a - b 
+                        #if np.isnan(diff):
+                        #    diff = 0
+                        diffs[label].append(a-b)
 
         # plots figures
         fig, axes = plt.subplots(2, 2)
