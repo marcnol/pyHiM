@@ -304,7 +304,8 @@ class ChromatinTraceTable:
 
     def filter_repeated_barcodes(self, trace_file="mock"):
         """
-        This function will remove the barcodes that are repeated in a trace. All other barcodes are kept.
+        This function will remove the barcodes that are present more than once in a trace. 
+        All other barcodes are kept.
 
         Parameters
         ----------
@@ -390,6 +391,63 @@ class ChromatinTraceTable:
             print("! Error: you are trying to filter an empty trace table!")
         self.data = trace_table_new
 
+
+    def remove_duplicates(self, ):
+        """
+        removes duplicated (identical) barcodes
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        trace_table : ASTROPY Table
+            output trace table.
+        """
+        trace_table = self.data
+        trace_table_new = trace_table.copy()
+        print("\n$ Removing duplicated barcodes...")
+        if len(trace_table) > 0:
+
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Spot_ID")
+            
+            # finds barcodes with the same UID and stores UIDs in list
+            spots_to_remove = list()
+            for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+                if len(trace)>1:
+                    spots_to_remove.append(trace["Spot_ID"][0])
+            
+            # finds row of the first offending barcode
+            # this only removes one of the duplicated barcodes --> assumes at most there are two copies
+            rows_to_remove = list()
+            for idx, row in enumerate(trace_table):
+                spot_id = row["Spot_ID"]
+                if spot_id in spots_to_remove:
+                    rows_to_remove.append(idx)
+                    spots_to_remove.remove(spot_id)
+                    
+            # removes from table
+            trace_table_new.remove_rows(rows_to_remove)
+
+            print(f"$ Number of rows to remove: {len(rows_to_remove)}")
+
+            if len(trace_table_new) > 0:
+                trace_table_indexed = trace_table_new.group_by("Trace_ID")
+                number_traces_left = len(trace_table_indexed.groups)
+            else:
+                number_traces_left = 0
+
+            print(
+                f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {number_traces_left}"
+            )
+
+        else:
+            print("! Error: you are trying to filter an empty trace table!")
+            
+        self.data = trace_table_new
+        
     def remove_barcode(self, remove_barcode = None):
         """
         Removes a specific barcode from a trace table        

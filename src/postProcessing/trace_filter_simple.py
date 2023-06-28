@@ -154,6 +154,9 @@ def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", re
             # reads new trace
             trace.load(trace_file)
 
+            # remove duplicated barcodes
+            trace.remove_duplicates()
+            
             # filters trace by minimum number of barcodes
             trace.filter_traces_by_n(minimum_number_barcodes=N_barcodes)
             comments.append("filt:N_barcodes>" + str(N_barcodes))
