@@ -27,10 +27,10 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class HiMFunctionCaller:
     """Class for high level function calling"""
 
-    def __init__(self, run_parameters, session_name="HiM_analysis"):
-        self.run_parameters = run_parameters
-        self.root_folder = run_parameters["rootFolder"]
-        self.parallel = run_parameters["parallel"]
+    def __init__(self, run_args, session_name="HiM_analysis"):
+        self.m_run_args = run_args
+        self.root_folder = run_args.data_path
+        self.parallel = run_args.parallel
         self.session_name = session_name
 
         self.current_log = Log(root_folder=self.root_folder, parallel=self.parallel)
@@ -113,7 +113,7 @@ class HiMFunctionCaller:
             self.cluster = dask_cluster_instance.cluster
 
     def make_projections(self, current_param):
-        if not self.run_parameters["parallel"]:
+        if not self.m_run_args.parallel:
             make_projections(current_param, self.current_session)
         else:
             result = self.client.submit(
