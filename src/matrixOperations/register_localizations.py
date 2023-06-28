@@ -28,9 +28,8 @@ from tqdm import trange
 
 from core.folder import Folders
 from core.pyhim_logging import print_log, write_string_to_file
-from imageProcessing.localization_table import LocalizationTable
+from imageProcessing.localization_table import LocalizationTable, decode_rois
 from matrixOperations.filter_localizations import get_file_table_new_name
-from src.imageProcessing.localization_table import decode_rois
 
 warnings.filterwarnings("ignore")
 

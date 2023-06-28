@@ -28,19 +28,23 @@ class HiMFunctionCaller:
     """Class for high level function calling"""
 
     def __init__(self, run_args, session_name="HiM_analysis"):
-        self.m_run_args = run_args
         self.root_folder = run_args.data_path
         self.parallel = run_args.parallel
-        self.session_name = session_name
 
         self.current_log = Log(root_folder=self.root_folder, parallel=self.parallel)
-
-        self.current_session = Session(self.root_folder, self.session_name)
+        self.current_session = Session(self.root_folder, session_name)
 
         self.log_file = ""
         self.markdown_filename = ""
         self.client = None
         self.cluster = None
+
+    def manage_parallel_option(self, feature, *args, **kwargs):
+        if not self.parallel:
+            feature(*args, **kwargs)
+        else:
+            result = self.client.submit(feature, *args, **kwargs)
+            _ = self.client.gather(result)
 
     def initialize(self):
         print_log(
@@ -55,7 +59,7 @@ class HiMFunctionCaller:
         # setup markdown file
         #####################
         print_log(
-            f"\n======================{self.session_name}======================\n"
+            f"\n======================{self.current_session.name}======================\n"
         )
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
@@ -113,13 +117,16 @@ class HiMFunctionCaller:
             self.cluster = dask_cluster_instance.cluster
 
     def make_projections(self, current_param):
-        if not self.m_run_args.parallel:
-            make_projections(current_param, self.current_session)
-        else:
-            result = self.client.submit(
-                make_projections, current_param, self.current_session
-            )
-            _ = self.client.gather(result)
+        self.manage_parallel_option(
+            make_projections, current_param, self.current_session
+        )
+        # if not self.parallel:
+        #     make_projections(current_param, self.current_session)
+        # else:
+        #     result = self.client.submit(
+        #         make_projections, current_param, self.current_session
+        #     )
+        #     _ = self.client.gather(result)
 
     def align_images(self, current_param, label):
         if (
@@ -127,13 +134,16 @@ class HiMFunctionCaller:
             and current_param.param_dict["acquisition"]["label"] == "fiducial"
         ):
             print_log(f"> Making image registrations for label: {label}")
-            if not self.parallel:
-                align_images(current_param, self.current_session)
-            else:
-                result = self.client.submit(
-                    align_images, current_param, self.current_session
-                )
-                _ = self.client.gather(result)
+            self.manage_parallel_option(
+                align_images, current_param, self.current_session
+            )
+            # if not self.parallel:
+            #     align_images(current_param, self.current_session)
+            # else:
+            #     result = self.client.submit(
+            #         align_images, current_param, self.current_session
+            #     )
+            #     _ = self.client.gather(result)
 
     def align_images_3d(self, current_param, label):
         if (
@@ -152,14 +162,16 @@ class HiMFunctionCaller:
             and current_param.param_dict["acquisition"]["label"] != "fiducial"
         ):
             print_log(f"> Applying image registrations for label: {label}")
-
-            if not self.parallel:
-                apply_registrations(current_param, self.current_session)
-            else:
-                result = self.client.submit(
-                    apply_registrations, current_param, self.current_session
-                )
-                _ = self.client.gather(result)
+            self.manage_parallel_option(
+                apply_registrations, current_param, self.current_session
+            )
+            # if not self.parallel:
+            #     apply_registrations(current_param, self.current_session)
+            # else:
+            #     result = self.client.submit(
+            #         apply_registrations, current_param, self.current_session
+            #     )
+            #     _ = self.client.gather(result)
 
     def segment_masks(self, current_param, label):
         if "segmentedObjects" in current_param.param_dict.keys():
@@ -172,13 +184,16 @@ class HiMFunctionCaller:
             and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
-            if not self.parallel:
-                segment_masks(current_param, self.current_session)
-            else:
-                result = self.client.submit(
-                    segment_masks, current_param, self.current_session
-                )
-                _ = self.client.gather(result)
+            self.manage_parallel_option(
+                segment_masks, current_param, self.current_session
+            )
+            # if not self.parallel:
+            #     segment_masks(current_param, self.current_session)
+            # else:
+            #     result = self.client.submit(
+            #         segment_masks, current_param, self.current_session
+            #     )
+            #     _ = self.client.gather(result)
 
     def segment_masks_3d(self, current_param, label):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
@@ -207,13 +222,16 @@ class HiMFunctionCaller:
 
     def process_pwd_matrices(self, current_param, label):
         if label in ("DAPI", "mask"):
-            if not self.parallel:
-                process_pwd_matrices(current_param, self.current_session)
-            else:
-                result = self.client.submit(
-                    process_pwd_matrices, current_param, self.current_session
-                )
-                _ = self.client.gather(result)
+            self.manage_parallel_option(
+                process_pwd_matrices, current_param, self.current_session
+            )
+            # if not self.parallel:
+            #     process_pwd_matrices(current_param, self.current_session)
+            # else:
+            #     result = self.client.submit(
+            #         process_pwd_matrices, current_param, self.current_session
+            #     )
+            #     _ = self.client.gather(result)
 
 
 # =============================================================================
