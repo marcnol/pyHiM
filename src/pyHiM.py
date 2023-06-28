@@ -16,7 +16,7 @@ import apifish
 import core.function_caller as fc
 from core.parameters import Parameters
 from core.pyhim_logging import print_log
-from core.run_args import him_parse_arguments
+from core.run_args import RunArgs
 
 warnings.filterwarnings("ignore")
 
@@ -35,17 +35,13 @@ def main(command_line_arguments=None):
     """
     begin_time = datetime.now()
 
-    run_parameters = him_parse_arguments(command_line_arguments)
+    run_args = RunArgs(command_line_arguments)
 
-    him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
+    him = fc.HiMFunctionCaller(run_args, session_name="HiM_analysis")
     him.initialize()
 
-    him.lauch_dask_scheduler(
-        threads_requested=run_parameters["threads"], maximum_load=0.8
-    )
-    global_param = Parameters(
-        root_folder=run_parameters["rootFolder"], file_name="infoList.json"
-    )
+    him.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
+    global_param = Parameters(root_folder=run_args.data_path, file_name="infoList.json")
     labels = global_param.param_dict["labels"]
 
     print_log(f"$ Started logging to: {him.log_file}")
@@ -54,10 +50,10 @@ def main(command_line_arguments=None):
     for label in labels:
         # sets parameters
         current_param = Parameters(
-            root_folder=run_parameters["rootFolder"],
+            root_folder=run_args.data_path,
             label=label,
             file_name="infoList.json",
-            stardist_basename=run_parameters["stardist_basename"],
+            stardist_basename=run_args.stardist_basename,
         )
 
         print_log(
@@ -74,51 +70,51 @@ def main(command_line_arguments=None):
         current_param.param_dict["fileNameMD"] = him.markdown_filename
 
         # [projects 3D images in 2d]
-        if "makeProjections" in run_parameters["cmd"]:
+        if "makeProjections" in run_args.cmd_list:
             him.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
-        if "alignImages" in run_parameters["cmd"]:
+        if "alignImages" in run_args.cmd_list:
             him.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in run_parameters["cmd"]:
+        if "appliesRegistrations" in run_args.cmd_list:
             him.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in run_parameters["cmd"]:
+        if "alignImages3D" in run_args.cmd_list:
             him.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in run_parameters["cmd"]:
+        if "segmentMasks" in run_args.cmd_list:
             him.segment_masks(current_param, label)
 
         # [segments masks in 3D]
-        if "segmentMasks3D" in run_parameters["cmd"]:
+        if "segmentMasks3D" in run_args.cmd_list:
             him.segment_masks_3d(current_param, label)
 
         # [segments sources in 3D]
-        if "segmentSources3D" in run_parameters["cmd"]:
+        if "segmentSources3D" in run_args.cmd_list:
             him.segment_sources_3d(current_param, label)
 
         # [filters barcode localization table]
-        if "filter_localizations" in run_parameters["cmd"]:
+        if "filter_localizations" in run_args.cmd_list:
             fc.filter_localizations(current_param, label)
 
         # [registers barcode localization table]
-        if "register_localizations" in run_parameters["cmd"]:
+        if "register_localizations" in run_args.cmd_list:
             fc.register_localizations(current_param, label)
 
         # [build traces]
-        if "build_traces" in run_parameters["cmd"]:
+        if "build_traces" in run_args.cmd_list:
             fc.build_traces(current_param, label)
 
         # [builds matrices]
-        if "build_matrix" in run_parameters["cmd"]:
+        if "build_matrix" in run_args.cmd_list:
             fc.build_matrix(current_param, label)
 
         # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in run_parameters["cmd"]:
+        if "buildHiMmatrix" in run_args.cmd_list:
             him.process_pwd_matrices(current_param, label)
 
         print("\n")
@@ -128,7 +124,7 @@ def main(command_line_arguments=None):
     him.current_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
-    if run_parameters["parallel"]:
+    if run_args.parallel:
         him.cluster.close()
         him.client.close()
 
