@@ -120,13 +120,6 @@ class HiMFunctionCaller:
         self.manage_parallel_option(
             make_projections, current_param, self.current_session
         )
-        # if not self.parallel:
-        #     make_projections(current_param, self.current_session)
-        # else:
-        #     result = self.client.submit(
-        #         make_projections, current_param, self.current_session
-        #     )
-        #     _ = self.client.gather(result)
 
     def align_images(self, current_param, label):
         if (
@@ -137,13 +130,6 @@ class HiMFunctionCaller:
             self.manage_parallel_option(
                 align_images, current_param, self.current_session
             )
-            # if not self.parallel:
-            #     align_images(current_param, self.current_session)
-            # else:
-            #     result = self.client.submit(
-            #         align_images, current_param, self.current_session
-            #     )
-            #     _ = self.client.gather(result)
 
     def align_images_3d(self, current_param, label):
         if (
@@ -165,13 +151,6 @@ class HiMFunctionCaller:
             self.manage_parallel_option(
                 apply_registrations, current_param, self.current_session
             )
-            # if not self.parallel:
-            #     apply_registrations(current_param, self.current_session)
-            # else:
-            #     result = self.client.submit(
-            #         apply_registrations, current_param, self.current_session
-            #     )
-            #     _ = self.client.gather(result)
 
     def segment_masks(self, current_param, label):
         if "segmentedObjects" in current_param.param_dict.keys():
@@ -187,13 +166,6 @@ class HiMFunctionCaller:
             self.manage_parallel_option(
                 segment_masks, current_param, self.current_session
             )
-            # if not self.parallel:
-            #     segment_masks(current_param, self.current_session)
-            # else:
-            #     result = self.client.submit(
-            #         segment_masks, current_param, self.current_session
-            #     )
-            #     _ = self.client.gather(result)
 
     def segment_masks_3d(self, current_param, label):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
@@ -225,13 +197,6 @@ class HiMFunctionCaller:
             self.manage_parallel_option(
                 process_pwd_matrices, current_param, self.current_session
             )
-            # if not self.parallel:
-            #     process_pwd_matrices(current_param, self.current_session)
-            # else:
-            #     result = self.client.submit(
-            #         process_pwd_matrices, current_param, self.current_session
-            #     )
-            #     _ = self.client.gather(result)
 
 
 # =============================================================================
