@@ -27,9 +27,9 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class HiMFunctionCaller:
     """Class for high level function calling"""
 
-    def __init__(self, run_args, session_name="HiM_analysis"):
-        self.root_folder = run_args.data_path
-        self.parallel = run_args.parallel
+    def __init__(self, data_m, is_parallel, session_name="HiM_analysis"):
+        self.root_folder = data_m.m_data_path
+        self.parallel = is_parallel
 
         self.current_log = Log(root_folder=self.root_folder, parallel=self.parallel)
         self.current_session = Session(self.root_folder, session_name)
