@@ -14,6 +14,7 @@ from datetime import datetime
 import apifish
 
 import core.function_caller as fc
+from core.data_manager import DataManager
 from core.parameters import Parameters
 from core.pyhim_logging import print_log
 from core.run_args import RunArgs
@@ -37,11 +38,13 @@ def main(command_line_arguments=None):
 
     run_args = RunArgs(command_line_arguments)
 
-    him = fc.HiMFunctionCaller(run_args, session_name="HiM_analysis")
+    datam = DataManager(run_args.data_path, run_args.stardist_basename)
+
+    him = fc.HiMFunctionCaller(datam, run_args.parallel, session_name="HiM_analysis")
     him.initialize()
 
     him.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
-    global_param = Parameters(root_folder=run_args.data_path, file_name="infoList.json")
+    global_param = Parameters(root_folder=datam.m_data_path, file_name="infoList.json")
     labels = global_param.param_dict["labels"]
 
     print_log(f"$ Started logging to: {him.log_file}")
@@ -50,10 +53,10 @@ def main(command_line_arguments=None):
     for label in labels:
         # sets parameters
         current_param = Parameters(
-            root_folder=run_args.data_path,
+            root_folder=datam.m_data_path,
             label=label,
             file_name="infoList.json",
-            stardist_basename=run_args.stardist_basename,
+            stardist_basename=datam.m_stardist_basename,
         )
 
         print_log(
