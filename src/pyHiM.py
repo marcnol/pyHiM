@@ -44,7 +44,9 @@ def main(command_line_arguments=None):
     him.initialize()
 
     him.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
-    global_param = Parameters(root_folder=datam.m_data_path, file_name="infoList.json")
+    raw_dict = datam.load_user_param()
+    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
+
     labels = global_param.param_dict["labels"]
 
     print_log(f"$ Started logging to: {him.log_file}")
@@ -53,9 +55,9 @@ def main(command_line_arguments=None):
     for label in labels:
         # sets parameters
         current_param = Parameters(
+            raw_dict,
             root_folder=datam.m_data_path,
             label=label,
-            file_name="infoList.json",
             stardist_basename=datam.m_stardist_basename,
         )
 
