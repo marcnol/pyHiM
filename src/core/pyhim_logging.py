@@ -26,7 +26,7 @@ class Logger:
         print("\n-----------------------------------------------------------------")
         print(f"$ root_folder: {self.m_root_folder}")
         begin_time = datetime.now()
-        print(f"\n======================{self.m_session.name}======================\n")
+        print_session_name(self.m_session.name)
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
 
@@ -174,3 +174,7 @@ def print_log(message, status="INFO"):
         logging.warning(message)
     elif status == "DEBUG":
         logging.debug(message)
+
+
+def print_session_name(name: str):
+    print_log(f"\n===================={name}====================\n")

@@ -29,7 +29,7 @@ from dask.distributed import get_client, wait
 
 from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from core.saving import image_show_with_values
 from imageProcessing.imageProcessing import Image
 
@@ -104,7 +104,7 @@ def make_projections(current_param, current_session, file_name=None):
     session_name = "makesProjections"
 
     # processes folders and files
-    print_log("\n===================={}====================\n".format(session_name))
+    print_session_name(session_name)
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log(f"> Folders read: {len(data_folder.list_folders)}")
     write_string_to_file(

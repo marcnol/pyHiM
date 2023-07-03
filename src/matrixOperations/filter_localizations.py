@@ -19,7 +19,7 @@ from tqdm import trange
 
 from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")
@@ -140,7 +140,7 @@ class FilterLocalizations:
 
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log("\n===================={}====================\n".format(session_name))
+        print_session_name(session_name)
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],

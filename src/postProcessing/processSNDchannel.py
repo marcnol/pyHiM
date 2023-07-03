@@ -29,7 +29,7 @@ from roipoly import MultiRoi
 from core.data_manager import DataManager, write_string_to_file
 from core.folder import Folders
 from core.parameters import Parameters
-from core.pyhim_logging import Log
+from core.pyhim_logging import Log, print_session_name
 from imageProcessing.imageProcessing import Image
 
 try:
