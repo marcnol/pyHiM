@@ -53,7 +53,7 @@ def main():
     if args.fileParameters:
         file_parameters = args.fileParameters
     else:
-        file_parameters = "infoList.json"
+        file_parameters = "infoList"
 
     # removes files in rootFolder
     if args.all:

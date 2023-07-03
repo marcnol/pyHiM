@@ -21,7 +21,7 @@ import glob
 import os
 import sys
 
-from core.pyhim_logging import write_string_to_file
+from core.data_manager import write_string_to_file
 
 # =============================================================================
 # MAIN

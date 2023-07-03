@@ -3,6 +3,8 @@ import os
 import re
 from tkinter import messagebox
 
+from core.data_manager import save_json
+
 
 def convert_dic_to_string(dic: dict):
     """Convert a dictionnary {'nuclei':'DAPI','mask1':'mask0'} to a simple
@@ -154,7 +156,7 @@ def check_dict(string: str):
 
 
 def update_infolist(user_values_dic, infolist_dic_full, current_dir):
-    """"
+    """ "
     1-Save old parameters from infolist_dic_full in infoList_preVersion.json in current directory.
     2-Save new parameters from user_values_dic in infoList.json in current directory.
     """
@@ -213,8 +215,8 @@ def update_infolist(user_values_dic, infolist_dic_full, current_dir):
     # in the current directory.
 
     infolist_previous_path = current_dir + os.sep + "infoList_preVersion.json"
-    with open(infolist_previous_path, mode="w") as file:
-        json.dump(infolist_dic_full, file, indent=4)
+
+    save_json(infolist_dic_full, infolist_previous_path)
 
     # Update infolist_dic with user_values_dic and save new infoList.json
     infolist_dic_full["common"]["acquisition"].update(dic_comm_acqui)
@@ -229,8 +231,7 @@ def update_infolist(user_values_dic, infolist_dic_full, current_dir):
     infolist_dic_full["labels"]["mask"]["zProject"].update(dic_labels_mask_zpro)
 
     infolist_new_path = current_dir + os.sep + "infoList.json"
-    with open(infolist_new_path, mode="w") as file:
-        json.dump(infolist_dic_full, file, indent=4)
+    save_json(infolist_dic_full, infolist_new_path)
 
 
 def check_settings(entries_dic):

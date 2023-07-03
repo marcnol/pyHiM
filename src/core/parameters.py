@@ -10,7 +10,8 @@ import re
 from os import path
 from warnings import warn
 
-from core.pyhim_logging import load_json, print_log
+from core.data_manager import load_json
+from core.pyhim_logging import print_log
 
 
 class Parameters:
@@ -196,11 +197,7 @@ class Parameters:
         """
         param_from_file = self.m_raw_dict
 
-        if param_from_file is None:
-            raise ValueError("No infoList.json file found")
-
         converted_param = param_from_file["common"]
-
         labels = param_from_file["labels"]
 
         ordered_list = [" "] * len(labels.keys())

@@ -37,19 +37,15 @@ def main(command_line_arguments=None):
     begin_time = datetime.now()
 
     run_args = RunArgs(command_line_arguments)
-
     datam = DataManager(run_args.data_path, run_args.stardist_basename)
-
-    pipe = fc.Pipeline(datam, run_args.parallel, session_name="HiM_analysis")
-    pipe.initialize()
-
-    pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
+    pipe = fc.Pipeline(datam, run_args.parallel, session_name="HiM_analysis")
+    pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     labels = global_param.param_dict["labels"]
 
-    print_log(f"$ Started logging to: {pipe.log_file}")
+    print_log(f"$ Started logging to: {pipe.m_logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
     for label in labels:
@@ -68,7 +64,7 @@ def main(command_line_arguments=None):
         print_log("------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = pipe.parallel
-        current_param.param_dict["fileNameMD"] = pipe.markdown_filename
+        current_param.param_dict["fileNameMD"] = pipe.m_logger.md_filename
 
         # [projects 3D images in 2d]
         if "makeProjections" in run_args.cmd_list:
@@ -122,7 +118,7 @@ def main(command_line_arguments=None):
         del current_param
 
     # exits
-    pipe.current_session.save()
+    pipe.m_logger.m_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
     if run_args.parallel:

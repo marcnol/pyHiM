@@ -32,7 +32,7 @@ from datetime import datetime
 
 import numpy as np
 
-from core.pyhim_logging import write_string_to_file
+from core.data_manager import save_json, write_string_to_file
 from matrixOperations.HIMmatrixOperations import (
     load_sc_data,
     load_sc_data_matlab,
@@ -375,10 +375,8 @@ def main():
                 spamwriter.writerow(common_set_unique_barcodes)
 
         p["SClabeledCollated"] = []
-        with open(
-            output_filename + "_parameters.json", mode="w", encoding="utf-8"
-        ) as f:
-            json.dump(p, f, ensure_ascii=False, sort_keys=True, indent=4)
+
+        save_json(p, output_filename + "_parameters.json")
 
         with open(
             output_filename + "_runName.csv", mode="w", newline="", encoding="utf-8"

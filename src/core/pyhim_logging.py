@@ -9,6 +9,66 @@ import logging
 import os
 from datetime import datetime
 
+from core.data_manager import save_json, write_string_to_file
+
+
+class Logger:
+    def __init__(self, root_folder, parallel=False, session_name=""):
+        self.m_root_folder = root_folder
+        self.m_log = Log(root_folder=root_folder, parallel=parallel)
+        self.m_session = Session(root_folder, session_name)
+        self.log_file = ""
+        self.md_filename = ""
+        self.setup_md_file()
+        self.setup_logger()
+
+    def setup_md_file(self):
+        print("\n-----------------------------------------------------------------")
+        print(f"$ root_folder: {self.m_root_folder}")
+        begin_time = datetime.now()
+        print(f"\n======================{self.m_session.name}======================\n")
+        now = datetime.now()
+        date_time = now.strftime("%d%m%Y_%H%M%S")
+
+        self.log_file = (
+            self.m_root_folder + os.sep + "HiM_analysis" + date_time + ".log"
+        )
+        self.md_filename = self.log_file.split(".")[0] + ".md"
+
+        print(f"$ Hi-M analysis will be written to: {self.md_filename}")
+        # initialises MD file
+        write_string_to_file(
+            self.md_filename,
+            f"""# Hi-M analysis {begin_time.strftime("%Y/%m/%d %H:%M:%S")}""",
+            "w",
+        )
+
+    def setup_logger(self):
+        # creates output formats for terminal and log file
+        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
+        formatter2 = logging.Formatter("%(message)s")
+
+        # clears up any existing logger
+        logger = logging.getLogger()
+        logger.handlers = []
+        for hdlr in logger.handlers[:]:
+            if isinstance(hdlr, logging.FileHandler):
+                logger.removeHandler(hdlr)
+
+        # initializes handlers for terminal and file
+        filehandler = logging.FileHandler(self.log_file, "w")
+        stream_handler = logging.StreamHandler()
+
+        logger.setLevel(logging.INFO)
+        filehandler.setLevel(logging.INFO)
+        stream_handler.setLevel(logging.INFO)
+
+        logger.addHandler(stream_handler)
+        logger.addHandler(filehandler)
+
+        filehandler.setFormatter(formatter1)
+        stream_handler.setFormatter(formatter2)
+
 
 class Session:
     """Used to log planned tasks on this run"""
@@ -22,7 +82,7 @@ class Session:
 
     def save(self):
         """Saves session to file"""
-        save_json(self.file_name, self.data)
+        save_json(self.data, self.file_name)
         print(f"> Saved json session file to {self.file_name}")
 
     def add(self, key, value):
@@ -48,7 +108,7 @@ class Log:
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
         self.file_name = root_folder + os.sep + "logfile" + date_time + ".log"
-        self.markdown_filename = self.file_name.split(".")[0] + ".md"
+        self.md_filename = self.file_name.split(".")[0] + ".md"
         self.parallel = parallel
 
     # saves to logfile, no display to cmd line
@@ -114,54 +174,3 @@ def print_log(message, status="INFO"):
         logging.warning(message)
     elif status == "DEBUG":
         logging.debug(message)
-
-
-def write_string_to_file(file_name, text_to_output, attribute="a"):
-    """write string to the log file
-
-    Parameters
-    ----------
-    file_name : str
-        log file
-    text_to_output : str
-        text to write in log file
-    attribute : str, optional
-        Open file mode option, by default "a"
-    """
-    with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
-        file_handle.write(f"{text_to_output}\n")
-
-
-def save_json(file_name, data):
-    """Save a python dict as a JSON file
-
-    Parameters
-    ----------
-    file_name : str
-        Output JSON file name
-    data : dict
-        Data to save
-    """
-    with open(file_name, mode="w", encoding="utf-8") as json_f:
-        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
-
-
-def load_json(file_name):
-    """Load a JSON file like a python dict
-
-    Parameters
-    ----------
-    file_name : str
-        JSON file name
-
-    Returns
-    -------
-    dict
-        Python dict
-    """
-    if os.path.exists(file_name):
-        with open(file_name, encoding="utf-8") as json_file:
-            data = json.load(json_file)
-    else:
-        data = {}
-    return data

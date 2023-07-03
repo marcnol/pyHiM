@@ -10,7 +10,8 @@ import os
 from datetime import datetime
 
 from core.dask_cluster import DaskCluster
-from core.pyhim_logging import Log, Session, print_log, write_string_to_file
+from core.data_manager import write_string_to_file
+from core.pyhim_logging import Log, Logger, Session, print_log
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import make_projections
@@ -31,11 +32,10 @@ class Pipeline:
         self.root_folder = data_m.m_data_path
         self.parallel = is_parallel
 
-        self.current_log = Log(root_folder=self.root_folder, parallel=self.parallel)
-        self.current_session = Session(self.root_folder, session_name)
+        self.m_logger = Logger(self.root_folder, self.parallel, session_name)
 
-        self.log_file = ""
-        self.markdown_filename = ""
+        # self.log_file = ""
+        # self.markdown_filename = ""
         self.client = None
         self.cluster = None
 
@@ -45,64 +45,6 @@ class Pipeline:
         else:
             result = self.client.submit(feature, *args, **kwargs)
             _ = self.client.gather(result)
-
-    def initialize(self):
-        print_log(
-            "\n--------------------------------------------------------------------------"
-        )
-
-        print_log(f"$ root_folder: {self.root_folder}")
-
-        begin_time = datetime.now()
-
-        #####################
-        # setup markdown file
-        #####################
-        print_log(
-            f"\n======================{self.current_session.name}======================\n"
-        )
-        now = datetime.now()
-        date_time = now.strftime("%d%m%Y_%H%M%S")
-
-        filename_root = "HiM_analysis"
-        self.log_file = self.root_folder + os.sep + filename_root + date_time + ".log"
-        self.markdown_filename = self.log_file.split(".")[0] + ".md"
-
-        print_log(f"$ Hi-M analysis will be written tos: {self.markdown_filename}")
-        write_string_to_file(
-            self.markdown_filename,
-            f"""# Hi-M analysis {begin_time.strftime("%Y/%m/%d %H:%M:%S")}""",
-            "w",
-        )  # initialises MD file
-
-        ##############
-        # setupLogger
-        ##############
-
-        # creates output formats for terminal and log file
-        formatter1 = logging.Formatter("%(asctime)s: %(levelname)s: %(message)s")
-        formatter2 = logging.Formatter("%(message)s")
-
-        # clears up any existing logger
-        logger = logging.getLogger()
-        logger.handlers = []
-        for hdlr in logger.handlers[:]:
-            if isinstance(hdlr, logging.FileHandler):
-                logger.removeHandler(hdlr)
-
-        # initializes handlers for terminal and file
-        filehandler = logging.FileHandler(self.log_file, "w")
-        stream_handler = logging.StreamHandler()
-
-        filehandler.setLevel(logging.INFO)
-        logger.setLevel(logging.INFO)
-        stream_handler.setLevel(logging.INFO)
-
-        logger.addHandler(stream_handler)
-        logger.addHandler(filehandler)
-
-        filehandler.setFormatter(formatter1)
-        stream_handler.setFormatter(formatter2)
 
     def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
@@ -118,7 +60,7 @@ class Pipeline:
 
     def make_projections(self, current_param):
         self.manage_parallel_option(
-            make_projections, current_param, self.current_session
+            make_projections, current_param, self.m_logger.m_session
         )
 
     def align_images(self, current_param, label):
@@ -128,7 +70,7 @@ class Pipeline:
         ):
             print_log(f"> Making image registrations for label: {label}")
             self.manage_parallel_option(
-                align_images, current_param, self.current_session
+                align_images, current_param, self.m_logger.m_session
             )
 
     def align_images_3d(self, current_param, label):
@@ -138,7 +80,7 @@ class Pipeline:
         ):
             print_log(f"> Making 3D image registrations label: {label}")
             _drift_3d = Drift3D(
-                current_param, self.current_session, parallel=self.parallel
+                current_param, self.m_logger.m_session, parallel=self.parallel
             )
             _drift_3d.align_fiducials_3d()
 
@@ -149,7 +91,7 @@ class Pipeline:
         ):
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
-                apply_registrations, current_param, self.current_session
+                apply_registrations, current_param, self.m_logger.m_session
             )
 
     def segment_masks(self, current_param, label):
@@ -164,7 +106,7 @@ class Pipeline:
             and "2D" in operation
         ):
             self.manage_parallel_option(
-                segment_masks, current_param, self.current_session
+                segment_masks, current_param, self.m_logger.m_session
             )
 
     def segment_masks_3d(self, current_param, label):
@@ -175,7 +117,7 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = SegmentMasks3D(
-                current_param, self.current_session, parallel=self.parallel
+                current_param, self.m_logger.m_session, parallel=self.parallel
             )
             _segment_sources_3d.segment_masks_3d()
 
@@ -188,14 +130,14 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = SegmentSources3D(
-                current_param, self.current_session, parallel=self.parallel
+                current_param, self.m_logger.m_session, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d()
 
     def process_pwd_matrices(self, current_param, label):
         if label in ("DAPI", "mask"):
             self.manage_parallel_option(
-                process_pwd_matrices, current_param, self.current_session
+                process_pwd_matrices, current_param, self.m_logger.m_session
             )
 
 

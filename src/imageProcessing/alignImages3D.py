@@ -46,6 +46,7 @@ from skimage import io
 from skimage.registration import phase_cross_correlation
 
 from core.dask_cluster import try_get_client
+from core.data_manager import write_string_to_file
 from core.folder import Folders
 from core.parameters import (
     get_dictionary_value,
@@ -53,7 +54,7 @@ from core.parameters import (
     print_dict,
     rt_to_filename,
 )
-from core.pyhim_logging import print_log, write_string_to_file
+from core.pyhim_logging import print_log
 from core.saving import plot_3d_shift_matrices, plot_4_images
 from imageProcessing.alignImages import (
     apply_xy_shift_3d_images,
