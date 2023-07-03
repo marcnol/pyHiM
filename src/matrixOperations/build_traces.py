@@ -53,9 +53,10 @@ from skimage.segmentation import expand_labels
 from tqdm import trange
 from tqdm.contrib import tzip
 
+from core.data_manager import write_string_to_file
 from core.folder import Folders
 from core.parameters import get_dictionary_value
-from core.pyhim_logging import print_log, write_string_to_file
+from core.pyhim_logging import print_log
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 

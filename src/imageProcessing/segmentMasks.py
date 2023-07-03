@@ -66,8 +66,9 @@ from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
 
 from core.dask_cluster import try_get_client
+from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log, write_string_to_file
+from core.pyhim_logging import print_log
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
 

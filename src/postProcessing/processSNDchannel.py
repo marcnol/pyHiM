@@ -26,10 +26,10 @@ from astropy.visualization import simple_norm
 from matplotlib import pyplot as plt
 from roipoly import MultiRoi
 
-from core.data_manager import DataManager
+from core.data_manager import DataManager, write_string_to_file
 from core.folder import Folders
 from core.parameters import Parameters
-from core.pyhim_logging import Log, write_string_to_file
+from core.pyhim_logging import Log
 from imageProcessing.imageProcessing import Image
 
 try:

@@ -69,7 +69,7 @@ class DataManager:
 
     def dispatch_files(self):
         """Get all input files and sort by extension type"""
-        img_ext = ["tif", "tiff"]
+        img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
         for path, name, ext in self.all_files:
             if ext in img_ext:
@@ -79,32 +79,72 @@ class DataManager:
             elif ext == "json" and name == self.m_filename_params:
                 self.user_parameter = str(path)
             else:
-                print(
-                    f"Unrecognized data file: {name}.{ext}\n>>>Inside this folder: {path}"
-                )
+                print(f"Unrecognized data file: {path}")
 
     def load_user_param(self):
-        """Load a json file but return None if file doesn't exist.
-
-        Parameters
-        ----------
-        file_name : str
-            JSON file name
+        """Load user parameter JSON file like a Python dict
 
         Returns
         -------
         dict
             Python dict
+
+        Raises
+        ------
+        ValueError
+            file not found
         """
-        parameters = None
+        params = load_json(self.user_parameter)
+        if params is None:
+            raise ValueError(f"Parameters file NOT FOUND: {self.user_parameter}")
+        print(f"$ Parameters file read: {self.user_parameter}")
+        return params
 
-        file_name = self.user_parameter
 
-        if os.path.exists(file_name):
-            with open(file_name, encoding="utf-8") as json_file:
-                parameters = json.load(json_file)
-            print(f"$ Parameters file read: {file_name}")
-        else:
-            print(f"$ Parameters file NOT FOUND: {file_name}")
+def load_json(file_name):
+    """Load a JSON file like a python dict
 
-        return parameters
+    Parameters
+    ----------
+    file_name : str
+        JSON file name
+
+    Returns
+    -------
+    dict
+        Python dict
+    """
+    if os.path.exists(file_name):
+        with open(file_name, encoding="utf-8") as json_file:
+            return json.load(json_file)
+    return None
+
+
+def write_string_to_file(file_name, text_to_output, attribute="a"):
+    """write a line of text into a file
+
+    Parameters
+    ----------
+    file_name : str
+        log file
+    text_to_output : str
+        text to write in file
+    attribute : str, optional
+        Open file mode option, by default "a"
+    """
+    with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
+        file_handle.write(str(text_to_output) + "\n")
+
+
+def save_json(data, file_name):
+    """Save a python dict as a JSON file
+
+    Parameters
+    ----------
+    data : dict
+        Data to save
+    file_name : str
+        Output JSON file name
+    """
+    with open(file_name, mode="w", encoding="utf-8") as json_f:
+        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)

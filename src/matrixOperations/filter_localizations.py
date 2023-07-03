@@ -17,8 +17,9 @@ import warnings
 
 from tqdm import trange
 
+from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log, write_string_to_file
+from core.pyhim_logging import print_log
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")
