@@ -54,7 +54,7 @@ from core.parameters import (
     print_dict,
     rt_to_filename,
 )
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from core.saving import plot_3d_shift_matrices, plot_4_images
 from imageProcessing.alignImages import (
     apply_xy_shift_3d_images,
@@ -359,7 +359,7 @@ class Drift3D:
         session_name = "alignImages3D"
 
         # processes folders and files
-        print_log("\n===================={}====================\n".format(session_name))
+        print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(

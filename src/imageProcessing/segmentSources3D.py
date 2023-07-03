@@ -46,7 +46,7 @@ from core.dask_cluster import try_get_client
 from core.data_manager import write_string_to_file
 from core.folder import Folders, retrieve_number_rois_folder
 from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from core.saving import _plot_image_3d
 from imageProcessing.alignImages import apply_xy_shift_3d_images
 from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image
@@ -594,7 +594,8 @@ class SegmentSources3D:
         session_name = "segmentSources3D"
 
         # processes folders and files
-        print_log("\n===================={}====================\n".format(session_name))
+
+        print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(

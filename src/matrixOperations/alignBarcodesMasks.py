@@ -50,7 +50,7 @@ from tqdm.contrib import tzip
 
 from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_distance_histograms,
@@ -1341,7 +1341,7 @@ def process_pwd_matrices(current_param, current_session):
 
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_log("\n===================={}====================\n".format(session_name))
+    print_session_name(session_name)
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
