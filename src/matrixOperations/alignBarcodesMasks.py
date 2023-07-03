@@ -1150,17 +1150,13 @@ def build_pwd_matrix(
             0
         ]  # need to iterate over the first index
 
-        print_log(
-            "----------------------------------------------------------------------"
-        )
+        print_log("------------------------------------------------------------------")
         print_log(
             "> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(
                 mask_identifier, n_roi
             )
         )
-        print_log(
-            "----------------------------------------------------------------------"
-        )
+        print_log("------------------------------------------------------------------")
 
         barcode_map_single_roi = barcode_map.group_by("ROI #").groups[roi]
 

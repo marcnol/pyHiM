@@ -164,9 +164,7 @@ def main():
 
     # [ Lists and loads datasets from different embryos]
     filename_list_data_json = p["rootFolder"] + os.sep + p["parametersFileName"]
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n-------------------------------------------------------------------")
     if os.path.exists(filename_list_data_json):
         with open(filename_list_data_json, encoding="utf-8") as json_file:
             list_data = json.load(json_file)

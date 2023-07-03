@@ -61,15 +61,11 @@ def main(command_line_arguments=None):
             stardist_basename=datam.m_stardist_basename,
         )
 
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
+        print_log("-----------------------------------------------------------------")
         print_log(
             f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           "
         )
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
+        print_log("------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = pipe.markdown_filename
