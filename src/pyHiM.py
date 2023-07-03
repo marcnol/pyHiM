@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.7.2"
+__version__ = "0.8.0"
 
 import os
 import sys
@@ -40,16 +40,16 @@ def main(command_line_arguments=None):
 
     datam = DataManager(run_args.data_path, run_args.stardist_basename)
 
-    him = fc.HiMFunctionCaller(datam, run_args.parallel, session_name="HiM_analysis")
-    him.initialize()
+    pipe = fc.Pipeline(datam, run_args.parallel, session_name="HiM_analysis")
+    pipe.initialize()
 
-    him.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
+    pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
 
     labels = global_param.param_dict["labels"]
 
-    print_log(f"$ Started logging to: {him.log_file}")
+    print_log(f"$ Started logging to: {pipe.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
     for label in labels:
@@ -71,36 +71,36 @@ def main(command_line_arguments=None):
             "--------------------------------------------------------------------------"
         )
 
-        current_param.param_dict["parallel"] = him.parallel
-        current_param.param_dict["fileNameMD"] = him.markdown_filename
+        current_param.param_dict["parallel"] = pipe.parallel
+        current_param.param_dict["fileNameMD"] = pipe.markdown_filename
 
         # [projects 3D images in 2d]
         if "makeProjections" in run_args.cmd_list:
-            him.make_projections(current_param)
+            pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
-            him.align_images(current_param, label)
+            pipe.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
         if "appliesRegistrations" in run_args.cmd_list:
-            him.apply_registrations(current_param, label)
+            pipe.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
         if "alignImages3D" in run_args.cmd_list:
-            him.align_images_3d(current_param, label)
+            pipe.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
         if "segmentMasks" in run_args.cmd_list:
-            him.segment_masks(current_param, label)
+            pipe.segment_masks(current_param, label)
 
         # [segments masks in 3D]
         if "segmentMasks3D" in run_args.cmd_list:
-            him.segment_masks_3d(current_param, label)
+            pipe.segment_masks_3d(current_param, label)
 
         # [segments sources in 3D]
         if "segmentSources3D" in run_args.cmd_list:
-            him.segment_sources_3d(current_param, label)
+            pipe.segment_sources_3d(current_param, label)
 
         # [filters barcode localization table]
         if "filter_localizations" in run_args.cmd_list:
@@ -120,20 +120,20 @@ def main(command_line_arguments=None):
 
         # [builds PWD matrix for all folders with images]
         if "buildHiMmatrix" in run_args.cmd_list:
-            him.process_pwd_matrices(current_param, label)
+            pipe.process_pwd_matrices(current_param, label)
 
         print("\n")
         del current_param
 
     # exits
-    him.current_session.save()
+    pipe.current_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
     if run_args.parallel:
-        him.cluster.close()
-        him.client.close()
+        pipe.cluster.close()
+        pipe.client.close()
 
-    del him
+    del pipe
 
     print_log(f"Elapsed time: {datetime.now() - begin_time}")
 

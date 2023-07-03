@@ -24,7 +24,7 @@ from matrixOperations.filter_localizations import FilterLocalizations
 from matrixOperations.register_localizations import RegisterLocalizations
 
 
-class HiMFunctionCaller:
+class Pipeline:
     """Class for high level function calling"""
 
     def __init__(self, data_m, is_parallel, session_name="HiM_analysis"):
