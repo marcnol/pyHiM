@@ -18,19 +18,18 @@ class Parameters:
 
     def __init__(
         self,
+        raw_dict,
         root_folder="./",
         label="",
-        file_name="infoList.json",
         stardist_basename=None,
     ):
-        self.file_name = file_name
+        self.m_raw_dict = raw_dict
         self.label = label
-        self.param_file = root_folder + os.sep + file_name
         self.files_to_process = []
         self.param_dict = {}
 
         self.initialize_standard_parameters()
-        self.convert_parameter_file(self.param_file, self.label)
+        self.convert_parameter_file()
         if stardist_basename is not None:
             self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
         self.param_dict["rootFolder"] = root_folder
@@ -185,22 +184,15 @@ class Parameters:
             },
         }
 
-    def convert_parameter_file(self, param_file, label_selected):
+    def convert_parameter_file(self):
         """Load and organize parameters from a JSON file
-
-        Parameters
-        ----------
-        param_file : str
-            Often it's the 'infoList.json'
-        label_selected : str
-            Specify the label specific parameters that we want load.
 
         Raises
         ------
         ValueError
             Error if file not found
         """
-        param_from_file = load_parameters_file(param_file)
+        param_from_file = self.m_raw_dict
 
         if param_from_file is None:
             raise ValueError("No infoList.json file found")
@@ -215,6 +207,8 @@ class Parameters:
             ordered_list[order - 1] = label
 
         converted_param["labels"] = ordered_list
+
+        label_selected = self.label  # the label specific parameters that we want load
 
         # need to add keys not present in common dict
         if len(label_selected) > 0:
@@ -404,29 +398,6 @@ class Parameters:
                 self.param_dict["acquisition"]["fileNameRegExp"], file_name
             )
         return file_parts
-
-
-def load_parameters_file(file_name):
-    """Like json_load but return None if file doesn't exist.
-
-    Parameters
-    ----------
-    file_name : str
-        JSON file name
-
-    Returns
-    -------
-    dict
-        Python dict
-    """
-    parameters = None
-
-    if path.exists(file_name):
-        with open(file_name, encoding="utf-8") as json_file:
-            parameters = json.load(json_file)
-        print(f"$ Parameters file read: {file_name}")
-
-    return parameters
 
 
 def load_alignment_dict(data_folder):

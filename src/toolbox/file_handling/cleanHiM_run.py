@@ -24,6 +24,7 @@ import glob
 import os
 import shutil
 
+from core.data_manager import DataManager
 from core.folder import Folders
 from core.parameters import Parameters
 
@@ -45,26 +46,26 @@ def main():
     args = parser.parse_args()
 
     if args.rootFolder:
-        ROOT_FOLDER = args.rootFolder
+        root_folder = args.rootFolder
     else:
-        ROOT_FOLDER = "."
+        root_folder = "."
 
     if args.fileParameters:
-        FILE_PARAMETERS = args.fileParameters
+        file_parameters = args.fileParameters
     else:
-        FILE_PARAMETERS = "infoList.json"
+        file_parameters = "infoList.json"
 
     # removes files in rootFolder
     if args.all:
         markdown_files = glob.glob(
-            ROOT_FOLDER + os.sep + "HiM_analysis*.md", recursive=True
+            root_folder + os.sep + "HiM_analysis*.md", recursive=True
         )
         md_log_files = glob.glob(
-            ROOT_FOLDER + os.sep + "HiM_analysis*.log", recursive=True
+            root_folder + os.sep + "HiM_analysis*.log", recursive=True
         )
-        log_files = glob.glob(ROOT_FOLDER + os.sep + "log*.txt", recursive=True)
+        log_files = glob.glob(root_folder + os.sep + "log*.txt", recursive=True)
         session_files = glob.glob(
-            ROOT_FOLDER + os.sep + "Session*.json", recursive=True
+            root_folder + os.sep + "Session*.json", recursive=True
         )
 
         for f in markdown_files + log_files + session_files + md_log_files:
@@ -74,10 +75,10 @@ def main():
             except OSError as e:
                 print(f"Error: {f} : {e.strerror}")
 
+    datam = DataManager(root_folder, filename_params=file_parameters)
+    raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
-    current_param = Parameters(
-        root_folder=ROOT_FOLDER, label="", file_name=FILE_PARAMETERS
-    )
+    current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")
 
     data_folder = Folders(current_param.param_dict["rootFolder"])
 
