@@ -249,11 +249,8 @@ class Parameters:
         """
 
         if key in self.param_dict["acquisition"].keys():
-            channel = self.param_dict["acquisition"][key]
-        else:
-            channel = default
-
-        return channel
+            return self.param_dict["acquisition"][key]
+        return default
 
     # method returns label-specific filenames from filename list
     def find_files_to_process(self, files_folder):
@@ -363,38 +360,37 @@ class Parameters:
         for i, file in enumerate(self.files_to_process):
             print_log(f"{i}\t{os.path.basename(file)}")
 
-    def decode_file_parts(self, file_name):
-        """
-        decodes variables from an input file. typically, RE takes the form:
+    # def decode_file_parts(self, file_name):
+    #     """
+    #     decodes variables from an input file. typically, RE takes the form:
 
-        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif" # pylint: disable=anomalous-backslash-in-string,line-too-long
+    #     "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif" # pylint: disable=anomalous-backslash-in-string,line-too-long
 
-        thus, by running decode_file_parts(current_param,file_name) you will get back
-        either an empty dict if the RE were not present
-        in your infoList...json file or a dict as follows if it all worked out fine:
+    #     thus, by running decode_file_parts(current_param,file_name) you will get back
+    #     either an empty dict if the RE were not present
+    #     in your infoList...json file or a dict as follows if it all worked out fine:
 
-        file_parts['runNumber']: runNumber number
-        file_parts['cycle']: cycle string
-        file_parts['roi']: roi number
-        file_parts['channel']: channel string
+    #     file_parts['runNumber']: runNumber number
+    #     file_parts['cycle']: cycle string
+    #     file_parts['roi']: roi number
+    #     file_parts['channel']: channel string
 
-        Parameters
-        ----------
-        file_name : string
-            filename to decode
+    #     Parameters
+    #     ----------
+    #     file_name : string
+    #         filename to decode
 
-        Returns
-        -------
-        Dict with file_parts.
+    #     Returns
+    #     -------
+    #     Dict with file_parts.
 
-        """
-        file_parts = {}
-        # decodes regular expressions
-        if "fileNameRegExp" in self.param_dict["acquisition"].keys():
-            file_parts = re.search(
-                self.param_dict["acquisition"]["fileNameRegExp"], file_name
-            )
-        return file_parts
+    #     """
+    #     file_parts = {}
+    #     # decodes regular expressions
+    #     regex = self.param_dict.get("acquisition").get("fileNameRegExp")
+    #     if regex:
+    #         return re.search(regex, file_name)
+    #     return None
 
 
 def load_alignment_dict(data_folder):

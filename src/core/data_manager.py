@@ -73,7 +73,7 @@ class DataManager:
         table_ext = ["csv", "ecsv", "dat"]
         for path, name, ext in self.all_files:
             if ext in img_ext:
-                self.data_images.append((path, name, ext))
+                self.data_images.append(ImageFile(path, name, ext))
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
             elif ext == "json" and name == self.m_filename_params:
@@ -148,3 +148,42 @@ def save_json(data, file_name):
     """
     with open(file_name, mode="w", encoding="utf-8") as json_f:
         json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
+
+
+class ImageFile:
+    def __init__(self, path, name, ext):
+        self.channel = ""
+        self.path = ""
+
+
+def decode_file_parts(param_dict, file_name):
+    """
+    decodes variables from an input file. typically, RE takes the form:
+
+    "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif" # pylint: disable=anomalous-backslash-in-string,line-too-long
+
+    thus, by running decode_file_parts(current_param,file_name) you will get back
+    either an empty dict if the RE were not present
+    in your infoList...json file or a dict as follows if it all worked out fine:
+
+    file_parts['runNumber']: runNumber number
+    file_parts['cycle']: cycle string
+    file_parts['roi']: roi number
+    file_parts['channel']: channel string
+
+    Parameters
+    ----------
+    file_name : string
+        filename to decode
+
+    Returns
+    -------
+    Dict with file_parts.
+
+    """
+    file_parts = {}
+    # decodes regular expressions
+    regex = param_dict.get("acquisition").get("fileNameRegExp")
+    if regex:
+        return re.search(regex, file_name)
+    return None

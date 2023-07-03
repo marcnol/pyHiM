@@ -37,6 +37,16 @@ warnings.filterwarnings("ignore")
 
 np.seterr(divide="ignore", invalid="ignore")
 
+
+class Project:
+    def __init__(self, param):
+        self.m_param = param
+        self.required_inputs = ["3D_image"]
+
+    def run(self, img, option):
+        pass
+
+
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
