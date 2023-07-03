@@ -58,6 +58,9 @@ class Pipeline:
             self.client = dask_cluster_instance.client
             self.cluster = dask_cluster_instance.cluster
 
+    def find_files_to_process(self):
+        pass
+
     def make_projections(self, current_param):
         self.manage_parallel_option(
             make_projections, current_param, self.m_logger.m_session
