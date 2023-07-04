@@ -88,6 +88,7 @@ def parse_arguments():
     )
     parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
     parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
+    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
 
     p = {}
 
@@ -102,6 +103,11 @@ def parse_arguments():
     else:
         p["input"] = None
 
+    if args.output:
+        p["output"] = args.output
+    else:
+        p["output"] = "PDBs"
+        
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
     else:
@@ -217,7 +223,7 @@ def main():
     barcode_type = loads_barcode_dict(p["barcode_type_dict"])
 
     # creates output folder
-    output_folder = "PDBs"
+    output_folder = p['output']
     folder_path = os.path.join(os.getcwd(), output_folder)  # Specify the folder path here
 
     create_folder(folder_path)
