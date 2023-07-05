@@ -71,9 +71,9 @@ class RunArgs:
         self._is_docker()
         self.cmd_list = self.parse_cmd(parsed_args.cmd)
         self.thread_nbr = parsed_args.threads
+        self.parallel = self.thread_nbr > 1
         self.stardist_basename = parsed_args.stardist_basename
         self._check_consistency()
-        self.parallel = self.thread_nbr > 1
         self.print_loaded_args()
 
     def _is_docker(self):

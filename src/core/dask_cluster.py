@@ -17,6 +17,7 @@ class DaskCluster:
     def __init__(self, requested_nb_nodes, maximum_load=0.6, memory_per_worker=12000):
         self.requested_nb_nodes = requested_nb_nodes
         # self.n_threads will be created after exetution of initialize_cluster()
+        self.n_threads = None
         self.maximum_load = maximum_load  # max number of workers that I can take
         self.memory_per_worker = memory_per_worker  # in Mb
         self.initialize_cluster()
