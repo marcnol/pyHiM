@@ -293,6 +293,7 @@ class Parameters:
                         "contact": "coolwarm",
                         "Nmatrix": "Blues",
                     },  # colormaps used for plotting matrices
+                    "z_offset": 2,  # px, z-offset between the DAPI (460nm) and the barcode channel (660nm)
                     "toleranceDrift": [3,1,1],  # zxy tolerance used for block drift correction, in px
                     "remove_uncorrected_localizations": True,  # if True it will removed uncorrected localizations, otherwise they will remain uncorrectd.
                 },

@@ -337,6 +337,8 @@ class ChromatinTraceTable:
             titles = ["Z-projection", "X-projection", "Y-projection"]
 
             # plots masks if available
+            if len(masks.shape) == 3:
+                masks = np.max(masks,axis=0)
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
             # makes plot
