@@ -29,34 +29,33 @@ class Pipeline:
     """Class for high level function calling"""
 
     def __init__(self, data_m, is_parallel, session_name="HiM_analysis"):
-        self.root_folder = data_m.m_data_path
+        self.m_data_m = data_m
         self.parallel = is_parallel
 
-        self.m_logger = Logger(self.root_folder, self.parallel, session_name)
+        self.m_logger = Logger(self.m_data_m.m_data_path, self.parallel, session_name)
 
         # self.log_file = ""
         # self.markdown_filename = ""
-        self.client = None
-        self.cluster = None
+        self.m_dask = None
+        # self.client = None
+        # self.cluster = None
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
             feature(*args, **kwargs)
         else:
-            result = self.client.submit(feature, *args, **kwargs)
-            _ = self.client.gather(result)
+            result = self.m_dask.client.submit(feature, *args, **kwargs)
+            _ = self.m_dask.client.gather(result)
 
     def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
             print_log(f"$ Requested {threads_requested} threads")
 
-            dask_cluster_instance = DaskCluster(
-                threads_requested, maximum_load=maximum_load
-            )
+            self.m_dask = DaskCluster(threads_requested, maximum_load=maximum_load)
 
-            dask_cluster_instance.create_distributed_client()
-            self.client = dask_cluster_instance.client
-            self.cluster = dask_cluster_instance.cluster
+            self.m_dask.create_distributed_client()
+            # self.client = dask_cluster_instance.client
+            # self.cluster = dask_cluster_instance.cluster
 
     def find_files_to_process(self):
         pass
