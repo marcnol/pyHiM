@@ -26,165 +26,15 @@ class Parameters:
     ):
         self.label = label
         self.files_to_process = []
-        self.param_dict = {}
-
-        self.initialize_standard_parameters()
+        self.param_dict = self.get_standard_parameters()
         self.convert_parameter_file(raw_dict)
-        if stardist_basename is not None:
-            self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
+        self.set_stardist_basename(stardist_basename)
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 
-    def initialize_standard_parameters(self):
-        """Reference of the standard parameters"""
-        self.param_dict = {
-            "common": {
-                "acquisition": {
-                    "positionROIinformation": 3,
-                    "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_\
-                        (?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-                    "DAPI_channel": "ch00",
-                    "fiducialDAPI_channel": "ch01",
-                    "RNA_channel": "ch02",
-                    "fiducialBarcode_channel": "ch00",
-                    "fiducialMask_channel": "ch00",
-                    "barcode_channel": "ch01",
-                    "mask_channel": "ch01",
-                    # in future this field will contain the ch for the label.
-                    # This parameter will supersed the individual channel fields above.
-                    "label_channel": "ch00",
-                    # in future this field will contain the ch for the label fiducial.
-                    # This parameter will supersed the individual channel fields above.
-                    "label_channel_fiducial": "ch01",
-                    "pixelSizeXY": 0.1,
-                    "zBinning": 2,
-                    # if True it will parallelize inner loops (plane by plane).
-                    # Otherwise outer loops (e.g. file by file)
-                    "parallelizePlanes": False,
-                    "pixelSizeZ": 0.25,
-                },  # barcode, fiducial
-                "zProject": {
-                    "folder": "zProject",  # output folder
-                    "operation": "skip",  # overwrite, skip
-                    "mode": "full",  # full, manual, automatic, laplacian
-                    "blockSize": 256,
-                    "display": True,
-                    "saveImage": True,
-                    "zmin": 1,
-                    "zmax": 59,
-                    "zwindows": 15,
-                    "windowSecurity": 2,
-                    "zProjectOption": "MIP",  # sum or MIP
-                },
-                "alignImages": {
-                    "folder": "alignImages",  # output folder
-                    "operation": "overwrite",  # overwrite, skip
-                    "outputFile": "alignImages",
-                    "referenceFiducial": "RT27",
-                    "localAlignment": "block3D",  # options: None, mask2D, block3D
-                    "alignByBlock": True,  # alignByBlock True will perform block alignment
-                    # Used in blockAlignment to determine the % of error tolerated
-                    "tolerance": 0.1,
-                    # lower threshold to adjust image intensity levels
-                    # before xcorrelation for alignment in 2D
-                    "lower_threshold": 0.999,
-                    # higher threshold to adjust image intensity levels
-                    # before xcorrelation for alignment in 2D
-                    "higher_threshold": 0.9999999,
-                    # lower threshold to adjust image intensity levels
-                    # before xcorrelation for Alignment3D
-                    "3D_lower_threshold": 0.9,
-                    # higher threshold to adjust image intensity levels
-                    # before xcorrelation for Alignment3D
-                    "3D_higher_threshold": 0.9999,
-                    "background_sigma": 3.0,  # used to remove inhom background
-                    "localShiftTolerance": 1,
-                    "blockSize": 256,
-                },
-                "buildsPWDmatrix": {
-                    "folder": "buildsPWDmatrix",  # output folder
-                    # available methods: masking, clustering
-                    "tracing_method": ["masking", "clustering"],
-                    # Expands masks until they collide by a max of 'mask_expansion' pixels
-                    "mask_expansion": 8,
-                    "flux_min": 10,  # min flux to keeep object
-                    "flux_min_3D": 0.1,  # min flux to keeep object
-                    "kd_tree_distance_threshold_mum": 1,  # distance threshold used to build KDtree
-                    # colormaps used for plotting matrices
-                    "colormaps": {
-                        "PWD_KDE": "terrain",
-                        "PWD_median": "terrain",
-                        "contact": "coolwarm",
-                        "Nmatrix": "Blues",
-                    },
-                    # px, z-offset between the DAPI (460nm) and the barcode channel (660nm)
-                    "z_offset": 2,
-                    # zxy tolerance used for block drift correction, in px
-                    "toleranceDrift": [3, 1, 1],
-                    # if True it will removed uncorrected localizations,
-                    # otherwise they will remain uncorrectd.
-                    "remove_uncorrected_localizations": True,
-                },
-                "segmentedObjects": {
-                    "folder": "segmentedObjects",  # output folder
-                    "operation": "2D,3D",  # options: 2D or 3D
-                    "outputFile": "segmentedObjects",
-                    "Segment3D": "overwrite",
-                    "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
-                    "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-                    # network for 2D barcode segmentation
-                    "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                    # network for 3D barcode segmentation
-                    "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                    "tesselation": True,  # tesselates masks
-                    "background_sigma": 3.0,  # used to remove inhom background
-                    "threshold_over_std": 1.0,  # threshold used to detect sources
-                    "fwhm": 3.0,  # source size in px
-                    "brightest": 1100,  # max number of sources segmented per FOV
-                    "intensity_min": 0,  # min int to keep object
-                    "intensity_max": 59,  # max int to keeep object
-                    "area_min": 50,  # min area to keeep object
-                    "area_max": 500,  # max area to keeep object
-                    # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
-                    "3Dmethod": "thresholding",
-                    "residual_max": 2.5,  # z-profile Fit: max residuals to keeep object
-                    "sigma_max": 5,  # z-profile Fit: max sigma 3D fitting to keeep object
-                    # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
-                    "centroidDifference_max": 5,
-                    # z-profile Fit: window size to extract subVolume, px.
-                    # 3 means subvolume will be 7x7.
-                    "3DGaussianfitWindow": 3,
-                    # constructs a YZ image by summing from xPlane-window:xPlane+window
-                    "3dAP_window": 5,
-                    "3dAP_flux_min": 2,  # # threshold to keep a source detected in YZ
-                    "3dAP_brightest": 100,  # number of sources sought in each YZ plane
-                    # px dist to attribute a source localized in YZ to one localized in XY
-                    "3dAP_distTolerance": 1,
-                    "3D_threshold_over_std": 5,
-                    "3D_sigma": 3,
-                    "3D_boxSize": 32,
-                    "3D_filter_size": 3,
-                    "3D_area_min": 10,
-                    "3D_area_max": 250,
-                    "3D_nlevels": 64,
-                    "3D_contrast": 0.001,
-                    "3D_psf_z": 500,
-                    "3D_psf_yx": 200,
-                    "3D_lower_threshold": 0.99,
-                    "3D_higher_threshold": 0.9999,
-                    # if reducePlanes==True it will calculate focal plane and only use a region
-                    # around it for segmentSources3D, otherwise will use the full stack
-                    "reducePlanes": True,
-                },
-            },
-            "labels": {
-                "fiducial": {"order": 1},
-                "barcode": {"order": 2},
-                "DAPI": {"order": 3},
-                "mask": {"order": 5},
-                "RNA": {"order": 4},
-            },
-        }
+    def set_stardist_basename(self, stardist_basename):
+        if stardist_basename is not None:
+            self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
 
     def convert_parameter_file(self, raw_dict):
         """Load and organize parameters from a JSON file
@@ -232,6 +82,19 @@ class Parameters:
         # need to replace default keys by those in 'label' key
         converted_param["acquisition"]["label"] = label_selected
         self.param_dict = converted_param
+
+    def get_sectioned_params(self, section_name: str):
+        section_dict = {}
+        section_dict["common"] = self.param_dict["common"].get(section_name)
+        section_dict["labels"] = {}
+        for label in self.param_dict["labels"]:
+            section_dict["labels"][label] = label.get(section_name)
+        return section_dict
+
+    def get_labelled_params(self, label_name: str):
+        main_dict = self.param_dict["common"]
+        update = self.param_dict["labels"].get(label_name, {})
+        return deep_dict_update(main_dict, update)
 
     def set_channel(self, key, default):
         """Set channel parameter with a default value
@@ -393,6 +256,156 @@ class Parameters:
             return re.search(regex, file_name)
         return None
 
+    @staticmethod
+    def get_standard_parameters():
+        """Reference of the standard parameters"""
+        return {
+            "common": {
+                "acquisition": {
+                    "positionROIinformation": 3,
+                    "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_\
+                        (?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+                    "DAPI_channel": "ch00",
+                    "fiducialDAPI_channel": "ch01",
+                    "RNA_channel": "ch02",
+                    "fiducialBarcode_channel": "ch00",
+                    "fiducialMask_channel": "ch00",
+                    "barcode_channel": "ch01",
+                    "mask_channel": "ch01",
+                    # in future this field will contain the ch for the label.
+                    # This parameter will supersed the individual channel fields above.
+                    "label_channel": "ch00",
+                    # in future this field will contain the ch for the label fiducial.
+                    # This parameter will supersed the individual channel fields above.
+                    "label_channel_fiducial": "ch01",
+                    "pixelSizeXY": 0.1,
+                    "zBinning": 2,
+                    # if True it will parallelize inner loops (plane by plane).
+                    # Otherwise outer loops (e.g. file by file)
+                    "parallelizePlanes": False,
+                    "pixelSizeZ": 0.25,
+                },  # barcode, fiducial
+                "zProject": {
+                    "folder": "zProject",  # output folder
+                    "operation": "skip",  # overwrite, skip
+                    "mode": "full",  # full, manual, automatic, laplacian
+                    "blockSize": 256,
+                    "display": True,
+                    "saveImage": True,
+                    "zmin": 1,
+                    "zmax": 59,
+                    "zwindows": 15,
+                    "windowSecurity": 2,
+                    "zProjectOption": "MIP",  # sum or MIP
+                },
+                "alignImages": {
+                    "folder": "alignImages",  # output folder
+                    "operation": "overwrite",  # overwrite, skip
+                    "outputFile": "alignImages",
+                    "referenceFiducial": "RT27",
+                    "localAlignment": "block3D",  # options: None, mask2D, block3D
+                    "alignByBlock": True,  # alignByBlock True will perform block alignment
+                    # Used in blockAlignment to determine the % of error tolerated
+                    "tolerance": 0.1,
+                    # lower threshold to adjust image intensity levels
+                    # before xcorrelation for alignment in 2D
+                    "lower_threshold": 0.999,
+                    # higher threshold to adjust image intensity levels
+                    # before xcorrelation for alignment in 2D
+                    "higher_threshold": 0.9999999,
+                    # lower threshold to adjust image intensity levels
+                    # before xcorrelation for Alignment3D
+                    "3D_lower_threshold": 0.9,
+                    # higher threshold to adjust image intensity levels
+                    # before xcorrelation for Alignment3D
+                    "3D_higher_threshold": 0.9999,
+                    "background_sigma": 3.0,  # used to remove inhom background
+                    "localShiftTolerance": 1,
+                    "blockSize": 256,
+                },
+                "buildsPWDmatrix": {
+                    "folder": "buildsPWDmatrix",  # output folder
+                    # available methods: masking, clustering
+                    "tracing_method": ["masking", "clustering"],
+                    # Expands masks until they collide by a max of 'mask_expansion' pixels
+                    "mask_expansion": 8,
+                    "flux_min": 10,  # min flux to keeep object
+                    "flux_min_3D": 0.1,  # min flux to keeep object
+                    "kd_tree_distance_threshold_mum": 1,  # distance threshold used to build KDtree
+                    # colormaps used for plotting matrices
+                    "colormaps": {
+                        "PWD_KDE": "terrain",
+                        "PWD_median": "terrain",
+                        "contact": "coolwarm",
+                        "Nmatrix": "Blues",
+                    },
+                    # zxy tolerance used for block drift correction, in px
+                    "toleranceDrift": [3, 1, 1],
+                    # if True it will removed uncorrected localizations,
+                    # otherwise they will remain uncorrectd.
+                    "remove_uncorrected_localizations": True,
+                },
+                "segmentedObjects": {
+                    "folder": "segmentedObjects",  # output folder
+                    "operation": "2D,3D",  # options: 2D or 3D
+                    "outputFile": "segmentedObjects",
+                    "Segment3D": "overwrite",
+                    "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
+                    "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+                    # network for 2D barcode segmentation
+                    "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
+                    # network for 3D barcode segmentation
+                    "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
+                    "tesselation": True,  # tesselates masks
+                    "background_sigma": 3.0,  # used to remove inhom background
+                    "threshold_over_std": 1.0,  # threshold used to detect sources
+                    "fwhm": 3.0,  # source size in px
+                    "brightest": 1100,  # max number of sources segmented per FOV
+                    "intensity_min": 0,  # min int to keep object
+                    "intensity_max": 59,  # max int to keeep object
+                    "area_min": 50,  # min area to keeep object
+                    "area_max": 500,  # max area to keeep object
+                    # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
+                    "3Dmethod": "thresholding",
+                    "residual_max": 2.5,  # z-profile Fit: max residuals to keeep object
+                    "sigma_max": 5,  # z-profile Fit: max sigma 3D fitting to keeep object
+                    # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
+                    "centroidDifference_max": 5,
+                    # z-profile Fit: window size to extract subVolume, px.
+                    # 3 means subvolume will be 7x7.
+                    "3DGaussianfitWindow": 3,
+                    # constructs a YZ image by summing from xPlane-window:xPlane+window
+                    "3dAP_window": 5,
+                    "3dAP_flux_min": 2,  # # threshold to keep a source detected in YZ
+                    "3dAP_brightest": 100,  # number of sources sought in each YZ plane
+                    # px dist to attribute a source localized in YZ to one localized in XY
+                    "3dAP_distTolerance": 1,
+                    "3D_threshold_over_std": 5,
+                    "3D_sigma": 3,
+                    "3D_boxSize": 32,
+                    "3D_filter_size": 3,
+                    "3D_area_min": 10,
+                    "3D_area_max": 250,
+                    "3D_nlevels": 64,
+                    "3D_contrast": 0.001,
+                    "3D_psf_z": 500,
+                    "3D_psf_yx": 200,
+                    "3D_lower_threshold": 0.99,
+                    "3D_higher_threshold": 0.9999,
+                    # if reducePlanes==True it will calculate focal plane and only use a region
+                    # around it for segmentSources3D, otherwise will use the full stack
+                    "reducePlanes": True,
+                },
+            },
+            "labels": {
+                "fiducial": {"order": 1},
+                "barcode": {"order": 2},
+                "DAPI": {"order": 3},
+                "mask": {"order": 5},
+                "RNA": {"order": 4},
+            },
+        }
+
 
 def load_alignment_dict(data_folder):
     """Load a JSON file with 'dictShifts' in the file name.
@@ -520,3 +533,12 @@ def rt_to_filename(current_param, reference_barcode):
             file_parts = current_param.decode_file_parts(os.path.basename(file))
             roi_list[file] = file_parts["roi"]
     return filenames_with_ref_barcode, roi_list
+
+
+def deep_dict_update(main_dict: dict, update: dict):
+    for key, value in update.items():
+        if isinstance(value, dict):
+            main_dict[key] = deep_dict_update(main_dict.get(key, {}), value)
+        else:
+            main_dict[key] = value
+    return main_dict

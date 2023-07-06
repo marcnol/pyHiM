@@ -9,6 +9,8 @@ Manage writing, reading and checking data.
 import json
 import os
 
+from skimage import io
+
 
 def extract_files(root: str):
     """Extract recursively file informations of all files into a given directory.
@@ -50,16 +52,38 @@ class DataManager:
         self,
         data_path: str,
         stardist_basename: str = "",
-        filename_params: str = "infoList",
+        params_filename: str = "infoList",
     ):
         self.m_data_path = self.__set_data_path(data_path)
         self.m_stardist_basename = str(stardist_basename)
-        self.m_filename_params = filename_params
+        self.m_filename_params = params_filename
         self.all_files = extract_files(self.m_data_path)
-        self.user_parameter = None
+        self.param_file_path = self.find_param_file(params_filename)
         self.data_images = []
         self.data_tables = []
-        self.dispatch_files()
+        self.filename_regex = ""
+        self.channels = {
+            "dapi_acq": {
+                "ch00": "dapi",
+                "ch01": "fiducial",
+                "ch02": "rna",
+            },
+            "mask_acq": {
+                "ch00": "mask",
+                "ch01": "fiducial",
+            },
+            "barcode_acq": {
+                "ch00": "barcode",
+                "ch01": "fiducial",
+            },
+        }
+        self.img_info = {
+            "parallelize_planes": False,
+            "pixel_size_XY": 0.1,
+            "pixel_size_Z": 0.25,
+            "z_binning": 2,
+        }
+        # self.dispatch_files()
 
     @staticmethod
     def __set_data_path(data_path):
@@ -67,19 +91,46 @@ class DataManager:
             return str(data_path)
         return os.getcwd()
 
+    def find_param_file(self, params_filename):
+        for path, name, ext in self.all_files:
+            if ext == "json" and name == self.m_filename_params:
+                return str(path)
+        # If we loop over all files, parameter file aren't detected.
+        raise ValueError(
+            f"Parameters file NOT FOUND, expected filename: {params_filename}.json"
+        )
+
     def dispatch_files(self):
         """Get all input files and sort by extension type"""
         img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
         for path, name, ext in self.all_files:
             if ext in img_ext:
-                self.data_images.append(ImageFile(path, name, ext))
+                label = self.find_label(name)
+                self.data_images.append(
+                    ImageFile(path, parts["cycle"], parts["roi"], parts["channel"])
+                )
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
-            elif ext == "json" and name == self.m_filename_params:
-                self.user_parameter = str(path)
+            # elif ext == "json" and name == self.m_filename_params:
+            #     self.user_parameter = str(path)
             else:
                 print(f"Unrecognized data file: {path}")
+
+    def find_label(self, filename):
+        parts = self.decode_file_parts(filename)
+        channel = parts["channel"]
+
+        if "DAPI" in path.basename(file).split("_"):
+            return self.channels["dapi_acq"][channel]
+        elif "RT" in path.basename(file).split("_"):
+            return self.channels["barcode_acq"][channel]
+        elif "mask" in path.basename(file).split("_"):
+            return self.channels["mask_acq"][channel]
+        else:
+            raise ValueError(f"Label NOT FOUND for this filename: {filename}")
+
+        return label
 
     def load_user_param(self):
         """Load user parameter JSON file like a Python dict
@@ -99,6 +150,63 @@ class DataManager:
             raise ValueError(f"Parameters file NOT FOUND: {self.user_parameter}")
         print(f"$ Parameters file read: {self.user_parameter}")
         return params
+
+    def set_up(acquisition_dict: dict):
+        acq = acquisition_dict["common"]
+        # Regular expression
+        self.filename_regex = remove_extension(acq["fileNameRegExp"])
+        # Channels
+        self.channels["dapi_acq"][acq.get("DAPI_channel", "ch00")] = "dapi"
+        self.channels["dapi_acq"][acq.get("fiducialDAPI_channel", "ch01")] = "fiducial"
+        self.channels["dapi_acq"][acq.get("RNA_channel", "ch02")] = "rna"
+        self.channels["mask_acq"][acq.get("mask_channel", "ch00")] = "mask"
+        self.channels["mask_acq"][acq.get("fiducialMask_channel", "ch01")] = "fiducial"
+        self.channels["barcode_acq"][acq.get("barcode_channel", "ch00")] = "barcode"
+        self.channels["barcode_acq"][
+            acq.get("fiducialBarcode_channel", "ch01")
+        ] = "fiducial"
+        # Image informations
+        self.img_info["parallelize_planes"] = acq["parallelizePlanes"]
+        self.img_info["pixel_size_XY"] = acq["pixelSizeXY"]
+        self.img_info["pixel_size_Z"] = acq["pixelSizeZ"]
+        self.img_info["z_binning"] = acq["zBinning"]
+
+    def decode_file_parts(self, file_name):
+        """
+        decodes variables from an input file. typically, RE takes the form:
+
+        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+)" # pylint: disable=anomalous-backslash-in-string,line-too-long
+
+        thus, by running decode_file_parts(file_name) you will get back
+        either an empty dict if the RE were not present
+        in your infoList.json file or a dict as follows if it all worked out fine:
+
+        file_parts['runNumber']: runNumber number
+        file_parts['cycle']: cycle string
+        file_parts['roi']: roi number
+        file_parts['channel']: channel string
+
+        Parameters
+        ----------
+        file_name : string
+            filename to decode
+
+        Returns
+        -------
+        Dict with file_parts.
+
+        """
+        # decodes regular expressions
+        if self.filename_regex:
+            return re.search(self.filename_regex, file_name)
+        return None
+
+    def get_inputs(self, labels: List[str]):
+        inputs = []
+        for img_file in self.data_images:
+            if img_file.label in labels:
+                inputs.append(img_file)
+        return inputs
 
 
 def load_json(file_name):
@@ -150,40 +258,32 @@ def save_json(data, file_name):
         json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
 
 
-class ImageFile:
-    def __init__(self, path, name, ext):
-        self.channel = ""
-        self.path = ""
+# class File:
+#     def __init__(self, path, name, ext):
+#         self.path = ""
+#         self.type = []  # Fiducial, barcode, mask, dapi, rna, localization, trace, ...
+#         self.status = []  # projected, registered, filtered
+#         self.reference_to = ""  # path ?
+
+#     def load(self):
+#         pass
+
+#     def save(self):
+#         pass
 
 
-def decode_file_parts(param_dict, file_name):
-    """
-    decodes variables from an input file. typically, RE takes the form:
+class ImageFile(File):
+    def __init__(self, path, label):
+        self.m_path = path
+        # self.acquisition = ""  # DAPI, Barcode, Mask
+        # self.channel = channel
+        self.m_label = label
+        # self.roi = roi
+        # self.cycle = cycle
 
-    "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif" # pylint: disable=anomalous-backslash-in-string,line-too-long
+    def load(self):
+        io.imread(self.m_path).squeeze()
 
-    thus, by running decode_file_parts(current_param,file_name) you will get back
-    either an empty dict if the RE were not present
-    in your infoList...json file or a dict as follows if it all worked out fine:
 
-    file_parts['runNumber']: runNumber number
-    file_parts['cycle']: cycle string
-    file_parts['roi']: roi number
-    file_parts['channel']: channel string
-
-    Parameters
-    ----------
-    file_name : string
-        filename to decode
-
-    Returns
-    -------
-    Dict with file_parts.
-
-    """
-    file_parts = {}
-    # decodes regular expressions
-    regex = param_dict.get("acquisition").get("fileNameRegExp")
-    if regex:
-        return re.search(regex, file_name)
-    return None
+def remove_extension(filename: str):
+    return ".".join(filename.split(".").pop())

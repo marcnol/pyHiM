@@ -11,10 +11,10 @@ from datetime import datetime
 
 from core.dask_cluster import DaskCluster
 from core.data_manager import write_string_to_file
-from core.pyhim_logging import Log, Logger, Session, print_log
+from core.pyhim_logging import Log, Logger, Session, print_dashes, print_log
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
-from imageProcessing.makeProjections import make_projections
+from imageProcessing.makeProjections import Project, make_projections
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import SegmentMasks3D
 from imageProcessing.segmentSources3D import SegmentSources3D
@@ -28,17 +28,23 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(self, data_m, is_parallel, session_name="HiM_analysis"):
+    def __init__(
+        self, data_m, cmd_list, global_param, is_parallel, session_name="HiM_analysis"
+    ):
         self.m_data_m = data_m
+        self.cmds = cmd_list
+        self.params = global_param
         self.parallel = is_parallel
-
         self.m_logger = Logger(self.m_data_m.m_data_path, self.parallel, session_name)
-
-        # self.log_file = ""
-        # self.markdown_filename = ""
         self.m_dask = None
-        # self.client = None
-        # self.cluster = None
+        self.tempo_var = {"makeProjections": Project}
+        self.features = []
+        self.init_features()
+
+    def init_features(self):
+        for command in self.cmds:
+            if command in self.tempo_var:
+                self.features.append(self.tempo_var.get(command)(self.params))
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
@@ -141,6 +147,28 @@ class Pipeline:
             self.manage_parallel_option(
                 process_pwd_matrices, current_param, self.m_logger.m_session
             )
+
+    def run(self):
+        for feat in self.features:
+            (required_data, required_ref, required_table) = feat.get_required_inputs()
+            # reference = self.m_data_m.load_reference(required_ref)
+            # table = self.m_data_m.load_table(required_table)
+            files_to_process = self.m_data_m.get_inputs(required_data)
+            self.m_data_m.create_folder(feat.out_folder)
+            if self.parallel:
+                # dask
+                client = get_client()
+                threads = [
+                    client.submit(feat.run, f2p.load(), reference, table)
+                    for f2p in files_to_process
+                ]
+                print_log(f"$ Waiting for {len(threads)} threads to complete ")
+                for _, _ in enumerate(threads):
+                    wait(threads)
+            else:
+                for f2p in files_to_process:
+                    data = f2p.load()
+                    feat.run(data, reference, table)
 
 
 # =============================================================================

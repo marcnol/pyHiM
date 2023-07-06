@@ -182,7 +182,7 @@ class Drift3D:
 
         self.p["fileNameReference"] = filename_reference
         self.p["ROI"] = self.roi_list[filename_reference]
-        print_log("Loading reference 3D image: {}".format(filename_reference))
+        print_log(f"Loading reference 3D image: {filename_reference}")
 
         self.image_ref_0, self.image_ref = load_n_preprocess_image(
             filename_reference,
@@ -205,9 +205,7 @@ class Drift3D:
         ]
 
         print_log(
-            "$ Found {} files in ROI: {}".format(
-                len(self.filenames_to_process_list), self.p["ROI"]
-            )
+            f"$ Found {len(self.filenames_to_process_list)} files in ROI: {self.p['ROI']}"
         )
         print_log(
             "$ [roi:cycle] {}".format(
