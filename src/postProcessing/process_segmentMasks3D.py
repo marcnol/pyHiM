@@ -19,18 +19,12 @@ from tifffile import imsave
 
 
 def save_projections(files, data2D):
-    output_files = [
-        x.split("_3Dmasks.npy")[0].rstrip(".") + "_Masks.npy" for x in files
-    ]
-    output_files_TIFF = [
-        x.split("_3Dmasks.npy")[0].rstrip(".") + "_Masks.tif" for x in files
-    ]
+    output_files = [x.split("_3Dmasks.npy")[0].rstrip(".") + "_Masks.npy" for x in files]
+    output_files_TIFF = [x.split("_3Dmasks.npy")[0].rstrip(".") + "_Masks.tif" for x in files]
 
     print(f"output files: {output_files}\n\n")
 
-    for output_file, _data2D, output_file_TIFF in zip(
-        output_files, data2D, output_files_TIFF
-    ):
+    for output_file, _data2D, output_file_TIFF in zip(output_files, data2D, output_files_TIFF):
         if os.path.exists(output_file):
             print(f"----Warning!----\nRenaming {output_file} as it exists already!\n")
             os.rename(output_file, output_file + "._2Dmasks.npy")

@@ -25,6 +25,7 @@ from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 from astropy.table import Table, vstack
 from stardist import random_label_cmap
 import matplotlib
+from tqdm import tqdm
 
 from fileProcessing.fileManagement import print_log
 from imageProcessing.localization_table import (
@@ -34,7 +35,7 @@ from imageProcessing.localization_table import (
 )
 
 lbl_cmap = random_label_cmap()
-font = {"weight": "normal", "size": 18}
+font = {"weight": "normal", "size": 22}
 matplotlib.rc("font", **font)
 
 # to remove in a future version
@@ -65,20 +66,7 @@ class ChromatinTraceTable:
                 "Barcode #",
                 "label",
             ),
-            dtype=(
-                "S2",
-                "S2",
-                "f4",
-                "f4",
-                "f4",
-                "S2",
-                "int",
-                "int",
-                "int",
-                "int",
-                "int",
-                "S2",
-            ),
+            dtype=("S2", "S2", "f4", "f4", "f4", "S2", "int", "int", "int", "int", "int", "S2",),
         )
 
         self.data.meta["comments"] = [
@@ -165,7 +153,7 @@ class ChromatinTraceTable:
 
         self.data = vstack([self.data, table])
 
-    def filter_traces_by_coordinate(self, coor = 'z', coor_min = 0., coor_max = np.inf):
+    def filter_traces_by_coordinate(self, coor="z", coor_min=0.0, coor_max=np.inf):
         """
         This function will remove the spots that are outside coordinate limits
 
@@ -185,45 +173,336 @@ class ChromatinTraceTable:
         """
         trace_table = self.data
 
-        if len(trace_table)>0:
-        
+        if len(trace_table) > 0:
+
             # indexes trace file
             trace_table_indexed = trace_table.group_by("Trace_ID")
-    
+
             # iterates over traces
             print(f"\n$ Will keep localizations with {coor_min} < {coor} < {coor_max}.")
-            print(
-                f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}"
-            )
-    
-            coordinates=[]
+            print(f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}")
+
+            coordinates = []
             rows_to_remove = []
             for idx, row in enumerate(trace_table):
                 coordinate = float(row[coor])
-    
+
                 if coordinate < coor_min or coordinate > coor_max:
                     rows_to_remove.append(idx)
                     # coordinates.append(coordinate)
-    
+
             print(f"$ Number of spots to remove: {len(rows_to_remove)}")
-    
+
             trace_table.remove_rows(rows_to_remove)
-    
+
             if len(trace_table) > 0:
                 trace_table_indexed = trace_table.group_by("Trace_ID")
                 number_traces_left = len(trace_table_indexed.groups)
             else:
                 number_traces_left = 0
-    
-            print(
-                f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}"
-            )
-            
+
+            print(f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}")
+
         else:
             print("! Error: you are trying to filter an empty trace table!")
         self.data = trace_table
 
+    def barcode_statistics(self, trace_table):
+        """
+        calculates the number of times a barcode is repeated in a trace for all traces in a trace table
 
+        Parameters
+        ----------
+        trace_table : ASTROPY table
+            trace table.
+
+        Returns
+        -------
+        collective_barcode_stats : dict
+            dict with barcode identities as keys and a list of the number of times it was present in each trace treated.
+
+        """
+        collective_barcode_stats = dict()
+
+        trace_table_indexed = trace_table.group_by("Trace_ID")
+
+        # iterates over traces
+        print("$ Calculating barcode stats...")
+
+        for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+            unique_barcodes = list(set(trace["Barcode #"].data))
+            number_unique_barcodes = len(unique_barcodes)
+            barcodes = list(trace["Barcode #"].data)
+            number_barcodes = len(barcodes)
+
+            # if number_unique_barcodes < number_barcodes:
+
+            barcode_stats = dict()
+            for barcode in unique_barcodes:
+
+                barcode_rep = barcodes.count(barcode)
+                barcode_stats[str(barcode)] = barcode_rep
+
+                if str(barcode) in collective_barcode_stats.keys():
+                    collective_barcode_stats[str(barcode)].append(barcode_rep)
+                else:
+                    collective_barcode_stats[str(barcode)] = [barcode_rep]
+
+        return collective_barcode_stats
+
+    def plots_barcode_statistics(self, collective_barcode_stats, file_name="barcode_stats", kind="violin", norm=True):
+        """
+        plots the collecive_bracode stats (see previous function)
+
+        Parameters
+        ----------
+        collective_barcode_stats : dict
+            dict with barcode identities as keys and a list of the number of times it was present in each trace treated.
+        file_name : str, optional
+            output filename for saving figure. The default is 'barcode_stats.png'.
+        kind : str, optional
+            Options for plotting styles: 'violin' or 'matrix'. The default is 'violin'.
+
+        Returns
+        -------
+        None.
+
+        """
+        sorted_barcodes = sorted([int(x) for x in collective_barcode_stats.keys()])
+        data = [collective_barcode_stats[str(key)] for key in sorted_barcodes]
+
+        fig, (ax1) = plt.subplots(nrows=1, ncols=1, figsize=(15, 15))
+
+        if norm:
+            label, density = "frequency", True
+        else:
+            label, density = "counts", False
+
+        ax1.set_title("Distribution of barcodes per trace")
+
+        if "violin" in kind:
+            ax1.set_ylabel("number of barcodes")
+            ax1.violinplot(data)
+
+            ax1.set_xticks(np.arange(1, len(sorted_barcodes) + 1), labels=sorted_barcodes)
+            ax1.set_xlim(0.25, len(sorted_barcodes) + 0.75)
+            ax1.set_ylim(0.0, 10)
+            ax1.set_xlabel("barcode id")
+
+        elif "matrix":
+            bins = range(1, 10)
+            matrix = np.zeros((len(sorted_barcodes), len(bins) - 1))
+            for idx, barcode_data in enumerate(data):
+                matrix[idx, :], _ = np.histogram(barcode_data, bins=bins, density=density)
+            bin_number = [x for x in bins]
+            pos = ax1.imshow(np.transpose(matrix), cmap="Reds")
+            ax1.set_xticks(np.arange(matrix.shape[0]), sorted_barcodes)
+            ax1.set_yticks(np.arange(0, len(bins)), bin_number)
+            ax1.set_ylabel("number of barcodes")
+            ax1.set_xlabel("barcode id")
+            fig.colorbar(pos, ax=ax1, location="bottom", anchor=(0.5, 1), shrink=0.4, label=label)
+
+        fig.savefig(file_name + ".png")
+
+    def filter_repeated_barcodes(self, trace_file="mock"):
+        """
+        This function will remove the barcodes that are present more than once in a trace. 
+        All other barcodes are kept.
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        updated trace table is kept in self.data
+
+        """
+        trace_table = self.data
+        trace_table_new = trace_table.copy()
+        print("\n$ Removing spots with repeated barcodes...")
+        if len(trace_table) > 0:
+
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Trace_ID")
+
+            # iterates over traces
+            print(f"\n$ Number of original \n spots: {len(trace_table)} \n traces: {len(trace_table_indexed.groups)}")
+
+            # calculates the statistics for the table before processing
+            collective_barcode_stats = self.barcode_statistics(trace_table)
+
+            # plots statistics of barcodes and saves in file
+            self.plots_barcode_statistics(
+                collective_barcode_stats, file_name=trace_file + "_before", kind="matrix", norm=True
+            )
+
+            # iterates over traces
+            spots_to_remove = list()
+            for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+
+                unique_barcodes = list(set(trace["Barcode #"].data))
+                number_unique_barcodes = len(unique_barcodes)
+                barcodes = list(trace["Barcode #"].data)
+                number_barcodes = len(barcodes)
+
+                if number_unique_barcodes < number_barcodes:
+                    trace_indexed_by_barcode = trace.group_by("Barcode #")
+
+                    for row in trace_indexed_by_barcode:
+                        barcode = row["Barcode #"].data
+                        barcode_rep = barcodes.count(barcode)
+
+                        # if a barcode is more than once I will remove both instances
+                        if barcode_rep > 1:
+                            spots_to_remove.append(row["Spot_ID"])
+
+            print(f"$ Number of spots to remove: {len(spots_to_remove)}")
+            print("$ Removing repeated spots...")
+
+            rows_to_remove = list()
+            for idx, row in enumerate(trace_table):
+                spot_id = row["Spot_ID"]
+
+                if spot_id in spots_to_remove:
+                    rows_to_remove.append(idx)
+
+            trace_table_new.remove_rows(rows_to_remove)
+
+            print(f"$ Number of rows to remove: {len(rows_to_remove)}")
+
+            if len(trace_table_new) > 0:
+                trace_table_indexed = trace_table_new.group_by("Trace_ID")
+                number_traces_left = len(trace_table_indexed.groups)
+            else:
+                number_traces_left = 0
+
+            print(
+                f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {len(trace_table_indexed.groups)}"
+            )
+
+            # calculates the statistics for the table before processing
+            collective_barcode_stats_new = self.barcode_statistics(trace_table_new)
+
+            # plots statistics of barcodes and saves in file
+            self.plots_barcode_statistics(
+                collective_barcode_stats_new, file_name=trace_file + "_filtered", kind="matrix", norm=False
+            )
+
+        else:
+            print("! Error: you are trying to filter an empty trace table!")
+        self.data = trace_table_new
+
+
+    def remove_duplicates(self, ):
+        """
+        removes duplicated (identical) barcodes
+
+        Parameters
+        ----------
+
+
+        Returns
+        -------
+        trace_table : ASTROPY Table
+            output trace table.
+        """
+        trace_table = self.data
+        trace_table_new = trace_table.copy()
+        print("\n$ Removing duplicated barcodes...")
+        if len(trace_table) > 0:
+
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Spot_ID")
+            
+            # finds barcodes with the same UID and stores UIDs in list
+            spots_to_remove = list()
+            for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+                if len(trace)>1:
+                    spots_to_remove.append(trace["Spot_ID"][0])
+            
+            # finds row of the first offending barcode
+            # this only removes one of the duplicated barcodes --> assumes at most there are two copies
+            rows_to_remove = list()
+            for idx, row in enumerate(trace_table):
+                spot_id = row["Spot_ID"]
+                if spot_id in spots_to_remove:
+                    rows_to_remove.append(idx)
+                    spots_to_remove.remove(spot_id)
+                    
+            # removes from table
+            trace_table_new.remove_rows(rows_to_remove)
+
+            print(f"$ Number of rows to remove: {len(rows_to_remove)}")
+
+            if len(trace_table_new) > 0:
+                trace_table_indexed = trace_table_new.group_by("Trace_ID")
+                number_traces_left = len(trace_table_indexed.groups)
+            else:
+                number_traces_left = 0
+
+            print(
+                f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {number_traces_left}"
+            )
+
+        else:
+            print("! Error: you are trying to filter an empty trace table!")
+            
+        self.data = trace_table_new
+        
+    def remove_barcode(self, remove_barcode = None):
+        """
+        Removes a specific barcode from a trace table        
+
+        Returns
+        -------
+        trace_table : ASTROPY Table
+            output trace table.
+        """
+        
+        if remove_barcode is not None:
+
+            print("\n$ Removing barcode <{}>".format(remove_barcode))
+            
+            trace_table = self.data
+            trace_table_new = trace_table.copy()
+
+            # indexes trace file
+            trace_table_indexed = trace_table.group_by("Barcode #")
+            number_barcodes_before = len(trace_table_indexed.groups)
+            
+            # iterates over traces
+            spots_to_remove = list()
+            for idx, sub_table_barcode in enumerate(tqdm(trace_table_indexed.groups)):
+                barcode_name =  list(set(sub_table_barcode["Barcode #"]))
+                if int(remove_barcode) in barcode_name:
+                    print("$ Found barcode: {}".format(barcode_name))
+
+                    for row in sub_table_barcode:
+                        spots_to_remove.append(row["Spot_ID"])
+
+            print(f"$ Number of spots to remove: {len(spots_to_remove)}")
+
+            # builds the list with the rows to remove
+            rows_to_remove = list()
+            for idx, row in enumerate(trace_table):
+                spot_id = row["Spot_ID"]
+
+                if spot_id in spots_to_remove:
+                    rows_to_remove.append(idx)
+                    
+            # removes targetted spots
+            trace_table_new.remove_rows(rows_to_remove)
+            
+            # provides statistics
+            trace_table_indexed_new = trace_table_new.group_by("Barcode #")
+            number_barcodes_left = len(trace_table_indexed_new.groups)
+            print(f"\n$ Number of barcodes \n\t original: {number_barcodes_before} \n\t after: {number_barcodes_left}")
+
+        self.data = trace_table_new
+
+
+        
     def filter_traces_by_n(self, minimum_number_barcodes=2):
         """
         Removes rows in trace table with less than `minimum_number_barcodes` barcodes
@@ -249,9 +528,7 @@ class ChromatinTraceTable:
 
         # iterates over traces
         print(f"\n$ Will keep traces with {minimum_number_barcodes } spots")
-        print(
-            f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}"
-        )
+        print(f"$ Number of original spots / traces: {len(trace_table)} / {len(trace_table_indexed.groups)}")
 
         barcodes_to_remove = []
 
@@ -284,15 +561,11 @@ class ChromatinTraceTable:
         else:
             number_traces_left = 0
 
-        print(
-            f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}"
-        )
+        print(f"$ Number of spots / traces left: {len(trace_table)} / {number_traces_left}")
 
         self.data = trace_table
 
-    def plots_traces(
-        self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[.1, .1, .25]
-    ):
+    def plots_traces(self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[0.1, 0.1, 0.25]):
 
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
@@ -344,7 +617,7 @@ class ChromatinTraceTable:
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
             # makes plot
-            plots_localization_projection(x/pixel_size[0], y/pixel_size[1], ax[0], colors, titles[0])
+            plots_localization_projection(x / pixel_size[0], y / pixel_size[1], ax[0], colors, titles[0])
             plots_localization_projection(x, z, ax[1], colors, titles[1])
             plots_localization_projection(y, z, ax[2], colors, titles[2])
 
@@ -365,15 +638,7 @@ class ChromatinTraceTable:
                 z_trace = np.mean(trace["z"].data) / pixel_size[2]
                 s_trace = (
                     300
-                    * (
-                        np.mean(
-                            [
-                                np.std(trace["x"].data),
-                                np.std(trace["y"].data),
-                                np.std(trace["z"].data),
-                            ]
-                        )
-                    )
+                    * (np.mean([np.std(trace["x"].data), np.std(trace["y"].data), np.std(trace["z"].data),]))
                     / pixel_size[0]
                 )
 
@@ -390,8 +655,4 @@ class ChromatinTraceTable:
             try:
                 fig.savefig("".join(filename_list_i))
             except ValueError:
-                print(
-                    "\nValue error while saving output figure with traces:{}".format(
-                        "".join(filename_list_i)
-                    )
-                )
+                print("\nValue error while saving output figure with traces:{}".format("".join(filename_list_i)))

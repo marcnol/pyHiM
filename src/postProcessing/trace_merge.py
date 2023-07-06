@@ -69,6 +69,7 @@ def parse_arguments():
 
     return p
 
+
 def appends_traces(traces, trace_files):
 
     new_trace = ChromatinTraceTable()
@@ -78,14 +79,14 @@ def appends_traces(traces, trace_files):
 
         # reads new trace
         new_trace.load(trace_file)
-        
+
         # adds it to existing trace collection
         traces.append(new_trace.data)
         traces.number_traces += 1
 
         print(f" $ appended trace file with {len(new_trace.data)} traces")
 
-    print(f" $ Merge trace file will contain {len(traces.data)} traces")
+    print(f" $ Merged trace file will contain {len(traces.data)} traces")
 
     return traces
 
@@ -114,17 +115,14 @@ def run(p):
         os.mkdir(p["outputFolder"])
         print("Folder created: {}".format(p["outputFolder"]))
 
-    #loads and merges traces
+    # loads and merges traces
     traces = load_traces(trace_files=p["trace_files"])
-
 
     # saves merged trace table
     output_file = p["output_file"]
 
     traces.save(
-        output_file,
-        traces.data,
-        comments="appended_trace_files=" + str(traces.number_traces),
+        output_file, traces.data, comments="appended_trace_files=" + str(traces.number_traces),
     )
 
     print("Finished execution")

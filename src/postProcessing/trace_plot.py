@@ -87,9 +87,8 @@ def parse_arguments():
         "--barcode_type_dict", help="Json dictionnary linking barcodes and atom types (MUST BE 3 characters long!). "
     )
     parser.add_argument("--all", help="plots all traces in trace file", action="store_true")
-    parser.add_argument(
-        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
-    )
+    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
+    parser.add_argument("-O", "--output", help="Tag to add to the output file. Default = filtered")
 
     p = {}
 
@@ -103,6 +102,11 @@ def parse_arguments():
         p["input"] = args.input
     else:
         p["input"] = None
+
+    if args.output:
+        p["output"] = args.output
+    else:
+        p["output"] = "PDBs"
         
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
@@ -139,7 +143,7 @@ def parse_arguments():
     else:
         p["pipe"] = False
         p["trace_files"] = [p["input"]]
-        
+
     return p
 
 
@@ -184,11 +188,11 @@ def runtime(
                 trace_id = single_trace["Trace_ID"][0]
                 flag = False
 
-                if select_traces == 'selected' and trace_id == selected_trace:
+                if select_traces == "selected" and trace_id == selected_trace:
                     flag = True
-                elif select_traces == 'all':
+                elif select_traces == "all":
                     flag = True
-                    
+
                 if flag:
                     print("Converting trace ID: {}".format(trace_id))
 
@@ -204,13 +208,9 @@ def runtime(
     return len(trace_files)
 
 
-
-
-
 # =============================================================================
 # MAIN
 # =============================================================================
-
 
 def main():
     begin_time = datetime.now()
@@ -222,7 +222,7 @@ def main():
     barcode_type = loads_barcode_dict(p["barcode_type_dict"])
 
     # creates output folder
-    output_folder = "PDBs"
+    output_folder = p['output']
     folder_path = os.path.join(os.getcwd(), output_folder)  # Specify the folder path here
 
     create_folder(folder_path)
