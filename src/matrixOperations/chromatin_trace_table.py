@@ -18,6 +18,8 @@ import os
 import sys
 
 import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Polygon
 import numpy as np
 from apifish.stack.io import read_table_from_ecsv, save_table_to_ecsv
 from astropy.table import Table, vstack
@@ -610,6 +612,8 @@ class ChromatinTraceTable:
             titles = ["Z-projection", "X-projection", "Y-projection"]
 
             # plots masks if available
+            if len(masks.shape) == 3:
+                masks = np.max(masks,axis=0)
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
             # makes plot
@@ -624,7 +628,11 @@ class ChromatinTraceTable:
             number_traces = len(data_traces.groups.keys)
             color_dict_traces = build_color_dict(data_traces, key="Trace_ID")
             colors_traces = [color_dict_traces[str(x)] for x in data_traces["Trace_ID"]]
-            for trace, color, trace_id in zip(data_traces.groups, colors_traces, data_traces.groups.keys):
+            cmap_traces = plt.cm.get_cmap("hsv", np.max(colors_traces))
+            
+            for trace, color, trace_id in zip(
+                data_traces.groups, colors_traces, data_traces.groups.keys
+            ):
                 x_trace = np.mean(trace["x"].data) / pixel_size[0]
                 y_trace = np.mean(trace["y"].data) / pixel_size[1]
                 z_trace = np.mean(trace["z"].data) / pixel_size[2]
@@ -634,17 +642,11 @@ class ChromatinTraceTable:
                     / pixel_size[0]
                 )
 
-                # plots circles for each trace
-                ax[0].scatter(
-                    x_trace,
-                    y_trace,
-                    s=s_trace,
-                    c=color,
-                    marker="$\u25EF$",
-                    cmap="nipy_spectral",
-                    linewidths=1,
-                    alpha=0.7,
-                )
+                # Plots polygons for each trace
+                poly_coord = np.array([(trace["x"].data) / pixel_size[0],(trace["y"].data) / pixel_size[1]]).T
+                polygon = Polygon(poly_coord, closed=False, fill=False, edgecolor=cmap_traces(color),linewidth=1, alpha=1)
+                ax[0].add_patch(polygon)
+
 
             # saves output figure
             filename_list_i = filename_list.copy()

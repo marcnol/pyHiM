@@ -37,7 +37,7 @@ dependencies = ["apifish",
                 "photutils == 1.1.0",
                 "pympler >= 1.0.1",
                 "roipoly >= 0.5.3",
-                "scikit-image >= 0.19.2",
+                "scikit-image == 0.19.2",
                 "scikit-learn >= 1.1.1",
                 "scipy >= 1.7.3",
                 "stardist >= 0.7.3",
@@ -51,7 +51,6 @@ Homepage = "https://github.com/marcnol/pyHiM"
 
 [project.scripts]
 pyhim = "pyHiM:main"
-train_stardist = "trainStarDist:main"
 change_rt_infolist = "fileProcessing.changeRT_infoList:main"
 clean_him_run = "fileProcessing.cleanHiM_run:main"
 lndir = "fileProcessing.lndir:main"

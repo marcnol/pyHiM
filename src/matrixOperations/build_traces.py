@@ -126,6 +126,12 @@ class BuildTraces:
             self.current_param.param_dict["buildsPWDmatrix"], "kd_tree_distance_threshold_mum", default=1,
         )
 
+        self.z_offset =  get_dictionary_value(
+            self.current_param.param_dict["buildsPWDmatrix"],
+            "z_offset",
+            default=2.0,
+        )
+
     def initialize_lists(self):
         (
             self.rois,
@@ -160,11 +166,18 @@ class BuildTraces:
         self.n_cells_assigned # number of cells assigned
         self.n_cells_unassigned # number of cells unassigned
         """
-
+        
         n_barcodes_in_mask = np.zeros(self.number_masks + 2)
         n_barcodes_roi = 0
 
-        image_size = self.masks.shape
+        image_size_array = self.masks.shape
+        if len(image_size_array)==2:
+            # 2d
+            image_size = {'z': np.inf,'x': image_size_array[0],'y': image_size_array[1]}
+        else:
+            # 3d
+            image_size = {'z': image_size_array[0],'x': image_size_array[1],'y': image_size_array[2]}
+
 
         # loops over barcode Table rows in a given ROI
         print_log(f"> Aligning localizations to {self.number_masks} masks...")
@@ -183,14 +196,28 @@ class BuildTraces:
             # binarizes coordinate
             y_int = binarize_coordinate(y_corrected)
             x_int = binarize_coordinate(x_corrected)
+            z_int = binarize_coordinate(z_corrected) + int(self.z_offset)
 
             # finds what mask label this barcode is sitting on
-            if np.isnan(x_int) or np.isnan(y_int):
+            if np.isnan(x_int) or np.isnan(y_int) or np.isnan(z_int):
                 # if a barcode has coordinates with NaNs, it is assigned to background
                 mask_id = 0
             else:
-                if x_int < image_size[0] and y_int < image_size[1] and x_int > 0 and y_int > 0:
-                    mask_id = self.masks[x_int][y_int]
+                if (
+                    x_int < image_size['x']
+                    and y_int < image_size['y']
+                    and z_int < image_size['z']
+                    and x_int > 0
+                    and y_int > 0
+                    and z_int > 0
+                    ):
+                    
+                    if len(image_size_array)==2:
+                        # 2d
+                        mask_id = self.masks[x_int,y_int]
+                    else:
+                        # 3d
+                        mask_id = self.masks[z_int,x_int,y_int]
                 else:
                     # if a barcode has coordinates outside the image, it is assigned to background
                     mask_id = 0
