@@ -544,9 +544,7 @@ def align_images_in_current_folder(
                 if (x not in filename_reference)
                 and current_param.decode_file_parts(os.path.basename(x))["roi"] == roi
             ]
-            print_log(
-                "Found {} files in ROI: {}".format(len(filenames_to_process_list), roi)
-            )
+            print_log(f"Found {len(filenames_to_process_list)} files in ROI: {roi}")
             print_log(
                 "[roi:cycle] {}".format(
                     "|".join(
@@ -588,11 +586,11 @@ def align_images_in_current_folder(
                         )
                     )
 
-                print_log("$ Waiting for {} results to arrive".format(len(futures)))
+                print_log(f"$ Waiting for {len(futures)} results to arrive")
 
                 results = client.gather(futures)
 
-                print_log("$ Retrieving {} results from cluster".format(len(results)))
+                print_log(f"$ Retrieving {len(results)} results from cluster")
 
                 for result, label in zip(results, labels):
                     shift, table_entry = result
@@ -613,9 +611,7 @@ def align_images_in_current_folder(
                     roi = current_param.decode_file_parts(
                         os.path.basename(filename_to_process)
                     )["roi"]
-                    print_log(
-                        "\n$ About to process file {} \\ {}".format(i_file, n_files)
-                    )
+                    print_log(f"\n$ About to process file {i_file} \\ {n_files}")
 
                     if filename_to_process not in filename_reference:
                         if file_name is None or (
@@ -636,9 +632,7 @@ def align_images_in_current_folder(
                             current_session.add(filename_to_process, session_name)
                     elif filename_to_process in filename_reference:
                         print_log(
-                            "\n$ Skipping reference file: {} ".format(
-                                os.path.basename(filename_to_process)
-                            )
+                            f"\n$ Skipping reference file: {os.path.basename(filename_to_process)} "
                         )
             # accumulates shifst for this ROI into global dictionary
             dict_shifts["ROI:" + roi] = dict_shift_roi
@@ -649,12 +643,10 @@ def align_images_in_current_folder(
             os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
         )
         save_json(dict_shifts, dictionary_filename)
-        print_log("$ Saved alignment dictionary to {}".format(dictionary_filename))
+        print_log(f"$ Saved alignment dictionary to {dictionary_filename}")
 
     else:
-        print_log(
-            "# Reference Barcode file does not exist: {}".format(reference_barcode)
-        )
+        print_log(f"# Reference Barcode file does not exist: {reference_barcode}")
         raise ValueError
 
     return alignment_results_table
@@ -682,7 +674,7 @@ def align_images(current_param, current_session, file_name=None):
     data_folder = Folders(current_param.param_dict["rootFolder"])
     data_folder.set_folders()
     print_session_name(session_name)
-    print_log("folders read: {}".format(len(data_folder.list_folders)))
+    print_log(f"folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
@@ -740,9 +732,7 @@ def apply_registrations_to_filename(
     except KeyError:
         shift_array = None
         print_log(
-            "$ Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                "ROI:" + roi, label
-            )
+            f"$ Could not find dictionary with alignment parameters for this ROI: {'ROI:' + roi}, label: {label}"
         )
 
     if shift_array is not None:
@@ -753,11 +743,7 @@ def apply_registrations_to_filename(
             filename_to_process, data_folder.output_folders["zProject"]
         )
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
-        print_log(
-            "$ Image registered using ROI:{}, label:{}, shift={}".format(
-                roi, label, shift
-            )
-        )
+        print_log(f"$ Image registered using ROI:{roi}, label:{label}, shift={shift}")
 
         # saves registered 2D image
         im_obj.save_image_2d(
@@ -779,11 +765,11 @@ def apply_registrations_to_filename(
             data_folder.output_folders["alignImages"],
             tag="_2d_registered",
         )
-        print_log("$ Saving image for referenceRT ROI:{}, label:{}".format(roi, label))
+        print_log(f"$ Saving image for referenceRT ROI:{roi}, label:{label}")
 
     else:
         print_log(
-            "# No shift found in dictionary for ROI:{}, label:{}".format(roi, label),
+            f"# No shift found in dictionary for ROI:{roi}, label:{label}",
             status="WARN",
         )
 
@@ -813,7 +799,7 @@ def apply_registrations_to_current_folder(
     # current_folder=data_folder.list_folders[0] # only one folder processed so far...
     files_folder = glob.glob(current_folder + os.sep + "*.tif")
     data_folder.create_folders(current_folder, current_param)
-    print_log("> Processing Folder: {}".format(current_folder))
+    print_log(f"> Processing Folder: {current_folder}")
 
     # loads dicShifts with shifts for all rois and all labels
     dict_filename = (
@@ -823,14 +809,14 @@ def apply_registrations_to_current_folder(
     # dict_filename = data_folder.output_files["dictShifts"] + ".json"
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
-        print_log("# File with dictionary not found!: {}".format(dict_filename))
+        print_log(f"# File with dictionary not found!: {dict_filename}")
     else:
-        print_log("$ Dictionary File loaded: {}".format(dict_filename))
+        print_log(f"$ Dictionary File loaded: {dict_filename}")
 
     # generates lists of files to process
     current_param.find_files_to_process(files_folder)
     n_files = len(current_param.files_to_process)
-    print_log("\n$ About to process {} files\n".format(n_files))
+    print_log(f"\n$ About to process {n_files} files\n")
 
     if len(current_param.files_to_process) > 0:
         # loops over files in file list
@@ -839,7 +825,7 @@ def apply_registrations_to_current_folder(
                 file_name is not None
                 and os.path.basename(file_name) == os.path.basename(filename_to_process)
             ):
-                print_log("\n$ About to process file {} \\ {}".format(i, n_files))
+                print_log(f"\n$ About to process file {i} \\ {n_files}")
                 apply_registrations_to_filename(
                     filename_to_process,
                     current_param,
@@ -864,7 +850,7 @@ def apply_registrations(current_param, current_session, file_name=None):
     data_folder = Folders(current_param.param_dict["rootFolder"])
     data_folder.set_folders()
     print_session_name(session_name)
-    print_log("$ folders read: {}".format(len(data_folder.list_folders)))
+    print_log(f"$ folders read: {len(data_folder.list_folders)}")
 
     for current_folder in data_folder.list_folders:
         apply_registrations_to_current_folder(

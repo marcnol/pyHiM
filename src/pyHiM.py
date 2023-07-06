@@ -37,16 +37,28 @@ def main(command_line_arguments=None):
     begin_time = datetime.now()
 
     run_args = RunArgs(command_line_arguments)
+
     datam = DataManager(run_args.data_path, run_args.stardist_basename)
+
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    pipe = fc.Pipeline(datam, run_args.parallel, session_name="HiM_analysis")
+    datam.set_up(global_param.get_section("acquisition"))
+
+    pipe = fc.Pipeline(
+        datam,
+        run_args.cmd_list,
+        global_param,
+        run_args.parallel,
+        session_name="HiM_analysis",
+    )
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     labels = global_param.param_dict["labels"]
 
     print_log(f"$ Started logging to: {pipe.m_logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
+
+    pipe.run()
 
     for label in labels:
         # sets parameters

@@ -178,3 +178,7 @@ def print_log(message, status="INFO"):
 
 def print_session_name(name: str):
     print_log(f"\n===================={name}====================\n")
+
+
+def print_dashes():
+    print_log("-----------------------------------------------------------------")
