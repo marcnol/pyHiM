@@ -156,19 +156,22 @@ class Pipeline:
             files_to_process = self.m_data_m.get_inputs(required_data)
             self.m_data_m.create_folder(feat.out_folder)
             if self.parallel:
-                # dask
-                client = get_client()
-                threads = [
-                    client.submit(feat.run, f2p.load(), reference, table)
-                    for f2p in files_to_process
-                ]
-                print_log(f"$ Waiting for {len(threads)} threads to complete ")
-                for _, _ in enumerate(threads):
-                    wait(threads)
+                pass
+                # C'est KC
+                # # dask
+                # client = get_client()
+                # threads = [
+                #     client.submit(feat.run, f2p.load(), reference, table)
+                #     for f2p in files_to_process
+                # ]
+                # print_log(f"$ Waiting for {len(threads)} threads to complete ")
+                # for _, _ in enumerate(threads):
+                #     wait(threads)
             else:
                 for f2p in files_to_process:
                     data = f2p.load()
-                    feat.run(data, reference, table)
+                    result = feat.run(data, reference, table)
+                    f2p.save(result, feat.out_folder, feat.out_tag)
 
 
 # =============================================================================

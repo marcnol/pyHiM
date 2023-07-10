@@ -42,7 +42,7 @@ def main(command_line_arguments=None):
 
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    datam.set_up(global_param.get_section("acquisition"))
+    datam.set_up(global_param.get_sectioned_params("acquisition"))
 
     pipe = fc.Pipeline(
         datam,
@@ -78,9 +78,9 @@ def main(command_line_arguments=None):
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = pipe.m_logger.md_filename
 
-        # [projects 3D images in 2d]
-        if "makeProjections" in run_args.cmd_list:
-            pipe.make_projections(current_param)
+        # # [projects 3D images in 2d]
+        # if "makeProjections" in run_args.cmd_list:
+        #     pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
