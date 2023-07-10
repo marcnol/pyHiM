@@ -55,6 +55,7 @@ class DataManager:
         params_filename: str = "infoList",
     ):
         self.m_data_path = self.__set_data_path(data_path)
+        self.out_path = self.m_data_path
         self.m_stardist_basename = str(stardist_basename)
         self.m_filename_params = params_filename
         self.all_files = extract_files(self.m_data_path)
@@ -91,6 +92,22 @@ class DataManager:
             return str(data_path)
         return os.getcwd()
 
+    def create_folder(self, folder_name: str):
+        """Create folder with `makedirs` from os module.
+        It's a recursive directory creation function.
+
+        Parameters
+        ----------
+        folder_name : str
+            Relative path name of folder
+        """
+        folder_path = self.out_path + os.sep + folder_name
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print(f"Folder '{folder_path}' created successfully.")
+        else:
+            print(f"Folder '{folder_path}' already exists.")
+
     def find_param_file(self, params_filename):
         for path, name, ext in self.all_files:
             if ext == "json" and name == self.m_filename_params:
@@ -107,9 +124,7 @@ class DataManager:
         for path, name, ext in self.all_files:
             if ext in img_ext:
                 label = self.find_label(name)
-                self.data_images.append(
-                    ImageFile(path, parts["cycle"], parts["roi"], parts["channel"])
-                )
+                self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
             # elif ext == "json" and name == self.m_filename_params:
@@ -145,13 +160,13 @@ class DataManager:
         ValueError
             file not found
         """
-        params = load_json(self.user_parameter)
+        params = load_json(self.param_file_path)
         if params is None:
-            raise ValueError(f"Parameters file NOT FOUND: {self.user_parameter}")
-        print(f"$ Parameters file read: {self.user_parameter}")
+            raise ValueError(f"Parameters file NOT FOUND: {self.param_file_path}")
+        print(f"$ Parameters file read: {self.param_file_path}")
         return params
 
-    def set_up(acquisition_dict: dict):
+    def set_up(self, acquisition_dict: dict):
         acq = acquisition_dict["common"]
         # Regular expression
         self.filename_regex = remove_extension(acq["fileNameRegExp"])
@@ -201,7 +216,7 @@ class DataManager:
             return re.search(self.filename_regex, file_name)
         return None
 
-    def get_inputs(self, labels: List[str]):
+    def get_inputs(self, labels: list[str]):
         inputs = []
         for img_file in self.data_images:
             if img_file.label in labels:
@@ -272,17 +287,32 @@ def save_json(data, file_name):
 #         pass
 
 
-class ImageFile(File):
-    def __init__(self, path, label):
-        self.m_path = path
+class ImageFile:
+    def __init__(self, path, img_name, ext, label):
+        self.all_path = path
+        self.name = img_name
+        self.extension = ext
+        self.root = self.get_root()
         # self.acquisition = ""  # DAPI, Barcode, Mask
         # self.channel = channel
         self.m_label = label
         # self.roi = roi
         # self.cycle = cycle
 
+    def get_root(self):
+        length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
+        return self.all_path[:length]
+
     def load(self):
         io.imread(self.m_path).squeeze()
+
+    def save(self, result, folder_name: str, tag: str):
+        path_name = self.root + os.sep + folder_name + self.name + tag
+        if result.shape > (1, 1):
+            np.save(path_name, result)
+            print_log(f"$ Image saved to disk: {path_name}.npy", "info")
+        else:
+            print_log("# Warning, image is empty", "Warning")
 
 
 def remove_extension(filename: str):

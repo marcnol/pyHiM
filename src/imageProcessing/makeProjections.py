@@ -23,11 +23,13 @@ import os
 import warnings
 
 import numpy as np
+import scipy.optimize as spo
 from apifish.stack import projection
 from dask.distributed import get_client, wait
 
 from core.data_manager import write_string_to_file
 from core.folder import Folders
+from core.parameters import Parameters
 from core.pyhim_logging import print_log, print_session_name
 from core.saving import image_show_with_values
 from imageProcessing.imageProcessing import Image
@@ -38,117 +40,216 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class Feature:
-    def __init__(self, param):
-        self.m_param = param
+    def __init__(self, params: Parameters):
+        self.m_params = params
         self.required_data = []
         self.required_ref = []
         self.required_table = []
         self.out_folder = ""
 
-    def required_inputs(self):
+    def get_required_inputs(self):
         return self.required_data, self.required_ref, self.required_table
 
 
 class Project(Feature):
-    def __init__(self, param):
-        super().__init__(param)
+    def __init__(self, params: Parameters):
+        super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "mask", "rna"]
         self.out_folder = "zProject"
+        self.out_tag = "_2d"
 
-        self.block_size = 256
-        self.display = True
-        self.folder_name = "zProject"
-        self.mode = "full"
-        self.operation = "skip"
-        self.save_image = True
-        self.window_security = 2
-        self.z_project_option = "MIP"
-        self.zmax = 59
-        self.zmin = 1
-        self.zwindows = 15
+        self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
+        self.display = params.get_labeled_dict_value("zProject", "display")
+        self.folder_name = params.get_labeled_dict_value("zProject", "folder")
+        self.mode = params.get_labeled_dict_value("zProject", "mode")
+        self.operation = params.get_labeled_dict_value("zProject", "operation")
+        self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
+        self.window_security = params.get_labeled_dict_value(
+            "zProject", "windowSecurity"
+        )
+        self.z_project_option = params.get_labeled_dict_value(
+            "zProject", "zProjectOption"
+        )
+        self.zmax = params.get_labeled_dict_value("zProject", "zmax")
+        self.zmin = params.get_labeled_dict_value("zProject", "zmin")
+        self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
 
-    def run(self, img, option):
+    def run(self, img, label: str):
+        mode = self.mode[label]
+        if mode == "laplacian":
+            return self._projection_laplacian(img, label)
         # find the correct range for the projection
-        img_reduce = self.precise_z_planes(img, option)
-        self.print_image_properties()
-        img_projected = self.projection_2d(img_reduce, option)
+        img_reduce = self.precise_z_planes(img, mode, label)
+        img_projected = self.projection_2d(img_reduce, label)
         return img_projected
 
-    def check_zmax(self, img_size):
-        if self.zmax > img_size[0]:
+    def check_zmax(self, img_size, label):
+        if self.zmax[label] > img_size[0]:
             print_log("$ Setting z max to the last plane")
-            self.zmax = img_size[0]
+            self.zmax[label] = img_size[0]
 
-    def precise_z_planes(self, img, option):
+    def precise_z_planes(self, img, mode, label):
         img_size = img.shape
-        self.check_zmax(img_size)
-        return img[z_range[1][0] : z_range[1][-1]]
+        self.check_zmax(img_size, label)
+        if mode == "automatic":
+            focus_plane, z_range = self._precise_z_planes_auto(img, label)
+        elif mode == "full":
+            focus_plane, z_range = self._precise_z_planes_full(img_size)
+        elif mode == "manual":
+            focus_plane, z_range = self._precise_z_planes_manual(label)
+        else:
+            raise ValueError(
+                f"Projection mode UNRECOGNIZED: {mode}\n> Available mode: automatic,full,manual,laplacian"
+            )
+        print_log(f"$ Image Size={img_size}")
+        print_log(f"$ Focal plane={focus_plane}")
+        print_log(f"> Processing z_range:{z_range}")
+        return img[z_range[1][0] : (z_range[1][-1] + 1)]
 
-    def projection_2d(self, img, mode):
+    def _precise_z_planes_auto(self, img, label):
+        """
+        Calculates the focal planes based max standard deviation
+        Finds best focal plane by determining the max of the std deviation vs z curve
+        """
+        win_sec = self.window_security[label]
+
+        print_log("> Calculating planes...")
+
+        nb_of_planes = self.zmax[label] - self.zmin[label]
+        std_matrix = np.zeros(nb_of_planes)
+        mean_matrix = np.zeros(nb_of_planes)
+
+        # calculate STD in each plane
+        for i in range(0, nb_of_planes):
+            std_matrix[i] = np.std(img[i])
+            mean_matrix[i] = np.mean(img[i])
+
+        max_std = np.max(std_matrix)
+        i_focus_plane = np.where(std_matrix == max_std)[0][0]
+        # Select a window to avoid being on the edges of the stack
+
+        if i_focus_plane < win_sec or (i_focus_plane > nb_of_planes - win_sec):
+            focus_plane = i_focus_plane
+        else:
+            # interpolate zfocus
+            axis_z = range(
+                max(
+                    self.zmin[label],
+                    i_focus_plane - win_sec,
+                    min(self.zmax[label], i_focus_plane + win_sec),
+                )
+            )
+
+            std_matrix -= np.min(std_matrix)
+            std_matrix /= np.max(std_matrix)
+
+            try:
+                fitgauss = spo.curve_fit(
+                    gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
+                )
+                focus_plane = int(fitgauss[0][1])
+            except RuntimeError:
+                print_log("Warning, too many iterations")
+                focus_plane = i_focus_plane
+
+        zmin = max(win_sec, focus_plane - win_sec)
+        zmax = min(
+            nb_of_planes, win_sec + nb_of_planes, focus_plane + self.zwindows[label]
+        )
+        zrange = range(zmin, zmax + 1)
+
+        return focus_plane, zrange
+
+    def _precise_z_planes_full(self, img_size):
+        (zmin, zmax) = (0, img_size[0])
+        focus_plane = round((zmin + zmax) / 2)
+        z_range = range(zmin, zmax)
+        return focus_plane, z_range
+
+    def _precise_z_planes_manual(self, label):
+        # Manual: reads from parameters file
+        if self.zmin[label] >= self.zmax[label]:
+            raise SystemExit(
+                "zmin is equal or larger than zmax in configuration file. Cannot proceed."
+            )
+        focus_plane = round((self.zmin[label] + self.zmax[label]) / 2)
+        z_range = range(self.zmin[label], self.zmax[label])
+        return focus_plane, z_range
+
+    def _projection_laplacian(self, img, label):
+        print_log("Stacking using Laplacian variance...")
+        focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
+            img, block_size_xy=self.block_size[label], window=self.zwindows[label]
+        )
+        # reassembles image
+        output = projection.reassemble_images(
+            focal_plane_matrix, block, window=self.zwindows[label]
+        )
+
+        return output, focal_plane_matrix, z_range
+
+    def projection_2d(self, img, label):
         # sums images
         i_collapsed = None
-
-        if "MIP" in mode:
+        option = self.z_project_option[label]
+        if "MIP" == option:
             # Max projection of selected planes
-            i_collapsed = projection.maximum_projection(img)
-        elif "sum" in mode:
+            i_collapsed = projection.maximum_projection(img.pop())
+        elif "sum" == option:
             # Sums selected planes
             i_collapsed = projection.sum_projection(img)
         else:
-            print_log(f"ERROR: mode not recognized. Expected: MIP or sum. Read: {mode}")
+            print_log(
+                f"ERROR: mode not recognized. Expected: MIP or sum. Read: {option}"
+            )
 
         return i_collapsed
 
-    def print_image_properties(self):
-        pass
+    # def z_projection_range(self):
+    # find the correct range for the projection
+    # if self.current_param.param_dict["zProject"]["zmax"] > self.image_size[0]:
+    #     print_log("$ Setting z max to the last plane")
+    #     self.current_param.param_dict["zProject"]["zmax"] = self.image_size[0]
 
-    # processes sum image in axial direction given range
-    # @jit(nopython=True)
-    def z_projection_range(self):
-        # find the correct range for the projection
-        # if self.current_param.param_dict["zProject"]["zmax"] > self.image_size[0]:
-        #     print_log("$ Setting z max to the last plane")
-        #     self.current_param.param_dict["zProject"]["zmax"] = self.image_size[0]
+    # if self.current_param.param_dict["zProject"]["mode"] == "automatic":
+    #     print_log("> Calculating planes...")
+    #     z_range = calculate_zrange(self.data, self.current_param)
 
-        if self.current_param.param_dict["zProject"]["mode"] == "automatic":
-            print_log("> Calculating planes...")
-            z_range = calculate_zrange(self.data, self.current_param)
+    # elif self.current_param.param_dict["zProject"]["mode"] == "full":
+    #     (zmin, zmax) = (0, self.image_size[0])
+    #     z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        elif self.current_param.param_dict["zProject"]["mode"] == "full":
-            (zmin, zmax) = (0, self.image_size[0])
-            z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
+    # if self.current_param.param_dict["zProject"]["mode"] == "laplacian":
+    # print_log("Stacking using Laplacian variance...")
+    # (
+    #     self.data_2d,
+    #     self.focal_plane_matrix,
+    #     self.z_range,
+    # ) = reinterpolate_focal_plane(self.data, self.current_param.param_dict)
+    # self.focus_plane = self.z_range[0]
 
-        if self.current_param.param_dict["zProject"]["mode"] == "laplacian":
-            print_log("Stacking using Laplacian variance...")
-            (
-                self.data_2d,
-                self.focal_plane_matrix,
-                self.z_range,
-            ) = reinterpolate_focal_plane(self.data, self.current_param.param_dict)
-            self.focus_plane = self.z_range[0]
+    # else:
+    # # Manual: reads from parameters file
+    # (zmin, zmax) = (
+    #     self.current_param.param_dict["zProject"]["zmin"],
+    #     self.current_param.param_dict["zProject"]["zmax"],
+    # )
+    # if zmin >= zmax:
+    #     raise SystemExit(
+    #         "zmin is equal or larger than zmax in configuration file. Cannot proceed."
+    #     )
+    # z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        else:
-            # Manual: reads from parameters file
-            (zmin, zmax) = (
-                self.current_param.param_dict["zProject"]["zmin"],
-                self.current_param.param_dict["zProject"]["zmax"],
-            )
-            if zmin >= zmax:
-                raise SystemExit(
-                    "zmin is equal or larger than zmax in configuration file. Cannot proceed."
-                )
-            z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
+    # if "laplacian" not in self.current_param.param_dict["zProject"]["mode"]:
+    #     self.data_2d = project_image_2d(
+    #         self.data,
+    #         z_range,
+    #         self.current_param.param_dict["zProject"]["zProjectOption"],
+    #     )
+    #     self.focus_plane = z_range[0]
+    #     self.z_range = z_range[1]
 
-        if "laplacian" not in self.current_param.param_dict["zProject"]["mode"]:
-            self.data_2d = project_image_2d(
-                self.data,
-                z_range,
-                self.current_param.param_dict["zProject"]["zProjectOption"],
-            )
-            self.focus_plane = z_range[0]
-            self.z_range = z_range[1]
-
-        print_log(f"> Processing z_range:{self.z_range}")
+    # print_log(f"> Processing z_range:{self.z_range}")
 
 
 # =============================================================================

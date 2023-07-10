@@ -24,77 +24,101 @@ class Parameters:
         label="",
         stardist_basename=None,
     ):
-        self.label = label
+        # self.label = label
         self.files_to_process = []
-        self.param_dict = self.get_standard_parameters()
-        self.convert_parameter_file(raw_dict)
+        # self.param_dict = self.get_standard_parameters()
+        self.param_dict = self.complete_with_default(raw_dict)
+        if label:
+            self.param_dict = self.get_labelled_params(label)
+        # self.convert_parameter_file(raw_dict)
         self.set_stardist_basename(stardist_basename)
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 
-    def set_stardist_basename(self, stardist_basename):
+    def complete_with_default(self, raw_dict):
+        default = self.get_standard_parameters()
+        return deep_dict_update(default, raw_dict)
+
+    def set_stardist_basename(self, stardist_basename: str):
         if stardist_basename is not None:
-            self.param_dict["segmentedObjects"]["stardist_basename"] = stardist_basename
+            if self.param_dict.get("common", False):
+                self.param_dict["common"]["segmentedObjects"][
+                    "stardist_basename"
+                ] = stardist_basename
+            else:
+                self.param_dict["segmentedObjects"][
+                    "stardist_basename"
+                ] = stardist_basename
 
-    def convert_parameter_file(self, raw_dict):
-        """Load and organize parameters from a JSON file
+    # def convert_parameter_file(self, raw_dict):
+    #     """Load and organize parameters from a JSON file
 
-        Raises
-        ------
-        ValueError
-            Error if file not found
-        """
-        param_from_file = raw_dict
+    #     Raises
+    #     ------
+    #     ValueError
+    #         Error if file not found
+    #     """
+    #     param_from_file = raw_dict
 
-        converted_param = param_from_file["common"]
-        labels = param_from_file["labels"]
+    #     converted_param = param_from_file["common"]
+    #     labels = param_from_file["labels"]
 
-        ordered_list = [" "] * len(labels.keys())
-        for _, label in enumerate(labels.keys()):
-            order = labels[label]["order"]
-            ordered_list[order - 1] = label
+    #     ordered_list = [" "] * len(labels.keys())
+    #     for _, label in enumerate(labels.keys()):
+    #         order = labels[label]["order"]
+    #         ordered_list[order - 1] = label
 
-        converted_param["labels"] = ordered_list
+    #     converted_param["labels"] = ordered_list
 
-        label_selected = self.label  # the label specific parameters that we want load
+    #     label_selected = self.label  # the label specific parameters that we want load
 
-        # need to add keys not present in common dict
-        if len(label_selected) > 0:
-            number_keys_ammended = 0
-            for key in param_from_file["labels"][label_selected].keys():
-                if key == "order":
-                    pass
-                else:
-                    for key2 in param_from_file["labels"][label_selected][key]:
-                        # checks that key2 is in common
-                        if key in param_from_file["common"].keys():
-                            param_from_file["common"][key][key2] = param_from_file[
-                                "labels"
-                            ][label_selected][key][key2]
-                            number_keys_ammended += 1
-                        else:
-                            print_log(
-                                f"Did not find key <{key}> in common dictionary",
-                                status="WARN",
-                            )
-            print_log(f"Amended {number_keys_ammended} keys for {label_selected}")
+    #     # need to add keys not present in common dict
+    #     if len(label_selected) > 0:
+    #         number_keys_ammended = 0
+    #         for key in param_from_file["labels"][label_selected].keys():
+    #             if key == "order":
+    #                 pass
+    #             else:
+    #                 for key2 in param_from_file["labels"][label_selected][key]:
+    #                     # checks that key2 is in common
+    #                     if key in param_from_file["common"].keys():
+    #                         param_from_file["common"][key][key2] = param_from_file[
+    #                             "labels"
+    #                         ][label_selected][key][key2]
+    #                         number_keys_ammended += 1
+    #                     else:
+    #                         print_log(
+    #                             f"Did not find key <{key}> in common dictionary",
+    #                             status="WARN",
+    #                         )
+    #         print_log(f"Amended {number_keys_ammended} keys for {label_selected}")
 
-        # need to replace default keys by those in 'label' key
-        converted_param["acquisition"]["label"] = label_selected
-        self.param_dict = converted_param
+    #     # need to replace default keys by those in 'label' key
+    #     converted_param["acquisition"]["label"] = label_selected
+    #     self.param_dict = converted_param
 
     def get_sectioned_params(self, section_name: str):
         section_dict = {}
-        section_dict["common"] = self.param_dict["common"].get(section_name)
+        # print(self.param_dict)
+        tempo = self.param_dict["common"].get(section_name)
+        section_dict["common"] = tempo
         section_dict["labels"] = {}
-        for label in self.param_dict["labels"]:
-            section_dict["labels"][label] = label.get(section_name)
+        for key, value in self.param_dict["labels"].items():
+            section_dict["labels"][key] = value.get(section_name)
         return section_dict
 
     def get_labelled_params(self, label_name: str):
         main_dict = self.param_dict["common"]
+        main_dict["acquisition"]["label"] = label_name
         update = self.param_dict["labels"].get(label_name, {})
         return deep_dict_update(main_dict, update)
+
+    def get_labeled_dict_value(self, section, param_name):
+        labeled_dict = {}
+        default = self.param_dict["common"][section][param_name]
+        for key, value in self.param_dict["labels"].items():
+            labeled_dict[key] = value.get(section, {}).get(param_name, default)
+        return labeled_dict
 
     def set_channel(self, key, default):
         """Set channel parameter with a default value
