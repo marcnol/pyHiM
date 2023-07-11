@@ -67,15 +67,17 @@ def main():
         session_files = glob.glob(
             root_folder + os.sep + "Session*.json", recursive=True
         )
+        tmp_img = [root_folder + os.sep + "tmp.png"]
+        il_model = [root_folder + os.sep + "infoList_model.json"]
 
-        for f in markdown_files + log_files + session_files + md_log_files:
+        for f in markdown_files + log_files + session_files + md_log_files + tmp_img + il_model:
             try:
                 os.remove(f)
                 print(f"File deleted: {f} ")
             except OSError as e:
                 print(f"Error: {f} : {e.strerror}")
 
-    datam = DataManager(root_folder, filename_params=file_parameters)
+    datam = DataManager(root_folder, params_filename=file_parameters)
     raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")
@@ -85,15 +87,15 @@ def main():
     for current_folder in data_folder.list_folders:
         folders_to_remove = []
         folders_to_remove.append(
-            current_folder + os.sep + current_param.param_dict["zProject"]["folder"]
+            current_folder + os.sep + current_param.param_dict["common"]["zProject"]["folder"]
         )
         folders_to_remove.append(
-            current_folder + os.sep + current_param.param_dict["alignImages"]["folder"]
+            current_folder + os.sep + current_param.param_dict["common"]["alignImages"]["folder"]
         )
         folders_to_remove.append(
             current_folder
             + os.sep
-            + current_param.param_dict["segmentedObjects"]["folder"]
+            + current_param.param_dict["common"]["segmentedObjects"]["folder"]
         )
         folders_to_remove.append(current_folder + os.sep + "buildsPWDmatrix")
 
