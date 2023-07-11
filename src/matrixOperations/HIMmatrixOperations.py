@@ -30,7 +30,7 @@ from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 from tqdm import trange
 
-from core.data_manager import write_string_to_file
+from core.pyhim_logging import write_string_to_file
 
 # =============================================================================
 # CLASSES

@@ -26,9 +26,8 @@ import numpy as np
 from astropy.table import Table
 from tqdm import trange
 
-from core.data_manager import write_string_to_file
 from core.folder import Folders
-from core.pyhim_logging import print_log, print_session_name
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable, decode_rois
 from matrixOperations.filter_localizations import get_file_table_new_name
 

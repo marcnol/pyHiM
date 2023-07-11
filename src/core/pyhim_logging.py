@@ -9,8 +9,6 @@ import logging
 import os
 from datetime import datetime
 
-from core.data_manager import save_json, write_string_to_file
-
 
 class Logger:
     def __init__(self, root_folder, parallel=False, session_name=""):
@@ -82,7 +80,8 @@ class Session:
 
     def save(self):
         """Saves session to file"""
-        save_json(self.data, self.file_name)
+        with open(self.file_name, mode="w", encoding="utf-8") as json_f:
+            json.dump(self.data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
         print(f"> Saved json session file to {self.file_name}")
 
     def add(self, key, value):
@@ -182,3 +181,18 @@ def print_session_name(name: str):
 
 def print_dashes():
     print_log("-----------------------------------------------------------------")
+
+def write_string_to_file(file_name, text_to_output, attribute="a"):
+    """write a line of text into a file
+
+    Parameters
+    ----------
+    file_name : str
+        log file
+    text_to_output : str
+        text to write in file
+    attribute : str, optional
+        Open file mode option, by default "a"
+    """
+    with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
+        file_handle.write(str(text_to_output) + "\n")

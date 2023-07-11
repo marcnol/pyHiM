@@ -67,8 +67,8 @@ def main():
         session_files = glob.glob(
             root_folder + os.sep + "Session*.json", recursive=True
         )
-        tmp_img = [root_folder + os.sep + "tmp.png"]
-        il_model = [root_folder + os.sep + "infoList_model.json"]
+        tmp_img = glob.glob(root_folder + os.sep + "tmp.png")
+        il_model = glob.glob(root_folder + os.sep + "infoList_model.json")
 
         for f in markdown_files + log_files + session_files + md_log_files + tmp_img + il_model:
             try:

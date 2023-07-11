@@ -8,8 +8,12 @@ Manage writing, reading and checking data.
 
 import json
 import os
+import re
 
+import numpy as np
 from skimage import io
+
+from core.pyhim_logging import print_log
 
 
 def extract_files(root: str):
@@ -119,7 +123,8 @@ class DataManager:
 
     def dispatch_files(self):
         """Get all input files and sort by extension type"""
-        img_ext = ["tif", "tiff", "npy", "png", "jpg"]
+        img_ext = ["tif", "tiff"]
+        # img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
         for path, name, ext in self.all_files:
             if ext in img_ext:
@@ -127,8 +132,8 @@ class DataManager:
                 self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
-            # elif ext == "json" and name == self.m_filename_params:
-            #     self.user_parameter = str(path)
+            elif ext in ["log","md"] or (ext == "json" and name == self.m_filename_params):
+                pass
             else:
                 print(f"Unrecognized data file: {path}")
 
@@ -136,12 +141,12 @@ class DataManager:
         parts = self.decode_file_parts(filename)
         channel = parts["channel"]
 
-        if "DAPI" in path.basename(file).split("_"):
-            return self.channels["dapi_acq"][channel]
-        elif "RT" in path.basename(file).split("_"):
-            return self.channels["barcode_acq"][channel]
-        elif "mask" in path.basename(file).split("_"):
-            return self.channels["mask_acq"][channel]
+        if "DAPI" in filename.split("_"):
+            label = self.channels["dapi_acq"][channel]
+        elif "RT" in filename:
+            label = self.channels["barcode_acq"][channel]
+        elif "mask" in filename.split("_"):
+            label = self.channels["mask_acq"][channel]
         else:
             raise ValueError(f"Label NOT FOUND for this filename: {filename}")
 
@@ -186,6 +191,8 @@ class DataManager:
         self.img_info["pixel_size_Z"] = acq["pixelSizeZ"]
         self.img_info["z_binning"] = acq["zBinning"]
 
+        self.dispatch_files()
+
     def decode_file_parts(self, file_name):
         """
         decodes variables from an input file. typically, RE takes the form:
@@ -219,7 +226,7 @@ class DataManager:
     def get_inputs(self, labels: list[str]):
         inputs = []
         for img_file in self.data_images:
-            if img_file.label in labels:
+            if img_file.m_label in labels:
                 inputs.append(img_file)
         return inputs
 
@@ -243,20 +250,6 @@ def load_json(file_name):
     return None
 
 
-def write_string_to_file(file_name, text_to_output, attribute="a"):
-    """write a line of text into a file
-
-    Parameters
-    ----------
-    file_name : str
-        log file
-    text_to_output : str
-        text to write in file
-    attribute : str, optional
-        Open file mode option, by default "a"
-    """
-    with open(file_name, mode=attribute, encoding="utf-8") as file_handle:
-        file_handle.write(str(text_to_output) + "\n")
 
 
 def save_json(data, file_name):
@@ -304,10 +297,10 @@ class ImageFile:
         return self.all_path[:length]
 
     def load(self):
-        io.imread(self.m_path).squeeze()
+        return io.imread(self.all_path).squeeze()
 
     def save(self, result, folder_name: str, tag: str):
-        path_name = self.root + os.sep + folder_name + self.name + tag
+        path_name = self.root + os.sep + folder_name + os.sep + self.name + tag
         if result.shape > (1, 1):
             np.save(path_name, result)
             print_log(f"$ Image saved to disk: {path_name}.npy", "info")
@@ -316,4 +309,6 @@ class ImageFile:
 
 
 def remove_extension(filename: str):
-    return ".".join(filename.split(".").pop())
+    fl_split = filename.split(".")
+    fl_split.pop()
+    return ".".join(fl_split)

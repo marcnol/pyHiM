@@ -27,10 +27,9 @@ import scipy.optimize as spo
 from apifish.stack import projection
 from dask.distributed import get_client, wait
 
-from core.data_manager import write_string_to_file
 from core.folder import Folders
 from core.parameters import Parameters
-from core.pyhim_logging import print_log, print_session_name
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import image_show_with_values
 from imageProcessing.imageProcessing import Image
 
@@ -54,7 +53,7 @@ class Feature:
 class Project(Feature):
     def __init__(self, params: Parameters):
         super().__init__(params)
-        self.required_data = ["barcode", "mask", "dapi", "mask", "rna"]
+        self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
         self.out_folder = "zProject"
         self.out_tag = "_2d"
 
@@ -104,7 +103,7 @@ class Project(Feature):
         print_log(f"$ Image Size={img_size}")
         print_log(f"$ Focal plane={focus_plane}")
         print_log(f"> Processing z_range:{z_range}")
-        return img[z_range[1][0] : (z_range[1][-1] + 1)]
+        return img[z_range[0] : (z_range[-1] + 1)]
 
     def _precise_z_planes_auto(self, img, label):
         """
@@ -194,7 +193,8 @@ class Project(Feature):
         option = self.z_project_option[label]
         if "MIP" == option:
             # Max projection of selected planes
-            i_collapsed = projection.maximum_projection(img.pop())
+            i_collapsed = projection.maximum_projection(img)
+            # i_collapsed = projection.maximum_projection(img[:-1])
         elif "sum" == option:
             # Sums selected planes
             i_collapsed = projection.sum_projection(img)

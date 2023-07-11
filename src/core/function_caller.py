@@ -10,8 +10,14 @@ import os
 from datetime import datetime
 
 from core.dask_cluster import DaskCluster
-from core.data_manager import write_string_to_file
-from core.pyhim_logging import Log, Logger, Session, print_dashes, print_log
+from core.pyhim_logging import (
+    Log,
+    Logger,
+    Session,
+    print_dashes,
+    print_log,
+    write_string_to_file,
+)
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import Project, make_projections
@@ -170,7 +176,8 @@ class Pipeline:
             else:
                 for f2p in files_to_process:
                     data = f2p.load()
-                    result = feat.run(data, reference, table)
+                    result = feat.run(data, f2p.m_label)
+                    # result = feat.run(data, reference, table)
                     f2p.save(result, feat.out_folder, feat.out_tag)
 
 
