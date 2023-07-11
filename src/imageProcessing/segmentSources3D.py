@@ -43,10 +43,9 @@ from skimage import exposure, io
 from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
-from core.data_manager import write_string_to_file
 from core.folder import Folders, retrieve_number_rois_folder
 from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
-from core.pyhim_logging import print_log, print_session_name
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import _plot_image_3d
 from imageProcessing.alignImages import apply_xy_shift_3d_images
 from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image

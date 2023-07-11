@@ -42,10 +42,10 @@ from skimage.util.shape import view_as_blocks
 from tqdm import tqdm, trange
 
 from core.dask_cluster import try_get_client
-from core.data_manager import load_json, save_json, write_string_to_file
+from core.data_manager import load_json, save_json
 from core.folder import Folders
 from core.parameters import get_dictionary_value, rt_to_filename
-from core.pyhim_logging import print_log, print_session_name
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import plotting_block_alignment_results, save_image_2d_cmd
 from imageProcessing.imageProcessing import (
     Image,

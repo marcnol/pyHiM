@@ -117,7 +117,8 @@ class Parameters:
         labeled_dict = {}
         default = self.param_dict["common"][section][param_name]
         for key, value in self.param_dict["labels"].items():
-            labeled_dict[key] = value.get(section, {}).get(param_name, default)
+            key_lower = key.lower()
+            labeled_dict[key_lower] = value.get(section, {}).get(param_name, default)
         return labeled_dict
 
     def set_channel(self, key, default):

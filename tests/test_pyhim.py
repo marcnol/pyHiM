@@ -1,15 +1,15 @@
-import sys
-import os
-import tempfile
-import shutil
-import pytest
 import filecmp
+import os
+import shutil
+import sys
+import tempfile
+
 import numpy as np
+import pytest
 from astropy.table import Table
 
 # sys.path.append("..")
 from pyHiM import main
-
 
 """Check the non regression of modules called inside the jupyter notebook on pyHiM documentation"""
 
