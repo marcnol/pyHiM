@@ -85,9 +85,6 @@ def parse_arguments():
         "--all", help="plots all traces in trace file", action="store_true"
     )
     parser.add_argument(
-        "--all", help="plots all traces in trace file", action="store_true"
-    )
-    parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
     parser.add_argument(

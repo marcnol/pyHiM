@@ -1309,7 +1309,7 @@ def plot_ensemble_contact_probability_matrix(
         + "_ensembleContactProbability"
     )
     write_string_to_file(
-        markdown_filename, "![]({})\n".format(output_filename + "_HiMmatrix.png"), "a"
+        markdown_filename, f"![]({output_filename}_HiMmatrix.png)\n", "a"
     )
 
     # plots results
