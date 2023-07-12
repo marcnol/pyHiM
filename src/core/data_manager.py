@@ -60,7 +60,7 @@ class DataManager:
     ):
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
-        self.m_stardist_basename = str(stardist_basename)
+        self.m_stardist_basename = stardist_basename
         self.m_filename_params = params_filename
         self.all_files = extract_files(self.m_data_path)
         self.param_file_path = self.find_param_file(params_filename)
