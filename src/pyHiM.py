@@ -1,150 +1,151 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Apr  4 09:11:01 2020
+"""Main file of pyHiM, include the top-level mechanism."""
 
-@author: marcnol
-
-This file contains routines to process Hi-M datasets
-
-"""
-
-__version__ = "0.7.2"
-
-# =============================================================================
-# IMPORTS
-# =============================================================================
+__version__ = "0.8.0"
 
 import os
 import sys
-import apifish
 
 # to remove in a future version
 import warnings
 from datetime import datetime
 
-from fileProcessing.fileManagement import Parameters, print_log
-import fileProcessing.functionCaller as fc
+import apifish
+
+import core.function_caller as fc
+from core.data_manager import DataManager
+from core.parameters import Parameters
+from core.pyhim_logging import print_log
+from core.run_args import RunArgs
 
 warnings.filterwarnings("ignore")
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 
-
-# =============================================================================
-# MAIN
-# =============================================================================
-
-
 def main(command_line_arguments=None):
+    """Main function of pyHiM
+
+    Parameters
+    ----------
+    command_line_arguments : List[str], optional
+        Used to give inputs for the runtime when you call this function like a module.
+        For example, to test the pyHiM run from tests folder.
+        By default None.
+    """
     begin_time = datetime.now()
 
-    run_parameters = fc.him_parse_arguments(command_line_arguments)
+    run_args = RunArgs(command_line_arguments)
 
-    him = fc.HiMFunctionCaller(run_parameters, session_name="HiM_analysis")
-    him.initialize()
+    datam = DataManager(run_args.data_path, run_args.stardist_basename)
 
-    him.lauch_dask_scheduler(
-        threads_requested=run_parameters["threads"], maximum_load=0.8
+    raw_dict = datam.load_user_param()
+    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
+    datam.set_up(global_param.get_sectioned_params("acquisition"))
+
+    pipe = fc.Pipeline(
+        datam,
+        run_args.cmd_list,
+        global_param,
+        run_args.parallel,
+        session_name="HiM_analysis",
     )
-    global_param = Parameters(
-        root_folder=run_parameters["rootFolder"], file_name="infoList.json"
-    )
+    pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
+
     labels = global_param.param_dict["labels"]
 
-    print_log(f"$ Started logging to: {him.log_file}")
+    print_log(f"$ Started logging to: {pipe.m_logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
-    for label in labels:
+    # pipe.run()
 
+    for label in labels:
         # sets parameters
         current_param = Parameters(
-            root_folder=run_parameters["rootFolder"],
+            raw_dict,
+            root_folder=datam.m_data_path,
             label=label,
-            file_name="infoList.json",
-            stardist_basename = run_parameters["stardist_basename"],
+            stardist_basename=datam.m_stardist_basename,
         )
 
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
+        print_log("-----------------------------------------------------------------")
         print_log(
             f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           "
         )
-        print_log(
-            "--------------------------------------------------------------------------"
-        )
+        print_log("------------------------------------------------------------------")
 
-        current_param.param_dict["parallel"] = him.parallel
-        current_param.param_dict["fileNameMD"] = him.markdown_filename
+        current_param.param_dict["parallel"] = pipe.parallel
+        current_param.param_dict["fileNameMD"] = pipe.m_logger.md_filename
 
         # [projects 3D images in 2d]
-        if "makeProjections" in run_parameters["cmd"]:
-            him.make_projections(current_param)
+        if "makeProjections" in run_args.cmd_list:
+            pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
-        if "alignImages" in run_parameters["cmd"]:
-            him.align_images(current_param, label)
+        if "alignImages" in run_args.cmd_list:
+            pipe.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in run_parameters["cmd"]:
-            him.apply_registrations(current_param, label)
+        if "appliesRegistrations" in run_args.cmd_list:
+            pipe.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in run_parameters["cmd"]:
-            him.align_images_3d(current_param, label)
+        if "alignImages3D" in run_args.cmd_list:
+            pipe.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in run_parameters["cmd"]:
-            him.segment_masks(current_param, label)
+        if "segmentMasks" in run_args.cmd_list:
+            pipe.segment_masks(current_param, label)
 
         # [segments masks in 3D]
-        if "segmentMasks3D" in run_parameters["cmd"]:
-            him.segment_masks_3d(current_param, label)
+        if "segmentMasks3D" in run_args.cmd_list:
+            pipe.segment_masks_3d(current_param, label)
 
         # [segments sources in 3D]
-        if "segmentSources3D" in run_parameters["cmd"]:
-            him.segment_sources_3d(current_param, label)
+        if "segmentSources3D" in run_args.cmd_list:
+            pipe.segment_sources_3d(current_param, label)
 
         # [filters barcode localization table]
-        if "filter_localizations" in run_parameters["cmd"]:
+        if "filter_localizations" in run_args.cmd_list:
             fc.filter_localizations(current_param, label)
 
         # [registers barcode localization table]
-        if "register_localizations" in run_parameters["cmd"]:
+        if "register_localizations" in run_args.cmd_list:
             fc.register_localizations(current_param, label)
 
         # [build traces]
-        if "build_traces" in run_parameters["cmd"]:
+        if "build_traces" in run_args.cmd_list:
             fc.build_traces(current_param, label)
 
         # [builds matrices]
-        if "build_matrix" in run_parameters["cmd"]:
+        if "build_matrix" in run_args.cmd_list:
             fc.build_matrix(current_param, label)
 
         # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in run_parameters["cmd"]:
-            him.process_pwd_matrices(current_param, label)
+        if "buildHiMmatrix" in run_args.cmd_list:
+            pipe.process_pwd_matrices(current_param, label)
 
         print("\n")
         del current_param
 
     # exits
-    him.current_session.save()
+    pipe.m_logger.m_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
-    if run_parameters["parallel"]:
-        him.cluster.close()
-        him.client.close()
+    if run_args.parallel:
+        pipe.m_dask.cluster.close()
+        pipe.m_dask.client.close()
+        # pipe.cluster.close()
+        # pipe.client.close()
 
-    del him
+    del pipe
 
     print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
 
 if __name__ == "__main__":
-    if apifish.__version__ < "0.6.4dev" :
+    if apifish.__version__ < "0.6.4dev":
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
     else:
         main()

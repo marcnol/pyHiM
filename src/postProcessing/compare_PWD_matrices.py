@@ -22,12 +22,13 @@ import argparse
 import select
 import sys
 
-import numpy as np
-
-import scipy.stats
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats
+
 from matrixOperations.HIMmatrixOperations import (
-    calculate_ensemble_pwd_matrix,calculate_contact_probability_matrix
+    calculate_contact_probability_matrix,
+    calculate_ensemble_pwd_matrix,
 )
 
 # =============================================================================
@@ -39,7 +40,9 @@ def usage():
     print("-" * 80)
     print("Example usage:\n")
     print("$ ls buildsPWDmatrix/*HiM*npy")
-    print("buildsPWDmatrix/buildsPWDmatrix_DAPI_HiMscMatrix.npy  buildsPWDmatrix/buildsPWDmatrix_mask0_HiMscMatrix.npy")
+    print(
+        "buildsPWDmatrix/buildsPWDmatrix_DAPI_HiMscMatrix.npy  buildsPWDmatrix/buildsPWDmatrix_mask0_HiMscMatrix.npy"
+    )
     print("$ ls buildsPWDmatrix/*HiM*npy | compare_PWD_matrices.py\n")
     print("You should now see a file called scatter_plot.png\n")
     print("-" * 80)
@@ -56,14 +59,18 @@ def parse_arguments():
         help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median",
     )
     parser.add_argument("--x_min", help="X minimum for a localization. Default = 0")
-    parser.add_argument("--x_max", help="X maximum for a localization. Default = np.inf")
-    parser.add_argument("--max_distance", help="Upper distance threshold in micro-meters. Default = np.inf")
+    parser.add_argument(
+        "--x_max", help="X maximum for a localization. Default = np.inf"
+    )
+    parser.add_argument(
+        "--max_distance",
+        help="Upper distance threshold in micro-meters. Default = np.inf",
+    )
     parser.add_argument("--scale", help="Scale: log or linear. Default: linear")
 
     p = {}
 
     args = parser.parse_args()
-
 
     if args.input1:
         p["input1"] = args.input1
@@ -89,22 +96,21 @@ def parse_arguments():
         p["x_max"] = float(args.x_max)
     else:
         p["x_max"] = None
-      
+
     if args.max_distance:
         p["max_distance"] = float(args.max_distance)
     else:
         p["max_distance"] = np.inf
-        
-        
+
     if args.scale:
         p["scale"] = args.scale
     else:
-        p["scale"] = 'linear'
-        
+        p["scale"] = "linear"
+
     p["input_files"] = list()
-    p["input_files"].append(p["input1"])        
-    p["input_files"].append(p["input2"])        
-    
+    p["input_files"].append(p["input1"])
+    p["input_files"].append(p["input2"])
+
     print("Input parameters\n" + "=" * 16)
     for item in p.keys():
         print("{}-->{}".format(item, p[item]))
@@ -113,24 +119,31 @@ def parse_arguments():
 
 
 def plot_result(x, y, r, p):
-
     if p["x_min"] is None:
-        x_min = np.min([x, y]) 
+        x_min = np.min([x, y])
     else:
-        x_min = p["x_min"] 
+        x_min = p["x_min"]
 
     if p["x_max"] is None:
-        x_max = np.max([x, y]) 
+        x_max = np.max([x, y])
     else:
-        x_max = p["x_max"]         
+        x_max = p["x_max"]
 
     print(f"$ limits: {x_min}-->{x_max}")
     plt.figure(figsize=(15, 15))
     plt.rcParams.update({"font.size": 20})
 
-    plt.scatter(x, y, label="Pearson = {:.2f}".format(r), color="m", marker="o", s=30, linewidth=5)
+    plt.scatter(
+        x,
+        y,
+        label="Pearson = {:.2f}".format(r),
+        color="m",
+        marker="o",
+        s=30,
+        linewidth=5,
+    )
 
-    if p['scale'] == 'log':
+    if p["scale"] == "log":
         plt.xscale("log")
         plt.yscale("log")
 
@@ -139,33 +152,36 @@ def plot_result(x, y, r, p):
     plt.ylabel("dataset 2")
     plt.legend()
 
-    axisX = np.linspace(x_min,x_max, 100)
+    axisX = np.linspace(x_min, x_max, 100)
     plt.plot(axisX, axisX, color="red", linewidth=3)
     plt.xlim([x_min, x_max])
     plt.ylim([x_min, x_max])
-    
+
     # plt.show()
     filename = "scatter_plot.png"
     plt.savefig(filename)
     print(f"> Output image saved as : {filename}")
 
+
 def calculates_pearson_correlation(x, y):
     r, p = scipy.stats.pearsonr(x, y)
     return r
+
 
 def parses_matrix_to_vector(matrix):
     matrix_shape = matrix.shape
     matrix = np.nan_to_num(matrix)
     return matrix.reshape(matrix_shape[0] * matrix_shape[1])
 
+
 def load_matrix(file):
     return np.load(file)
 
-def calculates_ensemble_matrices(matrices, mode='median', max_distance=2):
-    
-    mean_sc_matrices= list()
+
+def calculates_ensemble_matrices(matrices, mode="median", max_distance=2):
+    mean_sc_matrices = list()
     for matrix in matrices:
-        matrix[matrix>max_distance]=np.nan
+        matrix[matrix > max_distance] = np.nan
         if "proximity" in mode:
             mean_sc_matrix, n_cells = calculate_contact_probability_matrix(
                 matrix,
@@ -176,23 +192,26 @@ def calculates_ensemble_matrices(matrices, mode='median', max_distance=2):
         else:
             cells_to_plot = range(matrix.shape[2])
             mean_sc_matrix, _ = calculate_ensemble_pwd_matrix(
-                matrix, 1.0, cells_to_plot, mode = mode
+                matrix, 1.0, cells_to_plot, mode=mode
             )
 
         mean_sc_matrices.append(mean_sc_matrix)
-    
+
     return mean_sc_matrices
-        
+
+
 def main_script(p):
     print("Processing files\n" + "=" * 16)
 
     mode = p["mode"]
     files = p["input_files"]
     max_distance = p["max_distance"]
-    
+
     matrices = [load_matrix(file) for file in files]
 
-    mean_sc_matrices = calculates_ensemble_matrices(matrices, mode=mode,max_distance=max_distance)
+    mean_sc_matrices = calculates_ensemble_matrices(
+        matrices, mode=mode, max_distance=max_distance
+    )
 
     [x, y] = [parses_matrix_to_vector(matrix) for matrix in mean_sc_matrices]
 
@@ -209,7 +228,6 @@ def main_script(p):
 
 
 def main():
-
     usage()
 
     # [parsing arguments]

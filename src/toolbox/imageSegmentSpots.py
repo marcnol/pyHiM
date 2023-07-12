@@ -29,10 +29,8 @@ from skimage import io
 from tifffile import imsave
 from tqdm import tqdm
 
-from imageProcessing.imageProcessing import (
-    _segment_3d_volumes_by_thresholding,
-    save_image_as_blocks,
-)
+from core.saving import save_image_as_blocks
+from imageProcessing.segmentMasks import _segment_3d_volumes_by_thresholding
 
 
 def parse_arguments():
@@ -66,9 +64,7 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n-------------------------------------------------------------------")
     run_parameters = {}
 
     if args.rootFolder:

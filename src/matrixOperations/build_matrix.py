@@ -28,28 +28,19 @@ This script:
 # IMPORTS
 # =============================================================================
 
-import ast
 import glob
 import os
-import re
-import sys
-import uuid
 
 # to remove in a future version
 import warnings
 
-import matplotlib.pyplot as plt
 import numpy as np
-from astropy.table import Table, unique
-from photutils.segmentation import SegmentationImage
+from astropy.table import unique
 from sklearn.metrics import pairwise_distances
-from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import (
-    get_dictionary_value,
-    print_log,
-)
+from core.parameters import get_dictionary_value
+from core.pyhim_logging import print_log
 from matrixOperations.build_traces import initialize_module
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (
@@ -67,7 +58,6 @@ warnings.filterwarnings("ignore")
 
 class BuildMatrix:
     def __init__(self, param, colormaps=dict()):
-
         self.current_param = param
         self.colormaps = colormaps
 
@@ -83,9 +73,13 @@ class BuildMatrix:
         if type(self.current_param) is not dict:
             # if len(self.current_param.param_dict)>0:
             self.tracing_method = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"], "tracing_method", default="masking",
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "tracing_method",
+                default="masking",
             )
-            self.z_binning = get_dictionary_value(self.current_param.param_dict["acquisition"], "zBinning", default=1)
+            self.z_binning = get_dictionary_value(
+                self.current_param.param_dict["acquisition"], "zBinning", default=1
+            )
             self.pixel_size_xy = get_dictionary_value(
                 self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
             )
@@ -93,16 +87,26 @@ class BuildMatrix:
                 self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
             )
             self.pixel_size_z = self.z_binning * self.pixel_size_z_0
-            self.pixel_size = [self.pixel_size_xy, self.pixel_size_xy, self.pixel_size_z]
+            self.pixel_size = [
+                self.pixel_size_xy,
+                self.pixel_size_xy,
+                self.pixel_size_z,
+            ]
             self.available_masks = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"], "masks2process", default={"nuclei": "DAPI"},
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "masks2process",
+                default={"nuclei": "DAPI"},
             )
             self.log_name_md = self.current_param.param_dict["fileNameMD"]
             self.mask_expansion = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"], "mask_expansion", default=8,
+                self.current_param.param_dict["buildsPWDmatrix"],
+                "mask_expansion",
+                default=8,
             )
 
-            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"]["colormaps"]
+            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"][
+                "colormaps"
+            ]
 
     def calculate_pwd_single_mask(self, x, y, z):
         """
@@ -154,22 +158,28 @@ class BuildMatrix:
         number_matrices = len(unique(self.trace_table.data, keys="Trace_ID"))
 
         # finds unique barcodes from trace table
-        unique_barcodes = unique(self.trace_table.data, keys="Barcode #")["Barcode #"].data
+        unique_barcodes = unique(self.trace_table.data, keys="Barcode #")[
+            "Barcode #"
+        ].data
         number_unique_barcodes = unique_barcodes.shape[0]
 
         print_log(
-            f"$ Found {number_unique_barcodes} barcodes and {number_matrices} traces.", "INFO",
+            f"$ Found {number_unique_barcodes} barcodes and {number_matrices} traces.",
+            "INFO",
         )
 
         # Initializes sc_matrix
-        sc_matrix = np.zeros((number_unique_barcodes, number_unique_barcodes, number_matrices))
+        sc_matrix = np.zeros(
+            (number_unique_barcodes, number_unique_barcodes, number_matrices)
+        )
         sc_matrix[:] = np.NaN
 
         # loops over traces
         print_log("> Processing traces...", "INFO")
         data_traces = self.trace_table.data.group_by("Trace_ID")
-        for trace, trace_id, itrace in tzip(data_traces.groups, data_traces.groups.keys, range(number_matrices)):
-
+        for trace, trace_id, itrace in tzip(
+            data_traces.groups, data_traces.groups.keys, range(number_matrices)
+        ):
             barcodes_to_process = trace["Barcode #"].data
 
             # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
@@ -181,35 +191,49 @@ class BuildMatrix:
             pwd_matrix = self.calculate_pwd_single_mask(x, y, z)
 
             # loops over barcodes detected in cell mask: barcode1
-            for barcode1, ibarcode1 in zip(barcodes_to_process, range(len(barcodes_to_process))):
+            for barcode1, ibarcode1 in zip(
+                barcodes_to_process, range(len(barcodes_to_process))
+            ):
                 index_barcode_1 = np.nonzero(unique_barcodes == barcode1)[0][0]
 
                 # loops over barcodes detected in cell mask: barcode2
-                for barcode2, ibarcode2 in zip(barcodes_to_process, range(len(barcodes_to_process))):
+                for barcode2, ibarcode2 in zip(
+                    barcodes_to_process, range(len(barcodes_to_process))
+                ):
                     index_barcode_2 = np.nonzero(unique_barcodes == barcode2)[0][0]
 
                     if barcode1 != barcode2:
-
                         # attributes distance from the PWDmatrix field in the sc_pwd_item table
                         newdistance = pwd_matrix[ibarcode1, ibarcode2]
 
                         # inserts newdistance into sc_matrix using desired method
                         if mode == "last":
-                            sc_matrix[index_barcode_1][index_barcode_2][itrace] = newdistance
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                itrace
+                            ] = newdistance
                         elif mode == "mean":
-                            sc_matrix[index_barcode_1][index_barcode_2][itrace] = np.nanmean(
-                                [newdistance, sc_matrix[index_barcode_1][index_barcode_2][itrace],]
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                itrace
+                            ] = np.nanmean(
+                                [
+                                    newdistance,
+                                    sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                ]
                             )
                         elif mode == "min":
-                            sc_matrix[index_barcode_1][index_barcode_2][itrace] = np.nanmin(
-                                [newdistance, sc_matrix[index_barcode_1][index_barcode_2][itrace],]
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                itrace
+                            ] = np.nanmin(
+                                [
+                                    newdistance,
+                                    sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                ]
                             )
 
         self.sc_matrix = sc_matrix
         self.unique_barcodes = unique_barcodes
 
     def calculate_n_matrix(self):
-
         number_cells = self.sc_matrix.shape[2]
 
         if number_cells > 0:
@@ -277,7 +301,10 @@ class BuildMatrix:
 
         # calculates and plots contact probability matrix from merged samples/datasets
         him_matrix, n_cells = calculate_contact_probability_matrix(
-            self.sc_matrix, self.unique_barcodes, pixel_size, norm="nonNANs",
+            self.sc_matrix,
+            self.unique_barcodes,
+            pixel_size,
+            norm="nonNANs",
         )  # norm: n_cells (default), nonNANs
 
         c_scale = him_matrix.max()
@@ -325,7 +352,6 @@ class BuildMatrix:
         )
 
     def save_matrices(self, file):
-
         output_filename = file.split(".")[0] + "_Matrix"
 
         # saves output
@@ -333,14 +359,17 @@ class BuildMatrix:
         print("$ saved: {}".format(output_filename + "_PWDscMatrix.npy"))
 
         np.savetxt(
-            output_filename + "_uniqueBarcodes.ecsv", self.unique_barcodes, delimiter=" ", fmt="%d",
+            output_filename + "_uniqueBarcodes.ecsv",
+            self.unique_barcodes,
+            delimiter=" ",
+            fmt="%d",
         )
 
         print("$ saved: {}".format(output_filename + "_uniqueBarcodes.ecsv"))
 
         np.save(output_filename + "_Nmatrix.npy", self.n_matrix)
         print("$ saved: {}".format(output_filename + "_Nmatrix.npy"))
-        
+
     def launch_analysis(self, file):
         """
         run analysis for a chromatin trace table.
@@ -368,7 +397,6 @@ class BuildMatrix:
         self.save_matrices(file)
 
     def run(self):
-
         # initializes session_name, data_folder, current_folder
         self.label = "barcode"
         self.data_folder, self.current_folder = initialize_module(
@@ -378,7 +406,11 @@ class BuildMatrix:
         # reads chromatin traces
         files = [
             x
-            for x in glob.glob(self.data_folder.output_folders["buildsPWDmatrix"] + os.sep + "Trace_*.ecsv")
+            for x in glob.glob(
+                self.data_folder.output_folders["buildsPWDmatrix"]
+                + os.sep
+                + "Trace_*.ecsv"
+            )
             if "uniqueBarcodes" not in x
         ]
 
@@ -393,4 +425,6 @@ class BuildMatrix:
         for file in files:
             self.launch_analysis(file)
 
-        print_log(f"$ {len(files)} chromatin trace tables processed in {self.current_folder}")
+        print_log(
+            f"$ {len(files)} chromatin trace tables processed in {self.current_folder}"
+        )

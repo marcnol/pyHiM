@@ -48,7 +48,8 @@ from sklearn.metrics import pairwise_distances
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from core.folder import Folders
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_distance_histograms,
@@ -72,7 +73,9 @@ class CellID:
         self.n_cells_unassigned = 0
         self.n_barcodes_in_mask = 0
         self.ndims = ndims
-        self.dict_error_block_masks = {}  # contains the results from blockAlignment, if existing
+        self.dict_error_block_masks = (
+            {}
+        )  # contains the results from blockAlignment, if existing
 
         self.segmentation_mask = SegmentationImage(self.masks)
         self.number_masks = self.segmentation_mask.nlabels
@@ -127,7 +130,8 @@ class CellID:
         if "3DfitKeep" in self.barcode_map_roi.groups[0].keys() and self.ndims == 3:
             # [reading the flag in barcode_map_roi assigned by the 3D localization routine]
             keep = (
-                self.barcode_map_roi.groups[0]["3DfitKeep"][i] and self.barcode_map_roi.groups[0]["flux"][i] > flux_min
+                self.barcode_map_roi.groups[0]["3DfitKeep"][i]
+                and self.barcode_map_roi.groups[0]["flux"][i] > flux_min
             )
         else:
             # [or by reading the flux from 2D localization]
@@ -158,17 +162,24 @@ class CellID:
         y_int = int(self.barcode_map_roi.groups[0]["xcentroid"][i])
         x_int = int(self.barcode_map_roi.groups[0]["ycentroid"][i])
         keep_alignment = True
-        if not self.alignment_results_table_read:  # only proceeds if localAlignment was not performed
-            barcode_id = "barcode:" + str(self.barcode_map_roi.groups[0]["Barcode #"][i])
+        if (
+            not self.alignment_results_table_read
+        ):  # only proceeds if localAlignment was not performed
+            barcode_id = "barcode:" + str(
+                self.barcode_map_roi.groups[0]["Barcode #"][i]
+            )
             barcode_roi = "ROI:" + str(self.barcode_map_roi.groups[0]["ROI #"][i])
 
             if len(self.dict_error_block_masks) > 0:
                 if barcode_roi in self.dict_error_block_masks.keys():
                     if barcode_id in self.dict_error_block_masks[barcode_roi].keys():
-                        error_mask = self.dict_error_block_masks[barcode_roi][barcode_id]
+                        error_mask = self.dict_error_block_masks[barcode_roi][
+                            barcode_id
+                        ]
                         # TODO: Change conditions to adapt with tolerance_drift type update (from Float to Tuple)
                         keep_alignment = error_mask[
-                            int(np.floor(x_int / block_size)), int(np.floor(y_int / block_size)),
+                            int(np.floor(x_int / block_size)),
+                            int(np.floor(y_int / block_size)),
                         ] < max(tolerance_drift)
 
             # keeps it always if barcode is fiducial
@@ -218,7 +229,7 @@ class CellID:
 
         write_string_to_file(
             self.log_name_md,
-            "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.n_roi, self.ndims, file_name),
+            f"Barcode stats for ROI:{self.n_roi}, dims:{self.ndims} \n![]({file_name})\n",
             "a",
         )
 
@@ -247,7 +258,9 @@ class CellID:
         accuracy, x, y = [], [], []
         print_log("> Plotting barcode alignments...")
         for i in trange(len(self.barcode_map_roi.groups[0])):
-            barcode_id = "barcode:" + str(self.barcode_map_roi.groups[0]["Barcode #"][i])
+            barcode_id = "barcode:" + str(
+                self.barcode_map_roi.groups[0]["Barcode #"][i]
+            )
             barcode_roi = "ROI:" + str(self.barcode_map_roi.groups[0]["ROI #"][i])
             y_int = int(self.barcode_map_roi.groups[0]["xcentroid"][i])
             x_int = int(self.barcode_map_roi.groups[0]["ycentroid"][i])
@@ -255,14 +268,21 @@ class CellID:
             if len(self.dict_error_block_masks) > 0:
                 if barcode_roi in self.dict_error_block_masks.keys():
                     if barcode_id in self.dict_error_block_masks[barcode_roi].keys():
-                        error_mask = self.dict_error_block_masks[barcode_roi][barcode_id]
+                        error_mask = self.dict_error_block_masks[barcode_roi][
+                            barcode_id
+                        ]
                         accuracy.append(
-                            error_mask[int(np.floor(x_int / block_size)), int(np.floor(y_int / block_size)),]
+                            error_mask[
+                                int(np.floor(x_int / block_size)),
+                                int(np.floor(y_int / block_size)),
+                            ]
                         )
                         x.append(self.barcode_map_roi.groups[0]["xcentroid"][i])
                         y.append(self.barcode_map_roi.groups[0]["ycentroid"][i])
 
-        p_1 = axes.scatter(x, y, s=5, c=accuracy, cmap="terrain", alpha=0.5, vmin=0, vmax=5)
+        p_1 = axes.scatter(
+            x, y, s=5, c=accuracy, cmap="terrain", alpha=0.5, vmin=0, vmax=5
+        )
         fig.colorbar(p_1, ax=axes, fraction=0.046, pad=0.04)
         axes.set_title("barcode drift correction accuracy, px")
 
@@ -274,7 +294,7 @@ class CellID:
 
         write_string_to_file(
             self.log_name_md,
-            "Barcode stats for ROI:{}, dims:{} \n![]({})\n".format(self.n_roi, self.ndims, file_name),
+            f"Barcode stats for ROI:{self.n_roi}, dims:{self.ndims} \n![]({file_name})\n",
             "a",
         )
 
@@ -302,12 +322,18 @@ class CellID:
             print_log("# Flux min not found. Set to {}!".format(flux_min))
 
         if "toleranceDrift" in self.current_param.param_dict["buildsPWDmatrix"]:
-            tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"]["toleranceDrift"]
-            if not isinstance(self.tolerance_drift, tuple):
+            tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
+                "toleranceDrift"
+            ]
+            if not isinstance(tolerance_drift, tuple):
                 # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
                 tolerance_drift = (tolerance_drift, tolerance_drift, tolerance_drift)
         else:
-            tolerance_drift = (3, 1, 1)  # defines default anisotropic tolerance_drift (z,x,y)
+            tolerance_drift = (
+                3,
+                1,
+                1,
+            )  # defines default anisotropic tolerance_drift (z,x,y)
             print_log("# toleranceDrift not found. Set to {}!".format(tolerance_drift))
 
         if "blockSize" in self.current_param.param_dict["alignImages"]:
@@ -332,7 +358,9 @@ class CellID:
         keep_quality_all, keep_alignment_all, n_barcodes_roi = [], [], 0
         # loops over barcode Table rows in a given ROI
         print_log("> Aligning by masking...")
-        for i in trange(len(self.barcode_map_roi.groups[0])):  # i is the index of the barcode in barcode_map_roi
+        for i in trange(
+            len(self.barcode_map_roi.groups[0])
+        ):  # i is the index of the barcode in barcode_map_roi
             barcode = self.barcode_map_roi.groups[0]["Barcode #"][i]
             roi = self.barcode_map_roi.groups[0]["ROI #"][i]
 
@@ -340,13 +368,16 @@ class CellID:
             keep_quality = self.filter_localizations_quality(i, flux_min)
 
             # [filters barcode per blockAlignmentMask, if existing]
-            keep_alignment = self.filter_localizations_block_alignment(i, tolerance_drift, block_size)
+            keep_alignment = self.filter_localizations_block_alignment(
+                i, tolerance_drift, block_size
+            )
 
             # applies all filters
             if keep_quality and keep_alignment:
-
                 # keeps the particle if the test passed
-                x_uncorrected = self.barcode_map_roi.groups[0]["ycentroid"][i]  # control inversion between x-y
+                x_uncorrected = self.barcode_map_roi.groups[0]["ycentroid"][
+                    i
+                ]  # control inversion between x-y
                 y_uncorrected = self.barcode_map_roi.groups[0]["xcentroid"][i]
 
                 if self.ndims == 2:
@@ -363,8 +394,15 @@ class CellID:
                 # Corrects XYZ coordinate of barcode if localDriftCorrection is available
                 zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
                 rt_barcode = "RT" + str(barcode)
-                if rt_barcode not in self.current_param.param_dict["alignImages"]["referenceFiducial"]:
-                    zxy_corrected = self.search_local_shift(roi, mask_id, barcode, zxy_uncorrected, tolerance_drift)
+                if (
+                    rt_barcode
+                    not in self.current_param.param_dict["alignImages"][
+                        "referenceFiducial"
+                    ]
+                ):
+                    zxy_corrected = self.search_local_shift(
+                        roi, mask_id, barcode, zxy_uncorrected, tolerance_drift
+                    )
                 else:
                     # if it is the reference cycle, then it does not correct coordinates
                     zxy_corrected = zxy_uncorrected
@@ -400,30 +438,41 @@ class CellID:
         self.n_barcodes_in_mask = n_barcodes_in_mask
 
         print_log(
-            "$ Number of localizations passing quality test: {} / {}".format(sum(keep_quality_all), n_barcodes_roi)
+            "$ Number of localizations passing quality test: {} / {}".format(
+                sum(keep_quality_all), n_barcodes_roi
+            )
         )
 
         print_log(
-            "$ Number of localizations passing alignment test: {} / {}".format(sum(keep_alignment_all), n_barcodes_roi)
+            "$ Number of localizations passing alignment test: {} / {}".format(
+                sum(keep_alignment_all), n_barcodes_roi
+            )
         )
 
         print_log(
-            "$ Number of cells assigned: {} | discarded: {}".format(self.n_cells_assigned, self.n_cells_unassigned)
+            "$ Number of cells assigned: {} | discarded: {}".format(
+                self.n_cells_assigned, self.n_cells_unassigned
+            )
         )
 
-    def search_local_shift(self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)):
-
+    def search_local_shift(
+        self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)
+    ):
         if "mask2D" in self.current_param.param_dict["alignImages"]["localAlignment"]:
             return self.search_local_shift_mask_2d(roi, cell_id, zxy_uncorrected)
         elif (
             "block3D" in self.current_param.param_dict["alignImages"]["localAlignment"]
             and self.alignment_results_table_read
         ):
-            return self.search_local_shift_block_3d(roi, barcode, zxy_uncorrected, tolerance_drift)
+            return self.search_local_shift_block_3d(
+                roi, barcode, zxy_uncorrected, tolerance_drift
+            )
         else:  # no correction was applied because the localAlignmentTable was not found
             return zxy_uncorrected
 
-    def search_local_shift_block_3d(self, roi, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)):
+    def search_local_shift_block_3d(
+        self, roi, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)
+    ):
         """
         Searches for local drift for a specific barcode in a given ROI.
         If it exists then it adds to the uncorrected coordinates
@@ -456,7 +505,6 @@ class CellID:
         zxy_block = [np.floor(a / block_size_xy).astype(int) for a in zxy_uncorrected]
 
         for row in self.alignment_results_table:
-
             # I need to check that the XY coordinates from localization are the same as the ij indices from the block decomposition!
 
             if (
@@ -469,10 +517,14 @@ class CellID:
                 shifts = [row["shift_z"], row["shift_x"], row["shift_y"]]
 
                 # makes list with comparisons per axis
-                check = [np.abs(shift) < tol for shift, tol in zip(shifts, tolerance_drift)]
+                check = [
+                    np.abs(shift) < tol for shift, tol in zip(shifts, tolerance_drift)
+                ]
                 # checks that drifts > tolerance_drift are not applied
                 if all(check):
-                    zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
+                    zxy_corrected = [
+                        a + shift for a, shift in zip(zxy_uncorrected, shifts)
+                    ]
                 else:
                     zxy_corrected = zxy_uncorrected
 
@@ -481,7 +533,9 @@ class CellID:
 
         # keeps uncorrected values if no match is found
         if not _found_match:
-            print_log("# Did not find match for ROI #{} barcode #{}".format(roi, barcode))
+            print_log(
+                "# Did not find match for ROI #{} barcode #{}".format(roi, barcode)
+            )
             zxy_corrected = zxy_uncorrected
             self.found_match.append(False)
         else:
@@ -522,7 +576,9 @@ class CellID:
 
         # keeps uncorrected values if no match is found
         if not _found_match:
-            print_log("# Did not find match for CellID #{} in ROI #{}".format(cell_id, roi))
+            print_log(
+                "# Did not find match for CellID #{} in ROI #{}".format(cell_id, roi)
+            )
             zxy_corrected = zxy_uncorrected
             self.found_match.append(False)
         else:
@@ -552,7 +608,13 @@ class CellID:
 
         """
 
-        coords = np.column_stack((x * self.pixel_size["x"], y * self.pixel_size["y"], z * self.pixel_size["z"],))
+        coords = np.column_stack(
+            (
+                x * self.pixel_size["x"],
+                y * self.pixel_size["y"],
+                z * self.pixel_size["z"],
+            )
+        )
 
         return coords
 
@@ -600,15 +662,18 @@ class CellID:
         """
         # sorts Table by cellID
         barcode_map_roi = self.barcode_map_roi
-        barcode_map_roi_cell_id = barcode_map_roi.group_by("CellID #")  # ROI data sorted by cellID
+        barcode_map_roi_cell_id = barcode_map_roi.group_by(
+            "CellID #"
+        )  # ROI data sorted by cellID
 
         self.initialize_lists()
 
         # iterates over all cell masks in an ROI
         print_log("> Building sc_ distance Tables")
-        for key, group in tzip(barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups):
+        for key, group in tzip(
+            barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups
+        ):
             if key["CellID #"] > 1:  # excludes cellID 0 as this is background
-
                 group_keys, cell_id, roi = (
                     group.keys(),
                     key["CellID #"],
@@ -637,7 +702,9 @@ class CellID:
 
         print_log(
             "$ Local correction applied to {}/{} barcodes in ROI {}".format(
-                np.nonzero(self.found_match)[0].shape[0], len(self.found_match), group["ROI #"].data[0],
+                np.nonzero(self.found_match)[0].shape[0],
+                len(self.found_match),
+                group["ROI #"].data[0],
             )
         )
 
@@ -685,7 +752,9 @@ class CellID:
 
         # number of unique Barcodes for xy dimensions of sc_matrix
         number_unique_barcodes = unique_barcodes.shape[0]
-        sc_matrix = np.zeros((number_unique_barcodes, number_unique_barcodes, number_matrices))
+        sc_matrix = np.zeros(
+            (number_unique_barcodes, number_unique_barcodes, number_matrices)
+        )
         sc_matrix[:] = np.NaN
 
         # loops over cell masks
@@ -693,28 +762,43 @@ class CellID:
             barcodes_to_process = sc_pwd_item["Barcode #"]
 
             # loops over barcodes detected in cell mask: barcode1
-            for barcode1, ibarcode1 in zip(barcodes_to_process, range(len(barcodes_to_process))):
+            for barcode1, ibarcode1 in zip(
+                barcodes_to_process, range(len(barcodes_to_process))
+            ):
                 index_barcode_1 = np.nonzero(unique_barcodes == barcode1)[0][0]
 
                 # loops over barcodes detected in cell mask: barcode2
-                for barcode2, ibarcode2 in zip(barcodes_to_process, range(len(barcodes_to_process))):
+                for barcode2, ibarcode2 in zip(
+                    barcodes_to_process, range(len(barcodes_to_process))
+                ):
                     index_barcode_2 = np.nonzero(unique_barcodes == barcode2)[0][0]
 
                     if barcode1 != barcode2:
-
                         # attributes distance from the PWDmatrix field in the sc_pwd_item table
                         newdistance = sc_pwd_item["PWDmatrix"][ibarcode1][ibarcode2]
 
                         # inserts value into sc_matrix
                         if mode == "last":
-                            sc_matrix[index_barcode_1][index_barcode_2][i_cell] = newdistance
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                i_cell
+                            ] = newdistance
                         elif mode == "mean":
-                            sc_matrix[index_barcode_1][index_barcode_2][i_cell] = np.nanmean(
-                                [newdistance, sc_matrix[index_barcode_1][index_barcode_2][i_cell],]
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                i_cell
+                            ] = np.nanmean(
+                                [
+                                    newdistance,
+                                    sc_matrix[index_barcode_1][index_barcode_2][i_cell],
+                                ]
                             )
                         elif mode == "min":
-                            sc_matrix[index_barcode_1][index_barcode_2][i_cell] = np.nanmin(
-                                [newdistance, sc_matrix[index_barcode_1][index_barcode_2][i_cell],]
+                            sc_matrix[index_barcode_1][index_barcode_2][
+                                i_cell
+                            ] = np.nanmin(
+                                [
+                                    newdistance,
+                                    sc_matrix[index_barcode_1][index_barcode_2][i_cell],
+                                ]
                             )
 
         self.sc_matrix = sc_matrix
@@ -728,7 +812,6 @@ class CellID:
 
 
 def calculate_n_matrix(sc_matrix):
-
     number_cells = sc_matrix.shape[2]
 
     if number_cells > 0:
@@ -741,21 +824,27 @@ def calculate_n_matrix(sc_matrix):
 
 
 def load_local_alignment(current_param, data_folder):
-
     if "None" in current_param.param_dict["alignImages"]["localAlignment"]:
         print_log(
-            "\n\n$ localAlignment option set to {}".format(current_param.param_dict["alignImages"]["localAlignment"])
+            "\n\n$ localAlignment option set to {}".format(
+                current_param.param_dict["alignImages"]["localAlignment"]
+            )
         )
         return False, Table()
     else:
-        return _load_local_alignment(data_folder, current_param.param_dict["alignImages"]["localAlignment"])
+        return _load_local_alignment(
+            data_folder, current_param.param_dict["alignImages"]["localAlignment"]
+        )
 
 
 def _load_local_alignment(data_folder, mode):
-
-    local_alignment_filename = data_folder.output_files["alignImages"].split(".")[0] + "_" + mode + ".dat"
+    local_alignment_filename = (
+        data_folder.output_files["alignImages"].split(".")[0] + "_" + mode + ".dat"
+    )
     if os.path.exists(local_alignment_filename):
-        alignment_results_table = Table.read(local_alignment_filename, format="ascii.ecsv")
+        alignment_results_table = Table.read(
+            local_alignment_filename, format="ascii.ecsv"
+        )
         alignment_results_table_read = True
         print_log(
             "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
@@ -773,40 +862,6 @@ def _load_local_alignment(data_folder, mode):
         alignment_results_table = Table()
 
     return alignment_results_table, alignment_results_table_read
-
-
-# def load_local_alignment(data_folder):
-#     """
-#     reads and returns localAlignmentTable, if it exists
-
-#     Parameters
-#     ----------
-#     data_folder : folder()
-#         DESCRIPTION.
-
-#     Returns
-#     -------
-#     alignment_results_table : Table()
-#         DESCRIPTION.
-#     alignment_results_table_read : Boolean
-#         DESCRIPTION.
-
-#     """
-#     local_alignment_filename = data_folder.output_files["alignImages"].split(".")[0] + "_localAlignment.dat"
-#     if os.path.exists(local_alignment_filename):
-#         alignment_results_table = Table.read(local_alignment_filename, format="ascii.ecsv")
-#         alignment_results_table_read = True
-#         print_log("LocalAlignment file loaded !\nWill correct coordinates in XY")
-#     else:
-#         print_log(
-#             "\n\n*** Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-#                 local_alignment_filename
-#             )
-#         )
-#         alignment_results_table_read = False
-#         alignment_results_table = Table()
-
-#     return alignment_results_table, alignment_results_table_read
 
 
 def load_barcode_map(filename_barcode_coordinates, ndims):
@@ -831,15 +886,25 @@ def load_barcode_map(filename_barcode_coordinates, ndims):
     """
     if os.path.exists(filename_barcode_coordinates):
         barcode_map = Table.read(filename_barcode_coordinates, format="ascii.ecsv")
-        print_log("$ Successfully loaded barcode localizations file: {}".format(filename_barcode_coordinates))
+        print_log(
+            "$ Successfully loaded barcode localizations file: {}".format(
+                filename_barcode_coordinates
+            )
+        )
 
         unique_barcodes = np.unique(barcode_map["Barcode #"].data)
         number_unique_barcodes = unique_barcodes.shape[0]
 
-        print_log("Number Barcodes read from barcode_map: {}".format(number_unique_barcodes))
+        print_log(
+            "Number Barcodes read from barcode_map: {}".format(number_unique_barcodes)
+        )
         print_log("Unique Barcodes detected: {}".format(unique_barcodes))
     else:
-        print_log("\n\n# ERROR: could not find coordinates file: {}".format(filename_barcode_coordinates))
+        print_log(
+            "\n\n# ERROR: could not find coordinates file: {}".format(
+                filename_barcode_coordinates
+            )
+        )
         sys.exit()
 
     return barcode_map, ndims, unique_barcodes
@@ -867,7 +932,10 @@ def build_dictionary_error_alignment_masks(current_param, data_folder):
     filename_regexp = current_param.param_dict["acquisition"]["fileNameRegExp"]
     filename_regexp = filename_regexp.split(".")[0]
     list_re = [
-        re.search(filename_regexp, os.path.basename(x).split("_errorAlignmentBlockMap.npy")[0]) for x in file_list
+        re.search(
+            filename_regexp, os.path.basename(x).split("_errorAlignmentBlockMap.npy")[0]
+        )
+        for x in file_list
     ]
 
     dict_error_block_masks = {}
@@ -875,7 +943,10 @@ def build_dictionary_error_alignment_masks(current_param, data_folder):
     for file, reg_exp in zip(file_list, list_re):
         if "ROI:" + str(int(reg_exp["roi"])) not in dict_error_block_masks.keys():
             dict_error_block_masks["ROI:" + str(int(reg_exp["roi"]))] = {}
-        if "barcode:" + reg_exp["cycle"].split("RT")[-1] not in dict_error_block_masks.keys():
+        if (
+            "barcode:" + reg_exp["cycle"].split("RT")[-1]
+            not in dict_error_block_masks.keys()
+        ):
             new_mask = np.load(file)
             dict_error_block_masks["ROI:" + str(int(reg_exp["roi"]))][
                 "barcode:" + reg_exp["cycle"].split("RT")[-1]
@@ -960,7 +1031,10 @@ def plots_all_matrices(
 
     # calculates and plots contact probability matrix from merged samples/datasets
     him_matrix, n_cells = calculate_contact_probability_matrix(
-        sc_matrix_collated, unique_barcodes, pixel_size, norm="nonNANs",
+        sc_matrix_collated,
+        unique_barcodes,
+        pixel_size,
+        norm="nonNANs",
     )  # norm: n_cells (default), nonNANs
 
     c_scale = him_matrix.max()
@@ -1047,13 +1121,19 @@ def build_pwd_matrix(
 
     """
     # Loads localAlignment if it exists
-    alignment_results_table, alignment_results_table_read = load_local_alignment(current_param, data_folder)
+    alignment_results_table, alignment_results_table_read = load_local_alignment(
+        current_param, data_folder
+    )
 
     # Loads coordinate Tables
-    barcode_map, localization_dimension, unique_barcodes = load_barcode_map(filename_barcode_coordinates, ndims)
+    barcode_map, localization_dimension, unique_barcodes = load_barcode_map(
+        filename_barcode_coordinates, ndims
+    )
 
     # Builds dictionnary with filenames of errorAlignmentBlockMasks for each ROI and each barcode
-    dict_error_block_masks = build_dictionary_error_alignment_masks(current_param, data_folder)
+    dict_error_block_masks = build_dictionary_error_alignment_masks(
+        current_param, data_folder
+    )
 
     # processes tables
     barcode_map_roi = barcode_map.group_by("ROI #")
@@ -1066,11 +1146,17 @@ def build_pwd_matrix(
     sc_matrix_collated, processing_order = [], 0
 
     for roi in range(number_rois):
-        n_roi = barcode_map_roi.groups.keys[roi][0]  # need to iterate over the first index
+        n_roi = barcode_map_roi.groups.keys[roi][
+            0
+        ]  # need to iterate over the first index
 
-        print_log("----------------------------------------------------------------------")
-        print_log("> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(mask_identifier, n_roi))
-        print_log("----------------------------------------------------------------------")
+        print_log("------------------------------------------------------------------")
+        print_log(
+            "> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(
+                mask_identifier, n_roi
+            )
+        )
+        print_log("------------------------------------------------------------------")
 
         barcode_map_single_roi = barcode_map.group_by("ROI #").groups[roi]
 
@@ -1079,24 +1165,41 @@ def build_pwd_matrix(
             file
             for file in files_in_folder
             if file.split("_")[-1].split(".")[0]
-            == current_param.param_dict["acquisition"]["label_channel"]  # typically "ch00"
+            == current_param.param_dict["acquisition"][
+                "label_channel"
+            ]  # typically "ch00"
             and mask_identifier in os.path.basename(file).split("_")
             and int(os.path.basename(file).split("_")[3]) == n_roi
         ]
 
         if len(files_to_process) > 0:
-
             # loads file with cell masks
-            filename_roi_masks = os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
-            full_filename_roi_masks = os.path.dirname(filename_barcode_coordinates) + os.sep + filename_roi_masks
+            filename_roi_masks = (
+                os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
+            )
+            full_filename_roi_masks = (
+                os.path.dirname(filename_barcode_coordinates)
+                + os.sep
+                + filename_roi_masks
+            )
             if os.path.exists(full_filename_roi_masks):
                 masks = np.load(full_filename_roi_masks)
 
                 # Assigns barcodes to masks for a given ROI
                 cell_roi = CellID(
-                    current_param, data_folder, barcode_map_single_roi, masks, roi, ndims=localization_dimension,
+                    current_param,
+                    data_folder,
+                    barcode_map_single_roi,
+                    masks,
+                    roi,
+                    ndims=localization_dimension,
                 )
-                (cell_roi.ndims, cell_roi.n_roi, cell_roi.log_name_md, cell_roi.pixel_size,) = (
+                (
+                    cell_roi.ndims,
+                    cell_roi.n_roi,
+                    cell_roi.log_name_md,
+                    cell_roi.pixel_size,
+                ) = (
                     ndims,
                     n_roi,
                     log_name_md,
@@ -1124,13 +1227,20 @@ def build_pwd_matrix(
 
                 # saves Table with results per roi
                 cell_roi.sc_distance_table.write(
-                    output_filename + "_order:" + str(processing_order) + "_ROI:" + str(n_roi) + ".ecsv",
+                    output_filename
+                    + "_order:"
+                    + str(processing_order)
+                    + "_ROI:"
+                    + str(n_roi)
+                    + ".ecsv",
                     format="ascii.ecsv",
                     overwrite=True,
                 )
 
                 if len(sc_matrix_collated) > 0:
-                    sc_matrix_collated = np.concatenate((sc_matrix_collated, cell_roi.sc_matrix), axis=2)
+                    sc_matrix_collated = np.concatenate(
+                        (sc_matrix_collated, cell_roi.sc_matrix), axis=2
+                    )
                 else:
                     sc_matrix_collated = cell_roi.sc_matrix
                 del cell_roi
@@ -1145,12 +1255,16 @@ def build_pwd_matrix(
                         n_roi, filename_barcode_coordinates
                     )
                 )
-                print_log("# File I was searching for: {}".format(full_filename_roi_masks))
+                print_log(
+                    "# File I was searching for: {}".format(full_filename_roi_masks)
+                )
                 print_log("# Debug: ")
                 for file in files_in_folder:
                     if (
                         file.split("_")[-1].split(".")[0]
-                        == current_param.param_dict["acquisition"]["label_channel"]  # typically "ch00"
+                        == current_param.param_dict["acquisition"][
+                            "label_channel"
+                        ]  # typically "ch00"
                         and mask_identifier in file.split("_")
                         and int(os.path.basename(file).split("_")[3]) == n_roi
                     ):
@@ -1170,10 +1284,14 @@ def build_pwd_matrix(
 
         # saves output
         np.save(
-            output_filename + "_" + mask_identifier + "_HiMscMatrix.npy", sc_matrix_collated,
+            output_filename + "_" + mask_identifier + "_HiMscMatrix.npy",
+            sc_matrix_collated,
         )
         np.savetxt(
-            output_filename + "_" + mask_identifier + "_uniqueBarcodes.ecsv", unique_barcodes, delimiter=" ", fmt="%d",
+            output_filename + "_" + mask_identifier + "_uniqueBarcodes.ecsv",
+            unique_barcodes,
+            delimiter=" ",
+            fmt="%d",
         )
         np.save(output_filename + "_" + mask_identifier + "_Nmatrix.npy", n_matrix)
         pixel_size_xy = pixel_size["x"]
@@ -1222,10 +1340,12 @@ def process_pwd_matrices(current_param, current_session):
 
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_log("\n===================={}====================\n".format(session_name))
+    print_session_name(session_name)
     print_log("$ folders read: {}".format(len(data_folder.list_folders)))
     write_string_to_file(
-        current_param.param_dict["fileNameMD"], "## {}\n".format(session_name), "a",
+        current_param.param_dict["fileNameMD"],
+        f"## {session_name}\n",
+        "a",
     )
     label = "barcode"
 
@@ -1238,17 +1358,20 @@ def process_pwd_matrices(current_param, current_session):
         print_log("> Masks labels: {}".format(available_masks))
 
         for mask_label in available_masks.keys():
-
             mask_identifier = available_masks[mask_label]
 
-            filename_barcode_coordinates = data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
+            filename_barcode_coordinates = (
+                data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
+            )
             if os.path.exists(filename_barcode_coordinates):
                 # 2D
                 output_filename = data_folder.output_files["buildsPWDmatrix"]
                 print_log("> 2D processing: {}".format(output_filename))
 
                 if "pixelSizeXY" in current_param.param_dict["acquisition"].keys():
-                    pixel_size_xy = current_param.param_dict["acquisition"]["pixelSizeXY"]
+                    pixel_size_xy = current_param.param_dict["acquisition"][
+                        "pixelSizeXY"
+                    ]
                     pixel_size = {"x": pixel_size_xy, "y": pixel_size_xy, "z": 0.0}
                 else:
                     pixel_size = {"x": 0.1, "y": 0.1, "z": 0.0}
@@ -1265,22 +1388,29 @@ def process_pwd_matrices(current_param, current_session):
                 )
 
             # 3D
-            filename_barcode_coordinates = data_folder.output_files["segmentedObjects"] + "_3D_" + label + ".dat"
+            filename_barcode_coordinates = (
+                data_folder.output_files["segmentedObjects"] + "_3D_" + label + ".dat"
+            )
             if os.path.exists(filename_barcode_coordinates):
                 output_filename = data_folder.output_files["buildsPWDmatrix"] + "_3D"
                 print_log("> 3D processing: {}".format(output_filename))
 
-                if ("pixelSizeZ" in current_param.param_dict["acquisition"].keys()) and (
-                    "pixelSizeXY" in current_param.param_dict["acquisition"].keys()
-                ):
-                    pixel_size_xy = current_param.param_dict["acquisition"]["pixelSizeXY"]
+                if (
+                    "pixelSizeZ" in current_param.param_dict["acquisition"].keys()
+                ) and ("pixelSizeXY" in current_param.param_dict["acquisition"].keys()):
+                    pixel_size_xy = current_param.param_dict["acquisition"][
+                        "pixelSizeXY"
+                    ]
 
                     if "zBinning" in current_param.param_dict["acquisition"]:
                         z_binning = current_param.param_dict["acquisition"]["zBinning"]
                     else:
                         z_binning = 1
 
-                    pixel_size_z = z_binning * current_param.param_dict["acquisition"]["pixelSizeZ"]
+                    pixel_size_z = (
+                        z_binning
+                        * current_param.param_dict["acquisition"]["pixelSizeZ"]
+                    )
 
                     pixel_size = {
                         "x": pixel_size_xy,

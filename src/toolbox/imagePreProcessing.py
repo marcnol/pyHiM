@@ -28,18 +28,15 @@ import sys
 from datetime import datetime
 
 import numpy as np
-from dask.distributed import (
-    Client,
-    LocalCluster,
-)
+from dask.distributed import Client, LocalCluster
 from skimage import exposure, io
 from tifffile import imsave
 from tqdm import tqdm
 
+from core.saving import save_image_as_blocks
 from imageProcessing.imageProcessing import (
     _remove_inhomogeneous_background,
     image_adjust,
-    save_image_as_blocks,
 )
 
 
@@ -68,9 +65,7 @@ def parse_arguments():
 
     args = parser.parse_args()
 
-    print(
-        "\n--------------------------------------------------------------------------"
-    )
+    print("\n--------------------------------------------------------------------")
     run_parameters = {}
 
     if args.rootFolder:
@@ -130,9 +125,7 @@ def parse_arguments():
     return run_parameters
 
 
-def lauch_dask_scheduler(
-    requested_number_nodes, maximum_load=0.6, memory_per_worker=2000
-):
+def lauch_dask_scheduler(requested_nb_nodes, maximum_load=0.6, memory_per_worker=2000):
     number_cores_available = multiprocessing.cpu_count()
 
     # we want at least 2 GB per worker
@@ -142,7 +135,7 @@ def lauch_dask_scheduler(
         np.min([number_cores_available * maximum_load, free_m / memory_per_worker])
     )
 
-    n_threads = int(np.min([max_number_threads, requested_number_nodes]))
+    n_threads = int(np.min([max_number_threads, requested_nb_nodes]))
 
     print("Go to http://localhost:8787/status for information on progress...")
 

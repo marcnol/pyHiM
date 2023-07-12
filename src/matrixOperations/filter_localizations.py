@@ -9,15 +9,16 @@ Created on Mon Feb  7 16:45:44 2022
 # IMPORTS
 # =============================================================================
 
-import glob, os
+import glob
+import os
 
 # to remove in a future version
 import warnings
 
-import numpy as np
 from tqdm import trange
 
-from fileProcessing.fileManagement import Folders, print_log, write_string_to_file
+from core.folder import Folders
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
 
 warnings.filterwarnings("ignore")
@@ -36,7 +37,7 @@ class FilterLocalizations:
 
         self.current_param = param
 
-    def filter_localizations__quality(self, barcode_map, i):
+    def filter_localizations_quality(self, barcode_map, i):
         """
         [filters barcode localizations either by brigthness or 3D localization accuracy]
 
@@ -54,58 +55,14 @@ class FilterLocalizations:
         """
         if self.ndims == 3:  # and  "3DfitKeep" in barcode_map.keys()
             # [reading the flag in barcode_map_roi assigned by the 3D localization routine]
-            keep = barcode_map["flux"][i] > self.flux_min  # and barcode_map["3DfitKeep"][i]
+            keep = (
+                barcode_map["flux"][i] > self.flux_min
+            )  # and barcode_map["3DfitKeep"][i]
         else:
             # [or by reading the flux from 2D localization]
             keep = barcode_map["flux"][i] > self.flux_min
 
         return keep
-
-    # def filter_localizations_block_alignment(self, barcode_map, i):
-    #     """
-    #     [filters barcode per blockAlignmentMask, if existing]
-    #     runs only if localAligment was not run!
-
-    #     Parameters
-    #     ----------
-    #     i : int
-    #         index in barcode_map Table
-
-    #     Returns
-    #     -------
-    #     keep_alignment : Boolean
-    #         True if the test is passed.
-
-    #     """
-    #     y_int = int(barcode_map["xcentroid"][i])
-    #     x_int = int(barcode_map["ycentroid"][i])
-    #     keep_alignment = True
-    #     if (
-    #         not self.alignment_results_table_read
-    #     ):  # only proceeds if localAlignment was not performed
-    #         barcode_id = "barcode:" + str(barcode_map["Barcode #"][i])
-    #         barcode_roi = "ROI:" + str(barcode_map["ROI #"][i])
-
-    #         if len(self.dict_error_block_masks) > 0:
-    #             if barcode_roi in self.dict_error_block_masks.keys():
-    #                 if barcode_id in self.dict_error_block_masks[barcode_roi].keys():
-    #                     error_mask = self.dict_error_block_masks[barcode_roi][barcode_id]
-    #                     keep_alignment = (
-    #                         error_mask[
-    #                             int(np.floor(x_int / self.block_size)),
-    #                             int(np.floor(y_int / self.block_size)),
-    #                         ]
-    #                         < self.tolerance_drift
-    #                     )
-
-    #         # keeps it always if barcode is fiducial
-    #         if (
-    #             "RT" + str(barcode_map["Barcode #"][i])
-    #             in self.current_param.param_dict["alignImages"]["referenceFiducial"]
-    #         ):
-    #             keep_alignment = True
-
-    #     return keep_alignment
 
     def filter_barcode_table(self, barcode_map):
         """
@@ -126,9 +83,8 @@ class FilterLocalizations:
         n_barcodes = len(barcode_map)
         print(f"$ Minimum flux: {self.flux_min}")
         for i in trange(n_barcodes):  # i is the index of the barcode in barcode_map_roi
-
             # [filters barcode localizations either by]
-            keep_quality = self.filter_localizations__quality(barcode_map, i)
+            keep_quality = self.filter_localizations_quality(barcode_map, i)
 
             # [filters barcode per blockAlignmentMask, if existing]
             # keep_alignment = self.filter_localizations_block_alignment(barcode_map, i)
@@ -140,14 +96,14 @@ class FilterLocalizations:
         # removes rows from table
         barcode_map.remove_rows(rows_to_remove)
 
-        print(f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}.")
+        print(
+            f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}."
+        )
 
         return barcode_map
 
     def setup_filter_values(self):
         """
-
-
         Returns
         -------
         self.block_size : int
@@ -183,10 +139,12 @@ class FilterLocalizations:
 
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log("\n===================={}====================\n".format(session_name))
+        print_session_name(session_name)
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
-            self.current_param.param_dict["fileNameMD"], "## {}\n".format(session_name), "a",
+            self.current_param.param_dict["fileNameMD"],
+            f"## {session_name}\n",
+            "a",
         )
         label = "barcode"
 
@@ -194,12 +152,18 @@ class FilterLocalizations:
             self.data_folder.create_folders(current_folder, self.current_param)
             print_log("> Processing Folder: {}".format(current_folder))
 
-            files = [x for x in glob.glob(self.data_folder.output_files["segmentedObjects"] + "_*" + label + ".dat")]
+            files = [
+                x
+                for x in glob.glob(
+                    self.data_folder.output_files["segmentedObjects"]
+                    + "_*"
+                    + label
+                    + ".dat"
+                )
+            ]
 
             if len(files) > 0:
-
                 for file in files:
-
                     if "3D" in os.path.basename(file):
                         self.ndims = 3
                     else:
@@ -216,10 +180,12 @@ class FilterLocalizations:
                         new_file = get_file_table_new_name(file)
                         table.save(new_file, barcode_map)
                         table.plot_distribution_fluxes(
-                            barcode_map, [new_file.split(".")[0], "_barcode_stats", ".png"],
+                            barcode_map,
+                            [new_file.split(".")[0], "_barcode_stats", ".png"],
                         )
                         table.plots_localizations(
-                            barcode_map, [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map,
+                            [new_file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                         # processes tables
@@ -232,9 +198,12 @@ class FilterLocalizations:
 
                         # saves and plots filtered barcode coordinate Tables
                         table.save(file, barcode_map, comments="filtered")
-                        table.plot_distribution_fluxes(barcode_map, [file.split(".")[0], "_barcode_stats", ".png"])
+                        table.plot_distribution_fluxes(
+                            barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
+                        )
                         table.plots_localizations(
-                            barcode_map, [file.split(".")[0], "_barcode_localizations", ".png"],
+                            barcode_map,
+                            [file.split(".")[0], "_barcode_localizations", ".png"],
                         )
 
                     else:
@@ -247,13 +216,14 @@ class FilterLocalizations:
 
 
 def get_file_table_new_name(file):
-
     existing_versions = glob.glob(file.split(".")[0] + "_version_*.dat")
 
     if len(existing_versions) < 1:
         new_version = 0
     else:
-        version_numbers = [int(x.split("_version_")[1].split("_")[0]) for x in existing_versions]
+        version_numbers = [
+            int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
+        ]
 
         if len(version_numbers) > 0:
             new_version = max(version_numbers) + 1

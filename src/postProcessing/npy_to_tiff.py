@@ -9,7 +9,6 @@ converts NPY to TIFF
 
 """
 
-import glob
 import os
 import select
 import sys
@@ -20,7 +19,14 @@ from tifffile import TiffWriter
 
 files = sys.argv[1:]
 
-if select.select([sys.stdin,], [], [], 0.0)[0]:
+if select.select(
+    [
+        sys.stdin,
+    ],
+    [],
+    [],
+    0.0,
+)[0]:
     print("Found data in stdin !\n")
 
     piped_files = [line.rstrip("\n") for line in sys.stdin]
@@ -31,10 +37,8 @@ else:
     print("No stdin")
 
 if len(files) > 0:
-
     print(f"{len(files)} files to process: ")
     for file in files:
-
         print(f"\n{os.path.basename(file)}")
 
         # loads NPY
@@ -44,7 +48,7 @@ if len(files) > 0:
         data = rescale_intensity(data, out_range=(0, 1))
         data = equalize_adapthist(data)  # , kernel_size = 2)
         data = data - np.min(data)
-        data = data / np.max(data) * (2 ** 14)
+        data = data / np.max(data) * (2**14)
 
         # saves TIFF
         file_out = file.rsplit(".")[0] + ".tif"

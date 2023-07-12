@@ -37,31 +37,23 @@ from datetime import datetime
 
 import numpy as np
 from apifish.detection.spot_modeling import fit_subpixel
+from apifish.stack import projection
 from astropy.table import Table, vstack
 from skimage import exposure, io
 from skimage.measure import regionprops
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    load_alignment_dictionary,
-    print_dict,
-    print_log,
-    retrieve_number_rois_folder,
-    try_get_client,
-    write_string_to_file,
-)
-from imageProcessing.imageProcessing import (
-    _plot_image_3d,
+from core.dask_cluster import try_get_client
+from core.folder import Folders, retrieve_number_rois_folder
+from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.saving import _plot_image_3d
+from imageProcessing.alignImages import apply_xy_shift_3d_images
+from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image
+from imageProcessing.makeProjections import reinterpolate_z
+from imageProcessing.segmentMasks import (
     _segment_3d_volumes_by_thresholding,
     _segment_3d_volumes_stardist,
-    apply_xy_shift_3d_images,
-    image_adjust,
-    preprocess_3d_image,
-    reinterpolate_z,
 )
-from apifish.stack import projection
-
 
 # =============================================================================
 # CLASSES
@@ -257,7 +249,6 @@ class SegmentSources3D:
         return binary, segmented_image_3d
 
     def segment_sources_3d_file(self, filename_to_process):
-
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -488,7 +479,7 @@ class SegmentSources3D:
         )
 
         # loads dicShifts with shifts for all rois and all labels
-        self.dict_shifts, self.dict_shifts_available = load_alignment_dictionary(
+        self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             self.data_folder
         )
 
@@ -502,7 +493,6 @@ class SegmentSources3D:
             client = try_get_client()
 
         if self.number_rois > 0:
-
             # loops over rois
             for roi in self.roi_list:
                 # loads reference fiducial image for this ROI
@@ -586,7 +576,9 @@ class SegmentSources3D:
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
         output_table_global.write(
-            self.output_filename, format="ascii.ecsv", overwrite=True,
+            self.output_filename,
+            format="ascii.ecsv",
+            overwrite=True,
         )
 
     def segment_sources_3d(self):
@@ -601,12 +593,13 @@ class SegmentSources3D:
         session_name = "segmentSources3D"
 
         # processes folders and files
-        print_log("\n===================={}====================\n".format(session_name))
+
+        print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
 

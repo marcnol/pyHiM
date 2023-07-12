@@ -11,7 +11,7 @@ produces movies and structures from single cell PWD matrices
 
 import argparse
 
-#%% imports and plotting settings
+# %% imports and plotting settings
 import os
 
 import cv2
@@ -21,17 +21,15 @@ import matplotlib
 # import matplotlib as plt
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-from sklearn import manifold
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
 
 from matrixOperations.HIMmatrixOperations import (
     AnalysisHiMMatrix,
     get_barcodes_per_cell,
+    get_coordinates_from_pwd_matrix,
     get_detection_eff_barcodes,
     get_rg_from_pwd,
-    get_coordinates_from_pwd_matrix,
     kde_fit,
     plot_distance_histograms,
     sort_cells_by_number_pwd,
@@ -42,7 +40,7 @@ font = {"family": "DejaVu Sans", "weight": "normal", "size": 22}
 
 matplotlib.rc("font", **font)
 
-#%% define and loads datasets
+# %% define and loads datasets
 
 
 def parse_arguments():
@@ -232,7 +230,6 @@ def returnCellsHighestNumberPWD(sorted_values, n):
 
 
 def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3D.png"):
-
     fig = plt.figure()
     fig.set_size_inches((10, 10))
 
@@ -318,7 +315,6 @@ def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3
 def visualize2D(
     coordinateList, colors=[], cmap="hsv", titles=[], output="visualize2D.png"
 ):
-
     nRows = len(coordinateList)
 
     fig, allAxes = plt.subplots(1, nRows)
@@ -361,9 +357,8 @@ def visualize2D(
 
 
 def plotTrajectories(
-    him_data, run_parameters, outputFileNameRoot, cell_id, mode="matplotlib"
+    him_data, run_parameters, outputFileNameRoot, cell_id, sc_matrix, mode="matplotlib"
 ):
-
     pwd_matrix = sc_matrix[:, :, cell_id]
     EnsembleMatrix = 1 / him_data.data["ensembleContactProbability"]
 
@@ -441,6 +436,7 @@ def plotTrajectories(
 def plot_sc_matrix(
     him_data,
     cell_id,
+    run_parameters,
     outputFileNameRoot="sc_matrix.png",
     ensembleMatrix=False,
     searchPattern="_scMatrix:",
@@ -491,13 +487,12 @@ def plot_sc_matrix(
 
 
 def plotsSubplot_sc_matrices(him_data, nRows, output="subplotMatrices.png"):
-
     dataset_name = list(him_data.list_data.keys())[0]
 
     sc_matrix, sorted_values, n_cells = sort_cells_by_number_pwd(him_data)
 
     # displays plots
-    Ncells2Process = nRows ** 2
+    Ncells2Process = nRows**2
     cell_id, Npwd = returnCellsHighestNumberPWD(sorted_values, Ncells2Process)
 
     fig, allAxes = plt.subplots(nRows, nRows)
@@ -525,7 +520,6 @@ def plotsSubplot_sc_matrices(him_data, nRows, output="subplotMatrices.png"):
 
 
 def makesVideo(folder, video_name, searchPattern):
-
     images = [
         img
         for img in os.listdir(os.path.dirname(folder))
@@ -551,7 +545,6 @@ def makesVideo(folder, video_name, searchPattern):
 
 
 def plotsBarcodesPerCell(sc_matrix, run_parameters, outputFileNameRoot="./"):
-
     num_barcodes = get_barcodes_per_cell(sc_matrix)
     maxNumberBarcodes = sc_matrix.shape[0]
 
@@ -573,7 +566,6 @@ def plotsBarcodesPerCell(sc_matrix, run_parameters, outputFileNameRoot="./"):
 def plotsBarcodesEfficiencies(
     sc_matrix, run_parameters, unique_barcodes, outputFileNameRoot="./"
 ):
-
     eff = get_detection_eff_barcodes(sc_matrix)
 
     fig, ax = plt.subplots()
@@ -602,11 +594,10 @@ def plotsRgvalues(
     threshold=6,
     bandwidths=10 ** np.linspace(-1.5, 0, 20),
 ):
-
     print("Threshold = {} px | min number PWDs = {}".format(threshold, min_number_pwd))
 
     sc_matrix, sorted_values, n_cells = sort_cells_by_number_pwd(him_data)
-    Ncells2Process = nRows ** 2
+    Ncells2Process = nRows**2
     selectedCellsIDs, Npwd = returnCellsHighestNumberPWD(sorted_values, Ncells2Process)
 
     # calculates Rg for all cells
@@ -690,14 +681,13 @@ def makesPlotHistograms(
     )
 
 
-#%%
+# %%
 # =============================================================================
 # MAIN
 # =============================================================================
 
 
 def main():
-
     print(">>> Producing HiM matrix")
     root_folder, output_folder, run_parameters = parse_arguments()
 
@@ -794,12 +784,15 @@ def main():
                 plot_sc_matrix(
                     him_data,
                     cell_id,
+                    run_parameters,
                     outputFileNameRoot,
                     ensembleMatrix=run_parameters["ensembleMatrix"],
                 )
 
                 # plots trajectories
-                plotTrajectories(him_data, run_parameters, outputFileNameRoot, cell_id)
+                plotTrajectories(
+                    him_data, run_parameters, outputFileNameRoot, cell_id, sc_matrix
+                )
 
     # "makes video of SC matrix for selected cells"
     if run_parameters["video"]:
@@ -810,6 +803,7 @@ def main():
                 plot_sc_matrix(
                     him_data,
                     cell_id,
+                    run_parameters,
                     outputFileNameRoot,
                     ensembleMatrix=run_parameters["ensembleMatrix"],
                     searchPattern=searchPattern,

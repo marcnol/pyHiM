@@ -23,15 +23,11 @@ ChromatinTraceTable() object and output .ecsv formatted file with assembled trac
 # =============================================================================q
 
 import argparse
-import csv
 import glob
 import json
 import os
 import select
 import sys
-from datetime import datetime
-
-import numpy as np
 
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
@@ -94,7 +90,14 @@ def parse_arguments():
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
-        if select.select([sys.stdin,], [], [], 0.0)[0]:
+        if select.select(
+            [
+                sys.stdin,
+            ],
+            [],
+            [],
+            0.0,
+        )[0]:
             p["trace_files"] = [line.rstrip("\n") for line in sys.stdin]
         else:
             print("Nothing in stdin!\n")
@@ -109,13 +112,11 @@ def parse_arguments():
 
 
 def filter_trace(trace, label, action):
-
     rows_to_remove = []
     number_original_traces = len(trace.data)
 
     # print(f"label:{label}|action:{action}")
     if "all" not in action:  # otherwise it keeps all rows
-
         # finds rows to remove
         for index, trace_row in enumerate(trace.data):
             labels = trace_row["label"]
@@ -137,12 +138,10 @@ def filter_trace(trace, label, action):
 
 
 def appends_traces(traces, trace_files, label, action):
-
     new_trace = ChromatinTraceTable()
 
     # iterates over traces in folder
     for trace_file in trace_files:
-
         # reads new trace
         new_trace.load(trace_file)
 
@@ -158,9 +157,13 @@ def appends_traces(traces, trace_files, label, action):
 
 
 def load_traces(
-    folders=[], ndims=3, method="mask", label="none", action="all", trace_files=[],
+    folders=[],
+    ndims=3,
+    method="mask",
+    label="none",
+    action="all",
+    trace_files=[],
 ):
-
     traces = ChromatinTraceTable()
     traces.initialize()
     traces.number_traces = 0
@@ -250,7 +253,6 @@ def run(p):
 
 
 def main():
-
     # [parsing arguments]
     p = parse_arguments()
 

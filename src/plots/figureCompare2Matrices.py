@@ -8,10 +8,8 @@ Created on Fri Jun  5 09:24:51 2020
 
 
 import argparse
-import csv
-import json
 
-#%% imports and plotting settings
+# %% imports and plotting settings
 import os
 
 import matplotlib.gridspec as gridspec
@@ -23,16 +21,11 @@ import numpy as np
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
     AnalysisHiMMatrix,
-    calculate_3_way_contact_matrix,
     calculate_ensemble_pwd_matrix,
-    get_multi_contact,
     list_sc_to_keep,
-    plot_distance_histograms,
-    plot_matrix,
-    plot_ensemble_3_way_contact_matrix,
 )
 
-#%% define and loads datasets
+# %% define and loads datasets
 
 
 def parse_arguments():
@@ -186,7 +179,6 @@ def parse_arguments():
 
 
 def normalize_matrix(m1, m2, mode):
-
     print("Normalization: {}".format(mode))
 
     if "maximum" in mode:  # normalizes by maximum
@@ -218,7 +210,6 @@ def normalize_matrix(m1, m2, mode):
 
 
 def main():
-
     rootFolder1, rootFolder2, output_folder, run_parameters = parse_arguments()
 
     him_data_1 = AnalysisHiMMatrix(run_parameters, rootFolder1)
@@ -332,7 +323,6 @@ def main():
         )
 
     if m1.shape == m2.shape:
-
         fig1 = plt.figure(constrained_layout=True)
         spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
         f_1 = fig1.add_subplot(spec1[0, 0])  # 16

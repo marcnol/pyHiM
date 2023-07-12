@@ -36,36 +36,32 @@ During buildMatrix this database is loaded, if available.
 
 import glob
 import os
-import resource
 from datetime import datetime
 
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.table import Table, vstack
-
 from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
-from fileProcessing.fileManagement import (
-    Folders,
+from core.dask_cluster import try_get_client
+from core.folder import Folders
+from core.parameters import (
     get_dictionary_value,
-    load_alignment_dictionary,
+    load_alignment_dict,
     print_dict,
-    print_log,
     rt_to_filename,
-    try_get_client,
-    write_string_to_file,
 )
-from imageProcessing.imageProcessing import (
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.saving import plot_3d_shift_matrices, plot_4_images
+from imageProcessing.alignImages import (
     apply_xy_shift_3d_images,
     combine_blocks_image_by_reprojection,
     image_block_alignment_3d,
-    plot_3d_shift_matrices,
-    plot_4_images,
-    preprocess_3d_image,
-    reinterpolate_z,
 )
+from imageProcessing.imageProcessing import preprocess_3d_image
+from imageProcessing.makeProjections import reinterpolate_z
 
 # =============================================================================
 # CLASSES
@@ -130,18 +126,6 @@ class Drift3D:
         else:
             self.p["parallelizePlanes"] = 1
 
-    def find_file_to_process(self, n_barcode, n_roi):
-        barcode = "RT" + str(n_barcode)
-        roi = str(n_roi) + "_ROI"
-        channelbarcode = self.current_param.set_channel("barcode_channel", "ch01")
-
-        files_folder = glob.glob(self.data_folder.master_folder + os.sep + "*.tif")
-        image_file = [
-            x for x in files_folder if roi in x and barcode in x and channelbarcode in x
-        ]
-
-        return image_file
-
     def align_fiducials_3d_file(self, filename_to_process):
         """
         Aligns <filename_to_process> fiducial against reference
@@ -197,7 +181,7 @@ class Drift3D:
 
         self.p["fileNameReference"] = filename_reference
         self.p["ROI"] = self.roi_list[filename_reference]
-        print_log("Loading reference 3D image: {}".format(filename_reference))
+        print_log(f"Loading reference 3D image: {filename_reference}")
 
         self.image_ref_0, self.image_ref = load_n_preprocess_image(
             filename_reference,
@@ -220,9 +204,7 @@ class Drift3D:
         ]
 
         print_log(
-            "$ Found {} files in ROI: {}".format(
-                len(self.filenames_to_process_list), self.p["ROI"]
-            )
+            f"$ Found {len(self.filenames_to_process_list)} files in ROI: {self.p['ROI']}"
         )
         print_log(
             "$ [roi:cycle] {}".format(
@@ -263,7 +245,7 @@ class Drift3D:
         print_log("\nDetected {} rois".format(self.number_rois))
 
         # loads dicShifts with shifts for all rois and all labels
-        self.dict_shifts, self.dict_shifts_available = load_alignment_dictionary(
+        self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             self.data_folder
         )
 
@@ -297,10 +279,8 @@ class Drift3D:
             client = try_get_client()
 
         if self.number_rois > 0:
-
             # loops over rois
             for filename_reference in self.filenames_with_ref_barcode:
-
                 # loads reference fiducial image for this ROI
                 self.load_reference_fiducial(filename_reference)
                 number_files = len(self.filenames_to_process_list)
@@ -312,7 +292,6 @@ class Drift3D:
                     for file_index, filename_to_process in enumerate(
                         self.filenames_to_process_list
                     ):
-
                         print_log(
                             "\n\n>>>Iteration: {}/{}<<<".format(
                                 file_index, number_files
@@ -357,7 +336,9 @@ class Drift3D:
             self.data_folder.output_files["alignImages"].split(".")[0] + "_block3D.dat"
         )
         alignment_results_table_global.write(
-            output_filename, format="ascii.ecsv", overwrite=True,
+            output_filename,
+            format="ascii.ecsv",
+            overwrite=True,
         )
 
         print_log("$ alignImages3D procesing time: {}".format(datetime.now() - now))
@@ -375,12 +356,12 @@ class Drift3D:
         session_name = "alignImages3D"
 
         # processes folders and files
-        print_log("\n===================={}====================\n".format(session_name))
+        print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
 
@@ -414,7 +395,6 @@ def load_n_preprocess_image(
     higher_threshold,
     parallel_execution=True,
 ):
-
     print_log("$ File:{}".format(os.path.basename(filename_to_process)))
 
     image_3d_0 = io.imread(filename_to_process).squeeze()
@@ -447,7 +427,6 @@ def _align_fiducials_3d_file(
     dict_shifts_available,
     output_folder,
 ):
-
     # - load  and preprocesses 3D fiducial file
     print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
     image_3d_0, image_3d = load_n_preprocess_image(

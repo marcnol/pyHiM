@@ -15,33 +15,20 @@ steps:
     - output results
 """
 
-# =============================================================================
-# IMPORTS
-# =============================================================================
-
 import glob
 import os
 from datetime import datetime
 
 import numpy as np
 from skimage import io
-from skimage.measure import regionprops
 
-from fileProcessing.fileManagement import (
-    Folders,
-    get_dictionary_value,
-    load_alignment_dictionary,
-    print_dict,
-    print_log,
-    retrieve_number_rois_folder,
-    write_string_to_file,
-)
-from imageProcessing.imageProcessing import (
-    _segment_3d_masks,
-    apply_xy_shift_3d_images,
-    plot_raw_images_and_labels,
-    reinterpolate_z,
-)
+from core.folder import Folders, retrieve_number_rois_folder
+from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
+from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.saving import plot_raw_images_and_labels
+from imageProcessing.alignImages import apply_xy_shift_3d_images
+from imageProcessing.makeProjections import reinterpolate_z
+from imageProcessing.segmentMasks import _segment_3d_masks
 
 # =============================================================================
 # CLASSES
@@ -197,7 +184,6 @@ class SegmentMasks3D:
         return binary, segmented_image_3d
 
     def segment_masks_3d_file(self, filename_to_process):
-
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -251,7 +237,7 @@ class SegmentMasks3D:
         print_log("$ Number of masks detected: {}".format(number_masks))
 
         if number_masks > 0:
-            output_extension = {"2D":"_Masks","3D":"_3Dmasks"}          
+            output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
             npy_labeled_image_filename = (
                 self.data_folder.output_folders["segmentedObjects"]
                 + os.sep
@@ -259,16 +245,18 @@ class SegmentMasks3D:
             )
             npy_labeled_image_filename_2d = (
                 npy_labeled_image_filename.split(".")[0]
-                + output_extension['2D']
+                + output_extension["2D"]
                 + ".npy"
             )
             npy_labeled_image_filename_3d = (
                 npy_labeled_image_filename.split(".")[0]
-                + output_extension['3D']
+                + output_extension["3D"]
                 + ".npy"
             )
             print_log(
-                " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(npy_labeled_image_filename_2d,npy_labeled_image_filename_3d)
+                " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(
+                    npy_labeled_image_filename_2d, npy_labeled_image_filename_3d
+                )
             )
 
             # saves 3D image
@@ -285,7 +273,7 @@ class SegmentMasks3D:
             figures.append(
                 [
                     plot_image_3d(image_3d_aligned, segmented_image_3d),
-                    output_extension['3D'] + ".png",
+                    output_extension["3D"] + ".png",
                 ]
             )
 
@@ -336,15 +324,13 @@ class SegmentMasks3D:
         )
 
         # loads dicShifts with shifts for all rois and all labels
-        self.dict_shifts, self.dict_shifts_available = load_alignment_dictionary(
+        self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             self.data_folder
         )
 
         if self.number_rois > 0:
-
             # loops over rois
             for roi in self.roi_list:
-
                 # loads reference fiducial image for this ROI
                 self.filenames_to_process_list = [
                     x
@@ -413,12 +399,13 @@ class SegmentMasks3D:
         session_name = "segmentMasks3D"
 
         # processes folders and files
-        print_log("\n===================={}====================\n".format(session_name))
+
+        print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
-            "## {}\n".format(session_name),
+            f"## {session_name}\n",
             "a",
         )
 
@@ -464,79 +451,3 @@ def plot_image_3d(image_3d, masks):
     fig1 = plot_raw_images_and_labels(image_3d, masks)
 
     return fig1
-
-def get_mask_properties(
-    segmented_image_3d, image_3d_aligned, threshold=10, n_tolerance=1000
-):
-    """
-    get object properties from labeled image and formats
-    centroids in NPY array
-
-    Parameters
-    ----------
-    segmented_image_3d : NPY 3D array
-        labeled 3D image.
-    image_3d_aligned : NPY 3D array
-        pre-processed 3D image.
-
-    Returns
-    -------
-    spots : NPY int64 array
-        list of spots with the format: zyx
-
-    """
-
-    # gets object properties
-    properties = regionprops(segmented_image_3d, intensity_image=image_3d_aligned)
-
-    if len(properties) > 0:
-        # selects n_tolerance brightest spots and keeps only these for further processing
-        peak0 = [x.max_intensity for x in properties]
-        peak_list = peak0.copy()
-        peak_list.sort()
-        last2keep = np.min([n_tolerance, len(peak_list)])
-        highest_peak_value = peak_list[-last2keep]
-        selection = list(np.nonzero(peak0 > highest_peak_value)[0])
-
-        # attributes properties using the brightests spots selected
-        peak = [properties[x].max_intensity for x in selection]
-        centroids = [properties[x].weighted_centroid for x in selection]
-        sharpness = [
-            float(properties[x].filled_area / properties[x].bbox_area)
-            for x in selection
-        ]
-        roundness1 = [properties[x].equivalent_diameter for x in selection]
-        roundness2 = [properties[x].extent for x in selection]
-        npix = [properties[x].area for x in selection]
-        sky = [0.0 for x in selection]
-        peak = [properties[x].max_intensity for x in selection]
-        flux = [
-            100 * properties[x].max_intensity / threshold for x in selection
-        ]  # peak intensity over the detection threshold
-        mag = [-2.5 * np.log10(x) for x in flux]  # -2.5 log10(flux)
-
-        # converts centroids to spot coordinates for bigfish to run 3D gaussian fits
-        z = [x[0] for x in centroids]
-        y = [x[1] for x in centroids]
-        x = [x[2] for x in centroids]
-
-        spots = np.zeros((len(z), 3))
-        spots[:, 0] = z
-        spots[:, 1] = y
-        spots[:, 2] = x
-        spots = spots.astype("int64")
-
-        return (
-            spots,
-            sharpness,
-            roundness1,
-            roundness2,
-            npix,
-            sky,
-            peak,
-            flux,
-            mag,
-        )
-    else:
-        # creates output lists to return
-        return [], [], [], [], [], [], [], [], []

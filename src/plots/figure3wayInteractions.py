@@ -8,10 +8,8 @@ Created on Thu Jun  4 09:18:15 2020
 
 
 import argparse
-import csv
-import json
 
-#%% imports and plotting settings
+# %% imports and plotting settings
 import os
 
 import matplotlib.gridspec as gridspec
@@ -20,19 +18,12 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 
-from matrixOperations.HIMmatrixOperations import (
-    AnalysisHiMMatrix,
-    calculate_3_way_contact_matrix,
-    get_multi_contact,
-    plot_distance_histograms,
-    plot_matrix,
-    plot_ensemble_3_way_contact_matrix,
-)
+from matrixOperations.HIMmatrixOperations import AnalysisHiMMatrix
 
 # import scaleogram as scg
 
 
-#%% define and loads datasets
+# %% define and loads datasets
 def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
@@ -297,11 +288,6 @@ def main():
         cbar = fig2.colorbar(f2_ax1_im, cax=cbar_ax, fraction=0.046, pad=0.04)
         ticklabs = cbar.ax.get_yticklabels()
         cbar.ax.set_yticklabels(ticklabs, fontsize=12)
-
-    # for ifigure in FigList:
-    #     him_data_1.update_clims(0, c_max, ifigure)
-
-    # update_clims(0, c_max, FigList)
 
     plt.savefig(output_filename)
     print("Output figure: {}".format(output_filename))

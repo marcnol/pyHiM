@@ -208,7 +208,7 @@ git clone git@github.com:marcnol/pyHiM.git
 git checkout development
 
 # settings
-ln -s $HOME/Repositories/pyHiM/src/fileProcessing/cleanHiM_run.py $HOME/bin/cleanHiM
+ln -s $HOME/Repositories/pyHiM/src/toolbox/file_handling/cleanHiM_run.py $HOME/bin/cleanHiM
 
 ```
 
