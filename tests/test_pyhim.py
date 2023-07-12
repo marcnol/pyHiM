@@ -16,6 +16,7 @@ from pyHiM import main
 
 ################################# FUNCTIONS #################################
 
+
 def extract_files(root: str):
     """Extract recursively file informations of all files into a given directory.
     Note: filename is the name without extension
@@ -51,6 +52,7 @@ def extract_files(root: str):
 
     return files
 
+
 def compare_npy_files(first_file, second_file, shuffled_plans=False):
     """Load both files as numpy array and compare them.
 
@@ -65,15 +67,22 @@ def compare_npy_files(first_file, second_file, shuffled_plans=False):
     second_npy = np.load(second_file)
     is_same = np.array_equal(first_npy, second_npy, equal_nan=True)
     if not is_same and shuffled_plans:
-        reverse_first = np.swapaxes(first_npy,0,2)
-        reverse_second = np.swapaxes(second_npy,0,2)
+        reverse_first = np.swapaxes(first_npy, 0, 2)
+        reverse_second = np.swapaxes(second_npy, 0, 2)
         is_same = True
         for plan in reverse_first:
-            is_inside = (np.equal(plan,reverse_second) | np.isnan(reverse_second)).all((1,2)).any()
+            is_inside = (
+                (np.equal(plan, reverse_second) | np.isnan(reverse_second))
+                .all((1, 2))
+                .any()
+            )
             is_same = is_same and is_inside
     return is_same
 
-def compare_ecsv_files(first_file, second_file, columns_to_remove=[], shuffled_lines=False):
+
+def compare_ecsv_files(
+    first_file, second_file, columns_to_remove=[], shuffled_lines=False
+):
     first_ecsv = Table.read(first_file, format="ascii.ecsv")
     second_ecsv = Table.read(second_file, format="ascii.ecsv")
 
@@ -94,6 +103,7 @@ def compare_ecsv_files(first_file, second_file, columns_to_remove=[], shuffled_l
         is_same = comparison.all()
     return is_same
 
+
 def compare_line_by_line(first_file, second_file, shuffled_lines=False):
     with open(first_file) as f1:
         with open(second_file) as f2:
@@ -107,11 +117,15 @@ def compare_line_by_line(first_file, second_file, shuffled_lines=False):
                 if shuffled_lines:
                     is_same = f1_lines[line_index] in f2_lines
                     if not is_same:
-                        print(f"SHUFFLE: At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n")
+                        print(
+                            f"SHUFFLE: At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n"
+                        )
                 else:
                     is_same = f1_lines[line_index] == f2_lines[line_index]
                     if not is_same:
-                        print(f"At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n from {second_file}\n{f2_lines[line_index]}")
+                        print(
+                            f"At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n from {second_file}\n{f2_lines[line_index]}"
+                        )
                 line_index += 1
             return is_same
 
@@ -140,6 +154,7 @@ def test_make_projections():
         out_file = os.path.join(out_z_project, filename)
         assert compare_npy_files(tmp_file, out_file)
 
+
 def test_align_images():
     """Check alignImages"""
     main(["-F", tmp_small_inputs, "-C", "alignImages", "-S", tmp_stardist_basename])
@@ -162,9 +177,20 @@ def test_align_images():
 
 def test_applies_registrations():
     """Check appliesRegistrations"""
-    main(["-F", tmp_small_inputs, "-C", "appliesRegistrations", "-S", tmp_stardist_basename])
+    main(
+        [
+            "-F",
+            tmp_small_inputs,
+            "-C",
+            "appliesRegistrations",
+            "-S",
+            tmp_stardist_basename,
+        ]
+    )
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
-    out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/"
+    out_align_images = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/"
+    )
     out_files = extract_files(out_align_images)
     assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
@@ -172,6 +198,7 @@ def test_applies_registrations():
         tmp_file = os.path.join(tmp_align_images, filename)
         out_file = os.path.join(out_align_images, filename)
         assert compare_npy_files(tmp_file, out_file)
+
 
 def test_align_images_3d():
     """Check alignImages3D"""
@@ -186,11 +213,14 @@ def test_align_images_3d():
         out_file = os.path.join(out_align_images, filename)
         assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
+
 def test_segment_masks_3d():
     """Check segmentMasks3D"""
     main(["-F", tmp_small_inputs, "-C", "segmentMasks3D", "-S", tmp_stardist_basename])
     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
-    out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/"
+    out_segmented_objects = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/"
+    )
     out_files = extract_files(out_segmented_objects)
     assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
@@ -218,7 +248,9 @@ def test_build_traces():
     """Check build_traces"""
     main(["-F", tmp_traces_inputs, "-C", "build_traces"])
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
-    out_builds_pwd_matrix = "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/"
+    out_builds_pwd_matrix = (
+        "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/"
+    )
     out_files = extract_files(out_builds_pwd_matrix)
     assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:
@@ -227,11 +259,14 @@ def test_build_traces():
         out_file = os.path.join(out_builds_pwd_matrix, filename)
         assert compare_ecsv_files(tmp_file, out_file, columns_to_remove=["Trace_ID"])
 
+
 def test_build_matrix():
     """Check build_matrix"""
     main(["-F", tmp_traces_inputs, "-C", "build_matrix"])
     tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
-    out_builds_pwd_matrix = "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/"
+    out_builds_pwd_matrix = (
+        "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/"
+    )
     out_files = extract_files(out_builds_pwd_matrix)
     assert len(out_files) > 0
     for filepath, short_filename, extension in out_files:

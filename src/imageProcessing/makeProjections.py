@@ -103,7 +103,7 @@ class Project(Feature):
         print_log(f"$ Image Size={img_size}")
         print_log(f"$ Focal plane={focus_plane}")
         print_log(f"> Processing z_range:{z_range}")
-        return img[z_range[0] : (z_range[-1] + 1)]
+        return img[z_range[0] : z_range[-1] + 1]
 
     def _precise_z_planes_auto(self, img, label):
         """
