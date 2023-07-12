@@ -50,6 +50,7 @@ def parse_arguments():
     parser.add_argument("--clean_spots", help="remove barcode spots repeated in a single trace", action="store_true")
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
+    parser.add_argument("--dist_max", help="Maximum distance threshold. Default = np.inf")
     parser.add_argument("--z_min", help="Z minimum for a localization. Default = 0")
     parser.add_argument("--z_max", help="Z maximum for a localization. Default = np.inf")
     parser.add_argument("--y_min", help="Y minimum for a localization. Default = 0")
@@ -81,6 +82,11 @@ def parse_arguments():
     else:
         p["N_barcodes"] = 2
 
+    if args.dist_max:
+        p["dist_max"] = float(args.dist_max)
+    else:
+        p["dist_max"] = np.inf
+        
     if args.z_min:
         p["z_min"] = float(args.z_min)
     else:
@@ -130,7 +136,8 @@ def parse_arguments():
     return p
 
 
-def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", remove_duplicate_spots=False,remove_barcode=None):
+def runtime(trace_files=[], N_barcodes=2, coor_limits=dict(), tag="filtered", remove_duplicate_spots=False,remove_barcode=None,
+            dist_max = np.inf):
 
     # checks number of trace files
     if len(trace_files) < 1:
@@ -202,6 +209,7 @@ def main():
         tag=p["output"],
         remove_duplicate_spots=p["clean_spots"],
         remove_barcode = p["remove_barcode"],
+        dist_max = p['dist_max'],
     )
 
     print(f"Processed <{n_traces_processed}> trace file(s)")
