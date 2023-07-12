@@ -58,7 +58,7 @@ def main(command_line_arguments=None):
     print_log(f"$ Started logging to: {pipe.m_logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
-    pipe.run()
+    # pipe.run()
 
     for label in labels:
         # sets parameters
@@ -78,9 +78,9 @@ def main(command_line_arguments=None):
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = pipe.m_logger.md_filename
 
-        # # [projects 3D images in 2d]
-        # if "makeProjections" in run_args.cmd_list:
-        #     pipe.make_projections(current_param)
+        # [projects 3D images in 2d]
+        if "makeProjections" in run_args.cmd_list:
+            pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
