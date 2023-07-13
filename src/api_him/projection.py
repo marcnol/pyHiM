@@ -55,7 +55,7 @@ def calculate_zrange(idata, parameters):
 
         try:
             fitgauss = spo.curve_fit(
-                gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
+                projection.gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
             )
             focus_plane = int(fitgauss[0][1])
         except RuntimeError:

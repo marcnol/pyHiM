@@ -34,14 +34,12 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(
-        self, data_m, cmd_list, global_param, is_parallel, session_name="HiM_analysis"
-    ):
+    def __init__(self, data_m, cmd_list, global_param, is_parallel, logger):
         self.m_data_m = data_m
         self.cmds = cmd_list
         self.params = global_param
         self.parallel = is_parallel
-        self.m_logger = Logger(self.m_data_m.m_data_path, self.parallel, session_name)
+        self.m_logger = logger
         self.m_dask = None
         self.tempo_var = {"makeProjections": Project}
         self.features = []
@@ -176,9 +174,11 @@ class Pipeline:
             else:
                 for f2p in files_to_process:
                     data = f2p.load()
-                    result = feat.run(data, f2p.m_label)
-                    # result = feat.run(data, reference, table)
-                    f2p.save(result, feat.out_folder, feat.out_tag)
+                    results = feat.run(data, f2p.m_label)
+                    # results = feat.run(data, reference, table)
+                    self.m_data_m.save_data(
+                        results, feat.out_tags, feat.out_folder, f2p
+                    )
 
 
 # =============================================================================

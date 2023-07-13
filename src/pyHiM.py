@@ -16,7 +16,7 @@ import apifish
 import core.function_caller as fc
 from core.data_manager import DataManager
 from core.parameters import Parameters
-from core.pyhim_logging import print_log
+from core.pyhim_logging import Logger, print_log
 from core.run_args import RunArgs
 
 warnings.filterwarnings("ignore")
@@ -38,7 +38,16 @@ def main(command_line_arguments=None):
 
     run_args = RunArgs(command_line_arguments)
 
-    datam = DataManager(run_args.data_path, run_args.stardist_basename)
+    logger = Logger(
+        run_args.data_path, parallel=run_args.parallel, session_name="HiM_analysis"
+    )
+
+    datam = DataManager(
+        run_args.data_path,
+        logger,
+        stardist_basename=run_args.stardist_basename,
+        params_filename="infoList",
+    )
 
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
@@ -49,16 +58,16 @@ def main(command_line_arguments=None):
         run_args.cmd_list,
         global_param,
         run_args.parallel,
-        session_name="HiM_analysis",
+        logger,
     )
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     labels = global_param.param_dict["labels"]
 
-    print_log(f"$ Started logging to: {pipe.m_logger.log_file}")
+    print_log(f"$ Started logging to: {logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
-    # pipe.run()
+    pipe.run()
 
     for label in labels:
         # sets parameters
@@ -76,11 +85,11 @@ def main(command_line_arguments=None):
         print_log("------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = pipe.parallel
-        current_param.param_dict["fileNameMD"] = pipe.m_logger.md_filename
+        current_param.param_dict["fileNameMD"] = logger.md_filename
 
-        # [projects 3D images in 2d]
-        if "makeProjections" in run_args.cmd_list:
-            pipe.make_projections(current_param)
+        # # [projects 3D images in 2d]
+        # if "makeProjections" in run_args.cmd_list:
+        #     pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
@@ -130,7 +139,7 @@ def main(command_line_arguments=None):
         del current_param
 
     # exits
-    pipe.m_logger.m_session.save()
+    logger.m_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
     if run_args.parallel:
