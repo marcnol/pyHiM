@@ -10,10 +10,14 @@ import json
 import os
 import re
 
+import matplotlib.pyplot as plt
 import numpy as np
+from astropy.visualization import SqrtStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 from skimage import io
 
-from core.pyhim_logging import print_log
+from core.pyhim_logging import Logger, print_log, write_string_to_file
+from core.saving import image_show_with_values
 
 
 def extract_files(root: str):
@@ -49,17 +53,67 @@ def extract_files(root: str):
     return files
 
 
+# class File:
+#     def __init__(self, path, name, ext):
+#         self.path = ""
+#         self.type = []  # Fiducial, barcode, mask, dapi, rna, localization, trace, ...
+#         self.status = []  # projected, registered, filtered
+#         self.reference_to = ""  # path ?
+
+#     def load(self):
+#         pass
+
+#     def save(self):
+#         pass
+
+
+class ImageFile:
+    def __init__(self, path, img_name, ext, label):
+        self.all_path = path
+        self.name = img_name
+        self.extension = ext
+        self.root = self.get_root()
+        # self.acquisition = ""  # DAPI, Barcode, Mask
+        # self.channel = channel
+        self.m_label = label
+        # self.roi = roi
+        # self.cycle = cycle
+
+    def get_root(self):
+        length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
+        return self.all_path[:length]
+
+    def load(self):
+        return io.imread(self.all_path).squeeze()
+
+    # def save(self, result, folder_name: str, tag: str):
+    #     path_name = self.root + os.sep + folder_name + os.sep + self.name + tag
+    #     if result.shape > (1, 1):
+    #         np.save(path_name, result)
+    #         print_log(f"$ Image saved to disk: {path_name}.npy", "info")
+    #     else:
+    #         print_log("# Warning, image is empty", "Warning")
+
+
+def remove_extension(filename: str):
+    fl_split = filename.split(".")
+    fl_split.pop()
+    return ".".join(fl_split)
+
+
 class DataManager:
     """Single party responsible for communicating data with the system"""
 
     def __init__(
         self,
         data_path: str,
+        logger: Logger,
         stardist_basename: str = "",
         params_filename: str = "infoList",
     ):
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
+        self.m_logger = logger
         self.m_stardist_basename = stardist_basename
         self.m_filename_params = params_filename
         self.all_files = extract_files(self.m_data_path)
@@ -132,7 +186,9 @@ class DataManager:
                 self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
-            elif ext in ["log","md"] or (ext == "json" and name == self.m_filename_params):
+            elif ext in ["log", "md"] or (
+                ext == "json" and name == self.m_filename_params
+            ):
                 pass
             else:
                 print(f"Unrecognized data file: {path}")
@@ -230,6 +286,76 @@ class DataManager:
                 inputs.append(img_file)
         return inputs
 
+    def save_data(
+        self,
+        results: list,
+        tags: list[str],
+        out_folder: str,
+        associated_file: ImageFile,
+    ):
+        if len(results) != len(tags):
+            # TODO: Improuve this possibility, you may be can have just one image but different tags
+            # Because we want plot this image with different ways
+            raise SystemExit(f"len(results) {len(results)} != len(tags) {len(tags)}")
+
+        partial_path = (
+            self.out_path + os.sep + out_folder + os.sep + associated_file.name
+        )
+        for res, tag in zip(results, tags):
+            if tag == "_2d":
+                self._save_2d_npy(res, partial_path)
+                self._save_2d_png(res, partial_path)
+            elif tag == "_focalPlaneMatrix":
+                self._save_focal_plane_matrix((res, partial_path))
+            else:
+                raise SystemExit(f"tag UNRECOGNIZED: {tag}")
+
+    def _save_2d_npy(self, data, partial_path):
+        path_name = partial_path + "_2d"
+        if data.shape > (1, 1):
+            np.save(path_name, data)
+            print_log(f"$ Image saved to disk: {path_name}.npy", "info")
+        else:
+            raise ValueError(f"Image is empty! Original file: {partial_path}.tif")
+
+    def _save_2d_png(self, data, partial_path):
+        out_path = partial_path + "_2d.png"
+
+        fig = plt.figure()
+        size = (10, 10)
+        fig.set_size_inches(size)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        norm = ImageNormalize(stretch=SqrtStretch())
+
+        ax.set_title("2D Data")
+
+        fig.add_axes(ax)
+        ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
+        fig.savefig(out_path)
+        plt.close(fig)
+        original_filename = os.path.basename(partial_path + ".tif")
+        write_string_to_file(
+            self.m_logger.md_filename,
+            f"{original_filename}\n ![]({out_path})\n",
+            "a",
+        )
+
+    def _save_focal_plane_matrix(self, data: tuple, partial_path: str):
+        focal_plane_matrix, focus_plane = data
+        out_path = partial_path + "_focalPlaneMatrix.png"
+        image_show_with_values(
+            [focal_plane_matrix],
+            title="focal plane = " + f"{focus_plane:.2f}",
+            output_name=out_path,
+        )
+        original_filename = os.path.basename(partial_path + ".tif")
+        write_string_to_file(
+            self.m_logger.md_filename,
+            f"{original_filename}\n ![]({out_path})\n",
+            "a",
+        )
+
 
 def load_json(file_name):
     """Load a JSON file like a python dict
@@ -250,8 +376,6 @@ def load_json(file_name):
     return None
 
 
-
-
 def save_json(data, file_name):
     """Save a python dict as a JSON file
 
@@ -264,51 +388,3 @@ def save_json(data, file_name):
     """
     with open(file_name, mode="w", encoding="utf-8") as json_f:
         json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
-
-
-# class File:
-#     def __init__(self, path, name, ext):
-#         self.path = ""
-#         self.type = []  # Fiducial, barcode, mask, dapi, rna, localization, trace, ...
-#         self.status = []  # projected, registered, filtered
-#         self.reference_to = ""  # path ?
-
-#     def load(self):
-#         pass
-
-#     def save(self):
-#         pass
-
-
-class ImageFile:
-    def __init__(self, path, img_name, ext, label):
-        self.all_path = path
-        self.name = img_name
-        self.extension = ext
-        self.root = self.get_root()
-        # self.acquisition = ""  # DAPI, Barcode, Mask
-        # self.channel = channel
-        self.m_label = label
-        # self.roi = roi
-        # self.cycle = cycle
-
-    def get_root(self):
-        length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
-        return self.all_path[:length]
-
-    def load(self):
-        return io.imread(self.all_path).squeeze()
-
-    def save(self, result, folder_name: str, tag: str):
-        path_name = self.root + os.sep + folder_name + os.sep + self.name + tag
-        if result.shape > (1, 1):
-            np.save(path_name, result)
-            print_log(f"$ Image saved to disk: {path_name}.npy", "info")
-        else:
-            print_log("# Warning, image is empty", "Warning")
-
-
-def remove_extension(filename: str):
-    fl_split = filename.split(".")
-    fl_split.pop()
-    return ".".join(fl_split)

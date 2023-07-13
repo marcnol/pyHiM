@@ -103,6 +103,7 @@ class Image:
                 self.z_range,
             ) = reinterpolate_focal_plane(self.data, self.current_param.param_dict)
             self.focus_plane = self.z_range[0]
+            self.z_range = self.z_range[1]
 
         else:
             # Manual: reads from parameters file

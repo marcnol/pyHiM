@@ -54,12 +54,10 @@ class Project(Feature):
     def __init__(self, params: Parameters):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
-        self.out_folder = "zProject"
-        self.out_tag = "_2d"
+        self.out_folder = params.param_dict["common"]["zProject"]["folder"]
 
         self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
         self.display = params.get_labeled_dict_value("zProject", "display")
-        self.folder_name = params.get_labeled_dict_value("zProject", "folder")
         self.mode = params.get_labeled_dict_value("zProject", "mode")
         self.operation = params.get_labeled_dict_value("zProject", "operation")
         self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
@@ -73,6 +71,14 @@ class Project(Feature):
         self.zmin = params.get_labeled_dict_value("zProject", "zmin")
         self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
 
+        self.out_tags = self.find_out_tags()  # "_2d"
+
+    def find_out_tags(self):
+        tags = ["_2d"]
+        if self.mode == "laplacian":
+            tags.append("_focalPlaneMatrix")
+        return tags
+
     def run(self, img, label: str):
         mode = self.mode[label]
         if mode == "laplacian":
@@ -80,7 +86,7 @@ class Project(Feature):
         # find the correct range for the projection
         img_reduce = self.precise_z_planes(img, mode, label)
         img_projected = self.projection_2d(img_reduce, label)
-        return img_projected
+        return [img_projected]
 
     def check_zmax(self, img_size, label):
         if self.zmax[label] > img_size[0]:
@@ -100,9 +106,7 @@ class Project(Feature):
             raise ValueError(
                 f"Projection mode UNRECOGNIZED: {mode}\n> Available mode: automatic,full,manual,laplacian"
             )
-        print_log(f"$ Image Size={img_size}")
-        print_log(f"$ Focal plane={focus_plane}")
-        print_log(f"> Processing z_range:{z_range}")
+        self.__print_img_properties(z_range, img_size, focus_plane)
         return img[z_range[0] : z_range[-1] + 1]
 
     def _precise_z_planes_auto(self, img, label):
@@ -180,12 +184,13 @@ class Project(Feature):
         focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
             img, block_size_xy=self.block_size[label], window=self.zwindows[label]
         )
+        self.__print_img_properties(z_range[1], img.shape, z_range[0])
         # reassembles image
         output = projection.reassemble_images(
             focal_plane_matrix, block, window=self.zwindows[label]
         )
 
-        return output, focal_plane_matrix, z_range
+        return output, (focal_plane_matrix, z_range[0])
 
     def projection_2d(self, img, label):
         # sums images
@@ -204,6 +209,13 @@ class Project(Feature):
             )
 
         return i_collapsed
+
+    @staticmethod
+    def __print_img_properties(z_range, size, focal_plane):
+        # Outputs image properties to command line
+        print_log(f"> Processing z_range:{z_range}")
+        print_log(f"$ Image Size={size}")
+        print_log(f"$ Focal plane={focal_plane}")
 
     # def z_projection_range(self):
     # find the correct range for the projection
