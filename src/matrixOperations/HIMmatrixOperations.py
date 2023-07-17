@@ -1774,6 +1774,7 @@ def plot_matrix(
     c_min=0,
     cells_to_plot=[],
     filename_ending="_HiMmatrix.png",
+    font_size = 22,
 ):
     n_barcodes = sc_matrix_collated.shape[0]
 
@@ -1809,8 +1810,8 @@ def plot_matrix(
         # plots figure
         fig = plt.figure(figsize=(15, 15))
         pos = plt.imshow(mean_sc_matrix, cmap=c_m)  # colormaps RdBu seismic
-        plt.xlabel("barcode #")
-        plt.ylabel("barcode #")
+        plt.xlabel("barcode #", fontsize=float(font_size) * 1.2)
+        plt.ylabel("barcode #", fontsize=float(font_size) * 1.2)
         plt.title(
             figtitle
             + " | "
@@ -1818,16 +1819,24 @@ def plot_matrix(
             + " barcodes | n="
             + str(n_cells)
             + " | FOVs="
-            + str(number_rois)
+            + str(number_rois),
+            fontsize=float(font_size) * 1.3
         )
         # print("matrix size: {} | barcodes:{}".format(sc_matrix_collated.shape[0],list(unique_barcodes)))
-        plt.xticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes)
-        plt.yticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes)
+        plt.xticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size)
+        plt.yticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size)
         cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
+        cbar.ax.tick_params(labelsize=float(font_size) * 0.8) 
         cbar.minorticks_on()
-        cbar.set_label(cmtitle)
+        cbar.set_label(cmtitle, fontsize=float(font_size) * 1.0)
         plt.clim(c_min, clim)
 
+        # for xtick, ytick in zip(
+        #     fig.xaxis.get_majorticklabels(), fig.yaxis.get_majorticklabels()
+        # ):
+        #     xtick.set_fontsize(font_size)
+        #     ytick.set_fontsize(font_size)
+            
         if len(output_filename.split(".")) > 1:
             if output_filename.split(".")[1] != "png":
                 if len(output_filename.split(".")[1]) == 3:

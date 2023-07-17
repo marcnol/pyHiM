@@ -123,7 +123,7 @@ def parse_arguments():
     if args.fontsize:
         run_parameters["fontsize"] = args.fontsize
     else:
-        run_parameters["fontsize"] = 12
+        run_parameters["fontsize"] = 22
 
     if args.axisLabel:
         run_parameters["axisLabel"] = args.axisLabel
@@ -291,6 +291,7 @@ def main():
         c_m=run_parameters["cmap"],
         cmtitle="distance, um",
         filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
+        font_size=run_parameters["fontsize"],
     )
     print("Output figure: {}".format(outputFileName))
 
