@@ -71,11 +71,11 @@ class Project(Feature):
         self.zmin = params.get_labeled_dict_value("zProject", "zmin")
         self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
 
-        self.out_tags = self.find_out_tags()  # "_2d"
-
-    def find_out_tags(self):
+    def find_out_tags(self, label):
         tags = ["_2d"]
-        if self.mode == "laplacian":
+        # TODO: Check if label exist
+        # (may be this test have to be done in high level like Pipeline initialization)
+        if self.mode[label] == "laplacian":
             tags.append("_focalPlaneMatrix")
         return tags
 
@@ -142,20 +142,18 @@ class Project(Feature):
                     min(self.zmax[label], i_focus_plane + win_sec),
                 )
             )
-
             std_matrix -= np.min(std_matrix)
             std_matrix /= np.max(std_matrix)
 
             try:
                 fitgauss = spo.curve_fit(
-                    gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
+                    projection.gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
                 )
                 focus_plane = int(fitgauss[0][1])
             except RuntimeError:
-                print_log("Warning, too many iterations")
+                print_log("Warning, too many iterations", status="WARN")
                 focus_plane = i_focus_plane
-
-        zmin = max(win_sec, focus_plane - win_sec)
+        zmin = max(win_sec, focus_plane - self.zwindows[label])
         zmax = min(
             nb_of_planes, win_sec + nb_of_planes, focus_plane + self.zwindows[label]
         )
@@ -397,33 +395,6 @@ def make_projections(current_param, current_session, file_name=None):
                     current_session.add(filename_to_process, session_name)
                 else:
                     pass
-
-
-# @jit(nopython=True)
-def gaussian(x, a=1, mean=0, std=0.5):
-    """Gaussian function
-
-    Parameters
-    ----------
-    x : _type_
-        _description_
-    a : int, optional
-        _description_, by default 1
-    mean : int, optional
-        _description_, by default 0
-    std : float, optional
-        _description_, by default 0.5
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-    return (
-        a
-        * (1 / (std * (np.sqrt(2 * np.pi))))
-        * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
-    )
 
 
 # =============================================================================
