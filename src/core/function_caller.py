@@ -5,19 +5,10 @@ Module for high level function calling
 """
 
 
-import logging
 import os
-from datetime import datetime
 
 from core.dask_cluster import DaskCluster
-from core.pyhim_logging import (
-    Log,
-    Logger,
-    Session,
-    print_dashes,
-    print_log,
-    write_string_to_file,
-)
+from core.pyhim_logging import print_log
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import Project, make_projections
