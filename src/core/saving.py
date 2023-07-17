@@ -153,7 +153,6 @@ def image_show_with_values(
 
     """
     number_images = len(matrices)
-    print(f"number_images: {number_images}")
     fig, axes = plt.subplots(1, number_images)
     fig.set_size_inches((number_images * 2, 5))
     fig.suptitle(title)

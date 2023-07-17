@@ -56,31 +56,13 @@ def extract_files(root: str):
     return files
 
 
-# class File:
-#     def __init__(self, path, name, ext):
-#         self.path = ""
-#         self.type = []  # Fiducial, barcode, mask, dapi, rna, localization, trace, ...
-#         self.status = []  # projected, registered, filtered
-#         self.reference_to = ""  # path ?
-
-#     def load(self):
-#         pass
-
-#     def save(self):
-#         pass
-
-
 class ImageFile:
     def __init__(self, path, img_name, ext, label):
         self.all_path = path
         self.name = img_name
         self.extension = ext
         self.root = self.get_root()
-        # self.acquisition = ""  # DAPI, Barcode, Mask
-        # self.channel = channel
         self.m_label = label
-        # self.roi = roi
-        # self.cycle = cycle
 
     def get_root(self):
         length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
@@ -88,14 +70,6 @@ class ImageFile:
 
     def load(self):
         return io.imread(self.all_path).squeeze()
-
-    # def save(self, result, folder_name: str, tag: str):
-    #     path_name = self.root + os.sep + folder_name + os.sep + self.name + tag
-    #     if result.shape > (1, 1):
-    #         np.save(path_name, result)
-    #         print_log(f"$ Image saved to disk: {path_name}.npy", "info")
-    #     else:
-    #         print_log("# Warning, image is empty", "Warning")
 
 
 def remove_extension(filename: str):
