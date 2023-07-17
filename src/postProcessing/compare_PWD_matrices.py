@@ -169,10 +169,27 @@ def calculates_pearson_correlation(x, y):
 
 
 def parses_matrix_to_vector(matrix):
-    matrix_shape = matrix.shape
-    matrix = np.nan_to_num(matrix)
-    return matrix.reshape(matrix_shape[0] * matrix_shape[1])
+    
+    # this just maps the matrix into vector
+    # problem is that diagonal elements are included
+    
+    # matrix_shape = matrix.shape
+    # matrix = np.nan_to_num(matrix)
+    # return matrix.reshape(matrix_shape[0] * matrix_shape[1])
 
+
+    # this version instead only attributes non-diagonal elements
+    matrix_size = matrix.shape[0]
+    vector =[]
+    for i in range(matrix_size):
+        for j in range(i+1,matrix_size):
+            if np.isnan(matrix[i,j]):
+                vector.append(0.0) # otherwise Pearson cannot be calculated
+            else:
+                vector.append(matrix[i,j])
+
+    print(f"$ Converted {matrix_size}x{matrix_size} matrix to vector of length: {len(vector)}")
+    return np.array(vector)
 
 def load_matrix(file):
     return np.load(file)
