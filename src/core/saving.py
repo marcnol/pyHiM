@@ -155,17 +155,21 @@ def image_show_with_values(
     number_images = len(matrices)
     fig, axes = plt.subplots(1, number_images)
     fig.set_size_inches((number_images * 2, 5))
-    ax = axes.ravel()
     fig.suptitle(title)
     cbar_kw = {}
     cbar_kw["fraction"] = 0.046
     cbar_kw["pad"] = 0.04
-
     if len(cbarlabels) != number_images:
         cbarlabels = cbarlabels[0] * number_images
 
-    for matrix, axis, cbarlabel in zip(matrices, ax, cbarlabels):
-        image_show_with_values_single(axis, matrix, cbarlabel, fontsize, cbar_kw)
+    if number_images == 1:
+        ax = axes
+        image_show_with_values_single(ax, matrices[0], cbarlabels[0], fontsize, cbar_kw)
+
+    else:
+        ax = axes.ravel()
+        for matrix, axis, cbarlabel in zip(matrices, ax, cbarlabels):
+            image_show_with_values_single(axis, matrix, cbarlabel, fontsize, cbar_kw)
 
     fig.tight_layout()
     plt.savefig(output_name)

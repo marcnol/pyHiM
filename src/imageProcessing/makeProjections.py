@@ -54,12 +54,10 @@ class Project(Feature):
     def __init__(self, params: Parameters):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
-        self.out_folder = "zProject"
-        self.out_tag = "_2d"
+        self.out_folder = params.param_dict["common"]["zProject"]["folder"]
 
         self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
         self.display = params.get_labeled_dict_value("zProject", "display")
-        self.folder_name = params.get_labeled_dict_value("zProject", "folder")
         self.mode = params.get_labeled_dict_value("zProject", "mode")
         self.operation = params.get_labeled_dict_value("zProject", "operation")
         self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
@@ -73,6 +71,14 @@ class Project(Feature):
         self.zmin = params.get_labeled_dict_value("zProject", "zmin")
         self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
 
+    def find_out_tags(self, label):
+        tags = ["_2d"]
+        # TODO: Check if label exist
+        # (may be this test have to be done in high level like Pipeline initialization)
+        if self.mode[label] == "laplacian":
+            tags.append("_focalPlaneMatrix")
+        return tags
+
     def run(self, img, label: str):
         mode = self.mode[label]
         if mode == "laplacian":
@@ -80,7 +86,7 @@ class Project(Feature):
         # find the correct range for the projection
         img_reduce = self.precise_z_planes(img, mode, label)
         img_projected = self.projection_2d(img_reduce, label)
-        return img_projected
+        return [img_projected]
 
     def check_zmax(self, img_size, label):
         if self.zmax[label] > img_size[0]:
@@ -100,9 +106,7 @@ class Project(Feature):
             raise ValueError(
                 f"Projection mode UNRECOGNIZED: {mode}\n> Available mode: automatic,full,manual,laplacian"
             )
-        print_log(f"$ Image Size={img_size}")
-        print_log(f"$ Focal plane={focus_plane}")
-        print_log(f"> Processing z_range:{z_range}")
+        self.__print_img_properties(z_range, img_size, focus_plane)
         return img[z_range[0] : z_range[-1] + 1]
 
     def _precise_z_planes_auto(self, img, label):
@@ -138,20 +142,18 @@ class Project(Feature):
                     min(self.zmax[label], i_focus_plane + win_sec),
                 )
             )
-
             std_matrix -= np.min(std_matrix)
             std_matrix /= np.max(std_matrix)
 
             try:
                 fitgauss = spo.curve_fit(
-                    gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
+                    projection.gaussian, axis_z, std_matrix[axis_z[0] : axis_z[-1] + 1]
                 )
                 focus_plane = int(fitgauss[0][1])
             except RuntimeError:
-                print_log("Warning, too many iterations")
+                print_log("Warning, too many iterations", status="WARN")
                 focus_plane = i_focus_plane
-
-        zmin = max(win_sec, focus_plane - win_sec)
+        zmin = max(win_sec, focus_plane - self.zwindows[label])
         zmax = min(
             nb_of_planes, win_sec + nb_of_planes, focus_plane + self.zwindows[label]
         )
@@ -180,12 +182,13 @@ class Project(Feature):
         focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
             img, block_size_xy=self.block_size[label], window=self.zwindows[label]
         )
+        self.__print_img_properties(z_range[1], img.shape, z_range[0])
         # reassembles image
         output = projection.reassemble_images(
             focal_plane_matrix, block, window=self.zwindows[label]
         )
 
-        return output, focal_plane_matrix, z_range
+        return output, (focal_plane_matrix, z_range[0])
 
     def projection_2d(self, img, label):
         # sums images
@@ -204,6 +207,13 @@ class Project(Feature):
             )
 
         return i_collapsed
+
+    @staticmethod
+    def __print_img_properties(z_range, size, focal_plane):
+        # Outputs image properties to command line
+        print_log(f"> Processing z_range:{z_range}")
+        print_log(f"$ Image Size={size}")
+        print_log(f"$ Focal plane={focal_plane}")
 
     # def z_projection_range(self):
     # find the correct range for the projection
@@ -385,33 +395,6 @@ def make_projections(current_param, current_session, file_name=None):
                     current_session.add(filename_to_process, session_name)
                 else:
                     pass
-
-
-# @jit(nopython=True)
-def gaussian(x, a=1, mean=0, std=0.5):
-    """Gaussian function
-
-    Parameters
-    ----------
-    x : _type_
-        _description_
-    a : int, optional
-        _description_, by default 1
-    mean : int, optional
-        _description_, by default 0
-    std : float, optional
-        _description_, by default 0.5
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-    return (
-        a
-        * (1 / (std * (np.sqrt(2 * np.pi))))
-        * (np.exp(-((x - mean) ** 2) / ((2 * std) ** 2)))
-    )
 
 
 # =============================================================================

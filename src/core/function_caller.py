@@ -5,19 +5,10 @@ Module for high level function calling
 """
 
 
-import logging
 import os
-from datetime import datetime
 
 from core.dask_cluster import DaskCluster
-from core.pyhim_logging import (
-    Log,
-    Logger,
-    Session,
-    print_dashes,
-    print_log,
-    write_string_to_file,
-)
+from core.pyhim_logging import print_log
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import Project, make_projections
@@ -34,14 +25,12 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(
-        self, data_m, cmd_list, global_param, is_parallel, session_name="HiM_analysis"
-    ):
+    def __init__(self, data_m, cmd_list, global_param, is_parallel, logger):
         self.m_data_m = data_m
         self.cmds = cmd_list
         self.params = global_param
         self.parallel = is_parallel
-        self.m_logger = Logger(self.m_data_m.m_data_path, self.parallel, session_name)
+        self.m_logger = logger
         self.m_dask = None
         self.tempo_var = {"makeProjections": Project}
         self.features = []
@@ -176,9 +165,12 @@ class Pipeline:
             else:
                 for f2p in files_to_process:
                     data = f2p.load()
-                    result = feat.run(data, f2p.m_label)
-                    # result = feat.run(data, reference, table)
-                    f2p.save(result, feat.out_folder, feat.out_tag)
+                    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
+                    results = feat.run(data, f2p.m_label)
+                    # results = feat.run(data, reference, table)
+                    self.m_data_m.save_data(
+                        results, feat.find_out_tags(f2p.m_label), feat.out_folder, f2p
+                    )
 
 
 # =============================================================================

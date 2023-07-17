@@ -95,7 +95,7 @@ class Image:
             (zmin, zmax) = (0, self.image_size[0])
             z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        if self.current_param.param_dict["zProject"]["mode"] == "laplacian":
+        elif self.current_param.param_dict["zProject"]["mode"] == "laplacian":
             print_log("Stacking using Laplacian variance...")
             (
                 self.data_2d,
@@ -103,6 +103,7 @@ class Image:
                 self.z_range,
             ) = reinterpolate_focal_plane(self.data, self.current_param.param_dict)
             self.focus_plane = self.z_range[0]
+            self.z_range = self.z_range[1]
 
         else:
             # Manual: reads from parameters file

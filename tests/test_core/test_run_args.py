@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import tempfile
-
 import pytest
 
 from core import run_args as ra
