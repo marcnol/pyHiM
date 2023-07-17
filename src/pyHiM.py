@@ -67,7 +67,10 @@ def main(command_line_arguments=None):
     print_log(f"$ Started logging to: {logger.log_file}")
     print_log(f"$ labels to process: {labels}\n")
 
-    pipe.run()
+    # TODO: Test parallel mode with pipe.run
+    # If the projection cmd a require in sequential mode, we use the new way to run makeProjection
+    if not pipe.parallel:
+        pipe.run()
 
     for label in labels:
         # sets parameters
@@ -87,9 +90,11 @@ def main(command_line_arguments=None):
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
 
-        # # [projects 3D images in 2d]
-        # if "makeProjections" in run_args.cmd_list:
-        #     pipe.make_projections(current_param)
+        # If the projection cmd a require in parallel mode, we use the old way to run makeProjection
+        if pipe.parallel:
+            # [projects 3D images in 2d]
+            if "makeProjections" in run_args.cmd_list:
+                pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
