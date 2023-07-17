@@ -39,7 +39,10 @@ def extract_files(root: str):
     for dirpath, dirnames, filenames in os.walk(root):
         for filename in filenames:
             split_filename = filename.split(".")
-            extension = split_filename.pop()
+            if len(split_filename) > 1:
+                extension = split_filename.pop()
+            else:
+                extension = None
             short_filename = ".".join(split_filename)
             filepath = os.path.join(dirpath, filename)
             files.append((filepath, short_filename, extension))
