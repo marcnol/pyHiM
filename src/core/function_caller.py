@@ -174,10 +174,11 @@ class Pipeline:
             else:
                 for f2p in files_to_process:
                     data = f2p.load()
+                    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
                     results = feat.run(data, f2p.m_label)
                     # results = feat.run(data, reference, table)
                     self.m_data_m.save_data(
-                        results, feat.out_tags, feat.out_folder, f2p
+                        results, feat.find_out_tags(f2p.m_label), feat.out_folder, f2p
                     )
 
 

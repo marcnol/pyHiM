@@ -306,7 +306,7 @@ class DataManager:
                 self._save_2d_npy(res, partial_path)
                 self._save_2d_png(res, partial_path)
             elif tag == "_focalPlaneMatrix":
-                self._save_focal_plane_matrix((res, partial_path))
+                self._save_focal_plane_matrix(res, partial_path)
             else:
                 raise SystemExit(f"tag UNRECOGNIZED: {tag}")
 
