@@ -18,6 +18,7 @@ building_traces/build_traces
 building_traces/trace_selector
 building_traces/trace_combinator
 building_traces/trace_filter
+building_traces/trace_analyser
 building_traces/build_matrices
 ```
 
