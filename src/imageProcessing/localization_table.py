@@ -58,11 +58,11 @@ class LocalizationTable:
             number_unique_barcodes = unique_barcodes.shape[0]
 
             print(
-                "Number of barcodes read from barcode_map: {}".format(
+                "$ Number of barcodes read from barcode_map: {}".format(
                     number_unique_barcodes
                 )
             )
-            print("Unique Barcodes detected: {}".format(unique_barcodes))
+            print("$ Unique Barcodes detected: {}".format(unique_barcodes))
         else:
             print("\n\n# ERROR: could not find coordinates file: {}".format(file))
             sys.exit()
@@ -91,7 +91,7 @@ class LocalizationTable:
         None.
 
         """
-        print(f"Saving output table as {file_name} ...")
+        print(f"$ Saving output table as {file_name} ...")
 
         try:
             barcode_map.meta["comments"].append(comments)
@@ -174,7 +174,7 @@ class LocalizationTable:
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
-            print(f"Plotting barcode localization map for ROI: {n_roi}")
+            print(f"> Plotting barcode localization map for ROI: {n_roi}")
             color_dict = build_color_dict(barcode_map, key="Barcode #")
 
             # initializes figure

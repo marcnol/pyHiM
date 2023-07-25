@@ -132,7 +132,7 @@ class ChromatinTraceTable:
         None.
 
         """
-        print(f"Saving output table as {file_name} ...")
+        print(f"$ Saving output table as {file_name} ...")
 
         try:
             table.meta["comments"].append(comments)
@@ -623,7 +623,7 @@ class ChromatinTraceTable:
             # creates sub Table for this ROI
             data_roi = data_indexed.groups[i_roi]
             n_roi = data_roi["ROI #"][0]
-            print(f"Plotting barcode localization map for ROI: {n_roi}")
+            print(f"> Plotting barcode localization map for ROI: {n_roi}")
             color_dict = build_color_dict(data_roi, key="Barcode #")
             n_barcodes = np.unique(data_roi["Barcode #"]).shape[0]
 
@@ -651,6 +651,7 @@ class ChromatinTraceTable:
                 masks = np.max(masks, axis=0)
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
+            print(f"$ Pixel_size = {pixel_size}")
             # makes plot
             plots_localization_projection(
                 x / pixel_size[0], y / pixel_size[1], ax[0], colors, titles[0]

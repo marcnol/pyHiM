@@ -75,7 +75,8 @@ class BuildTraces:
         # initialize with default values
         self.current_folder = []
         self.mask_identifier = ["DAPI"]  # default mask label
-
+        self.masks = np.zeros((2048, 2048))
+        
     def initializes_masks(self, masks):
         self.masks = masks
         self.n_cells_assigned = 0
@@ -474,7 +475,7 @@ class BuildTraces:
 
         print_log("-" * 80)
         print_log(
-            " Loading masks and pre-processing barcodes for Mask <{}> for {} rois".format(
+            "> Loading masks and pre-processing barcodes for Mask <{}> for {} rois".format(
                 self.mask_identifier, number_rois
             )
         )
@@ -724,8 +725,9 @@ class BuildTraces:
 
                 # plots results
                 self.trace_table.plots_traces(
-                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"]
-                )
+                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
+                    masks=self.masks,
+                    )
 
                 print_log(
                     f"$ Traces built. Saved output table as {output_table_filename}"
@@ -737,7 +739,7 @@ class BuildTraces:
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
-
+        print_log(f"$ {len(barcode_map)} localizations in {os.path.basename(file)}")
         if "3D" in os.path.basename(file):
             self.ndims = 3
             self.pixel_size = {
@@ -749,6 +751,9 @@ class BuildTraces:
             self.ndims = 2
             self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
 
+        if "masking" in self.tracing_method:
+            self.build_trace_by_masking(barcode_map)
+            
         if (
             "clustering" in self.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
@@ -758,8 +763,7 @@ class BuildTraces:
                 f"! Warning: localization files in 2D will not be processed using clustering.\n"
             )
 
-        if "masking" in self.tracing_method:
-            self.build_trace_by_masking(barcode_map)
+
 
     def run(self):
         """
