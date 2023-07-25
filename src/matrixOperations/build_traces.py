@@ -475,7 +475,7 @@ class BuildTraces:
 
         print_log("-" * 80)
         print_log(
-            " Loading masks and pre-processing barcodes for Mask <{}> for {} rois".format(
+            "> Loading masks and pre-processing barcodes for Mask <{}> for {} rois".format(
                 self.mask_identifier, number_rois
             )
         )

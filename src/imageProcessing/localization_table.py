@@ -91,7 +91,7 @@ class LocalizationTable:
         None.
 
         """
-        print(f"Saving output table as {file_name} ...")
+        print(f"$ Saving output table as {file_name} ...")
 
         try:
             barcode_map.meta["comments"].append(comments)
@@ -174,7 +174,7 @@ class LocalizationTable:
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
-            print(f"Plotting barcode localization map for ROI: {n_roi}")
+            print(f"> Plotting barcode localization map for ROI: {n_roi}")
             color_dict = build_color_dict(barcode_map, key="Barcode #")
 
             # initializes figure

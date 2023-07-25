@@ -132,7 +132,7 @@ class ChromatinTraceTable:
         None.
 
         """
-        print(f"Saving output table as {file_name} ...")
+        print(f"$ Saving output table as {file_name} ...")
 
         try:
             table.meta["comments"].append(comments)
