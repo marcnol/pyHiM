@@ -739,7 +739,7 @@ class BuildTraces:
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
-
+        print_log(f"$ {len(barcode_map)} localizations in {os.path.basename(file)}")
         if "3D" in os.path.basename(file):
             self.ndims = 3
             self.pixel_size = {
@@ -751,6 +751,9 @@ class BuildTraces:
             self.ndims = 2
             self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
 
+        if "masking" in self.tracing_method:
+            self.build_trace_by_masking(barcode_map)
+            
         if (
             "clustering" in self.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
@@ -760,8 +763,7 @@ class BuildTraces:
                 f"! Warning: localization files in 2D will not be processed using clustering.\n"
             )
 
-        if "masking" in self.tracing_method:
-            self.build_trace_by_masking(barcode_map)
+
 
     def run(self):
         """
