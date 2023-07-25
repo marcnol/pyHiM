@@ -247,8 +247,12 @@ class RegisterLocalizations:
             # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
 
         if self.remove_uncorrected_localizations:
+            nb_loc_before = len(barcode_map.groups[0])
+            # Remove rows from the end
+            for i in list_uncorrected_barcodes[::-1]:
+                barcode_map.remove_row(i)
             print_log(
-                f"$ {len(list_uncorrected_barcodes)} localizations out of {len(barcode_map.groups[0])} were removed."
+                f"$ {len(list_uncorrected_barcodes)} localizations out of {len(nb_loc_before)} were removed."
             )
         else:
             print_log(
