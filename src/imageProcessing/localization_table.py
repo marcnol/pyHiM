@@ -58,11 +58,11 @@ class LocalizationTable:
             number_unique_barcodes = unique_barcodes.shape[0]
 
             print(
-                "Number of barcodes read from barcode_map: {}".format(
+                "$ Number of barcodes read from barcode_map: {}".format(
                     number_unique_barcodes
                 )
             )
-            print("Unique Barcodes detected: {}".format(unique_barcodes))
+            print("$ Unique Barcodes detected: {}".format(unique_barcodes))
         else:
             print("\n\n# ERROR: could not find coordinates file: {}".format(file))
             sys.exit()
