@@ -175,10 +175,15 @@ def matrix_2_pdb(
 ):
     # gets ensemble matrix from list of single matrices
     pixel_size = 1
-    cells_to_plot = range(sc_matrix.shape[2])
-    ensemble_matrix, _ = calculate_ensemble_pwd_matrix(
-        sc_matrix, pixel_size, cells_to_plot, mode="median"
-    )
+    
+    if len(sc_matrix.shape) == 3:
+        cells_to_plot = range(sc_matrix.shape[2])
+        ensemble_matrix, _ = calculate_ensemble_pwd_matrix(
+            sc_matrix, pixel_size, cells_to_plot, mode="median"
+        )
+    elif len(sc_matrix.shape) == 2:
+        ensemble_matrix = sc_matrix
+        
     ensemble_matrix = remove_nans(ensemble_matrix, min_number_nans=3)
 
     np.save(folder_path + os.sep + output_file + ".npy", ensemble_matrix)
@@ -201,7 +206,7 @@ def runtime(
             if os.path.exists(matrix_file):
                 sc_matrix = np.load(matrix_file)
 
-                matrix_2_pdb(sc_matrix, folder_path, barcode_type=barcode_type)
+                matrix_2_pdb(sc_matrix, folder_path, barcode_type=barcode_type, output_file=matrix_file.split('.')[0])
 
             else:
                 print("! ERROR: could not find {}".format(matrix_file))
