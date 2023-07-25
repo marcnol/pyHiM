@@ -139,9 +139,9 @@ class DataManager:
         folder_path = self.out_path + os.sep + folder_name
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-            print(f"Folder '{folder_path}' created successfully.")
+            print(f"$ Folder '{folder_path}' created successfully.")
         else:
-            print(f"Folder '{folder_path}' already exists.")
+            print(f"! Folder '{folder_path}' already exists.")
 
     def find_param_file(self, params_filename):
         for path, name, ext in self.all_files:

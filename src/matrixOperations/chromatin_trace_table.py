@@ -623,7 +623,7 @@ class ChromatinTraceTable:
             # creates sub Table for this ROI
             data_roi = data_indexed.groups[i_roi]
             n_roi = data_roi["ROI #"][0]
-            print(f"Plotting barcode localization map for ROI: {n_roi}")
+            print(f"> Plotting barcode localization map for ROI: {n_roi}")
             color_dict = build_color_dict(data_roi, key="Barcode #")
             n_barcodes = np.unique(data_roi["Barcode #"]).shape[0]
 
