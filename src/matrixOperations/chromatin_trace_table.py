@@ -651,6 +651,7 @@ class ChromatinTraceTable:
                 masks = np.max(masks, axis=0)
             ax[0].imshow(masks, cmap=lbl_cmap, alpha=0.3)
 
+            print(f"$ Pixel_size = {pixel_size}")
             # makes plot
             plots_localization_projection(
                 x / pixel_size[0], y / pixel_size[1], ax[0], colors, titles[0]
