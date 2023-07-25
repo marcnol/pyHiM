@@ -75,7 +75,8 @@ class BuildTraces:
         # initialize with default values
         self.current_folder = []
         self.mask_identifier = ["DAPI"]  # default mask label
-
+        self.masks = np.zeros((2048, 2048))
+        
     def initializes_masks(self, masks):
         self.masks = masks
         self.n_cells_assigned = 0
@@ -724,8 +725,9 @@ class BuildTraces:
 
                 # plots results
                 self.trace_table.plots_traces(
-                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"]
-                )
+                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
+                    masks=self.masks,
+                    )
 
                 print_log(
                     f"$ Traces built. Saved output table as {output_table_filename}"
