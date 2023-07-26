@@ -29,7 +29,8 @@ class DaskCluster:
         number_cores_available = multiprocessing.cpu_count()
 
         # we want at least 12 GB per worker
-        _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
+        # _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
+        free_m = int(os.popen("free -t -m").readlines()[1].split()[-1])
 
         max_number_threads = int(
             np.min(
