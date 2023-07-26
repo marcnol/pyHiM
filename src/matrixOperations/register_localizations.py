@@ -252,7 +252,7 @@ class RegisterLocalizations:
             for i in list_uncorrected_barcodes[::-1]:
                 barcode_map.remove_row(i)
             print_log(
-                f"$ {len(list_uncorrected_barcodes)} localizations out of {len(nb_loc_before)} were removed."
+                f"$ {len(list_uncorrected_barcodes)} localizations out of {nb_loc_before} were removed."
             )
         else:
             print_log(
