@@ -29,7 +29,7 @@ from roipoly import MultiRoi
 from core.data_manager import DataManager
 from core.folder import Folders
 from core.parameters import Parameters
-from core.pyhim_logging import Log, print_session_name, write_string_to_file
+from core.pyhim_logging import Logger
 from imageProcessing.imageProcessing import Image
 
 try:
@@ -329,24 +329,12 @@ def main():
     print(f"parameters> root_folder: {root_folder}")
     now = datetime.now()
 
-    datam = DataManager(root_folder)
+    logger = Logger(root_folder, session_name="processSNDchannel")
+
+    datam = DataManager(root_folder, logger)
     raw_dict = datam.load_user_param()
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path)
     labels = current_param.param_dict["labels"]
-
-    session_name = "processSNDchannel"
-
-    # setup logs
-    current_log = Log(root_folder)
-    current_log.add_simple_text(
-        f"\n^^^^^^^^^^^^^^^^^^^^^^^^^^{session_name}^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"
-    )
-    current_log.report(f"Process SND channel MD: {current_log.markdown_filename}")
-    write_string_to_file(
-        current_log.markdown_filename,
-        f"""# Process SND channel {now.strftime("%d/%m/%Y %H:%M:%S")}""",
-        "w",
-    )  # initialises MD file
 
     for label in labels:
         # sets parameters

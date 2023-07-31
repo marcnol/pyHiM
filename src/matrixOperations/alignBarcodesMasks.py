@@ -319,7 +319,7 @@ class CellID:
             flux_min = self.current_param.param_dict["buildsPWDmatrix"][flux_key]
         else:
             flux_min = 0
-            print_log("# Flux min not found. Set to {}!".format(flux_min))
+            print_log(f"# Flux min not found. Set to {flux_min}!")
 
         if "toleranceDrift" in self.current_param.param_dict["buildsPWDmatrix"]:
             tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
@@ -334,13 +334,13 @@ class CellID:
                 1,
                 1,
             )  # defines default anisotropic tolerance_drift (z,x,y)
-            print_log("# toleranceDrift not found. Set to {}!".format(tolerance_drift))
+            print_log(f"# toleranceDrift not found. Set to {tolerance_drift}!")
 
         if "blockSize" in self.current_param.param_dict["alignImages"]:
             block_size = self.current_param.param_dict["alignImages"]["blockSize"]
         else:
             block_size = 256
-            print_log("# blockSize not found. Set to {}!".format(block_size))
+            print_log(f"# blockSize not found. Set to {block_size}!")
 
         print_log(
             "\n$ ndims = {}\n$ Flux min = {} \n$ ToleranceDrift = {} px\n$ Reference barcode = {}".format(
@@ -438,21 +438,18 @@ class CellID:
         self.n_barcodes_in_mask = n_barcodes_in_mask
 
         print_log(
-            "$ Number of localizations passing quality test: {} / {}".format(
-                sum(keep_quality_all), n_barcodes_roi
-            )
+            f"$ Number of localizations passing quality test: \
+                {sum(keep_quality_all)} / {n_barcodes_roi}"
         )
 
         print_log(
-            "$ Number of localizations passing alignment test: {} / {}".format(
-                sum(keep_alignment_all), n_barcodes_roi
-            )
+            f"$ Number of localizations passing alignment test: \
+                {sum(keep_alignment_all)} / {n_barcodes_roi}"
         )
 
         print_log(
-            "$ Number of cells assigned: {} | discarded: {}".format(
-                self.n_cells_assigned, self.n_cells_unassigned
-            )
+            f"$ Number of cells assigned: {self.n_cells_assigned} \
+                | discarded: {self.n_cells_unassigned}"
         )
 
     def search_local_shift(
@@ -533,9 +530,7 @@ class CellID:
 
         # keeps uncorrected values if no match is found
         if not _found_match:
-            print_log(
-                "# Did not find match for ROI #{} barcode #{}".format(roi, barcode)
-            )
+            print_log(f"# Did not find match for ROI #{roi} barcode #{barcode}")
             zxy_corrected = zxy_uncorrected
             self.found_match.append(False)
         else:
@@ -576,9 +571,7 @@ class CellID:
 
         # keeps uncorrected values if no match is found
         if not _found_match:
-            print_log(
-                "# Did not find match for CellID #{} in ROI #{}".format(cell_id, roi)
-            )
+            print_log(f"# Did not find match for CellID #{cell_id} in ROI #{roi}")
             zxy_corrected = zxy_uncorrected
             self.found_match.append(False)
         else:
@@ -708,7 +701,7 @@ class CellID:
             )
         )
 
-        print_log("$ Coordinates dimensions: {}".format(self.ndims))
+        print_log(f"$ Coordinates dimensions: {self.ndims}")
 
         sc_distance_table = Table()
         sc_distance_table["Cuid"] = self.cuid
@@ -742,7 +735,7 @@ class CellID:
         """
         # [ builds sc_distance_table ]
         self.builds_sc_distance_table()
-        print_log("$ Cells with barcodes found: {}".format(len(self.sc_distance_table)))
+        print_log(f"$ Cells with barcodes found: {len(self.sc_distance_table)}")
 
         # [ builds sc_matrix ]
         number_matrices = len(self.sc_distance_table)  # z dimensions of sc_matrix
@@ -826,9 +819,7 @@ def calculate_n_matrix(sc_matrix):
 def load_local_alignment(current_param, data_folder):
     if "None" in current_param.param_dict["alignImages"]["localAlignment"]:
         print_log(
-            "\n\n$ localAlignment option set to {}".format(
-                current_param.param_dict["alignImages"]["localAlignment"]
-            )
+            f"""\n\n$ localAlignment option set to {current_param.param_dict["alignImages"]["localAlignment"]}"""
         )
         return False, Table()
     else:
@@ -846,18 +837,14 @@ def _load_local_alignment(data_folder, mode):
             local_alignment_filename, format="ascii.ecsv"
         )
         alignment_results_table_read = True
-        print_log(
-            "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
-                local_alignment_filename, mode
-            )
-        )
-        print_log("$ Number of records: {}".format(len(alignment_results_table)))
+        print_log(f"$ LocalAlignment file loaded: {local_alignment_filename}")
+        print_log(f"$ Will correct coordinates using {mode} alignment")
+        print_log(f"$ Number of records: {len(alignment_results_table)}")
     else:
         print_log(
-            "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-                local_alignment_filename
-            )
+            f"\n\n# Warning: could not find localAlignment: {local_alignment_filename}"
         )
+        print_log("\tProceeding with only global alignments...")
         alignment_results_table_read = False
         alignment_results_table = Table()
 
@@ -887,23 +874,17 @@ def load_barcode_map(filename_barcode_coordinates, ndims):
     if os.path.exists(filename_barcode_coordinates):
         barcode_map = Table.read(filename_barcode_coordinates, format="ascii.ecsv")
         print_log(
-            "$ Successfully loaded barcode localizations file: {}".format(
-                filename_barcode_coordinates
-            )
+            f"$ Successfully loaded barcode localizations file: {filename_barcode_coordinates}"
         )
 
         unique_barcodes = np.unique(barcode_map["Barcode #"].data)
         number_unique_barcodes = unique_barcodes.shape[0]
 
-        print_log(
-            "Number Barcodes read from barcode_map: {}".format(number_unique_barcodes)
-        )
-        print_log("Unique Barcodes detected: {}".format(unique_barcodes))
+        print_log(f"Number Barcodes read from barcode_map: {number_unique_barcodes}")
+        print_log(f"Unique Barcodes detected: {unique_barcodes}")
     else:
         print_log(
-            "\n\n# ERROR: could not find coordinates file: {}".format(
-                filename_barcode_coordinates
-            )
+            f"\n\n# ERROR: could not find coordinates file: {filename_barcode_coordinates}"
         )
         sys.exit()
 
@@ -1138,7 +1119,7 @@ def build_pwd_matrix(
     # processes tables
     barcode_map_roi = barcode_map.group_by("ROI #")
     number_rois = len(barcode_map_roi.groups.keys)
-    print_log("\n$ rois detected: {}".format(number_rois))
+    print_log(f"\n$ rois detected: {number_rois}")
 
     # loops over rois
     files_in_folder = glob.glob(current_folder + os.sep + "*.tif")
@@ -1152,9 +1133,7 @@ def build_pwd_matrix(
 
         print_log("------------------------------------------------------------------")
         print_log(
-            "> Loading masks and pre-processing barcodes for Mask <{}> ROI# {}".format(
-                mask_identifier, n_roi
-            )
+            f"> Loading masks and pre-processing barcodes for Mask <{mask_identifier}> ROI# {n_roi}"
         )
         print_log("------------------------------------------------------------------")
 
@@ -1251,13 +1230,9 @@ def build_pwd_matrix(
             ###############################################################################
             else:
                 print_log(
-                    "# Error, no mask file found for ROI: {}, segmentedMasks: {}\n".format(
-                        n_roi, filename_barcode_coordinates
-                    )
+                    f"# Error, no mask file found for ROI: {n_roi}, segmentedMasks: {filename_barcode_coordinates}\n"
                 )
-                print_log(
-                    "# File I was searching for: {}".format(full_filename_roi_masks)
-                )
+                print_log(f"# File I was searching for: {full_filename_roi_masks}")
                 print_log("# Debug: ")
                 for file in files_in_folder:
                     if (
@@ -1312,9 +1287,7 @@ def build_pwd_matrix(
             )
         else:
             print_log(
-                "# Nothing to plot. Single cell matrix is empty. Number of cells: {}".format(
-                    sc_matrix_collated.shape[2]
-                )
+                f"# Nothing to plot. Single cell matrix is empty. Number of cells: {sc_matrix_collated.shape[2]}"
             )
 
 
@@ -1341,7 +1314,7 @@ def process_pwd_matrices(current_param, current_session):
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_session_name(session_name)
-    print_log("$ folders read: {}".format(len(data_folder.list_folders)))
+    print_log(f"$ folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"## {session_name}\n",
@@ -1352,10 +1325,10 @@ def process_pwd_matrices(current_param, current_session):
     for current_folder in data_folder.list_folders:
         # files_folder=glob.glob(current_folder+os.sep+'*.tif')
         data_folder.create_folders(current_folder, current_param)
-        print_log("> Processing Folder: {}".format(current_folder))
+        print_log(f"> Processing Folder: {current_folder}")
 
         available_masks = current_param.param_dict["buildsPWDmatrix"]["masks2process"]
-        print_log("> Masks labels: {}".format(available_masks))
+        print_log(f"> Masks labels: {available_masks}")
 
         for mask_label in available_masks.keys():
             mask_identifier = available_masks[mask_label]
@@ -1366,7 +1339,7 @@ def process_pwd_matrices(current_param, current_session):
             if os.path.exists(filename_barcode_coordinates):
                 # 2D
                 output_filename = data_folder.output_files["buildsPWDmatrix"]
-                print_log("> 2D processing: {}".format(output_filename))
+                print_log(f"> 2D processing: {output_filename}")
 
                 if "pixelSizeXY" in current_param.param_dict["acquisition"].keys():
                     pixel_size_xy = current_param.param_dict["acquisition"][
@@ -1393,7 +1366,7 @@ def process_pwd_matrices(current_param, current_session):
             )
             if os.path.exists(filename_barcode_coordinates):
                 output_filename = data_folder.output_files["buildsPWDmatrix"] + "_3D"
-                print_log("> 3D processing: {}".format(output_filename))
+                print_log(f"> 3D processing: {output_filename}")
 
                 if (
                     "pixelSizeZ" in current_param.param_dict["acquisition"].keys()
@@ -1435,4 +1408,4 @@ def process_pwd_matrices(current_param, current_session):
             # tights loose ends
             current_session.add(current_folder, session_name)
 
-            print_log("HiM matrix in {} processed".format(current_folder), "info")
+            print_log(f"HiM matrix in {current_folder} processed", "info")

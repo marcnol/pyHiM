@@ -71,7 +71,7 @@ class AnalysisHiMMatrix:
             list_data = json.load(json_file)
 
         dataset_name = list(list_data.keys())[0]
-        print("Dataset: {}".format(dataset_name))
+        print(f"Dataset: {dataset_name}")
 
         output_filename = (
             self.data_folder
@@ -86,7 +86,7 @@ class AnalysisHiMMatrix:
         filename_parameters_json = output_filename + "_parameters.json"
         with open(filename_parameters_json, encoding="utf-8") as json_file:
             folders_to_load = json.load(json_file)
-        print("Loading parameter file:".format(filename_parameters_json))
+        print(f"Loading parameter file:{filename_parameters_json}")
 
         # Creates filenames to be loaded
         data_files = {}
@@ -103,7 +103,7 @@ class AnalysisHiMMatrix:
 
         # loads datasets: numpy matrices
         data = {}
-        print("Loading datasets from: {}".format(output_filename))
+        print(f"Loading datasets from: {output_filename}")
         for i_data_file in data_files.keys():
             print(
                 "Loaded: {}: <{}>".format(
@@ -118,16 +118,14 @@ class AnalysisHiMMatrix:
         # loads datasets: lists
         run_name = load_list(output_filename + "_runName.csv")
         data["runName"] = run_name
-        print("Loaded runNames: {}".format(data["runName"]))
+        print(f"""Loaded runNames: {data["runName"]}""")
 
         data["uniqueBarcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
-        print("Loaded barcodes #: {}".format(data["uniqueBarcodes"]))
+        print(f"""Loaded barcodes #: {data["uniqueBarcodes"]}""")
         self.number_barcodes = len(data["uniqueBarcodes"])
 
-        print(
-            "Total number of cells loaded: {}".format(data["SCmatrixCollated"].shape[2])
-        )
-        print("Number Datasets loaded: {}".format(len(data["runName"])))
+        print(f"""Total number of cells loaded: {data["SCmatrixCollated"].shape[2]}""")
+        print(f"""Number Datasets loaded: {len(data["runName"])}""")
 
         # Exports data
         self.data = data
@@ -160,7 +158,7 @@ class AnalysisHiMMatrix:
         pos = ifigure.imshow(matrix, cmap=c_m)  # colormaps RdBu seismic
 
         if show_title:
-            title_text = "{} | N = {} | n = {}".format(fig_title, n_cells, n_datasets)
+            title_text = f"{fig_title} | N = {n_cells} | n = {n_datasets}"
             ifigure.title.set_text(title_text)
 
         # plots figure
@@ -169,7 +167,7 @@ class AnalysisHiMMatrix:
             if not axis_ticks:
                 ifigure.set_xticklabels(())
             else:
-                print("barcodes:{}".format(unique_barcodes))
+                print(f"barcodes:{unique_barcodes}")
                 # ifigure.set_xticks(np.arange(matrix.shape[0]),unique_barcodes)
                 ifigure.set_xticklabels(unique_barcodes)
 
@@ -255,7 +253,7 @@ class AnalysisHiMMatrix:
             n_cells = len(cells_with_label)
         else:
             n_cells = self.data["SCmatrixCollated"].shape[2]
-        print("n_cells selected with label: {}".format(n_cells))
+        print(f"n_cells selected with label: {n_cells}")
         return n_cells
 
     def retrieve_sc_matrix(self):
@@ -294,7 +292,7 @@ class AnalysisHiMMatrix:
                 new_cell += 1
         else:
             sc_matrix_selected = self.data["SCmatrixCollated"]
-        print("n_cells retrieved: {}".format(sc_matrix_selected.shape[2]))
+        print(f"n_cells retrieved: {sc_matrix_selected.shape[2]}")
         self.sc_matrix_selected = sc_matrix_selected
 
 
@@ -304,7 +302,7 @@ class AnalysisHiMMatrix:
 
 
 def normalize_profile(profile1, profile2, run_parameters):
-    print("Normalization: {}".format(run_parameters["normalize"]))
+    print(f"""Normalization: {run_parameters["normalize"]}""")
 
     mode = run_parameters["normalize"]
 
@@ -419,7 +417,7 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
         cuids = Table()
         cuids["Cuid"] = []
 
-        print("rois to process: {}".format(pwd_table_sorted_roi.groups.keys))
+        print(f"rois to process: {pwd_table_sorted_roi.groups.keys}")
 
         for roi, group in zip(
             pwd_table_sorted_roi.groups.keys, pwd_table_sorted_roi.groups
@@ -458,13 +456,10 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
 
             if len(list_of_selected_cells) > 0:
                 print(
-                    "Detected {} cells in ROI {} with label".format(
-                        len(list_of_selected_cells), roi["ROI #"]
-                    )
+                    f"""Detected {len(list_of_selected_cells)} cells in ROI {roi["ROI #"]} with label"""
                 )
                 if len(cuids) > 0:
                     # cuids = vstack([cuids, cells_to_process_uid[list_of_selected_cells]])
-                    # print('adding {} more cells'.format(len(cells_to_process_uid[list_of_selected_cells])))
                     cuids_list += list(
                         cells_to_process_uid[list_of_selected_cells].data.compressed()
                     )
@@ -482,7 +477,6 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
 
         # from list of cuids from cells that show label, I construct a binary vector of the same size as sc_matrix. Labeled cells have a 1.
         sc_labeled = np.zeros(len(results_table))
-        # print('CUID list: {}'.format(CUIDsList2))
         # cuids_list = cuids["Cuid"].data.compressed()
         # cuids_list = CUIDsList2
         # checks that there are cells found with the label
@@ -499,7 +493,7 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
         return sc_labeled, cuids_list
     else:
         # otherwise returns an empty list
-        print("Warning: No cell with a mask labeled <{}> was found".format(label))
+        print(f"Warning: No cell with a mask labeled <{label}> was found")
         return [], []
 
 
@@ -525,7 +519,7 @@ def load_sc_data(list_data, dataset_name, p):
 
     """
     # tags2process = list(list_data.keys())
-    print("Dataset to load: {}\n\n".format(list(list_data.keys())[0]))
+    print(f"Dataset to load: {list(list_data.keys())[0]}\n\n")
 
     dim_tag = ""
     if "d3" in p.keys():
@@ -550,11 +544,7 @@ def load_sc_data(list_data, dataset_name, p):
             root_folder + "/Trace" + dim_tag + "_barcode_*ROI*.ecsv"
         )
 
-        print(
-            "files_to_process: {}".format(
-                root_folder + "/Trace" + dim_tag + "_barcode_ROI.ecsv"
-            )
-        )
+        print(f"files_to_process: {root_folder}/Trace{dim_tag}_barcode_ROI.ecsv")
 
         if len(files_to_process) == 0:
             # it resorts to old format
@@ -562,13 +552,11 @@ def load_sc_data(list_data, dataset_name, p):
                 root_folder + "/buildsPWDmatrix" + dim_tag + "_*ROI*.ecsv"
             )
         else:
-            print(
-                "Found {} ECSV files in {}".format(len(files_to_process), root_folder)
-            )
+            print(f"Found {len(files_to_process)} ECSV files in {root_folder}")
 
         # checks that something was found
         if len(files_to_process) > 0:
-            print(">>> Loading {} results tables".format(len(files_to_process)))
+            print(f">>> Loading {len(files_to_process)} results tables")
 
             # [initializes variables]
             build_pwd_matrix = Table()
@@ -587,11 +575,7 @@ def load_sc_data(list_data, dataset_name, p):
                         if "order" in isplit:
                             file_order_stamp[i_filename] = int(isplit.split(":")[1])
                             print(
-                                "order {}= {}--> {}".format(
-                                    i_filename,
-                                    os.path.basename(file_name),
-                                    file_order_stamp[i_filename],
-                                )
+                                f"order {i_filename}= {os.path.basename(file_name)}--> {file_order_stamp[i_filename]}"
                             )
                     file_time_stamp[i_filename] = os.path.getmtime(file_name)
                     choosing_time_stamp = False
@@ -605,7 +589,6 @@ def load_sc_data(list_data, dataset_name, p):
             else:
                 file_order = np.argsort(file_order_stamp).astype(int)
 
-            # print('FileOrder: {}'.format(file_order))
             # [loads buildsPWDmatrix Tables]
             for i_filename in range(len(files_to_process)):
                 file_name = files_to_process[file_order[i_filename]]
@@ -631,7 +614,7 @@ def load_sc_data(list_data, dataset_name, p):
                 + "segmentedObjects/snd_assigned_cells.ecsv"
             )
             if os.path.exists(filename_snd_assigned_cells):
-                print("Reading and processing: {}".format(filename_snd_assigned_cells))
+                print(f"Reading and processing: {filename_snd_assigned_cells}")
                 snd_assigned_cells = Table.read(
                     filename_snd_assigned_cells, format="ascii.ecsv"
                 )
@@ -672,24 +655,22 @@ def load_sc_data(list_data, dataset_name, p):
                 sc_matrix1 = np.load(filename_matrix)
                 sc_matrix_collated.append(sc_matrix1)
             else:
-                print("*** Error: could not find {}".format(filename_matrix))
+                print(f"*** Error: could not find {filename_matrix}")
 
             if os.path.exists(filename_barcodes):
                 unique_barcodes.append(np.loadtxt(filename_barcodes).astype(int))
             else:
-                print("*** Error: could not find {}".format(filename_barcodes))
+                print(f"*** Error: could not find {filename_barcodes}")
 
             build_pwd_matrix_collated.append(build_pwd_matrix)
 
-            print("\n>>>Merging root_folder: {}".format(root_folder))
-            print("Cells added after merge: {}\n".format(sc_matrix1.shape[2]))
+            print(f"\n>>>Merging root_folder: {root_folder}")
+            print(f"Cells added after merge: {sc_matrix1.shape[2]}\n")
         else:
             print(
-                "No file detected in the folder you provide: {}".format(
-                    root_folder + "/buildsPWDmatrix_*ROI*.ecsv"
-                )
+                f"No file detected in the folder you provide: {root_folder}/buildsPWDmatrix_*ROI*.ecsv"
             )
-    print("{} datasets loaded\n".format(len(sc_matrix_collated)))
+    print(f"{len(sc_matrix_collated)} datasets loaded\n")
 
     return (
         sc_matrix_collated,
@@ -701,7 +682,7 @@ def load_sc_data(list_data, dataset_name, p):
 
 
 def load_sc_data_matlab(list_data, dataset_name, p):
-    print("Dataset to load: {}\n\n".format(list(list_data.keys())[0]))
+    print(f"Dataset to load: {list(list_data.keys())[0]}\n\n")
 
     sc_matrix_collated, unique_barcodes = [], []
     run_name, sc_labeled_collated = [], []
@@ -717,9 +698,9 @@ def load_sc_data_matlab(list_data, dataset_name, p):
         # loads barcodes
         if os.path.exists(filename_barcodes):
             unique_barcodes.append(np.loadtxt(filename_barcodes).astype(int))
-            print(">>> Loaded {}".format(filename_matrix))
+            print(f">>> Loaded {filename_matrix}")
         else:
-            print("*** Error: could not find {}".format(filename_barcodes))
+            print(f"*** Error: could not find {filename_barcodes}")
 
         # loads SC matrix
         if os.path.exists(filename_matrix):
@@ -727,12 +708,10 @@ def load_sc_data_matlab(list_data, dataset_name, p):
             sc_matrix1 = data["distanceMatrixCumulative"]
             sc_matrix_collated.append(sc_matrix1)
             print(
-                ">>> Loaded: {}\n SC matrix shape: {}".format(
-                    filename_matrix, sc_matrix1.shape
-                )
+                f">>> Loaded: {filename_matrix}\n SC matrix shape: {sc_matrix1.shape}"
             )
         else:
-            print("*** Error: could not find {}".format(filename_matrix))
+            print(f"*** Error: could not find {filename_matrix}")
 
         # loads cell attributes
         cell_attributes_matrix = data["cellAttributesMatrix"]
@@ -745,10 +724,10 @@ def load_sc_data_matlab(list_data, dataset_name, p):
         sc_labeled[index_cells_with_label] = 1
         sc_labeled_collated.append(sc_labeled)
 
-        print("\n>>>Merging root_folder: {}".format(root_folder))
-        print("Cells added after merge: {}\n".format(sc_matrix1.shape[2]))
+        print(f"\n>>>Merging root_folder: {root_folder}")
+        print(f"Cells added after merge: {sc_matrix1.shape[2]}\n")
 
-    print("{} datasets loaded\n".format(len(sc_matrix_collated)))
+    print(f"{len(sc_matrix_collated)} datasets loaded\n")
 
     return (
         sc_matrix_collated,
@@ -759,7 +738,6 @@ def load_sc_data_matlab(list_data, dataset_name, p):
 
 
 def list_sc_to_keep(p, mask):
-    # print("{}:{}".format(p["label"], p["action"]))
     if p["action"] == "all":
         try:
             cells_to_plot = range(len(mask))
@@ -835,17 +813,13 @@ def plot_ensemble_3_way_contact_matrix(
                     sc_matrix_all_datasets = i_sc_matrix_collated[:, :, cells_to_plot]
                 common_set_unique_barcodes = i_unique_barcodes
         else:
-            print(
-                "Dataset: {} - {}  did not have any cell to plot".format(
-                    dataset_name, i_tag
-                )
-            )
+            print(f"Dataset: {dataset_name} - {i_tag}  did not have any cell to plot")
 
     # print(common_set_unique_barcodes)
 
     # loops over anchors
     for anchor in anchors:
-        print("n_cells processed: {}".format(sc_matrix_all_datasets.shape[2]))
+        print(f"n_cells processed: {sc_matrix_all_datasets.shape[2]}")
 
         # calculates the 3-way matrix for a given anchor
         sc_matrix = calculate_3_way_contact_matrix(
@@ -1038,7 +1012,6 @@ def plot_inverse_pwd_matrix(
 
         # selects cels according to label
         cells_to_plot = list_sc_to_keep(p, mask)
-        # print('Dataset {} cells2plot: {}'.format(i_tag,cells_to_plot))
 
         plot_matrix(
             i_sc_matrix_collated,
@@ -1076,7 +1049,7 @@ def plot_single_contact_probability_matrix(
     else:
         min_number_contacts = 0
 
-    print("$ Min number contacts: {}".format(min_number_contacts))
+    print(f"$ Min number contacts: {min_number_contacts}")
 
     for i_sc_matrix_collated, i_unique_barcodes, i_tag, mask in zip(
         sc_matrix_collated, unique_barcodes, run_name, p["SClabeledCollated"]
@@ -1112,7 +1085,7 @@ def plot_single_contact_probability_matrix(
                 + "_contactProbability"
             )
 
-            print("Dataset {} cells2plot: {}".format(i_tag, cells_to_plot))
+            print(f"Dataset {i_tag} cells2plot: {cells_to_plot}")
             c_scale = sc_matrix.max() / i_list_data["ContactProbability_scale"]
 
             plot_matrix(
@@ -1205,7 +1178,7 @@ def fuses_sc_matrix_collated_from_datasets(
             + ".dat"
         )
 
-        print(">>> Saving fused sc_matrix to {}".format(output_filename))
+        print(f">>> Saving fused sc_matrix to {output_filename}")
 
         np.savetxt(
             output_filename,
@@ -1283,9 +1256,7 @@ def plot_ensemble_contact_probability_matrix(
     )
 
     print(
-        "n_cells selected / processed: {}/{}".format(
-            sc_matrix_all_datasets.shape[2], n_cells_total
-        )
+        f"n_cells selected / processed: {sc_matrix_all_datasets.shape[2]}/{n_cells_total}"
     )
 
     # calculates contact probability matrix from merged samples/datasets
@@ -1380,11 +1351,9 @@ def shuffle_matrix(matrix, index):
                     new_matrix[i, j] = matrix[index[i], index[j]]
     else:
         print(
-            "Error: shuffle size {} is larger than matrix dimensions {}".format(
-                new_size, matrix.shape[0]
-            )
+            f"Error: shuffle size {new_size} is larger than matrix dimensions {matrix.shape[0]}"
         )
-        print("Shuffle: {} ".format(index))
+        print(f"Shuffle: {index} ")
 
     return new_matrix
 
@@ -1478,14 +1447,13 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type=dict()):
         # all atoms have the same identity
         print("did not find barcode_type dictionnary")
         for i, barcode in enumerate(barcodes):
-            barcode_type["{}".format(barcode)] = default_atom_name
+            barcode_type[str(barcode)] = default_atom_name
     else:
         # adds missing keys
-        # print("$ keys: {}".format(barcode_type.keys()))
         for barcode in barcodes:
             if str(barcode) not in barcode_type.keys():
-                barcode_type["{}".format(barcode)] = default_atom_name
-                print("$ fixing key {} as not found in dict".format(barcode))
+                barcode_type[str(barcode)] = default_atom_name
+                print(f"$ fixing key {barcode} as not found in dict")
 
     """
         COLUMNS        DATA TYPE       CONTENTS                            
@@ -1582,7 +1550,7 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type=dict()):
         # last line
         fid.write(txt1.format(i + 1, i))
 
-        print("Done writing {:s} with {:d} atoms.".format(file_name, n_atoms))
+        print(f"Done writing {file_name:s} with {n_atoms:d} atoms.")
 
 
 def distances_2_coordinates(distances):
@@ -1706,7 +1674,6 @@ def plot_distance_histograms(
     for i in trange(n_plots_x):
         for j in range(n_plots_y):
             if i != j:
-                # print('Printing [{}:{}]'.format(i,j))
                 if mode == "hist":
                     axs[i, j].hist(pixel_size * sc_matrix_collated[i, j, :], bins=bins)
                 else:
@@ -1746,7 +1713,7 @@ def plot_distance_histograms(
     else:
         file_name = output_filename + "_PWDhistograms.png"
 
-    print("Output figure: {}\n".format(file_name))
+    print(f"Output figure: {file_name}\n")
     plt.savefig(file_name)
 
     if not is_notebook():
@@ -1774,7 +1741,7 @@ def plot_matrix(
     c_min=0,
     cells_to_plot=[],
     filename_ending="_HiMmatrix.png",
-    font_size = 22,
+    font_size=22,
 ):
     n_barcodes = sc_matrix_collated.shape[0]
 
@@ -1820,13 +1787,16 @@ def plot_matrix(
             + str(n_cells)
             + " | FOVs="
             + str(number_rois),
-            fontsize=float(font_size) * 1.3
+            fontsize=float(font_size) * 1.3,
         )
-        # print("matrix size: {} | barcodes:{}".format(sc_matrix_collated.shape[0],list(unique_barcodes)))
-        plt.xticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size)
-        plt.yticks(np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size)
+        plt.xticks(
+            np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size
+        )
+        plt.yticks(
+            np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size
+        )
         cbar = plt.colorbar(pos, fraction=0.046, pad=0.04)
-        cbar.ax.tick_params(labelsize=float(font_size) * 0.8) 
+        cbar.ax.tick_params(labelsize=float(font_size) * 0.8)
         cbar.minorticks_on()
         cbar.set_label(cmtitle, fontsize=float(font_size) * 1.0)
         plt.clim(c_min, clim)
@@ -1836,7 +1806,7 @@ def plot_matrix(
         # ):
         #     xtick.set_fontsize(font_size)
         #     ytick.set_fontsize(font_size)
-            
+
         if len(output_filename.split(".")) > 1:
             if output_filename.split(".")[1] != "png":
                 if len(output_filename.split(".")[1]) == 3:
@@ -2071,7 +2041,7 @@ def get_rg_from_pwd(pwd_matrix_0, min_number_pwd=4, threshold=6):
     # check that pwd_matrix is of right shape
     if pwd_matrix.ndim != 2:
         raise SystemExit(
-            "get_rg_from_pwd: Expected 2D input but got {}D.".format(pwd_matrix.ndim)
+            f"get_rg_from_pwd: Expected 2D input but got {pwd_matrix.ndim}D."
         )
     if pwd_matrix.shape[0] != pwd_matrix.shape[1]:
         raise SystemExit("get_rg_from_pwd: Expected square matrix as input.")
@@ -2111,9 +2081,7 @@ def get_detection_eff_barcodes(sc_matrix_collated):
     # check that pwd_matrix is of right shape
     if sc_matrix_collated.ndim != 3:
         raise SystemExit(
-            "getBarcodeEff: Expected 3D input but got {}D.".format(
-                sc_matrix_collated.ndim
-            )
+            f"getBarcodeEff: Expected 3D input but got {sc_matrix_collated.ndim}D."
         )
     if sc_matrix_collated.shape[0] != sc_matrix_collated.shape[1]:
         raise SystemExit(
@@ -2137,7 +2105,7 @@ def get_detection_eff_barcodes(sc_matrix_collated):
 
     eff = eff / n_cells_2
 
-    print("\n\n *** n_cells={} | n_cells_2={}".format(n_cells, n_cells_2))
+    print(f"\n\n *** n_cells={n_cells} | n_cells_2={n_cells_2}")
     return eff
 
 
@@ -2185,7 +2153,6 @@ def sort_cells_by_number_pwd(him_data):
     sc_matrix = him_data.sc_matrix_selected
 
     n_cells = sc_matrix.shape[2]
-    # print("Number of cells loaded: {}".format(n_cells))
 
     # finds the number of barcodes detected per cell.
     n_barcode_per_cell = []

@@ -418,7 +418,7 @@ def tessellate_masks(segm_deblend):
         mask_voronoi[mask & mask_blurred] = mask_id
 
     # print_log("--- Took {:.2f}s seconds ---".format(time.time() - start_time))
-    print_log("$ Tessellation took {:.2f}s seconds.".format(time.time() - start_time))
+    print_log(f"$ Tessellation took {(time.time() - start_time):.2f}s seconds.")
 
     return voronoi_data, mask_voronoi
 
@@ -661,7 +661,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         + "_2d_registered.npy"
     )
 
-    print_log("> searching for {}".format(filename_2d_aligned))
+    print_log(f"> searching for {filename_2d_aligned}")
     if os.path.exists(filename_2d_aligned):  # file exists
         roi = os.path.basename(file_name).split("_")[
             current_param.param_dict["acquisition"]["positionROIinformation"]
@@ -677,9 +677,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         )
         im = im_obj.data_2d
         print_log(
-            "> [{}] Loaded 2D registered file: {}".format(
-                label, os.path.basename(file_name)
-            )
+            f"> [{label}] Loaded 2D registered file: {os.path.basename(file_name)}"
         )
 
         ##########################################
@@ -841,10 +839,8 @@ def segment_masks(current_param, current_session, file_name=None):
 
         # generates lists of files to process
         current_param.find_files_to_process(files_folder)
-        print_log("> Processing Folder: {}".format(current_folder))
-        print_log(
-            "> Files to Segment: {} \n".format(len(current_param.files_to_process))
-        )
+        print_log(f"> Processing Folder: {current_folder}")
+        print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
         label = current_param.param_dict["acquisition"]["label"]
         output_file = (
@@ -874,13 +870,13 @@ def segment_masks(current_param, current_session, file_name=None):
                         )
                         current_session.add(filename_to_process, session_name)
 
-            print_log("Waiting for {} results to arrive".format(len(futures)))
+            print_log(f"Waiting for {len(futures)} results to arrive")
 
             results = client.gather(futures)
 
             if label == "barcode":
                 # gathers results from different barcodes and rois
-                print_log("Retrieving {} results from cluster".format(len(results)))
+                print_log(f"Retrieving {len(results)} results from cluster")
                 detected_spots = []
                 for result in results:
                     detected_spots.append(len(result))
@@ -890,7 +886,7 @@ def segment_masks(current_param, current_session, file_name=None):
                     barcodes_coordinates.write(
                         output_file, format="ascii.ecsv", overwrite=True
                     )
-                print_log("$ File {} written to file.".format(output_file))
+                print_log(f"$ File {output_file} written to file.")
                 print_log(
                     "$ Detected spots: {}".format(
                         ",".join([str(x) for x in detected_spots])
@@ -921,7 +917,7 @@ def segment_masks(current_param, current_session, file_name=None):
                             barcodes_coordinates.write(
                                 output_file, format="ascii.ecsv", overwrite=True
                             )
-                            print_log("$ File {} written to file.".format(output_file))
+                            print_log(f"$ File {output_file} written to file.")
 
                         current_session.add(filename_to_process, session_name)
 

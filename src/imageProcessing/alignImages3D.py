@@ -236,13 +236,13 @@ class Drift3D:
         None.
 
         """
-        print_log("\nReference barcode: {}".format(self.p["referenceBarcode"]))
+        print_log(f"""\nReference barcode: {self.p["referenceBarcode"]}""")
         self.filenames_with_ref_barcode, self.roi_list = rt_to_filename(
             self.current_param, self.p["referenceBarcode"]
         )
 
         self.number_rois = len(self.roi_list)
-        print_log("\nDetected {} rois".format(self.number_rois))
+        print_log(f"\nDetected {self.number_rois} rois")
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
@@ -292,11 +292,7 @@ class Drift3D:
                     for file_index, filename_to_process in enumerate(
                         self.filenames_to_process_list
                     ):
-                        print_log(
-                            "\n\n>>>Iteration: {}/{}<<<".format(
-                                file_index, number_files
-                            )
-                        )
+                        print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
 
                         alignment_results_tables.append(
                             self.align_fiducials_3d_file(filename_to_process)
@@ -306,10 +302,9 @@ class Drift3D:
 
                 else:
                     self.inner_parallel_loop = False
+                    nb_workers = len(client.scheduler_info()["workers"])
                     print_log(
-                        "> Aligning {} files using {} workers...".format(
-                            number_files, len(client.scheduler_info()["workers"])
-                        )
+                        f"> Aligning {number_files} files using {nb_workers} workers..."
                     )
 
                     futures = [
@@ -319,9 +314,7 @@ class Drift3D:
 
                     alignment_results_tables = client.gather(futures)
                     print_log(
-                        " > Retrieving {} results from cluster".format(
-                            len(alignment_results_tables)
-                        )
+                        f"> Retrieving {len(alignment_results_tables)} results from cluster"
                     )
 
                     # del futures
@@ -341,7 +334,7 @@ class Drift3D:
             overwrite=True,
         )
 
-        print_log("$ alignImages3D procesing time: {}".format(datetime.now() - now))
+        print_log(f"$ alignImages3D procesing time: {datetime.now() - now}")
         print_log(f"$ alignImages3D output Table saved in: {output_filename}")
 
     def align_fiducials_3d(self):
@@ -358,7 +351,7 @@ class Drift3D:
         # processes folders and files
         print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log("folders read: {}".format(len(self.data_folder.list_folders)))
+        print_log(f"folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -371,14 +364,14 @@ class Drift3D:
         self.data_folder.create_folders(self.current_folder, self.current_param)
         self.output_filename = self.data_folder.output_files["alignImages"]
 
-        print_log("-------> Processing Folder: {}".format(self.current_folder))
+        print_log(f"-------> Processing Folder: {self.current_folder}")
         # self.current_log.parallel = self.parallel
 
         self.align_fiducials_3d_in_folder()
 
         self.current_session.add(self.current_folder, session_name)
 
-        print_log("HiM matrix in {} processed".format(self.current_folder))
+        print_log(f"HiM matrix in {self.current_folder} processed")
 
         return 0
 
@@ -395,7 +388,7 @@ def load_n_preprocess_image(
     higher_threshold,
     parallel_execution=True,
 ):
-    print_log("$ File:{}".format(os.path.basename(filename_to_process)))
+    print_log(f"$ File:{os.path.basename(filename_to_process)}")
 
     image_3d_0 = io.imread(filename_to_process).squeeze()
 
@@ -428,7 +421,7 @@ def _align_fiducials_3d_file(
     output_folder,
 ):
     # - load  and preprocesses 3D fiducial file
-    print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
+    print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{label}]<<<")
     image_3d_0, image_3d = load_n_preprocess_image(
         filename_to_process,
         p["zBinning"],
@@ -458,9 +451,7 @@ def _align_fiducials_3d_file(
         except KeyError:
             shift = None
             print_log(
-                "Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                    "ROI:" + roi, label
-                ),
+                f"Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}",
                 status="WARN",
             )
     if not dict_shifts_available or shift is None:
@@ -474,7 +465,7 @@ def _align_fiducials_3d_file(
 
     # applies XY shift to 3D stack
     # ----------------------------
-    print_log("$ shifts XY = {}".format(shift))
+    print_log(f"$ shifts XY = {shift}")
 
     # reinterpolate second file in XY using dictionnary to get rough alignment
     images.append(
@@ -584,12 +575,12 @@ def _align_fiducials_3d_file(
             ]
             alignment_results_table.add_row(table_entry)
 
-    print_log("Erasing {} variables\n".format(len(dir()) - 1))
+    print_log(f"Erasing {len(dir()) - 1} variables\n")
     for var in dir():
         if var != "alignment_results_table":
             del var
 
-    print_log("Variables still alive: {}".format(dir()))
+    print_log(f"Variables still alive: {dir()}")
 
     return alignment_results_table
 
