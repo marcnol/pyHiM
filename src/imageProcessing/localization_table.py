@@ -58,13 +58,11 @@ class LocalizationTable:
             number_unique_barcodes = unique_barcodes.shape[0]
 
             print(
-                "$ Number of barcodes read from barcode_map: {}".format(
-                    number_unique_barcodes
-                )
+                f"$ Number of barcodes read from barcode_map: {number_unique_barcodes}"
             )
-            print("$ Unique Barcodes detected: {}".format(unique_barcodes))
+            print(f"$ Unique Barcodes detected: {unique_barcodes}")
         else:
-            print("\n\n# ERROR: could not find coordinates file: {}".format(file))
+            print(f"\n\n# ERROR: could not find coordinates file: {file}")
             sys.exit()
 
         return barcode_map, unique_barcodes
@@ -251,10 +249,10 @@ class LocalizationTable:
                 for label in labels:
                     a, b = barcode_map_2.loc[buid_1][label], barcode_map_1[row][label]
                     if ~np.isnan(a).any() and ~np.isnan(b).any():
-                        #diff = a - b 
-                        #if np.isnan(diff):
+                        # diff = a - b
+                        # if np.isnan(diff):
                         #    diff = 0
-                        diffs[label].append(a-b)
+                        diffs[label].append(a - b)
 
         # plots figures
         fig, axes = plt.subplots(2, 2)
@@ -281,7 +279,7 @@ def decode_rois(data):
 
     number_rois = len(data_indexed.groups.keys)
 
-    print("\n$ rois detected: {}".format(number_rois))
+    print(f"\n$ rois detected: {number_rois}")
 
     return data_indexed, number_rois
 

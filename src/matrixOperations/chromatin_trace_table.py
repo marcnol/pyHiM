@@ -17,6 +17,9 @@ trace table management class
 import os
 import sys
 
+# to remove in a future version
+import warnings
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -34,14 +37,11 @@ from imageProcessing.localization_table import (
     plots_localization_projection,
 )
 
+warnings.filterwarnings("ignore")
+
 lbl_cmap = random_label_cmap()
 font = {"weight": "normal", "size": 22}
 matplotlib.rc("font", **font)
-
-# to remove in a future version
-import warnings
-
-warnings.filterwarnings("ignore")
 
 
 class ChromatinTraceTable:
@@ -83,8 +83,8 @@ class ChromatinTraceTable:
         )
 
         self.data.meta["comments"] = [
-            "xyz_unit={}".format(self.xyz_unit),
-            "genome_assembly={}".format(self.genome_assembly),
+            f"xyz_unit={self.xyz_unit}",
+            f"genome_assembly={self.genome_assembly}",
         ]
 
     def load(self, file):
@@ -494,7 +494,7 @@ class ChromatinTraceTable:
         """
 
         if remove_barcode is not None:
-            print("\n$ Removing barcode <{}>".format(remove_barcode))
+            print(f"\n$ Removing barcode <{remove_barcode}>")
 
             trace_table = self.data
             trace_table_new = trace_table.copy()
@@ -508,7 +508,7 @@ class ChromatinTraceTable:
             for idx, sub_table_barcode in enumerate(tqdm(trace_table_indexed.groups)):
                 barcode_name = list(set(sub_table_barcode["Barcode #"]))
                 if int(remove_barcode) in barcode_name:
-                    print("$ Found barcode: {}".format(barcode_name))
+                    print(f"$ Found barcode: {barcode_name}")
 
                     for row in sub_table_barcode:
                         spots_to_remove.append(row["Spot_ID"])
@@ -708,12 +708,8 @@ class ChromatinTraceTable:
             # saves output figure
             filename_list_i = filename_list.copy()
             filename_list_i.insert(-1, "_ROI" + str(n_roi))
-
+            traces = "".join(filename_list_i)
             try:
-                fig.savefig("".join(filename_list_i))
+                fig.savefig(traces)
             except ValueError:
-                print(
-                    "\nValue error while saving output figure with traces:{}".format(
-                        "".join(filename_list_i)
-                    )
-                )
+                print(f"\nValue error while saving output figure with traces:{traces}")

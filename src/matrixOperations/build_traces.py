@@ -76,7 +76,7 @@ class BuildTraces:
         self.current_folder = []
         self.mask_identifier = ["DAPI"]  # default mask label
         self.masks = np.zeros((2048, 2048))
-        
+
     def initializes_masks(self, masks):
         self.masks = masks
         self.n_cells_assigned = 0
@@ -250,9 +250,8 @@ class BuildTraces:
         self.n_barcodes_in_mask = n_barcodes_in_mask
 
         print_log(
-            "$ Number of cells assigned: {} | discarded: {}".format(
-                self.n_cells_assigned, self.n_cells_unassigned
-            )
+            f"$ Number of cells assigned: {self.n_cells_assigned} \
+                | discarded: {self.n_cells_unassigned}"
         )
 
     def build_vector(self, group_keys, x, y, z):
@@ -344,7 +343,7 @@ class BuildTraces:
                     ]
                     self.trace_table.data.add_row(entry)
 
-        print_log("$ Coordinates dimensions: {}".format(self.ndims))
+        print_log(f"$ Coordinates dimensions: {self.ndims}")
 
     def load_mask(
         self,
@@ -475,9 +474,8 @@ class BuildTraces:
 
         print_log("-" * 80)
         print_log(
-            "> Loading masks and pre-processing barcodes for Mask <{}> for {} rois".format(
-                self.mask_identifier, number_rois
-            )
+            f"> Loading masks and pre-processing barcodes for \
+                Mask <{self.mask_identifier}> for {number_rois} rois"
         )
 
         # finds TIFs in current_folder
@@ -496,7 +494,7 @@ class BuildTraces:
                 tif_files_in_folder,
             )
             if mask_loaded:
-                print_log("> Processing ROI# {}".format(self.n_roi))
+                print_log(f"> Processing ROI# {self.n_roi}")
 
                 # initializes trace table
                 self.trace_table.initialize()
@@ -510,9 +508,7 @@ class BuildTraces:
                 # builds sc_distance_table
                 self.builds_sc_distance_table()
                 print_log(
-                    "$ Number of entries in trace table: {}".format(
-                        len(self.trace_table.data)
-                    )
+                    f"$ Number of entries in trace table: {len(self.trace_table.data)}"
                 )
 
                 if len(self.trace_table.data) > 0:
@@ -542,7 +538,7 @@ class BuildTraces:
                 processing_order += 1
 
     def build_trace_by_masking(self, barcode_map):
-        print_log("> Masks labels: {}".format(self.available_masks))
+        print_log(f"> Masks labels: {self.available_masks}")
 
         for mask_label in self.available_masks.keys():
             self.mask_identifier = self.available_masks[mask_label]
@@ -569,9 +565,7 @@ class BuildTraces:
             )
 
             print_log(
-                "$ Trace built using mask assignment. Output saved in: {} ".format(
-                    self.current_folder
-                ),
+                f"$ Trace built using mask assignment. Output saved in: {self.current_folder}",
                 "info",
             )
 
@@ -672,9 +666,7 @@ class BuildTraces:
 
         print_log("-" * 80)
         print_log(
-            "> Starting spatial clustering for {} ROI in {} dimensions".format(
-                number_rois, self.ndims
-            )
+            f"> Starting spatial clustering for {number_rois} ROI in {self.ndims} dimensions"
         )
 
         tag = str(self.ndims) + "D"
@@ -693,7 +685,7 @@ class BuildTraces:
             ]  # need to iterate over the first index
             self.barcode_map_roi = barcode_map.group_by("ROI #").groups[roi]
 
-            print_log("$ Processing ROI# {}".format(self.n_roi))
+            print_log(f"$ Processing ROI# {self.n_roi}")
 
             # initializes trace table
             self.trace_table.initialize()
@@ -706,9 +698,7 @@ class BuildTraces:
             self.builds_sc_distance_table()
             if len(self.trace_table.data) > 0:
                 print_log(
-                    "$ Number of entries in trace table: {}".format(
-                        len(self.trace_table.data)
-                    )
+                    f"$ Number of entries in trace table: {len(self.trace_table.data)}"
                 )
 
                 # saves trace table with results per ROI
@@ -727,7 +717,7 @@ class BuildTraces:
                 self.trace_table.plots_traces(
                     [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
                     masks=self.masks,
-                    )
+                )
 
                 print_log(
                     f"$ Traces built. Saved output table as {output_table_filename}"
@@ -753,7 +743,7 @@ class BuildTraces:
 
         if "masking" in self.tracing_method:
             self.build_trace_by_masking(barcode_map)
-            
+
         if (
             "clustering" in self.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
@@ -762,8 +752,6 @@ class BuildTraces:
             print_log(
                 f"! Warning: localization files in 2D will not be processed using clustering.\n"
             )
-
-
 
     def run(self):
         """
@@ -789,7 +777,7 @@ class BuildTraces:
             self.current_param, module_name="build_traces", label=self.label
         )
 
-        print_log("> Masks labels: {}".format(self.available_masks))
+        print_log(f"> Masks labels: {self.available_masks}")
 
         # iterates over barcode localization tables in the current folder
         files = [
@@ -822,7 +810,7 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log("\n" + "=" * 35 + f"{session_name}" + "=" * 35 + "\n")
-    print_log("$ folders read: {}".format(len(data_folder.list_folders)))
+    print_log(f"$ folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"## {session_name}\n",
@@ -831,7 +819,7 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
 
     current_folder = current_param.param_dict["rootFolder"]
     data_folder.create_folders(current_folder, current_param)
-    print_log("> Processing Folder: {}".format(current_folder))
+    print_log(f"> Processing Folder: {current_folder}")
 
     return data_folder, current_folder
 
@@ -840,7 +828,7 @@ def debug_mask_filename(
     files_in_folder, full_filename_roi_masks, mask_identifier, n_roi, label=""
 ):
     print_log(f"# Error, no mask file found for ROI: {n_roi}\n")
-    print_log("# File I was searching for: {}".format(full_filename_roi_masks))
+    print_log(f"# File I was searching for: {full_filename_roi_masks}")
     print_log("# Debug: ")
     for file in files_in_folder:
         if (

@@ -69,8 +69,8 @@ class BuildMatrix:
 
     def initialize_parameters(self):
         # initializes parameters from current_param
-
-        if type(self.current_param) is not dict:
+        # TODO: Check this condition
+        if not isinstance(self.current_param, dict):
             # if len(self.current_param.param_dict)>0:
             self.tracing_method = get_dictionary_value(
                 self.current_param.param_dict["buildsPWDmatrix"],
@@ -356,7 +356,7 @@ class BuildMatrix:
 
         # saves output
         np.save(output_filename + "_PWDscMatrix.npy", self.sc_matrix)
-        print("$ saved: {}".format(output_filename + "_PWDscMatrix.npy"))
+        print(f"$ saved: {output_filename}_PWDscMatrix.npy")
 
         np.savetxt(
             output_filename + "_uniqueBarcodes.ecsv",
@@ -365,10 +365,10 @@ class BuildMatrix:
             fmt="%d",
         )
 
-        print("$ saved: {}".format(output_filename + "_uniqueBarcodes.ecsv"))
+        print(f"$ saved: {output_filename}_uniqueBarcodes.ecsv")
 
         np.save(output_filename + "_Nmatrix.npy", self.n_matrix)
-        print("$ saved: {}".format(output_filename + "_Nmatrix.npy"))
+        print(f"$ saved: {output_filename}_Nmatrix.npy")
 
     def launch_analysis(self, file):
         """

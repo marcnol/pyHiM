@@ -117,13 +117,13 @@ class FilterLocalizations:
             self.flux_min = self.current_param.param_dict["buildsPWDmatrix"][flux_key]
         else:
             self.flux_min = 0
-            print_log("# Flux min not found. Set to {}!".format(self.flux_min))
+            print_log(f"# Flux min not found. Set to {self.flux_min}!")
 
         if "blockSize" in self.current_param.param_dict["alignImages"]:
             self.block_size = self.current_param.param_dict["alignImages"]["blockSize"]
         else:
             self.block_size = 256
-            print_log("# blockSize not found. Set to {}!".format(self.block_size))
+            print_log(f"# blockSize not found. Set to {self.block_size}!")
 
     def filter_folder(self):
         """
@@ -140,7 +140,7 @@ class FilterLocalizations:
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
-        print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
+        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -150,7 +150,7 @@ class FilterLocalizations:
 
         for current_folder in self.data_folder.list_folders:
             self.data_folder.create_folders(current_folder, self.current_param)
-            print_log("> Processing Folder: {}".format(current_folder))
+            print_log(f"> Processing Folder: {current_folder}")
 
             files = [
                 x
@@ -191,7 +191,7 @@ class FilterLocalizations:
                         # processes tables
                         barcode_map_roi = barcode_map.group_by("ROI #")
                         number_rois = len(barcode_map_roi.groups.keys)
-                        print("\n$ rois detected: {}".format(number_rois))
+                        print(f"\n$ rois detected: {number_rois}")
 
                         # Filters barcode coordinate Tables
                         barcode_map = self.filter_barcode_table(barcode_map)
@@ -212,7 +212,7 @@ class FilterLocalizations:
             else:
                 print_log("No barcode tables found!")
 
-            print_log("Barcode tables {} filtered".format(current_folder), "info")
+            print_log(f"Barcode tables {current_folder} filtered", "info")
 
 
 def get_file_table_new_name(file):

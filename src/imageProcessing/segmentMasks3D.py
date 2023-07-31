@@ -196,8 +196,8 @@ class SegmentMasks3D:
         )
 
         # load  and preprocesses 3D fiducial file
-        print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
-        print_log("$ File:{}".format(os.path.basename(filename_to_process)))
+        print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{label}]<<<")
+        print_log(f"$ File:{os.path.basename(filename_to_process)}")
         image_3d_0 = io.imread(filename_to_process).squeeze()
 
         # reinterpolates image in z if necessary
@@ -214,14 +214,12 @@ class SegmentMasks3D:
             except KeyError:
                 shift = None
                 raise SystemExit(
-                    "# Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                        "ROI:" + roi, label
-                    )
+                    f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
                 )
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
-            print_log("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0], shift[1]))
+            print_log(f"$ Applies shift = [{shift[0]:.2f} ,{shift[1]:.2f}]")
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
             )
@@ -234,7 +232,7 @@ class SegmentMasks3D:
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
         number_masks = np.max(segmented_image_3d)
-        print_log("$ Number of masks detected: {}".format(number_masks))
+        print_log(f"$ Number of masks detected: {number_masks}")
 
         if number_masks > 0:
             output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
@@ -253,11 +251,9 @@ class SegmentMasks3D:
                 + output_extension["3D"]
                 + ".npy"
             )
-            print_log(
-                " > Saving output labeled images: \n 2D:{}\n 3D:{}".format(
-                    npy_labeled_image_filename_2d, npy_labeled_image_filename_3d
-                )
-            )
+            print_log("> Saving output labeled images:")
+            print_log(f"\t2D:{npy_labeled_image_filename_2d}")
+            print_log(f"\t3D:{npy_labeled_image_filename_3d}")
 
             # saves 3D image
             np.save(npy_labeled_image_filename_3d, segmented_image_3d)
@@ -313,15 +309,10 @@ class SegmentMasks3D:
             self.current_folder, p["regExp"], ext="tif"
         )
         self.number_rois = len(self.roi_list)
-        print_log("$ Detected {} rois".format(self.number_rois))
-        print_log(
-            "$ Images to be processed: {}".format(self.current_param.files_to_process)
-        )
-        print_log(
-            "$ Number of images to be processed: {}".format(
-                len(self.current_param.files_to_process)
-            )
-        )
+        print_log(f"$ Detected {self.number_rois} rois")
+        print_log(f"$ Images to be processed: {self.current_param.files_to_process}")
+        nb_imgs = len(self.current_param.files_to_process)
+        print_log(f"$ Number of images to be processed: {nb_imgs}")
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
@@ -349,9 +340,7 @@ class SegmentMasks3D:
                     )
                 ]
                 n_files_to_process = len(self.filenames_to_process_list)
-                print_log(
-                    "$ Found {} files in ROI [{}]".format(n_files_to_process, roi)
-                )
+                print_log(f"$ Found {n_files_to_process} files in ROI [{roi}]")
                 print_log(
                     "$ [roi:cycle] {}".format(
                         " | ".join(
@@ -378,14 +367,10 @@ class SegmentMasks3D:
                 for file_index, filename_to_process in enumerate(
                     self.filenames_to_process_list
                 ):
-                    print_log(
-                        "\n\n>>>Iteration: {}/{}<<<".format(
-                            file_index, n_files_to_process
-                        )
-                    )
+                    print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
                     self.segment_masks_3d_file(filename_to_process)
 
-        print_log("$ segmentMasks3D procesing time: {}".format(datetime.now() - now))
+        print_log(f"$ segmentMasks3D procesing time: {datetime.now() - now}")
 
     def segment_masks_3d(self):
         """
@@ -402,7 +387,7 @@ class SegmentMasks3D:
 
         print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
+        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -415,13 +400,13 @@ class SegmentMasks3D:
         self.data_folder.create_folders(self.current_folder, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]
 
-        print_log("> Processing Folder: {}".format(self.current_folder))
+        print_log(f"> Processing Folder: {self.current_folder}")
 
         self.segment_masks_3d_in_folder()
 
         self.current_session.add(self.current_folder, session_name)
 
-        print_log("$ segmentedObjects run in {} finished".format(self.current_folder))
+        print_log(f"$ segmentedObjects run in {self.current_folder} finished")
 
         return 0
 

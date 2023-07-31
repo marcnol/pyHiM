@@ -264,8 +264,8 @@ class SegmentSources3D:
         output_table = create_output_table()
 
         # - load  and preprocesses 3D fiducial file
-        print_log("\n\n>>>Processing roi:[{}] cycle:[{}]<<<".format(roi, label))
-        print_log("$ File:{}".format(os.path.basename(filename_to_process)))
+        print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{label}]<<<")
+        print_log(f"$ File:{os.path.basename(filename_to_process)}")
         image_3d_0 = io.imread(filename_to_process).squeeze()
 
         # reinterpolates image in z if necessary
@@ -281,14 +281,12 @@ class SegmentSources3D:
             z_offset = z_range[1][0]
             image_3d = image_3d_0[z_range[1], :, :].copy()
             print_log(
-                "$ Focal plane found: {}, z_range = {}, image_size = {}".format(
-                    z_range[0], z_range[1], image_3d.shape
-                )
+                f"$ Focal plane found: {z_range[0]}, z_range = {z_range[1]}, image_size = {image_3d.shape}"
             )
         else:
             image_3d = image_3d_0.copy()
             z_offset = 0
-            print_log("$ z_range used = 0-{}".format(image_3d.shape[0]))
+            print_log(f"$ z_range used = 0-{image_3d.shape[0]}")
 
         # preprocesses image by background substraction and level normalization
         if "stardist" not in p["3Dmethod"]:
@@ -311,15 +309,13 @@ class SegmentSources3D:
 
         if shift is None and label != p["referenceBarcode"]:
             raise SystemExit(
-                "> Existing with ERROR: Could not find dictionary with alignment parameters for this ROI: {}, label: {}".format(
-                    "ROI:" + self.roi, label
-                )
+                f"> Existing with ERROR: Could not find dictionary with alignment \
+                    parameters for this ROI: ROI:{self.roi}, label: {label}"
             )
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
-            # print_log("$ Applies shift = {:.2f}".format(shift))
-            print_log("$ Applies shift = [{:.2f} ,{:.2f}]".format(shift[0], shift[1]))
+            print_log(f"$ Applies shift = [{shift[0]:.2f} ,{shift[1]:.2f}]")
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
             )
@@ -351,9 +347,7 @@ class SegmentSources3D:
 
         number_sources = len(peak)
         print_log(
-            "$ Number of sources detected by image segmentation: {}".format(
-                number_sources
-            )
+            f"$ Number of sources detected by image segmentation: {number_sources}"
         )
 
         if number_sources > 0:
@@ -366,6 +360,7 @@ class SegmentSources3D:
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
             # compatibility with latest version of bigfish. To be removed if stable.
+            # TODO: Is it stable ? I think we can remove it.
             try:
                 # version 0.4 commit fa0df4f
                 spots_subpixel = fit_subpixel(
@@ -471,12 +466,9 @@ class SegmentSources3D:
             self.current_folder, p["regExp"], ext="tif"
         )
         self.number_rois = len(self.roi_list)
-        print_log("\n$ Detected {} rois".format(self.number_rois))
-        print_log(
-            "$ Number of images to be processed: {}".format(
-                len(self.current_param.files_to_process)
-            )
-        )
+        print_log(f"\n$ Detected {self.number_rois} rois")
+        nb_imgs = len(self.current_param.files_to_process)
+        print_log(f"$ Number of images to be processed: {nb_imgs}")
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
@@ -510,9 +502,7 @@ class SegmentSources3D:
                 ]
 
                 n_files_to_process = len(self.filenames_to_process_list)
-                print_log(
-                    "$ Found {} files in ROI [{}]".format(n_files_to_process, roi)
-                )
+                print_log(f"$ Found {n_files_to_process} files in ROI [{roi}]")
                 print_log(
                     "$ [roi:cycle] {}".format(
                         " | ".join(
@@ -541,9 +531,7 @@ class SegmentSources3D:
                         self.filenames_to_process_list
                     ):  # self.current_param.files_to_process):
                         print_log(
-                            "\n\n>>>Iteration: {}/{}<<<".format(
-                                file_index, n_files_to_process
-                            )
+                            f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<"
                         )
 
                         output_tables.append(
@@ -551,10 +539,9 @@ class SegmentSources3D:
                         )
                 else:
                     self.inner_parallel_loop = False
+                    nb_workers = len(client.scheduler_info()["workers"])
                     print_log(
-                        "> Aligning {} files using {} workers...".format(
-                            n_files_to_process, len(client.scheduler_info()["workers"])
-                        )
+                        f"> Aligning {n_files_to_process} files using {nb_workers} workers..."
                     )
 
                     futures = [
@@ -564,15 +551,13 @@ class SegmentSources3D:
 
                     output_tables = client.gather(futures)
                     print_log(
-                        " > Retrieving {} results from cluster".format(
-                            len(output_tables)
-                        )
+                        f" > Retrieving {len(output_tables)} results from cluster"
                     )
 
                 # Merges Tables for different cycles and appends results Table to that of previous ROI
                 output_table_global = vstack([output_table_global] + output_tables)
 
-        print_log("$ segmentSources3D procesing time: {}".format(datetime.now() - now))
+        print_log(f"$ segmentSources3D procesing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
         output_table_global.write(
@@ -596,7 +581,7 @@ class SegmentSources3D:
 
         print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
+        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -615,13 +600,13 @@ class SegmentSources3D:
             + ".dat"
         )
 
-        print_log("> Processing Folder: {}".format(self.current_folder))
+        print_log(f"> Processing Folder: {self.current_folder}")
 
         self.segment_sources_3d_in_folder()
 
         self.current_session.add(self.current_folder, session_name)
 
-        print_log("$ segmentedObjects run in {} finished".format(self.current_folder))
+        print_log(f"$ segmentedObjects run in {self.current_folder} finished")
 
         return 0
 

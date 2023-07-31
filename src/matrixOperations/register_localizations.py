@@ -77,9 +77,7 @@ class RegisterLocalizations:
                 1,
                 1,
             )  # defines default anisotropic tolerance_drift (z,x,y)
-            print_log(
-                "# toleranceDrift not found. Set to {}!".format(self.tolerance_drift)
-            )
+            print_log(f"# toleranceDrift not found. Set to {self.tolerance_drift}!")
 
         if (
             "remove_uncorrected_localizations"
@@ -190,7 +188,7 @@ class RegisterLocalizations:
             block_size = self.current_param.param_dict["alignImages"]["blockSize"]
         else:
             block_size = 256
-            print_log("# blockSize not found. Set to {}!".format(block_size))
+            print_log(f"# blockSize not found. Set to {block_size}!")
 
         print_log(
             f"\n$ Parameters:\n Blocksize = {block_size}\n Tolerance = {self.tolerance_drift}\n Reference barcode = {reference_fiducial}"
@@ -263,11 +261,7 @@ class RegisterLocalizations:
 
     def load_local_alignment(self):
         if "None" in self.current_param.param_dict["alignImages"]["localAlignment"]:
-            print_log(
-                "\n\n$ localAlignment option set to {}".format(
-                    self.current_param.param_dict["alignImages"]["localAlignment"]
-                )
-            )
+            print_log("\n\n$ localAlignment option set to `None`")
             return False, Table()
         else:
             return self._load_local_alignment()
@@ -291,13 +285,9 @@ class RegisterLocalizations:
             self.build_local_alignment_dict()
 
             print_log(
-                "$ LocalAlignment file loaded: {}\n$ Will correct coordinates using {} alignment".format(
-                    self.local_alignment_filename, mode
-                )
+                f"$ LocalAlignment file loaded: {self.local_alignment_filename}\n$ Will correct coordinates using {mode} alignment"
             )
-            print_log(
-                "$ Number of records: {}".format(len(self.alignment_results_table))
-            )
+            print_log(f"$ Number of records: {len(self.alignment_results_table)}")
         else:
             print_log(
                 "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
@@ -440,7 +430,7 @@ class RegisterLocalizations:
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
-        print_log("$ folders read: {}".format(len(self.data_folder.list_folders)))
+        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -450,7 +440,7 @@ class RegisterLocalizations:
 
         current_folder = self.current_param.param_dict["rootFolder"]
         self.data_folder.create_folders(current_folder, self.current_param)
-        print_log("> Processing Folder: {}".format(current_folder))
+        print_log(f"> Processing Folder: {current_folder}")
 
         # Loads localAlignment if it exists otherwise it exits with error
         self.load_local_alignment()
@@ -458,9 +448,7 @@ class RegisterLocalizations:
         if not self.alignment_results_table_read:
             print_log("Unable to find aligment table.\nDid you run alignImages3D?\n\n ")
             sys.exit(
-                "ERROR: Expected to find: {}--> Aborting.".format(
-                    self.local_alignment_filename
-                )
+                f"ERROR: Expected to find: {self.local_alignment_filename}--> Aborting."
             )
 
         # iterates over barcode localization tables in the current folder
