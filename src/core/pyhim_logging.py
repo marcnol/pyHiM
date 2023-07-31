@@ -92,10 +92,7 @@ class Session:
         value : str
             Task description
         """
-        if key not in self.data:
-            self.data[key] = value
-        else:
-            self.data[key] = [self.data[key], value]
+        self.data[key] = value if key not in self.data else [self.data[key], value]
 
 
 class Log:
@@ -130,10 +127,8 @@ class Log:
             message status, by default "info"
         """
         if not self.parallel or status.lower() == "error":
-            print(str(text))
-            self.save("\n" + text)
-        else:
-            self.save("\n" + text)
+            print(text)
+        self.save("\n" + text)
 
     def add_simple_text(self, title):
         """Add simple text inside log file and print it to cmd line terminal

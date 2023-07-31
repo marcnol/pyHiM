@@ -123,10 +123,10 @@ def image_show_with_values_single(
 
 def image_show_with_values(
     matrices,
-    output_name="tmp.png",
-    cbarlabels=["focalPlane"],
+    output_name: str = "tmp.png",
+    cbarlabels: list[str] = None,
     fontsize=6,
-    verbose=False,
+    verbose: bool = False,
     title="",
 ):
     """
@@ -152,13 +152,13 @@ def image_show_with_values(
     None.
 
     """
+    if cbarlabels is None:
+        cbarlabels = ["focalPlane"]
     number_images = len(matrices)
     fig, axes = plt.subplots(1, number_images)
     fig.set_size_inches((number_images * 2, 5))
     fig.suptitle(title)
-    cbar_kw = {}
-    cbar_kw["fraction"] = 0.046
-    cbar_kw["pad"] = 0.04
+    cbar_kw = {"fraction": 0.046, "pad": 0.04}
     if len(cbarlabels) != number_images:
         cbarlabels = cbarlabels[0] * number_images
 
@@ -216,9 +216,9 @@ def display_3d_assembled(
 
         axis.imshow(color.label2rgb(display_mask[:, :], bg_label=0), alpha=0.3)
 
-    colors_rbgy = ["r", "g", "b", "y"]
-    markersizes = [2, 1, 1, 1, 1]
     if localizations is not None:
+        colors_rbgy = ["r", "g", "b", "y"]
+        markersizes = [2, 1, 1, 1, 1]
         for i, loc in enumerate(localizations):
             axis.plot(loc[:, 2], loc[:, 1], "+", color=colors_rbgy[i], markersize=1)
             if plotting_range is not None:
@@ -279,20 +279,18 @@ def _plot_image_3d(
     img = image_3d
     center = int(img.shape[1] / 2)
 
-    images = []
-    images.append(np.sum(img, axis=0))
+    images = [np.sum(img, axis=0)]
     images.append(np.sum(img[:, :, center - window : center + window], axis=2))
     images.append(np.sum(img[:, center - window : center + window, :], axis=1))
 
     if masks is not None:
-        labels = []
-        labels.append(np.max(masks, axis=0))
+        labels = [np.max(masks, axis=0)]
         labels.append(np.max(masks[:, :, center - window : center + window], axis=2))
         labels.append(np.max(masks[:, center - window : center + window, :], axis=1))
     else:
         labels = None
 
-    fig1 = display_3d_assembled(
+    return display_3d_assembled(
         images,
         localizations=localizations,
         masks=labels,
@@ -300,14 +298,9 @@ def _plot_image_3d(
         normalize_b=normalize_b,
     )
 
-    return fig1
-
 
 def plot_3d_shift_matrices(shift_matrices, fontsize=8, log=False, valfmt="{x:.1f}"):
-    cbar_kw = {}
-    cbar_kw["fraction"] = 0.046
-    cbar_kw["pad"] = 0.04
-
+    cbar_kw = {"fraction": 0.046, "pad": 0.04}
     fig, axes = plt.subplots(1, len(shift_matrices))
     fig.set_size_inches((len(shift_matrices) * 10, 10))
     ax = axes.ravel()
@@ -324,10 +317,15 @@ def plot_3d_shift_matrices(shift_matrices, fontsize=8, log=False, valfmt="{x:.1f
     return fig
 
 
-def plot_4_images(
-    allimages,
-    titles=["reference", "cycle <i>", "processed reference", "processed cycle <i>"],
-):
+def plot_4_images(allimages, titles=None):
+    if titles is None:
+        titles = [
+            "reference",
+            "cycle <i>",
+            "processed reference",
+            "processed cycle <i>",
+        ]
+
     fig, axes = plt.subplots(2, 2)
     fig.set_size_inches((10, 10))
     ax = axes.ravel()
@@ -446,7 +444,7 @@ def annotate_heatmap(
     textcolors=("black", "white"),
     threshold=None,
     **textkw,
-):
+):  # sourcery skip: dict-assign-update-to-union
     """
     A function to annotate a heatmap.
 

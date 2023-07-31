@@ -143,7 +143,7 @@ class Pipeline:
                 process_pwd_matrices, current_param, self.m_logger.m_session
             )
 
-    def run(self):
+    def run(self):  # sourcery skip: remove-pass-body
         for feat in self.features:
             (required_data, required_ref, required_table) = feat.get_required_inputs()
             # reference = self.m_data_m.load_reference(required_ref)

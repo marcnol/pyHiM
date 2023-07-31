@@ -39,10 +39,7 @@ def extract_files(root: str):
     for dirpath, dirnames, filenames in os.walk(root):
         for filename in filenames:
             split_filename = filename.split(".")
-            if len(split_filename) > 1:
-                extension = split_filename.pop()
-            else:
-                extension = None
+            extension = split_filename.pop() if len(split_filename) > 1 else None
             short_filename = ".".join(split_filename)
             filepath = os.path.join(dirpath, filename)
             files.append((filepath, short_filename, extension))
@@ -123,9 +120,7 @@ class DataManager:
 
     @staticmethod
     def __set_data_path(data_path):
-        if data_path:
-            return str(data_path)
-        return os.getcwd()
+        return str(data_path) if data_path else os.getcwd()
 
     def create_folder(self, folder_name: str):
         """Create folder with `makedirs` from os module.
@@ -152,7 +147,7 @@ class DataManager:
             f"Parameters file NOT FOUND, expected filename: {params_filename}.json"
         )
 
-    def dispatch_files(self):
+    def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
         img_ext = ["tif", "tiff"]
         # img_ext = ["tif", "tiff", "npy", "png", "jpg"]
@@ -257,11 +252,7 @@ class DataManager:
         return None
 
     def get_inputs(self, labels: list[str]):
-        inputs = []
-        for img_file in self.data_images:
-            if img_file.m_label in labels:
-                inputs.append(img_file)
-        return inputs
+        return [img_file for img_file in self.data_images if img_file.m_label in labels]
 
     def save_data(
         self,
@@ -288,15 +279,14 @@ class DataManager:
                 raise SystemExit(f"tag UNRECOGNIZED: {tag}")
 
     def _save_2d_npy(self, data, partial_path):
-        path_name = partial_path + "_2d"
-        if data.shape > (1, 1):
-            np.save(path_name, data)
-            print_log(f"$ Image saved to disk: {path_name}.npy", "info")
-        else:
+        path_name = f"{partial_path}_2d"
+        if data.shape <= (1, 1):
             raise ValueError(f"Image is empty! Original file: {partial_path}.tif")
+        np.save(path_name, data)
+        print_log(f"$ Image saved to disk: {path_name}.npy", "info")
 
     def _save_2d_png(self, data, partial_path):
-        out_path = partial_path + "_2d.png"
+        out_path = f"{partial_path}_2d.png"
 
         fig = plt.figure()
         size = (10, 10)
@@ -311,7 +301,7 @@ class DataManager:
         ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
         fig.savefig(out_path)
         plt.close(fig)
-        original_filename = os.path.basename(partial_path + ".tif")
+        original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
             self.m_logger.md_filename,
             f"{original_filename}\n ![]({out_path})\n",
@@ -320,13 +310,14 @@ class DataManager:
 
     def _save_focal_plane_matrix(self, data: tuple, partial_path: str):
         focal_plane_matrix, focus_plane = data
-        out_path = partial_path + "_focalPlaneMatrix.png"
+        out_path = f"{partial_path}_focalPlaneMatrix.png"
         image_show_with_values(
             [focal_plane_matrix],
-            title="focal plane = " + f"{focus_plane:.2f}",
+            title=f"focal plane = {focus_plane:.2f}",
             output_name=out_path,
         )
-        original_filename = os.path.basename(partial_path + ".tif")
+
+        original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
             self.m_logger.md_filename,
             f"{original_filename}\n ![]({out_path})\n",

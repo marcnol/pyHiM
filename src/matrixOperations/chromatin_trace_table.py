@@ -238,14 +238,14 @@ class ChromatinTraceTable:
             dict with barcode identities as keys and a list of the number of times it was present in each trace treated.
 
         """
-        collective_barcode_stats = dict()
+        collective_barcode_stats = {}
 
         trace_table_indexed = trace_table.group_by("Trace_ID")
 
         # iterates over traces
         print("$ Calculating barcode stats...")
 
-        for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+        for trace in tqdm(trace_table_indexed.groups):
             unique_barcodes = list(set(trace["Barcode #"].data))
             number_unique_barcodes = len(unique_barcodes)
             barcodes = list(trace["Barcode #"].data)
@@ -253,12 +253,12 @@ class ChromatinTraceTable:
 
             # if number_unique_barcodes < number_barcodes:
 
-            barcode_stats = dict()
+            barcode_stats = {}
             for barcode in unique_barcodes:
                 barcode_rep = barcodes.count(barcode)
                 barcode_stats[str(barcode)] = barcode_rep
 
-                if str(barcode) in collective_barcode_stats.keys():
+                if str(barcode) in collective_barcode_stats:
                     collective_barcode_stats[str(barcode)].append(barcode_rep)
                 else:
                     collective_barcode_stats[str(barcode)] = [barcode_rep]
@@ -294,32 +294,19 @@ class ChromatinTraceTable:
 
         fig, (ax1) = plt.subplots(nrows=1, ncols=1, figsize=(15, 15))
 
-        if norm:
-            label, density = "frequency", True
-        else:
-            label, density = "counts", False
-
+        label, density = ("frequency", True) if norm else ("counts", False)
         ax1.set_title("Distribution of barcodes per trace")
 
         if "violin" in kind:
-            ax1.set_ylabel("number of barcodes")
-            ax1.violinplot(data)
-
-            ax1.set_xticks(
-                np.arange(1, len(sorted_barcodes) + 1), labels=sorted_barcodes
-            )
-            ax1.set_xlim(0.25, len(sorted_barcodes) + 0.75)
-            ax1.set_ylim(0.0, 10)
-            ax1.set_xlabel("barcode id")
-
-        elif "matrix":
+            self._extracted_from_plots_barcode_statistics_38(ax1, data, sorted_barcodes)
+        else:
             bins = range(1, 10)
             matrix = np.zeros((len(sorted_barcodes), len(bins) - 1))
             for idx, barcode_data in enumerate(data):
                 matrix[idx, :], _ = np.histogram(
                     barcode_data, bins=bins, density=density
                 )
-            bin_number = [x for x in bins]
+            bin_number = list(bins)
             pos = ax1.imshow(np.transpose(matrix), cmap="Reds")
             ax1.set_xticks(np.arange(matrix.shape[0]), sorted_barcodes)
             ax1.set_yticks(np.arange(0, len(bins)), bin_number)
@@ -329,7 +316,17 @@ class ChromatinTraceTable:
                 pos, ax=ax1, location="bottom", anchor=(0.5, 1), shrink=0.4, label=label
             )
 
-        fig.savefig(file_name + ".png")
+        fig.savefig(f"{file_name}.png")
+
+    # TODO Rename this here and in `plots_barcode_statistics`
+    def _extracted_from_plots_barcode_statistics_38(self, ax1, data, sorted_barcodes):
+        ax1.set_ylabel("number of barcodes")
+        ax1.violinplot(data)
+
+        ax1.set_xticks(np.arange(1, len(sorted_barcodes) + 1), labels=sorted_barcodes)
+        ax1.set_xlim(0.25, len(sorted_barcodes) + 0.75)
+        ax1.set_ylim(0.0, 10)
+        ax1.set_xlabel("barcode id")
 
     def filter_repeated_barcodes(self, trace_file="mock"):
         """
@@ -363,14 +360,14 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats,
-                file_name=trace_file + "_before",
+                file_name=f"{trace_file}_before",
                 kind="matrix",
                 norm=True,
             )
 
             # iterates over traces
-            spots_to_remove = list()
-            for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
+            spots_to_remove = []
+            for trace in tqdm(trace_table_indexed.groups):
                 unique_barcodes = list(set(trace["Barcode #"].data))
                 number_unique_barcodes = len(unique_barcodes)
                 barcodes = list(trace["Barcode #"].data)
@@ -390,7 +387,7 @@ class ChromatinTraceTable:
             print(f"$ Number of spots to remove: {len(spots_to_remove)}")
             print("$ Removing repeated spots...")
 
-            rows_to_remove = list()
+            rows_to_remove = []
             for idx, row in enumerate(trace_table):
                 spot_id = row["Spot_ID"]
 
@@ -417,7 +414,7 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats_new,
-                file_name=trace_file + "_filtered",
+                file_name=f"{trace_file}_filtered",
                 kind="matrix",
                 norm=False,
             )
@@ -428,7 +425,7 @@ class ChromatinTraceTable:
 
     def remove_duplicates(
         self,
-    ):
+    ):  # sourcery skip: extract-method
         """
         removes duplicated (identical) barcodes
 
@@ -449,14 +446,15 @@ class ChromatinTraceTable:
             trace_table_indexed = trace_table.group_by("Spot_ID")
 
             # finds barcodes with the same UID and stores UIDs in list
-            spots_to_remove = list()
-            for idx, trace in enumerate(tqdm(trace_table_indexed.groups)):
-                if len(trace) > 1:
-                    spots_to_remove.append(trace["Spot_ID"][0])
+            spots_to_remove = [
+                trace["Spot_ID"][0]
+                for trace in tqdm(trace_table_indexed.groups)
+                if len(trace) > 1
+            ]
 
             # finds row of the first offending barcode
             # this only removes one of the duplicated barcodes --> assumes at most there are two copies
-            rows_to_remove = list()
+            rows_to_remove = []
             for idx, row in enumerate(trace_table):
                 spot_id = row["Spot_ID"]
                 if spot_id in spots_to_remove:
@@ -504,19 +502,17 @@ class ChromatinTraceTable:
             number_barcodes_before = len(trace_table_indexed.groups)
 
             # iterates over traces
-            spots_to_remove = list()
-            for idx, sub_table_barcode in enumerate(tqdm(trace_table_indexed.groups)):
+            spots_to_remove = []
+            for sub_table_barcode in tqdm(trace_table_indexed.groups):
                 barcode_name = list(set(sub_table_barcode["Barcode #"]))
                 if int(remove_barcode) in barcode_name:
                     print(f"$ Found barcode: {barcode_name}")
 
-                    for row in sub_table_barcode:
-                        spots_to_remove.append(row["Spot_ID"])
-
+                    spots_to_remove.extend(row["Spot_ID"] for row in sub_table_barcode)
             print(f"$ Number of spots to remove: {len(spots_to_remove)}")
 
             # builds the list with the rows to remove
-            rows_to_remove = list()
+            rows_to_remove = []
             for idx, row in enumerate(trace_table):
                 spot_id = row["Spot_ID"]
 
@@ -566,7 +562,7 @@ class ChromatinTraceTable:
 
         barcodes_to_remove = []
 
-        for idx, trace in enumerate(trace_table_indexed.groups):
+        for trace in trace_table_indexed.groups:
             number_unique_barcodes = len(list(set(trace["Barcode #"].data)))
 
             if number_unique_barcodes < minimum_number_barcodes:
@@ -576,9 +572,7 @@ class ChromatinTraceTable:
 
         list_barcode_to_remove = []
         for barcodes in barcodes_to_remove:
-            for x in barcodes:
-                list_barcode_to_remove.append(x)
-
+            list_barcode_to_remove.extend(iter(barcodes))
         rows_to_remove = []
 
         for idx, row in enumerate(trace_table):
@@ -601,7 +595,7 @@ class ChromatinTraceTable:
         self.data = trace_table
 
     def plots_traces(
-        self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=[0.1, 0.1, 0.25]
+        self, filename_list, masks=np.zeros((2048, 2048)), pixel_size=None
     ):
         """
         This function plots 3 subplots (xy, xz, yz) with the localizations.
@@ -614,11 +608,14 @@ class ChromatinTraceTable:
             filename
         """
 
+        if pixel_size is None:
+            pixel_size = [0.1, 0.1, 0.25]
         data = self.data
 
         # indexes table by ROI
         data_indexed, number_rois = decode_rois(data)
 
+        im_size = 20
         for i_roi in range(number_rois):
             # creates sub Table for this ROI
             data_roi = data_indexed.groups[i_roi]
@@ -629,7 +626,6 @@ class ChromatinTraceTable:
 
             # initializes figure
             fig = plt.figure(constrained_layout=False)
-            im_size = 20
             fig.set_size_inches((im_size * 2, im_size))
             gs = fig.add_gridspec(2, 2)
             ax = [
@@ -707,7 +703,7 @@ class ChromatinTraceTable:
 
             # saves output figure
             filename_list_i = filename_list.copy()
-            filename_list_i.insert(-1, "_ROI" + str(n_roi))
+            filename_list_i.insert(-1, f"_ROI{str(n_roi)}")
             traces = "".join(filename_list_i)
             try:
                 fig.savefig(traces)

@@ -123,7 +123,7 @@ class Project(Feature):
         mean_matrix = np.zeros(nb_of_planes)
 
         # calculate STD in each plane
-        for i in range(0, nb_of_planes):
+        for i in range(nb_of_planes):
             std_matrix[i] = np.std(img[i])
             mean_matrix[i] = np.mean(img[i])
 
@@ -194,11 +194,11 @@ class Project(Feature):
         # sums images
         i_collapsed = None
         option = self.z_project_option[label]
-        if "MIP" == option:
+        if option == "MIP":
             # Max projection of selected planes
             i_collapsed = projection.maximum_projection(img)
             # i_collapsed = projection.maximum_projection(img[:-1])
-        elif "sum" == option:
+        elif option == "sum":
             # Sums selected planes
             i_collapsed = projection.sum_projection(img)
         else:
@@ -310,7 +310,7 @@ def make_2d_projections_file(file_name, current_param, current_session, data_fol
                 )
                 image_show_with_values(
                     [im_obj.focal_plane_matrix],
-                    title="focal plane = " + f"{im_obj.focus_plane:.2f}",
+                    title=f"focal plane = {im_obj.focus_plane:.2f}",
                     output_name=output_name,
                 )
 
@@ -349,7 +349,7 @@ def make_projections(current_param, current_session, file_name=None):
 
         if current_param.param_dict["parallel"]:
             threads = []
-            files_to_process_filtered = [
+            if files_to_process_filtered := [
                 x
                 for x in current_param.files_to_process
                 if (file_name is None)
@@ -360,9 +360,7 @@ def make_projections(current_param, current_session, file_name=None):
                         in [os.path.basename(x1) for x1 in file_name]
                     )
                 )
-            ]
-
-            if len(files_to_process_filtered) > 0:
+            ]:
                 # dask
                 client = get_client()
                 threads = [
@@ -377,11 +375,11 @@ def make_projections(current_param, current_session, file_name=None):
                 ]
 
                 print_log(f"$ Waiting for {len(threads)} threads to complete ")
-                for _, _ in enumerate(threads):
+                for _ in threads:
                     wait(threads)
 
         else:
-            for _, filename_to_process in enumerate(current_param.files_to_process):
+            for filename_to_process in current_param.files_to_process:
                 if (file_name is None) or (
                     file_name is not None
                     and (
@@ -393,8 +391,6 @@ def make_projections(current_param, current_session, file_name=None):
                         filename_to_process, current_param, current_session, data_folder
                     )
                     current_session.add(filename_to_process, session_name)
-                else:
-                    pass
 
 
 # =============================================================================

@@ -211,14 +211,13 @@ class SegmentSources3D:
 
         """
         window = self.p["windowDisplay"]
-        fig1 = _plot_image_3d(
+        return _plot_image_3d(
             image_3d,
             localizations=localizations,
             masks=masks,
             normalize_b=normalize_b,
             window=window,
         )
-        return fig1
 
     def _segment_3d_volumes(self, image_3d_aligned):
         p = self.p

@@ -202,7 +202,7 @@ class LocalizationTable:
 
             # saves output figure
             filename_list_i = filename_list.copy()
-            filename_list_i.insert(-1, "_ROI" + str(n_roi))
+            filename_list_i.insert(-1, f"_ROI{str(n_roi)}")
             fig.savefig("".join(filename_list_i))
 
     def compares_localizations(
@@ -227,11 +227,8 @@ class LocalizationTable:
         barcode_map_2.add_index("Buid")
         number_localizations = len(barcode_map_1)
 
-        diffs = {}
         labels = ["xcentroid", "ycentroid", "zcentroid"]
-        for label in labels:
-            diffs[label] = []
-
+        diffs = {label: [] for label in labels}
         # iterates over rows in barcode_map_1
         for row in range(number_localizations):
             buid_1 = barcode_map_2[row]["Buid"]
@@ -242,7 +239,6 @@ class LocalizationTable:
                 barcode_map_2.loc[buid_1]
             except KeyError:
                 barcode_found = False
-                pass
 
             # collects differences in values between same localization in both tables
             if barcode_found:
@@ -262,7 +258,7 @@ class LocalizationTable:
         for label, axis in zip(labels, ax):
             r = np.array(diffs[label])
             axis.hist(r, bins=20)
-            axis.set_xlabel(label + " correction, px", fontsize=fontsize)
+            axis.set_xlabel(f"{label} correction, px", fontsize=fontsize)
             axis.set_ylabel("counts", fontsize=fontsize)
 
         ax[3].scatter(
@@ -285,15 +281,12 @@ def decode_rois(data):
 
 
 def build_color_dict(data, key="Barcode #"):
-    color_dict = {}
-
     unique_barcodes = np.unique(data[key])
     output_array = range(unique_barcodes.shape[0])
 
-    for barcode, output in zip(unique_barcodes, output_array):
-        color_dict[str(barcode)] = output
-
-    return color_dict
+    return {
+        str(barcode): output for barcode, output in zip(unique_barcodes, output_array)
+    }
 
 
 def plots_localization_projection(coord1, coord2, axis, colors, title="" * 3):

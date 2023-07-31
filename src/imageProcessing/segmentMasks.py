@@ -123,7 +123,7 @@ def show_image_sources(
     y = sources["ycentroid"] + 0.5
 
     fig = _show_image_sources(im, im1_bkg_substracted, x, y, flux, percent=percent)
-    fig.savefig(output_filename + "_segmentedSources.png")
+    fig.savefig(f"{output_filename}_segmentedSources.png")
     plt.close(fig)
 
     write_string_to_file(
@@ -143,7 +143,7 @@ def show_image_masks(im, segm_deblend, markdown_filename, output_filename):
     fig.set_size_inches((30, 30))
     plt.imshow(im, cmap="Greys_r", origin="lower", norm=norm)
     plt.imshow(segm_deblend, origin="lower", cmap=cmap, alpha=0.5)
-    plt.savefig(output_filename + "_segmentedMasks.png")
+    plt.savefig(f"{output_filename}_segmentedMasks.png")
     plt.close()
     write_string_to_file(
         markdown_filename,
@@ -388,7 +388,7 @@ def tessellate_masks(segm_deblend):
     points = np.vstack((x, y)).T
 
     # currently takes 1min for approx 600 polygons
-    for label in range(0, num_masks):  # label is shifted by -1 now
+    for label in range(num_masks):  # label is shifted by -1 now
         mask_id = label + 1
 
         idx_vor_region = voronoi_data.point_region[label]
@@ -486,9 +486,7 @@ def get_tessellation(xy, img_shape):
     xy = np.append(xy, [corner1, corner2, corner3, corner4], axis=0)
 
     # perform Voroin tesseslation
-    voronoi_data = Voronoi(xy)
-
-    return voronoi_data
+    return Voronoi(xy)
 
 
 def segment_mask_inhomog_background(im, current_param):
@@ -613,8 +611,7 @@ def segment_mask_stardist(im, current_param):
 
     if n_channel > 1:
         print_log(
-            "> Normalizing image channels %s."
-            % ("jointly" if axis_norm is None or 2 in axis_norm else "independently")
+            f'> Normalizing image channels {"jointly" if axis_norm is None or 2 in axis_norm else "independently"}.'
         )
 
     model = StarDist2D(
@@ -684,10 +681,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         #               Segments barcodes
         ##########################################
 
-        if (
-            label == "barcode"
-            and len([i for i in root_filename.split("_") if "RT" in i]) > 0
-        ):
+        if label == "barcode" and [i for i in root_filename.split("_") if "RT" in i]:
             segmentation_method = current_param.param_dict["segmentedObjects"][
                 "background_method"
             ]
@@ -716,9 +710,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
             # [ formats results Table for output by adding buid, barcode_id, CellID and roi]
 
             # buid
-            buid = []
-            for i in range(len(output)):
-                buid.append(str(uuid.uuid4()))
+            buid = [str(uuid.uuid4()) for _ in range(len(output))]
             col_buid = Column(buid, name="Buid", dtype=str)
 
             # barcode_id, cellID and roi
@@ -743,9 +735,6 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
             # for col in output.colnames:
             #    output[col].info.format = '%.8g'  # for consistent table output
 
-        #######################################
-        #           Segments Masks
-        #######################################
         elif label in ("DAPI", "mask"):  # and root_filename.split("_")[2] == "DAPI":
             if (
                 current_param.param_dict["segmentedObjects"]["background_method"]
@@ -769,9 +758,11 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
                 output = np.zeros(1)
                 return output
 
-            if "tesselation" in current_param.param_dict["segmentedObjects"].keys():
-                if current_param.param_dict["segmentedObjects"]["tesselation"]:
-                    _, output = tessellate_masks(output)
+            if (
+                "tesselation" in current_param.param_dict["segmentedObjects"].keys()
+                and current_param.param_dict["segmentedObjects"]["tesselation"]
+            ):
+                _, output = tessellate_masks(output)
 
             # show results
             if "labeled" in locals():
@@ -797,20 +788,16 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
 
             # saves output 2d zProjection as matrix
             im_obj.save_image_2d(data_folder.output_folders["zProject"])
-            save_image_2d_cmd(output, output_filename + "_Masks")
+            save_image_2d_cmd(output, f"{output_filename}_Masks")
         else:
             output = []
         del im_obj
 
         return output
     else:
-        print_log(
-            "# 2D aligned file does not exist:{}\n{}\n{}".format(
-                filename_2d_aligned,
-                file_name in current_session.data.keys(),
-                os.path.exists(filename_2d_aligned),
-            )
-        )
+        print_log(f"# 2D aligned file does not exist:{filename_2d_aligned}")
+        print_log(f"\t{file_name in current_session.data.keys()}")
+        print_log(f"\t{os.path.exists(filename_2d_aligned)}")
         return []
 
 
@@ -819,10 +806,9 @@ def segment_masks(current_param, current_session, file_name=None):
 
     # processes folders and files
     print_log(
-        "\n===================={}:{}====================\n".format(
-            session_name, current_param.param_dict["acquisition"]["label"]
-        )
+        f'\n===================={session_name}:{current_param.param_dict["acquisition"]["label"]}====================\n'
     )
+
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_log(f"> folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
@@ -853,22 +839,24 @@ def segment_masks(current_param, current_session, file_name=None):
             futures = []
 
             for filename_to_process in current_param.files_to_process:
-                if file_name is None or (
-                    file_name is not None
-                    and os.path.basename(file_name)
-                    == os.path.basename(filename_to_process)
-                ):
-                    if label != "fiducial":
-                        futures.append(
-                            client.submit(
-                                make_segmentations,
-                                filename_to_process,
-                                current_param,
-                                current_session,
-                                data_folder,
-                            )
+                if (
+                    file_name is None
+                    or (
+                        file_name is not None
+                        and os.path.basename(file_name)
+                        == os.path.basename(filename_to_process)
+                    )
+                ) and label != "fiducial":
+                    futures.append(
+                        client.submit(
+                            make_segmentations,
+                            filename_to_process,
+                            current_param,
+                            current_session,
+                            data_folder,
                         )
-                        current_session.add(filename_to_process, session_name)
+                    )
+                    current_session.add(filename_to_process, session_name)
 
             print_log(f"Waiting for {len(futures)} results to arrive")
 
@@ -888,38 +876,36 @@ def segment_masks(current_param, current_session, file_name=None):
                     )
                 print_log(f"$ File {output_file} written to file.")
                 print_log(
-                    "$ Detected spots: {}".format(
-                        ",".join([str(x) for x in detected_spots])
-                    )
+                    f'$ Detected spots: {",".join([str(x) for x in detected_spots])}'
                 )
 
         else:
             for filename_to_process in current_param.files_to_process:
-                if file_name is None or (
-                    file_name is not None
-                    and os.path.basename(file_name)
-                    == os.path.basename(filename_to_process)
-                ):
-                    if label != "fiducial":
-                        # running in sequential mode
-                        output = make_segmentations(
-                            filename_to_process,
-                            current_param,
-                            current_session,
-                            data_folder,
+                if (
+                    file_name is None
+                    or (
+                        file_name is not None
+                        and os.path.basename(file_name)
+                        == os.path.basename(filename_to_process)
+                    )
+                ) and label != "fiducial":
+                    # running in sequential mode
+                    output = make_segmentations(
+                        filename_to_process,
+                        current_param,
+                        current_session,
+                        data_folder,
+                    )
+
+                    # gathers results from different barcodes and rois
+                    if label == "barcode":
+                        barcodes_coordinates = vstack([barcodes_coordinates, output])
+                        barcodes_coordinates.write(
+                            output_file, format="ascii.ecsv", overwrite=True
                         )
+                        print_log(f"$ File {output_file} written to file.")
 
-                        # gathers results from different barcodes and rois
-                        if label == "barcode":
-                            barcodes_coordinates = vstack(
-                                [barcodes_coordinates, output]
-                            )
-                            barcodes_coordinates.write(
-                                output_file, format="ascii.ecsv", overwrite=True
-                            )
-                            print_log(f"$ File {output_file} written to file.")
-
-                        current_session.add(filename_to_process, session_name)
+                    current_session.add(filename_to_process, session_name)
 
     return 0
 
@@ -950,45 +936,42 @@ def _segment_2d_image_by_thresholding(
         filter_kernel=kernel,
     )
 
-    if segm.nlabels > 0:
-        # removes masks too close to border
-        segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-
-        if segm.nlabels > 0:
-            segm_deblend = deblend_sources(
-                image_2d,
-                segm,
-                npixels=area_min,  # watch out, this is per plane!
-                filter_kernel=kernel,
-                nlevels=nlevels,
-                contrast=contrast,
-                relabel=True,
-                mode="exponential",
-            )
-            if segm_deblend.nlabels > 0:
-                # removes Masks too big or too small
-                for label in segm_deblend.labels:
-                    # take regions with large enough areas
-                    area = segm_deblend.get_area(label)
-                    if area < area_min or area > area_max:
-                        segm_deblend.remove_label(label=label)
-
-                # relabel so masks numbers are consecutive
-                # segm_deblend.relabel_consecutive()
-
-            # image_2d_segmented = segm.data % changed during recoding function
-            image_2d_segmented = segm_deblend.data
-
-            image_2d_segmented[image_2d_segmented > 0] = 1
-            return image_2d_segmented
-
-        else:
-            # returns empty image as no objects were detected
-            return segm.data
-
-    else:
+    if segm.nlabels <= 0:
         # returns empty image as no objects were detected
         return segm.data
+    # removes masks too close to border
+    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+
+    if segm.nlabels <= 0:
+        # returns empty image as no objects were detected
+        return segm.data
+
+    segm_deblend = deblend_sources(
+        image_2d,
+        segm,
+        npixels=area_min,  # watch out, this is per plane!
+        filter_kernel=kernel,
+        nlevels=nlevels,
+        contrast=contrast,
+        relabel=True,
+        mode="exponential",
+    )
+    if segm_deblend.nlabels > 0:
+        # removes Masks too big or too small
+        for label in segm_deblend.labels:
+            # take regions with large enough areas
+            area = segm_deblend.get_area(label)
+            if area < area_min or area > area_max:
+                segm_deblend.remove_label(label=label)
+
+        # relabel so masks numbers are consecutive
+        # segm_deblend.relabel_consecutive()
+
+    # image_2d_segmented = segm.data % changed during recoding function
+    image_2d_segmented = segm_deblend.data
+
+    image_2d_segmented[image_2d_segmented > 0] = 1
+    return image_2d_segmented
 
 
 def _segment_3d_volumes_stardist(
@@ -1025,11 +1008,7 @@ def _segment_3d_volumes_stardist(
     mask = np.array(labels > 0, dtype=int)
 
     # Now we want to separate objects in 3D using watersheding
-    if deblend_3d:
-        labeled_image = _deblend_3d_segmentation(mask)
-    else:
-        labeled_image = labels
-
+    labeled_image = _deblend_3d_segmentation(mask) if deblend_3d else labels
     return mask, labeled_image
 
 
@@ -1046,11 +1025,7 @@ def _segment_3d_volumes_by_thresholding(
     deblend_3d=False,
     parallel_execution=True,
 ):
-    if parallel_execution:
-        client = try_get_client()
-    else:
-        client = None
-
+    client = try_get_client() if parallel_execution else None
     number_planes = image_3d.shape[0]
 
     kernel = Gaussian2DKernel(sigma, x_size=sigma, y_size=sigma)
@@ -1061,12 +1036,11 @@ def _segment_3d_volumes_by_thresholding(
     parallel = True
     if client is None:
         parallel = False
-    else:
-        if len(client.scheduler_info()["workers"]) < 1:
-            parallel = False
-            print_log("# Failed getting workers. Report of scheduler:")
-            for key in client.scheduler_info().keys():
-                print_log(f"{key}:{client.scheduler_info()[key]}")
+    elif len(client.scheduler_info()["workers"]) < 1:
+        parallel = False
+        print_log("# Failed getting workers. Report of scheduler:")
+        for key in client.scheduler_info().keys():
+            print_log(f"{key}:{client.scheduler_info()[key]}")
 
     if not parallel:
         print_log(f"> Segmenting {number_planes} planes using 1 worker...")

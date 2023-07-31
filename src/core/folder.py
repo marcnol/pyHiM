@@ -62,15 +62,8 @@ class Folders:
         )
         self.create_folder_with_key("zProject")
 
-        self.output_folders["alignImages"] = (
-            files_folder + os.sep + current_param.param_dict["alignImages"]["folder"]
-        )
-        self.create_folder_with_key("alignImages")
-        self.output_files["alignImages"] = (
-            self.output_folders["alignImages"]
-            + os.sep
-            + current_param.param_dict["alignImages"]["outputFile"]
-        )
+        self._create_folder(files_folder, current_param, "alignImages")
+
         self.output_files["dictShifts"] = (
             self.output_folders["alignImages"]
             + os.sep
@@ -78,17 +71,7 @@ class Folders:
         )
 
         if "segmentedObjects" in current_param.param_dict.keys():
-            self.output_folders["segmentedObjects"] = (
-                files_folder
-                + os.sep
-                + current_param.param_dict["segmentedObjects"]["folder"]
-            )
-            self.create_folder_with_key("segmentedObjects")
-            self.output_files["segmentedObjects"] = (
-                self.output_folders["segmentedObjects"]
-                + os.sep
-                + current_param.param_dict["segmentedObjects"]["outputFile"]
-            )
+            self._create_folder(files_folder, current_param, "segmentedObjects")
 
         # backwards compatibility
         if "buildsPWDmatrix" in current_param.param_dict.keys():
@@ -105,6 +88,16 @@ class Folders:
         self.output_files["buildsPWDmatrix"] = (
             self.output_folders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
         )
+
+    # TODO: apply this method for each folder creation inside `create_folders`
+    def _create_folder(self, files_folder, current_param, arg2):
+        self.output_folders[arg2] = (
+            files_folder + os.sep + current_param.param_dict[arg2]["folder"]
+        )
+        self.create_folder_with_key(arg2)
+        self.output_files[arg2] = (
+            self.output_folders[arg2] + os.sep
+        ) + current_param.param_dict[arg2]["outputFile"]
 
 
 def create_single_folder(folder_path):

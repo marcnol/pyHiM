@@ -69,7 +69,7 @@ class Image:
     # read an image as a numpy array
     def load_image_2d(self, file_name, master_folder, tag="_2d"):
         self.file_name = file_name
-        file_name = self.get_image_filename(master_folder, tag) + ".npy"
+        file_name = f"{self.get_image_filename(master_folder, tag)}.npy"
 
         self.data_2d = np.load(file_name)
         print_log(f"$ Loading from disk:{os.path.basename(file_name)}")
@@ -154,7 +154,7 @@ class Image:
             ax.imshow(self.data_2d, origin="lower", cmap="Greys_r", norm=norm)
             return ax
 
-        if save and not show:
+        if save:
             fig.add_axes(ax)
             ax.imshow(self.data_2d, origin="lower", cmap="Greys_r", norm=norm)
             fig.savefig(output_name)
@@ -177,8 +177,7 @@ def scatter_3d_image(image):
 
     """
     number_planes = image.shape[0]
-    image_list_scattered = [image[z, :, :] for z in range(number_planes)]
-    return image_list_scattered
+    return [image[z, :, :] for z in range(number_planes)]
 
 
 def reassemble_3d_image(client, futures, output_shape):
@@ -390,10 +389,7 @@ def _remove_inhomogeneous_background_2d(im, filter_size=(3, 3), background=False
 
     im1_bkg_substracted = im - bkg.background
 
-    if background:
-        return im1_bkg_substracted, bkg
-    else:
-        return im1_bkg_substracted
+    return (im1_bkg_substracted, bkg) if background else im1_bkg_substracted
 
 
 def _remove_inhomogeneous_background_3d(
@@ -424,11 +420,7 @@ def _remove_inhomogeneous_background_3d(
         processed 3D image.
 
     """
-    if parallel_execution:
-        client = try_get_client()
-    else:
-        client = None
-
+    client = try_get_client() if parallel_execution else None
     number_planes = image_3d.shape[0]
     output = np.zeros(image_3d.shape)
 
@@ -477,7 +469,4 @@ def _remove_inhomogeneous_background_3d(
             )
             output[z, :, :] = image_2d - bkg.background
 
-    if background:
-        return output, bkg.background
-    else:
-        return output
+    return (output, bkg.background) if background else output

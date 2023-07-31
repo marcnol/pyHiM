@@ -98,11 +98,8 @@ class Parameters:
     #     self.param_dict = converted_param
 
     def get_sectioned_params(self, section_name: str):
-        section_dict = {}
-        # print(self.param_dict)
         tempo = self.param_dict["common"].get(section_name)
-        section_dict["common"] = tempo
-        section_dict["labels"] = {}
+        section_dict = {"common": tempo, "labels": {}}
         for key, value in self.param_dict["labels"].items():
             section_dict["labels"][key] = value.get(section_name)
         return section_dict
@@ -167,14 +164,14 @@ class Parameters:
         ]
 
         # defines channels for RNA and DAPI-fiducial
-        if len(dapi_files) > 0:
+        if dapi_files:
             channel_dapi_fiducial = self.set_channel("fiducialDAPI_channel", "ch02")
             channel_dapi_rna = self.set_channel("RNA_channel", "ch01")
         else:
             channel_dapi_fiducial = self.set_channel("fiducialDAPI_channel", "ch01")
             channel_dapi_rna = self.set_channel("RNA_channel", "ch04")
 
-        if channel_dapi_fiducial and len(dapi_files) == 0:
+        if channel_dapi_fiducial and not dapi_files:
             warn(
                 "\n\n****You are using ch02 for channel_dapi_fiducial \
                     but there are only 2 channels for DAPI!\n\n"
@@ -250,6 +247,7 @@ class Parameters:
             print_log(f"{i}\t{os.path.basename(file)}")
 
     def decode_file_parts(self, file_name):
+        # sourcery skip: use-named-expression
         """
         decodes variables from an input file. typically, RE takes the form:
 
@@ -277,9 +275,7 @@ class Parameters:
         file_parts = {}
         # decodes regular expressions
         regex = self.param_dict.get("acquisition").get("fileNameRegExp")
-        if regex:
-            return re.search(regex, file_name)
-        return None
+        return re.search(regex, file_name) if regex else None
 
     @staticmethod
     def get_standard_parameters():
@@ -470,7 +466,7 @@ def print_dict(dictionary):
     """
     print("\n$ Parameters loaded:")
     for key in dictionary.keys():
-        spacer = "\t" * (3 - int(len(key) / 8))
+        spacer = "\t" * (3 - len(key) // 8)
         print(f"\t{key}{spacer}{dictionary[key]}")
     print("\n")
 
@@ -492,12 +488,7 @@ def get_dictionary_value(dictionary, key, default=""):
     str
         value or default
     """
-    if key in dictionary.keys():
-        value = dictionary[key]
-    else:
-        value = default
-
-    return value
+    return dictionary[key] if key in dictionary.keys() else default
 
 
 def loads_barcode_dict(file_name):

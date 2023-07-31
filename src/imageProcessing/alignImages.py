@@ -77,7 +77,7 @@ def display_equalization_histograms(
     ax4.set_yscale("log")
     ax1.vlines(lower_threshold["Im1"], 0, i_histogram["Im1"][0][0].max(), colors="r")
     ax2.vlines(lower_threshold["Im2"], 0, i_histogram["Im2"][0][0].max(), colors="r")
-    plt.savefig(output_filename + "_intensityHist.png")
+    plt.savefig(f"{output_filename}_intensityHist.png")
     write_string_to_file(
         markdown_filename,
         f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n",
@@ -101,9 +101,7 @@ def remove_inhomogeneous_background(im, current_param):
         bkg_estimator=bkg_estimator,
     )
 
-    im1_bkg_substracted = im - bkg.background
-
-    return im1_bkg_substracted
+    return im - bkg.background
 
 
 def save_image_differences(img_1, img_2, img_3, img_4, output_filename):
@@ -399,7 +397,7 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
             relative_shifts,
             rms_image,
             contour,
-            file_name=output_filename + "_block_alignments.png",
+            file_name=f"{output_filename}_block_alignments.png",
         )
 
         write_string_to_file(
@@ -409,8 +407,8 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         )
 
         # saves mask of valid regions with a correction within the tolerance
-        save_image_2d_cmd(rms_image, output_filename + "_rmsBlockMap")
-        save_image_2d_cmd(relative_shifts, output_filename + "_errorAlignmentBlockMap")
+        save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
+        save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
 
     image2_corrected_raw = shift_image(image2_uncorrected, shift)
 
@@ -429,7 +427,7 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
     save_2_images_rgb(
         image1_uncorrected,
         image2_corrected_raw,
-        output_filename + "_overlay_corrected.png",
+        f"{output_filename}_overlay_corrected.png",
     )
 
     save_image_differences(
@@ -437,7 +435,7 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         image2_uncorrected,
         image1_uncorrected,
         image2_corrected_raw,
-        output_filename + "_referenceDifference.png",
+        f"{output_filename}_referenceDifference.png",
     )
 
     # reports image in MD file
@@ -463,7 +461,7 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
     ]
 
     # saves registered fiducial image
-    save_image_2d_cmd(image2_corrected_raw, output_filename + "_2d_registered")
+    save_image_2d_cmd(image2_corrected_raw, f"{output_filename}_2d_registered")
 
     del img_2
     return shift, table_entry
@@ -472,10 +470,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
 def align_images_in_current_folder(
     current_folder, current_param, data_folder, current_session, file_name=None
 ):
-    # session
-    session_name = "alignImages"
-    verbose = False
-
     alignment_results_table = Table(
         names=(
             "aligned file",
@@ -491,9 +485,6 @@ def align_images_in_current_folder(
     # initializes variables
     files_folder = glob.glob(current_folder + os.sep + "*.tif")
     data_folder.create_folders(current_folder, current_param)
-    dict_shifts = (
-        {}
-    )  # defaultdict(dict) # contains dictionary of shifts for each folder
 
     # generates lists of files to process for current_folder
     current_param.find_files_to_process(files_folder)
@@ -515,6 +506,10 @@ def align_images_in_current_folder(
     )
 
     if len(filenames_with_ref_barcode) > 0:
+        verbose = False
+        # contains dictionary of shifts for each folder
+        dict_shifts = {}
+        session_name = "alignImages"
         # loops over fiducials images one ROI at a time
         for filename_reference in filenames_with_ref_barcode:
             # loads reference fiducial image for this ROI
@@ -546,24 +541,7 @@ def align_images_in_current_folder(
             ]
             print_log(f"Found {len(filenames_to_process_list)} files in ROI: {roi}")
             print_log(
-                "[roi:cycle] {}".format(
-                    "|".join(
-                        [
-                            str(
-                                current_param.decode_file_parts(os.path.basename(x))[
-                                    "roi"
-                                ]
-                            )
-                            + ":"
-                            + str(
-                                current_param.decode_file_parts(os.path.basename(x))[
-                                    "cycle"
-                                ]
-                            )
-                            for x in filenames_to_process_list
-                        ]
-                    )
-                )
+                f'[roi:cycle] {"|".join([str(current_param.decode_file_parts(os.path.basename(x))["roi"]) + ":" + str(current_param.decode_file_parts(os.path.basename(x))["cycle"]) for x in filenames_to_process_list])}'
             )
 
             if current_param.param_dict["parallel"]:
@@ -613,29 +591,28 @@ def align_images_in_current_folder(
                     )["roi"]
                     print_log(f"\n$ About to process file {i_file} \\ {n_files}")
 
-                    if filename_to_process not in filename_reference:
-                        if file_name is None or (
-                            file_name is not None
-                            and os.path.basename(file_name)
-                            == os.path.basename(filename_to_process)
-                        ):
-                            # aligns files and saves results to database in dict format and to a Table
-                            shift, table_entry = align_2_files(
-                                filename_to_process,
-                                img_reference,
-                                current_param,
-                                data_folder,
-                                verbose,
-                            )
-                            dict_shift_roi[label] = shift.tolist()
-                            alignment_results_table.add_row(table_entry)
-                            current_session.add(filename_to_process, session_name)
-                    elif filename_to_process in filename_reference:
+                    if filename_to_process in filename_reference:
                         print_log(
                             f"\n$ Skipping reference file: {os.path.basename(filename_to_process)} "
                         )
+                    elif file_name is None or (
+                        file_name is not None
+                        and os.path.basename(file_name)
+                        == os.path.basename(filename_to_process)
+                    ):
+                        # aligns files and saves results to database in dict format and to a Table
+                        shift, table_entry = align_2_files(
+                            filename_to_process,
+                            img_reference,
+                            current_param,
+                            data_folder,
+                            verbose,
+                        )
+                        dict_shift_roi[label] = shift.tolist()
+                        alignment_results_table.add_row(table_entry)
+                        current_session.add(filename_to_process, session_name)
             # accumulates shifst for this ROI into global dictionary
-            dict_shifts["ROI:" + roi] = dict_shift_roi
+            dict_shifts[f"ROI:{roi}"] = dict_shift_roi
             del img_reference
 
         # saves dicShifts dictionary with shift results
@@ -718,9 +695,6 @@ def apply_registrations_to_filename(
     None.
 
     """
-    # session
-    session_name = "registersImages"
-
     # gets shift from dictionary
     # ROI = os.path.basename(filename_to_process).split("_")[position_roi_information]
     roi = current_param.decode_file_parts(os.path.basename(filename_to_process))["roi"]
@@ -728,11 +702,11 @@ def apply_registrations_to_filename(
     label = os.path.basename(filename_to_process).split("_")[2]  # to FIX
 
     try:
-        shift_array = dict_shifts["ROI:" + roi][label]
+        shift_array = dict_shifts[f"ROI:{roi}"][label]
     except KeyError:
         shift_array = None
         print_log(
-            f"$ Could not find dictionary with alignment parameters for this ROI: {'ROI:' + roi}, label: {label}"
+            f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
         )
 
     if shift_array is not None:
@@ -751,12 +725,12 @@ def apply_registrations_to_filename(
             tag="_2d_registered",
         )
 
+        # session
+        session_name = "registersImages"
+
         # logs output
         current_session.add(filename_to_process, session_name)
-    elif (
-        shift_array is None
-        and label == current_param.param_dict["alignImages"]["referenceFiducial"]
-    ):
+    elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
         im_obj = Image(current_param)
         im_obj.load_image_2d(
             filename_to_process, data_folder.output_folders["zProject"]
@@ -879,11 +853,7 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     shifted 3D image.
 
     """
-    if parallel_execution:
-        client = try_get_client()
-    else:
-        client = None
-
+    client = try_get_client() if parallel_execution else None
     number_planes = image.shape[0]
 
     if client is None:
@@ -928,7 +898,7 @@ def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     block_target = blocks[1]
 
     # - loop thru blocks and calculates block shift in xyz:
-    shift_matrices = [np.zeros(block_ref.shape[0:2]) for x in range(3)]
+    shift_matrices = [np.zeros(block_ref.shape[:2]) for _ in range(3)]
 
     for i in trange(block_ref.shape[0]):
         for j in range(block_ref.shape[1]):
@@ -982,11 +952,10 @@ def combine_blocks_image_by_reprojection(
     img_sizes = [x * number_blocks for x in block_sizes]
 
     # gets ranges for slicing
-    slice_coordinates = []
-    for block_size in block_sizes:
-        slice_coordinates.append(
-            [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
-        )
+    slice_coordinates = [
+        [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
+        for block_size in block_sizes
+    ]
 
     # creates output images
     output = np.zeros((img_sizes[0], img_sizes[1], 3))
@@ -1002,9 +971,7 @@ def combine_blocks_image_by_reprojection(
     # takes one plane block
     for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
         for j, j_slice in enumerate(slice_coordinates[1]):
-            imgs = []
-            imgs.append(block_ref[i, j])  # appends reference image to image list
-
+            imgs = [block_ref[i, j]]
             if shift_matrices is not None:
                 shift_3d = np.array(
                     [x[i, j] for x in shift_matrices]
@@ -1124,7 +1091,7 @@ def align_2_images_cross_correlation(
     image2_corrected = shift_image(image2_adjusted, shift)
     image2_corrected = exposure.rescale_intensity(image2_corrected, out_range=(0, 1))
 
-    results = (
+    return (
         shift,
         error,
         diffphase,
@@ -1134,8 +1101,6 @@ def align_2_images_cross_correlation(
         image1_adjusted,
         image2_adjusted,
     )
-
-    return results
 
 
 def align_cv2(im1, im2, warp_mode):
@@ -1178,9 +1143,6 @@ def align_cv2(im1, im2, warp_mode):
 def apply_correction(im2, warp_matrix):
     sz = im2.shape
 
-    # Use warpAffine for Translation, Euclidean and Affine
-    im2_aligned = cv2.warpAffine(
+    return cv2.warpAffine(
         im2, warp_matrix, (sz[1], sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     )
-
-    return im2_aligned

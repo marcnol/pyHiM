@@ -53,16 +53,7 @@ class FilterLocalizations:
             True if the test is passed.
 
         """
-        if self.ndims == 3:  # and  "3DfitKeep" in barcode_map.keys()
-            # [reading the flag in barcode_map_roi assigned by the 3D localization routine]
-            keep = (
-                barcode_map["flux"][i] > self.flux_min
-            )  # and barcode_map["3DfitKeep"][i]
-        else:
-            # [or by reading the flux from 2D localization]
-            keep = barcode_map["flux"][i] > self.flux_min
-
-        return keep
+        return barcode_map["flux"][i] > self.flux_min
 
     def filter_barcode_table(self, barcode_map):
         """
@@ -82,13 +73,13 @@ class FilterLocalizations:
         rows_to_remove = []
         n_barcodes = len(barcode_map)
         print(f"$ Minimum flux: {self.flux_min}")
+        # [filters barcode per blockAlignmentMask, if existing]
+        # keep_alignment = self.filter_localizations_block_alignment(barcode_map, i)
+        keep_alignment = True
+
         for i in trange(n_barcodes):  # i is the index of the barcode in barcode_map_roi
             # [filters barcode localizations either by]
             keep_quality = self.filter_localizations_quality(barcode_map, i)
-
-            # [filters barcode per blockAlignmentMask, if existing]
-            # keep_alignment = self.filter_localizations_block_alignment(barcode_map, i)
-            keep_alignment = True
 
             if not keep_quality or not keep_alignment:
                 rows_to_remove.append(i)
@@ -152,23 +143,16 @@ class FilterLocalizations:
             self.data_folder.create_folders(current_folder, self.current_param)
             print_log(f"> Processing Folder: {current_folder}")
 
-            files = [
-                x
-                for x in glob.glob(
+            if files := list(
+                glob.glob(
                     self.data_folder.output_files["segmentedObjects"]
                     + "_*"
                     + label
                     + ".dat"
                 )
-            ]
-
-            if len(files) > 0:
+            ):
                 for file in files:
-                    if "3D" in os.path.basename(file):
-                        self.ndims = 3
-                    else:
-                        self.ndims = 2
-
+                    self.ndims = 3 if "3D" in os.path.basename(file) else 2
                     self.setup_filter_values()
 
                     # Loads barcode coordinate Tables
@@ -225,11 +209,5 @@ def get_file_table_new_name(file):
             int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
         ]
 
-        if len(version_numbers) > 0:
-            new_version = max(version_numbers) + 1
-        else:
-            new_version = 0
-
-    new_file = file.split(".dat")[0] + "_version_" + str(new_version) + "_.dat"
-
-    return new_file
+        new_version = max(version_numbers) + 1 if version_numbers else 0
+    return file.split(".dat")[0] + "_version_" + str(new_version) + "_.dat"

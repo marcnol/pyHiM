@@ -133,9 +133,7 @@ class BuildMatrix:
         # r_mum = np.column_stack((x, y, z))
         r_mum = np.column_stack((x, y, z))
 
-        pairwd = pairwise_distances(r_mum)
-
-        return pairwd
+        return pairwise_distances(r_mum)
 
     def build_distance_matrix(self, mode="mean"):
         """
@@ -200,9 +198,9 @@ class BuildMatrix:
                 for barcode2, ibarcode2 in zip(
                     barcodes_to_process, range(len(barcodes_to_process))
                 ):
-                    index_barcode_2 = np.nonzero(unique_barcodes == barcode2)[0][0]
-
                     if barcode1 != barcode2:
+                        index_barcode_2 = np.nonzero(unique_barcodes == barcode2)[0][0]
+
                         # attributes distance from the PWDmatrix field in the sc_pwd_item table
                         newdistance = pwd_matrix[ibarcode1, ibarcode2]
 
@@ -355,11 +353,11 @@ class BuildMatrix:
         output_filename = file.split(".")[0] + "_Matrix"
 
         # saves output
-        np.save(output_filename + "_PWDscMatrix.npy", self.sc_matrix)
+        np.save(f"{output_filename}_PWDscMatrix.npy", self.sc_matrix)
         print(f"$ saved: {output_filename}_PWDscMatrix.npy")
 
         np.savetxt(
-            output_filename + "_uniqueBarcodes.ecsv",
+            f"{output_filename}_uniqueBarcodes.ecsv",
             self.unique_barcodes,
             delimiter=" ",
             fmt="%d",
@@ -367,7 +365,7 @@ class BuildMatrix:
 
         print(f"$ saved: {output_filename}_uniqueBarcodes.ecsv")
 
-        np.save(output_filename + "_Nmatrix.npy", self.n_matrix)
+        np.save(f"{output_filename}_Nmatrix.npy", self.n_matrix)
         print(f"$ saved: {output_filename}_Nmatrix.npy")
 
     def launch_analysis(self, file):
@@ -414,7 +412,7 @@ class BuildMatrix:
             if "uniqueBarcodes" not in x
         ]
 
-        if len(files) < 1:
+        if not files:
             print_log("$ No chromatin trace table found !", "WARN")
             return
 

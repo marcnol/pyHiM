@@ -9,6 +9,7 @@ contains functions and classes needed for the analysis and plotting of HiM matri
 
 """
 
+
 # =============================================================================
 # IMPORTS
 # =============================================================================
@@ -16,6 +17,7 @@ contains functions and classes needed for the analysis and plotting of HiM matri
 
 import csv
 import glob
+import itertools
 import json
 import os
 
@@ -83,44 +85,42 @@ class AnalysisHiMMatrix:
             + self.run_parameters["action"]
         )
 
-        filename_parameters_json = output_filename + "_parameters.json"
+        filename_parameters_json = f"{output_filename}_parameters.json"
         with open(filename_parameters_json, encoding="utf-8") as json_file:
             folders_to_load = json.load(json_file)
         print(f"Loading parameter file:{filename_parameters_json}")
 
         # Creates filenames to be loaded
-        data_files = {}
-        data_files["ensembleContactProbability"] = "_ensembleContactProbability.npy"
-        data_files["SCmatrixCollated"] = "_SCmatrixCollated.npy"
-        data_files["SClabeledCollated"] = "_SClabeledCollated.npy"
+        data_files = {
+            "ensembleContactProbability": "_ensembleContactProbability.npy",
+            "SCmatrixCollated": "_SCmatrixCollated.npy",
+            "SClabeledCollated": "_SClabeledCollated.npy",
+        }
 
         if "3wayContacts_anchors" in list_data[dataset_name]:
             for i_anchor in list_data[dataset_name]["3wayContacts_anchors"]:
-                new_key = "anchor:" + str(i_anchor - 1)
-                data_files[new_key] = "_" + new_key + "_ensemble3wayContacts.npy"
+                new_key = f"anchor:{str(i_anchor - 1)}"
+                data_files[new_key] = f"_{new_key}_ensemble3wayContacts.npy"
         else:
             print("No anchors found")
 
         # loads datasets: numpy matrices
         data = {}
         print(f"Loading datasets from: {output_filename}")
-        for i_data_file in data_files.keys():
+        for i_data_file, value in data_files.items():
             print(
-                "Loaded: {}: <{}>".format(
-                    i_data_file,
-                    os.path.basename(output_filename + data_files[i_data_file]),
-                )
+                f"Loaded: {i_data_file}: <{os.path.basename(output_filename + value)}>"
             )
             data[i_data_file] = np.load(
                 output_filename + data_files[i_data_file]
             ).squeeze()
 
         # loads datasets: lists
-        run_name = load_list(output_filename + "_runName.csv")
+        run_name = load_list(f"{output_filename}_runName.csv")
         data["runName"] = run_name
         print(f"""Loaded runNames: {data["runName"]}""")
 
-        data["uniqueBarcodes"] = load_list(output_filename + "_uniqueBarcodes.csv")
+        data["uniqueBarcodes"] = load_list(f"{output_filename}_uniqueBarcodes.csv")
         print(f"""Loaded barcodes #: {data["uniqueBarcodes"]}""")
         self.number_barcodes = len(data["uniqueBarcodes"])
 
@@ -274,22 +274,18 @@ class AnalysisHiMMatrix:
             cells_with_label = [
                 idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x > 0
             ]
-            new_cell = 0
-            for i_cell in cells_with_label:
+            for new_cell, i_cell in enumerate(cells_with_label):
                 sc_matrix_selected[:, :, new_cell] = self.data["SCmatrixCollated"][
                     :, :, i_cell
                 ]
-                new_cell += 1
         elif self.run_parameters["action"] == "unlabeled":
             cells_with_label = [
                 idx for idx, x in enumerate(self.data["SClabeledCollated"]) if x == 0
             ]
-            new_cell = 0
-            for i_cell in cells_with_label:
+            for new_cell, i_cell in enumerate(cells_with_label):
                 sc_matrix_selected[:, :, new_cell] = self.data["SCmatrixCollated"][
                     :, :, i_cell
                 ]
-                new_cell += 1
         else:
             sc_matrix_selected = self.data["SCmatrixCollated"]
         print(f"n_cells retrieved: {sc_matrix_selected.shape[2]}")
@@ -395,20 +391,16 @@ def load_list(file_name):
 
 
 def attributes_labels2cells(snd_table, results_table, label="doc"):
+    # sourcery skip: extract-method
     sorted_snd_table = snd_table.group_by("MaskID #")
     list_keys = list(sorted_snd_table.groups.keys["MaskID #"].data)
-    index_key = [
+    if index_key := [
         index for i, index in zip(list_keys, range(len(list_keys))) if i == label
-    ]
-
-    # checks that there is at least one cell with the label
-    if len(index_key) > 0:
+    ]:
         snd_table_with_label = sorted_snd_table.groups[index_key[0]]
         print("\n>>> Matching labels")
         print(
-            "Found {} out of {} cells with {} in dataset".format(
-                len(snd_table_with_label), len(sorted_snd_table), label
-            )
+            f"Found {len(snd_table_with_label)} out of {len(sorted_snd_table)} cells with {label} in dataset"
         )
 
         # sorts Results Table by ROI
@@ -454,7 +446,7 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
                 if i_cell in cells_with_label
             ]
 
-            if len(list_of_selected_cells) > 0:
+            if list_of_selected_cells:
                 print(
                     f"""Detected {len(list_of_selected_cells)} cells in ROI {roi["ROI #"]} with label"""
                 )
@@ -470,9 +462,7 @@ def attributes_labels2cells(snd_table, results_table, label="doc"):
                     # cuids = cells_to_process_uid[list_of_selected_cells]
 
             print(
-                "Processed ROI # {}, found {} out of {} cells with {}".format(
-                    roi["ROI #"], len(list_of_selected_cells), len(group), label
-                )
+                f'Processed ROI # {roi["ROI #"]}, found {len(list_of_selected_cells)} out of {len(group)} cells with {label}'
             )
 
         # from list of cuids from cells that show label, I construct a binary vector of the same size as sc_matrix. Labeled cells have a 1.
@@ -523,11 +513,7 @@ def load_sc_data(list_data, dataset_name, p):
 
     dim_tag = ""
     if "d3" in p.keys():
-        if p["d3"]:
-            dim_tag = "_3D"
-        else:
-            dim_tag = "_2D"
-
+        dim_tag = "_3D" if p["d3"] else "_2D"
     sc_matrix_collated, unique_barcodes = [], []
     build_pwd_matrix_collated, run_name, sc_labeled_collated = [], [], []
 
@@ -538,10 +524,11 @@ def load_sc_data(list_data, dataset_name, p):
         # [makes list of files with Tables to load]
         # tries to load files from newer version of proceesingPipeline.py
         files_to_process_compatibility = glob.glob(
-            root_folder + "/buildsPWDmatrix" + dim_tag + "_order*ROI*.ecsv"
+            f"{root_folder}/buildsPWDmatrix{dim_tag}_order*ROI*.ecsv"
         )
+
         files_to_process = files_to_process_compatibility + glob.glob(
-            root_folder + "/Trace" + dim_tag + "_barcode_*ROI*.ecsv"
+            f"{root_folder}/Trace{dim_tag}_barcode_*ROI*.ecsv"
         )
 
         print(f"files_to_process: {root_folder}/Trace{dim_tag}_barcode_ROI.ecsv")
@@ -549,8 +536,9 @@ def load_sc_data(list_data, dataset_name, p):
         if len(files_to_process) == 0:
             # it resorts to old format
             files_to_process = glob.glob(
-                root_folder + "/buildsPWDmatrix" + dim_tag + "_*ROI*.ecsv"
+                f"{root_folder}/buildsPWDmatrix{dim_tag}_*ROI*.ecsv"
             )
+
         else:
             print(f"Found {len(files_to_process)} ECSV files in {root_folder}")
 
@@ -577,13 +565,12 @@ def load_sc_data(list_data, dataset_name, p):
                             print(
                                 f"order {i_filename}= {os.path.basename(file_name)}--> {file_order_stamp[i_filename]}"
                             )
-                    file_time_stamp[i_filename] = os.path.getmtime(file_name)
                     choosing_time_stamp = False
 
                 else:
-                    file_time_stamp[i_filename] = os.path.getmtime(file_name)
                     choosing_time_stamp = True
 
+                file_time_stamp[i_filename] = os.path.getmtime(file_name)
             if choosing_time_stamp:
                 file_order = np.argsort(file_time_stamp).astype(int)
             else:
@@ -597,14 +584,10 @@ def load_sc_data(list_data, dataset_name, p):
                 )  # ascii.ecsv
                 build_pwd_matrix = vstack([build_pwd_matrix, new_build_pwd_matrix])
                 print(
-                    "[{}:{}:{}] From {}, Read: {} cells, Cummulative: {} cells".format(
-                        i_filename,
-                        file_order[i_filename],
-                        file_time_stamp[file_order[i_filename]],
-                        os.path.basename(file_name),
-                        len(new_build_pwd_matrix),
-                        len(build_pwd_matrix),
-                    )
+                    f"[{i_filename}:{file_order[i_filename]}:{file_time_stamp[file_order[i_filename]]}] \
+                        From {os.path.basename(file_name)}, \
+                            Read: {len(new_build_pwd_matrix)} cells, \
+                                Cummulative: {len(build_pwd_matrix)} cells"
                 )
 
             # [loads snd_assigned_cells.ecsv files if available]
@@ -752,9 +735,8 @@ def list_sc_to_keep(p, mask):
         cells_to_plot = a
 
     print(
-        ">> label: {}\t action:{}\t Ncells2plot:{}\t Ncells in sc_matrix:{}".format(
-            p["label"], p["action"], max(cells_to_plot), len(mask)
-        )
+        f'>> label: {p["label"]}\t action:{p["action"]}\
+            \t Ncells2plot:{max(cells_to_plot)}\t Ncells in sc_matrix:{len(mask)}'
     )
 
     return cells_to_plot
@@ -796,10 +778,10 @@ def plot_ensemble_3_way_contact_matrix(
         if len(cells_to_plot) > 0:
             if max(cells_to_plot) > i_sc_matrix_collated.shape[2]:
                 print(
-                    "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
-                        max(cells_to_plot), i_tag, i_sc_matrix_collated.shape[2]
-                    )
+                    f"Error: max in cells2plot {max(cells_to_plot)} in dataset \
+                    {i_tag} is larger than the number of available cells {i_sc_matrix_collated.shape[2]}"
                 )
+
             else:
                 if len(sc_matrix_all_datasets) > 0:
                     sc_matrix_all_datasets = np.concatenate(
@@ -845,7 +827,7 @@ def plot_ensemble_3_way_contact_matrix(
         )
 
         # outputs result
-        output_filename += "_anchor_" + str(anchor)
+        output_filename += f"_anchor_{str(anchor)}"
         write_string_to_file(
             markdown_filename,
             f"![]({output_filename}_HiMmatrix.png)\n",
@@ -883,7 +865,7 @@ def plot_ensemble_3_way_contact_matrix(
             + "_anchor:"
             + str(anchor)
         )
-        np.save(root_output_filename + "_ensemble3wayContacts.npy", sc_matrix)
+        np.save(f"{root_output_filename}_ensemble3wayContacts.npy", sc_matrix)
 
 
 def calculate_3_way_contact_matrix(
@@ -974,13 +956,14 @@ def plot_single_pwd_matrice(
             i_unique_barcodes,
             p["pixelSize"],
             output_filename=output_filename,
-            figtitle="PWD:" + dataset_name + i_tag,
+            figtitle=f"PWD:{dataset_name}{i_tag}",
             c_m=i_list_data["PWD_cm"],
             clim=i_list_data["PWD_clim"],
             mode=i_list_data["PWD_mode"],
             n_cells=i_sc_matrix_collated.shape[2],
             cells_to_plot=cells_to_plot,
-        )  # twilight_shifted_r 1.4, mode: median KDE coolwarm terrain
+        )
+
         write_string_to_file(
             markdown_filename,
             f"![]({output_filename}_HiMmatrix.png)\n",
@@ -1021,12 +1004,13 @@ def plot_inverse_pwd_matrix(
             output_filename=output_filename,
             clim=i_list_data["iPWD_clim"],
             mode=i_list_data["iPWD_mode"],
-            figtitle="inverse PWD:" + dataset_name + i_tag,
+            figtitle=f"inverse PWD:{dataset_name}{i_tag}",
             cmtitle="inverse distance, 1/nm",
             inverse_matrix=True,
             n_cells=i_sc_matrix_collated.shape[2],
             cells_to_plot=cells_to_plot,
-        )  # twilight_shifted_r, mode: median KDE
+        )
+
         write_string_to_file(
             markdown_filename,
             f"![]({output_filename}_HiMmatrix.png)\n",
@@ -1062,10 +1046,10 @@ def plot_single_contact_probability_matrix(
 
         if max(cells_to_plot) > i_sc_matrix_collated.shape[2]:
             print(
-                "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                    max(cells_to_plot), i_sc_matrix_collated.shape[2]
-                )
+                f"Error with range in cells2plot {max(cells_to_plot)} as it is \
+                    larger than the number of available cells {i_sc_matrix_collated.shape[2]}"
             )
+
         else:
             sc_matrix, n_cells = calculate_contact_probability_matrix(
                 i_sc_matrix_collated[:, :, cells_to_plot],
@@ -1096,11 +1080,12 @@ def plot_single_contact_probability_matrix(
                 output_filename=output_filename,
                 c_min=i_list_data["ContactProbability_cmin"],
                 clim=c_scale,
-                figtitle="HiM:" + dataset_name + i_tag,
+                figtitle=f"HiM:{dataset_name}{i_tag}",
                 cmtitle="probability",
                 n_cells=n_cells,
                 cells_to_plot=cells_to_plot,
-            )  # twilight_shifted_r terrain coolwarm
+            )
+
             write_string_to_file(
                 markdown_filename,
                 f"![]({output_filename}_HiMmatrix.png)\n",
@@ -1110,7 +1095,7 @@ def plot_single_contact_probability_matrix(
 
 def fuses_sc_matrix_collated_from_datasets(
     sc_matrix_collated, unique_barcodes, p, run_name, i_list_data
-):
+):  # sourcery skip: extract-method
     # combines matrices from different embryos and calculates integrated contact probability matrix
 
     sc_matrix_all_datasets = []
@@ -1127,10 +1112,10 @@ def fuses_sc_matrix_collated_from_datasets(
         if len(cells_to_plot) > 0:
             if max(cells_to_plot) > i_sc_matrix_collated.shape[2]:
                 print(
-                    "Error: max in cells2plot {} in dataset {} is larger than the number of available cells {}".format(
-                        max(cells_to_plot), i_tag, i_sc_matrix_collated.shape[2]
-                    )
+                    f"Error: max in cells2plot {max(cells_to_plot)} in dataset {i_tag} \
+                        is larger than the number of available cells {i_sc_matrix_collated.shape[2]}"
                 )
+
             else:
                 if len(sc_matrix_all_datasets) > 0:
                     sc_matrix_all_datasets = np.concatenate(
@@ -1345,10 +1330,9 @@ def shuffle_matrix(matrix, index):
     new_matrix = np.zeros((new_size, new_size))
 
     if new_size <= matrix.shape[0]:
-        for i in range(new_size):
-            for j in range(new_size):
-                if index[i] < matrix.shape[0] and index[j] < matrix.shape[0]:
-                    new_matrix[i, j] = matrix[index[i], index[j]]
+        for i, j in itertools.product(range(new_size), range(new_size)):
+            if index[i] < matrix.shape[0] and index[j] < matrix.shape[0]:
+                new_matrix[i, j] = matrix[index[i], index[j]]
     else:
         print(
             f"Error: shuffle size {new_size} is larger than matrix dimensions {matrix.shape[0]}"
@@ -1365,11 +1349,11 @@ def comp_func(mat_a, n_w):
     signal1 = np.zeros((n_1, 1))
     n_int = np.zeros((n_1, 1))
 
-    for i in range(0, n_1):
+    for i in range(n_1):
         if i <= n_w:
             p_1 = n_1 + i - n_w
             p_2 = i + n_w
-            for k in range(0, n_1):
+            for k in range(n_1):
                 if k <= p_2 or k >= p_1:
                     somme_short[i] = somme_short[i] + mat_a[i, k]
                     n_int[i] = n_int[i] + 1
@@ -1377,7 +1361,7 @@ def comp_func(mat_a, n_w):
         elif (n_1 - n_w) <= i:
             p_1 = i - n_w
             p_2 = i + n_w - n_1
-            for k in range(0, n_1):
+            for k in range(n_1):
                 if k <= p_2 or k >= p_1:
                     somme_short[i] = somme_short[i] + mat_a[i, k]
                     n_int[i] = n_int[i] + 1
@@ -1385,8 +1369,8 @@ def comp_func(mat_a, n_w):
         else:
             p_1 = i - n_w
             p_2 = i + n_w
-            for k in range(0, n_1):
-                if p_1 <= k and k <= p_2:
+            for k in range(n_1):
+                if p_1 <= k <= p_2:
                     somme_short[i] = somme_short[i] + mat_a[i, k]
                     n_int[i] = n_int[i] + 1
 
@@ -1416,7 +1400,7 @@ def decodes_trace(single_trace):
         single_trace["y"],
         single_trace["z"],
     )
-    trace_name = single_trace["Trace_ID"][0][0:3]
+    trace_name = single_trace["Trace_ID"][0][:3]
 
     return barcodes, X, Y, Z, trace_name
 
@@ -1530,9 +1514,9 @@ def write_xyz_2_pdb(file_name, single_trace, barcode_type=dict()):
                     i + 1,
                     atom_name,
                     int(barcodes[i]),
-                    " {:0<7.3f}".format(xyz[i, 0])[0:8],
-                    " {:0<7.3f}".format(xyz[i, 1])[0:8],
-                    " {:0<7.3f}".format(xyz[i, 2])[0:8],
+                    " {:0<7.3f}".format(xyz[i, 0])[:8],
+                    " {:0<7.3f}".format(xyz[i, 1])[:8],
+                    " {:0<7.3f}".format(xyz[i, 2])[:8],
                 )
             )
 
@@ -1561,13 +1545,13 @@ def distances_2_coordinates(distances):
     # pre-caching
     cache = {}
     for j in range(N):
-        sumi = sum([distances[j, k] ** 2 for k in range(j + 1, N)])
+        sumi = sum(distances[j, k] ** 2 for k in range(j + 1, N))
         cache[j] = sumi
 
     # compute distances from center of mass
-    sum2 = sum([cache[j] for j in range(N)])
+    sum2 = sum(cache[j] for j in range(N))
     for i in range(N):
-        sum1 = cache[i] + sum([distances[j, i] ** 2 for j in range(i + 1)])
+        sum1 = cache[i] + sum(distances[j, i] ** 2 for j in range(i + 1))
 
         val = 1 / N * sum1 - 1 / N**2 * sum2
         d_0.append(val)
@@ -1608,17 +1592,17 @@ def coord_2_distances(coordinates):
     for row in range(coordinates.shape[0]):
         for col in range(coordinates.shape[0]):
             comp_sum = sum(
-                [
-                    (coordinates[row, d] - coordinates[col, d]) ** 2
-                    for d in range(dimension)
-                ]
+                (coordinates[row, d] - coordinates[col, d]) ** 2
+                for d in range(dimension)
             )
+
             distances[row, col] = np.sqrt(comp_sum)
 
     return distances
 
 
 def is_notebook():
+    # sourcery skip: assign-if-exp, boolean-if-exp-identity, remove-unnecessary-cast, switch
     """
     This function detects if you are running on an ipython console or in the shell.
     It is used to either kill plots or leave them open.
@@ -1655,13 +1639,12 @@ def plot_distance_histograms(
 ):
     if not is_notebook():
         n_plots_x = n_plots_y = sc_matrix_collated.shape[0]
+    elif limit_n_plots == 0:
+        n_plots_x = n_plots_y = sc_matrix_collated.shape[0]
     else:
-        if limit_n_plots == 0:
-            n_plots_x = n_plots_y = sc_matrix_collated.shape[0]
-        else:
-            n_plots_x = n_plots_y = min(
-                [limit_n_plots, sc_matrix_collated.shape[0]]
-            )  # sets a max of subplots if you are outputing to screen!
+        n_plots_x = n_plots_y = min(
+            [limit_n_plots, sc_matrix_collated.shape[0]]
+        )  # sets a max of subplots if you are outputing to screen!
 
     bins = np.arange(0, max_distance, 0.25)
 
@@ -1709,9 +1692,9 @@ def plot_distance_histograms(
     file_extension = output_filename.split(".")[-1]
 
     if len(file_extension) == 3:
-        file_name = output_filename + "_PWDhistograms." + file_extension
+        file_name = f"{output_filename}_PWDhistograms.{file_extension}"
     else:
-        file_name = output_filename + "_PWDhistograms.png"
+        file_name = f"{output_filename}_PWDhistograms.png"
 
     print(f"Output figure: {file_name}\n")
     plt.savefig(file_name)
@@ -1739,12 +1722,12 @@ def plot_matrix(
     mode="median",
     inverse_matrix=False,
     c_min=0,
-    cells_to_plot=[],
+    cells_to_plot=None,
     filename_ending="_HiMmatrix.png",
     font_size=22,
 ):
-    n_barcodes = sc_matrix_collated.shape[0]
-
+    if cells_to_plot is None:
+        cells_to_plot = []
     ######################################################
     # Calculates ensemble matrix from single cell matrices
     ######################################################
@@ -1762,11 +1745,10 @@ def plot_matrix(
         # already an ensemble matrix --> no need for further treatment
         if mode == "counts":
             mean_sc_matrix = sc_matrix_collated
-            keep_plotting = True
         else:
             mean_sc_matrix = pixel_size * sc_matrix_collated
-            keep_plotting = True
-
+        keep_plotting = True
+    n_barcodes = sc_matrix_collated.shape[0]
     if keep_plotting:
         # no errors occurred
 
@@ -1780,15 +1762,10 @@ def plot_matrix(
         plt.xlabel("barcode #", fontsize=float(font_size) * 1.2)
         plt.ylabel("barcode #", fontsize=float(font_size) * 1.2)
         plt.title(
-            figtitle
-            + " | "
-            + str(mean_sc_matrix.shape[0])
-            + " barcodes | n="
-            + str(n_cells)
-            + " | FOVs="
-            + str(number_rois),
+            f"{figtitle} | {str(mean_sc_matrix.shape[0])} barcodes | n={str(n_cells)} | FOVs={str(number_rois)}",
             fontsize=float(font_size) * 1.3,
         )
+
         plt.xticks(
             np.arange(sc_matrix_collated.shape[0]), unique_barcodes, fontsize=font_size
         )
@@ -1808,22 +1785,17 @@ def plot_matrix(
         #     ytick.set_fontsize(font_size)
 
         if len(output_filename.split(".")) > 1:
-            if output_filename.split(".")[1] != "png":
-                if len(output_filename.split(".")[1]) == 3:
-                    # keeps original extension
-                    out_fn = output_filename
-                    plt.savefig(output_filename)
-                else:
-                    # most likely the full filname contains other '.' in addition to that in the extension
-                    out_fn = output_filename + filename_ending
-                    plt.savefig(out_fn)
-            else:
+            if output_filename.split(".")[1] == "png":
                 out_fn = output_filename.split(".")[0] + filename_ending
-                plt.savefig(out_fn)
+            elif len(output_filename.split(".")[1]) == 3:
+                # keeps original extension
+                out_fn = output_filename
+            else:
+                # most likely the full filname contains other '.' in addition to that in the extension
+                out_fn = output_filename + filename_ending
         else:
             out_fn = output_filename + filename_ending
-            plt.savefig(out_fn)
-
+        plt.savefig(out_fn)
         if not is_notebook():
             plt.close()
         if "png" not in out_fn:
@@ -1859,30 +1831,23 @@ def calculate_contact_probability_matrix(
 
                 if number_contacts < min_number_contacts:
                     print(
-                        "$ Rejected {}-{} because number contacts: {} < {}".format(
-                            i, j, number_contacts, min_number_contacts
-                        )
+                        f"$ Rejected {i}-{j} because number contacts: {number_contacts} < {min_number_contacts}"
                     )
-                    probability = 0.0
-                else:
-                    # normalizes # of contacts by the # of cells
-                    if norm == "n_cells":
-                        probability = (
-                            len(np.nonzero(distance_distribution < threshold)[0])
-                            / n_cells
-                        )
 
-                    # normalizes # of contacts by the # of PWD detected in each bin
-                    elif norm == "nonNANs":
-                        number_nans = len(
-                            np.nonzero(np.isnan(distance_distribution))[0]
-                        )
-                        if n_cells == number_nans:
-                            probability = np.nan
-                        else:
-                            probability = len(
-                                np.nonzero(distance_distribution < threshold)[0]
-                            ) / (n_cells - number_nans)
+                    probability = 0.0
+                elif norm == "n_cells":
+                    probability = (
+                        len(np.nonzero(distance_distribution < threshold)[0]) / n_cells
+                    )
+
+                elif norm == "nonNANs":
+                    number_nans = len(np.nonzero(np.isnan(distance_distribution))[0])
+                    probability = (
+                        np.nan
+                        if n_cells == number_nans
+                        else len(np.nonzero(distance_distribution < threshold)[0])
+                        / (n_cells - number_nans)
+                    )
 
                 sc_matrix[i, j] = probability
 
@@ -2067,9 +2032,7 @@ def get_rg_from_pwd(pwd_matrix_0, min_number_pwd=4, threshold=6):
 
     rg_sq = sqr / (2 * (2 * num_not_nan + pwd_matrix.shape[0]))  # replaces 1/(2*N^2)
 
-    radius_gyration = np.sqrt(rg_sq)
-
-    return radius_gyration
+    return np.sqrt(rg_sq)
 
 
 def get_detection_eff_barcodes(sc_matrix_collated):
@@ -2143,9 +2106,7 @@ def get_coordinates_from_pwd_matrix(matrix):
         dissimilarity="precomputed",  # euclidean | precomputed
     )
 
-    xyz = mds.fit(matrix).embedding_
-
-    return xyz
+    return mds.fit(matrix).embedding_
 
 
 def sort_cells_by_number_pwd(him_data):
@@ -2207,10 +2168,10 @@ def calculate_ensemble_pwd_matrix(sc_matrix, pixel_size, cells_to_plot, mode="me
         #######################################
         if max(cells_to_plot) > sc_matrix.shape[2]:
             print(
-                "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                    max(cells_to_plot), sc_matrix.shape[2]
-                )
+                f"Error with range in cells2plot {max(cells_to_plot)} as it is larger \
+                    than the number of available cells {sc_matrix.shape[2]}"
             )
+
             keep_plotting = False
         else:
             mean_sc_matrix = pixel_size * np.nanmedian(
@@ -2223,10 +2184,10 @@ def calculate_ensemble_pwd_matrix(sc_matrix, pixel_size, cells_to_plot, mode="me
 
         if max(cells_to_plot) > sc_matrix.shape[2]:
             print(
-                "Error with range in cells2plot {} as it is larger than the number of available cells {}".format(
-                    max(cells_to_plot), sc_matrix.shape[2]
-                )
+                f"Error with range in cells2plot {max(cells_to_plot)} as it is larger \
+                    than the number of available cells {sc_matrix.shape[2]}"
             )
+
             keep_plotting = False
         else:
             for bin1 in trange(n_barcodes):

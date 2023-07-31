@@ -97,9 +97,8 @@ class RegisterLocalizations:
     def search_local_shift(self, roi, barcode, zxy_uncorrected):
         if self.alignment_results_table_read:
             return self.search_local_shift_block_3d(roi, barcode, zxy_uncorrected)
-        else:  # no correction was applied because the localAlignmentTable was not found
-            print("ERROR> did not found alignment_results_table")
-            return zxy_uncorrected, {"below_tolerance": False}
+        print("ERROR> did not found alignment_results_table")
+        return zxy_uncorrected, {"below_tolerance": False}
 
     def search_local_shift_block_3d(self, roi, barcode, zxy_uncorrected):
         """
@@ -131,10 +130,10 @@ class RegisterLocalizations:
         zxy_block = [np.floor(a / block_size_xy).astype(int) for a in zxy_uncorrected]
 
         # defines roi, barcode ID, and blocks for the localization
-        n_roi = "ROI:" + str(roi)
+        n_roi = f"ROI:{str(roi)}"
         n_barcode = "barcode:" + "RT" + str(barcode)
-        n_block_i = "block_i:" + str(zxy_block[1])
-        n_block_j = "block_j:" + str(zxy_block[2])
+        n_block_i = f"block_i:{str(zxy_block[1])}"
+        n_block_j = f"block_j:{str(zxy_block[2])}"
 
         # finds the corresponding shift int the dictionary
         shifts = [
@@ -157,9 +156,9 @@ class RegisterLocalizations:
             ]
             if all(check):
                 accepts_localization = True  # only if tolerance is passed in all axes the localization is kept
-        else:  # defaults to previous usage with isotropic tolerance
-            if max(np.abs(shifts)) < self.tolerance_drift:
-                accepts_localization = True
+        # defaults to previous usage with isotropic tolerance
+        elif max(np.abs(shifts)) < self.tolerance_drift:
+            accepts_localization = True
 
         if accepts_localization:
             zxy_corrected = [a + shift for a, shift in zip(zxy_uncorrected, shifts)]
@@ -210,7 +209,7 @@ class RegisterLocalizations:
 
             # Corrects XYZ coordinate of barcode if localDriftCorrection is available
             zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
-            rt_barcode = "RT" + str(barcode)
+            rt_barcode = f"RT{str(barcode)}"
 
             if (
                 rt_barcode
@@ -224,9 +223,8 @@ class RegisterLocalizations:
                     if self.remove_uncorrected_localizations:
                         # will remove localizations that cannot be corrected
                         zxy_corrected = [np.nan, np.nan, np.nan]
-                    else:
-                        # will keep uncorrected localizations
-                        pass
+
+                    # ELSE: will keep uncorrected localizations
 
             else:
                 # if it is the reference cycle, then it does not correct coordinates
@@ -241,8 +239,8 @@ class RegisterLocalizations:
             if self.ndims > 2:
                 barcode_map.groups[0]["zcentroid"][i] = zxy_corrected[0]
 
-            # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
-            # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
+                # if not quality_correction['below_tolerance'] and self.remove_uncorrected_localizations:
+                # print(f" $ After correction: {barcodeMap.groups[0][i]} ")
 
         if self.remove_uncorrected_localizations:
             nb_loc_before = len(barcode_map.groups[0])
@@ -260,11 +258,10 @@ class RegisterLocalizations:
         return barcode_map
 
     def load_local_alignment(self):
-        if "None" in self.current_param.param_dict["alignImages"]["localAlignment"]:
-            print_log("\n\n$ localAlignment option set to `None`")
-            return False, Table()
-        else:
+        if "None" not in self.current_param.param_dict["alignImages"]["localAlignment"]:
             return self._load_local_alignment()
+        print_log("\n\n$ localAlignment option set to `None`")
+        return False, Table()
 
     def _load_local_alignment(self):
         mode = self.current_param.param_dict["alignImages"]["localAlignment"]
@@ -284,16 +281,15 @@ class RegisterLocalizations:
             # builds dict of local alignments
             self.build_local_alignment_dict()
 
-            print_log(
-                f"$ LocalAlignment file loaded: {self.local_alignment_filename}\n$ Will correct coordinates using {mode} alignment"
-            )
+            print_log(f"$ LocalAlignment file loaded: {self.local_alignment_filename}")
+            print_log(f"$ Will correct coordinates using {mode} alignment")
             print_log(f"$ Number of records: {len(self.alignment_results_table)}")
         else:
             print_log(
-                "\n\n# Warning: could not find localAlignment: {}\n Proceeding with only global alignments...".format(
-                    self.local_alignment_filename
-                )
+                f"\n\n# Warning: could not find localAlignment: {self.local_alignment_filename}"
             )
+            print_log(f"\tProceeding with only global alignments...")
+
             self.alignment_results_table_read = False
             self.alignment_results_table = Table()
             self.dict_error_block_masks = Table()
@@ -359,11 +355,7 @@ class RegisterLocalizations:
         return True
 
     def register_barcode_map_file(self, file):
-        if "3D" in os.path.basename(file):
-            self.ndims = 3
-        else:
-            self.ndims = 2
-
+        self.ndims = 3 if "3D" in os.path.basename(file) else 2
         # loads barcode coordinate Tables
         table = LocalizationTable()
 
@@ -376,12 +368,14 @@ class RegisterLocalizations:
             print_log(f"\nWARNING>{file} contains an empty table!")
             return None
 
-        if "comments" in barcode_map_full.meta.keys():
-            if "registered" in barcode_map_full.meta["comments"]:
-                print_log(
-                    f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything"
-                )
-                return None
+        if (
+            "comments" in barcode_map_full.meta.keys()
+            and "registered" in barcode_map_full.meta["comments"]
+        ):
+            print_log(
+                f"\nWARNING>{file} contains a table thas was already registered! \nWill not do anything"
+            )
+            return None
 
         # preserves original copy of table for safe keeping
         new_file = get_file_table_new_name(file)
@@ -461,7 +455,7 @@ class RegisterLocalizations:
             )
         )
 
-        if len(files) < 1:
+        if not files:
             print_log("No localization table found to process!")
             return
 

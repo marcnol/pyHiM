@@ -209,13 +209,13 @@ class SegmentMasks3D:
         if self.dict_shifts_available:
             # uses existing shift calculated by align_images
             try:
-                shift = self.dict_shifts["ROI:" + roi][label]
+                shift = self.dict_shifts[f"ROI:{roi}"][label]
                 print_log("> Applying existing XY shift...")
-            except KeyError:
+            except KeyError as e:
                 shift = None
                 raise SystemExit(
                     f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
-                )
+                ) from e
 
         # applies XY shift to 3D stack
         if label != p["referenceBarcode"]:
@@ -433,6 +433,4 @@ def plot_image_3d(image_3d, masks):
 
     """
 
-    fig1 = plot_raw_images_and_labels(image_3d, masks)
-
-    return fig1
+    return plot_raw_images_and_labels(image_3d, masks)

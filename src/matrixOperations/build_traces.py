@@ -83,10 +83,9 @@ class BuildTraces:
         self.n_cells_unassigned = 0
         self.n_barcodes_in_mask = 0
         self.number_masks = np.max(self.masks).astype(int)
-        self.barcodes_in_mask = {}
-
-        for mask in range(self.number_masks + 1):
-            self.barcodes_in_mask["maskID_" + str(mask)] = []
+        self.barcodes_in_mask = {
+            f"maskID_{str(mask)}": [] for mask in range(self.number_masks + 1)
+        }
 
     def initialize_parameters(self):
         # initializes parameters from current_param
@@ -208,24 +207,23 @@ class BuildTraces:
             if np.isnan(x_int) or np.isnan(y_int) or np.isnan(z_int):
                 # if a barcode has coordinates with NaNs, it is assigned to background
                 mask_id = 0
+            elif (
+                x_int < image_size["x"]
+                and y_int < image_size["y"]
+                and z_int < image_size["z"]
+                and x_int > 0
+                and y_int > 0
+                and z_int > 0
+            ):
+                mask_id = (
+                    self.masks[x_int, y_int]
+                    if len(image_size_array) == 2
+                    else self.masks[z_int, x_int, y_int]
+                )
+
             else:
-                if (
-                    x_int < image_size["x"]
-                    and y_int < image_size["y"]
-                    and z_int < image_size["z"]
-                    and x_int > 0
-                    and y_int > 0
-                    and z_int > 0
-                ):
-                    if len(image_size_array) == 2:
-                        # 2d
-                        mask_id = self.masks[x_int, y_int]
-                    else:
-                        # 3d
-                        mask_id = self.masks[z_int, x_int, y_int]
-                else:
-                    # if a barcode has coordinates outside the image, it is assigned to background
-                    mask_id = 0
+                # if a barcode has coordinates outside the image, it is assigned to background
+                mask_id = 0
 
             # attributes CellID to a barcode
             self.barcode_map_roi["CellID #"][i] = mask_id
@@ -236,7 +234,7 @@ class BuildTraces:
                 n_barcodes_in_mask[mask_id] += 1
 
                 # stores the identify of the barcode in a mask dictionary
-                self.barcodes_in_mask["maskID_" + str(mask_id)].append(i)
+                self.barcodes_in_mask[f"maskID_{str(mask_id)}"].append(i)
 
                 # keeps statistics
                 if int(self.barcode_map_roi.groups[0]["ROI #"][i]) == int(self.n_roi):
@@ -276,15 +274,13 @@ class BuildTraces:
 
         """
 
-        coords = np.column_stack(
+        return np.column_stack(
             (
                 x * self.pixel_size["x"],
                 y * self.pixel_size["y"],
                 z * self.pixel_size["z"],
             )
         )
-
-        return coords
 
     def builds_sc_distance_table(self):
         """
@@ -348,7 +344,7 @@ class BuildTraces:
     def load_mask(
         self,
         files_in_folder,
-    ):
+    ):  # sourcery skip: use-named-expression
         """
         searches and loads mask files for building chromatin trace
 
@@ -367,7 +363,7 @@ class BuildTraces:
 
         # finds files with cell masks
         channel = self.current_param.param_dict["acquisition"][
-            self.mask_type + "_channel"
+            f"{self.mask_type}_channel"
         ]
 
         files_to_process = [
@@ -379,7 +375,7 @@ class BuildTraces:
             and int(self.current_param.decode_file_parts(file)["roi"]) == self.n_roi
         ]
 
-        if len(files_to_process) > 0:
+        if files_to_process:
             # loads file with cell masks
             filename_roi_masks = (
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
@@ -490,10 +486,7 @@ class BuildTraces:
             ]  # need to iterate over the first index
             self.barcode_map_roi = barcode_map.group_by("ROI #").groups[roi]
 
-            mask_loaded = self.load_mask(
-                tif_files_in_folder,
-            )
-            if mask_loaded:
+            if mask_loaded := self.load_mask(tif_files_in_folder):
                 print_log(f"> Processing ROI# {self.n_roi}")
 
                 # initializes trace table
@@ -513,16 +506,8 @@ class BuildTraces:
 
                 if len(self.trace_table.data) > 0:
                     # saves trace table with results per ROI
-                    output_table_filename = (
-                        output_filename
-                        + "_"
-                        + self.label
-                        + "_mask:"
-                        + str(self.mask_identifier)
-                        + "_ROI:"
-                        + str(self.n_roi)
-                        + ".ecsv"
-                    )
+                    output_table_filename = f"{output_filename}_{self.label}_mask:{str(self.mask_identifier)}_ROI:{str(self.n_roi)}.ecsv"
+
                     self.trace_table.save(output_table_filename, self.trace_table.data)
 
                     # plots results
@@ -533,7 +518,7 @@ class BuildTraces:
 
                     print_log(f"$ Saved output table as {output_table_filename}")
                 else:
-                    print_log(f"! Warning: table was empty therefore not saved!")
+                    print_log("! Warning: table was empty therefore not saved!")
 
                 processing_order += 1
 
@@ -542,12 +527,8 @@ class BuildTraces:
 
         for mask_label in self.available_masks.keys():
             self.mask_identifier = self.available_masks[mask_label]
-            if "DAPI" in self.mask_identifier:
-                self.mask_type = "DAPI"
-            else:
-                self.mask_type = "mask"
-
-            tag = str(self.ndims) + "D"
+            self.mask_type = "DAPI" if "DAPI" in self.mask_identifier else "mask"
+            tag = f"{str(self.ndims)}D"
 
             output_filename = (
                 self.data_folder.output_folders["buildsPWDmatrix"]
@@ -632,12 +613,10 @@ class BuildTraces:
         r = self.kd_tree_distance_threshold_mum
 
         # Groups points when they're less than r away
-        points = []
-        for element in coordinates:
-            points.append(x_tree.query_ball_point(element, r, p=2.0))
+        points = [x_tree.query_ball_point(element, r, p=2.0) for element in coordinates]
 
         # Get unique groups
-        groups = list(set(tuple(x) for x in points))
+        groups = list({tuple(x) for x in points})
         group_list = [list(x) for x in groups]
         self.n_cells_assigned = len(group_list)
 
@@ -669,7 +648,7 @@ class BuildTraces:
             f"> Starting spatial clustering for {number_rois} ROI in {self.ndims} dimensions"
         )
 
-        tag = str(self.ndims) + "D"
+        tag = f"{str(self.ndims)}D"
 
         output_filename = (
             self.data_folder.output_folders["buildsPWDmatrix"] + os.sep + "Trace_" + tag
@@ -723,7 +702,7 @@ class BuildTraces:
                     f"$ Traces built. Saved output table as {output_table_filename}"
                 )
             else:
-                print_log(f"! Warning: table was empty therefore not saved!")
+                print_log("! Warning: table was empty therefore not saved!")
 
     def launch_analysis(self, file):
         # loads barcode coordinate Tables
@@ -780,17 +759,16 @@ class BuildTraces:
         print_log(f"> Masks labels: {self.available_masks}")
 
         # iterates over barcode localization tables in the current folder
-        files = [
-            x
-            for x in glob.glob(
+        files = list(
+            glob.glob(
                 self.data_folder.output_files["segmentedObjects"]
                 + "_*"
                 + self.label
                 + ".dat"
             )
-        ]
+        )
 
-        if len(files) < 1:
+        if not files:
             print_log("$ No localization table found to process!", "WARN")
             return
 
@@ -838,17 +816,11 @@ def debug_mask_filename(
         ):
             print_log("$ Hit found!")
         print_log(
-            "fileSplit:{}, {} in filename: {}, ROI: {}".format(
-                file.split("_")[-1].split(".")[0],
-                mask_identifier,
-                mask_identifier in os.path.basename(file).split("_"),
-                int(os.path.basename(file).split("_")[3]),
-            )
+            f'fileSplit:{file.split("_")[-1].split(".")[0]}, \
+                {mask_identifier} in filename: {mask_identifier in os.path.basename(file).split("_")}, \
+                ROI: {int(os.path.basename(file).split("_")[3])}'
         )
 
 
 def binarize_coordinate(x):
-    if not np.isnan(x):
-        return int(x)
-    else:
-        return np.nan
+    return np.nan if np.isnan(x) else int(x)

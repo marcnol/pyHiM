@@ -25,7 +25,7 @@ def calculate_zrange(idata, parameters):
     mean_matrix = np.zeros(num_planes)
 
     # calculate STD in each plane
-    for i in range(0, num_planes):
+    for i in range(num_planes):
         std_matrix[i] = np.std(idata[i])
         mean_matrix[i] = np.mean(idata[i])
 
