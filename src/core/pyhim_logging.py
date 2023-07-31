@@ -11,16 +11,16 @@ from datetime import datetime
 
 
 class Logger:
-    def __init__(self, root_folder, parallel=False, session_name=""):
+    def __init__(self, root_folder, parallel=False, session_name="HiM_analysis"):
         self.m_root_folder = root_folder
         self.m_log = Log(root_folder=root_folder, parallel=parallel)
         self.m_session = Session(root_folder, session_name)
         self.log_file = ""
         self.md_filename = ""
-        self.setup_md_file()
+        self.setup_md_file(session_name)
         self.setup_logger()
 
-    def setup_md_file(self):
+    def setup_md_file(self, session_name: str = "HiM_analysis"):
         print("\n-----------------------------------------------------------------")
         print(f"$ root_folder: {self.m_root_folder}")
         begin_time = datetime.now()
@@ -28,16 +28,14 @@ class Logger:
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
 
-        self.log_file = (
-            self.m_root_folder + os.sep + "HiM_analysis" + date_time + ".log"
-        )
+        self.log_file = self.m_root_folder + os.sep + session_name + date_time + ".log"
         self.md_filename = self.log_file.split(".")[0] + ".md"
 
-        print(f"$ Hi-M analysis will be written to: {self.md_filename}")
+        print(f"$ {session_name} will be written to: {self.md_filename}")
         # initialises MD file
         write_string_to_file(
             self.md_filename,
-            f"""# Hi-M analysis {begin_time.strftime("%Y/%m/%d %H:%M:%S")}""",
+            f"""# {session_name} {begin_time.strftime("%Y/%m/%d %H:%M:%S")}""",
             "w",
         )
 
@@ -181,6 +179,7 @@ def print_session_name(name: str):
 
 def print_dashes():
     print_log("-----------------------------------------------------------------")
+
 
 def write_string_to_file(file_name, text_to_output, attribute="a"):
     """write a line of text into a file
