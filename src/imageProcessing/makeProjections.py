@@ -513,11 +513,11 @@ def reinterpolate_z(image_3d, z_range, mode="average"):
     output: numpy array
 
     """
-    if "interpolate" in mode:
+    if mode == "interpolate":
         output = _interpolate_z_planes(image_3d, z_range)
-    elif "remove" in mode:
+    elif mode == "remove":
         output = _remove_z_planes(image_3d, z_range)
-    elif "average" in mode:
+    elif mode == "average":
         output = _average_z_planes(image_3d, z_range)
 
     print_log(f"$ Reduced Z-planes from {image_3d.shape[0]} to {output.shape[0]}")

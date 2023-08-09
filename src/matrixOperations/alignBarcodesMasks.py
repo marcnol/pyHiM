@@ -393,9 +393,7 @@ class CellID:
                 rt_barcode = f"RT{str(barcode)}"
                 if (
                     rt_barcode
-                    not in self.current_param.param_dict["alignImages"][
-                        "referenceFiducial"
-                    ]
+                    != self.current_param.param_dict["alignImages"]["referenceFiducial"]
                 ):
                     zxy_corrected = self.search_local_shift(
                         roi, mask_id, barcode, zxy_uncorrected, tolerance_drift
@@ -452,10 +450,10 @@ class CellID:
     def search_local_shift(
         self, roi, cell_id, barcode, zxy_uncorrected, tolerance_drift=(3, 1, 1)
     ):
-        if "mask2D" in self.current_param.param_dict["alignImages"]["localAlignment"]:
+        if self.current_param.param_dict["alignImages"]["localAlignment"] == "mask2D":
             return self.search_local_shift_mask_2d(roi, cell_id, zxy_uncorrected)
         elif (
-            "block3D" in self.current_param.param_dict["alignImages"]["localAlignment"]
+            self.current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
             and self.alignment_results_table_read
         ):
             return self.search_local_shift_block_3d(
@@ -806,7 +804,7 @@ def calculate_n_matrix(sc_matrix):
 
 
 def load_local_alignment(current_param, data_folder):
-    if "None" not in current_param.param_dict["alignImages"]["localAlignment"]:
+    if current_param.param_dict["alignImages"]["localAlignment"] != "None":
         return _load_local_alignment(
             data_folder, current_param.param_dict["alignImages"]["localAlignment"]
         )

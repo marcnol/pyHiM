@@ -536,7 +536,7 @@ def align_images_in_current_folder(
             filenames_to_process_list = [
                 x
                 for x in current_param.files_to_process
-                if (x not in filename_reference)
+                if (x != filename_reference)
                 and current_param.decode_file_parts(os.path.basename(x))["roi"] == roi
             ]
             print_log(f"Found {len(filenames_to_process_list)} files in ROI: {roi}")

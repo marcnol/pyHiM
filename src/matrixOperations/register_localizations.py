@@ -213,7 +213,7 @@ class RegisterLocalizations:
 
             if (
                 rt_barcode
-                not in self.current_param.param_dict["alignImages"]["referenceFiducial"]
+                != self.current_param.param_dict["alignImages"]["referenceFiducial"]
             ):
                 zxy_corrected, quality_correction = self.search_local_shift(
                     roi, barcode, zxy_uncorrected
@@ -258,7 +258,7 @@ class RegisterLocalizations:
         return barcode_map
 
     def load_local_alignment(self):
-        if "None" not in self.current_param.param_dict["alignImages"]["localAlignment"]:
+        if self.current_param.param_dict["alignImages"]["localAlignment"] != "None":
             return self._load_local_alignment()
         print_log("\n\n$ localAlignment option set to `None`")
         return False, Table()

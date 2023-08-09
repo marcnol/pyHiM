@@ -222,7 +222,7 @@ class SegmentSources3D:
     def _segment_3d_volumes(self, image_3d_aligned):
         p = self.p
 
-        if "stardist" in p["3Dmethod"]:
+        if p["3Dmethod"] == "stardist":
             binary, segmented_image_3d = _segment_3d_volumes_stardist(
                 image_3d_aligned,
                 deblend_3d=True,
@@ -288,7 +288,7 @@ class SegmentSources3D:
             print_log(f"$ z_range used = 0-{image_3d.shape[0]}")
 
         # preprocesses image by background substraction and level normalization
-        if "stardist" not in p["3Dmethod"]:
+        if p["3Dmethod"] != "stardist":
             image_3d = preprocess_3d_image(
                 image_3d,
                 p["lower_threshold"],
@@ -301,7 +301,7 @@ class SegmentSources3D:
         if self.dict_shifts_available and label != p["referenceBarcode"]:
             # uses existing shift calculated by align_images
             try:
-                shift = self.dict_shifts["ROI:" + roi][label]
+                shift = self.dict_shifts[f"ROI:{roi}"][label]
                 print_log("> Applying existing XY shift...")
             except KeyError:
                 shift = None
@@ -409,7 +409,7 @@ class SegmentSources3D:
 
             # represents image in 3D with localizations
             figures = []
-            if "stardist" in p["3Dmethod"]:
+            if p["3Dmethod"] == "stardist":
                 image_3d_aligned = image_adjust(
                     image_3d_aligned,
                     lower_threshold=p["lower_threshold"],
