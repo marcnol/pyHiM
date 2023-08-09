@@ -80,12 +80,12 @@ def project_image_2d(img, z_range, mode):
     # sums images
     i_collapsed = None
 
-    if "MIP" in mode:
+    if mode == "MIP":
         # Max projection of selected planes
         i_collapsed = projection.maximum_projection(
             img[z_range[1][0] : z_range[1][-1] + 1]
         )
-    elif "sum" in mode:
+    elif mode == "sum":
         # Sums selected planes
         i_collapsed = projection.sum_projection(
             img[z_range[1][0] : (z_range[1][-1] + 1)]

@@ -117,7 +117,7 @@ class Image:
                 )
             z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
 
-        if "laplacian" not in self.current_param.param_dict["zProject"]["mode"]:
+        if self.current_param.param_dict["zProject"]["mode"] != "laplacian":
             self.data_2d = project_image_2d(
                 self.data,
                 z_range,

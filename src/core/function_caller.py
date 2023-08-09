@@ -79,7 +79,7 @@ class Pipeline:
     def align_images_3d(self, current_param, label):
         if (
             label == "fiducial"
-            and "block3D" in current_param.param_dict["alignImages"]["localAlignment"]
+            and current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
         ):
             print_log(f"> Making 3D image registrations label: {label}")
             _drift_3d = Drift3D(

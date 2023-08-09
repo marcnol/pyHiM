@@ -40,8 +40,12 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
-    parser.add_argument("--pixel_size", help="Lateral pixel size un microns. Default = 0.1")
-    parser.add_argument("--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true")
+    parser.add_argument(
+        "--pixel_size", help="Lateral pixel size un microns. Default = 0.1"
+    )
+    parser.add_argument(
+        "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
+    )
 
     p = {}
 
@@ -122,14 +126,22 @@ def process_traces(folder, pixel_size=0.1, trace_files=[]):
     masks_folder = folder.rstrip("/") + os.sep + "segmentedObjects" + os.sep
 
     if len(trace_files) < 1:
-        trace_files = [x for x in glob.glob(trace_folder + "Trace*ecsv") if "uniqueBarcodes" not in x]
+        trace_files = [
+            x
+            for x in glob.glob(f"{trace_folder}Trace*ecsv")
+            if "uniqueBarcodes" not in x
+        ]
 
     # removes already labeled trace files
     trace_files = [x for x in trace_files if "labeled" not in x]
 
-    print("\n{} trace files to process= {}".format(len(trace_files), "\n".join(map(str, trace_files))))
+    print(
+        "\n{} trace files to process= {}".format(
+            len(trace_files), "\n".join(map(str, trace_files))
+        )
+    )
 
-    if len(trace_files) > 0:
+    if trace_files:
         # iterates over traces in folder
         for trace_file in trace_files:
             trace = ChromatinTraceTable()
@@ -159,7 +171,9 @@ def main():
     p = parse_arguments()
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
-    traces = process_traces(folder, pixel_size=p["pixel_size"], trace_files=p["trace_files"])
+    traces = process_traces(
+        folder, pixel_size=p["pixel_size"], trace_files=p["trace_files"]
+    )
 
     print("Finished execution")
 

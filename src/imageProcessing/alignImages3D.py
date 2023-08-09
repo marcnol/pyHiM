@@ -198,7 +198,7 @@ class Drift3D:
         self.filenames_to_process_list = [
             x
             for x in self.current_param.files_to_process
-            if (x not in filename_reference)
+            if (x != filename_reference)
             and self.current_param.decode_file_parts(os.path.basename(x))["roi"]
             == self.p["ROI"]
         ]
