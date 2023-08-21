@@ -167,13 +167,13 @@ class DataManager:
 
     def find_label(self, filename):
         parts = self.decode_file_parts(filename)
-        channel = parts["channel"]
+        channel = parts["channel"][:4]
 
         if "DAPI" in filename.split("_"):
             label = self.channels["dapi_acq"][channel]
         elif "RT" in filename:
             label = self.channels["barcode_acq"][channel]
-        elif "mask" in filename.split("_"):
+        elif "mask" in filename:
             label = self.channels["mask_acq"][channel]
         else:
             raise ValueError(f"Label NOT FOUND for this filename: {filename}")
