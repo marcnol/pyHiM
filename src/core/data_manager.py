@@ -167,7 +167,7 @@ class DataManager:
 
     def find_label(self, filename):
         parts = self.decode_file_parts(filename)
-        channel = parts["channel"]
+        channel = parts["channel"][:4]
 
         if "DAPI" in filename.split("_"):
             label = self.channels["dapi_acq"][channel]
