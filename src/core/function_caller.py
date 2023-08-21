@@ -7,6 +7,8 @@ Module for high level function calling
 
 import os
 
+from dask.distributed import get_client
+
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log
 from imageProcessing.alignImages import align_images, apply_registrations
@@ -51,12 +53,14 @@ class Pipeline:
     def lauch_dask_scheduler(self, threads_requested=25, maximum_load=0.8):
         if self.parallel:
             print_log(f"$ Requested {threads_requested} threads")
-
             self.m_dask = DaskCluster(threads_requested, maximum_load=maximum_load)
-
-            self.m_dask.create_distributed_client()
-            # self.client = dask_cluster_instance.client
-            # self.cluster = dask_cluster_instance.cluster
+            # Run can be blocked with 0 or just 1 worker
+            if self.m_dask.n_threads < 2:
+                self.parallel = False
+                print_log("! [WARNING] Resource too low to run in parallel mode.")
+                print_log("! [WARNING] Sequential mode: activated")
+            else:
+                self.m_dask.create_distributed_client()
 
     def find_files_to_process(self):
         pass
@@ -151,26 +155,41 @@ class Pipeline:
             files_to_process = self.m_data_m.get_inputs(required_data)
             self.m_data_m.create_folder(feat.out_folder)
             if self.parallel:
-                pass
-                # C'est KC
-                # # dask
-                # client = get_client()
-                # threads = [
-                #     client.submit(feat.run, f2p.load(), reference, table)
-                #     for f2p in files_to_process
-                # ]
-                # print_log(f"$ Waiting for {len(threads)} threads to complete ")
-                # for _, _ in enumerate(threads):
-                #     wait(threads)
+                client = self.m_dask.client
+                # forward_logging are used to allow workers send log msg to client with print_log()
+                client.forward_logging()
+                # Planify, for the future, work to execute in parallel
+                threads = [
+                    client.submit(run_pattern, feat, f2p, self.m_data_m)
+                    for f2p in files_to_process
+                ]
+                # Run works
+                client.gather(threads)
+
             else:
                 for f2p in files_to_process:
-                    data = f2p.load()
-                    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
-                    results = feat.run(data, f2p.m_label)
-                    # results = feat.run(data, reference, table)
-                    self.m_data_m.save_data(
-                        results, feat.find_out_tags(f2p.m_label), feat.out_folder, f2p
-                    )
+                    run_pattern(feat, f2p, self.m_data_m)
+
+
+def run_pattern(feat, f2p, m_data_m):
+    """Generic pattern for both run mode, sequential and parallel.
+    (need to be a function and not a method for parallel running)
+
+    Parameters
+    ----------
+    feat : Feature
+        A sub-class of Feature
+    f2p : ImageFile
+        A file object with a `load` method.
+        TODO: create a mother class `File` for ImageFile to be generic with other type of data files
+    m_data_m : Allow to save outputs
+    """
+    data = f2p.load()
+    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
+    results = feat.run(data, f2p.m_label)
+    # TODO: Include different type of inputs like reference image for registration or data table like ECSV
+    # results = feat.run(data, reference, table)
+    m_data_m.save_data(results, feat.find_out_tags(f2p.m_label), feat.out_folder, f2p)
 
 
 # =============================================================================

@@ -45,10 +45,8 @@ def extract_files(root: str):
             files.append((filepath, short_filename, extension))
 
         if len(dirnames) > 0:
-            print("[INFO] Inside:")
-            print(dirpath)
-            print("[INFO] Subdirectories detected:")
-            print(dirnames)
+            print_log(f"! [INFO] Inside: {dirpath}")
+            print_log(f"\t Subdirectories detected: {dirnames}")
 
     return files
 
@@ -134,9 +132,9 @@ class DataManager:
         folder_path = self.out_path + os.sep + folder_name
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-            print(f"$ Folder '{folder_path}' created successfully.")
+            print_log(f"$ Folder '{folder_path}' created successfully.")
         else:
-            print(f"! Folder '{folder_path}' already exists.")
+            print_log(f"! [INFO] Folder '{folder_path}' already exists.")
 
     def find_param_file(self, params_filename):
         for path, name, ext in self.all_files:
@@ -152,6 +150,7 @@ class DataManager:
         img_ext = ["tif", "tiff"]
         # img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
+        unrecognized = 0
         for path, name, ext in self.all_files:
             if ext in img_ext:
                 label = self.find_label(name)
@@ -163,7 +162,8 @@ class DataManager:
             ):
                 pass
             else:
-                print(f"Unrecognized data file: {path}")
+                unrecognized += 1
+        print(f"! [INFO] Unrecognized data files: {unrecognized}")
 
     def find_label(self, filename):
         parts = self.decode_file_parts(filename)
@@ -196,7 +196,7 @@ class DataManager:
         params = load_json(self.param_file_path)
         if params is None:
             raise ValueError(f"Parameters file NOT FOUND: {self.param_file_path}")
-        print(f"$ Parameters file read: {self.param_file_path}")
+        print_log(f"$ Parameters file read: {self.param_file_path}")
         return params
 
     def set_up(self, acquisition_dict: dict):

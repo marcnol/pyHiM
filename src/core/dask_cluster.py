@@ -10,6 +10,8 @@ import os
 import numpy as np
 from dask.distributed import Client, LocalCluster, get_client
 
+from core.pyhim_logging import print_log
+
 
 class DaskCluster:
     """Used to manage parallel run thanks the Dask package"""
@@ -43,7 +45,7 @@ class DaskCluster:
 
         self.n_threads = int(np.min([max_number_threads, self.requested_nb_nodes]))
 
-        print(
+        print_log(
             f"$ Cluster with {self.n_threads} workers started ({self.requested_nb_nodes} requested)"
         )
 
@@ -51,10 +53,10 @@ class DaskCluster:
         """Instance workers"""
         client = try_get_client()
         if client is not None:
-            print("# Shutting down existing cluster! ")
+            print_log("# Shutting down existing cluster! ")
             client.shutdown()
         else:
-            print("$ No running cluster detected. Will start one.")
+            print_log("$ No running cluster detected. Will start one.")
 
         self.cluster = LocalCluster(
             n_workers=self.n_threads,
@@ -63,7 +65,7 @@ class DaskCluster:
         )
         self.client = Client(self.cluster)
 
-        print("$ Go to http://localhost:8787/status for information on progress...")
+        print_log("$ Go to http://localhost:8787/status for information on progress...")
 
 
 def try_get_client():
