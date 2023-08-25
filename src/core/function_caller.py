@@ -7,13 +7,11 @@ Module for high level function calling
 
 import os
 
-from dask.distributed import get_client
-
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
-from imageProcessing.makeProjections import Project, make_projections
+from imageProcessing.makeProjections import Project
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import SegmentMasks3D
 from imageProcessing.segmentSources3D import SegmentSources3D
@@ -63,12 +61,8 @@ class Pipeline:
                 self.m_dask.create_distributed_client()
 
     def find_files_to_process(self):
+        # TODO: is it a future or old method ??
         pass
-
-    def make_projections(self, current_param):
-        self.manage_parallel_option(
-            make_projections, current_param, self.m_logger.m_session
-        )
 
     def align_images(self, current_param, label):
         if (

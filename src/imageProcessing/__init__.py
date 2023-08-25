@@ -9,20 +9,14 @@ The pyHi-M.projections package includes functions to produce 2D projections from
 
 """
 
-# from .makeProjections import make_projections
-# from .make_projections import make_2d_projections_file
-
 # from .imageProcessing import Image
 # from .imageProcessing import gaussian
 # from .imageProcessing import image_adjust
 
-# _makeProjections = [
-#     "make_projections",
-#     "make_2d_projections_file"]
 
 # _imageProcessing = [
 #     "Image",
 #     "gaussian",
 #     "image_adjust"]
 
-# __all__ = _makeProjections + _imageProcessing
+# __all__ = _imageProcessing

@@ -16,11 +16,6 @@ from photutils import Background2D, MedianBackground
 from skimage import exposure, io
 from tqdm import trange
 
-from api_him.projection import (
-    calculate_zrange,
-    project_image_2d,
-    reinterpolate_focal_plane,
-)
 from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
 from core.saving import save_image_2d_cmd
@@ -73,60 +68,6 @@ class Image:
 
         self.data_2d = np.load(file_name)
         print_log(f"$ Loading from disk:{os.path.basename(file_name)}")
-
-    # Outputs image properties to command line
-    def print_image_properties(self):
-        print_log(f"$ Image Size={self.image_size}")
-        print_log(f"$ Focal plane={self.focus_plane}")
-
-    # processes sum image in axial direction given range
-    # @jit(nopython=True)
-    def z_projection_range(self):
-        # find the correct range for the projection
-        if self.current_param.param_dict["zProject"]["zmax"] > self.image_size[0]:
-            print_log("$ Setting z max to the last plane")
-            self.current_param.param_dict["zProject"]["zmax"] = self.image_size[0]
-
-        if self.current_param.param_dict["zProject"]["mode"] == "automatic":
-            print_log("> Calculating planes...")
-            z_range = calculate_zrange(self.data, self.current_param)
-
-        elif self.current_param.param_dict["zProject"]["mode"] == "full":
-            (zmin, zmax) = (0, self.image_size[0])
-            z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
-
-        elif self.current_param.param_dict["zProject"]["mode"] == "laplacian":
-            print_log("Stacking using Laplacian variance...")
-            (
-                self.data_2d,
-                self.focal_plane_matrix,
-                self.z_range,
-            ) = reinterpolate_focal_plane(self.data, self.current_param.param_dict)
-            self.focus_plane = self.z_range[0]
-            self.z_range = self.z_range[1]
-
-        else:
-            # Manual: reads from parameters file
-            (zmin, zmax) = (
-                self.current_param.param_dict["zProject"]["zmin"],
-                self.current_param.param_dict["zProject"]["zmax"],
-            )
-            if zmin >= zmax:
-                raise SystemExit(
-                    "zmin is equal or larger than zmax in configuration file. Cannot proceed."
-                )
-            z_range = (round((zmin + zmax) / 2), range(zmin, zmax))
-
-        if self.current_param.param_dict["zProject"]["mode"] != "laplacian":
-            self.data_2d = project_image_2d(
-                self.data,
-                z_range,
-                self.current_param.param_dict["zProject"]["zProjectOption"],
-            )
-            self.focus_plane = z_range[0]
-            self.z_range = z_range[1]
-
-        print_log(f"> Processing z_range:{self.z_range}")
 
     # displays image and shows it
     def show_image(

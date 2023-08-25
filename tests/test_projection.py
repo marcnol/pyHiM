@@ -30,12 +30,12 @@ def template_test_project(mode: str):
     inputs = os.path.join(tmp_projection_in, mode)
     main(["-F", inputs, "-C", "makeProjections"])
     generated_z_project = os.path.join(inputs, "zProject")
-    reference_outputs = "pyhim-small-dataset/projection/OUT/" + mode + "/zProject/"
+    reference_outputs = f"pyhim-small-dataset/projection/OUT/{mode}/zProject/"
     generated_files = extract_files(generated_z_project)
     reference_files = extract_files(reference_outputs)
     assert len(generated_files[1]) == len(reference_files[1])
     for _, short_filename, extension in generated_files:
-        filename = short_filename + "." + extension
+        filename = f"{short_filename}.{extension}"
         tmp_file = os.path.join(generated_z_project, filename)
         out_file = os.path.join(reference_outputs, filename)
         assert os.path.exists(out_file)
