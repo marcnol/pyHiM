@@ -9,6 +9,11 @@ import logging
 import os
 from datetime import datetime
 
+from dask.distributed.worker import logger
+
+# Default level of dask logger is WARN
+logger.setLevel(logging.INFO)
+
 
 class Logger:
     def __init__(self, root_folder, parallel=False, session_name="HiM_analysis"):
@@ -19,6 +24,7 @@ class Logger:
         self.md_filename = ""
         self.setup_md_file(session_name)
         self.setup_logger()
+        print_log(f"$ Started logging to: {self.log_file}")
 
     def setup_md_file(self, session_name: str = "HiM_analysis"):
         print("\n-----------------------------------------------------------------")
@@ -45,22 +51,22 @@ class Logger:
         formatter2 = logging.Formatter("%(message)s")
 
         # clears up any existing logger
-        logger = logging.getLogger()
-        logger.handlers = []
-        for hdlr in logger.handlers[:]:
+        my_logger = logging.getLogger()
+        my_logger.handlers = []
+        for hdlr in my_logger.handlers[:]:
             if isinstance(hdlr, logging.FileHandler):
-                logger.removeHandler(hdlr)
+                my_logger.removeHandler(hdlr)
 
         # initializes handlers for terminal and file
         filehandler = logging.FileHandler(self.log_file, "w")
         stream_handler = logging.StreamHandler()
 
-        logger.setLevel(logging.INFO)
+        my_logger.setLevel(logging.INFO)
         filehandler.setLevel(logging.INFO)
         stream_handler.setLevel(logging.INFO)
 
-        logger.addHandler(stream_handler)
-        logger.addHandler(filehandler)
+        my_logger.addHandler(stream_handler)
+        my_logger.addHandler(filehandler)
 
         filehandler.setFormatter(formatter1)
         stream_handler.setFormatter(formatter2)
@@ -144,7 +150,9 @@ class Log:
 
 def print_log(message, status="INFO"):
     """
-    Shows message to terminal and logs it to file
+    Shows message to terminal and logs it to file.
+    Compatible with dask workers.
+    Used the dask logger that used itself logging logger instance before.
 
     Parameters
     ----------
@@ -158,14 +166,13 @@ def print_log(message, status="INFO"):
     None.
 
     """
-    # print(message)
 
     if status == "INFO":
-        logging.info(message)
+        logger.info(message)
     elif status == "WARN":
-        logging.warning(message)
+        logger.warning(message)
     elif status == "DEBUG":
-        logging.debug(message)
+        logger.debug(message)
 
 
 def print_session_name(name: str):

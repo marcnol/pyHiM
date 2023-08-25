@@ -113,7 +113,7 @@ def create_single_folder(folder_path):
         os.makedirs(folder_path)
         print(f"$ Folder '{folder_path}' created successfully.")
     else:
-        print(f"! Folder '{folder_path}' already exists.")
+        print(f"! [INFO] Folder '{folder_path}' already exists.")
 
 
 def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):

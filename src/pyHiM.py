@@ -4,6 +4,7 @@
 
 __version__ = "0.8.0"
 
+import json
 import os
 import sys
 
@@ -63,14 +64,10 @@ def main(command_line_arguments=None):
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     labels = global_param.param_dict["labels"]
+    print_log(f"$ Labels to process: {list(labels.keys())}")
+    print_log(f"{json.dumps(labels, indent=4)}")
 
-    print_log(f"$ Started logging to: {logger.log_file}")
-    print_log(f"$ labels to process: {labels}\n")
-
-    # TODO: Test parallel mode with pipe.run
-    # If the projection cmd a require in sequential mode, we use the new way to run makeProjection
-    if not pipe.parallel:
-        pipe.run()
+    pipe.run()
 
     for label in labels:
         # sets parameters
@@ -89,11 +86,6 @@ def main(command_line_arguments=None):
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
-
-        # [projects 3D images in 2d]
-        # If the projection cmd a require in parallel mode, we use the old way to run makeProjection
-        if pipe.parallel and "makeProjections" in run_args.cmd_list:
-            pipe.make_projections(current_param)
 
         # [registers fiducials using a barcode as reference]
         if "alignImages" in run_args.cmd_list:
@@ -139,7 +131,7 @@ def main(command_line_arguments=None):
         if "buildHiMmatrix" in run_args.cmd_list:
             pipe.process_pwd_matrices(current_param, label)
 
-        print("\n")
+        print_log("\n")
         del current_param
 
     # exits
