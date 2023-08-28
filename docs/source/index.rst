@@ -134,6 +134,7 @@ How to proceed
    contributor/dev_process
    contributor/good_commit
    contributor/build_doc
+   contributor/no_python_files
    contributor/issues
    contributor/work_with_apifish
    contributor/ressources

@@ -1,5 +1,7 @@
 # How to document
 
+*[Build documentation locally](./dev_installation.md#build-documentation-locally)*
+
 ## Philosophy
 Our documentation is structured as follows:
 
@@ -59,6 +61,11 @@ param_file
 personalise_run
 ```
 ````
+
+#### Link a section from an other page
+```markdown
+[Build documentation locally](./dev_installation.md#build-documentation-locally)
+```
 
 ## Document features
 

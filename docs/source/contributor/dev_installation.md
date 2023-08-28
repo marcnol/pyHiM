@@ -263,3 +263,16 @@ If you want to run it in your data directory, then copy the configuration files 
 ```bash
 cp /home/rata/Repositories/pyHiM/modelParameterFiles_JSON/infoList*json path-to-your-directory
 ```
+
+## Build documentation locally
+Install in your conda env:
+```bash
+pip install nbsphinx ipython sphinx-book-theme
+conda install pandoc
+```
+Generate documentation:
+```bash
+cd docs/
+make html
+```
+A `build/html/` folder has been created with a `index.html` file inside, open it with your favorite browser.
