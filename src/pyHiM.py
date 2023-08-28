@@ -138,11 +138,9 @@ def main(command_line_arguments=None):
     logger.m_session.save()
     print_log("\n==================== Normal termination ====================\n")
 
-    if run_args.parallel:
+    if pipe.parallel:
         pipe.m_dask.cluster.close()
         pipe.m_dask.client.close()
-        # pipe.cluster.close()
-        # pipe.client.close()
 
     del pipe
 

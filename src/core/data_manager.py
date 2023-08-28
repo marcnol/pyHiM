@@ -248,8 +248,24 @@ class DataManager:
         """
         # decodes regular expressions
         if self.filename_regex:
-            return re.search(self.filename_regex, file_name)
-        return None
+            parts = re.search(self.filename_regex, file_name)
+            if parts is None:
+                raise ValueError(
+                    f"Filename: {file_name}\nDoesn't match with regex: {self.filename_regex}"
+                )
+            if parts["runNumber"] is None:
+                raise ValueError(
+                    f"'runNumber' part not found in this file:\n{file_name}"
+                )
+            if parts["cycle"] is None:
+                raise ValueError(f"'cycle' part not found in this file:\n{file_name}")
+            if parts["roi"] is None:
+                raise ValueError(f"'roi' part not found in this file:\n{file_name}")
+            if parts["channel"] is None:
+                raise ValueError(f"'channel' part not found in this file:\n{file_name}")
+            return parts
+
+        raise ValueError("fileNameRegExp not found")
 
     def get_inputs(self, labels: list[str]):
         return [img_file for img_file in self.data_images if img_file.m_label in labels]
