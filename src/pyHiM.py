@@ -13,6 +13,7 @@ import warnings
 from datetime import datetime
 
 import apifish
+import dask.distributed
 
 import core.function_caller as fc
 from core.data_manager import DataManager
@@ -150,5 +151,7 @@ def main(command_line_arguments=None):
 if __name__ == "__main__":
     if apifish.__version__ < "0.6.4dev":
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
+    if dask.distributed.__version__ < "2023.4.1":
+        sys.exit("ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] (pip install -U distributed)")
     else:
         main()
