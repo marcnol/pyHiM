@@ -66,7 +66,6 @@ def main(command_line_arguments=None):
 
     labels = global_param.param_dict["labels"]
     print_log(f"$ Labels to process: {list(labels.keys())}")
-    print_log(f"{json.dumps(labels, indent=4)}")
 
     pipe.run()
 
