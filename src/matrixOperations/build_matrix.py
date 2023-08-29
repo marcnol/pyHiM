@@ -135,7 +135,7 @@ class BuildMatrix:
 
         return pairwise_distances(r_mum)
 
-    def build_distance_matrix(self, mode="mean"):
+    def build_distance_matrix(self, mode="min", distance_threshold = np.inf):
         """
         Builds pairwise distance matrix from a coordinates table
 
@@ -204,29 +204,32 @@ class BuildMatrix:
                         # attributes distance from the PWDmatrix field in the sc_pwd_item table
                         newdistance = pwd_matrix[ibarcode1, ibarcode2]
 
-                        # inserts newdistance into sc_matrix using desired method
-                        if mode == "last":
-                            sc_matrix[index_barcode_1][index_barcode_2][
-                                itrace
-                            ] = newdistance
-                        elif mode == "mean":
-                            sc_matrix[index_barcode_1][index_barcode_2][
-                                itrace
-                            ] = np.nanmean(
-                                [
-                                    newdistance,
-                                    sc_matrix[index_barcode_1][index_barcode_2][itrace],
-                                ]
-                            )
-                        elif mode == "min":
-                            sc_matrix[index_barcode_1][index_barcode_2][
-                                itrace
-                            ] = np.nanmin(
-                                [
-                                    newdistance,
-                                    sc_matrix[index_barcode_1][index_barcode_2][itrace],
-                                ]
-                            )
+                        # checks distance
+                        if newdistance < distance_threshold:
+                            
+                            # inserts newdistance into sc_matrix using desired method
+                            if mode == "last":
+                                sc_matrix[index_barcode_1][index_barcode_2][
+                                    itrace
+                                ] = newdistance
+                            elif mode == "mean":
+                                sc_matrix[index_barcode_1][index_barcode_2][
+                                    itrace
+                                ] = np.nanmean(
+                                    [
+                                        newdistance,
+                                        sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                    ]
+                                )
+                            elif mode == "min":
+                                sc_matrix[index_barcode_1][index_barcode_2][
+                                    itrace
+                                ] = np.nanmin(
+                                    [
+                                        newdistance,
+                                        sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                    ]
+                                )
 
         self.sc_matrix = sc_matrix
         self.unique_barcodes = unique_barcodes
@@ -368,7 +371,7 @@ class BuildMatrix:
         np.save(f"{output_filename}_Nmatrix.npy", self.n_matrix)
         print(f"$ saved: {output_filename}_Nmatrix.npy")
 
-    def launch_analysis(self, file):
+    def launch_analysis(self, file, distance_threshold = np.inf):
         """
         run analysis for a chromatin trace table.
 
@@ -383,7 +386,7 @@ class BuildMatrix:
         self.trace_table.load(file)
 
         # runs calculation of PWD matrix
-        self.build_distance_matrix("min")  # mean min last
+        self.build_distance_matrix("min",distance_threshold = distance_threshold)  # mean min last
 
         # calculates N-matrix: number of PWD distances for each barcode combination
         self.calculate_n_matrix()

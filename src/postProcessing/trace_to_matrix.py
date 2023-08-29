@@ -18,6 +18,7 @@ import argparse
 import select
 import sys
 from datetime import datetime
+import numpy as np
 
 from matrixOperations.build_matrix import BuildMatrix
 
@@ -30,6 +31,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--outputFolder", help="Output folder, Default: PWD")
     parser.add_argument("--input", help="Name of input trace file.")
+    parser.add_argument("--distance_threshold", help="Threshold for the maximum distance allowed. Default: np.inf")
+   
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -46,6 +49,11 @@ def parse_arguments():
         p["input"] = args.input
     else:
         p["input"] = None
+    
+    if args.distance_threshold:
+        p["distance_threshold"] = float(args.distance_threshold)
+    else:
+        p["distance_threshold"] = np.inf
 
     p["trace_files"] = []
     if args.pipe:
@@ -75,7 +83,7 @@ def parse_arguments():
     return p
 
 
-def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict()):
+def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict(), distance_threshold = np.inf):
     if len(trace_files) < 1:
         print(
             "! Error: no trace file provided. Please either use pipe or the --input option to provide a filename."
@@ -97,7 +105,7 @@ def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict()):
 
             param = dict()
             new_matrix = BuildMatrix(param, colormaps=colormaps)
-            new_matrix.launch_analysis(trace_file)
+            new_matrix.launch_analysis(trace_file,distance_threshold=distance_threshold)
 
     return len(trace_files)
 
@@ -116,7 +124,7 @@ def main():
     # [loops over lists of datafolders]
     folder = p["rootFolder"]
     n_traces_processed = runtime(
-        folder, trace_files=p["trace_files"], colormaps=p["colormaps"]
+        folder, trace_files=p["trace_files"], colormaps=p["colormaps"],distance_threshold=p["distance_threshold"]
     )
 
     print(f"Processed <{n_traces_processed}> trace(s)")
