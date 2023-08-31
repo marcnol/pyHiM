@@ -54,6 +54,8 @@ def parse_arguments():
     )
     parser.add_argument("--input1", help="Name of first input trace file.")
     parser.add_argument("--input2", help="Name of second input trace file.")
+    parser.add_argument("--output", help="Name of output plot. Default: scatter_plot.png")
+
     parser.add_argument(
         "--mode",
         help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median",
@@ -82,6 +84,11 @@ def parse_arguments():
     else:
         p["input2"] = None
 
+    if args.output:
+        p["output"] = args.output
+    else:
+        p["output"] = "scatter_plot.png"
+        
     if args.mode:
         p["mode"] = args.mode
     else:
@@ -158,10 +165,9 @@ def plot_result(x, y, r, p):
     plt.ylim([x_min, x_max])
 
     # plt.show()
-    filename = "scatter_plot.png"
+    filename = p["output"]
     plt.savefig(filename)
     print(f"> Output image saved as : {filename}")
-
 
 def calculates_pearson_correlation(x, y):
     r, p = scipy.stats.pearsonr(x, y)
@@ -217,6 +223,27 @@ def calculates_ensemble_matrices(matrices, mode="median", max_distance=2):
 
     return mean_sc_matrices
 
+def common_member(a, b):
+    result = [i for i in a if i in b]
+    return result
+
+def filters_zero_values(x,y):
+    '''
+    finds the list of common indices in these arrays that contain nonzero values
+    '''
+
+    # identifies positions with zeros
+    non_zero_indices_x = list(np.nonzero(x)[0])
+    non_zero_indices_y = list(np.nonzero(y)[0])
+    
+    non_zero_consensous = common_member(non_zero_indices_x, non_zero_indices_y)
+    
+    print(non_zero_consensous)    
+
+    x = x[non_zero_consensous]
+    y = y[non_zero_consensous]
+    
+    return x, y 
 
 def main_script(p):
     print("Processing files\n" + "=" * 16)
@@ -224,7 +251,7 @@ def main_script(p):
     mode = p["mode"]
     files = p["input_files"]
     max_distance = p["max_distance"]
-
+    
     matrices = [load_matrix(file) for file in files]
 
     mean_sc_matrices = calculates_ensemble_matrices(
@@ -232,6 +259,8 @@ def main_script(p):
     )
 
     [x, y] = [parses_matrix_to_vector(matrix) for matrix in mean_sc_matrices]
+
+    x, y = filters_zero_values(x,y)
 
     r = calculates_pearson_correlation(x, y)
 
