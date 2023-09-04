@@ -22,7 +22,9 @@ from core.saving import image_show_with_values
 
 def extract_files(root: str):
     """Extract recursively file informations of all files into a given directory.
-    Note: filename is the name without extension
+    Note:
+    * filepath is directory path with filename and extension
+    * filename is the name without extension
 
     Parameters
     ----------
@@ -76,24 +78,47 @@ def remove_extension(filename: str):
 class DataManager:
     """Single party responsible for communicating data with the system"""
 
-    def __init__(
-        self,
-        data_path: str,
-        logger: Logger,
-        stardist_basename: str = "",
-        params_filename: str = "infoList",
-    ):
+    def __init__(self, data_path: str, logger: Logger, stardist_basename: str = ""):
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
         self.md_log_file = logger.md_filename
         self.m_stardist_basename = stardist_basename
-        self.m_filename_params = params_filename
+        self.params_filename = "infoList"
         self.all_files = extract_files(self.m_data_path)
-        self.param_file_path = self.find_param_file(params_filename)
+        self.param_file_path = self.find_param_file()
         self.data_images = []
         self.data_tables = []
         self.filename_regex = ""
-        self.channels = {
+        self.channels = self.__channel_decoder()
+
+    @staticmethod
+    def __set_data_path(data_path):
+        return str(data_path) if data_path else os.getcwd()
+
+    def find_param_file(self):
+        """Find the user parameters file like `infoList.json` inside extracted input files.
+
+        Returns
+        -------
+        str
+            Parameters file path
+
+        Raises
+        ------
+        ValueError
+            Parameters file NOT FOUND
+        """
+        for path, name, ext in self.all_files:
+            if ext == "json" and name == self.params_filename:
+                return str(path)
+        # If we loop over all files, parameter file aren't detected.
+        raise ValueError(
+            f"Parameters file NOT FOUND, expected filename: {self.params_filename}.json"
+        )
+
+    @staticmethod
+    def __channel_decoder():
+        return {
             "dapi_acq": {
                 "ch00": "dapi",
                 "ch01": "fiducial",
@@ -108,17 +133,6 @@ class DataManager:
                 "ch01": "fiducial",
             },
         }
-        self.img_info = {
-            "parallelize_planes": False,
-            "pixel_size_XY": 0.1,
-            "pixel_size_Z": 0.25,
-            "z_binning": 2,
-        }
-        # self.dispatch_files()
-
-    @staticmethod
-    def __set_data_path(data_path):
-        return str(data_path) if data_path else os.getcwd()
 
     def create_folder(self, folder_name: str):
         """Create folder with `makedirs` from os module.
@@ -136,15 +150,6 @@ class DataManager:
         else:
             print_log(f"! [INFO] Folder '{folder_path}' already exists.")
 
-    def find_param_file(self, params_filename):
-        for path, name, ext in self.all_files:
-            if ext == "json" and name == self.m_filename_params:
-                return str(path)
-        # If we loop over all files, parameter file aren't detected.
-        raise ValueError(
-            f"Parameters file NOT FOUND, expected filename: {params_filename}.json"
-        )
-
     def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
         img_ext = ["tif", "tiff"]
@@ -158,7 +163,7 @@ class DataManager:
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
             elif ext in ["log", "md"] or (
-                ext == "json" and name == self.m_filename_params
+                ext == "json" and name == self.params_filename
             ):
                 pass
             else:
@@ -213,11 +218,6 @@ class DataManager:
         self.channels["barcode_acq"][
             acq.get("fiducialBarcode_channel", "ch01")
         ] = "fiducial"
-        # Image informations
-        self.img_info["parallelize_planes"] = acq["parallelizePlanes"]
-        self.img_info["pixel_size_XY"] = acq["pixelSizeXY"]
-        self.img_info["pixel_size_Z"] = acq["pixelSizeZ"]
-        self.img_info["z_binning"] = acq["zBinning"]
 
         self.dispatch_files()
 
