@@ -40,29 +40,21 @@ def main(command_line_arguments=None):
 
     datam = DataManager(
         run_args.data_path,
-        logger,
+        logger.md_filename,
         stardist_basename=run_args.stardist_basename,
-        params_filename="infoList",
     )
 
-    raw_dict = datam.load_user_param()
-    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    datam.set_up(global_param.get_sectioned_params("acquisition"))
+    # datam.set_up(global_param.get_sectioned_params("acquisition"))
 
-    pipe = fc.Pipeline(
-        datam,
-        run_args.cmd_list,
-        global_param,
-        run_args.parallel,
-        logger,
-    )
+    pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
-
-    labels = global_param.param_dict["labels"]
-    print_log(f"$ Labels to process: {list(labels.keys())}")
 
     pipe.run()
 
+    raw_dict = datam.load_user_param()
+    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
+    labels = global_param.param_dict["labels"]
+    print_log(f"$ Labels to process: {list(labels.keys())}")
     for label in labels:
         # sets parameters
         current_param = Parameters(

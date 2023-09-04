@@ -84,7 +84,7 @@ def main():
                 print(f"File deleted: {f} ")
             except OSError as e:
                 print(f"Error: {f} : {e.strerror}")
-    datam = DataManager(root_folder, None)
+    datam = DataManager(root_folder)
     raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")

@@ -59,9 +59,7 @@ class DaskCluster:
             print_log("$ No running cluster detected. Will start one.")
 
         self.cluster = LocalCluster(
-            n_workers=self.n_threads,
-            threads_per_worker=1,
-            memory_limit="64GB",
+            n_workers=self.n_threads, threads_per_worker=1, memory_limit="64GB",
         )
         self.client = Client(self.cluster)
 

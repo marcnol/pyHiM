@@ -331,7 +331,7 @@ def main():
 
     logger = Logger(root_folder, session_name="processSNDchannel")
 
-    datam = DataManager(root_folder, logger)
+    datam = DataManager(root_folder, logger.md_filename)
     raw_dict = datam.load_user_param()
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path)
     labels = current_param.param_dict["labels"]

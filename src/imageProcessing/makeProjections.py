@@ -24,7 +24,7 @@ import numpy as np
 import scipy.optimize as spo
 from apifish.stack import projection
 
-from core.parameters import Parameters
+from core.parameters import Parameters, ProjectionParams
 from core.pyhim_logging import print_log
 
 warnings.filterwarnings("ignore")
@@ -33,48 +33,48 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class Feature:
-    def __init__(self, params: Parameters):
+    def __init__(self, params):
         self.m_params = params
         self.required_data = []
         self.required_ref = []
         self.required_table = []
-        self.out_folder = ""
 
     def get_required_inputs(self):
         return self.required_data, self.required_ref, self.required_table
 
 
 class Project(Feature):
-    def __init__(self, params: Parameters):
+    def __init__(self, params: ProjectionParams):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
-        self.out_folder = params.param_dict["common"]["zProject"]["folder"]
+        self.params = params
+        # self.out_folder = params.folder
 
-        self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
-        self.display = params.get_labeled_dict_value("zProject", "display")
-        self.mode = params.get_labeled_dict_value("zProject", "mode")
-        self.operation = params.get_labeled_dict_value("zProject", "operation")
-        self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
-        self.window_security = params.get_labeled_dict_value(
-            "zProject", "windowSecurity"
-        )
-        self.z_project_option = params.get_labeled_dict_value(
-            "zProject", "zProjectOption"
-        )
-        self.zmax = params.get_labeled_dict_value("zProject", "zmax")
-        self.zmin = params.get_labeled_dict_value("zProject", "zmin")
-        self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
+        # self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
+        # self.display = params.get_labeled_dict_value("zProject", "display")
+        # self.mode = params.get_labeled_dict_value("zProject", "mode")
+        # self.operation = params.get_labeled_dict_value("zProject", "operation")
+        # self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
+        # self.window_security = params.get_labeled_dict_value(
+        #     "zProject", "windowSecurity"
+        # )
+        # self.z_project_option = params.get_labeled_dict_value(
+        #     "zProject", "zProjectOption"
+        # )
+        # self.zmax = params.get_labeled_dict_value("zProject", "zmax")
+        # self.zmin = params.get_labeled_dict_value("zProject", "zmin")
+        # self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
 
     def find_out_tags(self, label):
         tags = ["_2d"]
         # TODO: Check if label exist
         # (may be this test have to be done in high level like Pipeline initialization)
-        if self.mode[label] == "laplacian":
+        if self.params.mode == "laplacian":
             tags.append("_focalPlaneMatrix")
         return tags
 
     def run(self, img, label: str):
-        mode = self.mode[label]
+        mode = self.params.mode
         if mode == "laplacian":
             return self._projection_laplacian(img, label)
         # find the correct range for the projection
@@ -83,9 +83,9 @@ class Project(Feature):
         return [img_projected]
 
     def check_zmax(self, img_size, label):
-        if self.zmax[label] > img_size[0]:
+        if self.params.zmax > img_size[0]:
             print_log("$ Setting z max to the last plane")
-            self.zmax[label] = img_size[0]
+            self.params.zmax = img_size[0]
 
     def precise_z_planes(self, img, mode, label):
         img_size = img.shape
@@ -108,11 +108,11 @@ class Project(Feature):
         Calculates the focal planes based max standard deviation
         Finds best focal plane by determining the max of the std deviation vs z curve
         """
-        win_sec = self.window_security[label]
+        win_sec = self.params.window_security
 
         print_log("> Calculating planes...")
 
-        nb_of_planes = self.zmax[label] - self.zmin[label]
+        nb_of_planes = self.params.zmax - self.params.zmin
         std_matrix = np.zeros(nb_of_planes)
         mean_matrix = np.zeros(nb_of_planes)
 
@@ -131,9 +131,9 @@ class Project(Feature):
             # interpolate zfocus
             axis_z = range(
                 max(
-                    self.zmin[label],
+                    self.params.zmin,
                     i_focus_plane - win_sec,
-                    min(self.zmax[label], i_focus_plane + win_sec),
+                    min(self.params.zmax, i_focus_plane + win_sec),
                 )
             )
             std_matrix -= np.min(std_matrix)
@@ -147,9 +147,9 @@ class Project(Feature):
             except RuntimeError:
                 print_log("Warning, too many iterations", status="WARN")
                 focus_plane = i_focus_plane
-        zmin = max(win_sec, focus_plane - self.zwindows[label])
+        zmin = max(win_sec, focus_plane - self.params.zwindows)
         zmax = min(
-            nb_of_planes, win_sec + nb_of_planes, focus_plane + self.zwindows[label]
+            nb_of_planes, win_sec + nb_of_planes, focus_plane + self.params.zwindows
         )
         zrange = range(zmin, zmax + 1)
 
@@ -163,23 +163,23 @@ class Project(Feature):
 
     def _precise_z_planes_manual(self, label):
         # Manual: reads from parameters file
-        if self.zmin[label] >= self.zmax[label]:
+        if self.params.zmin >= self.params.zmax:
             raise SystemExit(
                 "zmin is equal or larger than zmax in configuration file. Cannot proceed."
             )
-        focus_plane = round((self.zmin[label] + self.zmax[label]) / 2)
-        z_range = range(self.zmin[label], self.zmax[label])
+        focus_plane = round((self.params.zmin + self.params.zmax) / 2)
+        z_range = range(self.params.zmin, self.params.zmax)
         return focus_plane, z_range
 
     def _projection_laplacian(self, img, label):
         print_log("Stacking using Laplacian variance...")
         focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
-            img, block_size_xy=self.block_size[label], window=self.zwindows[label]
+            img, block_size_xy=self.params.block_size, window=self.params.zwindows
         )
         self.__print_img_properties(z_range[1], img.shape, z_range[0])
         # reassembles image
         output = projection.reassemble_images(
-            focal_plane_matrix, block, window=self.zwindows[label]
+            focal_plane_matrix, block, window=self.params.zwindows
         )
 
         return output, (focal_plane_matrix, z_range[0])
@@ -187,7 +187,7 @@ class Project(Feature):
     def projection_2d(self, img, label):
         # sums images
         i_collapsed = None
-        option = self.z_project_option[label]
+        option = self.params.z_project_option
         if option == "MIP":
             # Max projection of selected planes
             i_collapsed = projection.maximum_projection(img)

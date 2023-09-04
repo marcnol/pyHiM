@@ -25,10 +25,10 @@ from matrixOperations.register_localizations import RegisterLocalizations
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(self, data_m, cmd_list, global_param, is_parallel, logger):
+    def __init__(self, data_m, cmd_list, is_parallel, logger):
         self.m_data_m = data_m
         self.cmds = cmd_list
-        self.params = global_param
+        # self.params = None
         self.parallel = is_parallel
         self.m_logger = logger
         self.m_dask = None
@@ -37,9 +37,16 @@ class Pipeline:
         self.init_features()
 
     def init_features(self):
-        for command in self.cmds:
-            if command in self.tempo_var:
-                self.features.append(self.tempo_var.get(command)(self.params))
+        if "makeProjections" in self.cmds:
+            labelled_feature = {}
+            for label in self.m_data_m.label_to_process:
+                labelled_feature[label] = Project(
+                    self.m_data_m.labelled_params[label].projection
+                )
+            self.features.append(labelled_feature)
+        # for command in self.cmds:
+        #     if command in self.tempo_var:
+        #         self.features.append(self.tempo_var.get(command)(self.params))
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
@@ -142,19 +149,20 @@ class Pipeline:
             )
 
     def run(self):  # sourcery skip: remove-pass-body
-        for feat in self.features:
-            (required_data, required_ref, required_table) = feat.get_required_inputs()
+        for feat_dict in self.features:
+            feat = get_a_dict_value(feat_dict)
+            (label_types, required_ref, required_table) = feat.get_required_inputs()
             # reference = self.m_data_m.load_reference(required_ref)
             # table = self.m_data_m.load_table(required_table)
-            files_to_process = self.m_data_m.get_inputs(required_data)
-            self.m_data_m.create_folder(feat.out_folder)
+            files_to_process = self.m_data_m.get_inputs(label_types)
+            self.m_data_m.create_folder(feat.params.folder)
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()
                 client.forward_logging()
                 # Planify, for the future, work to execute in parallel
                 threads = [
-                    client.submit(run_pattern, feat, f2p, self.m_data_m)
+                    client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
                     for f2p in files_to_process
                 ]
                 # Run works
@@ -162,7 +170,7 @@ class Pipeline:
 
             else:
                 for f2p in files_to_process:
-                    run_pattern(feat, f2p, self.m_data_m)
+                    run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
 
 
 def run_pattern(feat, f2p, m_data_m):
@@ -180,10 +188,10 @@ def run_pattern(feat, f2p, m_data_m):
     """
     data = f2p.load()
     print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
-    results = feat.run(data, f2p.m_label)
+    results = feat.run(data, f2p.label)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    m_data_m.save_data(results, feat.find_out_tags(f2p.m_label), feat.out_folder, f2p)
+    m_data_m.save_data(results, feat.find_out_tags(f2p.label), feat.params.folder, f2p)
 
 
 # =============================================================================
@@ -249,3 +257,7 @@ def build_matrix(current_param, label):
     if label == "barcode":
         build_matrix_instance = BuildMatrix(current_param)
         build_matrix_instance.run()
+
+
+def get_a_dict_value(d: dict):
+    return list(d.values())[0]
