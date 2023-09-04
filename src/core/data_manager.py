@@ -85,7 +85,7 @@ class DataManager:
     ):
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
-        self.m_logger = logger
+        self.md_log_file = logger.md_filename
         self.m_stardist_basename = stardist_basename
         self.m_filename_params = params_filename
         self.all_files = extract_files(self.m_data_path)
@@ -319,7 +319,7 @@ class DataManager:
         plt.close(fig)
         original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
-            self.m_logger.md_filename,
+            self.md_log_file,
             f"{original_filename}\n ![]({out_path})\n",
             "a",
         )
@@ -335,7 +335,7 @@ class DataManager:
 
         original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
-            self.m_logger.md_filename,
+            self.md_log_file,
             f"{original_filename}\n ![]({out_path})\n",
             "a",
         )
