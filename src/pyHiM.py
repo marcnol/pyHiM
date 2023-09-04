@@ -136,7 +136,6 @@ def main(command_line_arguments=None):
 
     # exits
     logger.m_session.save()
-    print_log("\n==================== Normal termination ====================\n")
 
     if pipe.parallel:
         pipe.m_dask.cluster.close()
@@ -144,13 +143,21 @@ def main(command_line_arguments=None):
 
     del pipe
 
+    print_log("\n==================== Normal termination ====================\n")
     print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
 
-if __name__ == "__main__":
+def check_version_compatibily():
     if apifish.__version__ < "0.6.4dev":
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
     if dask.distributed.__version__ < "2023.4.1":
-        sys.exit("ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] (pip install -U distributed)")
-    else:
-        main()
+        sys.exit(
+            "ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] \
+                (pip install -U distributed)"
+        )
+
+
+if __name__ == "__main__":
+    print(f"[VERSION] pyHiM {__version__}")
+    check_version_compatibily()
+    main()
