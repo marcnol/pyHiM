@@ -4,12 +4,8 @@
 
 __version__ = "0.8.0"
 
-import json
 import os
 import sys
-
-# to remove in a future version
-import warnings
 from datetime import datetime
 
 import apifish
@@ -20,8 +16,6 @@ from core.data_manager import DataManager
 from core.parameters import Parameters
 from core.pyhim_logging import Logger, print_log
 from core.run_args import RunArgs
-
-warnings.filterwarnings("ignore")
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
