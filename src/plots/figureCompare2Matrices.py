@@ -83,6 +83,7 @@ def parse_arguments():
         "--shuffle",
         help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
     )
+
     parser.add_argument("--cMin", help="Colormap min cscale. Default: 0")
     parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
 
@@ -135,12 +136,12 @@ def parse_arguments():
     if args.axisLabel:
         run_parameters["axisLabel"] = args.axisLabel
     else:
-        run_parameters["axisLabel"] = False
+        run_parameters["axisLabel"] = True
 
     if args.axisTicks:
         run_parameters["axisTicks"] = args.axisTicks
     else:
-        run_parameters["axisTicks"] = False
+        run_parameters["axisTicks"] = True
 
     if args.ratio:
         run_parameters["ratio"] = args.ratio
@@ -161,6 +162,11 @@ def parse_arguments():
         run_parameters["dist_calc_mode"] = args.dist_calc_mode
     else:
         run_parameters["dist_calc_mode"] = "median"
+
+    if run_parameters["dist_calc_mode"] == 'proximity':
+        run_parameters["cmtitle"] = 'proximity frequency'
+    else:
+        run_parameters["cmtitle"] = 'distance, um'
         
     if args.matrix_norm_mode:
         run_parameters["matrix_norm_mode"] = args.matrix_norm_mode
@@ -194,9 +200,9 @@ def parse_arguments():
     return run_parameters
 
 
-
 def gets_ensemble_matrix(run_parameters,scPWDMatrix_filename=''):
-               
+
+                   
     (sc_matrix,
      uniqueBarcodes,
      cScale, 
@@ -219,7 +225,7 @@ def gets_ensemble_matrix(run_parameters,scPWDMatrix_filename=''):
         c_min=run_parameters["cMin"],
         n_cells=n_cells,
         c_m=run_parameters["cmap"],
-        cmtitle="distance, um",
+        cmtitle=run_parameters["cmtitle"],
         filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
         font_size=run_parameters["fontsize"],
     )
@@ -271,7 +277,9 @@ def main():
                                fontsize=run_parameters["fontsize"],
                                axis_ticks=run_parameters["axisTicks"],
                                outputFileName = outputFileName1,
-                               plottingFileExtension=run_parameters["plottingFileExtension"]
+                               fig_title=run_parameters["cmtitle"],
+                               plottingFileExtension=run_parameters["plottingFileExtension"],
+                               n_cells=n_cells1+n_cells2,
                                )
         
         plot_mixed_matrix(m1,m2,uniqueBarcodes,
@@ -281,7 +289,9 @@ def main():
                                axis_ticks=run_parameters["axisTicks"],
                                cAxis=run_parameters["cMax"],
                                outputFileName = outputFileName1,
-                               plottingFileExtension=run_parameters["plottingFileExtension"]
+                               fig_title=run_parameters["cmtitle"],
+                               plottingFileExtension=run_parameters["plottingFileExtension"],
+                               n_cells=n_cells1+n_cells2,
                                )
         
     else:

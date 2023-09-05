@@ -131,7 +131,7 @@ def plot_2d_matrix_simple(
     axis_ticks=False,
     n_cells=0,
     n_datasets=0,
-    show_title=False,
+    show_title=True,
     fig_title="",
 ):
     pos = ifigure.imshow(matrix, cmap=c_m)  # colormaps RdBu seismic
@@ -146,19 +146,21 @@ def plot_2d_matrix_simple(
         if not axis_ticks:
             ifigure.set_xticklabels(())
         else:
+            
             print(f"barcodes:{unique_barcodes}")
-            # ifigure.set_xticks(np.arange(matrix.shape[0]),unique_barcodes)
-            ifigure.set_xticklabels(unique_barcodes)
+            ifigure.set_xticks(np.arange(matrix.shape[0]),unique_barcodes)
+            # ifigure.set_xticklabels(unique_barcodes)
 
     else:
         ifigure.set_xticklabels(())
+
     if yticks:
         ifigure.set_ylabel("barcode #", fontsize=fontsize)
         if not axis_ticks:
             ifigure.set_yticklabels(())
         else:
-            # ifigure.set_yticks(np.arange(matrix.shape[0]), unique_barcodes)
-            ifigure.set_yticklabels(unique_barcodes)
+            ifigure.set_yticks(np.arange(matrix.shape[0]), unique_barcodes)
+            # ifigure.set_yticklabels(unique_barcodes)
     else:
         ifigure.set_yticklabels(())
 
@@ -168,6 +170,12 @@ def plot_2d_matrix_simple(
         xtick.set_fontsize(fontsize)
         ytick.set_fontsize(fontsize)
 
+    # plt.xticks(
+    #     np.arange(matrix.shape[0]), unique_barcodes, fontsize=fontsize
+    # )
+    # plt.yticks(
+    #     np.arange(matrix.shape[0]), unique_barcodes, fontsize=fontsize
+    # )
     if colorbar:
         cbar = plt.colorbar(pos, ax=ifigure, fraction=0.046, pad=0.04)
         cbar.minorticks_on()
@@ -184,11 +192,14 @@ def plot_matrix_difference(m1,
                             normalize='none', 
                             ratio=True, 
                             c_scale=0.6,
-                            axisLabel=False,
+                            axisLabel=True,
                             fontsize=22,
                             axis_ticks=False,
                             outputFileName='',
-                            plottingFileExtension='.png'):
+                            fig_title="",
+                            plottingFileExtension='.png',
+                            n_cells=0,
+                            ):
 
     # plots difference/ratio matrix
     fig1 = plt.figure(constrained_layout=True)
@@ -207,10 +218,12 @@ def plot_matrix_difference(m1,
     if ratio == True:
         matrix = np.log2(_m1 / _m2)
         cmtitle = "log(ratio)"
+        fig_title = "log2(Dataset1/Dataset2)"
         print(f'$ calculating ratio')
     else:
         matrix = _m1 - _m2
         cmtitle = "difference"
+        fig_title = "Dataset1-Dataset2"
         print(f'$ calculating difference')
 
       
@@ -219,16 +232,20 @@ def plot_matrix_difference(m1,
     f1_ax1_im = plot_2d_matrix_simple(
         f_1,
         matrix,
-        [uniqueBarcodes,uniqueBarcodes],
+        uniqueBarcodes,
         yticks=axisLabel,
         xticks=axisLabel,
         cmtitle=cmtitle,
+        fig_title=fig_title,
         c_min=-c_scale,
         c_max=c_scale,
         fontsize=fontsize,
         colorbar=True,
         axis_ticks=axis_ticks,
         c_m="RdBu",
+        show_title=True,
+        n_cells=n_cells,
+        n_datasets=2,
     )
     plt.savefig(outputFileName+"_difference"+plottingFileExtension)
     print("Output figure: {}".format(outputFileName))
@@ -240,7 +257,9 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
                                axis_ticks=False,
                                cAxis=0.6,
                                outputFileName='',
-                               plottingFileExtension='.png'
+                               fig_title='',
+                               plottingFileExtension='.png',
+                               n_cells=0,
                                ):
 
     # plots mixed matrix
@@ -257,6 +276,8 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
     # _m1, _m2 = normalize_matrix(_m1, _m2, mode)
     matrix2 = _m1
 
+    fig_title = 'mixed matrix'
+    
     for i in range(matrix2.shape[0]):
         for j in range(0, i):
             matrix2[i, j] = _m2[i, j]
@@ -267,13 +288,17 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
         list(uniqueBarcodes),
         yticks=axisLabel,
         xticks=axisLabel,
-        cmtitle="probability",
+        cmtitle=fig_title,
+        fig_title=fig_title,
+        show_title=True,
         c_min=0,
         c_max=cAxis,
         fontsize=fontsize,
         colorbar=True,
         axis_ticks=axis_ticks,
         c_m="coolwarm",
+        n_cells=n_cells,
+        n_datasets=2,
     )
     plt.savefig(outputFileName + "_mixed_matrix" + plottingFileExtension)
     np.save(outputFileName + "_mixed_matrix.npy", matrix2)
