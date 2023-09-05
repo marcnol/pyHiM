@@ -4,7 +4,7 @@
             "DAPI_channel": "ch00",
             "RNA_channel": "ch02",
             "barcode_channel": "ch01",
-            "mask_channel": "ch01",                
+            "mask_channel": "ch01",
             "fiducialBarcode_channel": "ch00",
             "fiducialMask_channel": "ch00",
             "fiducialDAPI_channel": "ch01",
@@ -28,28 +28,36 @@
             "localAlignment": "block3D",
             "localShiftTolerance": 1,
             "lower_threshold": 0.999,
-            "operation": "overwrite",
             "outputFile": "alignImages",
             "referenceFiducial": "RT1",
             "tolerance": 0.1
         },
         "buildsPWDmatrix": {
-            "tracing_method": ["masking","clustering"],
-            "mask_expansion": 8,            
+            "tracing_method": [
+                "masking",
+                "clustering"
+            ],
+            "mask_expansion": 8,
             "flux_min": 10,
             "flux_min_3D": 4000,
-            "KDtree_distance_threshold_mum": 1,            
             "folder": "buildsPWDmatrix",
-            "masks2process":{"nuclei":"DAPI","mask1":"mask0"},
-			"colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},            	
+            "masks2process": {
+                "nuclei": "DAPI",
+                "mask1": "mask0"
+            },
+            "colormaps": {
+                "PWD_KDE": "terrain",
+                "PWD_median": "terrain",
+                "contact": "coolwarm",
+                "Nmatrix": "Blues"
+            },
             "remove_uncorrected_localizations": true,
             "toleranceDrift": 1
         },
         "segmentedObjects": {
-            "Segment3D": "overwrite",
-	        "operation": "2D",
+            "operation": "2D",
             "background_sigma": 3.0,
-			"stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
+            "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
             "brightest": 1100,
             "centroidDifference_max": 5,
             "folder": "segmentedObjects",
@@ -60,7 +68,7 @@
             "residual_max": 2.5,
             "sigma_max": 5,
             "tesselation": true,
-            "reducePlanes": true,            
+            "reducePlanes": true,
             "threshold_over_std": 1.0
         },
         "zProject": {
@@ -68,8 +76,6 @@
             "display": true,
             "folder": "zProject",
             "mode": "full",
-            "operation": "skip",
-            "saveImage": true,
             "windowSecurity": 2,
             "zProjectOption": "MIP",
             "zmax": 59,
@@ -79,34 +85,34 @@
     },
     "labels": {
         "DAPI": {
-            "order": 3, 
-		    "acquisition": {
-		        "label_channel": "ch00",
-		        "label_channel_fiducial": "ch01"            
-		    },            
-		    "segmentedObjects": {
-		        "area_max": 3000,
-		        "area_min": 150,
-		        "background_method": "inhomogeneous",
-		        "centroidDifference_max": 5,
-		        "operation": "2D,3D",
-		        "stardist_network": "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2",
-		        "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
-		        "tesselation": true,
-		        "threshold_over_std": 1.0
-	    },
+            "order": 3,
+            "acquisition": {
+                "label_channel": "ch00",
+                "label_channel_fiducial": "ch01"
+            },
+            "segmentedObjects": {
+                "area_max": 3000,
+                "area_min": 150,
+                "background_method": "inhomogeneous",
+                "centroidDifference_max": 5,
+                "operation": "2D,3D",
+                "stardist_network": "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2",
+                "stardist_network3D": "DAPI_3D_stardist_20210720_deconvolved",
+                "tesselation": true,
+                "threshold_over_std": 1.0
+            },
             "zProject": {
-		        "mode": "full",
-		        "zProjectOption": "sum",
-		        "zmax": 59,
-		        "zmin": 1,
-		        "zwindows": 15
-        }
+                "mode": "full",
+                "zProjectOption": "sum",
+                "zmax": 59,
+                "zmin": 1,
+                "zwindows": 15
+            }
         },
         "RNA": {
             "order": 4,
             "acquisition": {
-                "label" : "RNA"
+                "label": "RNA"
             },
             "segmentedObjects": {
                 "operation": "overwrite"
@@ -114,73 +120,72 @@
         },
         "barcode": {
             "order": 2,
-		    "acquisition": {
-		        "label_channel": "ch01",
-		        "label_channel_fiducial": "ch00"
-		    },            
-		    "segmentedObjects": {
-		        "area_max": 500,
-		        "area_min": 50,
-		        "background_method": "inhomogeneous",
-		        "centroidDifference_max": 5,
-		        "operation": "2D,3D",
-		        "3DGaussianfitWindow": 3,
-		        "3Dmethod": "stardist",
-		        "3dAP_brightest": 100,
-		        "3dAP_distTolerance": 1,
-		        "3dAP_flux_min": 2,
-		        "3dAP_window": 5,
-		        "threshold_over_std": 1.0,
-                "3D_threshold_over_std":5,
-                "3D_sigma":3,
-                "3D_boxSize":32,
-                "3D_filter_size":3,
-                "3D_area_min":10,
-                "3D_area_max":250,
-                "3D_nlevels":64,
-                "3D_contrast":0.001,
-                "3D_psf_z":500,
-                "3D_psf_yx":200,
-                "3D_lower_threshold":0.99,
-                "3D_higher_threshold":0.9999,
-		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
-		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
-		    },
+            "acquisition": {
+                "label_channel": "ch01",
+                "label_channel_fiducial": "ch00"
+            },
+            "segmentedObjects": {
+                "area_max": 500,
+                "area_min": 50,
+                "background_method": "inhomogeneous",
+                "centroidDifference_max": 5,
+                "operation": "2D,3D",
+                "3DGaussianfitWindow": 3,
+                "3Dmethod": "stardist",
+                "3dAP_brightest": 100,
+                "3dAP_distTolerance": 1,
+                "3dAP_flux_min": 2,
+                "3dAP_window": 5,
+                "threshold_over_std": 1.0,
+                "3D_threshold_over_std": 5,
+                "3D_sigma": 3,
+                "3D_boxSize": 32,
+                "3D_area_min": 10,
+                "3D_area_max": 250,
+                "3D_nlevels": 64,
+                "3D_contrast": 0.001,
+                "3D_psf_z": 500,
+                "3D_psf_yx": 200,
+                "3D_lower_threshold": 0.99,
+                "3D_higher_threshold": 0.9999,
+                "stardist_network": "PSF_2D_stardist_19032021_single_loci",
+                "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+            },
             "zProject": {
-		        "mode": "full",
-		        "zProjectOption": "MIP",
-		        "zmax": 59,
-		        "zmin": 1,
-		        "zwindows": 15
-        }
+                "mode": "full",
+                "zProjectOption": "MIP",
+                "zmax": 59,
+                "zmin": 1,
+                "zwindows": 15
+            }
         },
         "fiducial": {
             "order": 1
         },
         "mask": {
             "order": 5,
-		    "acquisition": {
-		        "label_channel": "ch01",
-		        "label_channel_fiducial": "ch00"            
-		    },            
-		    "segmentedObjects": {
-		        "area_max": 3000,
-		        "area_min": 150,
-		        "background_method": "inhomogeneous",
-		        "centroidDifference_max": 5,
-		        "operation": "2D,3D",
-		        "stardist_network": "PSF_2D_stardist_19032021_single_loci",
-		        "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01",
-		        "tesselation": true,
-		        "threshold_over_std": 1.0
-		    },
+            "acquisition": {
+                "label_channel": "ch01",
+                "label_channel_fiducial": "ch00"
+            },
+            "segmentedObjects": {
+                "area_max": 3000,
+                "area_min": 150,
+                "background_method": "inhomogeneous",
+                "centroidDifference_max": 5,
+                "operation": "2D,3D",
+                "stardist_network": "PSF_2D_stardist_19032021_single_loci",
+                "stardist_network3D": "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01",
+                "tesselation": true,
+                "threshold_over_std": 1.0
+            },
             "zProject": {
-		        "mode": "full",
-		        "zProjectOption": "sum",
-		        "zmax": 59,
-		        "zmin": 1,
-		        "zwindows": 15
-        }
+                "mode": "full",
+                "zProjectOption": "sum",
+                "zmax": 59,
+                "zmin": 1,
+                "zwindows": 15
+            }
         }
     }
 }

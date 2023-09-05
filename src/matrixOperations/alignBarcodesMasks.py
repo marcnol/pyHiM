@@ -388,6 +388,7 @@ class CellID:
                 # finds what mask label this barcode is sitting on
                 mask_id = self.masks[x_int][y_int]
 
+                # TODO: UPDATE this comment, localDriftCorrection was removed from pyHiM.
                 # Corrects XYZ coordinate of barcode if localDriftCorrection is available
                 zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
                 rt_barcode = f"RT{str(barcode)}"

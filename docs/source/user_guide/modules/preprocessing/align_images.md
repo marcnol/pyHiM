@@ -27,8 +27,6 @@ Parameters for this script will be read from the  ```alignImages``` field of ```
 |:-:|:-:|:-:|
 |referenceFiducial| |Selects reference barcode image|
 |alignByBlock| | Sets to false if a block correction is not needed. Default: True|
-|bezel| |Selects number of pixels around the fiducial mask for local shift correction|
-|localShiftTolerance | | Maximal tolerance in pixels to apply local correction |
 
 
 ## Description
@@ -48,4 +46,3 @@ The algorithm takes images one by one and aligns them with the reference.
 There are several ways to compute the shift:
 - Global alignement makes simple cross-correlation with two images
 - Splits image in blocks and makes cross-correlation block by block. The `alignByBlock` parameter in the `alignImages` field of `infoList.json` should be set to `True`. It calculates the optimal shift between fiducial and reference in each block. It estimates the root mean squared error (RMS) between the reference and the shifted image for each block, and uses the blocks in which the RMS is within `tolerance`. Mean and standar deviation of the XY shifts are calcualted, and mean shifts are used for shifting the image and getting the final RMS error. This method is more robust against a bright noise spot.
-- Local drift correction in 2D using a bounding box that is `bezel` pixels larger than the mask for both the reference fiducial and the fiducial of each cycle. It applies the same cross-correlation algotrithm as before to find aditional local shift. If local shift is larger than `localShiftTolerance` in any direction, it will not apply the cross-correlation algotrithm.

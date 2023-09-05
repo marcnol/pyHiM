@@ -285,14 +285,6 @@ def main():
     )
     tracing_method_help_button.grid(row=5, column=2)
 
-    # KDtree_distance_threshold_mum Help Button (tab2):
-    tracing_method_help_button = tk.Button(
-        buildsPWDmatrix_LabelFrame,
-        text="?",
-        command=partial(display_help, "KDtree_distance_threshold_mum"),
-    )
-    tracing_method_help_button.grid(row=6, column=2)
-
     # stardist_basename Help Button (tab2):
     stardist_help_button = tk.Button(
         segmentedObjects_LabelFrame,
@@ -582,12 +574,6 @@ def main():
     tracing_method_label = tk.Label(buildsPWDmatrix_LabelFrame, text="tracing_method :")
     tracing_method_label.grid(row=5, column=0)
 
-    # KDtree_distance_threshold_mum label
-    KDtree_distance_threshold_mum_label = tk.Label(
-        buildsPWDmatrix_LabelFrame, text="KDtree_distance_threshold_mum :"
-    )
-    KDtree_distance_threshold_mum_label.grid(row=6, column=0)
-
     # flux_min Entry
     flux_min_entry = tk.Entry(buildsPWDmatrix_LabelFrame, width=25)
     value = infolist_partial["flux_min_entry"]
@@ -636,17 +622,6 @@ def main():
     tracing_method_entry.insert(0, string=value)
     entries_dic["tracing_method_entry"] = [tracing_method_entry, value, type(value)]
     tracing_method_entry.grid(row=5, column=1)
-
-    # KDtree_distance_threshold_mum Entry
-    KDtree_distance_threshold_mum_entry = tk.Entry(buildsPWDmatrix_LabelFrame, width=25)
-    value = infolist_partial["KDtree_distance_threshold_mum_entry"]
-    KDtree_distance_threshold_mum_entry.insert(0, string=value)
-    entries_dic["KDtree_distance_threshold_mum_entry"] = [
-        KDtree_distance_threshold_mum_entry,
-        value,
-        type(value),
-    ]
-    KDtree_distance_threshold_mum_entry.grid(row=6, column=1)
 
     # ----------------------SegmentedObjects parameters (tab2)-----------------------------------
     # stardist_basename Label

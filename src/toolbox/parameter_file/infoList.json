@@ -29,7 +29,6 @@
             "localAlignment": "block3D",
             "localShiftTolerance": 1,
             "lower_threshold": 0.999,
-            "operation": "overwrite",
             "outputFile": "alignImages",
             "referenceFiducial": "RT1",
             "tolerance": 0.1
@@ -42,7 +41,6 @@
             "mask_expansion": 8,
             "flux_min": 10,
             "flux_min_3D": 4000,
-            "KDtree_distance_threshold_mum": 1,
             "folder": "buildsPWDmatrix",
             "masks2process": {
                 "nuclei": "DAPI",
@@ -56,13 +54,7 @@
             },
             "toleranceDrift": 1
         },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
-        },
         "segmentedObjects": {
-            "Segment3D": "overwrite",
             "operation": "2D",
             "background_sigma": 3.0,
             "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
@@ -83,8 +75,6 @@
             "display": true,
             "folder": "zProject",
             "mode": "full",
-            "operation": "skip",
-            "saveImage": true,
             "windowSecurity": 2,
             "zProjectOption": "MIP",
             "zmax": 59,
@@ -149,7 +139,6 @@
                 "3D_threshold_over_std": 5,
                 "3D_sigma": 3,
                 "3D_boxSize": 32,
-                "3D_filter_size": 3,
                 "3D_area_min": 10,
                 "3D_area_max": 250,
                 "3D_nlevels": 64,

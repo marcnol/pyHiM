@@ -194,7 +194,6 @@ def main():
             threshold_over_std=threshold_over_std,
             sigma=3,
             box_size=(32, 32),
-            filter_size=(3, 3),
             area_min=area_min,
             area_max=area_max,
             nlevels=nlevels,

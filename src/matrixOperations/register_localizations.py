@@ -207,6 +207,7 @@ class RegisterLocalizations:
             y_uncorrected = barcode_map.groups[0]["xcentroid"][i]
             z_uncorrected = barcode_map.groups[0]["zcentroid"][i]
 
+            # TODO: UPDATE this comment, localDriftCorrection was removed from pyHiM.
             # Corrects XYZ coordinate of barcode if localDriftCorrection is available
             zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
             rt_barcode = f"RT{str(barcode)}"

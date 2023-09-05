@@ -40,5 +40,5 @@ Most of the parameters are shared with ```segmentMasks```, except for the follow
 
 |Name|Option|Description|
 |:-:|:-:|:-:|
-|stardist_basename3D| | Folder containing 3D AI models|
+|stardist_basename| | Folder containing 2D and 3D AI models|
 |stardist_network3D| | Name of the 3D network| 

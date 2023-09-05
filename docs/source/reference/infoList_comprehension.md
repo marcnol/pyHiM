@@ -38,8 +38,6 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |display|Save output 2D projection as PNG; show image|
 |folder|Give a name of output folder to save output data of zPorject features|
 |mode|Select projection mode between `full`, `manual`, `automatic`, `laplacian`|
-|operation|DEPRECATED|
-|saveImage|Save output 2D projection as PNG; DEPRECATED ?|
 |windowSecurity|Remove the lowest and highest Z-plans for `automatic` mode|
 |zmax|Set a maximum on Z axis for `manual` mode|
 |zmin|Set a minimum on Z axis for `manual` mode|
@@ -52,14 +50,11 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |---|---|
 |alignByBlock|True will perform block alignment. False will do global alignement.|
 |background_sigma|Remove inhomogeneous background; set the number of standard deviations to use for both the lower and upper clipping limit ([astropy.stats.SigmaClip](https://docs.astropy.org/en/stable/api/astropy.stats.SigmaClip.html))|
-|bezel|Set number of pixels to use around a box made around each DAPI mask for `localDriftCorrection` mode|
 |blockSize|Define size in (X,Y) of block for 3D local alignment; value needs to be a power of 2|
 |folder|Give a name of output folder to save output data of alignImages features|
 |higher_threshold|Set higher threshold to adjust image intensity levels before xcorrelation for `alignment in 2D`|
 |localAlignment|Select mode between global alignment (`None`), 2D local alignment (`mask2D`) and 3D local alignment ( `block3D`)|
-|localShiftTolerance|Set number of pixels tolerated to apply local drift correction|
 |lower_threshold|Set lower threshold to adjust image intensity levels before xcorrelation for `alignment in 2D`|
-|operation|DEPRECATED|
 |outputFile|Set a base name for output files|
 |referenceFiducial|Set name of the reference fiducial cycle|
 |tolerance|Determine the % of error tolerated for `blockAlignment` mode|
@@ -83,7 +78,6 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |operation|Select 2D or 3D method of segmentation for DAPI and barcode label; Process secondary masks in processSNDchannel.py for RNA label|
 |outputFile|Set a base name for output files|
 |residual_max|Set maximum difference between axial spot intensity and gaussian fit|
-|Segment3D|Unused ==> DEPRECATED ?|
 |sigma_max|Set maximum gaussian fit sigma allowed (axial spot intensity)|
 |stardist_basename|Set path name of AI models for 2D segmentation with StarDist|
 |stardist_network|Set network name for 2D `DAPI` and `mask` segmentation with StarDist|
@@ -94,7 +88,6 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |3D_area_min|Set min area to keep 3D segmented object (in pixels)|
 |3D_boxSize|Set size of box used for block decomposition|
 |3D_contrast|"The fraction of the total (blended) source flux that a local peak must have (at any one of the multi-thresholds) to be considered as a separate object." ([photutils.segmentation.deblend_sources](https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.deblend_sources.html))|
-|3D_filter_size|Unused ==> DEPRECATED ?|
 |3D_lower_threshold|Set lower threshold for adjusting image levels|
 |3D_nlevels|"The number of multi-thresholding levels to use." ([photutils.segmentation.deblend_sources](https://photutils.readthedocs.io/en/stable/api/photutils.segmentation.deblend_sources.html))|
 |3D_psf_yx|"Radius of the spot, in nanometer. One value per spatial dimension (zyx or yx dimensions). If it's a scalar, the same radius is applied to every dimensions." ([apifish.detection.spot_modeling.fit_subpixel](https://github.com/apiFISH/apiFISH/blob/development/apifish/detection/spot_modeling.py))|
@@ -118,18 +111,8 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |flux_min|Set minimum flux per spot for 2D. If flux is smaller, localization will be discarded|
 |flux_min_3D|Set minimum flux per spot for 3D localizations. If flux is smaller, localization will be discarded|
 |folder|Give a name of output folder to save output data of buildsPWDmatrix features|
-|KDtree_distance_threshold_mum|Set distance threshold used to build KDtree|
 |mask_expansion|Set number of pixels masks will be expanded to assign localizations|
 |toleranceDrift|Set tolerance used for block drift correction (in pixels)|
 |tracing_method|Set list of methods it will use|
 
-
-### DEPRECATED
-
-- zProject.**operation**
-- zProject.**saveImage**
-- alignimage.**operation**
-- segmentedObjects.**segment3D**
-- segmentedObjects.**3D_filter_size**
-- **projectBarcodes**
 

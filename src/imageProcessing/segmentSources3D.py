@@ -133,12 +133,6 @@ class SegmentSources3D:
             self.current_param.param_dict["segmentedObjects"], "3D_boxSize", default=32
         )
         self.p["boxSize"] = (box_size, box_size)
-        filter_size = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_filter_size",
-            default=3,
-        )
-        self.p["filter_size"] = (filter_size, filter_size)
         self.p["area_min"] = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"], "3D_area_min", default=3
         )
@@ -236,7 +230,6 @@ class SegmentSources3D:
                 threshold_over_std=p["threshold_over_std"],
                 sigma=p["sigma"],
                 box_size=p["boxSize"],
-                filter_size=p["filter_size"],
                 area_min=p["area_min"],
                 area_max=p["area_max"],
                 nlevels=p["nlevels"],
