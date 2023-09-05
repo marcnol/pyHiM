@@ -7,6 +7,7 @@ Created on Thu Jan 26 21:04:10 2023
 
 script to compare PWD matrices from two experiments
 *- pearson correlation in ensemble *
+*- also now plots violin diagrams with the distribution of proximities/distances for each dataset*
 - make sure to map barcodes to allow for experiments with different barcode combinations [TODO]
 - same but single cell [TODO]
 
@@ -21,6 +22,8 @@ script to compare PWD matrices from two experiments
 import argparse
 import select
 import sys
+import seaborn as sns
+sns.set(font_scale=2)
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,7 +47,6 @@ def usage():
         "buildsPWDmatrix/buildsPWDmatrix_DAPI_HiMscMatrix.npy  buildsPWDmatrix/buildsPWDmatrix_mask0_HiMscMatrix.npy"
     )
     print("$ ls buildsPWDmatrix/*HiM*npy | compare_PWD_matrices.py\n")
-    print("You should now see a file called scatter_plot.png\n")
     print("-" * 80)
 
 
@@ -86,8 +88,10 @@ def parse_arguments():
 
     if args.output:
         p["output"] = args.output
+        if len(p["output"].split('.'))<2:
+            p["output"]=p["output"]+'.png'
     else:
-        p["output"] = "scatter_plot.png"
+        p["output"] = "output.png"
         
     if args.mode:
         p["mode"] = args.mode
@@ -164,14 +168,51 @@ def plot_result(x, y, r, p):
     plt.xlim([x_min, x_max])
     plt.ylim([x_min, x_max])
 
-    # plt.show()
-    filename = p["output"]
+    root, ext = p["output"].split('.')[0], p["output"].split('.')[1]
+    filename = root + "_scatter_plot." + ext
     plt.savefig(filename)
     print(f"> Output image saved as : {filename}")
 
 def calculates_pearson_correlation(x, y):
     r, p = scipy.stats.pearsonr(x, y)
     return r
+
+def remove_zeros(x):
+
+    new_vector = [x[i] for i in np.nonzero(x)[0]]
+    
+    return np.array(new_vector)
+
+def plots_distributions(x, y, output_filename = 'violin_plot.png', y_axis_label='counts'):
+    '''
+    makes violin plots containing each dataset.    
+
+    Parameters
+    ----------
+    x : dataset 1 NPY array
+    y : dataset 2 NPY array
+    
+
+    '''
+    X = [x.copy(), y.copy()]
+        
+    # removes zeros from both vectors
+    X = [remove_zeros(x0) for x0 in X]
+    
+    # starts figure
+    fig = plt.figure(figsize=(10, 10))
+
+    # plots datasets
+
+    ax=sns.violinplot(data = X).set(title=y_axis_label + ' distributions')
+    plt.xlabel('datasets')
+    plt.ylabel(y_axis_label)
+    
+    # saves figure
+    root, ext = output_filename.split('.')[0], output_filename.split('.')[1]
+    filename = root + "_violin_plot." + ext
+    plt.savefig(filename)
+    print(f"> Output image saved as : {filename}")
 
 
 def parses_matrix_to_vector(matrix):
@@ -263,6 +304,8 @@ def main_script(p):
     x, y = filters_zero_values(x,y)
 
     r = calculates_pearson_correlation(x, y)
+    
+    plots_distributions(x, y, y_axis_label=p["mode"],output_filename = p["output"])
 
     print("Pearson Correlation Coefficient: ", r)
 
