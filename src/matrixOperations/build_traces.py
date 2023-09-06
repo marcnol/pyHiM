@@ -43,9 +43,6 @@ import glob
 import os
 import uuid
 
-# to remove in a future version
-import warnings
-
 import numpy as np
 from apifish.stack.io import read_array
 from scipy.spatial import KDTree
@@ -55,11 +52,14 @@ from tqdm.contrib import tzip
 
 from core.folder import Folders
 from core.parameters import get_dictionary_value
-from core.pyhim_logging import print_log, write_string_to_file
+from core.pyhim_logging import (
+    print_dashes,
+    print_log,
+    print_session_name,
+    write_string_to_file,
+)
 from imageProcessing.localization_table import LocalizationTable
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
-
-warnings.filterwarnings("ignore")
 
 # =============================================================================
 # CLASSES
@@ -116,9 +116,9 @@ class BuildTraces:
             "mask_expansion",
             default=8,
         )
-        self.kd_tree_distance_threshold_mum = get_dictionary_value(
+        self.kdtree_distance_threshold_mum = get_dictionary_value(
             self.current_param.param_dict["buildsPWDmatrix"],
-            "kd_tree_distance_threshold_mum",
+            "KDtree_distance_threshold_mum",
             default=1,
         )
 
@@ -389,7 +389,7 @@ class BuildTraces:
             if os.path.exists(full_filename_roi_masks):
                 # loads and initializes masks
                 segmented_masks = read_array(full_filename_roi_masks)
-                print(f"$ loaded mask file: {full_filename_roi_masks}")
+                print_log(f"$ loaded mask file: {full_filename_roi_masks}")
 
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.masks = expand_labels(
@@ -407,7 +407,9 @@ class BuildTraces:
                     full_filename_roi_masks,
                     self.mask_identifier,
                     self.n_roi,
-                    label=self.current_param.param_dict["acquisition"]["label_channel"],
+                    label=self.current_param.param_dict["acquisition"][
+                        f"{self.mask_identifier[:4]}_channel"
+                    ],
                 )
 
         else:
@@ -415,14 +417,16 @@ class BuildTraces:
                 f"$ Did not find any filename for mask: {self.mask_identifier}, channel: {channel}",
                 "WARN",
             )
-            print_log("-" * 80)
+            print_dashes()
             # Could not find a file with masks to assign. Report and continue with next ROI
             debug_mask_filename(
                 files_in_folder,
                 "None",
                 self.mask_identifier,
                 self.n_roi,
-                label=self.current_param.param_dict["acquisition"]["label_channel"],
+                label=self.current_param.param_dict["acquisition"][
+                    f"{self.mask_identifier[:4]}_channel"
+                ],
             )
 
         return False
@@ -468,10 +472,9 @@ class BuildTraces:
         barcode_map_roi = barcode_map.group_by("ROI #")
         number_rois = len(barcode_map_roi.groups.keys)
 
-        print_log("-" * 80)
+        print_dashes()
         print_log(
-            f"> Loading masks and pre-processing barcodes for \
-                Mask <{self.mask_identifier}> for {number_rois} rois"
+            f"> Loading masks and pre-processing barcodes for Mask <{self.mask_identifier}> for {number_rois} rois"
         )
 
         # finds TIFs in current_folder
@@ -599,18 +602,13 @@ class BuildTraces:
                 ],
                 axis=1,
             )
-        """ if this code above works and does not introduce bugs, we will remove the commented lines in future
-        elif self.ndims == 2:
-            coordinates = np.concatenate([pixel_size['x']*data_table['xcentroid'].data.reshape(len_data_table,1),
-                                    pixel_size['y']*data_table['ycentroid'].data.reshape(len_data_table,1)], axis = 1)
-        """
 
         # gets tree of coordinates
         print_log(f"> Creating KDTree for {self.ndims} dimensions")
         x_tree = KDTree(coordinates)
 
         ## set distance thresold
-        r = self.kd_tree_distance_threshold_mum
+        r = self.kdtree_distance_threshold_mum
 
         # Groups points when they're less than r away
         points = [x_tree.query_ball_point(element, r, p=2.0) for element in coordinates]
@@ -643,7 +641,7 @@ class BuildTraces:
         barcode_map_roi = barcode_map.group_by("ROI #")
         number_rois = len(barcode_map_roi.groups.keys)
 
-        print_log("-" * 80)
+        print_dashes()
         print_log(
             f"> Starting spatial clustering for {number_rois} ROI in {self.ndims} dimensions"
         )
@@ -787,7 +785,7 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
 
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_log("\n" + "=" * 35 + f"{session_name}" + "=" * 35 + "\n")
+    print_session_name(module_name)
     print_log(f"$ folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],

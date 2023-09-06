@@ -74,7 +74,6 @@ class RunArgs:
         self.parallel = self.thread_nbr > 1
         self.stardist_basename = parsed_args.stardist_basename
         self._check_consistency()
-        self.print_loaded_args()
 
     def _is_docker(self):
         """Change the data path is run inside docker"""
@@ -105,7 +104,7 @@ class RunArgs:
         if self.stardist_basename and not os.path.isdir(self.stardist_basename):
             raise SystemExit(f"Stardist basename ({self.stardist_basename}) NOT FOUND.")
 
-    def print_loaded_args(self):
+    def args_to_str(self):
         """Print parameters in your shell terminal
 
         Parameters
@@ -114,16 +113,18 @@ class RunArgs:
             Parameters dictionary
         """
 
-        def print_tab_spacer(name: str, val: str):
+        def tab_spacer(name: str, val: str):
             spacer = "\t" * (3 - int(len(name) / 8))
-            print("\t" + name + spacer + val)
+            return "\t" + name + spacer + val + "\n"
 
-        print("\n$ Loaded arguments:")
-        print_tab_spacer("rootFolder", str(self.data_path))
-        print_tab_spacer("stardist_basename", str(self.stardist_basename))
-        print_tab_spacer("threads", str(self.thread_nbr))
-        print_tab_spacer("parallel", str(self.parallel))
-        print_tab_spacer("cmd", str(self.cmd_list))
+        to_print = "\n$ Loaded arguments:\n"
+        to_print += tab_spacer("rootFolder", str(self.data_path))
+        to_print += tab_spacer("stardist_basename", str(self.stardist_basename))
+        to_print += tab_spacer("threads", str(self.thread_nbr))
+        to_print += tab_spacer("parallel", str(self.parallel))
+        to_print += tab_spacer("cmd", str(self.cmd_list))
+
+        return to_print
 
     @classmethod
     def parse_cmd(cls, cmd):

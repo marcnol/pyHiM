@@ -26,6 +26,7 @@ help_dic = {
     "folder": "Give a name of the output folder\n\nDefault Value = buildsPWDmatrix",
     "masks2process": "Set the list of masks that need to be segmented\n\nDefault Value = nuclei:DAPI, mask1:mask1",
     "tracing_method": "Set list of methods it will use : masking,clustering\n\nDefault Value = masking,clustering",
+    "KDtree_distance_threshold_mum": "Set distance threshold used to build KDtree\n\nDefault Value = 1",
     "Stardist_basename": "Set path name of AI models for 2D segmentation with StarDist",
     "brightest": "Set max number of objects segmented per FOV (only for barcodes!); “Number of brightest objects to \
     keep after sorting the full object list. If brightest is set to None, all objects will be selected” \

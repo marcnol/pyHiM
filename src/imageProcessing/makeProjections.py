@@ -18,16 +18,13 @@ Operation will be defined in the parameters file. Options are:
 # IMPORTS
 # =============================================================================
 
-import warnings
 
 import numpy as np
 import scipy.optimize as spo
 from apifish.stack import projection
 
-from core.parameters import Parameters, ProjectionParams
+from core.parameters import ProjectionParams
 from core.pyhim_logging import print_log
-
-warnings.filterwarnings("ignore")
 
 np.seterr(divide="ignore", invalid="ignore")
 

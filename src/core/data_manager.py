@@ -17,7 +17,13 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from skimage import io
 
 from core.parameters import AcquisitionParams, Params, deep_dict_update, load_json
-from core.pyhim_logging import Logger, print_log, write_string_to_file
+from core.pyhim_logging import (
+    print_log,
+    print_section,
+    print_session_name,
+    print_title,
+    write_string_to_file,
+)
 from core.saving import image_show_with_values
 
 
@@ -48,8 +54,7 @@ def extract_files(root: str):
             files.append((filepath, short_filename, extension))
 
         if len(dirnames) > 0:
-            print_log(f"! [INFO] Inside: {dirpath}")
-            print_log(f"\t Subdirectories detected: {dirnames}")
+            print_log(f"$ Inside {dirpath}, subdirectories detected:\n  {dirnames}")
 
     return files
 
@@ -80,6 +85,7 @@ class DataManager:
     """Single party responsible for communicating data with the system"""
 
     def __init__(self, data_path: str, md_file: str = "", stardist_basename: str = ""):
+        print_session_name("DataManager initialisation")
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
         self.md_log_file = md_file
@@ -94,12 +100,13 @@ class DataManager:
         self.label_to_process = []
 
         self.raw_dict = self.load_user_param_with_structure()
+        print_section("acquisition")
+        # pylint: disable=no-member
         self.acquisition_params = AcquisitionParams.from_dict(
             self.raw_dict["common"]["acquisition"]
         )
         self.labelled_params = {}
 
-        # self.set_parameters()
         self.set_up()
 
     @staticmethod
@@ -130,9 +137,19 @@ class DataManager:
     @staticmethod
     def __default_label_decoder():
         return {
-            "dapi_acq": {"ch00": "dapi", "ch01": "fiducial", "ch02": "rna",},
-            "mask_acq": {"ch00": "mask", "ch01": "fiducial",},
-            "barcode_acq": {"ch00": "barcode", "ch01": "fiducial",},
+            "dapi_acq": {
+                "ch00": "dapi",
+                "ch01": "fiducial",
+                "ch02": "rna",
+            },
+            "mask_acq": {
+                "ch00": "mask",
+                "ch01": "fiducial",
+            },
+            "barcode_acq": {
+                "ch00": "barcode",
+                "ch01": "fiducial",
+            },
         }
 
     def load_user_param_with_structure(self):
@@ -177,7 +194,7 @@ class DataManager:
     def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
         img_ext = ["tif", "tiff"]
-        # img_ext = ["tif", "tiff", "npy", "png", "jpg"]
+        # TODO: improve to: img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
         unrecognized = 0
         for path, name, ext in self.all_files:
@@ -193,7 +210,7 @@ class DataManager:
                 pass
             else:
                 unrecognized += 1
-        print(f"! [INFO] Unrecognized data files: {unrecognized}")
+        print_log(f"! Unrecognized data files: {unrecognized}", status="WARN")
 
     def find_label(self, filename):
         """Decode a filename to find its label (fiducial, DAPI, barcode, RNA, mask)
@@ -263,42 +280,19 @@ class DataManager:
         print_log(f"$ Parameters file read: {self.param_file_path}")
         return params
 
-    def set_labelled_params(self):
-        if "fiducial" in self.label_to_process:
-            self.labelled_params["fiducial"] = Params(
-                "fiducial",
+    def set_labelled_params(self, labelled_sections):
+        print_session_name("Parameters initialisation")
+        for label in self.label_to_process:
+            up_label = label.upper() if label in ["rna", "dapi"] else label
+            print_title(f"Params: {up_label}")
+            self.labelled_params[label] = Params(
+                label,
                 deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"]["fiducial"]
+                    self.raw_dict["common"], self.raw_dict["labels"][up_label]
                 ),
+                labelled_sections[label],
             )
-        if "barcode" in self.label_to_process:
-            self.labelled_params["barcode"] = Params(
-                "barcode",
-                deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"]["barcode"]
-                ),
-            )
-        if "dapi" in self.label_to_process:
-            self.labelled_params["dapi"] = Params(
-                "dapi",
-                deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"]["DAPI"]
-                ),
-            )
-        if "mask" in self.label_to_process:
-            self.labelled_params["mask"] = Params(
-                "mask",
-                deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"]["mask"]
-                ),
-            )
-        if "rna" in self.label_to_process:
-            self.labelled_params["rna"] = Params(
-                "rna",
-                deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"]["RNA"]
-                ),
-            )
+        print_log("\n$ [Params] Initialisation done.\n")
 
     # TODO: clean this
     def set_up(self):
@@ -307,7 +301,6 @@ class DataManager:
         # Channels
         self.set_label_decoder()
         self.dispatch_files()
-        self.set_labelled_params()
 
     def decode_file_parts(self, file_name):
         """
@@ -407,7 +400,9 @@ class DataManager:
         plt.close(fig)
         original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
-            self.md_log_file, f"{original_filename}\n ![]({out_path})\n", "a",
+            self.md_log_file,
+            f"{original_filename}\n ![]({out_path})\n",
+            "a",
         )
 
     def _save_focal_plane_matrix(self, data: tuple, partial_path: str):
@@ -421,7 +416,9 @@ class DataManager:
 
         original_filename = os.path.basename(f"{partial_path}.tif")
         write_string_to_file(
-            self.md_log_file, f"{original_filename}\n ![]({out_path})\n", "a",
+            self.md_log_file,
+            f"{original_filename}\n ![]({out_path})\n",
+            "a",
         )
 
 

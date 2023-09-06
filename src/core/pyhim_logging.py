@@ -16,19 +16,23 @@ logger.setLevel(logging.INFO)
 
 
 class Logger:
-    def __init__(self, root_folder, parallel=False, session_name="HiM_analysis"):
+    def __init__(
+        self, root_folder, parallel=False, session_name="HiM_analysis", init_msg=""
+    ):
         self.m_root_folder = root_folder
         self.m_log = Log(root_folder=root_folder, parallel=parallel)
         self.m_session = Session(root_folder, session_name)
         self.log_file = ""
         self.md_filename = ""
+        # Keeps the messages to be print in log until this is possible
+        self.init_msg = init_msg
         self.setup_md_file(session_name)
         self.setup_logger()
+        print_log(self.init_msg)
         print_log(f"$ Started logging to: {self.log_file}")
 
     def setup_md_file(self, session_name: str = "HiM_analysis"):
-        print("\n-----------------------------------------------------------------")
-        print(f"$ root_folder: {self.m_root_folder}")
+        self.init_msg += f"\n$ root_folder: {self.m_root_folder}\n"
         begin_time = datetime.now()
         print_session_name(self.m_session.name)
         now = datetime.now()
@@ -36,8 +40,8 @@ class Logger:
 
         self.log_file = self.m_root_folder + os.sep + session_name + date_time + ".log"
         self.md_filename = self.log_file.split(".")[0] + ".md"
+        self.init_msg += f"$ {session_name} will be written to: {self.md_filename}"
 
-        print(f"$ {session_name} will be written to: {self.md_filename}")
         # initialises MD file
         write_string_to_file(
             self.md_filename,
@@ -86,7 +90,7 @@ class Session:
         """Saves session to file"""
         with open(self.file_name, mode="w", encoding="utf-8") as json_f:
             json.dump(self.data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
-        print(f"> Saved json session file to {self.file_name}")
+        print_log(f"> Saved json session file to {self.file_name}")
 
     def add(self, key, value):
         """Add new task to session
@@ -101,6 +105,7 @@ class Session:
         self.data[key] = value if key not in self.data else [self.data[key], value]
 
 
+# TODO: DEPRECATED, only used for processSNDchannel.py
 class Log:
     """Hand made logging system to correspond for pyhim log needs"""
 
@@ -111,7 +116,6 @@ class Log:
         self.md_filename = self.file_name.split(".")[0] + ".md"
         self.parallel = parallel
 
-    # saves to logfile, no display to cmd line
     def save(self, text=""):
         """saves to logfile, no display to cmd line
 
@@ -175,12 +179,52 @@ def print_log(message, status="INFO"):
         logger.debug(message)
 
 
+def print_framed_text(text: str, frame: str):
+    """Example: ================= text =================
+
+    Parameters
+    ----------
+    text : str
+        Text to print in the middle
+    frame : str
+        Template of frame to put in right and left
+        Example: "================="
+    """
+    nbr_to_remove = len(text) // 2
+    dashes = frame[:-nbr_to_remove]
+    rest = "" if len(text) % 2 else frame[0]
+    print_log(f"{dashes} {text} {dashes}{rest}")
+
+
 def print_session_name(name: str):
-    print_log(f"\n===================={name}====================\n")
+    print_log("")
+    print_framed_text(name, "================================")
+    print_log("")
 
 
 def print_dashes():
-    print_log("-----------------------------------------------------------------")
+    print_log("-------------------------------------------------------------------")
+
+
+def print_title(title: str):
+    print_framed_text(title, "--------------------------------")
+
+
+def print_analyzing_label(text: str):
+    print_dashes()
+    print_framed_text(text, "                                ")
+    print_dashes()
+
+
+def print_section(section: str):
+    print_log(f"$ Load: {section}")
+
+
+def print_unknown_params(unknown_params: dict):
+    print_log(
+        f"! Unknown parameters detected: {unknown_params}",
+        status="WARN",
+    )
 
 
 def write_string_to_file(file_name, text_to_output, attribute="a"):

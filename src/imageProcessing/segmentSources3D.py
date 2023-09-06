@@ -104,10 +104,6 @@ class SegmentSources3D:
             "pixelSizeZ"
         ]
 
-        self.p["parallelizePlanes"] = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "parallelizePlanes", default=1
-        )
-
         # decides what segmentation method to use
         self.p["3Dmethod"] = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"],
@@ -471,10 +467,7 @@ class SegmentSources3D:
         output_table_global = create_output_table()
         output_tables = []
 
-        if self.p["parallelizePlanes"]:
-            client = None
-        else:
-            client = try_get_client()
+        client = try_get_client()
 
         if self.number_rois > 0:
             # loops over rois

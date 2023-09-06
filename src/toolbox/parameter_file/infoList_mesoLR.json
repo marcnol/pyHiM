@@ -7,10 +7,8 @@
             "fiducialBarcode_channel": "ch00",
             "fiducialDAPI_channel": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-            "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
             "pixelSizeZ": 0.25,
-            "positionROIinformation": 3,
             "zBinning": 2
         },
         "alignImages": {
@@ -23,7 +21,6 @@
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
-            "localShiftTolerance": 1,
             "outputFile": "alignImages",
             "referenceFiducial": "RT27",
             "tolerance": 0.1

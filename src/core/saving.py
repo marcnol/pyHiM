@@ -5,7 +5,6 @@ Functions for common image processing
 """
 
 import os
-import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,8 +17,6 @@ from tifffile import imsave
 from tqdm import trange
 
 from core.pyhim_logging import print_log
-
-warnings.filterwarnings("ignore")
 
 np.seterr(divide="ignore", invalid="ignore")
 
@@ -98,8 +95,6 @@ def save_image_as_blocks(img, full_filename, block_size_xy=256, label="raw_image
                 + ".tif"
             )
             imsave(outfile, blocks[i, j])
-
-    # cmap = "seismic"
 
 
 def image_show_with_values_single(
@@ -404,7 +399,6 @@ def heatmap(
 
     # Plot the heatmap
     im = ax.imshow(data, **kwargs)
-    # im = ax.imshow(data)
     # Create colorbar
     cbar = ax.figure.colorbar(im, ax=ax, **cbar_kw)
     cbar.ax.set_ylabel(cbarlabel, rotation=-90, va="bottom", size=fontsize)
@@ -415,11 +409,6 @@ def heatmap(
     # ... and label them with the respective list entries.
     ax.set_xticklabels(col_labels, size=fontsize)
     ax.set_yticklabels(row_labels, size=fontsize)
-
-    # Let the horizontal axes labeling appear on top.
-    # ax.tick_params(top=True, bottom=False,
-    #                 labeltop=True, labelbottom=False)
-
     ax.tick_params(top=False, bottom=True, labeltop=False, labelbottom=True)
 
     # Rotate the tick labels and set their alignment.

@@ -11,10 +11,8 @@
             "label_channel": "ch00",
             "label_channel_fiducial": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-            "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
             "pixelSizeZ": 0.25,
-            "positionROIinformation": 3,
             "zBinning": 2
         },
         "alignImages": {
@@ -27,7 +25,6 @@
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
-            "localShiftTolerance": 1,
             "lower_threshold": 0.999,
             "outputFile": "alignImages",
             "referenceFiducial": "RT1",
@@ -41,6 +38,7 @@
             "mask_expansion": 8,
             "flux_min": 10,
             "flux_min_3D": 4000,
+            "KDtree_distance_threshold_mum": 1,
             "folder": "buildsPWDmatrix",
             "masks2process": {
                 "nuclei": "DAPI",

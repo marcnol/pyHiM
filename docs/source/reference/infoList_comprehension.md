@@ -22,10 +22,8 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |label_channel|in future this field will contain the ch for the label. This parameter will supersed the individual channel fields above.|
 |label_channel_fiducial|in future this field will contain the ch for the label fiducial. This parameter will supersed the individual channel fields above.|
 |mask_channel|List the files to process, label of mask channel|
-|parallelizePlanes| parallelize inner loops if `True` (plane by plane). Otherwise outer loops (e.g. file by file)|
 |pixelSizeXY|Get lateral pixel size in nm; compute voxel size for 3D gaussian fitting|
 |pixelSizeZ|Get axial pixel size in nm; compute voxel size for 3D gaussian fitting|
-|positionROIinformation| Find ROI information in filename, should be REMOVE|
 |RNA_channel|List the files to process; Label of RNA channel|
 |zBinning| Speed up processing time; binning in z-axis. A z-binning of 2 will skip every other plane. A z-binning of 1 will keep all planes.|
 
@@ -111,6 +109,7 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |flux_min|Set minimum flux per spot for 2D. If flux is smaller, localization will be discarded|
 |flux_min_3D|Set minimum flux per spot for 3D localizations. If flux is smaller, localization will be discarded|
 |folder|Give a name of output folder to save output data of buildsPWDmatrix features|
+|KDtree_distance_threshold_mum|Set distance threshold used to build KDtree|
 |mask_expansion|Set number of pixels masks will be expanded to assign localizations|
 |toleranceDrift|Set tolerance used for block drift correction (in pixels)|
 |tracing_method|Set list of methods it will use|

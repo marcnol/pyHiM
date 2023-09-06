@@ -14,7 +14,7 @@ import dask.distributed
 import core.function_caller as fc
 from core.data_manager import DataManager
 from core.parameters import Parameters
-from core.pyhim_logging import Logger, print_log
+from core.pyhim_logging import Logger, print_analyzing_label, print_log
 from core.run_args import RunArgs
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -35,7 +35,10 @@ def main(command_line_arguments=None):
     run_args = RunArgs(command_line_arguments)
 
     logger = Logger(
-        run_args.data_path, parallel=run_args.parallel, session_name="HiM_analysis"
+        run_args.data_path,
+        parallel=run_args.parallel,
+        session_name="HiM_analysis",
+        init_msg=run_args.args_to_str(),
     )
 
     datam = DataManager(
@@ -44,19 +47,19 @@ def main(command_line_arguments=None):
         stardist_basename=run_args.stardist_basename,
     )
 
-    # datam.set_up(global_param.get_sectioned_params("acquisition"))
-
     pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     pipe.run()
 
+    # Separate no-refactor routines
+    print_log("\n\n\n")
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
     labels = global_param.param_dict["labels"]
     print_log(f"$ Labels to process: {list(labels.keys())}")
     for label in labels:
-        # sets parameters
+        # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(
             raw_dict,
             root_folder=datam.m_data_path,
@@ -64,11 +67,9 @@ def main(command_line_arguments=None):
             stardist_basename=datam.m_stardist_basename,
         )
 
-        print_log("-----------------------------------------------------------------")
-        print_log(
-            f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           "
+        print_analyzing_label(
+            f"Analyzing label: {current_param.param_dict['acquisition']['label']}"
         )
-        print_log("------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename

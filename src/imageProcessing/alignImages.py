@@ -21,9 +21,6 @@ import glob
 import os
 import sys
 
-# to remove in a future version
-import warnings
-
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,11 +51,8 @@ from imageProcessing.imageProcessing import (
     scatter_3d_image,
 )
 
-warnings.filterwarnings("ignore")
-
 np.seterr(divide="ignore", invalid="ignore")
 
-warnings.filterwarnings("ignore")
 # =============================================================================
 # FUNCTIONS
 # =============================================================================

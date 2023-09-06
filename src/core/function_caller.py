@@ -8,7 +8,7 @@ Module for high level function calling
 import os
 
 from core.dask_cluster import DaskCluster
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import Project
@@ -28,13 +28,61 @@ class Pipeline:
     def __init__(self, data_m, cmd_list, is_parallel, logger):
         self.m_data_m = data_m
         self.cmds = cmd_list
-        # self.params = None
+        self.set_params_from_cmds()
         self.parallel = is_parallel
         self.m_logger = logger
         self.m_dask = None
-        self.tempo_var = {"makeProjections": Project}
         self.features = []
         self.init_features()
+
+    def set_params_from_cmds(self):
+        # TODO: precise association cmd<->section
+        labelled_sections = {
+            "barcode": [],
+            "fiducial": [],
+            "dapi": [],
+            "rna": [],
+            "mask": [],
+        }
+
+        if "makeProjections" in self.cmds:
+            labelled_sections["barcode"].append("zProject")
+            labelled_sections["fiducial"].append("zProject")
+            labelled_sections["dapi"].append("zProject")
+            labelled_sections["rna"].append("zProject")
+            labelled_sections["mask"].append("zProject")
+
+        if {
+            "appliesRegistrations",
+            "alignImages",
+            "alignImages3D",
+            "register_localizations",
+        }.intersection(set(self.cmds)):
+            labelled_sections["barcode"].append("alignImages")
+            labelled_sections["fiducial"].append("alignImages")
+            labelled_sections["dapi"].append("alignImages")
+            labelled_sections["rna"].append("alignImages")
+            labelled_sections["mask"].append("alignImages")
+
+        if {"segmentMasks", "segmentMasks3D", "segmentSources3D"}.intersection(
+            set(self.cmds)
+        ):
+            labelled_sections["barcode"].append("segmentedObjects")
+            labelled_sections["dapi"].append("segmentedObjects")
+            labelled_sections["mask"].append("segmentedObjects")
+
+        if {
+            "filter_localizations",
+            "register_localizations",
+            "build_traces",
+            "build_matrix",
+            "buildHiMmatrix",
+        }.intersection(set(self.cmds)):
+            labelled_sections["barcode"].append("buildsPWDmatrix")
+            labelled_sections["dapi"].append("buildsPWDmatrix")
+            labelled_sections["mask"].append("buildsPWDmatrix")
+
+        self.m_data_m.set_labelled_params(labelled_sections)
 
     def init_features(self):
         if "makeProjections" in self.cmds:
@@ -44,9 +92,6 @@ class Pipeline:
                     self.m_data_m.labelled_params[label].projection
                 )
             self.features.append(labelled_feature)
-        # for command in self.cmds:
-        #     if command in self.tempo_var:
-        #         self.features.append(self.tempo_var.get(command)(self.params))
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
@@ -66,10 +111,6 @@ class Pipeline:
                 print_log("! [WARNING] Sequential mode: activated")
             else:
                 self.m_dask.create_distributed_client()
-
-    def find_files_to_process(self):
-        # TODO: is it a future or old method ??
-        pass
 
     def align_images(self, current_param, label):
         if (
@@ -165,10 +206,12 @@ class Pipeline:
                     client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
                     for f2p in files_to_process
                 ]
-                # Run works
+                print_session_name("makeProjections")
+                # Run workers
                 client.gather(threads)
 
             else:
+                print_session_name("makeProjections")
                 for f2p in files_to_process:
                     run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
 

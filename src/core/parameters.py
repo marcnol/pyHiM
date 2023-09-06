@@ -10,12 +10,10 @@ import re
 from dataclasses import dataclass, field
 from os import path
 from typing import Dict, List, Union
-from warnings import warn
 
 from dataclasses_json import CatchAll, LetterCase, Undefined, dataclass_json
 
-# from core.data_manager import load_json
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, print_section, print_unknown_params
 
 
 def load_json(file_name):
@@ -38,18 +36,22 @@ def load_json(file_name):
 
 
 class Parameters:
-    """Manage all pyHiM parameters."""
+    """
+    Manage all pyHiM parameters.
+    Old way, used before pyHiM restructuration.
+    """
 
     def __init__(
-        self, raw_dict, root_folder="./", label="", stardist_basename=None,
+        self,
+        raw_dict,
+        root_folder="./",
+        label="",
+        stardist_basename=None,
     ):
-        # self.label = label
         self.files_to_process = []
-        # self.param_dict = self.get_standard_parameters()
         self.param_dict = self.complete_with_default(raw_dict)
         if label:
             self.param_dict = self.get_labelled_params(label)
-        # self.convert_parameter_file(raw_dict)
         self.set_stardist_basename(stardist_basename)
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
@@ -110,7 +112,6 @@ class Parameters:
             return self.param_dict["acquisition"][key]
         return default
 
-    # method returns label-specific filenames from filename list
     def find_files_to_process(self, files_folder):
         """Find label-specific filenames from filename list.
         Save these filenames in self.files_to_process.
@@ -144,9 +145,9 @@ class Parameters:
             channel_dapi_rna = self.set_channel("RNA_channel", "ch04")
 
         if channel_dapi_fiducial and not dapi_files:
-            warn(
-                "\n\n****You are using ch02 for channel_dapi_fiducial \
-                    but there are only 2 channels for DAPI!\n\n"
+            print_log(
+                "\n\n****You are using ch02 for channel_dapi_fiducial but there are only 2 channels for DAPI!\n\n",
+                status="WARN",
             )
 
         # selects DAPI files
@@ -255,9 +256,7 @@ class Parameters:
         return {
             "common": {
                 "acquisition": {
-                    "positionROIinformation": 3,
-                    "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_\
-                        (?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+                    "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
                     "DAPI_channel": "ch00",
                     "fiducialDAPI_channel": "ch01",
                     "RNA_channel": "ch02",
@@ -265,17 +264,8 @@ class Parameters:
                     "fiducialMask_channel": "ch00",
                     "barcode_channel": "ch01",
                     "mask_channel": "ch01",
-                    # in future this field will contain the ch for the label.
-                    # This parameter will supersed the individual channel fields above.
-                    "label_channel": "ch00",
-                    # in future this field will contain the ch for the label fiducial.
-                    # This parameter will supersed the individual channel fields above.
-                    "label_channel_fiducial": "ch01",
                     "pixelSizeXY": 0.1,
                     "zBinning": 2,
-                    # if True it will parallelize inner loops (plane by plane).
-                    # Otherwise outer loops (e.g. file by file)
-                    "parallelizePlanes": False,
                     "pixelSizeZ": 0.25,
                 },  # barcode, fiducial
                 "zProject": {
@@ -310,7 +300,6 @@ class Parameters:
                     # before xcorrelation for Alignment3D
                     "3D_higher_threshold": 0.9999,
                     "background_sigma": 3.0,  # used to remove inhom background
-                    "localShiftTolerance": 1,
                     "blockSize": 256,
                 },
                 "buildsPWDmatrix": {
@@ -321,7 +310,7 @@ class Parameters:
                     "mask_expansion": 8,
                     "flux_min": 10,  # min flux to keeep object
                     "flux_min_3D": 0.1,  # min flux to keeep object
-                    "kd_tree_distance_threshold_mum": 1,  # distance threshold used to build KDtree
+                    "KDtree_distance_threshold_mum": 1,  # distance threshold used to build KDtree
                     # colormaps used for plotting matrices
                     "colormaps": {
                         "PWD_KDE": "terrain",
@@ -395,37 +384,49 @@ class Parameters:
         }
 
 
+def warn_default(key, val):
+    print_log(
+        f"""! key NOT FOUND inside infoList.json: "{key}"\n\t\t  Default value used: {val}""",
+        status="WARN",
+    )
+    return val
+
+
+def warn_pop(dico: dict, key: str, default):
+    if dico.get(key):
+        return dico.pop(key, default)
+    return warn_default(key, default)
+
+
+def set_default(key: str, val):
+    return field(default_factory=lambda: warn_default(key, val))
+
+
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class AcquisitionParams:
     """acquisition section of infoList.json parameter file."""
 
     # pylint: disable=invalid-name
-    DAPI_channel: str = "ch00"
-    RNA_channel: str = "ch02"
-    barcode_channel: str = "ch01"
-    mask_channel: str = "ch01"
-    fiducialBarcode_channel: str = "ch00"
-    fiducialMask_channel: str = "ch00"
-    fiducialDAPI_channel: str = "ch01"
-    fileNameRegExp: str = "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_\
-                        (?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif"
-    # parallelizePlanes: if True it will parallelize inner loops (plane by plane).
-    # Otherwise outer loops (e.g. file by file)
-    parallelizePlanes: bool = False
-    pixelSizeXY: float = 0.1
-    pixelSizeZ: float = 0.25
-    positionROIinformation: int = 3
-    zBinning: int = 2
+    DAPI_channel: str = set_default("DAPI_channel", "ch00")
+    RNA_channel: str = set_default("RNA_channel", "ch02")
+    barcode_channel: str = set_default("barcode_channel", "ch01")
+    mask_channel: str = set_default("mask_channel", "ch01")
+    fiducialBarcode_channel: str = set_default("fiducialBarcode_channel", "ch00")
+    fiducialMask_channel: str = set_default("fiducialMask_channel", "ch00")
+    fiducialDAPI_channel: str = set_default("fiducialDAPI_channel", "ch01")
+    fileNameRegExp: str = set_default(
+        "fileNameRegExp",
+        "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+    )
+    pixelSizeXY: float = set_default("pixelSizeXY", 0.1)
+    pixelSizeZ: float = set_default("pixelSizeZ", 0.25)
+    zBinning: int = set_default("zBinning", 2)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
         if self.unknown_params:
-            print_log(
-                f"Unknown parameters detected inside {self.__class__.__name__}: \
-                    \n{json.dumps(self.unknown_params, indent=4)}",
-                status="WARN",
-            )
+            print_unknown_params(self.unknown_params)
 
 
 @dataclass_json(undefined=Undefined.INCLUDE, letter_case=LetterCase.CAMEL)
@@ -434,24 +435,20 @@ class ProjectionParams:
     """zProject section of infoList.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = "zProject"  # output folder
-    mode: str = "full"  # full, manual, automatic, laplacian
-    block_size: int = 256
-    display: bool = True
-    zmin: int = 1
-    zmax: int = 59
-    zwindows: int = 15
-    window_security: int = 2
-    z_project_option: str = "MIP"  # sum or MIP
+    folder: str = set_default("folder", "zProject")  # output folder
+    mode: str = set_default("mode", "full")  # full, manual, automatic, laplacian
+    block_size: int = set_default("block_size", 256)
+    display: bool = set_default("display", True)
+    zmin: int = set_default("zmin", 1)
+    zmax: int = set_default("zmax", 59)
+    zwindows: int = set_default("zwindows", 15)
+    window_security: int = set_default("window_security", 2)
+    z_project_option: str = set_default("z_project_option", "MIP")  # sum or MIP
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
         if self.unknown_params:
-            print_log(
-                f"Unknown parameters detected inside {self.__class__.__name__}: \
-                    \n{json.dumps(self.unknown_params, indent=4)}",
-                status="WARN",
-            )
+            print_unknown_params(self.unknown_params)
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -460,41 +457,44 @@ class RegistrationParams:
     """alignImages section of infoList.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = "alignImages"  # output folder
-    outputFile: str = "alignImages"
-    referenceFiducial: str = "RT27"
-    localAlignment: str = "block3D"  # options: None, mask2D, block3D
-    alignByBlock: bool = True  # alignByBlock True will perform block alignment
+    folder: str = set_default("folder", "alignImages")  # output folder
+    outputFile: str = set_default("outputFile", "alignImages")
+    referenceFiducial: str = set_default("referenceFiducial", "RT27")
+    localAlignment: str = set_default(
+        "localAlignment", "block3D"
+    )  # options: None, mask2D, block3D
+    alignByBlock: bool = set_default(
+        "alignByBlock", True
+    )  # alignByBlock True will perform block alignment
     # Used in blockAlignment to determine the % of error tolerated
-    tolerance: float = 0.1
+    tolerance: float = set_default("tolerance", 0.1)
     # lower threshold to adjust image intensity levels
     # before xcorrelation for alignment in 2D
-    lower_threshold: float = 0.999
+    lower_threshold: float = set_default("lower_threshold", 0.999)
     # higher threshold to adjust image intensity levels
     # before xcorrelation for alignment in 2D
-    higher_threshold: float = 0.9999999
+    higher_threshold: float = set_default("higher_threshold", 0.9999999)
     # lower threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
     _3D_lower_threshold: float = 0.9
     # higher threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
     _3D_higher_threshold: float = 0.9999
-    background_sigma: float = 3.0  # used to remove inhom background
-    localShiftTolerance: int = 1
-    blockSize: int = 256
+    background_sigma: float = set_default(
+        "background_sigma", 3.0
+    )  # used to remove inhom background
+    blockSize: int = set_default("blockSize", 256)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
-        self._3D_lower_threshold = self.unknown_params.pop("3D_lower_threshold", 0.9)
-        self._3D_higher_threshold = self.unknown_params.pop(
-            "3D_higher_threshold", 0.9999
+        self._3D_lower_threshold = warn_pop(
+            self.unknown_params, "3D_lower_threshold", 0.9
+        )
+        self._3D_higher_threshold = warn_pop(
+            self.unknown_params, "3D_higher_threshold", 0.9999
         )
         if self.unknown_params:  # if dict isn't empty
-            print_log(
-                f"Unknown parameters detected inside {self.__class__.__name__}: \
-                    \n{json.dumps(self.unknown_params, indent=4)}",
-                status="WARN",
-            )
+            print_unknown_params(self.unknown_params)
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -503,30 +503,51 @@ class SegmentationParams:
     """segmentedObjects section of infoList.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = "segmentedObjects"  # output folder
-    operation: str = "2D,3D"  # options: 2D or 3D
-    outputFile: str = "segmentedObjects"
-    background_method: str = "inhomogeneous"  # flat or inhomogeneous or stardist
-    stardist_basename: str = "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"
+    folder: str = set_default("folder", "segmentedObjects")  # output folder
+    operation: str = set_default("operation", "2D,3D")  # options: 2D or 3D
+    outputFile: str = set_default("outputFile", "segmentedObjects")
+    background_method: str = set_default(
+        "background_method", "inhomogeneous"
+    )  # flat or inhomogeneous or stardist
+    stardist_basename: str = set_default(
+        "stardist_basename", "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"
+    )
     # network for 2D barcode segmentation
-    stardist_network: str = "stardist_nc14_nrays:64_epochs:40_grid:2"
+    stardist_network: str = set_default(
+        "stardist_network", "stardist_nc14_nrays:64_epochs:40_grid:2"
+    )
     # network for 3D barcode segmentation
-    stardist_network3D: str = "stardist_nc14_nrays:64_epochs:40_grid:2"
-    tesselation: bool = True  # tesselates masks
-    background_sigma: float = 3.0  # used to remove inhom background
-    threshold_over_std: float = 1.0  # threshold used to detect sources
-    fwhm: float = 3.0  # source size in px
-    brightest: int = 1100  # max number of sources segmented per FOV
-    intensity_min: int = 0  # min int to keep object
-    intensity_max: int = 59  # max int to keeep object
-    area_min: int = 50  # min area to keeep object
-    area_max: int = 500  # max area to keeep object
+    stardist_network3D: str = set_default(
+        "stardist_network3D", "stardist_nc14_nrays:64_epochs:40_grid:2"
+    )
+    tesselation: bool = set_default("tesselation", True)  # tesselates masks
+    background_sigma: float = set_default(
+        "background_sigma", 3.0
+    )  # used to remove inhom background
+    threshold_over_std: float = set_default(
+        "threshold_over_std", 1.0
+    )  # threshold used to detect sources
+    fwhm: float = set_default("fwhm", 3.0)  # source size in px
+    brightest: int = set_default(
+        "brightest", 1100
+    )  # max number of sources segmented per FOV
+    intensity_min: int = set_default("intensity_min", 0)  # min int to keep object
+    intensity_max: int = set_default("intensity_max", 59)  # max int to keeep object
+    area_min: int = set_default("area_min", 50)  # min area to keeep object
+    area_max: int = set_default("area_max", 500)  # max area to keeep object
+    # if reducePlanes==True it will calculate focal plane and only use a region
+    # around it for segmentSources3D, otherwise will use the full stack
+    reducePlanes: bool = set_default("reducePlanes", True)
+    residual_max: float = set_default(
+        "residual_max", 2.5
+    )  # z-profile Fit: max residuals to keeep object
+    sigma_max: int = set_default(
+        "sigma_max", 5
+    )  # z-profile Fit: max sigma 3D fitting to keeep object
+    # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
+    centroidDifference_max: int = set_default("centroidDifference_max", 5)
     # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
     _3Dmethod: str = "thresholding"
-    residual_max: float = 2.5  # z-profile Fit: max residuals to keeep object
-    sigma_max: int = 5  # z-profile Fit: max sigma 3D fitting to keeep object
-    # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
-    centroidDifference_max: int = 5
     # z-profile Fit: window size to extract subVolume, px.
     # 3 means subvolume will be 7x7.
     _3DGaussianfitWindow: int = 3
@@ -547,37 +568,38 @@ class SegmentationParams:
     _3D_psf_yx: int = 200
     _3D_lower_threshold: float = 0.99
     _3D_higher_threshold: float = 0.9999
-    # if reducePlanes==True it will calculate focal plane and only use a region
-    # around it for segmentSources3D, otherwise will use the full stack
-    reducePlanes: bool = True
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
-        self._3Dmethod = self.unknown_params.pop("3Dmethod", None)
-        self._3DGaussianfitWindow = self.unknown_params.pop("3DGaussianfitWindow", None)
-        self._3dAP_window = self.unknown_params.pop("3dAP_window", None)
-        self._3dAP_flux_min = self.unknown_params.pop("3dAP_flux_min", None)
-        self._3dAP_brightest = self.unknown_params.pop("3dAP_brightest", None)
-        self._3dAP_distTolerance = self.unknown_params.pop("3dAP_distTolerance", None)
-        self._3D_threshold_over_std = self.unknown_params.pop(
-            "3D_threshold_over_std", None
+        self._3Dmethod = warn_pop(self.unknown_params, "3Dmethod", None)
+        self._3DGaussianfitWindow = warn_pop(
+            self.unknown_params, "3DGaussianfitWindow", None
         )
-        self._3D_sigma = self.unknown_params.pop("3D_sigma", None)
-        self._3D_boxSize = self.unknown_params.pop("3D_boxSize", None)
-        self._3D_area_min = self.unknown_params.pop("3D_area_min", None)
-        self._3D_area_max = self.unknown_params.pop("3D_area_max", None)
-        self._3D_nlevels = self.unknown_params.pop("3D_nlevels", None)
-        self._3D_contrast = self.unknown_params.pop("3D_contrast", None)
-        self._3D_psf_z = self.unknown_params.pop("3D_psf_z", None)
-        self._3D_psf_yx = self.unknown_params.pop("3D_psf_yx", None)
-        self._3D_lower_threshold = self.unknown_params.pop("3D_lower_threshold", None)
-        self._3D_higher_threshold = self.unknown_params.pop("3D_higher_threshold", None)
+        self._3dAP_window = warn_pop(self.unknown_params, "3dAP_window", None)
+        self._3dAP_flux_min = warn_pop(self.unknown_params, "3dAP_flux_min", None)
+        self._3dAP_brightest = warn_pop(self.unknown_params, "3dAP_brightest", None)
+        self._3dAP_distTolerance = warn_pop(
+            self.unknown_params, "3dAP_distTolerance", None
+        )
+        self._3D_threshold_over_std = warn_pop(
+            self.unknown_params, "3D_threshold_over_std", None
+        )
+        self._3D_sigma = warn_pop(self.unknown_params, "3D_sigma", None)
+        self._3D_boxSize = warn_pop(self.unknown_params, "3D_boxSize", None)
+        self._3D_area_min = warn_pop(self.unknown_params, "3D_area_min", None)
+        self._3D_area_max = warn_pop(self.unknown_params, "3D_area_max", None)
+        self._3D_nlevels = warn_pop(self.unknown_params, "3D_nlevels", None)
+        self._3D_contrast = warn_pop(self.unknown_params, "3D_contrast", None)
+        self._3D_psf_z = warn_pop(self.unknown_params, "3D_psf_z", None)
+        self._3D_psf_yx = warn_pop(self.unknown_params, "3D_psf_yx", None)
+        self._3D_lower_threshold = warn_pop(
+            self.unknown_params, "3D_lower_threshold", None
+        )
+        self._3D_higher_threshold = warn_pop(
+            self.unknown_params, "3D_higher_threshold", None
+        )
         if self.unknown_params:
-            print_log(
-                f"Unknown parameters detected inside {self.__class__.__name__}: \
-                    \n{json.dumps(self.unknown_params, indent=4)}",
-                status="WARN",
-            )
+            print_unknown_params(self.unknown_params)
 
 
 @dataclass_json(undefined=Undefined.INCLUDE)
@@ -586,52 +608,71 @@ class MatrixParams:
     """buildsPWDmatrix section of infoList.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = "buildsPWDmatrix"  # output folder
+    folder: str = set_default("folder", "buildsPWDmatrix")  # output folder
     # available methods: masking, clustering
-    tracing_method: List[str] = field(default_factory=lambda: ["masking", "clustering"])
+    tracing_method: List[str] = set_default("tracing_method", ["masking", "clustering"])
     # Expands masks until they collide by a max of 'mask_expansion' pixels
-    mask_expansion: int = 8
-    masks2process: Dict[str, str] = field(
-        default_factory=lambda: {"nuclei": "DAPI", "mask1": "mask0"}
+    mask_expansion: int = set_default("mask_expansion", 8)
+    masks2process: Dict[str, str] = set_default(
+        "masks2process", {"nuclei": "DAPI", "mask1": "mask0"}
     )
-    flux_min: int = 10  # min flux to keeep object
-    flux_min_3D: float = 0.1  # min flux to keeep object
-    kd_tree_distance_threshold_mum: int = 1  # distance threshold used to build KDtree
+    flux_min: int = set_default("flux_min", 10)  # min flux to keeep object
+    flux_min_3D: float = set_default("flux_min_3D", 0.1)  # min flux to keeep object
+    KDtree_distance_threshold_mum: int = set_default(
+        "KDtree_distance_threshold_mum", 1
+    )  # distance threshold used to build KDtree
     # colormaps used for plotting matrices
-    colormaps: Dict[str, str] = field(
-        default_factory=lambda: {
+    colormaps: Dict[str, str] = set_default(
+        "colormaps",
+        {
             "PWD_KDE": "terrain",
             "PWD_median": "terrain",
             "contact": "coolwarm",
             "Nmatrix": "Blues",
-        }
+        },
     )
     # zxy tolerance used for block drift correction, in px
-    toleranceDrift: Union[int, List[int]] = field(default_factory=lambda: [3, 1, 1])
+    toleranceDrift: Union[int, List[int]] = set_default("toleranceDrift", [3, 1, 1])
     # if True it will removed uncorrected localizations,
     # otherwise they will remain uncorrectd.
-    remove_uncorrected_localizations: bool = True
+    remove_uncorrected_localizations: bool = set_default(
+        "remove_uncorrected_localizations", True
+    )
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
         if self.unknown_params:
-            print_log(
-                f"Unknown parameters detected inside {self.__class__.__name__}: \
-                    \n{json.dumps(self.unknown_params, indent=4)}",
-                status="WARN",
-            )
+            print_unknown_params(self.unknown_params)
 
 
 class Params:
-    def __init__(self, label: str, labelled_dict: dict):
+    def __init__(self, label: str, labelled_dict: dict, sections: List[str]):
         self.my_label = label
-        self.acquisition = AcquisitionParams.from_dict(labelled_dict["acquisition"])
-        self.projection = ProjectionParams.from_dict(labelled_dict["zProject"])
-        self.registration = RegistrationParams.from_dict(labelled_dict["alignImages"])
-        self.segmentation = SegmentationParams.from_dict(
-            labelled_dict["segmentedObjects"]
-        )
-        self.matrix = MatrixParams.from_dict(labelled_dict["buildsPWDmatrix"])
+        if "acquisition" in sections:
+            print_section("acquisition")
+            # pylint: disable=no-member
+            self.acquisition = AcquisitionParams.from_dict(labelled_dict["acquisition"])
+        if "zProject" in sections:
+            print_section("zProject")
+            # pylint: disable=no-member
+            self.projection = ProjectionParams.from_dict(labelled_dict["zProject"])
+        if "alignImages" in sections:
+            print_section("alignImages")
+            # pylint: disable=no-member
+            self.registration = RegistrationParams.from_dict(
+                labelled_dict["alignImages"]
+            )
+        if "segmentedObjects" in sections:
+            print_section("segmentedObjects")
+            # pylint: disable=no-member
+            self.segmentation = SegmentationParams.from_dict(
+                labelled_dict["segmentedObjects"]
+            )
+        if "buildsPWDmatrix" in sections:
+            print_section("buildsPWDmatrix")
+            # pylint: disable=no-member
+            self.matrix = MatrixParams.from_dict(labelled_dict["buildsPWDmatrix"])
+
         self.highlight_deprecated_params(labelled_dict)
 
     def highlight_deprecated_params(self, dict_to_check: dict):
@@ -652,8 +693,7 @@ class Params:
             ]:
                 unused_params = {key: dict_to_check[key]}
                 print_log(
-                    f"Unused parameters detected, it's probably a deprecated section: \
-                        \n{json.dumps(unused_params, indent=4)}",
+                    f"! Unused parameters detected, it's probably a deprecated section: {unused_params}",
                     status="WARN",
                 )
 
@@ -695,11 +735,11 @@ def print_dict(dictionary: dict):
     dictionary : dict
         Parameters dictionary
     """
-    print("\n$ Parameters loaded:")
+    print_log("\n$ Parameters loaded:")
     for key in dictionary:
         spacer = "\t" * (3 - len(key) // 8)
-        print(f"\t{key}{spacer}{dictionary[key]}")
-    print("\n")
+        print_log(f"\t{key}{spacer}{dictionary[key]}")
+    print_log("\n")
 
 
 def get_dictionary_value(dictionary: dict, key: str, default: str = ""):
@@ -741,13 +781,13 @@ def loads_barcode_dict(file_name):
     bc_dict = {}
     # Check if the file exists
     if not os.path.exists(file_name):
-        print("File does not exist")
+        print_log("File does not exist")
     else:
         # Opening JSON file
         with open(file_name, encoding="utf-8") as json_f:
             # returns JSON object as a dictionary
             barcode_type = json.load(json_f)
-            print("$ {} barcode dictionary loaded")
+            print_log("$ {} barcode dictionary loaded")
             bc_dict = barcode_type
 
     return bc_dict

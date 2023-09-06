@@ -26,9 +26,6 @@ import os
 import time
 import uuid
 
-# to remove in a future version
-import warnings
-
 # ---- stardist
 import matplotlib
 import matplotlib.pylab as plt
@@ -67,18 +64,13 @@ from tqdm import trange
 
 from core.dask_cluster import try_get_client
 from core.folder import Folders
-from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
-
-warnings.filterwarnings("ignore")
 
 np.seterr(divide="ignore", invalid="ignore")
 
 matplotlib.rcParams["image.interpolation"] = None
-
-
-warnings.filterwarnings("ignore")
 
 
 # =============================================================================
@@ -660,9 +652,8 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
 
     print_log(f"> searching for {filename_2d_aligned}")
     if os.path.exists(filename_2d_aligned):  # file exists
-        roi = os.path.basename(file_name).split("_")[
-            current_param.param_dict["acquisition"]["positionROIinformation"]
-        ]
+        # TODO: use decode_file_parts with the regex --> should be done with DataManager
+        roi = os.path.basename(file_name).split("_")[3]
         label = current_param.param_dict["acquisition"]["label"]
 
         # loading registered 2D projection

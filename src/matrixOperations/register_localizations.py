@@ -19,9 +19,6 @@ import glob
 import os
 import sys
 
-# to remove in a future version
-import warnings
-
 import numpy as np
 from astropy.table import Table
 from tqdm import trange
@@ -30,8 +27,6 @@ from core.folder import Folders
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable, decode_rois
 from matrixOperations.filter_localizations import get_file_table_new_name
-
-warnings.filterwarnings("ignore")
 
 
 class RegisterLocalizations:

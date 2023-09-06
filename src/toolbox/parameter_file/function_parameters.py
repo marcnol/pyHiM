@@ -69,6 +69,9 @@ def import_parameters(script_dir, current_dir=None):
     dic["tracing_method_entry"] = convert_list_to_string(
         dic_full["common"]["buildsPWDmatrix"]["tracing_method"]
     )
+    dic["KDtree_distance_threshold_mum_entry"] = dic_full["common"]["buildsPWDmatrix"][
+        "KDtree_distance_threshold_mum"
+    ]
     dic["stardist_entry"] = dic_full["common"]["segmentedObjects"]["stardist_basename"]
     dic["brightest_entry"] = dic_full["common"]["segmentedObjects"]["brightest"]
     dic["aeraMax_dapi_SegObjt_entry"] = dic_full["labels"]["DAPI"]["segmentedObjects"][
@@ -179,6 +182,9 @@ def update_infolist(user_values_dic, infolist_dic_full, current_dir):
         "mask_expansion": int(user_values_dic["mask_expansion_entry"]),
         "flux_min": int(user_values_dic["flux_min_entry"]),
         "flux_min_3D": int(user_values_dic["flux_min_3D_entry"]),
+        "KDtree_distance_threshold_mum": int(
+            user_values_dic["KDtree_distance_threshold_mum_entry"]
+        ),
         "folder": str(user_values_dic["folder_entry"]),
         "masks2process": convert_string_to_dictionnary(
             user_values_dic["masks2process_entry"]

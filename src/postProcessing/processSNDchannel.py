@@ -109,9 +109,8 @@ def processes_user_masks(current_param, current_log, processing_list):
         )
         current_log.report(f"folders read: {len(data_folder.list_folders)}")
 
-        position_roi_information = current_param.param_dict["acquisition"][
-            "positionROIinformation"
-        ]
+        # TODO: for roi, use decode_file_parts with the regex --> should be done with DataManager
+        position_roi_information = 3
         number_masked_files = 0
 
         all_results_table = Table()

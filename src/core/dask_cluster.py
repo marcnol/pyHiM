@@ -31,7 +31,6 @@ class DaskCluster:
         number_cores_available = multiprocessing.cpu_count()
 
         # we want at least 12 GB per worker
-        # _, _, free_m = map(int, os.popen("free -t -m").readlines()[-1].split()[1:])
         free_m = int(os.popen("free -t -m").readlines()[1].split()[-1])
 
         max_number_threads = int(
@@ -59,7 +58,9 @@ class DaskCluster:
             print_log("$ No running cluster detected. Will start one.")
 
         self.cluster = LocalCluster(
-            n_workers=self.n_threads, threads_per_worker=1, memory_limit="64GB",
+            n_workers=self.n_threads,
+            threads_per_worker=1,
+            memory_limit="64GB",
         )
         self.client = Client(self.cluster)
 

@@ -77,10 +77,6 @@ class SegmentMasks3D:
             "pixelSizeZ"
         ]
 
-        self.p["parallelizePlanes"] = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "parallelizePlanes", default=1
-        )
-
         # decides what segmentation method to use
         self.p["3Dmethod"] = get_dictionary_value(
             self.current_param.param_dict["segmentedObjects"],

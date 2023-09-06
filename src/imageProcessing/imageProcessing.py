@@ -5,7 +5,6 @@ Classes for common image processing
 """
 
 import os
-import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,8 +18,6 @@ from tqdm import trange
 from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
 from core.saving import save_image_2d_cmd
-
-warnings.filterwarnings("ignore")
 
 np.seterr(divide="ignore", invalid="ignore")
 
