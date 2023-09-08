@@ -37,9 +37,6 @@ import re
 import sys
 import uuid
 
-# to remove in a future version
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
@@ -55,8 +52,6 @@ from matrixOperations.HIMmatrixOperations import (
     plot_distance_histograms,
     plot_matrix,
 )
-
-warnings.filterwarnings("ignore")
 
 # =============================================================================
 # CLASSES
@@ -388,6 +383,7 @@ class CellID:
                 # finds what mask label this barcode is sitting on
                 mask_id = self.masks[x_int][y_int]
 
+                # TODO: UPDATE this comment, localDriftCorrection was removed from pyHiM.
                 # Corrects XYZ coordinate of barcode if localDriftCorrection is available
                 zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
                 rt_barcode = f"RT{str(barcode)}"
@@ -1121,14 +1117,19 @@ def build_pwd_matrix(
 
         barcode_map_single_roi = barcode_map.group_by("ROI #").groups[roi]
 
-        if files_to_process := [
+        label_ch = current_param.param_dict["acquisition"][
+            f"{mask_identifier[:4]}_channel"
+        ]  # typically "ch00"
+        # finds file with cell masks
+        files_to_process = [
             file
             for file in files_in_folder
-            if file.split("_")[-1].split(".")[0]
-            == current_param.param_dict["acquisition"]["label_channel"]
+            if file.split("_")[-1].split(".")[0] == label_ch
             and mask_identifier in os.path.basename(file).split("_")
             and int(os.path.basename(file).split("_")[3]) == n_roi
-        ]:
+        ]
+
+        if len(files_to_process) > 0:
             # loads file with cell masks
             filename_roi_masks = (
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
@@ -1206,7 +1207,7 @@ def build_pwd_matrix(
                     if (
                         file.split("_")[-1].split(".")[0]
                         == current_param.param_dict["acquisition"][
-                            "label_channel"
+                            f"{mask_identifier[:4]}_channel"
                         ]  # typically "ch00"
                         and mask_identifier in file.split("_")
                         and int(os.path.basename(file).split("_")[3]) == n_roi

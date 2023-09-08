@@ -6,6 +6,8 @@ import glob
 import os
 import re
 
+from core.pyhim_logging import print_log
+
 # =============================================================================
 # CLASSES
 # =============================================================================
@@ -111,9 +113,9 @@ def create_single_folder(folder_path):
     """
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
-        print(f"$ Folder '{folder_path}' created successfully.")
+        print_log(f"$ Folder '{folder_path}' created successfully.")
     else:
-        print(f"! [INFO] Folder '{folder_path}' already exists.")
+        print_log(f"! Folder '{folder_path}' already exists.", status="WARN")
 
 
 def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
@@ -137,15 +139,6 @@ def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
     return unique(rois)
 
 
-def unique(list1):
+def unique(list_to_sort: list):
     """function to get unique values"""
-    # intilize a null list
-    unique_list = []
-
-    # traverse for all elements
-    for val in list1:
-        # check if exists in unique_list or not
-        if val not in unique_list:
-            unique_list.append(val)
-
-    return unique_list
+    return list(set(list_to_sort))

@@ -16,16 +16,11 @@ This class will contain methods to load, save, plot barcode localizations and st
 import os
 import sys
 
-# to remove in a future version
-import warnings
-
 import matplotlib.pyplot as plt
 import numpy as np
 from apifish.stack.io import read_table_from_ecsv
 
 from core.pyhim_logging import print_log
-
-warnings.filterwarnings("ignore")
 
 
 class LocalizationTable:
@@ -57,12 +52,14 @@ class LocalizationTable:
             unique_barcodes = np.unique(barcode_map["Barcode #"].data)
             number_unique_barcodes = unique_barcodes.shape[0]
 
-            print(
+            print_log(
                 f"$ Number of barcodes read from barcode_map: {number_unique_barcodes}"
             )
-            print(f"$ Unique Barcodes detected: {unique_barcodes}")
+            print_log(f"$ Unique Barcodes detected: {unique_barcodes}")
         else:
-            print(f"\n\n# ERROR: could not find coordinates file: {file}")
+            print_log(
+                f"\n\n# ERROR: could not find coordinates file: {file}", status="DEBUG"
+            )
             sys.exit()
 
         return barcode_map, unique_barcodes
@@ -89,7 +86,7 @@ class LocalizationTable:
         None.
 
         """
-        print(f"$ Saving output table as {file_name} ...")
+        print_log(f"$ Saving output table as {file_name} ...")
 
         try:
             barcode_map.meta["comments"].append(comments)
@@ -172,7 +169,7 @@ class LocalizationTable:
             # creates sub Table for this ROI
             barcode_map = barcode_map_roi.groups[i_roi]
             n_roi = barcode_map["ROI #"][0]
-            print(f"> Plotting barcode localization map for ROI: {n_roi}")
+            print_log(f"> Plotting barcode localization map for ROI: {n_roi}")
             color_dict = build_color_dict(barcode_map, key="Barcode #")
 
             # initializes figure
@@ -275,7 +272,7 @@ def decode_rois(data):
 
     number_rois = len(data_indexed.groups.keys)
 
-    print(f"\n$ rois detected: {number_rois}")
+    print_log(f"\n$ rois detected: {number_rois}")
 
     return data_indexed, number_rois
 

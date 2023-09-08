@@ -68,8 +68,7 @@ options:
   -h, --help        show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                     Folder with images
-  -C CMD, --cmd CMD Comma-separated list of routines to run
-                    (order matters !): 
+  -C CMD, --cmd CMD Comma-separated list of routines to run: 
                     makeProjections alignImages 
                     appliesRegistrations alignImages3D 
                     segmentMasks segmentMasks3D

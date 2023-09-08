@@ -2,14 +2,10 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
-import json
 import os
 import sys
-
-# to remove in a future version
-import warnings
 from datetime import datetime
 
 import apifish
@@ -18,10 +14,8 @@ import dask.distributed
 import core.function_caller as fc
 from core.data_manager import DataManager
 from core.parameters import Parameters
-from core.pyhim_logging import Logger, print_log
+from core.pyhim_logging import Logger, print_analyzing_label, print_log
 from core.run_args import RunArgs
-
-warnings.filterwarnings("ignore")
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -41,36 +35,31 @@ def main(command_line_arguments=None):
     run_args = RunArgs(command_line_arguments)
 
     logger = Logger(
-        run_args.data_path, parallel=run_args.parallel, session_name="HiM_analysis"
+        run_args.data_path,
+        parallel=run_args.parallel,
+        session_name="HiM_analysis",
+        init_msg=run_args.args_to_str(),
     )
 
     datam = DataManager(
         run_args.data_path,
-        logger,
+        logger.md_filename,
         stardist_basename=run_args.stardist_basename,
-        params_filename="infoList",
     )
 
-    raw_dict = datam.load_user_param()
-    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    datam.set_up(global_param.get_sectioned_params("acquisition"))
-
-    pipe = fc.Pipeline(
-        datam,
-        run_args.cmd_list,
-        global_param,
-        run_args.parallel,
-        logger,
-    )
+    pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
-
-    labels = global_param.param_dict["labels"]
-    print_log(f"$ Labels to process: {list(labels.keys())}")
 
     pipe.run()
 
+    # Separate no-refactor routines
+    print_log("\n\n\n")
+    raw_dict = datam.load_user_param()
+    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
+    labels = global_param.param_dict["labels"]
+    print_log(f"$ Labels to process: {list(labels.keys())}")
     for label in labels:
-        # sets parameters
+        # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(
             raw_dict,
             root_folder=datam.m_data_path,
@@ -78,11 +67,9 @@ def main(command_line_arguments=None):
             stardist_basename=datam.m_stardist_basename,
         )
 
-        print_log("-----------------------------------------------------------------")
-        print_log(
-            f">                  Analyzing label: {current_param.param_dict['acquisition']['label']}           "
+        print_analyzing_label(
+            f"Analyzing label: {current_param.param_dict['acquisition']['label']}"
         )
-        print_log("------------------------------------------------------------------")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
@@ -136,7 +123,6 @@ def main(command_line_arguments=None):
 
     # exits
     logger.m_session.save()
-    print_log("\n==================== Normal termination ====================\n")
 
     if pipe.parallel:
         pipe.m_dask.cluster.close()
@@ -144,13 +130,21 @@ def main(command_line_arguments=None):
 
     del pipe
 
+    print_log("\n==================== Normal termination ====================\n")
     print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
 
-if __name__ == "__main__":
+def check_version_compatibily():
     if apifish.__version__ < "0.6.4dev":
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
     if dask.distributed.__version__ < "2023.4.1":
-        sys.exit("ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] (pip install -U distributed)")
-    else:
-        main()
+        sys.exit(
+            "ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] \
+                (pip install -U distributed)"
+        )
+
+
+if __name__ == "__main__":
+    print(f"[VERSION] pyHiM {__version__}")
+    check_version_compatibily()
+    main()

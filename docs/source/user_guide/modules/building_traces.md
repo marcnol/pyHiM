@@ -63,11 +63,10 @@ optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
+  -C CMD, --cmd CMD     Comma-separated list of routines to run: 
   						makeProjections, appliesRegistrations,
                         alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+                        segmentSources3D,buildHiMmatrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```

@@ -119,13 +119,6 @@ class Drift3D:
         else:
             self.p["zBinning"] = 1
 
-        if "parallelizePlanes" in self.current_param.param_dict["acquisition"]:
-            self.p["parallelizePlanes"] = self.current_param.param_dict["acquisition"][
-                "parallelizePlanes"
-            ]
-        else:
-            self.p["parallelizePlanes"] = 1
-
     def align_fiducials_3d_file(self, filename_to_process):
         """
         Aligns <filename_to_process> fiducial against reference
@@ -273,10 +266,7 @@ class Drift3D:
         alignment_results_table_global = create_output_table()
         alignment_results_tables = []
 
-        if self.p["parallelizePlanes"]:
-            client = None
-        else:
-            client = try_get_client()
+        client = try_get_client()
 
         if self.number_rois > 0:
             # loops over rois

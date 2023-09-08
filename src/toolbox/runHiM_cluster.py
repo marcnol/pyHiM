@@ -45,7 +45,7 @@ def read_arguments():
     parser.add_argument(
         "-C",
         "--cmd",
-        help="Comma-separated list of routines to run (order matters !): makeProjections alignImages \
+        help="Comma-separated list of routines to run: makeProjections alignImages \
                         appliesRegistrations alignImages3D segmentMasks \
                         segmentSources3D \
                         buildHiMmatrix",

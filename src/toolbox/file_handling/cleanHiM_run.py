@@ -36,9 +36,10 @@ from core.parameters import Parameters
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    parser.add_argument(
-        "-P", "--fileParameters", help="parameters file, default: infoList.json"
-    )
+    # TODO: Unused argument ?
+    # parser.add_argument(
+    #     "-P", "--fileParameters", help="parameters file, default: infoList.json"
+    # )
     parser.add_argument(
         "-A", "--all", help="Deletes folders, MD files, LOG files", action="store_true"
     )
@@ -50,10 +51,10 @@ def main():
     else:
         root_folder = "."
 
-    if args.fileParameters:
-        file_parameters = args.fileParameters
-    else:
-        file_parameters = "infoList"
+    # if args.fileParameters:
+    #     file_parameters = args.fileParameters
+    # else:
+    #     file_parameters = "infoList"
 
     # removes files in rootFolder
     if args.all:
@@ -83,7 +84,7 @@ def main():
                 print(f"File deleted: {f} ")
             except OSError as e:
                 print(f"Error: {f} : {e.strerror}")
-    datam = DataManager(root_folder, None, params_filename=file_parameters)
+    datam = DataManager(root_folder)
     raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")

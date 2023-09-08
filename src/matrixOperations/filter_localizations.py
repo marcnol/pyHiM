@@ -12,16 +12,11 @@ Created on Mon Feb  7 16:45:44 2022
 import glob
 import os
 
-# to remove in a future version
-import warnings
-
 from tqdm import trange
 
 from core.folder import Folders
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
-
-warnings.filterwarnings("ignore")
 
 
 class FilterLocalizations:
@@ -72,7 +67,7 @@ class FilterLocalizations:
 
         rows_to_remove = []
         n_barcodes = len(barcode_map)
-        print(f"$ Minimum flux: {self.flux_min}")
+        print_log(f"$ Minimum flux: {self.flux_min}")
         # [filters barcode per blockAlignmentMask, if existing]
         # keep_alignment = self.filter_localizations_block_alignment(barcode_map, i)
         keep_alignment = True
@@ -87,7 +82,7 @@ class FilterLocalizations:
         # removes rows from table
         barcode_map.remove_rows(rows_to_remove)
 
-        print(
+        print_log(
             f"$ Removed {len(rows_to_remove)} barcode localizations from table out of {n_barcodes}."
         )
 
@@ -175,7 +170,7 @@ class FilterLocalizations:
                         # processes tables
                         barcode_map_roi = barcode_map.group_by("ROI #")
                         number_rois = len(barcode_map_roi.groups.keys)
-                        print(f"\n$ rois detected: {number_rois}")
+                        print_log(f"\n$ rois detected: {number_rois}")
 
                         # Filters barcode coordinate Tables
                         barcode_map = self.filter_barcode_table(barcode_map)
@@ -191,7 +186,7 @@ class FilterLocalizations:
                         )
 
                     else:
-                        print(f"\nWARNING>{file} contains an empty table!")
+                        print_log(f"\nWARNING>{file} contains an empty table!")
 
             else:
                 print_log("No barcode tables found!")

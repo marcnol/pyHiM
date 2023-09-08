@@ -31,9 +31,6 @@ This script:
 import glob
 import os
 
-# to remove in a future version
-import warnings
-
 import numpy as np
 from astropy.table import unique
 from sklearn.metrics import pairwise_distances
@@ -48,8 +45,6 @@ from matrixOperations.HIMmatrixOperations import (
     plot_distance_histograms,
     plot_matrix,
 )
-
-warnings.filterwarnings("ignore")
 
 # =============================================================================
 # CLASSES
@@ -135,7 +130,7 @@ class BuildMatrix:
 
         return pairwise_distances(r_mum)
 
-    def build_distance_matrix(self, mode="min", distance_threshold = np.inf):
+    def build_distance_matrix(self, mode="min", distance_threshold=np.inf):
         """
         Builds pairwise distance matrix from a coordinates table
 
@@ -206,7 +201,6 @@ class BuildMatrix:
 
                         # checks distance
                         if newdistance < distance_threshold:
-                            
                             # inserts newdistance into sc_matrix using desired method
                             if mode == "last":
                                 sc_matrix[index_barcode_1][index_barcode_2][
@@ -218,7 +212,9 @@ class BuildMatrix:
                                 ] = np.nanmean(
                                     [
                                         newdistance,
-                                        sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                        sc_matrix[index_barcode_1][index_barcode_2][
+                                            itrace
+                                        ],
                                     ]
                                 )
                             elif mode == "min":
@@ -227,7 +223,9 @@ class BuildMatrix:
                                 ] = np.nanmin(
                                     [
                                         newdistance,
-                                        sc_matrix[index_barcode_1][index_barcode_2][itrace],
+                                        sc_matrix[index_barcode_1][index_barcode_2][
+                                            itrace
+                                        ],
                                     ]
                                 )
 
@@ -357,7 +355,7 @@ class BuildMatrix:
 
         # saves output
         np.save(f"{output_filename}_PWDscMatrix.npy", self.sc_matrix)
-        print(f"$ saved: {output_filename}_PWDscMatrix.npy")
+        print_log(f"$ saved: {output_filename}_PWDscMatrix.npy")
 
         np.savetxt(
             f"{output_filename}_uniqueBarcodes.ecsv",
@@ -366,12 +364,12 @@ class BuildMatrix:
             fmt="%d",
         )
 
-        print(f"$ saved: {output_filename}_uniqueBarcodes.ecsv")
+        print_log(f"$ saved: {output_filename}_uniqueBarcodes.ecsv")
 
         np.save(f"{output_filename}_Nmatrix.npy", self.n_matrix)
-        print(f"$ saved: {output_filename}_Nmatrix.npy")
+        print_log(f"$ saved: {output_filename}_Nmatrix.npy")
 
-    def launch_analysis(self, file, distance_threshold = np.inf):
+    def launch_analysis(self, file, distance_threshold=np.inf):
         """
         run analysis for a chromatin trace table.
 
@@ -386,7 +384,9 @@ class BuildMatrix:
         self.trace_table.load(file)
 
         # runs calculation of PWD matrix
-        self.build_distance_matrix("min",distance_threshold = distance_threshold)  # mean min last
+        self.build_distance_matrix(
+            "min", distance_threshold=distance_threshold
+        )  # mean min last
 
         # calculates N-matrix: number of PWD distances for each barcode combination
         self.calculate_n_matrix()
@@ -421,7 +421,7 @@ class BuildMatrix:
 
         print_log(f"> Will process {len(files)} trace tables with names:")
         for file in files:
-            print_log(f"{os.path.basename(file)}")
+            print_log(f"\t{os.path.basename(file)}")
 
         for file in files:
             self.launch_analysis(file)

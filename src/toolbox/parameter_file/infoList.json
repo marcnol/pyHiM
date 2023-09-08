@@ -11,10 +11,8 @@
             "label_channel": "ch00",
             "label_channel_fiducial": "ch01",
             "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
-            "parallelizePlanes": false,
             "pixelSizeXY": 0.1,
             "pixelSizeZ": 0.25,
-            "positionROIinformation": 3,
             "zBinning": 2
         },
         "alignImages": {
@@ -27,9 +25,7 @@
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
-            "localShiftTolerance": 1,
             "lower_threshold": 0.999,
-            "operation": "overwrite",
             "outputFile": "alignImages",
             "referenceFiducial": "RT1",
             "tolerance": 0.1
@@ -56,13 +52,7 @@
             },
             "toleranceDrift": 1
         },
-        "projectsBarcodes": {
-            "folder": "projectsBarcodes",
-            "operation": "overwrite",
-            "outputFile": "projectsBarcodes"
-        },
         "segmentedObjects": {
-            "Segment3D": "overwrite",
             "operation": "2D",
             "background_sigma": 3.0,
             "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
@@ -83,8 +73,6 @@
             "display": true,
             "folder": "zProject",
             "mode": "full",
-            "operation": "skip",
-            "saveImage": true,
             "windowSecurity": 2,
             "zProjectOption": "MIP",
             "zmax": 59,
@@ -149,7 +137,6 @@
                 "3D_threshold_over_std": 5,
                 "3D_sigma": 3,
                 "3D_boxSize": 32,
-                "3D_filter_size": 3,
                 "3D_area_min": 10,
                 "3D_area_max": 250,
                 "3D_nlevels": 64,

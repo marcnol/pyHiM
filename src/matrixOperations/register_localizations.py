@@ -19,9 +19,6 @@ import glob
 import os
 import sys
 
-# to remove in a future version
-import warnings
-
 import numpy as np
 from astropy.table import Table
 from tqdm import trange
@@ -30,8 +27,6 @@ from core.folder import Folders
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable, decode_rois
 from matrixOperations.filter_localizations import get_file_table_new_name
-
-warnings.filterwarnings("ignore")
 
 
 class RegisterLocalizations:
@@ -207,6 +202,7 @@ class RegisterLocalizations:
             y_uncorrected = barcode_map.groups[0]["xcentroid"][i]
             z_uncorrected = barcode_map.groups[0]["zcentroid"][i]
 
+            # TODO: UPDATE this comment, localDriftCorrection was removed from pyHiM.
             # Corrects XYZ coordinate of barcode if localDriftCorrection is available
             zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
             rt_barcode = f"RT{str(barcode)}"
