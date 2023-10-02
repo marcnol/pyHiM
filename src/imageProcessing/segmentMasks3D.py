@@ -52,7 +52,7 @@ class SegmentMasks3D:
         self.current_folder = ""
         self.label = ""
 
-        # parameters from infoList.json
+        # parameters from parameters.json
         self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
             "referenceFiducial"
         ]

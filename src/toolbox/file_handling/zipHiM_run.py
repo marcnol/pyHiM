@@ -23,11 +23,10 @@ import os
 
 
 def main():
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
     parser.add_argument(
-        "-P", "--fileParameters", help="parameters file, default: infoList_barcode.json"
+        "-P", "--fileParameters", help="parameters file, default: parameters.json"
     )
     parser.add_argument(
         "-R",
@@ -47,7 +46,7 @@ def main():
     if args.fileParameters:
         file_parameters = args.fileParameters
     else:
-        file_parameters = "infoList.json"
+        file_parameters = "parameters.json"
 
     if args.recursive:
         RECURSIVE = args.recursive
@@ -86,7 +85,7 @@ def main():
     if RECURSIVE:
         folders = glob.glob(root_folder + os.sep + "*")
         folders = [x for x in folders if os.path.isdir(x)]  # keeps only folders
-        folders = [x for x in folders if os.path.exists(x + os.sep + "infoList.json")]
+        folders = [x for x in folders if os.path.exists(x + os.sep + "parameters.json")]
 
     else:
         folders = [root_folder]
@@ -94,7 +93,6 @@ def main():
     print(f"Folders to zip:\n{folders}")
     print("=" * 30)
     for current_folder in folders:
-
         folders2zip = []
         folders2zip.append(current_folder + os.sep + "zProject")
         folders2zip.append(current_folder + os.sep + "alignImages")
@@ -111,7 +109,6 @@ def main():
 
             file_extensions = ["/*.png", "/*.dat", "/*.ecsv", "/buildsPWDmatrix*.npy"]
             for new_file_extensions in file_extensions:
-
                 new_files = new_folder_relative + new_file_extensions
 
                 if len(glob.glob(new_files)) > 0:

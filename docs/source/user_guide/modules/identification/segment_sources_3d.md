@@ -15,7 +15,7 @@ pyhim -C segmentSources3D
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 |<image_name>.tif|2..n|Yes|3D images|
 
 ## Outputs

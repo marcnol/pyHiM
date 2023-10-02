@@ -51,7 +51,6 @@ Homepage = "https://github.com/marcnol/pyHiM"
 
 [project.scripts]
 pyhim = "pyHiM:main"
-change_rt_infolist = "toolbox.file_handling.changeRT_infoList:main"
 clean_him_run = "toolbox.file_handling.cleanHiM_run:main"
 lndir = "toolbox.file_handling.lndir:main"
 run_him_cluster = "toolbox.runHiM_cluster:main"

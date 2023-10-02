@@ -14,7 +14,7 @@ pyhim -C build_matrix
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -23,7 +23,7 @@ pyhim -C build_matrix
 
 ## Relevant options
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 ```
 "colormaps":{"PWD_KDE":"terrain","PWD_median":"terrain","contact":"coolwarm","Nmatrix":"Blues"},    

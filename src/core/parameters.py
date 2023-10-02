@@ -228,7 +228,7 @@ class Parameters:
 
         thus, by running decode_file_parts(current_param,file_name) you will get back
         either an empty dict if the RE were not present
-        in your infoList...json file or a dict as follows if it all worked out fine:
+        in your parameters.json file or a dict as follows if it all worked out fine:
 
         file_parts['runNumber']: runNumber number
         file_parts['cycle']: cycle string
@@ -386,7 +386,7 @@ class Parameters:
 
 def warn_default(key, val):
     print_log(
-        f"""! key NOT FOUND inside infoList.json: "{key}"\n\t\t  Default value used: {val}""",
+        f"""! key NOT FOUND inside parameters.json: "{key}"\n\t\t  Default value used: {val}""",
         status="WARN",
     )
     return val
@@ -405,7 +405,7 @@ def set_default(key: str, val):
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class AcquisitionParams:
-    """acquisition section of infoList.json parameter file."""
+    """acquisition section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
     DAPI_channel: str = set_default("DAPI_channel", "ch00")
@@ -432,7 +432,7 @@ class AcquisitionParams:
 @dataclass_json(undefined=Undefined.INCLUDE, letter_case=LetterCase.CAMEL)
 @dataclass
 class ProjectionParams:
-    """zProject section of infoList.json parameter file."""
+    """zProject section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "zProject")  # output folder
@@ -454,7 +454,7 @@ class ProjectionParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class RegistrationParams:
-    """alignImages section of infoList.json parameter file."""
+    """alignImages section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "alignImages")  # output folder
@@ -500,7 +500,7 @@ class RegistrationParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class SegmentationParams:
-    """segmentedObjects section of infoList.json parameter file."""
+    """segmentedObjects section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "segmentedObjects")  # output folder
@@ -605,7 +605,7 @@ class SegmentationParams:
 @dataclass_json(undefined=Undefined.INCLUDE)
 @dataclass
 class MatrixParams:
-    """buildsPWDmatrix section of infoList.json parameter file."""
+    """buildsPWDmatrix section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "buildsPWDmatrix")  # output folder
@@ -676,7 +676,7 @@ class Params:
         self.highlight_deprecated_params(labelled_dict)
 
     def highlight_deprecated_params(self, dict_to_check: dict):
-        """Warns the user that there are unused/deprecated parameters in his infoList.json
+        """Warns the user that there are unused/deprecated parameters in his parameters.json
 
         Parameters
         ----------

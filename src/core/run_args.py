@@ -55,7 +55,7 @@ def _parse_run_args(command_line_arguments):
         "--stardist_basename",
         type=str,
         default=None,
-        help="Replace all stardist_basename from infoList.json",
+        help="Replace all stardist_basename from parameters.json",
     )
 
     return parser.parse_args(command_line_arguments)

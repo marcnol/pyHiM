@@ -20,23 +20,23 @@ def convert_list_to_string(liste: list):
 
 
 def import_parameters(script_dir, current_dir=None):
-    """Function that imports the parameters from the infoList.json
+    """Function that imports the parameters from the parameters.json
     located in the script directory. If there is a current directory parameter
-    the parameters are imported from the infoList.json located in priority from
+    the parameters are imported from the parameters.json located in priority from
     the current directory. Return the parameters are stored in a dictionary
     """
 
-    infolist_script_path = script_dir + os.sep + "infoList.json"
+    parameters_script_path = script_dir + os.sep + "parameters.json"
     if current_dir != None:
-        infolist_current_path = current_dir + os.sep + "infoList.json"
-        if os.path.exists(infolist_current_path):
-            with open(infolist_current_path, mode="r") as file:
+        parameters_current_path = current_dir + os.sep + "parameters.json"
+        if os.path.exists(parameters_current_path):
+            with open(parameters_current_path, mode="r") as file:
                 dic_full = json.load(file)
         else:
-            with open(infolist_script_path, mode="r") as file:
+            with open(parameters_script_path, mode="r") as file:
                 dic_full = json.load(file)
     else:
-        with open(infolist_script_path, mode="r") as file:
+        with open(parameters_script_path, mode="r") as file:
             dic_full = json.load(file)
 
     dic = {}
@@ -155,10 +155,10 @@ def check_dict(string: str):
         return False
 
 
-def update_infolist(user_values_dic, infolist_dic_full, current_dir):
+def update_parameters(user_values_dic, parameters_dic_full, current_dir):
     """ "
-    1-Save old parameters from infolist_dic_full in infoList_preVersion.json in current directory.
-    2-Save new parameters from user_values_dic in infoList.json in current directory.
+    1-Save old parameters from parameters_dic_full in parameters_preversion.json in current directory.
+    2-Save new parameters from user_values_dic in parameters.json in current directory.
     """
     dic_comm_acqui = {
         "DAPI_channel": user_values_dic["dapi_ch"],
@@ -211,27 +211,27 @@ def update_infolist(user_values_dic, infolist_dic_full, current_dir):
         "zmax": int(user_values_dic["zProject_Mask_zmax_entry"]),
         "zmin": int(user_values_dic["zProject_Mask_zmin_entry"]),
     }
-    # Save previous parameters contained in infolist_dic in infoList_preVersion.json file
+    # Save previous parameters contained in parameters_dic in parameters_preversion.json file
     # in the current directory.
 
-    infolist_previous_path = current_dir + os.sep + "infoList_preVersion.json"
+    parameters_previous_path = current_dir + os.sep + "parameters_preversion.json"
 
-    save_json(infolist_dic_full, infolist_previous_path)
+    save_json(parameters_dic_full, parameters_previous_path)
 
-    # Update infolist_dic with user_values_dic and save new infoList.json
-    infolist_dic_full["common"]["acquisition"].update(dic_comm_acqui)
-    infolist_dic_full["common"]["alignImages"].update(dic_comm_aligimg)
-    infolist_dic_full["common"]["buildsPWDmatrix"].update(dic_comm_buildmatrix)
-    infolist_dic_full["common"]["segmentedObjects"].update(dic_comm_segmobj)
-    infolist_dic_full["labels"]["DAPI"]["segmentedObjects"].update(
+    # Update parameters_dic with user_values_dic and save new parameters.json
+    parameters_dic_full["common"]["acquisition"].update(dic_comm_acqui)
+    parameters_dic_full["common"]["alignImages"].update(dic_comm_aligimg)
+    parameters_dic_full["common"]["buildsPWDmatrix"].update(dic_comm_buildmatrix)
+    parameters_dic_full["common"]["segmentedObjects"].update(dic_comm_segmobj)
+    parameters_dic_full["labels"]["DAPI"]["segmentedObjects"].update(
         dic_labels_dapi_segmobj
     )
-    infolist_dic_full["labels"]["DAPI"]["zProject"].update(dic_labels_dapi_zpro)
-    infolist_dic_full["labels"]["barcode"]["zProject"].update(dic_labels_bcd_zpro)
-    infolist_dic_full["labels"]["mask"]["zProject"].update(dic_labels_mask_zpro)
+    parameters_dic_full["labels"]["DAPI"]["zProject"].update(dic_labels_dapi_zpro)
+    parameters_dic_full["labels"]["barcode"]["zProject"].update(dic_labels_bcd_zpro)
+    parameters_dic_full["labels"]["mask"]["zProject"].update(dic_labels_mask_zpro)
 
-    infolist_new_path = current_dir + os.sep + "infoList.json"
-    save_json(infolist_dic_full, infolist_new_path)
+    parameters_new_path = current_dir + os.sep + "parameters.json"
+    save_json(parameters_dic_full, parameters_new_path)
 
 
 def check_settings(entries_dic):

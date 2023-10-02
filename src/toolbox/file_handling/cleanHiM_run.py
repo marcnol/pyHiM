@@ -36,10 +36,6 @@ from core.parameters import Parameters
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--rootFolder", help="Folder with images, default: .")
-    # TODO: Unused argument ?
-    # parser.add_argument(
-    #     "-P", "--fileParameters", help="parameters file, default: infoList.json"
-    # )
     parser.add_argument(
         "-A", "--all", help="Deletes folders, MD files, LOG files", action="store_true"
     )
@@ -51,12 +47,6 @@ def main():
     else:
         root_folder = "."
 
-    # if args.fileParameters:
-    #     file_parameters = args.fileParameters
-    # else:
-    #     file_parameters = "infoList"
-
-    # removes files in rootFolder
     if args.all:
         markdown_files = glob.glob(
             root_folder + os.sep + "HiM_analysis*.md", recursive=True
@@ -70,6 +60,7 @@ def main():
         )
         tmp_img = glob.glob(root_folder + os.sep + "tmp.png")
         il_model = glob.glob(root_folder + os.sep + "infoList_model.json")
+        params_model = glob.glob(root_folder + os.sep + "parameters_model.json")
 
         for f in (
             markdown_files
@@ -78,6 +69,7 @@ def main():
             + md_log_files
             + tmp_img
             + il_model
+            + params_model
         ):
             try:
                 os.remove(f)

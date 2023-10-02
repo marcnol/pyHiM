@@ -2,18 +2,6 @@
 
 ## File Processing, handling HPC runs, etc
 
-### changeRT_infoList.py
-
-*This script is used to modify the fiducial signal used as a reference for shift correction in the parameter file.*
-
-
-Usage: `change_rt_infolist <old_RT> <new_RT>`
-
-Example: 
-```sh
-change_rt_infolist RT33 RT1
-```
-
 ### cleanHiM_run.py
 
 *Cleans the directories and log files created by pyHiM in previous runs.* 
@@ -25,7 +13,7 @@ optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder where the analysis has been performed
   -P PARAMETERS, --fileParameters PARAMETERS
-                        Parameters file. Default: infolist.json
+                        Parameters file. Default: parameters.json
   -A ALL, --all ALL
                         Delete all folders and all created files
 ```
@@ -50,7 +38,7 @@ optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder where the analysis has been performed
   -P PARAMETERS, --fileParameters PARAMETERS
-                        Parameters file. Default: infolist.json
+                        Parameters file. Default: parameters.json
   -R RECURSIVE, --recursive RECURSIVE
                         Zip files inside folders of current directory
 ```

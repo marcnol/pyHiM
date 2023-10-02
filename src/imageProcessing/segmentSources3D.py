@@ -79,7 +79,7 @@ class SegmentSources3D:
         self.label = None
         self.output_filename = None
 
-        # parameters from infoList.json
+        # parameters from parameters.json
         self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
             "referenceFiducial"
         ]
