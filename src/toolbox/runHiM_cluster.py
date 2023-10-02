@@ -45,10 +45,12 @@ def read_arguments():
     parser.add_argument(
         "-C",
         "--cmd",
-        help="Comma-separated list of routines to run: makeProjections alignImages \
-                        appliesRegistrations alignImages3D segmentMasks \
-                        segmentSources3D \
-                        buildHiMmatrix",
+        help="Comma-separated list of routines to run: \
+                     project  register_global register_local  \
+                     mask_2d localize_2d \
+                     mask_3d localize_3d \
+                     filter_localizations register_localizations \
+                     build_traces build_matrix",
     )
     parser.add_argument(
         "--threads",

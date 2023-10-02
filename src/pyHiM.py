@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.4"
+__version__ = "0.8.5"
 
 import os
 import sys
@@ -76,48 +76,44 @@ def main(command_line_arguments=None):
         current_param.param_dict["fileNameMD"] = logger.md_filename
 
         # [registers fiducials using a barcode as reference]
-        if "alignImages" in run_args.cmd_list:
+        if "register_global" in pipe.cmds:
             pipe.align_images(current_param, label)
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in run_args.cmd_list:
+        if "register_global" in pipe.cmds:
             pipe.apply_registrations(current_param, label)
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in run_args.cmd_list:
+        if "register_local" in pipe.cmds:
             pipe.align_images_3d(current_param, label)
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in run_args.cmd_list:
+        if "mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds:
             pipe.segment_masks(current_param, label)
 
         # [segments masks in 3D]
-        if "segmentMasks3D" in run_args.cmd_list:
+        if "mask_3d" in pipe.cmds:
             pipe.segment_masks_3d(current_param, label)
 
         # [segments sources in 3D]
-        if "segmentSources3D" in run_args.cmd_list:
+        if "localize_3d" in pipe.cmds:
             pipe.segment_sources_3d(current_param, label)
 
         # [filters barcode localization table]
-        if "filter_localizations" in run_args.cmd_list:
+        if "filter_localizations" in pipe.cmds:
             fc.filter_localizations(current_param, label)
 
         # [registers barcode localization table]
-        if "register_localizations" in run_args.cmd_list:
+        if "register_localizations" in pipe.cmds:
             fc.register_localizations(current_param, label)
 
         # [build traces]
-        if "build_traces" in run_args.cmd_list:
+        if "build_traces" in pipe.cmds:
             fc.build_traces(current_param, label)
 
         # [builds matrices]
-        if "build_matrix" in run_args.cmd_list:
+        if "build_matrix" in pipe.cmds:
             fc.build_matrix(current_param, label)
-
-        # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in run_args.cmd_list:
-            pipe.process_pwd_matrices(current_param, label)
 
         print_log("\n")
         del current_param

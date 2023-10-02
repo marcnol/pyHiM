@@ -1,10 +1,10 @@
-# AppliesRegistrations
+# register_global 2
 *Applies registration to DAPI and barcodes*
 
 ## Invoke
 Inside the folder with your input data, run:
 ```shell
-pyhim -C appliesRegistrations
+pyhim -C register_global
 ```
 
 ![registration](../../../_static/from_tuto/registration.png)
@@ -14,7 +14,7 @@ pyhim -C appliesRegistrations
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |parameters.json|1|Yes|Parameter file.|
-|alignImages.ecsv|1|Yes|XY alignment resulting from the XY alignment produced while running `alignImages`.|
+|register_global.ecsv|1|Yes|XY alignment resulting from the XY alignment produced while running `register_global`.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -24,4 +24,4 @@ pyhim -C appliesRegistrations
 ## Relevant options
 
 ## Description
-To run this function exclusively, run *pyHiM* using the ``` -C appliesRegistrations ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder.  
+To run this function exclusively, run *pyHiM* using the ``` -C register_global ``` argument. It loads masks, RNA, and barcodes 2D projected images, and applies registrations to them. The resulting images are saved as npy arrays in the ```alignImages``` folder.  

@@ -13,8 +13,8 @@ from imageProcessing.alignImages import align_images, apply_registrations
 from imageProcessing.alignImages3D import Drift3D
 from imageProcessing.makeProjections import Project
 from imageProcessing.segmentMasks import segment_masks
-from imageProcessing.segmentMasks3D import SegmentMasks3D
-from imageProcessing.segmentSources3D import SegmentSources3D
+from imageProcessing.segmentMasks3D import Mask3D
+from imageProcessing.segmentSources3D import Localize3D
 from matrixOperations.alignBarcodesMasks import process_pwd_matrices
 from matrixOperations.build_matrix import BuildMatrix
 from matrixOperations.build_traces import BuildTraces
@@ -27,13 +27,106 @@ class Pipeline:
 
     def __init__(self, data_m, cmd_list, is_parallel, logger):
         self.m_data_m = data_m
-        self.cmds = cmd_list
+        self.cmds = self.interpret_cmd_list(cmd_list)
         self.set_params_from_cmds()
         self.parallel = is_parallel
         self.m_logger = logger
         self.m_dask = None
         self.features = []
         self.init_features()
+
+    def interpret_cmd_list(self, cmd_list):
+        cmds = []
+        for cmd in cmd_list:
+            if cmd.lower() in ["project", "makeprojection", "makeprojections"]:
+                cmds.append("project")
+            elif cmd.lower() in [
+                "register_global",
+                "registerglobal",
+                "alignimage",
+                "alignimages",
+            ]:
+                cmds.append("register_global")
+            elif cmd.lower() in [
+                "applyregistration",
+                "applyregistrations",
+                "appliesregistration",
+                "appliesregistrations",
+            ]:
+                print_log(
+                    f"! DEPRECATED COMMAND: {cmd}, now you can just use 'register_global'",
+                    status="WARN",
+                )
+                cmds.append("register_global")
+            if cmd.lower() in [
+                "register_local",
+                "registerlocal",
+                "alignimages3d",
+                "alignimage3d",
+            ]:
+                cmds.append("register_local")
+            if cmd.lower() in [
+                "mask_2d",
+                "mask2d",
+                "masks_2d",
+                "masks2d",
+                "segmentmasks",
+                "segmentmask",
+            ]:
+                cmds.append("mask_2d")
+            if cmd.lower() in [
+                "localize_2d",
+                "localize2d",
+                "segmentmasks",
+                "segmentmask",
+            ]:
+                cmds.append("localize_2d")
+            if cmd.lower() in [
+                "mask_3d",
+                "mask3d",
+                "masks_3d",
+                "masks3d",
+                "segmentmasks3d",
+                "segmentmask3d",
+            ]:
+                cmds.append("mask_3d")
+            if cmd.lower() in [
+                "localize_3d",
+                "localize3d",
+                "segmentsource3d",
+                "segmentsources3d",
+            ]:
+                cmds.append("localize_3d")
+            if cmd.lower() in [
+                "filter_localizations",
+                "filter_localization",
+                "filterlocalizations",
+                "filterlocalization",
+            ]:
+                cmds.append("filter_localizations")
+            if cmd.lower() in [
+                "register_localizations",
+                "register_localization",
+                "registerlocalizations",
+                "registerlocalization",
+            ]:
+                cmds.append("register_localizations")
+            if cmd.lower() in [
+                "build_traces",
+                "build_trace",
+                "buildtrace",
+                "buildtraces",
+            ]:
+                cmds.append("build_traces")
+            if cmd.lower() in [
+                "build_matrix",
+                "buildmatrix",
+                "build_matrices",
+                "buildmatrices",
+            ]:
+                cmds.append("build_matrix")
+        # remove duplicate commands
+        return list(set(cmds))
 
     def set_params_from_cmds(self):
         # TODO: precise association cmd<->section
@@ -45,7 +138,7 @@ class Pipeline:
             "mask": [],
         }
 
-        if "makeProjections" in self.cmds:
+        if "project" in self.cmds:
             labelled_sections["barcode"].append("zProject")
             labelled_sections["fiducial"].append("zProject")
             labelled_sections["dapi"].append("zProject")
@@ -53,9 +146,8 @@ class Pipeline:
             labelled_sections["mask"].append("zProject")
 
         if {
-            "appliesRegistrations",
-            "alignImages",
-            "alignImages3D",
+            "register_global",
+            "register_local",
             "register_localizations",
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("alignImages")
@@ -64,7 +156,7 @@ class Pipeline:
             labelled_sections["rna"].append("alignImages")
             labelled_sections["mask"].append("alignImages")
 
-        if {"segmentMasks", "segmentMasks3D", "segmentSources3D"}.intersection(
+        if {"mask_2d", "mask_3d", "localize_2d", "localize_3d"}.intersection(
             set(self.cmds)
         ):
             labelled_sections["barcode"].append("segmentedObjects")
@@ -76,7 +168,6 @@ class Pipeline:
             "register_localizations",
             "build_traces",
             "build_matrix",
-            "buildHiMmatrix",
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("buildsPWDmatrix")
             labelled_sections["dapi"].append("buildsPWDmatrix")
@@ -85,7 +176,7 @@ class Pipeline:
         self.m_data_m.set_labelled_params(labelled_sections)
 
     def init_features(self):
-        if "makeProjections" in self.cmds:
+        if "project" in self.cmds:
             labelled_feature = {}
             for label in self.m_data_m.label_to_process:
                 labelled_feature[label] = Project(
@@ -165,7 +256,7 @@ class Pipeline:
             print_log(f"Making 3D image segmentations for label: {label}")
             print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segment_sources_3d = SegmentMasks3D(
+            _segment_sources_3d = Mask3D(
                 current_param, self.m_logger.m_session, parallel=self.parallel
             )
             _segment_sources_3d.segment_masks_3d()
@@ -178,7 +269,7 @@ class Pipeline:
             print_log(f"Making 3D image segmentations for label: {label}")
             print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segment_sources_3d = SegmentSources3D(
+            _segment_sources_3d = Localize3D(
                 current_param, self.m_logger.m_session, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d()
@@ -206,12 +297,12 @@ class Pipeline:
                     client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
                     for f2p in files_to_process
                 ]
-                print_session_name("makeProjections")
+                print_session_name("project")
                 # Run workers
                 client.gather(threads)
 
             else:
-                print_session_name("makeProjections")
+                print_session_name("project")
                 for f2p in files_to_process:
                     run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
 

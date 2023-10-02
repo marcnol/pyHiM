@@ -64,9 +64,11 @@ optional arguments:
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
   -C CMD, --cmd CMD     Comma-separated list of routines to run: 
-  						makeProjections, appliesRegistrations,
-                        alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,buildHiMmatrix
+  						       project register_global register_local  
+                     mask_2d localize_2d 
+                     mask_3d localize_3d 
+                     filter_localizations register_localizations 
+                     build_traces build_matrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```

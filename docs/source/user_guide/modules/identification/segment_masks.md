@@ -1,10 +1,10 @@
-# segmentMasks
+# mask_2d and localize_2d
 *Segments DAPI and sources in 2D*
 
 ## Invoke
 Inside the folder with your input data, run:
 ```shell
-pyhim -C segmentMasks
+pyhim -C mask_2d,localize_2d
 ```
 
 ## Inputs

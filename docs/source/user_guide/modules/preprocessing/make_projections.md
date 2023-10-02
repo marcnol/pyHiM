@@ -1,4 +1,4 @@
-# makeProjections
+# project
 
 *Projects 3D images in 2D*
 
@@ -6,7 +6,7 @@
 
 Inside the folder with your input data, run:
 ```shell
-pyhim -C makeProjections
+pyhim -C project
 ```
 
 ![projection](../../../_static/from_tuto/projection.png)

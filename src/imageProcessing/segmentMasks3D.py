@@ -35,7 +35,7 @@ from imageProcessing.segmentMasks import _segment_3d_masks
 # =============================================================================
 
 
-class SegmentMasks3D:
+class Mask3D:
     def __init__(self, param, current_session, parallel=False):
         self.current_param = param
         self.current_session = current_session
@@ -360,7 +360,7 @@ class SegmentMasks3D:
                     print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
                     self.segment_masks_3d_file(filename_to_process)
 
-        print_log(f"$ segmentMasks3D procesing time: {datetime.now() - now}")
+        print_log(f"$ mask_3d procesing time: {datetime.now() - now}")
 
     def segment_masks_3d(self):
         """
@@ -371,7 +371,7 @@ class SegmentMasks3D:
         None.
 
         """
-        session_name = "segmentMasks3D"
+        session_name = "mask_3d"
 
         # processes folders and files
 

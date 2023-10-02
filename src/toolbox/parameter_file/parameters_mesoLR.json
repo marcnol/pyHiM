@@ -21,7 +21,7 @@
             "3D_lower_threshold": 0.9,
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
-            "outputFile": "alignImages",
+            "outputFile": "register_global",
             "referenceFiducial": "RT27",
             "tolerance": 0.1
         },

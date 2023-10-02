@@ -1,10 +1,10 @@
-# alignImages
+# register_global
 *Registers fiducials using a barcode as reference*
 
 ## Invoke
 Inside the folder with your input data, run:
 ```shell
-pyhim -C alignImages
+pyhim -C register_global
 ```
 
 ## Inputs
@@ -17,11 +17,11 @@ pyhim -C alignImages
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-|alignImages.ecsv|1|X, Y shift for each image|
+|register_global.ecsv|1|X, Y shift for each image|
 
 ## Relevant options
 
-Parameters for this script will be read from the  ```alignImages``` field of ```parameters.json```
+Parameters for this script will be read from the  ```register_global``` field of ```parameters.json```
 
 |Name|Option|Description|
 |:-:|:-:|:-:|

@@ -1,10 +1,10 @@
-# segmentMasks3D
+# mask_3d
 *Segments masks in 3D*
 
 ## Invoke
 Inside the folder with your input data, run:
 ```shell
-pyhim -C segmentMasks3D
+pyhim -C mask_3d
 ```
 
 ![segmentation](../../../_static/from_tuto/segmentation.png)
@@ -36,7 +36,7 @@ The NPY file is a 3D labeled numpy array containing the segmented objects. The f
 _Warning_: This mode operates in 3D, therefore the Startdist network provided **must be** in 3D.
 
 ## Relevant options
-Most of the parameters are shared with ```segmentMasks```, except for the following:
+Most of the parameters are shared with ```mask_2d```, except for the following:
 
 |Name|Option|Description|
 |:-:|:-:|:-:|

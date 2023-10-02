@@ -60,7 +60,7 @@ from imageProcessing.segmentMasks import (
 # =============================================================================
 
 
-class SegmentSources3D:
+class Localize3D:
     def __init__(self, param, current_session, parallel=False):
         self.current_param = param
         self.current_session = current_session
@@ -542,7 +542,7 @@ class SegmentSources3D:
                 # Merges Tables for different cycles and appends results Table to that of previous ROI
                 output_table_global = vstack([output_table_global] + output_tables)
 
-        print_log(f"$ segmentSources3D procesing time: {datetime.now() - now}")
+        print_log(f"$ localize_3d procesing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
         output_table_global.write(
@@ -560,7 +560,7 @@ class SegmentSources3D:
         None.
 
         """
-        session_name = "segmentSources3D"
+        session_name = "localize_3d"
 
         # processes folders and files
 

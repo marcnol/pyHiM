@@ -407,7 +407,7 @@ class RegisterLocalizations:
 
     def register(self):
         """
-        Function that registers barcodes using a local drift correction table produced by *alignImages3D*
+        Function that registers barcodes using a local drift correction table produced by *register_local*
 
 
         Returns
@@ -436,7 +436,9 @@ class RegisterLocalizations:
         self.load_local_alignment()
 
         if not self.alignment_results_table_read:
-            print_log("Unable to find aligment table.\nDid you run alignImages3D?\n\n ")
+            print_log(
+                "Unable to find aligment table.\nDid you run register_local?\n\n "
+            )
             sys.exit(
                 f"ERROR: Expected to find: {self.local_alignment_filename}--> Aborting."
             )
