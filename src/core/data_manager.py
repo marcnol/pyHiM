@@ -98,6 +98,7 @@ class DataManager:
         self.filename_regex = ""
         self.label_decoder = self.__default_label_decoder()
         self.label_to_process = []
+        self.processed_roi = None
 
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
@@ -191,15 +192,28 @@ class DataManager:
         if label not in self.label_to_process:
             self.label_to_process.append(label)
 
+    def check_roi_uniqueness(self, roi_name: str):
+        if self.processed_roi is None:
+            print_log(f"$ Detected ROI: {roi_name}")
+            self.processed_roi = roi_name
+        elif self.processed_roi != roi_name:
+            msg = f"""ERROR (ROI UNIQUENESS) - At least 2 ROI are detected: "{self.processed_roi}" and "{roi_name}"."""
+            print_log(msg, status="DEBUG")
+            raise SystemExit(msg)
+
     def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
+        print_section("file names")
         img_ext = ["tif", "tiff"]
         # TODO: improve to: img_ext = ["tif", "tiff", "npy", "png", "jpg"]
         table_ext = ["csv", "ecsv", "dat"]
         unrecognized = 0
         for path, name, ext in self.all_files:
             if ext in img_ext:
-                label = self.find_label(name)
+                parts = self.decode_file_parts(name)
+                self.check_roi_uniqueness(parts["roi"])
+                channel = parts["channel"][:4]
+                label = self.find_label(name, channel)
                 self.add_label_to_process(label)
                 self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
@@ -212,7 +226,7 @@ class DataManager:
                 unrecognized += 1
         print_log(f"! Unrecognized data files: {unrecognized}", status="WARN")
 
-    def find_label(self, filename):
+    def find_label(self, filename, channel):
         """Decode a filename to find its label (fiducial, DAPI, barcode, RNA, mask)
 
         Parameters
@@ -230,8 +244,6 @@ class DataManager:
         ValueError
             Label NOT FOUND
         """
-        parts = self.decode_file_parts(filename)
-        channel = parts["channel"][:4]
 
         if "DAPI" in filename.split("_"):
             label = self.label_decoder["dapi_acq"][channel]
