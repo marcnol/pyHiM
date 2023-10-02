@@ -281,7 +281,7 @@ class Parameters:
                 },
                 "alignImages": {
                     "folder": "alignImages",  # output folder
-                    "outputFile": "alignImages",
+                    "outputFile": "register_global",
                     "referenceFiducial": "RT27",
                     "localAlignment": "block3D",  # options: None, mask2D, block3D
                     "alignByBlock": True,  # alignByBlock True will perform block alignment
@@ -458,7 +458,7 @@ class RegistrationParams:
 
     # pylint: disable=invalid-name
     folder: str = set_default("folder", "alignImages")  # output folder
-    outputFile: str = set_default("outputFile", "alignImages")
+    outputFile: str = set_default("outputFile", "register_global")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
     localAlignment: str = set_default(
         "localAlignment", "block3D"

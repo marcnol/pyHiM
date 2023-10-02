@@ -324,8 +324,8 @@ class Drift3D:
             overwrite=True,
         )
 
-        print_log(f"$ alignImages3D procesing time: {datetime.now() - now}")
-        print_log(f"$ alignImages3D output Table saved in: {output_filename}")
+        print_log(f"$ register_local procesing time: {datetime.now() - now}")
+        print_log(f"$ register_local output Table saved in: {output_filename}")
 
     def align_fiducials_3d(self):
         """
@@ -336,7 +336,7 @@ class Drift3D:
         None.
 
         """
-        session_name = "alignImages3D"
+        session_name = "register_local"
 
         # processes folders and files
         print_session_name(session_name)

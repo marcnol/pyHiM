@@ -36,10 +36,11 @@ def _parse_run_args(command_line_arguments):
     parser.add_argument(
         "-C",
         "--cmd",
-        help="Comma-separated list of routines to run (without space !): \
-                        makeProjections alignImages appliesRegistrations alignImages3D \
-                        segmentMasks segmentMasks3D segmentSources3D buildHiMmatrix (DEPRECATED) \
-                        filter_localizations register_localizations build_traces build_matrix",
+        help="Comma-separated list of routines to run (without space !): \n\
+                                project register_global register_local \n\
+                                mask_2d localize_2d mask_3d localize_3d \n\
+                                filter_localizations register_localizations \n\
+                                build_traces build_matrix",
     )
     # Number of threads
     parser.add_argument(
@@ -176,18 +177,24 @@ class RunArgs:
             Set of available commands
         """
         return (
-            "makeProjections",
-            "appliesRegistrations",
-            "alignImages",
-            "alignImages3D",
-            "segmentMasks",
-            "segmentMasks3D",
-            "segmentSources3D",
+            "project",
+            "register_global",
+            "register_local",
+            "mask_2d",
+            "localize_2d",
+            "mask_3d",
+            "localize_3d",
+            "makeProjections",  # DEPRECATED
+            "appliesRegistrations",  # DEPRECATED
+            "alignImages",  # DEPRECATED
+            "alignImages3D",  # DEPRECATED
+            "segmentMasks",  # DEPRECATED
+            "segmentMasks3D",  # DEPRECATED
+            "segmentSources3D",  # DEPRECATED
             "filter_localizations",
             "register_localizations",
             "build_traces",
             "build_matrix",
-            "buildHiMmatrix",  # DEPRECATED
         )
 
     @staticmethod
@@ -200,10 +207,10 @@ class RunArgs:
             Set of 2D commands
         """
         return (
-            "makeProjections",
-            "alignImages",
-            "appliesRegistrations",
-            "segmentMasks",
+            "project",
+            "register_global",
+            "mask_2d",
+            "localize_2d",
             "filter_localizations",
             "build_traces",
             "build_matrix",
@@ -219,11 +226,11 @@ class RunArgs:
             Set of 3D commands
         """
         return (
-            "makeProjections",
-            "alignImages",
-            "alignImages3D",
-            "segmentMasks3D",
-            "segmentSources3D",
+            "project",
+            "register_global",
+            "register_local",
+            "mask_3d",
+            "localize_3d",
             "filter_localizations",
             "register_localizations",
             "build_traces",

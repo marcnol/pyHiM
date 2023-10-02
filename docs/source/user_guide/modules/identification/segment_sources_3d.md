@@ -1,4 +1,4 @@
-# segmentSources3D
+# localize_3d
 
 *Segments sources in 3D*
 
@@ -6,7 +6,7 @@
 
 Inside the folder with your input data, run:
 ```shell
-pyhim -C segmentSources3D
+pyhim -C localize_3d
 ```
 
 ![localization](../../../_static/from_tuto/localization.png)
