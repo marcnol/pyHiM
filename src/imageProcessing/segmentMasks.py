@@ -778,7 +778,6 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
             )
 
             # saves output 2d zProjection as matrix
-            im_obj.save_image_2d(data_folder.output_folders["zProject"])
             save_image_2d_cmd(output, f"{output_filename}_Masks")
         else:
             output = []
