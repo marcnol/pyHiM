@@ -84,7 +84,13 @@ def remove_extension(filename: str):
 class DataManager:
     """Single party responsible for communicating data with the system"""
 
-    def __init__(self, data_path: str, md_file: str = "", stardist_basename: str = ""):
+    def __init__(
+        self,
+        data_path: str,
+        md_file: str = "",
+        stardist_basename: str = "",
+        param_file: str = None,
+    ):
         print_session_name("DataManager initialisation")
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
@@ -92,7 +98,7 @@ class DataManager:
         self.m_stardist_basename = stardist_basename
         self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
-        self.param_file_path = self.find_param_file()
+        self.param_file_path = self.find_param_file(param_file)
         self.data_images = []
         self.data_tables = []
         self.filename_regex = ""
@@ -114,7 +120,7 @@ class DataManager:
     def __set_data_path(data_path):
         return str(data_path) if data_path else os.getcwd()
 
-    def find_param_file(self):
+    def find_param_file(self, param_file: str = None):
         """Find the user parameters file like `parameters.json` inside extracted input files.
 
         Returns
@@ -127,6 +133,14 @@ class DataManager:
         ValueError
             Parameters file NOT FOUND
         """
+        if param_file is not None:
+            self.params_filename = param_file.split(os.sep)[-1].split(".")[0]
+            if self.params_filename == "infoList":
+                print_log(
+                    "! 'infoList.json' is a DEPRECATED file name, please use by default 'parameters.json'.",
+                    status="WARN",
+                )
+            return param_file
         for path, name, ext in self.all_files:
             if ext == "json" and name == self.params_filename:
                 return str(path)
