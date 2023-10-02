@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.3"
+__version__ = "0.8.4"
 
 import os
 import sys
@@ -45,6 +45,7 @@ def main(command_line_arguments=None):
         run_args.data_path,
         logger.md_filename,
         stardist_basename=run_args.stardist_basename,
+        param_file=run_args.params_path,
     )
 
     pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)

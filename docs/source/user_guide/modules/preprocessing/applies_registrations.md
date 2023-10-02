@@ -13,7 +13,7 @@ pyhim -C appliesRegistrations
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 |alignImages.ecsv|1|Yes|XY alignment resulting from the XY alignment produced while running `alignImages`.|
 
 ## Outputs

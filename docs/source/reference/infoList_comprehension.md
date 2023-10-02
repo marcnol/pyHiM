@@ -1,5 +1,5 @@
-# Input parameters
-*infoList.json file*
+# Parameters
+*parameters.json file, previously named infoList.json (DEPRECATED)*
 
 ## Global structure
 

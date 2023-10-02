@@ -251,7 +251,7 @@ If you want to go for a test run, do the following:
   cd /mnt/grey/DATA/users/marcnol/test_HiM/testDataset
   ```
 
-- Copy a model `infoList.json` file into the data folder.
+- Copy a model `parameters.json` file into the data folder.
 - Run `pyHiM` by executing the following command:
 
 ```bash
@@ -261,7 +261,7 @@ pyHiM.py -F .
 If you want to run it in your data directory, then copy the configuration files to the directory where you want to run *pyHiM*
 
 ```bash
-cp /home/rata/Repositories/pyHiM/modelParameterFiles_JSON/infoList*json path-to-your-directory
+cp /home/Repositories/pyHiM/src/toolbox/parameter_file/parameters*json path-to-your-directory
 ```
 
 ## Build documentation locally

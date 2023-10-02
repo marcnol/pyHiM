@@ -55,7 +55,14 @@ def _parse_run_args(command_line_arguments):
         "--stardist_basename",
         type=str,
         default=None,
-        help="Replace all stardist_basename from infoList.json",
+        help="Replace all stardist_basename from parameters.json",
+    )
+    parser.add_argument(
+        "-P",
+        "--parameters",
+        type=str,
+        default=None,
+        help="Path of your parameters.json file. If none, pyHiM expect this file inside your current folder.",
     )
 
     return parser.parse_args(command_line_arguments)
@@ -73,6 +80,7 @@ class RunArgs:
         self.thread_nbr = parsed_args.threads
         self.parallel = self.thread_nbr > 1
         self.stardist_basename = parsed_args.stardist_basename
+        self.params_path = parsed_args.parameters
         self._check_consistency()
 
     def _is_docker(self):
@@ -84,6 +92,7 @@ class RunArgs:
     def _check_consistency(self):
         if not os.path.isdir(self.data_path):
             raise SystemExit(f"Input data path ({self.data_path}) NOT FOUND.")
+
         available_commands = self.get_available_commands()
         low_available_cmds = [a_c.lower() for a_c in available_commands]
         for cmd in self.cmd_list:
@@ -104,6 +113,9 @@ class RunArgs:
         if self.stardist_basename and not os.path.isdir(self.stardist_basename):
             raise SystemExit(f"Stardist basename ({self.stardist_basename}) NOT FOUND.")
 
+        if self.params_path is not None and not os.path.isfile(self.params_path):
+            raise SystemExit(f"Input parameters file ({self.data_path}) NOT FOUND.")
+
     def args_to_str(self):
         """Print parameters in your shell terminal
 
@@ -119,6 +131,8 @@ class RunArgs:
 
         to_print = "\n$ Loaded arguments:\n"
         to_print += tab_spacer("rootFolder", str(self.data_path))
+        if self.params_path:
+            to_print += tab_spacer("parameters", str(self.params_path))
         to_print += tab_spacer("stardist_basename", str(self.stardist_basename))
         to_print += tab_spacer("threads", str(self.thread_nbr))
         to_print += tab_spacer("parallel", str(self.parallel))

@@ -84,15 +84,21 @@ def remove_extension(filename: str):
 class DataManager:
     """Single party responsible for communicating data with the system"""
 
-    def __init__(self, data_path: str, md_file: str = "", stardist_basename: str = ""):
+    def __init__(
+        self,
+        data_path: str,
+        md_file: str = "",
+        stardist_basename: str = "",
+        param_file: str = None,
+    ):
         print_session_name("DataManager initialisation")
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
         self.md_log_file = md_file
         self.m_stardist_basename = stardist_basename
-        self.params_filename = "infoList"
+        self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
-        self.param_file_path = self.find_param_file()
+        self.param_file_path = self.find_param_file(param_file)
         self.data_images = []
         self.data_tables = []
         self.filename_regex = ""
@@ -114,8 +120,8 @@ class DataManager:
     def __set_data_path(data_path):
         return str(data_path) if data_path else os.getcwd()
 
-    def find_param_file(self):
-        """Find the user parameters file like `infoList.json` inside extracted input files.
+    def find_param_file(self, param_file: str = None):
+        """Find the user parameters file like `parameters.json` inside extracted input files.
 
         Returns
         -------
@@ -127,12 +133,28 @@ class DataManager:
         ValueError
             Parameters file NOT FOUND
         """
+        if param_file is not None:
+            self.params_filename = param_file.split(os.sep)[-1].split(".")[0]
+            if self.params_filename == "infoList":
+                print_log(
+                    "! 'infoList.json' is a DEPRECATED file name, please use by default 'parameters.json'.",
+                    status="WARN",
+                )
+            return param_file
         for path, name, ext in self.all_files:
             if ext == "json" and name == self.params_filename:
                 return str(path)
+            # TODO: Remove this deprecated "infoList.json" including at pyHiM v1.0
+            if ext == "json" and name == "infoList":
+                print_log(
+                    "! 'infoList.json' is a DEPRECATED file name, please use by default 'parameters.json'.",
+                    status="WARN",
+                )
+                self.params_filename = "infoList"
+                return str(path)
         # If we loop over all files, parameter file aren't detected.
         raise ValueError(
-            f"Parameters file NOT FOUND, expected filename: {self.params_filename}.json"
+            f"Parameters file NOT FOUND, expected filename: {self.params_filename}.json OR infoList.json (DEPRECATED)"
         )
 
     @staticmethod
@@ -322,7 +344,7 @@ class DataManager:
 
         thus, by running decode_file_parts(file_name) you will get back
         either an empty dict if the RE were not present
-        in your infoList.json file or a dict as follows if it all worked out fine:
+        in your parameters.json file or a dict as follows if it all worked out fine:
 
         file_parts['runNumber']: runNumber number
         file_parts['cycle']: cycle string

@@ -52,7 +52,7 @@ The ```processesPWDmatrices``` script:
 
 **Invoke**
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C buildHiMmatrix``` argument.
 

@@ -16,7 +16,7 @@ pyhim -C alignImages3D
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 |<image_name>.tif|2..n|Yes|Images to align in 3D containing a fiducial signal.|
 |alignImages.ecsv|1|No|XY alignment resulting from running `alignImages`.|
 
