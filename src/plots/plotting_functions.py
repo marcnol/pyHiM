@@ -104,7 +104,7 @@ def Wilcoxon_matrix(m1,m2,uniqueBarcodes,):
                     x, y = m1[i,j,:], m2[i,j,:]
                     x = x[~np.isnan(x)]
                     y = y[~np.isnan(y)]
-                    a, p = ranksums(x, y)
+                    a, p = ranksums(x, y)#, nan_policy='omit')
                     result[i,j] = p
         return result
 
@@ -141,7 +141,7 @@ def plot_Wilcoxon_matrix(m1,m2,uniqueBarcodes,
         cmtitle=cmtitle,
         fig_title=fig_title,
         c_min=-3,
-        c_max=0,
+        c_max=0, # log10(0.05) = -1.3
         fontsize=fontsize,
         colorbar=True,
         axis_ticks=axis_ticks,
