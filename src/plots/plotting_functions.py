@@ -11,6 +11,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from scipy.stats import ranksums
 
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
@@ -91,6 +92,66 @@ def gets_matrix(run_parameters,scPWDMatrix_filename='',uniqueBarcodes=''):
     )
 
     return sc_matrix, uniqueBarcodes, cScale, n_cells, outputFileName,fileNameEnding
+
+def Wilcoxon_matrix(m1,m2,uniqueBarcodes,): 
+
+        nbins = len(uniqueBarcodes)
+        result = np.zeros((nbins,nbins))
+        
+        for i in range(nbins):
+            for j in range(nbins):
+                if i != j :
+                    x, y = m1[i,j,:], m2[i,j,:]
+                    x = x[~np.isnan(x)]
+                    y = y[~np.isnan(y)]
+                    a, p = ranksums(x, y)
+                    result[i,j] = p
+        return result
+
+def plot_Wilcoxon_matrix(m1,m2,uniqueBarcodes,
+                            normalize='none', 
+                            ratio=True, 
+                            c_scale=0.6,
+                            axisLabel=True,
+                            fontsize=22,
+                            axis_ticks=False,
+                            outputFileName='',
+                            fig_title="",
+                            plottingFileExtension='.png',
+                            n_cells=0,
+                            cmap="RdBu",): 
+
+    cmtitle = "log10(p-value)"
+    fig_title = "Wilcoxon's rank sum test"
+        
+    result = Wilcoxon_matrix(m1,m2,uniqueBarcodes,)
+
+    fig1 = plt.figure(constrained_layout=True)
+    spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
+    f_1 = fig1.add_subplot(spec1[0, 0])  # 16
+    
+    result = np.log10(result) 
+    
+    f1_ax1_im = plot_2d_matrix_simple(
+        f_1,
+        result,
+        uniqueBarcodes,
+        yticks=axisLabel,
+        xticks=axisLabel,
+        cmtitle=cmtitle,
+        fig_title=fig_title,
+        c_min=-3,
+        c_max=0,
+        fontsize=fontsize,
+        colorbar=True,
+        axis_ticks=axis_ticks,
+        c_m=cmap,
+        show_title=True,
+        n_cells=n_cells,
+        n_datasets=2,
+    )
+    plt.savefig(outputFileName+"_Wilcoxon"+plottingFileExtension)
+    print("Output figure: {}".format(outputFileName))
 
 def normalize_matrix(m1, m2, mode='none'):
     print("$ Normalization: {}".format(mode))

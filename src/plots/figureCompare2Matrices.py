@@ -22,10 +22,17 @@ from matrixOperations.HIMmatrixOperations import (
     AnalysisHiMMatrix,
     calculate_ensemble_pwd_matrix,
     list_sc_to_keep,
-    plot_matrix
+    plot_matrix,
 )
 
-from plotting_functions import gets_matrix, plot_2d_matrix_simple,plot_matrix_difference, plot_mixed_matrix
+from plotting_functions import (
+    gets_matrix, 
+    plot_2d_matrix_simple,
+    plot_matrix_difference, 
+    plot_mixed_matrix,
+    plot_Wilcoxon_matrix,
+    )
+
 
     
 # %% define and loads datasets
@@ -236,7 +243,7 @@ def gets_ensemble_matrix(run_parameters,scPWDMatrix_filename=''):
         font_size=run_parameters["fontsize"],
     )
 
-    return meansc_matrix, uniqueBarcodes, cScale, n_cells, outputFileName, fileNameEnding
+    return sc_matrix, meansc_matrix, uniqueBarcodes, cScale, n_cells, outputFileName, fileNameEnding
 
 
 # =============================================================================
@@ -253,7 +260,8 @@ def main():
         print("Folder created: {}".format(run_parameters["outputFolder"]))
         
     # loads matrices
-    (m1,
+    (m1_sc,
+     m1,
      uniqueBarcodes,
      cScale1, 
      n_cells1, 
@@ -262,14 +270,15 @@ def main():
                 scPWDMatrix_filename = run_parameters["input1"])
     print("-"*50)
 
-    (m2,
+    (m2_sc,
+     m2,
      uniqueBarcodes,
      cScale2, 
      n_cells2, 
      outputFileName2,
      fileNameEnding) = gets_ensemble_matrix(run_parameters,
                 scPWDMatrix_filename = run_parameters["input2"])
-                            
+                         
     # plots results               
     if m1.shape == m2.shape:
         
@@ -301,7 +310,23 @@ def main():
                                n_cells=n_cells1+n_cells2,
                                cmap=run_parameters["cmap"],                               
                                )
-        
+
+
+        if "proximity" not in run_parameters["dist_calc_mode"]:
+            plot_Wilcoxon_matrix(m1_sc,
+                                    m2_sc,
+                                    uniqueBarcodes,
+                                    normalize=run_parameters["normalize"],
+                                    axisLabel = run_parameters["axisLabel"],
+                                    fontsize=run_parameters["fontsize"],
+                                    axis_ticks=run_parameters["axisTicks"],
+                                    outputFileName = outputFileName1,
+                                    fig_title=run_parameters["cmtitle"],
+                                    plottingFileExtension=run_parameters["plottingFileExtension"],
+                                    n_cells=n_cells1+n_cells2,
+                                    cmap=run_parameters["cmap"],                               
+                                    )
+            
     else:
         print("Error: matrices do not have the same dimensions!")
 
