@@ -324,8 +324,8 @@ class Drift3D:
             overwrite=True,
         )
 
-        print_log(f"$ alignImages3D procesing time: {datetime.now() - now}")
-        print_log(f"$ alignImages3D output Table saved in: {output_filename}")
+        print_log(f"$ register_local procesing time: {datetime.now() - now}")
+        print_log(f"$ register_local output Table saved in: {output_filename}")
 
     def align_fiducials_3d(self):
         """
@@ -336,7 +336,7 @@ class Drift3D:
         None.
 
         """
-        session_name = "alignImages3D"
+        session_name = "register_local"
 
         # processes folders and files
         print_session_name(session_name)
@@ -486,7 +486,6 @@ def _align_fiducials_3d_file(
             )
         )
 
-    ssim_matrices = [x[1] for x in outputs]
     mse_matrices = [x[2] for x in outputs]
     nrmse_matrices = [x[3] for x in outputs]
 
@@ -507,18 +506,8 @@ def _align_fiducials_3d_file(
 
     fig3.tight_layout()
 
-    fig4 = plot_3d_shift_matrices(
-        ssim_matrices, fontsize=6, log=False, valfmt="{x:.2f}"
-    )
-    fig4.suptitle("SSIM block matrices")
-
     fig5 = plot_3d_shift_matrices(mse_matrices, fontsize=6, log=False, valfmt="{x:.2f}")
     fig5.suptitle("mean square root block matrices")
-
-    fig6 = plot_3d_shift_matrices(
-        nrmse_matrices, fontsize=6, log=False, valfmt="{x:.2f}"
-    )
-    fig6.suptitle("normalized root mean square block matrices")
 
     # saves figures
     # -------------
@@ -526,16 +515,14 @@ def _align_fiducials_3d_file(
         "_bkgSubstracted.png",
         "_shiftMatrices.png",
         "_3Dalignments.png",
-        "_SSIMblocks.png",
         "_MSEblocks.png",
-        "_NRMSEblocks.png",
     ]
     output_filenames = [
         output_folder + os.sep + os.path.basename(filename_to_process) + x
         for x in fig_titles
     ]
 
-    figs = [fig1, fig2, fig3, fig4, fig5, fig6]
+    figs = [fig1, fig2, fig3, fig5]
     for fig, file in zip(figs, output_filenames):
         fig.savefig(file)
         plt.close(fig)

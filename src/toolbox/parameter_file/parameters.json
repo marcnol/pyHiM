@@ -2,7 +2,7 @@
     "common": {
         "acquisition": {
             "DAPI_channel": "ch00",
-            "RNA_channel": "ch02",
+            "RNA_channel": "ch01",
             "barcode_channel": "ch01",
             "mask_channel": "ch01",
             "fiducialBarcode_channel": "ch00",
@@ -18,6 +18,7 @@
         "alignImages": {
             "alignByBlock": true,
             "background_sigma": 3.0,
+            "bezel": 20,
             "blockSize": 256,
             "folder": "alignImages",
             "higher_threshold": 0.9999999,
@@ -25,7 +26,7 @@
             "3D_higher_threshold": 0.9999,
             "localAlignment": "block3D",
             "lower_threshold": 0.999,
-            "outputFile": "alignImages",
+            "outputFile": "register_global",
             "referenceFiducial": "RT1",
             "tolerance": 0.1
         },
@@ -49,24 +50,22 @@
                 "contact": "coolwarm",
                 "Nmatrix": "Blues"
             },
-            "remove_uncorrected_localizations": true,
             "toleranceDrift": 1
         },
         "segmentedObjects": {
             "operation": "2D",
             "background_sigma": 3.0,
             "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-            "brightest": 1100,
+            "brightest": "None",
             "centroidDifference_max": 5,
             "folder": "segmentedObjects",
             "fwhm": 3.0,
             "intensity_max": 59,
-            "intensity_min": 0,
+            "intensity_min": 59,
             "outputFile": "segmentedObjects",
             "residual_max": 2.5,
             "sigma_max": 5,
             "tesselation": true,
-            "reducePlanes": true,
             "threshold_over_std": 1.0
         },
         "zProject": {

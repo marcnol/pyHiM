@@ -531,7 +531,9 @@ def segment_mask_inhomog_background(im, current_param):
     )
 
     # removes masks too close to border
-    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+    segm.remove_border_labels(
+        border_width=10
+    )  # TODO: parameter to add to parameters.json ?
 
     segm_deblend = deblend_sources(
         im,
@@ -619,7 +621,7 @@ def segment_mask_stardist(im, current_param):
     segm = SegmentationImage(labeled)
 
     # removes masks too close to border
-    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
+    segm.remove_border_labels(border_width=10)
     segm_deblend = segm
 
     # removes Masks too big or too small
@@ -778,7 +780,6 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
             )
 
             # saves output 2d zProjection as matrix
-            im_obj.save_image_2d(data_folder.output_folders["zProject"])
             save_image_2d_cmd(output, f"{output_filename}_Masks")
         else:
             output = []
@@ -931,8 +932,7 @@ def _segment_2d_image_by_thresholding(
         # returns empty image as no objects were detected
         return segm.data
     # removes masks too close to border
-    segm.remove_border_labels(border_width=10)  # parameter to add to infoList
-
+    segm.remove_border_labels(border_width=10)
     if segm.nlabels <= 0:
         # returns empty image as no objects were detected
         return segm.data

@@ -503,7 +503,7 @@ def align_images_in_current_folder(
         verbose = False
         # contains dictionary of shifts for each folder
         dict_shifts = {}
-        session_name = "alignImages"
+        session_name = "register_global"
         # loops over fiducials images one ROI at a time
         for filename_reference in filenames_with_ref_barcode:
             # loads reference fiducial image for this ROI
@@ -639,7 +639,7 @@ def align_images(current_param, current_session, file_name=None):
     None.
 
     """
-    session_name = "registersImages"
+    session_name = "register_global"
 
     # processes folders and adds information to log files
     data_folder = Folders(current_param.param_dict["rootFolder"])
@@ -720,7 +720,7 @@ def apply_registrations_to_filename(
         )
 
         # session
-        session_name = "registersImages"
+        session_name = "register_global"
 
         # logs output
         current_session.add(filename_to_process, session_name)
@@ -810,7 +810,7 @@ def apply_registrations(current_param, current_session, file_name=None):
     - save registered images as npy arrays
     """
 
-    session_name = "registersImages"
+    session_name = "register_global"
 
     # verbose=False
 

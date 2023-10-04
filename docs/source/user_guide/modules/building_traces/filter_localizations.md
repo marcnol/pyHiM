@@ -10,7 +10,7 @@ pyhim -C filter_localizations
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -19,7 +19,7 @@ pyhim -C filter_localizations
 
 ## Relevant options
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 ```
 "flux_min": 10, # maximum flux allowed for 2D

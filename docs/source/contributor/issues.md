@@ -48,8 +48,8 @@ git checkout -b doc/name_of_my_branch
 
 You're reading the [online documentation](https://pyhim.readthedocs.io/en/latest/index.html) and you find something to fix:
 
-- Check your web link like `https://pyhim.readthedocs.io/en/latest/reference/infoList_comprehension.html`
-- Go to `pyHiM > docs > source > reference > infoList_comprehension.md`
+- Check your web link like https://pyhim.readthedocs.io/en/latest/**user_guide/pyhim_presentation**.html
+- With your file editor, go to `pyHiM` > `docs` > `source` > **user_guide > pyhim_presentation**.md
 - Fix what you want
 
 ### 5. Share your modifications
@@ -60,4 +60,4 @@ You're reading the [online documentation](https://pyhim.readthedocs.io/en/latest
 - Create a pull request [on github](https://github.com/marcnol/pyHiM/pulls)
 - wait for a developer to validate the PR
 
-### THANKS! :)
+### THANKS!

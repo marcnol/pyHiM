@@ -26,8 +26,8 @@ tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 
 
 def test_make_projections():
-    """Check makeProjections"""
-    main(["-F", tmp_small_inputs, "-C", "makeProjections", "-S", tmp_stardist_basename])
+    """Check 'project'"""
+    main(["-F", tmp_small_inputs, "-C", "project", "-S", tmp_stardist_basename])
     tmp_z_project = os.path.join(tmp_small_inputs, "zProject")
     out_z_project = "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/"
     out_files = extract_files(out_z_project)
@@ -40,8 +40,8 @@ def test_make_projections():
 
 
 def test_align_images():
-    """Check alignImages"""
-    main(["-F", tmp_small_inputs, "-C", "alignImages", "-S", tmp_stardist_basename])
+    """Check register_global"""
+    main(["-F", tmp_small_inputs, "-C", "register_global", "-S", tmp_stardist_basename])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/"
     out_files = extract_files(out_align_images)
@@ -58,19 +58,6 @@ def test_align_images():
         else:
             assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
-
-def test_applies_registrations():
-    """Check appliesRegistrations"""
-    main(
-        [
-            "-F",
-            tmp_small_inputs,
-            "-C",
-            "appliesRegistrations",
-            "-S",
-            tmp_stardist_basename,
-        ]
-    )
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/"
@@ -85,8 +72,8 @@ def test_applies_registrations():
 
 
 def test_align_images_3d():
-    """Check alignImages3D"""
-    main(["-F", tmp_small_inputs, "-C", "alignImages3D", "-S", tmp_stardist_basename])
+    """Check register_local"""
+    main(["-F", tmp_small_inputs, "-C", "register_local", "-S", tmp_stardist_basename])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
     out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/"
     out_files = extract_files(out_align_images)
@@ -99,8 +86,8 @@ def test_align_images_3d():
 
 
 def test_segment_masks_3d():
-    """Check segmentMasks3D"""
-    main(["-F", tmp_small_inputs, "-C", "segmentMasks3D", "-S", tmp_stardist_basename])
+    """Check mask_3d"""
+    main(["-F", tmp_small_inputs, "-C", "mask_3d", "-S", tmp_stardist_basename])
     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
     out_segmented_objects = (
         "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/"
@@ -116,8 +103,8 @@ def test_segment_masks_3d():
 
 # TODO: Find a way to test this module
 # def test_segment_sources_3d():
-#     """Check segmentSources3D"""
-#     main(["-F", tmp_small_inputs, "-C", "segmentSources3D", "-S", tmp_stardist_basename])
+#     """Check localize_3d"""
+#     main(["-F", tmp_small_inputs, "-C", "localize_3d", "-S", tmp_stardist_basename])
 #     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
 #     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
 #     out_files = extract_files(out_segmented_objects)

@@ -36,10 +36,11 @@ def _parse_run_args(command_line_arguments):
     parser.add_argument(
         "-C",
         "--cmd",
-        help="Comma-separated list of routines to run (without space !): \
-                        makeProjections alignImages appliesRegistrations alignImages3D \
-                        segmentMasks segmentMasks3D segmentSources3D buildHiMmatrix (DEPRECATED) \
-                        filter_localizations register_localizations build_traces build_matrix",
+        help="Comma-separated list of routines to run (without space !): \n\
+                                project register_global register_local \n\
+                                mask_2d localize_2d mask_3d localize_3d \n\
+                                filter_localizations register_localizations \n\
+                                build_traces build_matrix",
     )
     # Number of threads
     parser.add_argument(
@@ -55,7 +56,14 @@ def _parse_run_args(command_line_arguments):
         "--stardist_basename",
         type=str,
         default=None,
-        help="Replace all stardist_basename from infoList.json",
+        help="Replace all stardist_basename from parameters.json",
+    )
+    parser.add_argument(
+        "-P",
+        "--parameters",
+        type=str,
+        default=None,
+        help="Path of your parameters.json file. If none, pyHiM expect this file inside your current folder.",
     )
 
     return parser.parse_args(command_line_arguments)
@@ -73,6 +81,7 @@ class RunArgs:
         self.thread_nbr = parsed_args.threads
         self.parallel = self.thread_nbr > 1
         self.stardist_basename = parsed_args.stardist_basename
+        self.params_path = parsed_args.parameters
         self._check_consistency()
 
     def _is_docker(self):
@@ -84,6 +93,7 @@ class RunArgs:
     def _check_consistency(self):
         if not os.path.isdir(self.data_path):
             raise SystemExit(f"Input data path ({self.data_path}) NOT FOUND.")
+
         available_commands = self.get_available_commands()
         low_available_cmds = [a_c.lower() for a_c in available_commands]
         for cmd in self.cmd_list:
@@ -104,6 +114,9 @@ class RunArgs:
         if self.stardist_basename and not os.path.isdir(self.stardist_basename):
             raise SystemExit(f"Stardist basename ({self.stardist_basename}) NOT FOUND.")
 
+        if self.params_path is not None and not os.path.isfile(self.params_path):
+            raise SystemExit(f"Input parameters file ({self.data_path}) NOT FOUND.")
+
     def args_to_str(self):
         """Print parameters in your shell terminal
 
@@ -119,6 +132,8 @@ class RunArgs:
 
         to_print = "\n$ Loaded arguments:\n"
         to_print += tab_spacer("rootFolder", str(self.data_path))
+        if self.params_path:
+            to_print += tab_spacer("parameters", str(self.params_path))
         to_print += tab_spacer("stardist_basename", str(self.stardist_basename))
         to_print += tab_spacer("threads", str(self.thread_nbr))
         to_print += tab_spacer("parallel", str(self.parallel))
@@ -162,18 +177,24 @@ class RunArgs:
             Set of available commands
         """
         return (
-            "makeProjections",
-            "appliesRegistrations",
-            "alignImages",
-            "alignImages3D",
-            "segmentMasks",
-            "segmentMasks3D",
-            "segmentSources3D",
+            "project",
+            "register_global",
+            "register_local",
+            "mask_2d",
+            "localize_2d",
+            "mask_3d",
+            "localize_3d",
+            "makeProjections",  # DEPRECATED
+            "appliesRegistrations",  # DEPRECATED
+            "alignImages",  # DEPRECATED
+            "alignImages3D",  # DEPRECATED
+            "segmentMasks",  # DEPRECATED
+            "segmentMasks3D",  # DEPRECATED
+            "segmentSources3D",  # DEPRECATED
             "filter_localizations",
             "register_localizations",
             "build_traces",
             "build_matrix",
-            "buildHiMmatrix",  # DEPRECATED
         )
 
     @staticmethod
@@ -186,10 +207,10 @@ class RunArgs:
             Set of 2D commands
         """
         return (
-            "makeProjections",
-            "alignImages",
-            "appliesRegistrations",
-            "segmentMasks",
+            "project",
+            "register_global",
+            "mask_2d",
+            "localize_2d",
             "filter_localizations",
             "build_traces",
             "build_matrix",
@@ -205,11 +226,11 @@ class RunArgs:
             Set of 3D commands
         """
         return (
-            "makeProjections",
-            "alignImages",
-            "alignImages3D",
-            "segmentMasks3D",
-            "segmentSources3D",
+            "project",
+            "register_global",
+            "register_local",
+            "mask_3d",
+            "localize_3d",
             "filter_localizations",
             "register_localizations",
             "build_traces",

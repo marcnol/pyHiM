@@ -45,10 +45,12 @@ def read_arguments():
     parser.add_argument(
         "-C",
         "--cmd",
-        help="Comma-separated list of routines to run: makeProjections alignImages \
-                        appliesRegistrations alignImages3D segmentMasks \
-                        segmentSources3D \
-                        buildHiMmatrix",
+        help="Comma-separated list of routines to run: \
+                     project  register_global register_local  \
+                     mask_2d localize_2d \
+                     mask_3d localize_3d \
+                     filter_localizations register_localizations \
+                     build_traces build_matrix",
     )
     parser.add_argument(
         "--threads",
@@ -155,7 +157,9 @@ def main():
     if run_parameters["singleDataset"] is None:
         folders = glob.glob(root_folder + os.sep + "*")
         folders0 = [x for x in folders if os.path.isdir(x)]  # keeps only folders
-        folders = [x for x in folders0 if os.path.exists(x + os.sep + "infoList.json")]
+        folders = [
+            x for x in folders0 if os.path.exists(x + os.sep + "parameters.json")
+        ]
     else:
         folders0 = folders = [run_parameters["singleDataset"]]
         # run_parameters["dataset"] = os.path.basename(run_parameters["singleDataset"])
@@ -174,7 +178,7 @@ def main():
 
     print(f"\n\n$ Found {len(folders0)} folders in {root_folder}")
     print(
-        f"$ Of these, {len(folders)} contained an infoList.json file and will be processed"
+        f"$ Of these, {len(folders)} contained an parameters.json file and will be processed"
     )
     print(f"Folders to process: {folders}")
     print(f"$ Scheduling {len(folders)} jobs...")

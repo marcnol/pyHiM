@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.8.1"
+version = "0.8.5"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -51,7 +51,6 @@ Homepage = "https://github.com/marcnol/pyHiM"
 
 [project.scripts]
 pyhim = "pyHiM:main"
-change_rt_infolist = "toolbox.file_handling.changeRT_infoList:main"
 clean_him_run = "toolbox.file_handling.cleanHiM_run:main"
 lndir = "toolbox.file_handling.lndir:main"
 run_him_cluster = "toolbox.runHiM_cluster:main"
@@ -65,7 +64,6 @@ figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
 figure_him_matrix = "plots.figureHiMmatrix:main"
 figure_n_him_matrices = "plots.figureN_HiMmatrices:main"
 figure_single_cell = "plots.figureSingleCell:main"
-process_segment_masks_3d = "postProcessing.process_segmentMasks3D:main"
 process_him_matrix = "postProcessing.processHiMmatrix:main"
 process_snd_channel = "postProcessing.processSNDchannel:main"
 trace_analyzer = "postProcessing.trace_analyzer:main"

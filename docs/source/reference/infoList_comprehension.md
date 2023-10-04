@@ -1,5 +1,5 @@
-# Input parameters
-*infoList.json file*
+# Parameters
+*parameters.json file, previously named infoList.json (DEPRECATED)*
 
 ## Global structure
 
@@ -49,7 +49,7 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |alignByBlock|True will perform block alignment. False will do global alignement.|
 |background_sigma|Remove inhomogeneous background; set the number of standard deviations to use for both the lower and upper clipping limit ([astropy.stats.SigmaClip](https://docs.astropy.org/en/stable/api/astropy.stats.SigmaClip.html))|
 |blockSize|Define size in (X,Y) of block for 3D local alignment; value needs to be a power of 2|
-|folder|Give a name of output folder to save output data of alignImages features|
+|folder|Give a name of output folder to save output data of register_global features|
 |higher_threshold|Set higher threshold to adjust image intensity levels before xcorrelation for `alignment in 2D`|
 |localAlignment|Select mode between global alignment (`None`), 2D local alignment (`mask2D`) and 3D local alignment ( `block3D`)|
 |lower_threshold|Set lower threshold to adjust image intensity levels before xcorrelation for `alignment in 2D`|
