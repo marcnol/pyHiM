@@ -95,8 +95,8 @@ def normalize_matrix(m1, m2, mode='none'):
     print("$ Normalization: {}".format(mode))
 
     if "maximum" in mode:  # normalizes by maximum
-        m1_norm = m1.nanmax()
-        m2_norm = m2.nanmax()
+        m1_norm = np.nanmax(m1)
+        m2_norm = np.nanmax(m2)
     elif len(mode.split(",")) > 1:  # normalizes by bin
         N = mode.split(",")
         m1_norm = 1
