@@ -73,6 +73,7 @@ def parse_arguments():
         "--dist_calc_mode",
         help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median",
     )
+    parser.add_argument("--proximity_threshold", help="proximity threshold in um")
     
     parser.add_argument("--cMax", help="Colormap max scale. Default: automatic")
     parser.add_argument(
@@ -118,6 +119,11 @@ def parse_arguments():
     else:
         run_parameters["outputFolder"] = "plots"
 
+    if args.proximity_threshold:
+        run_parameters["proximity_threshold"] = float(args.proximity_threshold)
+    else:
+        run_parameters["proximity_threshold"] = 0.25
+        
     if args.cmap:
         run_parameters["cmap"] = args.cmap
     else:
@@ -280,6 +286,7 @@ def main():
                                fig_title=run_parameters["cmtitle"],
                                plottingFileExtension=run_parameters["plottingFileExtension"],
                                n_cells=n_cells1+n_cells2,
+                               cmap=run_parameters["cmap"],
                                )
         
         plot_mixed_matrix(m1,m2,uniqueBarcodes,
@@ -292,6 +299,7 @@ def main():
                                fig_title=run_parameters["cmtitle"],
                                plottingFileExtension=run_parameters["plottingFileExtension"],
                                n_cells=n_cells1+n_cells2,
+                               cmap=run_parameters["cmap"],                               
                                )
         
     else:

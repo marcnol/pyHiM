@@ -125,7 +125,7 @@ def parse_arguments():
     if args.proximity_threshold:
         run_parameters["proximity_threshold"] = float(args.proximity_threshold)
     else:
-        run_parameters["proximity_threshold"] = 0.5
+        run_parameters["proximity_threshold"] = 0.25
 
     if args.cMax:
         run_parameters["cMax"] = float(args.cMax)

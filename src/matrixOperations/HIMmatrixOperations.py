@@ -1778,12 +1778,6 @@ def plot_matrix(
         cbar.set_label(cmtitle, fontsize=float(font_size) * 1.0)
         plt.clim(c_min, clim)
 
-        # for xtick, ytick in zip(
-        #     fig.xaxis.get_majorticklabels(), fig.yaxis.get_majorticklabels()
-        # ):
-        #     xtick.set_fontsize(font_size)
-        #     ytick.set_fontsize(font_size)
-
         if len(output_filename.split(".")) > 1:
             if output_filename.split(".")[1] == "png":
                 out_fn = output_filename.split(".")[0] + filename_ending
@@ -1791,7 +1785,7 @@ def plot_matrix(
                 # keeps original extension
                 out_fn = output_filename
             else:
-                # most likely the full filname contains other '.' in addition to that in the extension
+                # most likely the full filename contains other '.' in addition to that in the extension
                 out_fn = output_filename + filename_ending
         else:
             out_fn = output_filename + filename_ending

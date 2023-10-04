@@ -77,6 +77,7 @@ def gets_matrix(run_parameters,scPWDMatrix_filename='',uniqueBarcodes=''):
             sc_matrix,
             uniqueBarcodes,
             run_parameters["pixelSize"],
+            threshold = run_parameters["proximity_threshold"],
             norm=run_parameters["matrix_norm_mode"],
         )
 
@@ -199,6 +200,7 @@ def plot_matrix_difference(m1,
                             fig_title="",
                             plottingFileExtension='.png',
                             n_cells=0,
+                            cmap="RdBu",
                             ):
 
     # plots difference/ratio matrix
@@ -242,7 +244,7 @@ def plot_matrix_difference(m1,
         fontsize=fontsize,
         colorbar=True,
         axis_ticks=axis_ticks,
-        c_m="RdBu",
+        c_m=cmap,
         show_title=True,
         n_cells=n_cells,
         n_datasets=2,
@@ -260,6 +262,7 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
                                fig_title='',
                                plottingFileExtension='.png',
                                n_cells=0,
+                               cmap = 'RdBu'
                                ):
 
     # plots mixed matrix
@@ -296,7 +299,7 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
         fontsize=fontsize,
         colorbar=True,
         axis_ticks=axis_ticks,
-        c_m="coolwarm",
+        c_m = cmap,
         n_cells=n_cells,
         n_datasets=2,
     )
