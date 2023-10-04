@@ -61,7 +61,8 @@ class Image:
     # read an image as a numpy array
     def load_image_2d(self, file_name, master_folder, tag="_2d"):
         self.file_name = file_name
-        file_name = f"{self.get_image_filename(master_folder, tag)}.npy"
+        folder = master_folder + os.sep + "data"
+        file_name = f"{self.get_image_filename(folder, tag)}.npy"
 
         self.data_2d = np.load(file_name)
         print_log(f"$ Loading from disk:{os.path.basename(file_name)}")

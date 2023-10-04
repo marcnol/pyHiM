@@ -383,6 +383,8 @@ class BuildTraces:
             full_filename_roi_masks = (
                 self.data_folder.output_folders["segmentedObjects"]
                 + os.sep
+                + "data"
+                + os.sep
                 + filename_roi_masks
             )
 
@@ -536,6 +538,8 @@ class BuildTraces:
             output_filename = (
                 self.data_folder.output_folders["buildsPWDmatrix"]
                 + os.sep
+                + "data"
+                + os.sep
                 + "Trace_"
                 + tag
             )
@@ -649,7 +653,12 @@ class BuildTraces:
         tag = f"{str(self.ndims)}D"
 
         output_filename = (
-            self.data_folder.output_folders["buildsPWDmatrix"] + os.sep + "Trace_" + tag
+            self.data_folder.output_folders["buildsPWDmatrix"]
+            + os.sep
+            + "data"
+            + os.sep
+            + "Trace_"
+            + tag
         )
 
         # creates and initializes trace table
@@ -757,14 +766,19 @@ class BuildTraces:
         print_log(f"> Masks labels: {self.available_masks}")
 
         # iterates over barcode localization tables in the current folder
-        files = list(
-            glob.glob(
-                self.data_folder.output_files["segmentedObjects"]
-                + "_*"
-                + self.label
-                + ".dat"
+
+        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + split_name[0]
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
             )
-        )
+        files = list(glob.glob(data_file_path + "_*" + self.label + ".dat"))
 
         if not files:
             print_log("$ No localization table found to process!", "WARN")

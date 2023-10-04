@@ -41,6 +41,7 @@ class Folders:
         """
         folder_path = self.output_folders[folder_key_name]
         create_single_folder(folder_path)
+        create_single_folder(folder_path + os.sep + "data")
 
     def create_folders(self, files_folder, current_param):
         """
@@ -68,6 +69,8 @@ class Folders:
 
         self.output_files["dictShifts"] = (
             self.output_folders["alignImages"]
+            + os.sep
+            + "data"
             + os.sep
             + current_param.param_dict["alignImages"]["outputFile"]
         )

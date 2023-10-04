@@ -138,14 +138,19 @@ class FilterLocalizations:
             self.data_folder.create_folders(current_folder, self.current_param)
             print_log(f"> Processing Folder: {current_folder}")
 
-            if files := list(
-                glob.glob(
-                    self.data_folder.output_files["segmentedObjects"]
-                    + "_*"
-                    + label
-                    + ".dat"
+            split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
+            if len(split_name) == 1:
+                data_file_path = "data" + os.sep + split_name[0]
+            else:
+                data_file_path = (
+                    (os.sep).join(split_name[:-1])
+                    + os.sep
+                    + "data"
+                    + os.sep
+                    + split_name[-1]
                 )
-            ):
+            files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
+            if files:
                 for file in files:
                     self.ndims = 3 if "3D" in os.path.basename(file) else 2
                     self.setup_filter_values()

@@ -28,8 +28,10 @@ tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 def test_make_projections():
     """Check 'project'"""
     main(["-F", tmp_small_inputs, "-C", "project", "-S", tmp_stardist_basename])
-    tmp_z_project = os.path.join(tmp_small_inputs, "zProject")
-    out_z_project = "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/"
+    tmp_z_project = os.path.join(tmp_small_inputs, "zProject/data")
+    out_z_project = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/data"
+    )
     out_files = extract_files(out_z_project)
     assert len(out_files) > 0
     for _, short_filename, extension in out_files:
@@ -42,8 +44,10 @@ def test_make_projections():
 def test_align_images():
     """Check register_global"""
     main(["-F", tmp_small_inputs, "-C", "register_global", "-S", tmp_stardist_basename])
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
-    out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/"
+    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
+    out_align_images = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
+    )
     out_files = extract_files(out_align_images)
     assert len(out_files) > 0
     for _, short_filename, extension in out_files:
@@ -58,9 +62,9 @@ def test_align_images():
         else:
             assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
+    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
-        "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/"
+        "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/data"
     )
     out_files = extract_files(out_align_images)
     assert len(out_files) > 0
@@ -74,8 +78,10 @@ def test_align_images():
 def test_align_images_3d():
     """Check register_local"""
     main(["-F", tmp_small_inputs, "-C", "register_local", "-S", tmp_stardist_basename])
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages")
-    out_align_images = "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/"
+    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
+    out_align_images = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/data"
+    )
     out_files = extract_files(out_align_images)
     assert len(out_files) > 0
     for _, short_filename, extension in out_files:
@@ -88,9 +94,9 @@ def test_align_images_3d():
 def test_segment_masks_3d():
     """Check mask_3d"""
     main(["-F", tmp_small_inputs, "-C", "mask_3d", "-S", tmp_stardist_basename])
-    tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
+    tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects/data")
     out_segmented_objects = (
-        "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/"
+        "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/data"
     )
     out_files = extract_files(out_segmented_objects)
     assert len(out_files) > 0
@@ -119,9 +125,9 @@ def test_segment_masks_3d():
 def test_build_traces():
     """Check build_traces"""
     main(["-F", tmp_traces_inputs, "-C", "build_traces"])
-    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
+    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
     out_builds_pwd_matrix = (
-        "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/"
+        "pyhim-small-dataset/resources/traces_dataset/OUT/build_traces/data"
     )
     out_files = extract_files(out_builds_pwd_matrix)
     assert len(out_files) > 0
@@ -135,9 +141,9 @@ def test_build_traces():
 def test_build_matrix():
     """Check build_matrix"""
     main(["-F", tmp_traces_inputs, "-C", "build_matrix"])
-    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix")
+    tmp_builds_pwd_matrix = os.path.join(tmp_traces_inputs, "buildsPWDmatrix/data")
     out_builds_pwd_matrix = (
-        "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/"
+        "pyhim-small-dataset/resources/traces_dataset/OUT/build_matrix/data"
     )
     out_files = extract_files(out_builds_pwd_matrix)
     assert len(out_files) > 0

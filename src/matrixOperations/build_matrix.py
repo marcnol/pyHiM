@@ -410,6 +410,8 @@ class BuildMatrix:
             for x in glob.glob(
                 self.data_folder.output_folders["buildsPWDmatrix"]
                 + os.sep
+                + "data"
+                + os.sep
                 + "Trace_*.ecsv"
             )
             if "uniqueBarcodes" not in x

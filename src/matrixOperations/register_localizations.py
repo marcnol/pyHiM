@@ -261,12 +261,24 @@ class RegisterLocalizations:
 
     def _load_local_alignment(self):
         mode = self.current_param.param_dict["alignImages"]["localAlignment"]
-        self.local_alignment_filename = (
+        tempo_local_alignment_filename = (
             self.data_folder.output_files["alignImages"].split(".")[0]
             + "_"
             + mode
             + ".dat"
         )
+        split_name = tempo_local_alignment_filename.split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + split_name[0]
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
+            )
+        self.local_alignment_filename = data_file_path
 
         if os.path.exists(self.local_alignment_filename):
             self.alignment_results_table = Table.read(
@@ -444,14 +456,19 @@ class RegisterLocalizations:
             )
 
         # iterates over barcode localization tables in the current folder
-        files = list(
-            glob.glob(
-                self.data_folder.output_files["segmentedObjects"]
-                + "_*"
-                + label
-                + ".dat"
+
+        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + split_name[0]
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
             )
-        )
+        files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
 
         if not files:
             print_log("No localization table found to process!")
