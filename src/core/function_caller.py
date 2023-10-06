@@ -287,7 +287,7 @@ class Pipeline:
             # reference = self.m_data_m.load_reference(required_ref)
             # table = self.m_data_m.load_table(required_table)
             files_to_process = self.m_data_m.get_inputs(label_types)
-            self.m_data_m.create_folder(feat.params.folder)
+            self.m_data_m.create_out_structure(feat.params.folder)
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()

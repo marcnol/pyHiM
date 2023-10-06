@@ -545,8 +545,19 @@ class Localize3D:
         print_log(f"$ localize_3d procesing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
+        split_name = self.output_filename.split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + split_name[0]
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
+            )
         output_table_global.write(
-            self.output_filename,
+            data_file_path,
             format="ascii.ecsv",
             overwrite=True,
         )

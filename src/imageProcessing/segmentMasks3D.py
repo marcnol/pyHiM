@@ -229,6 +229,8 @@ class Mask3D:
             npy_labeled_image_filename = (
                 self.data_folder.output_folders["segmentedObjects"]
                 + os.sep
+                + "data"
+                + os.sep
                 + os.path.basename(filename_to_process)
             )
             npy_labeled_image_filename_2d = (

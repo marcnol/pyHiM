@@ -34,17 +34,17 @@ def template_test_project(mode: str):
     generated_files = extract_files(generated_z_project)
     reference_files = extract_files(reference_outputs)
     assert len(generated_files[1]) == len(reference_files[1])
-    for _, short_filename, extension in generated_files:
-        filename = f"{short_filename}.{extension}"
-        tmp_file = os.path.join(generated_z_project, filename)
-        out_file = os.path.join(reference_outputs, filename)
+    for filepath, short_filename, extension in generated_files:
+        filename = f"{filepath}.{extension}"
+        tmp_file = os.path.join(generated_z_project, filepath)
+        out_file = os.path.join(reference_outputs, filepath)
         assert os.path.exists(out_file)
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
         elif extension == "png":
             assert image_pixel_differences(tmp_file, out_file)
         else:
-            raise ValueError(f"Extension file UNRECOGNIZED: {filename}")
+            raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
 
 
 def test_project_automatic():

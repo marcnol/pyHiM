@@ -315,17 +315,28 @@ class Drift3D:
                 )
 
         # saves Table with all shifts
-        output_filename = (
-            self.data_folder.output_files["alignImages"].split(".")[0] + "_block3D.dat"
-        )
+
+        path_name = self.data_folder.output_files["alignImages"].split(".")[0]
+        split_name = path_name.split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + path_name + "_block3D.dat"
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
+                + "_block3D.dat"
+            )
         alignment_results_table_global.write(
-            output_filename,
+            data_file_path,
             format="ascii.ecsv",
             overwrite=True,
         )
 
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
-        print_log(f"$ register_local output Table saved in: {output_filename}")
+        print_log(f"$ register_local output Table saved in: {data_file_path}")
 
     def align_fiducials_3d(self):
         """

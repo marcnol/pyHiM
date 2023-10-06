@@ -194,21 +194,17 @@ class DataManager:
         }
         return deep_dict_update(dict_structure, self.load_user_param())
 
-    def create_folder(self, folder_name: str):
-        """Create folder with `makedirs` from os module.
-        It's a recursive directory creation function.
+    def create_out_structure(self, folder_name: str):
+        """Create output folder structure for one Feature.
 
         Parameters
         ----------
         folder_name : str
-            Relative path name of folder
+            Relative path name of Feature output folder name
         """
         folder_path = self.out_path + os.sep + folder_name
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-            print_log(f"$ Folder '{folder_path}' created successfully.")
-        else:
-            print_log(f"! [INFO] Folder '{folder_path}' already exists.")
+        create_folder(folder_path)
+        create_folder(folder_path + os.sep + "data")
 
     def add_label_to_process(self, label):
         if label not in self.label_to_process:
@@ -411,10 +407,21 @@ class DataManager:
 
     def _save_2d_npy(self, data, partial_path):
         path_name = f"{partial_path}_2d"
+        split_name = path_name.split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + path_name
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
+            )
         if data.shape <= (1, 1):
             raise ValueError(f"Image is empty! Original file: {partial_path}.tif")
-        np.save(path_name, data)
-        print_log(f"$ Image saved to disk: {path_name}.npy", "info")
+        np.save(data_file_path, data)
+        print_log(f"$ Image saved to disk: {data_file_path}.npy", "info")
 
     def _save_2d_png(self, data, partial_path):
         out_path = f"{partial_path}_2d.png"
@@ -468,3 +475,20 @@ def save_json(data, file_name):
     """
     with open(file_name, mode="w", encoding="utf-8") as json_f:
         json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
+
+
+def create_folder(folder_path: str):
+    """Create folder with `makedirs` from os module.
+    It's a recursive directory creation function.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path name of folder
+    """
+
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print_log(f"$ Folder '{folder_path}' created successfully.")
+    else:
+        print_log(f"! [INFO] Folder '{folder_path}' already exists.")

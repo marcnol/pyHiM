@@ -60,9 +60,16 @@ def plot_raw_images_and_labels(image, label):
 
 
 def save_image_2d_cmd(image, file_name):
+    split_name = file_name.split(os.sep)
+    if len(split_name) == 1:
+        data_file_path = "data" + os.sep + file_name
+    else:
+        data_file_path = (
+            (os.sep).join(split_name[:-1]) + os.sep + "data" + os.sep + split_name[-1]
+        )
     if image.shape > (1, 1):
-        np.save(file_name, image)
-        print_log(f"$ Image saved to disk: {file_name}.npy", "info")
+        np.save(data_file_path, image)
+        print_log(f"$ Image saved to disk: {data_file_path}.npy", "info")
     else:
         print_log("# Warning, image is empty", "Warning")
 
