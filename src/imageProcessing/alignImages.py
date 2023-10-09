@@ -718,6 +718,29 @@ def align_images_in_current_folder(
     return alignment_results_table
 
 
+def save_shifts_table(data_folder, alignment_results_table):
+    # saves Table with all shifts
+
+    path_name = data_folder.output_files["alignImages"].split(".")[0]
+    split_name = path_name.split(os.sep)
+    if len(split_name) == 1:
+        data_file_path = "data" + os.sep + path_name + ".table"
+    else:
+        data_file_path = (
+            (os.sep).join(split_name[:-1])
+            + os.sep
+            + "data"
+            + os.sep
+            + split_name[-1]
+            + ".table"
+        )
+    alignment_results_table.write(
+        data_file_path,
+        format="ascii.ecsv",
+        overwrite=True,
+    )
+
+
 def align_images(current_param, current_session, file_name=None):
     """
     From a given parameters class it aligns all the fiducial images
@@ -753,26 +776,7 @@ def align_images(current_param, current_session, file_name=None):
             current_folder, current_param, data_folder, current_session, file_name
         )
 
-    # saves Table with all shifts
-
-    path_name = data_folder.output_files["alignImages"].split(".")[0]
-    split_name = path_name.split(os.sep)
-    if len(split_name) == 1:
-        data_file_path = "data" + os.sep + path_name + ".table"
-    else:
-        data_file_path = (
-            (os.sep).join(split_name[:-1])
-            + os.sep
-            + "data"
-            + os.sep
-            + split_name[-1]
-            + ".table"
-        )
-    alignment_results_table.write(
-        data_file_path,
-        format="ascii.ecsv",
-        overwrite=True,
-    )
+    save_shifts_table(data_folder, alignment_results_table)
 
     del data_folder
 
