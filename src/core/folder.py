@@ -7,6 +7,7 @@ import os
 import re
 
 from core.pyhim_logging import print_log
+from core.data_manager import create_folder
 
 # =============================================================================
 # CLASSES
@@ -33,8 +34,8 @@ class Folders:
             The key word to access at the folder name inside the parameter file
         """
         folder_path = self.output_folders[folder_key_name]
-        create_single_folder(folder_path)
-        create_single_folder(folder_path + os.sep + "data")
+        create_folder(folder_path)
+        create_folder(folder_path + os.sep + "data")
 
     def create_folders(self, files_folder, current_param):
         """
@@ -96,22 +97,6 @@ class Folders:
         self.output_files[arg2] = (
             self.output_folders[arg2] + os.sep
         ) + current_param.param_dict[arg2]["outputFile"]
-
-
-def create_single_folder(folder_path):
-    """Create folder with `makedirs` from os module.
-    It's a recursive directory creation function.
-
-    Parameters
-    ----------
-    folder_path : str
-        Relative or absolute path + name of folder
-    """
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print_log(f"$ Folder '{folder_path}' created successfully.")
-    else:
-        print_log(f"! Folder '{folder_path}' already exists.", status="WARN")
 
 
 def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
