@@ -337,7 +337,7 @@ def compute_global_shift(
     # [calculates unique translation for the entire image using cross-correlation]
     (
         shift,
-        error,
+        _,
         diffphase,
         lower_threshold,
         i_histogram,
@@ -360,6 +360,61 @@ def compute_global_shift(
         verbose,
     )
     return shift, diffphase
+
+
+def compute_shift_by_block(
+    image1_uncorrected,
+    image2_uncorrected,
+    dict_block_size,
+    tolerance,
+    output_filename,
+    file_name_md,
+    # current_param.param_dict["fileNameMD"],
+):
+    # [calculates block translations by cross-correlation and gets overall shift by polling]
+
+    # normalizes images
+    image1_uncorrected, image2_uncorrected = (
+        np.float32(image1_uncorrected),
+        np.float32(image2_uncorrected),
+    )
+    # matches histograms
+    image2_uncorrected = np.float32(
+        match_histograms(image2_uncorrected, image1_uncorrected)
+    )
+    # calculates block shifts and polls for most favourable shift
+    block_size = (dict_block_size, dict_block_size)
+    (
+        shift,
+        _,
+        relative_shifts,
+        rms_image,
+        contour,
+    ) = align_images_by_blocks(
+        image1_uncorrected,
+        image2_uncorrected,
+        block_size,
+        upsample_factor=100,
+        min_number_pollsters=4,
+        tolerance=tolerance,
+    )
+    diffphase = 0
+    plotting_block_alignment_results(
+        relative_shifts,
+        rms_image,
+        contour,
+        file_name=f"{output_filename}_block_alignments.png",
+    )
+    write_string_to_file(
+        file_name_md,
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_block_alignments.png)\n",
+        "a",
+    )
+    # saves mask of valid regions with a correction within the tolerance
+    save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
+    save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
+
+    return image1_uncorrected, image2_uncorrected, shift, diffphase
 
 
 def align_2_files(file_name, img_reference, current_param, data_folder, verbose):
@@ -440,55 +495,19 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         )
 
     else:
-        # [calculates block translations by cross-correlation and gets overall shift by polling]
-
-        # normalizes images
-        image1_uncorrected, image2_uncorrected = (
-            np.float32(image1_uncorrected),
-            np.float32(image2_uncorrected),
-        )
-
-        # matches histograms
-        image2_uncorrected = np.float32(
-            match_histograms(image2_uncorrected, image1_uncorrected)
-        )
-
-        # calculates block shifts and polls for most favourable shift
-        upsample_factor = 100
-        block_size = (dict_block_size, dict_block_size)
-
         (
-            shift,
-            error,
-            relative_shifts,
-            rms_image,
-            contour,
-        ) = align_images_by_blocks(
             image1_uncorrected,
             image2_uncorrected,
-            block_size,
-            upsample_factor=upsample_factor,
-            min_number_pollsters=4,
-            tolerance=tolerance,
-        )
-        diffphase = 0
-
-        plotting_block_alignment_results(
-            relative_shifts,
-            rms_image,
-            contour,
-            file_name=f"{output_filename}_block_alignments.png",
-        )
-
-        write_string_to_file(
+            shift,
+            diffphase,
+        ) = compute_shift_by_block(
+            image1_uncorrected,
+            image2_uncorrected,
+            dict_block_size,
+            tolerance,
+            output_filename,
             current_param.param_dict["fileNameMD"],
-            f"{os.path.basename(output_filename)}\n ![]({output_filename}_block_alignments.png)\n",
-            "a",
         )
-
-        # saves mask of valid regions with a correction within the tolerance
-        save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
-        save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
 
     image2_corrected_raw = shift_image(image2_uncorrected, shift)
 
