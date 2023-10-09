@@ -124,7 +124,7 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 def display_equalization_histograms(
-    i_histogram, lower_threshold, output_filename, markdown_filename, verbose=False
+    i_histogram, lower_threshold, output_filename, markdown_filename
 ):
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
 
@@ -142,9 +142,7 @@ def display_equalization_histograms(
         f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n",
         "a",
     )
-
-    if not verbose:
-        plt.close(fig)
+    plt.close(fig)
 
 
 def remove_inhomogeneous_background(im, current_param):
@@ -331,8 +329,7 @@ def compute_global_shift(
     lower_threshold,
     higher_threshold,
     output_filename,
-    file_name_md,  # current_param.param_dict["fileNameMD"]
-    verbose,
+    file_name_md,
 ):
     # [calculates unique translation for the entire image using cross-correlation]
     (
@@ -353,11 +350,7 @@ def compute_global_shift(
 
     # displays intensity histograms
     display_equalization_histograms(
-        i_histogram,
-        lower_threshold,
-        output_filename,
-        file_name_md,
-        verbose,
+        i_histogram, lower_threshold, output_filename, file_name_md
     )
     return shift, diffphase
 
@@ -417,7 +410,45 @@ def compute_shift_by_block(
     return image1_uncorrected, image2_uncorrected, shift, diffphase
 
 
-def align_2_files(file_name, img_reference, current_param, data_folder, verbose):
+def save_align_2_files_results(
+    image1_uncorrected,
+    image2_uncorrected,
+    image2_corrected_raw,
+    output_filename,
+    file_name_md,  # current_param.param_dict["fileNameMD"]
+):
+    # [displays and saves results]
+
+    # thresholds corrected images for better display and saves
+    image1_uncorrected[image1_uncorrected < 0] = 0
+    image2_uncorrected[image2_uncorrected < 0] = 0
+
+    save_2_images_rgb(
+        image1_uncorrected,
+        image2_corrected_raw,
+        f"{output_filename}_overlay_corrected.png",
+    )
+
+    save_image_differences(
+        image1_uncorrected,
+        image2_uncorrected,
+        image1_uncorrected,
+        image2_corrected_raw,
+        f"{output_filename}_referenceDifference.png",
+    )
+
+    # saves registered fiducial image
+    save_image_2d_cmd(image2_corrected_raw, f"{output_filename}_2d_registered")
+
+    # reports image in MD file
+    write_string_to_file(
+        file_name_md,
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_overlay_corrected.png)\n ![]({output_filename}_referenceDifference.png)\n",
+        "a",
+    )
+
+
+def align_2_files(file_name, img_reference, current_param, data_folder):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
@@ -431,8 +462,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         Running parameters
     data_folder : Folders Class
         DESCRIPTION.
-    verbose : boolean
-        True for display images
 
     Returns are returned as arguments!
     -------
@@ -491,7 +520,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
             higher_threshold,
             output_filename,
             current_param.param_dict["fileNameMD"],
-            verbose,
         )
 
     else:
@@ -510,38 +538,16 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         )
 
     image2_corrected_raw = shift_image(image2_uncorrected, shift)
-
     image2_corrected_raw[image2_corrected_raw < 0] = 0
-
     error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw), axis=1))
-
     print_log(f"$ Detected subpixel offset (y, x): {shift} px")
 
-    # [displays and saves results]
-
-    # thresholds corrected images for better display and saves
-    image1_uncorrected[image1_uncorrected < 0] = 0
-    image2_uncorrected[image2_uncorrected < 0] = 0
-
-    save_2_images_rgb(
-        image1_uncorrected,
-        image2_corrected_raw,
-        f"{output_filename}_overlay_corrected.png",
-    )
-
-    save_image_differences(
+    save_align_2_files_results(
         image1_uncorrected,
         image2_uncorrected,
-        image1_uncorrected,
         image2_corrected_raw,
-        f"{output_filename}_referenceDifference.png",
-    )
-
-    # reports image in MD file
-    write_string_to_file(
+        output_filename,
         current_param.param_dict["fileNameMD"],
-        f"{os.path.basename(output_filename)}\n ![]({output_filename}_overlay_corrected.png)\n ![]({output_filename}_referenceDifference.png)\n",
-        "a",
     )
 
     # creates Table entry to return
@@ -553,9 +559,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         error,
         diffphase,
     ]
-
-    # saves registered fiducial image
-    save_image_2d_cmd(image2_corrected_raw, f"{output_filename}_2d_registered")
 
     del img_2
     return shift, table_entry
@@ -595,7 +598,6 @@ def align_images_in_current_folder(
     )
 
     if len(filenames_with_ref_barcode) > 0:
-        verbose = False
         # contains dictionary of shifts for each folder
         dict_shifts = {}
         session_name = "register_global"
@@ -649,7 +651,6 @@ def align_images_in_current_folder(
                             img_reference,
                             current_param,
                             data_folder,
-                            verbose,
                         )
                     )
 
@@ -695,7 +696,6 @@ def align_images_in_current_folder(
                             img_reference,
                             current_param,
                             data_folder,
-                            verbose,
                         )
                         dict_shift_roi[label] = shift.tolist()
                         alignment_results_table.add_row(table_entry)
@@ -920,8 +920,6 @@ def apply_registrations(current_param, current_session, file_name=None):
     """
 
     session_name = "register_global"
-
-    # verbose=False
 
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
