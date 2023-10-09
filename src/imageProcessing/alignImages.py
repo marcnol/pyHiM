@@ -761,20 +761,20 @@ def align_images(current_param, current_session, file_name=None):
 
     # processes folders and adds information to log files
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    data_folder.set_folders()
     print_session_name(session_name)
-    print_log(f"folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
         "a",
     )
 
-    # loops over folders
-    for current_folder in data_folder.list_folders:
-        alignment_results_table = align_images_in_current_folder(
-            current_folder, current_param, data_folder, current_session, file_name
-        )
+    alignment_results_table = align_images_in_current_folder(
+        current_param.param_dict["rootFolder"],
+        current_param,
+        data_folder,
+        current_session,
+        file_name,
+    )
 
     save_shifts_table(data_folder, alignment_results_table)
 
@@ -876,8 +876,6 @@ def apply_registrations_to_current_folder(
     None.
 
     """
-
-    # current_folder=data_folder.list_folders[0] # only one folder processed so far...
     files_folder = glob.glob(current_folder + os.sep + "*.tif")
     data_folder.create_folders(current_folder, current_param)
     print_log(f"> Processing Folder: {current_folder}")
@@ -927,14 +925,15 @@ def apply_registrations(current_param, current_session, file_name=None):
 
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    data_folder.set_folders()
     print_session_name(session_name)
-    print_log(f"$ folders read: {len(data_folder.list_folders)}")
 
-    for current_folder in data_folder.list_folders:
-        apply_registrations_to_current_folder(
-            current_folder, current_param, data_folder, current_session, file_name
-        )
+    apply_registrations_to_current_folder(
+        current_param.param_dict["rootFolder"],
+        current_param,
+        data_folder,
+        current_session,
+        file_name,
+    )
 
     del data_folder
 

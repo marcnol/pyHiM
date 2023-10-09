@@ -18,18 +18,11 @@ class Folders:
 
     def __init__(self, master_folder=r"/home/marcnol/Documents/Images"):
         self.master_folder = master_folder
-        self.list_folders = []
 
         # list of sub-folders in rootFilder with images
         self.z_project_folder = ""
         self.output_folders = {}
         self.output_files = {}
-
-        self.set_folders()
-
-    def set_folders(self):
-        """returns list of directories"""
-        self.list_folders = [self.master_folder]
 
     def create_folder_with_key(self, folder_key_name: str):
         """Create one folder for one type of pyHiM outputs.

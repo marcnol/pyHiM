@@ -577,7 +577,6 @@ class Localize3D:
 
         print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -585,7 +584,7 @@ class Localize3D:
         )
 
         # creates output folders and filenames
-        self.current_folder = self.data_folder.list_folders[0]
+        self.current_folder = self.current_param.param_dict["rootFolder"]
 
         self.data_folder.create_folders(self.current_folder, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]

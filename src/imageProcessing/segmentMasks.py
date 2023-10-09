@@ -802,7 +802,6 @@ def segment_masks(current_param, current_session, file_name=None):
     )
 
     data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_log(f"> folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
@@ -810,94 +809,89 @@ def segment_masks(current_param, current_session, file_name=None):
     )
     barcodes_coordinates = Table()
 
-    for current_folder in data_folder.list_folders:
-        # current_folder=data_folder.list_folders[0]
-        files_folder = glob.glob(current_folder + os.sep + "*.tif")
-        data_folder.create_folders(current_folder, current_param)
+    current_folder = current_param.param_dict["rootFolder"]
+    files_folder = glob.glob(current_folder + os.sep + "*.tif")
+    data_folder.create_folders(current_folder, current_param)
 
-        # generates lists of files to process
-        current_param.find_files_to_process(files_folder)
-        print_log(f"> Processing Folder: {current_folder}")
-        print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
+    # generates lists of files to process
+    current_param.find_files_to_process(files_folder)
+    print_log(f"> Processing Folder: {current_folder}")
+    print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
-        label = current_param.param_dict["acquisition"]["label"]
-        output_file = (
-            data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
-        )
+    label = current_param.param_dict["acquisition"]["label"]
+    output_file = data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
 
-        if current_param.param_dict["parallel"]:
-            # running in parallel mode
-            client = get_client()
-            futures = []
+    if current_param.param_dict["parallel"]:
+        # running in parallel mode
+        client = get_client()
+        futures = []
 
-            for filename_to_process in current_param.files_to_process:
-                if (
-                    file_name is None
-                    or (
-                        file_name is not None
-                        and os.path.basename(file_name)
-                        == os.path.basename(filename_to_process)
-                    )
-                ) and label != "fiducial":
-                    futures.append(
-                        client.submit(
-                            make_segmentations,
-                            filename_to_process,
-                            current_param,
-                            current_session,
-                            data_folder,
-                        )
-                    )
-                    current_session.add(filename_to_process, session_name)
-
-            print_log(f"Waiting for {len(futures)} results to arrive")
-
-            results = client.gather(futures)
-
-            if label == "barcode":
-                # gathers results from different barcodes and rois
-                print_log(f"Retrieving {len(results)} results from cluster")
-                detected_spots = []
-                for result in results:
-                    detected_spots.append(len(result))
-                    barcodes_coordinates = vstack([barcodes_coordinates, result])
-
-                    # saves results together into a single Table
-                    barcodes_coordinates.write(
-                        output_file, format="ascii.ecsv", overwrite=True
-                    )
-                print_log(f"$ File {output_file} written to file.")
-                print_log(
-                    f'$ Detected spots: {",".join([str(x) for x in detected_spots])}'
+        for filename_to_process in current_param.files_to_process:
+            if (
+                file_name is None
+                or (
+                    file_name is not None
+                    and os.path.basename(file_name)
+                    == os.path.basename(filename_to_process)
                 )
-
-        else:
-            for filename_to_process in current_param.files_to_process:
-                if (
-                    file_name is None
-                    or (
-                        file_name is not None
-                        and os.path.basename(file_name)
-                        == os.path.basename(filename_to_process)
-                    )
-                ) and label != "fiducial":
-                    # running in sequential mode
-                    output = make_segmentations(
+            ) and label != "fiducial":
+                futures.append(
+                    client.submit(
+                        make_segmentations,
                         filename_to_process,
                         current_param,
                         current_session,
                         data_folder,
                     )
+                )
+                current_session.add(filename_to_process, session_name)
 
-                    # gathers results from different barcodes and rois
-                    if label == "barcode":
-                        barcodes_coordinates = vstack([barcodes_coordinates, output])
-                        barcodes_coordinates.write(
-                            output_file, format="ascii.ecsv", overwrite=True
-                        )
-                        print_log(f"$ File {output_file} written to file.")
+        print_log(f"Waiting for {len(futures)} results to arrive")
 
-                    current_session.add(filename_to_process, session_name)
+        results = client.gather(futures)
+
+        if label == "barcode":
+            # gathers results from different barcodes and rois
+            print_log(f"Retrieving {len(results)} results from cluster")
+            detected_spots = []
+            for result in results:
+                detected_spots.append(len(result))
+                barcodes_coordinates = vstack([barcodes_coordinates, result])
+
+                # saves results together into a single Table
+                barcodes_coordinates.write(
+                    output_file, format="ascii.ecsv", overwrite=True
+                )
+            print_log(f"$ File {output_file} written to file.")
+            print_log(f'$ Detected spots: {",".join([str(x) for x in detected_spots])}')
+
+    else:
+        for filename_to_process in current_param.files_to_process:
+            if (
+                file_name is None
+                or (
+                    file_name is not None
+                    and os.path.basename(file_name)
+                    == os.path.basename(filename_to_process)
+                )
+            ) and label != "fiducial":
+                # running in sequential mode
+                output = make_segmentations(
+                    filename_to_process,
+                    current_param,
+                    current_session,
+                    data_folder,
+                )
+
+                # gathers results from different barcodes and rois
+                if label == "barcode":
+                    barcodes_coordinates = vstack([barcodes_coordinates, output])
+                    barcodes_coordinates.write(
+                        output_file, format="ascii.ecsv", overwrite=True
+                    )
+                    print_log(f"$ File {output_file} written to file.")
+
+                current_session.add(filename_to_process, session_name)
 
     return 0
 

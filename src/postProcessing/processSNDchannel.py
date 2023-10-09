@@ -103,104 +103,102 @@ def processes_user_masks(current_param, current_log, processing_list):
 
         # processes folders and files
         data_folder = Folders(current_param.param_dict["rootFolder"])
-        data_folder.set_folders()
         current_log.add_simple_text(
             f"\n===================={session_name}====================\n"
         )
-        current_log.report(f"folders read: {len(data_folder.list_folders)}")
 
         # TODO: for roi, use decode_file_parts with the regex --> should be done with DataManager
         position_roi_information = 3
         number_masked_files = 0
 
         all_results_table = Table()
-        for current_folder in data_folder.list_folders:
-            files_folder = glob.glob(current_folder + os.sep + "*.tif")
-            data_folder.create_folders(current_folder, current_param)
-            current_log.report(f"-------> Processing Folder: {current_folder}")
+        current_folder = current_param.param_dict["rootFolder"]
+        files_folder = glob.glob(current_folder + os.sep + "*.tif")
+        data_folder.create_folders(current_folder, current_param)
+        current_log.report(f"-------> Processing Folder: {current_folder}")
 
-            # generates lists of files to process
-            current_param.find_files_to_process(files_folder)
-            file_quantity = len(current_param.files_to_process)
-            current_log.report(f"About to process {file_quantity} files\n")
+        # generates lists of files to process
+        current_param.find_files_to_process(files_folder)
+        file_quantity = len(current_param.files_to_process)
+        current_log.report(f"About to process {file_quantity} files\n")
 
-            if file_quantity > 0:
-                files_to_process = [
-                    file
-                    for file in glob.glob(
-                        data_folder.output_folders["segmentedObjects"] + os.sep + "*"
+        if file_quantity > 0:
+            files_to_process = [
+                file
+                for file in glob.glob(
+                    data_folder.output_folders["segmentedObjects"] + os.sep + "*"
+                )
+                if "SNDmask" in file.split("_")
+            ]
+
+            if processing_list["cleanAllMasks"]:
+                # [clears all SND masks]
+                number_masked_files = len(files_to_process)
+                for file_name in files_to_process:
+                    os.remove(file_name)
+                    current_log.report(
+                        f"Removing SND mask: {os.path.basename(file_name)}",
+                        "info",
                     )
-                    if "SNDmask" in file.split("_")
-                ]
 
-                if processing_list["cleanAllMasks"]:
-                    # [clears all SND masks]
-                    number_masked_files = len(files_to_process)
-                    for file_name in files_to_process:
-                        os.remove(file_name)
+            elif (
+                processing_list["addMask"] == ""
+                and not processing_list["cleanAllMasks"]
+            ):
+                # [assigns cells to exsting masks]
+                results_table = assigns_snd_mask2cells(
+                    files_to_process, position_roi_information, current_log
+                )
+                all_results_table = vstack([all_results_table, results_table])
+
+                current_log.report("assigning masks", "info")
+
+            elif (
+                not processing_list["cleanAllMasks"]
+                and len(processing_list["addMask"]) > 0
+            ):
+                # [makes new set of masks]
+                for file_name in current_param.files_to_process:
+                    # gets filename information
+                    roi = os.path.basename(file_name).split("_")[
+                        position_roi_information
+                    ]
+
+                    # checks that SND channel was projected and aligned
+                    registered_filename = (
+                        data_folder.output_folders["alignImages"]
+                        + os.sep
+                        + os.path.basename(file_name).split(".")[0]
+                        + "_2d_registered.npy"
+                    )
+
+                    if os.path.exists(registered_filename):
+                        output_filename = (
+                            data_folder.output_folders["segmentedObjects"]
+                            + os.sep
+                            + os.path.basename(registered_filename).split(".")[0]
+                            + "_SNDmask"
+                            + "_"
+                            + processing_list["addMask"]
+                            + ".npy"
+                        )
+                        creates_user_mask(
+                            current_param,
+                            current_log,
+                            registered_filename,
+                            output_filename,
+                        )
+                        number_masked_files += 1
                         current_log.report(
-                            f"Removing SND mask: {os.path.basename(file_name)}",
+                            f"Segmented image for SND channel ROI#{roi}: {output_filename}",
                             "info",
                         )
-
-                elif (
-                    processing_list["addMask"] == ""
-                    and not processing_list["cleanAllMasks"]
-                ):
-                    # [assigns cells to exsting masks]
-                    results_table = assigns_snd_mask2cells(
-                        files_to_process, position_roi_information, current_log
-                    )
-                    all_results_table = vstack([all_results_table, results_table])
-
-                    current_log.report("assigning masks", "info")
-
-                elif (
-                    not processing_list["cleanAllMasks"]
-                    and len(processing_list["addMask"]) > 0
-                ):
-                    # [makes new set of masks]
-                    for file_name in current_param.files_to_process:
-                        # gets filename information
-                        roi = os.path.basename(file_name).split("_")[
-                            position_roi_information
-                        ]
-
-                        # checks that SND channel was projected and aligned
-                        registered_filename = (
-                            data_folder.output_folders["alignImages"]
-                            + os.sep
-                            + os.path.basename(file_name).split(".")[0]
-                            + "_2d_registered.npy"
+                    else:
+                        current_log.report(
+                            "Could not find registered image for SND channel: "
+                            + str(registered_filename),
+                            "error",
                         )
-
-                        if os.path.exists(registered_filename):
-                            output_filename = (
-                                data_folder.output_folders["segmentedObjects"]
-                                + os.sep
-                                + os.path.basename(registered_filename).split(".")[0]
-                                + "_SNDmask"
-                                + "_"
-                                + processing_list["addMask"]
-                                + ".npy"
-                            )
-                            creates_user_mask(
-                                current_param,
-                                current_log,
-                                registered_filename,
-                                output_filename,
-                            )
-                            number_masked_files += 1
-                            current_log.report(
-                                f"Segmented image for SND channel ROI#{roi}: {output_filename}",
-                                "info",
-                            )
-                        else:
-                            current_log.report(
-                                "Could not find registered image for SND channel: "
-                                + str(registered_filename),
-                                "error",
-                            )
 
         table_output_filename = (
             data_folder.output_folders["segmentedObjects"]
