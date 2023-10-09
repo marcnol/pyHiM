@@ -56,7 +56,14 @@ from imageProcessing.makeProjections import Feature
 class RegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
-        self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
+        self.required_data = ["fiducial"]
+        self.out_folder = "register_global"
+
+
+class ApplyRegisterGlobal(Feature):
+    def __init__(self, params: RegistrationParams):
+        super().__init__(params)
+        self.required_data = ["barcode", "mask", "dapi", "rna"]
         self.out_folder = "register_global"
 
 

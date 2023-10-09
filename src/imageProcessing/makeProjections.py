@@ -39,6 +39,12 @@ class Feature:
     def get_required_inputs(self):
         return self.required_data, self.required_ref, self.required_table
 
+    def find_out_tags(self):
+        pass
+
+    def run(self):
+        pass
+
 
 class Project(Feature):
     def __init__(self, params: ProjectionParams):

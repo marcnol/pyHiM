@@ -103,7 +103,7 @@ class DataManager:
         self.data_tables = []
         self.filename_regex = ""
         self.label_decoder = self.__default_label_decoder()
-        self.label_to_process = []
+        self.processable_labels = []
         self.processed_roi = None
 
         self.raw_dict = self.load_user_param_with_structure()
@@ -206,9 +206,9 @@ class DataManager:
         create_folder(folder_path)
         create_folder(folder_path + os.sep + "data")
 
-    def add_label_to_process(self, label):
-        if label not in self.label_to_process:
-            self.label_to_process.append(label)
+    def add_to_processable_labels(self, label):
+        if label not in self.processable_labels:
+            self.processable_labels.append(label)
 
     def check_roi_uniqueness(self, roi_name: str):
         if self.processed_roi is None:
@@ -232,7 +232,7 @@ class DataManager:
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
-                self.add_label_to_process(label)
+                self.add_to_processable_labels(label)
                 self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
                 self.data_tables.append((path, name, ext))
@@ -312,7 +312,7 @@ class DataManager:
 
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
-        for label in self.label_to_process:
+        for label in self.processable_labels:
             up_label = label.upper() if label in ["rna", "dapi"] else label
             print_title(f"Params: {up_label}")
             self.labelled_params[label] = Params(

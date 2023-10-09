@@ -9,9 +9,14 @@ import os
 
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log, print_session_name
-from imageProcessing.alignImages import align_images, apply_registrations
+from imageProcessing.alignImages import (
+    align_images,
+    apply_registrations,
+    RegisterGlobal,
+    ApplyRegisterGlobal,
+)
 from imageProcessing.alignImages3D import Drift3D
-from imageProcessing.makeProjections import Project
+from imageProcessing.makeProjections import Project, Feature
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
@@ -175,14 +180,33 @@ class Pipeline:
 
         self.m_data_m.set_labelled_params(labelled_sections)
 
+    def _init_labelled_feature(
+        self, feature_class_name: Feature, params_attr_name: str
+    ):
+        labelled_feature = {}
+        for label in self.m_data_m.processable_labels:
+            params_section = getattr(
+                self.m_data_m.labelled_params[label], params_attr_name
+            )
+            labelled_feature[label] = feature_class_name(params_section)
+        self.features.append(labelled_feature)
+
     def init_features(self):
         if "project" in self.cmds:
-            labelled_feature = {}
-            for label in self.m_data_m.label_to_process:
-                labelled_feature[label] = Project(
-                    self.m_data_m.labelled_params[label].projection
-                )
-            self.features.append(labelled_feature)
+            self._init_labelled_feature(Project, "projection")
+        # if "register_global" in self.cmds:
+        #     labelled_feature = {}
+        #     for label in self.m_data_m.processable_labels:
+        #         labelled_feature[label] = RegisterGlobal(
+        #             self.m_data_m.labelled_params[label].registration
+        #         )
+        #     self.features.append(labelled_feature)
+        #     labelled_feature = {}
+        #     for label in self.m_data_m.processable_labels:
+        #         labelled_feature[label] = ApplyRegisterGlobal(
+        #             self.m_data_m.labelled_params[label].registration
+        #         )
+        #     self.features.append(labelled_feature)
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
