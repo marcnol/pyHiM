@@ -465,11 +465,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
         "a",
     )
 
-    # outputs results to logfile
-    alignment_output = data_folder.output_files["alignImages"]
-    text_to_output = f"{os.path.basename(filename_2)}\t{os.path.basename(filename_1)}\t{shift[0]:.2f}\t{shift[1]:.2f}\t{error:.2f}\t{diffphase:.2f}"
-    write_string_to_file(alignment_output, text_to_output, "a")
-
     # creates Table entry to return
     table_entry = [
         os.path.basename(filename_2),
@@ -510,11 +505,6 @@ def align_images_in_current_folder(
     current_param.find_files_to_process(files_folder)
     print_log(f"> Processing Folder: {current_folder}")
     print_log(f"> About to process {len(current_param.files_to_process)} files\n")
-    write_string_to_file(
-        data_folder.output_files["alignImages"],
-        "File1 \t File_reference \t shift_y \t shift_x \t error \t diffphase",
-        "w",
-    )
 
     # Finds and loads Reference fiducial information
     reference_barcode = current_param.param_dict["alignImages"]["referenceFiducial"]

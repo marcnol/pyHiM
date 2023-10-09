@@ -61,9 +61,10 @@ def compare_ecsv_files(
     first_ecsv = Table.read(first_file, format="ascii.ecsv")
     second_ecsv = Table.read(second_file, format="ascii.ecsv")
 
-    for col in columns_to_remove:
-        first_ecsv.remove_column(col)
-        second_ecsv.remove_column(col)
+    if columns_to_remove:
+        for col in columns_to_remove:
+            first_ecsv.remove_column(col)
+            second_ecsv.remove_column(col)
     first_npy = first_ecsv.as_array()
     second_npy = second_ecsv.as_array()
     is_same = True
