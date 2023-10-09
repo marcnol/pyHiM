@@ -565,8 +565,22 @@ def align_2_files(file_name, img_reference, current_param, data_folder):
 
 
 def align_images_in_current_folder(
-    current_folder, current_param, data_folder, current_session, file_name=None
+    data_path, current_param, params: RegistrationParams
 ):
+    """From a given parameters class it aligns all the fiducial images
+
+    Parameters
+    ----------
+    data_path : _type_
+        _description_
+    current_param : _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """
     alignment_results_table = Table(
         names=(
             "aligned file",
@@ -579,13 +593,14 @@ def align_images_in_current_folder(
         dtype=("S2", "S2", "f4", "f4", "f4", "f4"),
     )
 
+    data_folder = Folders(data_path)
     # initializes variables
-    files_folder = glob.glob(current_folder + os.sep + "*.tif")
-    data_folder.create_folders(current_folder, current_param)
+    files_folder = glob.glob(data_path + os.sep + "*.tif")
+    data_folder.create_folders(data_path, current_param)
 
     # generates lists of files to process for current_folder
     current_param.find_files_to_process(files_folder)
-    print_log(f"> Processing Folder: {current_folder}")
+    print_log(f"> Processing Folder: {data_path}")
     print_log(f"> About to process {len(current_param.files_to_process)} files\n")
 
     # Finds and loads Reference fiducial information
@@ -600,7 +615,6 @@ def align_images_in_current_folder(
     if len(filenames_with_ref_barcode) > 0:
         # contains dictionary of shifts for each folder
         dict_shifts = {}
-        session_name = "register_global"
         # loops over fiducials images one ROI at a time
         for filename_reference in filenames_with_ref_barcode:
             # loads reference fiducial image for this ROI
@@ -664,8 +678,6 @@ def align_images_in_current_folder(
                     shift, table_entry = result
                     dict_shift_roi[label] = shift.tolist()
                     alignment_results_table.add_row(table_entry)
-                    # TODO: filename_to_process var doesn't exist in this scope, why and what's happend ?
-                    current_session.add(filename_to_process, session_name)
 
             else:
                 # running in sequential mode
@@ -685,11 +697,7 @@ def align_images_in_current_folder(
                         print_log(
                             f"\n$ Skipping reference file: {os.path.basename(filename_to_process)} "
                         )
-                    elif file_name is None or (
-                        file_name is not None
-                        and os.path.basename(file_name)
-                        == os.path.basename(filename_to_process)
-                    ):
+                    else:
                         # aligns files and saves results to database in dict format and to a Table
                         shift, table_entry = align_2_files(
                             filename_to_process,
@@ -699,7 +707,6 @@ def align_images_in_current_folder(
                         )
                         dict_shift_roi[label] = shift.tolist()
                         alignment_results_table.add_row(table_entry)
-                        current_session.add(filename_to_process, session_name)
             # accumulates shifst for this ROI into global dictionary
             dict_shifts[f"ROI:{roi}"] = dict_shift_roi
             del img_reference
@@ -715,13 +722,12 @@ def align_images_in_current_folder(
         print_log(f"# Reference Barcode file does not exist: {reference_barcode}")
         raise ValueError
 
-    return alignment_results_table
+    path_name = data_path + os.sep + params.folder + os.sep + params.outputFile
+    save_shifts_table(path_name, alignment_results_table)
 
 
-def save_shifts_table(data_folder, alignment_results_table):
+def save_shifts_table(path_name, alignment_results_table):
     # saves Table with all shifts
-
-    path_name = data_folder.output_files["alignImages"].split(".")[0]
     split_name = path_name.split(os.sep)
     if len(split_name) == 1:
         data_file_path = "data" + os.sep + path_name + ".table"
@@ -741,48 +747,8 @@ def save_shifts_table(data_folder, alignment_results_table):
     )
 
 
-def align_images(current_param, current_session, file_name=None):
-    """
-    From a given parameters class it aligns all the fiducial images
-
-    Parameters
-    ----------
-    current_param : Parameters class
-        running parameters
-    current_session : Session Class
-        logs session information.
-
-    Returns
-    -------
-    None.
-
-    """
-    session_name = "register_global"
-
-    # processes folders and adds information to log files
-    data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_session_name(session_name)
-    write_string_to_file(
-        current_param.param_dict["fileNameMD"],
-        f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
-        "a",
-    )
-
-    alignment_results_table = align_images_in_current_folder(
-        current_param.param_dict["rootFolder"],
-        current_param,
-        data_folder,
-        current_session,
-        file_name,
-    )
-
-    save_shifts_table(data_folder, alignment_results_table)
-
-    del data_folder
-
-
 def apply_registrations_to_filename(
-    filename_to_process, current_param, data_folder, current_session, dict_shifts
+    filename_to_process, current_param, data_folder, dict_shifts
 ):
     """
     Applies registration of filename_to_process
@@ -793,7 +759,6 @@ def apply_registrations_to_filename(
         file to apply registration to
     current_param : Parameters class
     data_folder : data_folder class
-    current_session : Session class
     dict_shifts : Dictionnary
         contains the shifts to be applied to all rois
 
@@ -832,11 +797,6 @@ def apply_registrations_to_filename(
             tag="_2d_registered",
         )
 
-        # session
-        session_name = "register_global"
-
-        # logs output
-        current_session.add(filename_to_process, session_name)
     elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
         im_obj = Image(current_param)
         im_obj.load_image_2d(
@@ -855,11 +815,12 @@ def apply_registrations_to_filename(
         )
 
 
-def apply_registrations_to_current_folder(
-    current_folder, current_param, data_folder, current_session, file_name=None
-):
+def apply_registrations_to_current_folder(current_folder, current_param):
     """
-    applies registrations to all files in current_folder
+    This function will
+    - load masks, RNA and barcode 2D projected images,
+    - apply registrations
+    - save registered images as npy arrays
 
     Parameters
     ----------
@@ -867,15 +828,13 @@ def apply_registrations_to_current_folder(
         DESCRIPTION.
     current_param : Parameters class
     data_folder : data_folder class
-    current_session : Session class
-    file_name : string, optional
-        File to process. The default is None.
 
     Returns
     -------
     None.
 
     """
+    data_folder = Folders(current_folder)
     files_folder = glob.glob(current_folder + os.sep + "*.tif")
     data_folder.create_folders(current_folder, current_param)
     print_log(f"> Processing Folder: {current_folder}")
@@ -884,6 +843,13 @@ def apply_registrations_to_current_folder(
     dict_filename = (
         os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
+    print(dict_filename)
+    print(dict_filename)
+    print(dict_filename)
+    print(dict_filename)
+    print(dict_filename)
+    print(dict_filename)
+    print(dict_filename)
 
     # dict_filename = data_folder.output_files["dictShifts"] + ".json"
     dict_shifts = load_json(dict_filename)
@@ -900,42 +866,13 @@ def apply_registrations_to_current_folder(
     if len(current_param.files_to_process) > 0:
         # loops over files in file list
         for i, filename_to_process in enumerate(current_param.files_to_process):
-            if file_name is None or (
-                file_name is not None
-                and os.path.basename(file_name) == os.path.basename(filename_to_process)
-            ):
-                print_log(f"\n$ About to process file {i} \\ {n_files}")
-                apply_registrations_to_filename(
-                    filename_to_process,
-                    current_param,
-                    data_folder,
-                    current_session,
-                    dict_shifts,
-                )
-
-
-def apply_registrations(current_param, current_session, file_name=None):
-    """This function will
-    - load masks, RNA and barcode 2D projected images,
-    - apply registrations
-    - save registered images as npy arrays
-    """
-
-    session_name = "register_global"
-
-    # processes folders and files
-    data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_session_name(session_name)
-
-    apply_registrations_to_current_folder(
-        current_param.param_dict["rootFolder"],
-        current_param,
-        data_folder,
-        current_session,
-        file_name,
-    )
-
-    del data_folder
+            print_log(f"\n$ About to process file {i} \\ {n_files}")
+            apply_registrations_to_filename(
+                filename_to_process,
+                current_param,
+                data_folder,
+                dict_shifts,
+            )
 
 
 # =============================================================================

@@ -10,8 +10,8 @@ import os
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.alignImages import (
-    align_images,
-    apply_registrations,
+    align_images_in_current_folder,
+    apply_registrations_to_current_folder,
     RegisterGlobal,
     ApplyRegisterGlobal,
 )
@@ -217,14 +217,17 @@ class Pipeline:
             else:
                 self.m_dask.create_distributed_client()
 
-    def align_images(self, current_param, label):
+    def align_images(self, current_param, label, data_path, registration_params):
         if (
             label == "fiducial"
             and current_param.param_dict["acquisition"]["label"] == "fiducial"
         ):
             print_log(f"> Making image registrations for label: {label}")
             self.manage_parallel_option(
-                align_images, current_param, self.m_logger.m_session
+                align_images_in_current_folder,
+                data_path,
+                current_param,
+                registration_params,
             )
 
     def align_images_3d(self, current_param, label):
@@ -238,14 +241,14 @@ class Pipeline:
             )
             _drift_3d.align_fiducials_3d()
 
-    def apply_registrations(self, current_param, label):
+    def apply_registrations(self, current_param, label, data_path):
         if (
             label != "fiducial"
             and current_param.param_dict["acquisition"]["label"] != "fiducial"
         ):
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
-                apply_registrations, current_param, self.m_logger.m_session
+                apply_registrations_to_current_folder, data_path, current_param
             )
 
     def segment_masks(self, current_param, label):

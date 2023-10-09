@@ -54,11 +54,28 @@ def main(command_line_arguments=None):
     pipe.run()
 
     # Separate no-refactor routines
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    # No-refactored
+    # \            /
+    #  \          /
+    #   \        /
+    #    \      /
+    #     \    /
+    #      \  /
+    #       \/
+
     print_log("\n\n\n")
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    labels = global_param.param_dict["labels"]
-    print_log(f"$ Labels to process: {list(labels.keys())}")
+    labels = datam.processable_labels
+    print_log(f"$ Labels to process: {labels}")
     for label in labels:
         # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(
@@ -77,11 +94,14 @@ def main(command_line_arguments=None):
 
         # [registers fiducials using a barcode as reference]
         if "register_global" in pipe.cmds:
-            pipe.align_images(current_param, label)
+            registration_params = datam.labelled_params[label.lower()].registration
+            pipe.align_images(
+                current_param, label, datam.m_data_path, registration_params
+            )
 
         # [applies registration to DAPI and barcodes]
         if "register_global" in pipe.cmds:
-            pipe.apply_registrations(current_param, label)
+            pipe.apply_registrations(current_param, label, datam.m_data_path)
 
         # [aligns fiducials in 3D]
         if "register_local" in pipe.cmds:

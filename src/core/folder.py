@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """Manage folders for outputs"""
 
-import glob
 import os
-import re
 
-from core.pyhim_logging import print_log
 from core.data_manager import create_folder
 
 # =============================================================================
@@ -21,7 +18,6 @@ class Folders:
         self.master_folder = master_folder
 
         # list of sub-folders in rootFilder with images
-        self.z_project_folder = ""
         self.output_folders = {}
         self.output_files = {}
 
@@ -57,7 +53,6 @@ class Folders:
         self.output_folders["zProject"] = (
             files_folder + os.sep + current_param.param_dict["zProject"]["folder"]
         )
-        self.create_folder_with_key("zProject")
 
         self._create_folder(files_folder, current_param, "alignImages")
 
