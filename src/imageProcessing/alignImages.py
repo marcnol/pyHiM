@@ -325,6 +325,43 @@ def save_2_images_rgb(img_1, img_2, output_filename):
     plt.close(fig)
 
 
+def compute_global_shift(
+    image1_uncorrected,
+    image2_uncorrected,
+    lower_threshold,
+    higher_threshold,
+    output_filename,
+    file_name_md,  # current_param.param_dict["fileNameMD"]
+    verbose,
+):
+    # [calculates unique translation for the entire image using cross-correlation]
+    (
+        shift,
+        error,
+        diffphase,
+        lower_threshold,
+        i_histogram,
+        _,
+        _,
+        _,
+    ) = align_2_images_cross_correlation(
+        image1_uncorrected,
+        image2_uncorrected,
+        lower_threshold=lower_threshold,
+        higher_threshold=higher_threshold,
+    )
+
+    # displays intensity histograms
+    display_equalization_histograms(
+        i_histogram,
+        lower_threshold,
+        output_filename,
+        file_name_md,
+        verbose,
+    )
+    return shift, diffphase
+
+
 def align_2_files(file_name, img_reference, current_param, data_folder, verbose):
     """
     Uses preloaded ImReference Object and aligns it against filename
@@ -392,27 +429,11 @@ def align_2_files(file_name, img_reference, current_param, data_folder, verbose)
     )
 
     if not align_by_block:
-        # [calculates unique translation for the entire image using cross-correlation]
-        (
-            shift,
-            error,
-            diffphase,
-            lower_threshold,
-            i_histogram,
-            _,
-            _,
-            _,
-        ) = align_2_images_cross_correlation(
+        shift, diffphase = compute_global_shift(
             image1_uncorrected,
             image2_uncorrected,
-            lower_threshold=lower_threshold,
-            higher_threshold=higher_threshold,
-        )
-
-        # displays intensity histograms
-        display_equalization_histograms(
-            i_histogram,
             lower_threshold,
+            higher_threshold,
             output_filename,
             current_param.param_dict["fileNameMD"],
             verbose,
