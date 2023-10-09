@@ -57,13 +57,45 @@ class RegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
         self.required_data = ["fiducial"]
+        self.required_ref = params.referenceFiducial
         self.out_folder = "register_global"
+
+    def run(self):
+        pass
+        # write_string_to_file(
+        #     current_param.param_dict["fileNameMD"],
+        #     f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
+        #     "a",
+        # )
+        # alignment_results_table = align_images_in_current_folder()
+
+        # # saves Table with all shifts
+        # path_name = data_folder.output_files["alignImages"].split(".")[0]
+        # split_name = path_name.split(os.sep)
+        # if len(split_name) == 1:
+        #     data_file_path = "data" + os.sep + path_name + ".table"
+        # else:
+        #     data_file_path = (
+        #         (os.sep).join(split_name[:-1])
+        #         + os.sep
+        #         + "data"
+        #         + os.sep
+        #         + split_name[-1]
+        #         + ".table"
+        #     )
+        # alignment_results_table.write(
+        #     data_file_path,
+        #     format="ascii.ecsv",
+        #     overwrite=True,
+        # )
 
 
 class ApplyRegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "rna"]
+        self.required_ref = params.referenceFiducial
+        self.required_table = ["shift"]
         self.out_folder = "register_global"
 
 

@@ -195,18 +195,8 @@ class Pipeline:
         if "project" in self.cmds:
             self._init_labelled_feature(Project, "projection")
         # if "register_global" in self.cmds:
-        #     labelled_feature = {}
-        #     for label in self.m_data_m.processable_labels:
-        #         labelled_feature[label] = RegisterGlobal(
-        #             self.m_data_m.labelled_params[label].registration
-        #         )
-        #     self.features.append(labelled_feature)
-        #     labelled_feature = {}
-        #     for label in self.m_data_m.processable_labels:
-        #         labelled_feature[label] = ApplyRegisterGlobal(
-        #             self.m_data_m.labelled_params[label].registration
-        #         )
-        #     self.features.append(labelled_feature)
+        #     self._init_labelled_feature(RegisterGlobal, "registration")
+        #     self._init_labelled_feature(ApplyRegisterGlobal, "registration")
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
