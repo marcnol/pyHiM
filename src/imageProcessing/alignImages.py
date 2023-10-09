@@ -41,7 +41,7 @@ from tqdm import tqdm, trange
 from core.dask_cluster import try_get_client
 from core.data_manager import load_json, save_json
 from core.folder import Folders
-from core.parameters import get_dictionary_value, rt_to_filename
+from core.parameters import get_dictionary_value, rt_to_filename, RegistrationParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import plotting_block_alignment_results, save_image_2d_cmd
 from imageProcessing.imageProcessing import (
@@ -50,6 +50,32 @@ from imageProcessing.imageProcessing import (
     reassemble_3d_image,
     scatter_3d_image,
 )
+from imageProcessing.makeProjections import Feature
+
+
+class RegisterGlobal(Feature):
+    def __init__(self, params: RegistrationParams):
+        super().__init__(params)
+        self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
+        self.out_folder = "register_global"
+
+
+#      ||
+#      ||
+#      ||
+#      ||
+#      ||
+#      ||
+#      ||
+#      ||
+# No-refactored
+# \            /
+# \          /
+#  \        /
+#   \      /
+#    \    /
+#     \  /
+#      \/
 
 np.seterr(divide="ignore", invalid="ignore")
 

@@ -31,7 +31,7 @@ np.seterr(divide="ignore", invalid="ignore")
 
 class Feature:
     def __init__(self, params):
-        self.m_params = params
+        self.params = params
         self.required_data = []
         self.required_ref = []
         self.required_table = []
@@ -44,7 +44,6 @@ class Project(Feature):
     def __init__(self, params: ProjectionParams):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
-        self.params = params
         # self.out_folder = params.folder
 
         # self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
