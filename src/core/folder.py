@@ -97,29 +97,3 @@ class Folders:
         self.output_files[arg2] = (
             self.output_folders[arg2] + os.sep
         ) + current_param.param_dict[arg2]["outputFile"]
-
-
-def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
-    """
-    given a directory and a regular expression, it returns the number of unique rois detected
-
-    Parameters
-    ----------
-    root_folder : string
-    ext : string, optional
-        File extension. The default is 'tif'.
-
-    Returns
-    -------
-    list
-        list of unique rois.
-
-    """
-    files = glob.glob(root_folder + os.sep + "*" + ext)
-    rois = [re.search(reg_exp, x)["roi"] for x in files]
-    return unique(rois)
-
-
-def unique(list_to_sort: list):
-    """function to get unique values"""
-    return list(set(list_to_sort))

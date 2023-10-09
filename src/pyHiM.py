@@ -93,11 +93,11 @@ def main(command_line_arguments=None):
 
         # [segments masks in 3D]
         if "mask_3d" in pipe.cmds:
-            pipe.segment_masks_3d(current_param, label)
+            pipe.segment_masks_3d(current_param, label, datam.processed_roi)
 
         # [segments sources in 3D]
         if "localize_3d" in pipe.cmds:
-            pipe.segment_sources_3d(current_param, label)
+            pipe.segment_sources_3d(current_param, label, datam.processed_roi)
 
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds:

@@ -263,7 +263,7 @@ class Pipeline:
                 segment_masks, current_param, self.m_logger.m_session
             )
 
-    def segment_masks_3d(self, current_param, label):
+    def segment_masks_3d(self, current_param, label, roi_name: str):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
         ]["operation"]:
@@ -273,9 +273,9 @@ class Pipeline:
             _segment_sources_3d = Mask3D(
                 current_param, self.m_logger.m_session, parallel=self.parallel
             )
-            _segment_sources_3d.segment_masks_3d()
+            _segment_sources_3d.segment_masks_3d(roi_name)
 
-    def segment_sources_3d(self, current_param, label):
+    def segment_sources_3d(self, current_param, label, roi_name: str):
         if (
             label == "barcode"
             and "3D" in current_param.param_dict["segmentedObjects"]["operation"]
@@ -284,7 +284,7 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Localize3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
+                current_param, self.m_logger.m_session, roi_name, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d()
 
