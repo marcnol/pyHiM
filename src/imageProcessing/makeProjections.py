@@ -49,7 +49,7 @@ class Feature:
 class Project(Feature):
     def __init__(self, params: ProjectionParams):
         super().__init__(params)
-        self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
+        self.required_data = ["barcode", "mask", "DAPI", "fiducial", "RNA"]
         # self.out_folder = params.folder
 
         # self.block_size = params.get_labeled_dict_value("zProject", "blockSize")

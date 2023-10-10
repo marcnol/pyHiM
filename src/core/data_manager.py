@@ -102,8 +102,8 @@ class DataManager:
         self.data_images = []
         self.data_tables = []
         self.filename_regex = ""
-        self.label_decoder = self.__default_label_decoder()
-        self.processable_labels = []
+        self.label_decoder = self.__default_label_decoder() 
+        self.__processable_labels = {"fiducial":False, "DAPI":False, "mask":False, "fiducial":False, "RNA":False}
         self.processed_roi = None
 
         self.raw_dict = self.load_user_param_with_structure()
@@ -161,9 +161,9 @@ class DataManager:
     def __default_label_decoder():
         return {
             "dapi_acq": {
-                "ch00": "dapi",
+                "ch00": "DAPI",
                 "ch01": "fiducial",
-                "ch02": "rna",
+                "ch02": "RNA",
             },
             "mask_acq": {
                 "ch00": "mask",
@@ -207,8 +207,14 @@ class DataManager:
         create_folder(folder_path + os.sep + "data")
 
     def add_to_processable_labels(self, label):
-        if label not in self.processable_labels:
-            self.processable_labels.append(label)
+        self.__processable_labels[label] = True
+
+    def get_processable_labels(self):
+        label_list = []
+        for label,value in self.__processable_labels.items():
+            if value:
+                label_list.append(label)
+        return label_list
 
     def check_roi_uniqueness(self, roi_name: str):
         if self.processed_roi is None:
@@ -235,6 +241,8 @@ class DataManager:
                 self.add_to_processable_labels(label)
                 self.data_images.append(ImageFile(path, name, ext, label))
             elif ext in table_ext:
+                if "barcode" in name:
+                    self.add_to_processable_labels("barcode")
                 self.data_tables.append((path, name, ext))
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
@@ -275,11 +283,11 @@ class DataManager:
         return label
 
     def set_label_decoder(self):
-        self.label_decoder["dapi_acq"][self.acquisition_params.DAPI_channel] = "dapi"
+        self.label_decoder["dapi_acq"][self.acquisition_params.DAPI_channel] = "DAPI"
         self.label_decoder["dapi_acq"][
             self.acquisition_params.fiducialDAPI_channel
         ] = "fiducial"
-        self.label_decoder["dapi_acq"][self.acquisition_params.RNA_channel] = "rna"
+        self.label_decoder["dapi_acq"][self.acquisition_params.RNA_channel] = "RNA"
         self.label_decoder["mask_acq"][self.acquisition_params.mask_channel] = "mask"
         self.label_decoder["mask_acq"][
             self.acquisition_params.fiducialMask_channel
@@ -312,13 +320,12 @@ class DataManager:
 
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
-        for label in self.processable_labels:
-            up_label = label.upper() if label in ["rna", "dapi"] else label
-            print_title(f"Params: {up_label}")
+        for label in self.get_processable_labels():
+            print_title(f"Params: {label}")
             self.labelled_params[label] = Params(
                 label,
                 deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"][up_label]
+                    self.raw_dict["common"], self.raw_dict["labels"][label]
                 ),
                 labelled_sections[label],
             )

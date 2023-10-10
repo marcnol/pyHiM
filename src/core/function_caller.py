@@ -10,13 +10,13 @@ import os
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.alignImages import (
+    ApplyRegisterGlobal,
+    RegisterGlobal,
     align_images_in_current_folder,
     apply_registrations_to_current_folder,
-    RegisterGlobal,
-    ApplyRegisterGlobal,
 )
 from imageProcessing.alignImages3D import Drift3D
-from imageProcessing.makeProjections import Project, Feature
+from imageProcessing.makeProjections import Feature, Project
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
@@ -138,16 +138,16 @@ class Pipeline:
         labelled_sections = {
             "barcode": [],
             "fiducial": [],
-            "dapi": [],
-            "rna": [],
+            "DAPI": [],
+            "RNA": [],
             "mask": [],
         }
 
         if "project" in self.cmds:
             labelled_sections["barcode"].append("zProject")
             labelled_sections["fiducial"].append("zProject")
-            labelled_sections["dapi"].append("zProject")
-            labelled_sections["rna"].append("zProject")
+            labelled_sections["DAPI"].append("zProject")
+            labelled_sections["RNA"].append("zProject")
             labelled_sections["mask"].append("zProject")
 
         if {
@@ -157,15 +157,15 @@ class Pipeline:
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("alignImages")
             labelled_sections["fiducial"].append("alignImages")
-            labelled_sections["dapi"].append("alignImages")
-            labelled_sections["rna"].append("alignImages")
+            labelled_sections["DAPI"].append("alignImages")
+            labelled_sections["RNA"].append("alignImages")
             labelled_sections["mask"].append("alignImages")
 
         if {"mask_2d", "mask_3d", "localize_2d", "localize_3d"}.intersection(
             set(self.cmds)
         ):
             labelled_sections["barcode"].append("segmentedObjects")
-            labelled_sections["dapi"].append("segmentedObjects")
+            labelled_sections["DAPI"].append("segmentedObjects")
             labelled_sections["mask"].append("segmentedObjects")
 
         if {
@@ -175,7 +175,7 @@ class Pipeline:
             "build_matrix",
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("buildsPWDmatrix")
-            labelled_sections["dapi"].append("buildsPWDmatrix")
+            labelled_sections["DAPI"].append("buildsPWDmatrix")
             labelled_sections["mask"].append("buildsPWDmatrix")
 
         self.m_data_m.set_labelled_params(labelled_sections)
@@ -184,7 +184,7 @@ class Pipeline:
         self, feature_class_name: Feature, params_attr_name: str
     ):
         labelled_feature = {}
-        for label in self.m_data_m.processable_labels:
+        for label in self.m_data_m.get_processable_labels():
             params_section = getattr(
                 self.m_data_m.labelled_params[label], params_attr_name
             )

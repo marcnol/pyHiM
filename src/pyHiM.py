@@ -74,7 +74,7 @@ def main(command_line_arguments=None):
     print_log("\n\n\n")
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    labels = datam.processable_labels
+    labels = datam.get_processable_labels()
     print_log(f"$ Labels to process: {labels}")
     for label in labels:
         # sets parameters with old way (temporary during pyHiM restructuration)
@@ -94,7 +94,7 @@ def main(command_line_arguments=None):
 
         # [registers fiducials using a barcode as reference]
         if "register_global" in pipe.cmds:
-            registration_params = datam.labelled_params[label.lower()].registration
+            registration_params = datam.labelled_params[label].registration
             pipe.align_images(
                 current_param, label, datam.m_data_path, registration_params
             )
