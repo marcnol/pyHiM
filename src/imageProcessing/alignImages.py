@@ -56,47 +56,23 @@ from imageProcessing.makeProjections import Feature
 class RegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
-        self.required_data = ["fiducial"]
-        self.required_ref = params.referenceFiducial
-        self.out_folder = "register_global"
+        # self.required_data = ["fiducial"]
+        # self.required_ref = params.referenceFiducial
+        self.out_folder = self.params.folder
+        self.name = "RegisterGlobal"
 
     def run(self):
         pass
-        # write_string_to_file(
-        #     current_param.param_dict["fileNameMD"],
-        #     f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
-        #     "a",
-        # )
-        # alignment_results_table = align_images_in_current_folder()
-
-        # # saves Table with all shifts
-        # path_name = data_folder.output_files["alignImages"].split(".")[0]
-        # split_name = path_name.split(os.sep)
-        # if len(split_name) == 1:
-        #     data_file_path = "data" + os.sep + path_name + ".table"
-        # else:
-        #     data_file_path = (
-        #         (os.sep).join(split_name[:-1])
-        #         + os.sep
-        #         + "data"
-        #         + os.sep
-        #         + split_name[-1]
-        #         + ".table"
-        #     )
-        # alignment_results_table.write(
-        #     data_file_path,
-        #     format="ascii.ecsv",
-        #     overwrite=True,
-        # )
 
 
 class ApplyRegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
-        self.required_data = ["barcode", "mask", "DAPI", "RNA"]
-        self.required_ref = params.referenceFiducial
-        self.required_table = ["shift"]
-        self.out_folder = "register_global"
+        # self.required_data = ["barcode", "mask", "DAPI", "RNA"]
+        # self.required_ref = params.referenceFiducial
+        # self.required_table = ["shift"]
+        self.out_folder = self.params.folder
+        self.name = "ApplyRegisterGlobal"
 
 
 #      ||
@@ -448,7 +424,7 @@ def save_align_2_files_results(
     )
 
 
-def align_2_files(file_name, img_reference, current_param, data_folder):
+def align_2_files(file_name, img_reference, current_param, data_path, params: RegistrationParams):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
@@ -460,8 +436,6 @@ def align_2_files(file_name, img_reference, current_param, data_folder):
         Object type <Image> with image reference
     current_param : Parameters Class
         Running parameters
-    data_folder : Folders Class
-        DESCRIPTION.
 
     Returns are returned as arguments!
     -------
@@ -474,15 +448,11 @@ def align_2_files(file_name, img_reference, current_param, data_folder):
     filename_1 = img_reference.file_name
     filename_2 = file_name
 
-    output_filename = (
-        data_folder.output_folders["alignImages"]
-        + os.sep
-        + os.path.basename(filename_2).split(".")[0]
-    )
+    output_filename = data_path +os.sep + params.folder + os.sep + os.path.basename(filename_2).split(".")[0] 
 
     # loads image
     img_2 = Image(current_param)
-    img_2.load_image_2d(filename_2, data_folder.output_folders["zProject"])
+    img_2.load_image_2d(filename_2, data_path + os.sep + "zProject")
 
     # Normalises images
     image1_uncorrected = img_reference.data_2d / img_reference.data_2d.max()
@@ -593,10 +563,8 @@ def align_images_in_current_folder(
         dtype=("S2", "S2", "f4", "f4", "f4", "f4"),
     )
 
-    data_folder = Folders(data_path)
     # initializes variables
     files_folder = glob.glob(data_path + os.sep + "*.tif")
-    data_folder.create_folders(data_path, current_param)
 
     # generates lists of files to process for current_folder
     current_param.find_files_to_process(files_folder)
@@ -621,18 +589,18 @@ def align_images_in_current_folder(
             roi = roi_list[filename_reference]
             img_reference = Image(current_param)
             img_reference.load_image_2d(
-                filename_reference, data_folder.output_folders["zProject"]
+                filename_reference, data_path + os.sep + "zProject"
             )
             print_log(f"> Loading reference Image {filename_reference}")
 
             # saves reference 2D image of fiducial
             if not os.path.exists(
                 img_reference.get_image_filename(
-                    data_folder.output_folders["alignImages"], tag="_2d_registered"
+                    data_path + os.sep + params.folder, tag="_2d_registered"
                 )
             ):
                 img_reference.save_image_2d(
-                    data_folder.output_folders["alignImages"],
+                    data_path + os.sep + params.folder,
                     tag="_2d_registered",
                 )
 
@@ -664,7 +632,8 @@ def align_images_in_current_folder(
                             filename_to_process,
                             img_reference,
                             current_param,
-                            data_folder,
+                            data_path,
+                            params,
                         )
                     )
 
@@ -703,7 +672,8 @@ def align_images_in_current_folder(
                             filename_to_process,
                             img_reference,
                             current_param,
-                            data_folder,
+                            data_path,
+                            params,
                         )
                         dict_shift_roi[label] = shift.tolist()
                         alignment_results_table.add_row(table_entry)
@@ -712,9 +682,7 @@ def align_images_in_current_folder(
             del img_reference
 
         # saves dicShifts dictionary with shift results
-        dictionary_filename = (
-            os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
-        )
+        dictionary_filename = data_path + os.sep + params.folder + os.sep + "data" + os.sep + params.outputFile + ".json"
         save_json(dict_shifts, dictionary_filename)
         print_log(f"$ Saved alignment dictionary to {dictionary_filename}")
 
@@ -748,7 +716,7 @@ def save_shifts_table(path_name, alignment_results_table):
 
 
 def apply_registrations_to_filename(
-    filename_to_process, current_param, data_folder, dict_shifts
+    filename_to_process, current_param, dict_shifts, data_path, params: RegistrationParams,
 ):
     """
     Applies registration of filename_to_process
@@ -758,7 +726,6 @@ def apply_registrations_to_filename(
     filename_to_process : string
         file to apply registration to
     current_param : Parameters class
-    data_folder : data_folder class
     dict_shifts : Dictionnary
         contains the shifts to be applied to all rois
 
@@ -786,24 +753,24 @@ def apply_registrations_to_filename(
         # loads 2D image and applies registration
         im_obj = Image(current_param)
         im_obj.load_image_2d(
-            filename_to_process, data_folder.output_folders["zProject"]
+            filename_to_process, data_path + os.sep + "zProject"
         )
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
         print_log(f"$ Image registered using ROI:{roi}, label:{label}, shift={shift}")
 
         # saves registered 2D image
         im_obj.save_image_2d(
-            data_folder.output_folders["alignImages"],
+            data_path + os.sep + params.folder,
             tag="_2d_registered",
         )
 
     elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
         im_obj = Image(current_param)
         im_obj.load_image_2d(
-            filename_to_process, data_folder.output_folders["zProject"]
+            filename_to_process, data_path + os.sep + "zProject"
         )
         im_obj.save_image_2d(
-            data_folder.output_folders["alignImages"],
+            data_path + os.sep + params.folder,
             tag="_2d_registered",
         )
         print_log(f"$ Saving image for referenceRT ROI:{roi}, label:{label}")
@@ -815,7 +782,7 @@ def apply_registrations_to_filename(
         )
 
 
-def apply_registrations_to_current_folder(current_folder, current_param):
+def apply_registrations_to_current_folder(data_path, current_param, params: RegistrationParams):
     """
     This function will
     - load masks, RNA and barcode 2D projected images,
@@ -824,27 +791,18 @@ def apply_registrations_to_current_folder(current_folder, current_param):
 
     Parameters
     ----------
-    current_folder : TYPE
+    data_path : TYPE
         DESCRIPTION.
     current_param : Parameters class
-    data_folder : data_folder class
 
     Returns
     -------
     None.
 
     """
-    data_folder = Folders(current_folder)
-    files_folder = glob.glob(current_folder + os.sep + "*.tif")
-    data_folder.create_folders(current_folder, current_param)
-    print_log(f"> Processing Folder: {current_folder}")
-
-    # loads dicShifts with shifts for all rois and all labels
-    dict_filename = (
-        os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
-    )
-
-    # dict_filename = data_folder.output_files["dictShifts"] + ".json"
+    files_folder = glob.glob(data_path + os.sep + "*.tif")
+    print_log(f"> Processing Folder: {data_path}")
+    dict_filename = data_path + os.sep + params.folder+ os.sep + "data" + os.sep + params.outputFile + ".json"
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
         print_log(f"# File with dictionary not found!: {dict_filename}")
@@ -863,8 +821,9 @@ def apply_registrations_to_current_folder(current_folder, current_param):
             apply_registrations_to_filename(
                 filename_to_process,
                 current_param,
-                data_folder,
                 dict_shifts,
+                data_path,
+                params,
             )
 
 

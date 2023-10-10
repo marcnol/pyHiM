@@ -35,6 +35,7 @@ class Feature:
         self.required_data = []
         self.required_ref = []
         self.required_table = []
+        self.name:str = None
 
     def get_required_inputs(self):
         return self.required_data, self.required_ref, self.required_table
@@ -50,22 +51,8 @@ class Project(Feature):
     def __init__(self, params: ProjectionParams):
         super().__init__(params)
         self.required_data = ["barcode", "mask", "DAPI", "fiducial", "RNA"]
-        # self.out_folder = params.folder
-
-        # self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
-        # self.display = params.get_labeled_dict_value("zProject", "display")
-        # self.mode = params.get_labeled_dict_value("zProject", "mode")
-        # self.operation = params.get_labeled_dict_value("zProject", "operation")
-        # self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
-        # self.window_security = params.get_labeled_dict_value(
-        #     "zProject", "windowSecurity"
-        # )
-        # self.z_project_option = params.get_labeled_dict_value(
-        #     "zProject", "zProjectOption"
-        # )
-        # self.zmax = params.get_labeled_dict_value("zProject", "zmax")
-        # self.zmin = params.get_labeled_dict_value("zProject", "zmin")
-        # self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
+        self.out_folder = self.params.folder
+        self.name = "Project"
 
     def find_out_tags(self, label):
         tags = ["_2d"]

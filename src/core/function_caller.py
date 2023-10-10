@@ -194,9 +194,9 @@ class Pipeline:
     def init_features(self):
         if "project" in self.cmds:
             self._init_labelled_feature(Project, "projection")
-        # if "register_global" in self.cmds:
-        #     self._init_labelled_feature(RegisterGlobal, "registration")
-        #     self._init_labelled_feature(ApplyRegisterGlobal, "registration")
+        if "register_global" in self.cmds:
+            self._init_labelled_feature(RegisterGlobal, "registration")
+            self._init_labelled_feature(ApplyRegisterGlobal, "registration")
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
@@ -241,14 +241,14 @@ class Pipeline:
             )
             _drift_3d.align_fiducials_3d()
 
-    def apply_registrations(self, current_param, label, data_path):
+    def apply_registrations(self, current_param, label, data_path, registration_params):
         if (
             label != "fiducial"
             and current_param.param_dict["acquisition"]["label"] != "fiducial"
         ):
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
-                apply_registrations_to_current_folder, data_path, current_param
+                apply_registrations_to_current_folder, data_path, current_param, registration_params
             )
 
     def segment_masks(self, current_param, label):
@@ -304,7 +304,7 @@ class Pipeline:
             # reference = self.m_data_m.load_reference(required_ref)
             # table = self.m_data_m.load_table(required_table)
             files_to_process = self.m_data_m.get_inputs(label_types)
-            self.m_data_m.create_out_structure(feat.params.folder)
+            self.m_data_m.create_out_structure(feat.out_folder)
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()
@@ -314,12 +314,12 @@ class Pipeline:
                     client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
                     for f2p in files_to_process
                 ]
-                print_session_name("project")
+                print_session_name(feat.name)
                 # Run workers
                 client.gather(threads)
 
             else:
-                print_session_name("project")
+                print_session_name(feat.name)
                 for f2p in files_to_process:
                     run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
 
