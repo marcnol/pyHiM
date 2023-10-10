@@ -659,7 +659,7 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         label = current_param.param_dict["acquisition"]["label"]
 
         # loading registered 2D projection
-        im_obj = Image(current_param)
+        im_obj = Image()
         im_obj.load_image_2d(
             file_name,
             data_folder.output_folders["alignImages"],

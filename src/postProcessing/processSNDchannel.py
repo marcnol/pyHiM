@@ -61,7 +61,7 @@ def creates_user_mask(current_param, current_log, file_name, output_filename):
     # loads image
 
     # displays image
-    im_obj = Image(current_param, current_log)
+    im_obj = Image(current_log)
     im_obj.data_2d = np.load(file_name).squeeze()
     im_obj.show_image(show=True, normalization="simple")
     print("Click on the button to add a new ROI")

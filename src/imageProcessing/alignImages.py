@@ -74,6 +74,30 @@ class ApplyRegisterGlobal(Feature):
         self.out_folder = self.params.folder
         self.name = "ApplyRegisterGlobal"
 
+    # def run(self, raw_2d_img, dict_shifts:dict, raw_label:str="RT42", roi_name:str = "001"):
+    #      """
+    #     Applies registration 
+
+    #     """
+    #     if raw_label == self.params.referenceFiducial:
+    #         return raw_2d_img,"_2d_registered"
+    #     try:
+    #         # gets shift from dictionary
+    #         shift_array = dict_shifts[f"ROI:{roi_name}"][raw_label]
+    #     except KeyError:
+    #         shift_array = None
+    #         msg = f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {raw_label}"
+    #         print_log(msg)
+    #         raise KeyError(msg)
+
+    #     shift = np.asarray(shift_array)
+    #     registered_2d_img = shift_image(raw_2d_img, shift)
+    #     print_log(f"$ Image registered using ROI:{roi_name}, label:{raw_label}, shift={shift}")
+
+    #     return registered_2d_img,"_2d_registered"
+
+
+
 
 #      ||
 #      ||
@@ -121,9 +145,9 @@ def display_equalization_histograms(
     plt.close(fig)
 
 
-def remove_inhomogeneous_background(im, current_param):
+def remove_inhomogeneous_background(im, background_sigma):
     sigma_clip = SigmaClip(
-        sigma=current_param.param_dict["alignImages"]["background_sigma"]
+        sigma=background_sigma
     )
     bkg_estimator = MedianBackground()
     bkg = Background2D(
@@ -338,7 +362,6 @@ def compute_shift_by_block(
     tolerance,
     output_filename,
     file_name_md,
-    # current_param.param_dict["fileNameMD"],
 ):
     # [calculates block translations by cross-correlation and gets overall shift by polling]
 
@@ -391,7 +414,7 @@ def save_align_2_files_results(
     image2_uncorrected,
     image2_corrected_raw,
     output_filename,
-    file_name_md,  # current_param.param_dict["fileNameMD"]
+    file_name_md,
 ):
     # [displays and saves results]
 
@@ -424,18 +447,16 @@ def save_align_2_files_results(
     )
 
 
-def align_2_files(file_name, img_reference, current_param, data_path, params: RegistrationParams):
+def align_2_files(img_path_to_register, reference_img_path, data_path, params: RegistrationParams, file_name_md:str):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
     Parameters
     ----------
-    file_name : npy 2D array
+    img_path_to_register : npy 2D array
         file of image to be aligned
-    img_reference : Image Class
+    reference_img_path : Image Class
         Object type <Image> with image reference
-    current_param : Parameters Class
-        Running parameters
 
     Returns are returned as arguments!
     -------
@@ -445,51 +466,34 @@ def align_2_files(file_name, img_reference, current_param, data_path, params: Re
         results zipped in Table Class form
 
     """
-    filename_1 = img_reference.file_name
-    filename_2 = file_name
+    filename_1 = reference_img_path.file_name
 
-    output_filename = data_path +os.sep + params.folder + os.sep + os.path.basename(filename_2).split(".")[0] 
+    output_filename = data_path +os.sep + params.folder + os.sep + os.path.basename(img_path_to_register).split(".")[0][:-3] # remove the 3 lqst char "_2d"
 
     # loads image
-    img_2 = Image(current_param)
-    img_2.load_image_2d(filename_2, data_path + os.sep + "zProject")
+    raw_2d_img = np.load(img_path_to_register)
+    print_log(f"$ Loading from disk:{os.path.basename(img_path_to_register)}")
 
     # Normalises images
-    image1_uncorrected = img_reference.data_2d / img_reference.data_2d.max()
-    image2_uncorrected = img_2.data_2d / img_2.data_2d.max()
+    image1_uncorrected = reference_img_path.data_2d / reference_img_path.data_2d.max()
+    image2_uncorrected = raw_2d_img / raw_2d_img.max()
 
     # removes inhomogeneous background
     image1_uncorrected = remove_inhomogeneous_background(
-        image1_uncorrected, current_param
+        image1_uncorrected, params.background_sigma
     )
     image2_uncorrected = remove_inhomogeneous_background(
-        image2_uncorrected, current_param
+        image2_uncorrected, params.background_sigma
     )
 
-    lower_threshold = get_dictionary_value(
-        current_param.param_dict["alignImages"], "lower_threshold", default=0.999
-    )
-    higher_threshold = get_dictionary_value(
-        current_param.param_dict["alignImages"], "higher_threshold", default=0.9999999
-    )
-    align_by_block = get_dictionary_value(
-        current_param.param_dict["alignImages"], "alignByBlock", default=False
-    )
-    tolerance = get_dictionary_value(
-        current_param.param_dict["alignImages"], "tolerance", default=0.1
-    )
-    dict_block_size = get_dictionary_value(
-        current_param.param_dict["alignImages"], "blockSize", default=256
-    )
-
-    if not align_by_block:
+    if not params.alignByBlock:
         shift, diffphase = compute_global_shift(
             image1_uncorrected,
             image2_uncorrected,
-            lower_threshold,
-            higher_threshold,
+            params.lower_threshold,
+            params.higher_threshold,
             output_filename,
-            current_param.param_dict["fileNameMD"],
+            file_name_md,
         )
 
     else:
@@ -501,10 +505,10 @@ def align_2_files(file_name, img_reference, current_param, data_path, params: Re
         ) = compute_shift_by_block(
             image1_uncorrected,
             image2_uncorrected,
-            dict_block_size,
-            tolerance,
+            params.blockSize,
+            params.tolerance,
             output_filename,
-            current_param.param_dict["fileNameMD"],
+            file_name_md,
         )
 
     image2_corrected_raw = shift_image(image2_uncorrected, shift)
@@ -517,12 +521,12 @@ def align_2_files(file_name, img_reference, current_param, data_path, params: Re
         image2_uncorrected,
         image2_corrected_raw,
         output_filename,
-        current_param.param_dict["fileNameMD"],
+        file_name_md,
     )
 
     # creates Table entry to return
     table_entry = [
-        os.path.basename(filename_2),
+        os.path.basename(img_path_to_register),
         os.path.basename(filename_1),
         shift[0],
         shift[1],
@@ -530,7 +534,6 @@ def align_2_files(file_name, img_reference, current_param, data_path, params: Re
         diffphase,
     ]
 
-    del img_2
     return shift, table_entry
 
 
@@ -587,7 +590,7 @@ def align_images_in_current_folder(
         for filename_reference in filenames_with_ref_barcode:
             # loads reference fiducial image for this ROI
             roi = roi_list[filename_reference]
-            img_reference = Image(current_param)
+            img_reference = Image()
             img_reference.load_image_2d(
                 filename_reference, data_path + os.sep + "zProject"
             )
@@ -626,14 +629,15 @@ def align_images_in_current_folder(
                 for filename_to_process in filenames_to_process_list:
                     # excludes the reference fiducial and processes files in the same ROI
                     labels.append(os.path.basename(filename_to_process).split("_")[2])
+                    img_path_to_register = data_path + os.sep + "zProject" + os.sep + "data" + os.sep +os.path.basename(filename_to_process).split(".")[0] + "_2d.npy"
                     futures.append(
                         client.submit(
                             align_2_files,
-                            filename_to_process,
+                            img_path_to_register,
                             img_reference,
-                            current_param,
                             data_path,
                             params,
+                            current_param.param_dict["fileNameMD"],
                         )
                     )
 
@@ -668,12 +672,13 @@ def align_images_in_current_folder(
                         )
                     else:
                         # aligns files and saves results to database in dict format and to a Table
+                        img_path_to_register = data_path + os.sep + "zProject" + os.sep + "data" + os.sep +os.path.basename(filename_to_process).split(".")[0] + "_2d.npy"
                         shift, table_entry = align_2_files(
-                            filename_to_process,
+                            img_path_to_register,
                             img_reference,
-                            current_param,
                             data_path,
                             params,
+                            current_param.param_dict["fileNameMD"],
                         )
                         dict_shift_roi[label] = shift.tolist()
                         alignment_results_table.add_row(table_entry)
@@ -735,7 +740,6 @@ def apply_registrations_to_filename(
 
     """
     # gets shift from dictionary
-    # ROI = os.path.basename(filename_to_process).split("_")[position_roi_information]
     roi = current_param.decode_file_parts(os.path.basename(filename_to_process))["roi"]
 
     label = os.path.basename(filename_to_process).split("_")[2]  # to FIX
@@ -751,7 +755,7 @@ def apply_registrations_to_filename(
     if shift_array is not None:
         shift = np.asarray(shift_array)
         # loads 2D image and applies registration
-        im_obj = Image(current_param)
+        im_obj = Image()
         im_obj.load_image_2d(
             filename_to_process, data_path + os.sep + "zProject"
         )
@@ -765,7 +769,7 @@ def apply_registrations_to_filename(
         )
 
     elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
-        im_obj = Image(current_param)
+        im_obj = Image()
         im_obj.load_image_2d(
             filename_to_process, data_path + os.sep + "zProject"
         )
