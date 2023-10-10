@@ -19,6 +19,50 @@ from matrixOperations.HIMmatrixOperations import (
     shuffle_matrix,
 )
 
+rng = np.random.default_rng()
+
+from scipy.stats import bootstrap
+from tqdm import trange
+
+def bootstrapping(x,N_bootstrap=9999):
+    data = (x,)  # samples must be in a sequence
+    
+    res = bootstrap(data, np.mean, confidence_level=0.9,
+                    n_resamples=N_bootstrap,
+                    batch = None,
+                    random_state=rng)
+    
+    return res.bootstrap_distribution
+
+def bootstraps_matrix(m,N_bootstrap=9999):
+    n_bins = m.shape[0]
+    mean_bs = np.zeros((n_bins,n_bins))
+    mean_error = np.zeros((n_bins,n_bins))
+    print(f"$ n bins: {n_bins}")    
+    
+    for i in trange(n_bins):
+        for j in range(i+1,n_bins):
+            if i != j:
+                # gets distribution and removes nans
+                x = m[i,j,:]
+                x = x[~np.isnan(x)]
+                
+                # bootstraps distribution
+                bs = bootstrapping(x,N_bootstrap=N_bootstrap)
+ 
+                # gets mean and std of mean
+                mean_bs[i,j] = np.median(bs)
+                mean_error[i,j] = np.std(bs)
+                
+                # symmetrizes matrix
+                mean_bs[j,i] = mean_bs[i,j]
+                mean_error[j,i] = np.std(bs)
+
+    for i in range(n_bins):
+        mean_bs[i,i], mean_error[i,i] = np.nan, np.nan
+                
+    return mean_bs, mean_error
+
 def gets_matrix(run_parameters,scPWDMatrix_filename='',uniqueBarcodes=''):
 
 
