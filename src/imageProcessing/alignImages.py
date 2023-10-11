@@ -76,7 +76,7 @@ class ApplyRegisterGlobal(Feature):
 
     # def run(self, raw_2d_img, dict_shifts:dict, raw_label:str="RT42", roi_name:str = "001"):
     #      """
-    #     Applies registration 
+    #     Applies registration
 
     #     """
     #     if raw_label == self.params.referenceFiducial:
@@ -95,8 +95,6 @@ class ApplyRegisterGlobal(Feature):
     #     print_log(f"$ Image registered using ROI:{roi_name}, label:{raw_label}, shift={shift}")
 
     #     return registered_2d_img,"_2d_registered"
-
-
 
 
 #      ||
@@ -146,9 +144,7 @@ def display_equalization_histograms(
 
 
 def remove_inhomogeneous_background(im, background_sigma):
-    sigma_clip = SigmaClip(
-        sigma=background_sigma
-    )
+    sigma_clip = SigmaClip(sigma=background_sigma)
     bkg_estimator = MedianBackground()
     bkg = Background2D(
         im,
@@ -447,7 +443,22 @@ def save_align_2_files_results(
     )
 
 
-def align_2_files(img_path_to_register, reference_img_path, data_path, params: RegistrationParams, file_name_md:str):
+def img_2d_npy_name_to_tif_name(img_2d_npy_name: str = "_2d.npy"):
+    if img_2d_npy_name[-7:] == "_2d.npy":
+        return img_2d_npy_name[:-7] + ".tif"
+    else:
+        raise ValueError(
+            f"This name doesn't correspond to a 2D numpy filename (*_2d.npy):\n{img_2d_npy_name}"
+        )
+
+
+def align_2_files(
+    img_path_to_register,
+    reference_img_path,
+    data_path,
+    params: RegistrationParams,
+    file_name_md: str,
+):
     """
     Uses preloaded ImReference Object and aligns it against filename
 
@@ -468,7 +479,13 @@ def align_2_files(img_path_to_register, reference_img_path, data_path, params: R
     """
     filename_1 = reference_img_path.file_name
 
-    output_filename = data_path +os.sep + params.folder + os.sep + os.path.basename(img_path_to_register).split(".")[0][:-3] # remove the 3 lqst char "_2d"
+    output_filename = (
+        data_path
+        + os.sep
+        + params.folder
+        + os.sep
+        + os.path.basename(img_path_to_register).split(".")[0][:-3]
+    )  # remove the 3 last char "_2d"
 
     # loads image
     raw_2d_img = np.load(img_path_to_register)
@@ -526,7 +543,7 @@ def align_2_files(img_path_to_register, reference_img_path, data_path, params: R
 
     # creates Table entry to return
     table_entry = [
-        os.path.basename(img_path_to_register),
+        img_2d_npy_name_to_tif_name(os.path.basename(img_path_to_register)),
         os.path.basename(filename_1),
         shift[0],
         shift[1],
@@ -629,7 +646,16 @@ def align_images_in_current_folder(
                 for filename_to_process in filenames_to_process_list:
                     # excludes the reference fiducial and processes files in the same ROI
                     labels.append(os.path.basename(filename_to_process).split("_")[2])
-                    img_path_to_register = data_path + os.sep + "zProject" + os.sep + "data" + os.sep +os.path.basename(filename_to_process).split(".")[0] + "_2d.npy"
+                    img_path_to_register = (
+                        data_path
+                        + os.sep
+                        + "zProject"
+                        + os.sep
+                        + "data"
+                        + os.sep
+                        + os.path.basename(filename_to_process).split(".")[0]
+                        + "_2d.npy"
+                    )
                     futures.append(
                         client.submit(
                             align_2_files,
@@ -672,7 +698,16 @@ def align_images_in_current_folder(
                         )
                     else:
                         # aligns files and saves results to database in dict format and to a Table
-                        img_path_to_register = data_path + os.sep + "zProject" + os.sep + "data" + os.sep +os.path.basename(filename_to_process).split(".")[0] + "_2d.npy"
+                        img_path_to_register = (
+                            data_path
+                            + os.sep
+                            + "zProject"
+                            + os.sep
+                            + "data"
+                            + os.sep
+                            + os.path.basename(filename_to_process).split(".")[0]
+                            + "_2d.npy"
+                        )
                         shift, table_entry = align_2_files(
                             img_path_to_register,
                             img_reference,
@@ -687,13 +722,24 @@ def align_images_in_current_folder(
             del img_reference
 
         # saves dicShifts dictionary with shift results
-        dictionary_filename = data_path + os.sep + params.folder + os.sep + "data" + os.sep + params.outputFile + ".json"
+        dictionary_filename = (
+            data_path
+            + os.sep
+            + params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + params.outputFile
+            + ".json"
+        )
         save_json(dict_shifts, dictionary_filename)
         print_log(f"$ Saved alignment dictionary to {dictionary_filename}")
 
     else:
         print_log(f"# Reference Barcode file does not exist: {reference_barcode}")
-        raise ValueError
+        raise ValueError(
+            f"# Reference Barcode file does not exist: {reference_barcode}"
+        )
 
     path_name = data_path + os.sep + params.folder + os.sep + params.outputFile
     save_shifts_table(path_name, alignment_results_table)
@@ -721,7 +767,11 @@ def save_shifts_table(path_name, alignment_results_table):
 
 
 def apply_registrations_to_filename(
-    filename_to_process, current_param, dict_shifts, data_path, params: RegistrationParams,
+    filename_to_process,
+    current_param,
+    dict_shifts,
+    data_path,
+    params: RegistrationParams,
 ):
     """
     Applies registration of filename_to_process
@@ -756,9 +806,7 @@ def apply_registrations_to_filename(
         shift = np.asarray(shift_array)
         # loads 2D image and applies registration
         im_obj = Image()
-        im_obj.load_image_2d(
-            filename_to_process, data_path + os.sep + "zProject"
-        )
+        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
         print_log(f"$ Image registered using ROI:{roi}, label:{label}, shift={shift}")
 
@@ -770,9 +818,7 @@ def apply_registrations_to_filename(
 
     elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
         im_obj = Image()
-        im_obj.load_image_2d(
-            filename_to_process, data_path + os.sep + "zProject"
-        )
+        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
         im_obj.save_image_2d(
             data_path + os.sep + params.folder,
             tag="_2d_registered",
@@ -786,7 +832,9 @@ def apply_registrations_to_filename(
         )
 
 
-def apply_registrations_to_current_folder(data_path, current_param, params: RegistrationParams):
+def apply_registrations_to_current_folder(
+    data_path, current_param, params: RegistrationParams
+):
     """
     This function will
     - load masks, RNA and barcode 2D projected images,
@@ -806,7 +854,16 @@ def apply_registrations_to_current_folder(data_path, current_param, params: Regi
     """
     files_folder = glob.glob(data_path + os.sep + "*.tif")
     print_log(f"> Processing Folder: {data_path}")
-    dict_filename = data_path + os.sep + params.folder+ os.sep + "data" + os.sep + params.outputFile + ".json"
+    dict_filename = (
+        data_path
+        + os.sep
+        + params.folder
+        + os.sep
+        + "data"
+        + os.sep
+        + params.outputFile
+        + ".json"
+    )
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
         print_log(f"# File with dictionary not found!: {dict_filename}")
