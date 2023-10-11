@@ -640,7 +640,7 @@ def segment_mask_stardist(im, current_param):
     return segm_deblend, labeled
 
 
-def make_segmentations(file_name, current_param, current_session, data_folder):
+def make_segmentations(file_name, current_param, data_folder):
     root_filename = os.path.basename(file_name).split(".")[0]
     output_filename = (
         data_folder.output_folders["segmentedObjects"] + os.sep + root_filename
@@ -788,12 +788,11 @@ def make_segmentations(file_name, current_param, current_session, data_folder):
         return output
     else:
         print_log(f"# 2D aligned file does not exist:{filename_2d_aligned}")
-        print_log(f"\t{file_name in current_session.data.keys()}")
         print_log(f"\t{os.path.exists(filename_2d_aligned)}")
         return []
 
 
-def segment_masks(current_param, current_session, file_name=None):
+def segment_masks(current_param, file_name=None):
     session_name = "segmentMasks"
 
     # processes folders and files
@@ -840,11 +839,9 @@ def segment_masks(current_param, current_session, file_name=None):
                         make_segmentations,
                         filename_to_process,
                         current_param,
-                        current_session,
                         data_folder,
                     )
                 )
-                current_session.add(filename_to_process, session_name)
 
         print_log(f"Waiting for {len(futures)} results to arrive")
 
@@ -879,7 +876,6 @@ def segment_masks(current_param, current_session, file_name=None):
                 output = make_segmentations(
                     filename_to_process,
                     current_param,
-                    current_session,
                     data_folder,
                 )
 
@@ -890,8 +886,6 @@ def segment_masks(current_param, current_session, file_name=None):
                         output_file, format="ascii.ecsv", overwrite=True
                     )
                     print_log(f"$ File {output_file} written to file.")
-
-                current_session.add(filename_to_process, session_name)
 
     return 0
 

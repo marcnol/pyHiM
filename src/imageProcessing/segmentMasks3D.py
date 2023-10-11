@@ -36,9 +36,8 @@ from imageProcessing.segmentMasks import _segment_3d_masks
 
 
 class Mask3D:
-    def __init__(self, param, current_session, parallel=False):
+    def __init__(self, param, parallel=False):
         self.current_param = param
-        self.current_session = current_session
         self.parallel = parallel
 
         self.p = {}
@@ -380,8 +379,6 @@ class Mask3D:
         print_log(f"> Processing Folder: {self.current_folder}")
 
         self.segment_masks_3d_in_folder(roi_name)
-
-        self.current_session.add(self.current_folder, session_name)
 
         print_log(f"$ segmentedObjects run in {self.current_folder} finished")
 

@@ -102,8 +102,14 @@ class DataManager:
         self.data_images = []
         self.data_tables = []
         self.filename_regex = ""
-        self.label_decoder = self.__default_label_decoder() 
-        self.__processable_labels = {"fiducial":False, "DAPI":False, "mask":False, "fiducial":False, "RNA":False}
+        self.label_decoder = self.__default_label_decoder()
+        self.__processable_labels = {
+            "fiducial": False,
+            "DAPI": False,
+            "mask": False,
+            "barcode": False,
+            "RNA": False,
+        }
         self.processed_roi = None
 
         self.raw_dict = self.load_user_param_with_structure()
@@ -211,7 +217,7 @@ class DataManager:
 
     def get_processable_labels(self):
         label_list = []
-        for label,value in self.__processable_labels.items():
+        for label, value in self.__processable_labels.items():
             if value:
                 label_list.append(label)
         return label_list

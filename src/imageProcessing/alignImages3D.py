@@ -69,9 +69,8 @@ from imageProcessing.makeProjections import reinterpolate_z
 
 
 class Drift3D:
-    def __init__(self, param, current_session, parallel=False):
+    def __init__(self, param, parallel=False):
         self.current_param = param
-        self.current_session = current_session
         self.window = 3
         self.parallel = parallel
         self.p = {}
@@ -368,8 +367,6 @@ class Drift3D:
         # self.current_log.parallel = self.parallel
 
         self.align_fiducials_3d_in_folder()
-
-        self.current_session.add(self.current_folder, session_name)
 
         print_log(f"HiM matrix in {self.current_folder} processed")
 

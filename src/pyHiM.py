@@ -101,7 +101,9 @@ def main(command_line_arguments=None):
         # [applies registration to DAPI and barcodes]
         if "register_global" in pipe.cmds:
             registration_params = datam.labelled_params[label].registration
-            pipe.apply_registrations(current_param, label, datam.m_data_path, registration_params)
+            pipe.apply_registrations(
+                current_param, label, datam.m_data_path, registration_params
+            )
 
         # [aligns fiducials in 3D]
         if "register_local" in pipe.cmds:
@@ -139,8 +141,6 @@ def main(command_line_arguments=None):
         del current_param
 
     # exits
-    logger.m_session.save()
-
     if pipe.parallel:
         pipe.m_dask.cluster.close()
         pipe.m_dask.client.close()

@@ -236,9 +236,7 @@ class Pipeline:
             and current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
         ):
             print_log(f"> Making 3D image registrations label: {label}")
-            _drift_3d = Drift3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
-            )
+            _drift_3d = Drift3D(current_param, parallel=self.parallel)
             _drift_3d.align_fiducials_3d()
 
     def apply_registrations(self, current_param, label, data_path, registration_params):
@@ -248,7 +246,10 @@ class Pipeline:
         ):
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
-                apply_registrations_to_current_folder, data_path, current_param, registration_params
+                apply_registrations_to_current_folder,
+                data_path,
+                current_param,
+                registration_params,
             )
 
     def segment_masks(self, current_param, label):
@@ -262,9 +263,7 @@ class Pipeline:
             and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
-            self.manage_parallel_option(
-                segment_masks, current_param, self.m_logger.m_session
-            )
+            self.manage_parallel_option(segment_masks, current_param)
 
     def segment_masks_3d(self, current_param, label, roi_name: str):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
@@ -273,9 +272,7 @@ class Pipeline:
             print_log(f"Making 3D image segmentations for label: {label}")
             print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segment_sources_3d = Mask3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
-            )
+            _segment_sources_3d = Mask3D(current_param, parallel=self.parallel)
             _segment_sources_3d.segment_masks_3d(roi_name)
 
     def segment_sources_3d(self, current_param, label, roi_name: str):
@@ -287,15 +284,13 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Localize3D(
-                current_param, self.m_logger.m_session, roi_name, parallel=self.parallel
+                current_param, roi_name, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d()
 
     def process_pwd_matrices(self, current_param, label):
         if label in ("DAPI", "mask"):
-            self.manage_parallel_option(
-                process_pwd_matrices, current_param, self.m_logger.m_session
-            )
+            self.manage_parallel_option(process_pwd_matrices, current_param)
 
     def run(self):  # sourcery skip: remove-pass-body
         for feat_dict in self.features:

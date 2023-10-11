@@ -26,8 +26,6 @@ class FilterLocalizations:
         ----------
         param : class
             Parameters
-        current_session : class
-            session information
         """
 
         self.current_param = param

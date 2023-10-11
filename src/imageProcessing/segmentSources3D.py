@@ -61,9 +61,8 @@ from imageProcessing.segmentMasks import (
 
 
 class Localize3D:
-    def __init__(self, param, current_session, roi_name: str, parallel=False):
+    def __init__(self, param, roi_name: str, parallel=False):
         self.current_param = param
-        self.current_session = current_session
         self.parallel = parallel
 
         self.p = {}
@@ -579,8 +578,6 @@ class Localize3D:
         print_log(f"> Processing Folder: {self.current_folder}")
 
         self.segment_sources_3d_in_folder()
-
-        self.current_session.add(self.current_folder, session_name)
 
         print_log(f"$ segmentedObjects run in {self.current_folder} finished")
 

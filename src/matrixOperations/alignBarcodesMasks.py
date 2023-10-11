@@ -1257,7 +1257,7 @@ def build_pwd_matrix(
             )
 
 
-def process_pwd_matrices(current_param, current_session):
+def process_pwd_matrices(current_param):
     """
     Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
@@ -1267,8 +1267,6 @@ def process_pwd_matrices(current_param, current_session):
         Parameters
     current_log : class
         logging class.
-    current_session : class
-        session information
 
     Returns
     -------
@@ -1363,8 +1361,5 @@ def process_pwd_matrices(current_param, current_session):
                 ndims=3,
                 mask_identifier=mask_identifier,
             )
-
-        # tights loose ends
-        current_session.add(current_folder, session_name)
 
         print_log(f"HiM matrix in {current_folder} processed", "info")

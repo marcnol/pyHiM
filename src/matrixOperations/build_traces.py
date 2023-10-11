@@ -749,8 +749,6 @@ class BuildTraces:
             Parameters
         current_log : class
             logging class.
-        current_session : class
-            session information
 
         Returns
         -------
