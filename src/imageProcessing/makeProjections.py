@@ -23,7 +23,7 @@ import numpy as np
 import scipy.optimize as spo
 from apifish.stack import projection
 
-from core.data_manager import FocalPlaneMatrixFile, NpyFile, Png2DFile
+from core.data_file import FocalPlaneMatrixFile, NpyFile, Png2DFile
 from core.parameters import ProjectionParams
 from core.pyhim_logging import print_log
 
