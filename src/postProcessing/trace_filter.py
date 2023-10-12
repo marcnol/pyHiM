@@ -56,6 +56,11 @@ def parse_arguments():
         help="remove barcode spots repeated in a single trace",
         action="store_true",
     )
+
+    parser.add_argument(
+        "--remove_label", help="Use this argument to remove traces with the label provided", action="store_true"
+    )
+    
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument("--N_barcodes", help="minimum_number_barcodes. Default = 2")
     parser.add_argument(
@@ -75,6 +80,8 @@ def parse_arguments():
     )
     parser.add_argument("--remove_barcode", help="name of barcode to remove")
 
+    parser.add_argument("--label", help="Select traces containing this label, removes all other traces.")
+
     p = {}
 
     args = parser.parse_args()
@@ -93,6 +100,11 @@ def parse_arguments():
     else:
         p["clean_spots"] = False
 
+    if args.remove_label:
+        p["keep"] = False
+    else:
+        p["keep"] = True
+        
     if args.N_barcodes:
         p["N_barcodes"] = int(args.N_barcodes)
     else:
@@ -138,6 +150,11 @@ def parse_arguments():
     else:
         p["remove_barcode"] = None
 
+    if args.label:
+        p["label"] = args.label
+    else:
+        p["label"] = None
+        
     p["trace_files"] = []
     if args.pipe:
         p["pipe"] = True
@@ -167,6 +184,8 @@ def runtime(
     remove_duplicate_spots=False,
     remove_barcode=None,
     dist_max=np.inf,
+    label='',
+    keep = True,
 ):
     # checks number of trace files
     if len(trace_files) < 1:
@@ -221,11 +240,20 @@ def runtime(
             if remove_barcode is not None:
                 trace.remove_barcode(remove_barcode)
 
+            if label is not None:
+                if keep:
+                    trace.trace_keep_label(label)       
+                    file_tag= label
+                else:
+                    trace.trace_remove_label(label)
+                    file_tag='not:' + label
+                    
             # saves output trace
             outputfile = (
-                os.path.basename(trace_file).split(".")[0] + "_" + tag + ".ecsv"
+                trace_file.split(".")[0] + "_" + tag + "_" + file_tag + ".ecsv"
             )
             trace.save(outputfile, trace.data, comments=", ".join(comments))
+            print(f"$ Saved output trace file at: {outputfile}")
     else:
         print("No trace file found to process!")
 
@@ -240,6 +268,8 @@ def runtime(
 def main():
     begin_time = datetime.now()
 
+    print("="*10+"Started execution"+"="*10)
+
     # [parsing arguments]
     p = parse_arguments()
     # [loops over lists of datafolders]
@@ -251,10 +281,12 @@ def main():
         remove_duplicate_spots=p["clean_spots"],
         remove_barcode=p["remove_barcode"],
         dist_max=p["dist_max"],
+        label=p["label"],
+        keep=p["keep"],
     )
 
-    print(f"Processed <{n_traces_processed}> trace file(s)")
-    print("Finished execution")
+    print(f"Processed <{n_traces_processed}> trace file(s)\n")
+    print("="*9+"Finished execution"+"="*9)
 
 
 if __name__ == "__main__":
