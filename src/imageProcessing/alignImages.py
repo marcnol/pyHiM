@@ -40,9 +40,8 @@ from tqdm import tqdm, trange
 
 from core.dask_cluster import try_get_client
 from core.data_manager import load_json, save_json
-from core.folder import Folders
-from core.parameters import RegistrationParams, get_dictionary_value, rt_to_filename
-from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.parameters import RegistrationParams, rt_to_filename
+from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import plotting_block_alignment_results, save_image_2d_cmd
 from imageProcessing.imageProcessing import (
     Image,
@@ -51,6 +50,13 @@ from imageProcessing.imageProcessing import (
     scatter_3d_image,
 )
 from imageProcessing.makeProjections import Feature
+
+
+def preprocess_2d_img(img, background_sigma):
+    # Normalises images
+    norm_img = img / img.max()
+    # removes inhomogeneous background
+    return remove_inhomogeneous_background(norm_img, background_sigma)
 
 
 class RegisterGlobal(Feature):
@@ -63,6 +69,36 @@ class RegisterGlobal(Feature):
 
     def run(self):
         pass
+
+    # def run(self, raw_2d_img, reference_2d_img):
+    #     preprocessed_img = preprocess_2d_img(raw_2d_img, self.params.background_sigma)
+    #     preprocessed_ref = preprocess_2d_img(
+    #         reference_2d_img, self.params.background_sigma
+    #     )
+
+    #     if self.params.alignByBlock:
+    #         (
+    #             image1_uncorrected,
+    #             image2_uncorrected,
+    #             shift,
+    #             diffphase,
+    #         ) = compute_shift_by_block(
+    #             preprocessed_img,
+    #             preprocessed_ref,
+    #             self.params.blockSize,
+    #             self.params.tolerance,
+    #             output_filename,
+    #             file_name_md,
+    #         )
+    #     else:
+    #         shift, diffphase = compute_global_shift(
+    #             preprocessed_img,
+    #             preprocessed_ref,
+    #             self.params.lower_threshold,
+    #             self.params.higher_threshold,
+    #             output_filename,
+    #             file_name_md,
+    #         )
 
 
 class ApplyRegisterGlobal(Feature):
@@ -248,7 +284,7 @@ def align_images_by_blocks(
     contours = measure.find_contours(rms_image, threshold)
 
     try:
-        contour = sorted(contours, key=lambda x: len(x))[-1]
+        contour = sorted(contours, key=len)[-1]
     except IndexError:
         contour = np.array([0, 0])
 
@@ -527,11 +563,11 @@ def align_2_files(
             output_filename,
             file_name_md,
         )
+    print_log(f"$ Detected subpixel offset (y, x): {shift} px")
 
     image2_corrected_raw = shift_image(image2_uncorrected, shift)
     image2_corrected_raw[image2_corrected_raw < 0] = 0
     error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw), axis=1))
-    print_log(f"$ Detected subpixel offset (y, x): {shift} px")
 
     save_align_2_files_results(
         image1_uncorrected,
