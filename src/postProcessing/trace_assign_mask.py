@@ -39,10 +39,13 @@ from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F", "--rootFolder", help="Folder with images")
+    parser.add_argument("--input", help="Input trace file")
+    parser.add_argument("--mask_file", help="Input mask image file. Expected format: NPY")
     parser.add_argument(
         "--pixel_size", help="Lateral pixel size un microns. Default = 0.1"
     )
+    parser.add_argument("--label", help="Label to add to trace file. Default=labeled")
+
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -50,17 +53,29 @@ def parse_arguments():
     p = {}
 
     args = parser.parse_args()
-    if args.rootFolder:
-        p["rootFolder"] = args.rootFolder
+    p["trace_files"] = []
+
+    if args.input:
+        p["trace_files"].append(args.input)
+
+    if args.mask_file:
+        p["mask_file"] = args.mask_file
     else:
-        p["rootFolder"] = "."
+        print(
+            ">> ERROR: you must provide a filename with a mask file"
+        )
+        sys.exit(-1)
 
     if args.pixel_size:
         p["pixel_size"] = args.pixel_size
     else:
         p["pixel_size"] = 0.1
 
-    p["trace_files"] = []
+    if args.label:
+        p["label"]= args.label
+    else:
+        p["label"] = 'labeled'
+        
     if args.pipe:
         p["pipe"] = True
         if select.select(
@@ -77,25 +92,24 @@ def parse_arguments():
     else:
         p["pipe"] = False
 
+    if len(p["trace_files"])<1:
+        print(
+            ">> ERROR: you must provide a filename with a trace file"
+        )
+        sys.exit(-1)
     return p
 
+def assign_masks(trace, mask_file, label='labeled', pixel_size=0.1):
+    
+    # [checks if mask file exists for the file to process]
 
-def assign_masks(trace, folder_masks, pixel_size=0.1):
-    # [checks if DAPI mask exists for the file to process]
-    mask_files = glob.glob(folder_masks.rstrip("/") + os.sep + "*.npy")
-    mask_files = [x for x in mask_files if "SNDmask" in x.split("_")]
 
-    if len(mask_files) < 1:
-        print(f"No mask file found in folder: {folder_masks}")
-        return
-
-    for mask_file in mask_files:
-        label = mask_file.split("_")[-1].split(".")[0]
+    if os.path.exists(mask_file):
 
         # load mask
-        print(f"\nWill attemp to match mask {label} from: {mask_file}")
         mask = Image()
         mask.data_2d = np.load(mask_file, allow_pickle=False).squeeze()
+        print(f"$ mask image file read: {mask_file}")
 
         # matches traces and masks
         index = 0
@@ -106,34 +120,24 @@ def assign_masks(trace, folder_masks, pixel_size=0.1):
             if "x" in trace_row["label"]:
                 trace_row["label"] = "_"
 
-            # labels are appended as comma separated lists. Thus a localization can have multiple labels
+            # labels are appended as comma separated lists. Thus a trace can have multiple labels
             if mask.data_2d[x_int, y_int] == 1:
                 trace_row["label"] = trace_row["label"] + "," + label
                 index += 1
                 labeled_trace.append(trace_row["Trace_ID"])
-                # print("label assigned: {}, {}".format(trace_row['label'],label))
 
         unique_traces_labeled = set(labeled_trace)
         print(
             f"\n> {index} trace rows out of {len(trace.data)} were associated to mask {label}. Unique traces: {len(unique_traces_labeled)}"
         )
-
+    else:
+        print(f"ERROR: No mask image file found with name: {mask_file}")
+        sys.exit(-1)
+        
     return trace
 
 
-def process_traces(folder, pixel_size=0.1, trace_files=[]):
-    trace_folder = folder.rstrip("/") + os.sep + "buildsPWDmatrix" + os.sep
-    masks_folder = folder.rstrip("/") + os.sep + "segmentedObjects" + os.sep
-
-    if len(trace_files) < 1:
-        trace_files = [
-            x
-            for x in glob.glob(f"{trace_folder}Trace*ecsv")
-            if "uniqueBarcodes" not in x
-        ]
-
-    # removes already labeled trace files
-    trace_files = [x for x in trace_files if "labeled" not in x]
+def process_traces(trace_files=[], mask_file='',label = "labeled", pixel_size=0.1):
 
     print(
         "\n{} trace files to process= {}".format(
@@ -150,14 +154,13 @@ def process_traces(folder, pixel_size=0.1, trace_files=[]):
             # reads new trace
             trace.load(trace_file)
 
-            trace = assign_masks(trace, masks_folder, pixel_size=pixel_size)
+            trace = assign_masks(trace, mask_file, label=label, pixel_size=pixel_size)
+            
+            outputfile = trace_file.rstrip(".ecsv") + "_" + label + ".ecsv"
 
-            outputfile = trace_file.rstrip(".ecsv") + "_labeled" + ".ecsv"
-
-            trace.save(outputfile, trace.data, comments="labeled")
-
-    return trace
-
+            trace.save(outputfile, trace.data, comments=label)
+            
+            print(f"$ Saved output trace file at: {outputfile}")
 
 # =============================================================================
 # MAIN
@@ -165,18 +168,20 @@ def process_traces(folder, pixel_size=0.1, trace_files=[]):
 
 
 def main():
-    begin_time = datetime.now()
 
     # [parsing arguments]
     p = parse_arguments()
-    # [loops over lists of datafolders]
-    folder = p["rootFolder"]
-    traces = process_traces(
-        folder, pixel_size=p["pixel_size"], trace_files=p["trace_files"]
+
+    print("="*10+"Started execution"+"="*10)
+    
+    process_traces(trace_files=p["trace_files"],
+                            mask_file=p["mask_file"],
+                            label=p["label"],                            
+                            pixel_size=p["pixel_size"]
     )
 
-    print("Finished execution")
 
+    print("="*9+"Finished execution"+"="*9)
 
 if __name__ == "__main__":
     main()
