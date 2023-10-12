@@ -325,6 +325,69 @@ class ChromatinTraceTable:
         ax1.set_ylim(0.0, 10)
         ax1.set_xlabel("barcode id")
 
+
+    def trace_remove_label(self, label=""):
+        """
+        This function will remove traces that do not contain the word 'label' in the 'label' column
+
+        Parameters
+        ----------
+        label : TYPE, string
+            the labe to keep. The default is "".
+
+        Returns
+        -------
+        None.
+
+        """
+        trace_table = self.data
+
+        trace_table_new = trace_table.copy()
+
+        rows_to_remove = []
+
+        for idx, row in enumerate(trace_table_new):
+            if label in row['label']:
+                rows_to_remove.append(idx)
+
+        trace_table_new.remove_rows(rows_to_remove)
+
+        removed = len(trace_table)-len(trace_table_new)
+        print(f"$ Removed {removed} spots that contained the label: {label}")
+
+        self.data = trace_table_new
+
+    def trace_keep_label(self, label=""):
+        """
+        This function will remove traces that do not contain the word 'label' in the 'label' column
+
+        Parameters
+        ----------
+        label : TYPE, string
+            the labe to keep. The default is "".
+
+        Returns
+        -------
+        None.
+
+        """
+        trace_table = self.data
+
+        trace_table_new = trace_table.copy()
+
+        rows_to_remove = []
+
+        for idx, row in enumerate(trace_table_new):
+            if label not in row['label']:
+                rows_to_remove.append(idx)
+
+        trace_table_new.remove_rows(rows_to_remove)
+
+        removed = len(trace_table)-len(trace_table_new)
+        print(f"$ Removed {removed} spots that did not contain the label: {label}")
+
+        self.data = trace_table_new
+
     def filter_repeated_barcodes(self, trace_file="mock"):
         """
         This function will remove the barcodes that are present more than once in a trace.
