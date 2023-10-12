@@ -295,31 +295,50 @@ class Pipeline:
     def run(self):  # sourcery skip: remove-pass-body
         for feat_dict in self.features:
             feat = get_a_dict_value(feat_dict)
-            (label_types, required_ref, required_table) = feat.get_required_inputs()
-            # reference = self.m_data_m.load_reference(required_ref)
+            (
+                tif_labels,
+                npy_labels,
+                required_ref,
+                required_table,
+            ) = feat.get_required_inputs()
+            reference_file = self.m_data_m.load_reference(required_ref)
             # table = self.m_data_m.load_table(required_table)
-            files_to_process = self.m_data_m.get_inputs(label_types)
+
+            files_to_process = self.m_data_m.get_inputs(tif_labels, npy_labels)
+
             self.m_data_m.create_out_structure(feat.out_folder)
+            results_to_keep = []
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()
                 client.forward_logging()
                 # Planify, for the future, work to execute in parallel
                 threads = [
-                    client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
+                    client.submit(
+                        run_pattern,
+                        feat_dict[f2p.label],
+                        f2p,
+                        reference_file,
+                        self.m_data_m,
+                    )
                     for f2p in files_to_process
                 ]
                 print_session_name(feat.name)
                 # Run workers
-                client.gather(threads)
+                results_to_keep = client.gather(threads)
 
             else:
                 print_session_name(feat.name)
                 for f2p in files_to_process:
-                    run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
+                    results_to_keep.append(
+                        run_pattern(
+                            feat_dict[f2p.label], f2p, reference_file, self.m_data_m
+                        )
+                    )
+            feat.save_results(results_to_keep)
 
 
-def run_pattern(feat, f2p, m_data_m):
+def run_pattern(feat, f2p, reference_file, m_data_m):
     """Generic pattern for both run mode, sequential and parallel.
     (need to be a function and not a method for parallel running)
 
@@ -333,11 +352,21 @@ def run_pattern(feat, f2p, m_data_m):
     m_data_m : Allow to save outputs
     """
     data = f2p.load()
-    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
-    results = feat.run(data, f2p.label)
+
+    reference = reference_file.load() if reference_file else None
+    print_log(f"\n> Analysing file: {os.path.basename(f2p.path_name)}")
+    results_to_save, results_to_keep = feat.run(data, reference)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    m_data_m.save_data(results, feat.params.folder, f2p.basename)
+    m_data_m.save_data(results_to_save, feat.params.folder, f2p.basename)
+    results_to_keep["tif_name"] = f2p.tif_name
+    # mg_2d_npy_name_to_tif_name(
+    #     os.path.basename(img_path_to_register)
+    # )
+    results_to_keep["ref_tif_name"] = (
+        reference_file.tif_name if reference_file else None
+    )
+    return results_to_keep
 
 
 # =============================================================================

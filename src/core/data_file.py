@@ -32,28 +32,38 @@ class DataFile:
 
 class TifFile:
     def __init__(self, path, basename, ext, label):
-        self.all_path = path
+        self.path_name = path
         self.basename = basename
         self.extension = ext
-        self.root = self.get_root()
+        self.folder_path = self.get_root()
         self.label = label
+        self.tif_name = basename + "." + ext
 
     def get_root(self):
-        length = len(self.all_path) - len(self.basename) - 1 - len(self.extension)
-        return self.all_path[:length]
+        length = len(self.path_name) - len(self.basename) - 1 - len(self.extension)
+        return self.path_name[:length]
 
     def load(self):
-        return io.imread(self.all_path).squeeze()
+        return io.imread(self.path_name).squeeze()
 
 
 class NpyFile(DataFile):
-    def __init__(self, npy_data, status: str):
+    def __init__(self, npy_data, status: str, path="", basename="", label=""):
         super().__init__(npy_data)
         self.status = status
         self.extension = "npy"
+        self.basename = basename
+        self.path_name = path
+        self.label = label
         self.folder_path = ""
-        self.basename = ""
-        self.path_name = ""
+        self.tif_name = basename[: len(status)] + ".tif"
+
+    def get_root(self):
+        if self.path_name:
+            length = len(self.path_name) - len(self.basename) - 1 - len(self.extension)
+            return self.path_name[:length]
+        else:
+            return ""
 
     def save(self, folder_path: str, basename: str):
         self.folder_path = folder_path + os.sep + "data"

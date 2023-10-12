@@ -10,7 +10,7 @@ import json
 import os
 import re
 
-from core.data_file import DataFile, TifFile
+from core.data_file import DataFile, NpyFile, TifFile
 from core.parameters import AcquisitionParams, Params, deep_dict_update, load_json
 from core.pyhim_logging import (
     print_log,
@@ -230,6 +230,13 @@ class DataManager:
                 if "barcode" in name:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
+            elif ext in self.npy_ext:
+                parts = self.decode_file_parts(name)
+                self.check_roi_uniqueness(parts["roi"])
+                channel = parts["channel"][:4]
+                label = self.find_label(name, channel)
+                self.add_to_processable_labels(label)
+                self.npy_files.append(NpyFile(None, "_2d", path, name, label))
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):
@@ -371,8 +378,17 @@ class DataManager:
 
         raise ValueError("fileNameRegExp not found")
 
-    def get_inputs(self, labels: list[str]):
-        return [img_file for img_file in self.tif_files if img_file.label in labels]
+    def get_inputs(self, tif_labels: list[str], npy_labels: list[str]):
+        if tif_labels:
+            return [
+                img_file for img_file in self.tif_files if img_file.label in tif_labels
+            ]
+        elif tif_labels:
+            return [
+                img_file for img_file in self.npy_files if img_file.label in npy_labels
+            ]
+        else:
+            return []
 
     def save_data(self, results: list[DataFile], feature_folder: str, basename: str):
         for data_file in results:
@@ -389,6 +405,10 @@ class DataManager:
                     f"{basename}\n ![]({data_file.path_name})\n",
                     "a",
                 )
+
+    def load_reference(self, required_ref):
+        if not required_ref:
+            return None
 
 
 def save_json(data, file_name):

@@ -49,7 +49,6 @@ from core.data_file import (
 from core.data_manager import load_json, save_json
 from core.parameters import RegistrationParams, rt_to_filename
 from core.pyhim_logging import print_log, write_string_to_file
-from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import (
     Image,
     image_adjust,
@@ -74,38 +73,61 @@ class RegisterGlobal(Feature):
         self.out_folder = self.params.folder
         self.name = "RegisterGlobal"
 
-    def run(self):
-        pass
+    def run(self, raw_2d_img, reference_2d_img):
+        results_to_save = []
+        preprocessed_img = preprocess_2d_img(raw_2d_img, self.params.background_sigma)
+        preprocessed_ref = preprocess_2d_img(
+            reference_2d_img, self.params.background_sigma
+        )
 
-    # def run(self, raw_2d_img, reference_2d_img):
-    #     preprocessed_img = preprocess_2d_img(raw_2d_img, self.params.background_sigma)
-    #     preprocessed_ref = preprocess_2d_img(
-    #         reference_2d_img, self.params.background_sigma
-    #     )
+        if self.params.alignByBlock:
+            (
+                preprocessed_ref,
+                preprocessed_img,
+                shift,
+                diffphase,
+                relative_shifts,
+                rms_image,
+                contour,
+            ) = compute_shift_by_block(
+                preprocessed_ref,
+                preprocessed_img,
+                self.params.blockSize,
+                self.params.tolerance,
+            )
 
-    #     if self.params.alignByBlock:
-    #         (
-    #             image1_uncorrected,
-    #             image2_uncorrected,
-    #             shift,
-    #             diffphase,
-    #         ) = compute_shift_by_block(
-    #             preprocessed_img,
-    #             preprocessed_ref,
-    #             self.params.blockSize,
-    #             self.params.tolerance,
-    #             output_filename,
-    #             file_name_md,
-    #         )
-    #     else:
-    #         shift, diffphase = compute_global_shift(
-    #             preprocessed_img,
-    #             preprocessed_ref,
-    #             self.params.lower_threshold,
-    #             self.params.higher_threshold,
-    #             output_filename,
-    #             file_name_md,
-    #         )
+            results_to_save.append(
+                BlockAlignmentFile(relative_shifts, rms_image, contour)
+            )
+
+            # saves mask of valid regions with a correction within the tolerance
+            results_to_save.append(NpyFile(rms_image, "_rmsBlockMap"))
+            results_to_save.append(NpyFile(relative_shifts, "_errorAlignmentBlockMap"))
+        else:
+            shift, diffphase, i_histogram, lower_threshold = compute_global_shift(
+                preprocessed_ref,
+                preprocessed_img,
+                self.params.lower_threshold,
+                self.params.higher_threshold,
+            )
+
+            results_to_save.append(
+                EqualizationHistogramsFile(i_histogram, lower_threshold)
+            )
+
+        shifted_img = shift_image(preprocessed_img, shift)
+        error = calcul_error(shifted_img, preprocessed_ref)
+        # thresholds corrected images for better display and saves
+        preprocessed_ref[preprocessed_ref < 0] = 0
+        preprocessed_img[preprocessed_img < 0] = 0
+        results_to_save.append(BothImgRbgFile(preprocessed_ref, shifted_img))
+        results_to_save.append(
+            RefDiffFile(preprocessed_ref, shifted_img, preprocessed_img)
+        )
+        results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
+
+        results_to_keep = {"shift": shift, "diffphase": diffphase, "error": error}
+        return results_to_save, results_to_keep
 
 
 class ApplyRegisterGlobal(Feature):
@@ -451,7 +473,17 @@ def register_2_img(params, raw_2d_img, reference_2d_img):
 
         results_to_save.append(EqualizationHistogramsFile(i_histogram, lower_threshold))
 
-    return preprocessed_img, preprocessed_ref, shift, diffphase, results_to_save
+    shifted_img = shift_image(preprocessed_img, shift)
+    error = calcul_error(shifted_img, preprocessed_ref)
+    # thresholds corrected images for better display and saves
+    preprocessed_ref[preprocessed_ref < 0] = 0
+    preprocessed_img[preprocessed_img < 0] = 0
+    results_to_save.append(BothImgRbgFile(preprocessed_ref, shifted_img))
+    results_to_save.append(RefDiffFile(preprocessed_ref, shifted_img, preprocessed_img))
+    results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
+
+    results_to_keep = {"shift": shift, "diffphase": diffphase, "error": error}
+    return results_to_save, results_to_keep
 
 
 def calcul_error(shifted_img, ref_img):
@@ -494,8 +526,6 @@ def align_2_files(
     -------
     shift : float list, 2 dimensions
         offset in Y and X
-    table_entry : Table Class
-        results zipped in Table Class form
 
     """
     filename_1 = reference_img_path.file_name
@@ -512,24 +542,11 @@ def align_2_files(
     raw_2d_img = np.load(img_path_to_register)
     print_log(f"$ Loading from disk:{os.path.basename(img_path_to_register)}")
 
-    (
-        preprocessed_img,
-        preprocessed_ref,
-        shift,
-        diffphase,
-        results_to_save,
-    ) = register_2_img(params, raw_2d_img, reference_img_path.data_2d)
+    (results_to_save, results_to_keep) = register_2_img(
+        params, raw_2d_img, reference_img_path.data_2d
+    )
 
-    print_log(f"$ Detected subpixel offset (y, x): {shift} px")
-
-    shifted_img = shift_image(preprocessed_img, shift)
-    error = calcul_error(shifted_img, preprocessed_ref)
-    # thresholds corrected images for better display and saves
-    preprocessed_ref[preprocessed_ref < 0] = 0
-    preprocessed_img[preprocessed_img < 0] = 0
-    results_to_save.append(BothImgRbgFile(preprocessed_ref, shifted_img))
-    results_to_save.append(RefDiffFile(preprocessed_ref, shifted_img, preprocessed_img))
-    results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
+    print_log(f"""$ Detected subpixel offset (y, x): {results_to_keep["shift"]} px""")
 
     tempo_save_data(
         results_to_save,
@@ -538,17 +555,11 @@ def align_2_files(
         file_name_md,
     )
 
-    # creates Table entry to return
-    table_entry = [
-        img_2d_npy_name_to_tif_name(os.path.basename(img_path_to_register)),
-        os.path.basename(filename_1),
-        shift[0],
-        shift[1],
-        error,
-        diffphase,
-    ]
-
-    return shift, table_entry
+    results_to_keep["tif_name"] = img_2d_npy_name_to_tif_name(
+        os.path.basename(img_path_to_register)
+    )
+    results_to_keep["ref_tif_name"] = os.path.basename(filename_1)
+    return results_to_keep
 
 
 def align_images_in_current_folder(
@@ -671,7 +682,15 @@ def align_images_in_current_folder(
                 print_log(f"$ Retrieving {len(results)} results from cluster")
 
                 for result, label in zip(results, labels):
-                    shift, table_entry = result
+                    shift = result["shift"]
+                    table_entry = [
+                        result["tif_name"],
+                        result["ref_tif_name"],
+                        result["shift"][0],
+                        result["shift"][1],
+                        result["error"],
+                        result["diffphase"],
+                    ]
                     dict_shift_roi[label] = shift.tolist()
                     alignment_results_table.add_row(table_entry)
 
@@ -705,13 +724,22 @@ def align_images_in_current_folder(
                             + os.path.basename(filename_to_process).split(".")[0]
                             + "_2d.npy"
                         )
-                        shift, table_entry = align_2_files(
+                        result = align_2_files(
                             img_path_to_register,
                             img_reference,
                             data_path,
                             params,
                             current_param.param_dict["fileNameMD"],
                         )
+                        shift = result["shift"]
+                        table_entry = [
+                            result["tif_name"],
+                            result["ref_tif_name"],
+                            result["shift"][0],
+                            result["shift"][1],
+                            result["error"],
+                            result["diffphase"],
+                        ]
                         dict_shift_roi[label] = shift.tolist()
                         alignment_results_table.add_row(table_entry)
             # accumulates shifst for this ROI into global dictionary
