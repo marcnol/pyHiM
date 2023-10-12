@@ -39,7 +39,13 @@ from skimage.util.shape import view_as_blocks
 from tqdm import tqdm, trange
 
 from core.dask_cluster import try_get_client
-from core.data_file import BlockAlignmentFile, BothImgRbgFile, NpyFile, RefDiffFile
+from core.data_file import (
+    BlockAlignmentFile,
+    BothImgRbgFile,
+    EqualizationHistogramsFile,
+    NpyFile,
+    RefDiffFile,
+)
 from core.data_manager import load_json, save_json
 from core.parameters import RegistrationParams, rt_to_filename
 from core.pyhim_logging import print_log, write_string_to_file
@@ -156,28 +162,6 @@ np.seterr(divide="ignore", invalid="ignore")
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
-
-
-def display_equalization_histograms(
-    i_histogram, lower_threshold, output_filename, markdown_filename
-):
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
-
-    ax1.plot(i_histogram["Im1"][0][1], i_histogram["Im1"][0][0])
-    ax2.plot(i_histogram["Im2"][0][1], i_histogram["Im2"][0][0])
-    ax3.plot(i_histogram["Im1"][1][1], i_histogram["Im1"][1][0])
-    ax4.plot(i_histogram["Im2"][1][1], i_histogram["Im2"][1][0])
-    ax3.set_yscale("log")
-    ax4.set_yscale("log")
-    ax1.vlines(lower_threshold["Im1"], 0, i_histogram["Im1"][0][0].max(), colors="r")
-    ax2.vlines(lower_threshold["Im2"], 0, i_histogram["Im2"][0][0].max(), colors="r")
-    plt.savefig(f"{output_filename}_intensityHist.png")
-    write_string_to_file(
-        markdown_filename,
-        f"{os.path.basename(output_filename)}\n ![]({output_filename}_intensityHist.png)\n",
-        "a",
-    )
-    plt.close(fig)
 
 
 def remove_inhomogeneous_background(im, background_sigma):
@@ -434,7 +418,7 @@ def img_2d_npy_name_to_tif_name(img_2d_npy_name: str = "_2d.npy"):
         )
 
 
-def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_name_md):
+def register_2_img(params, raw_2d_img, reference_2d_img):
     results_to_save = []
     preprocessed_img = preprocess_2d_img(raw_2d_img, params.background_sigma)
     preprocessed_ref = preprocess_2d_img(reference_2d_img, params.background_sigma)
@@ -455,8 +439,8 @@ def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_n
         results_to_save.append(BlockAlignmentFile(relative_shifts, rms_image, contour))
 
         # saves mask of valid regions with a correction within the tolerance
-        save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
-        save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
+        results_to_save.append(NpyFile(rms_image, "_rmsBlockMap"))
+        results_to_save.append(NpyFile(relative_shifts, "_errorAlignmentBlockMap"))
     else:
         shift, diffphase, i_histogram, lower_threshold = compute_global_shift(
             preprocessed_ref,
@@ -465,10 +449,7 @@ def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_n
             params.higher_threshold,
         )
 
-        # displays intensity histograms
-        display_equalization_histograms(
-            i_histogram, lower_threshold, output_filename, file_name_md
-        )
+        results_to_save.append(EqualizationHistogramsFile(i_histogram, lower_threshold))
 
     return preprocessed_img, preprocessed_ref, shift, diffphase, results_to_save
 
@@ -537,9 +518,7 @@ def align_2_files(
         shift,
         diffphase,
         results_to_save,
-    ) = register_2_img(
-        params, raw_2d_img, reference_img_path.data_2d, output_filename, file_name_md
-    )
+    ) = register_2_img(params, raw_2d_img, reference_img_path.data_2d)
 
     print_log(f"$ Detected subpixel offset (y, x): {shift} px")
 

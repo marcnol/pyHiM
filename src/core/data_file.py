@@ -278,3 +278,51 @@ class RefDiffFile(DataFile):
         fig.savefig(self.path_name)
 
         plt.close(fig)
+
+
+class EqualizationHistogramsFile(DataFile):
+    def __init__(self, i_histogram, lower_threshold):
+        super().__init__()
+        self.extension = "png"
+        self.i_histogram = i_histogram
+        self.lower_threshold = lower_threshold
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def delete_data(self):
+        self.i_histogram = None
+        self.lower_threshold = None
+
+    def save(self, folder_path, basename):
+        """
+        Overlays two images as R and B and saves them to output file
+        """
+        self.folder_path = folder_path
+        self.basename = f"{basename}_intensityHist"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+
+        ax1.plot(self.i_histogram["Im1"][0][1], self.i_histogram["Im1"][0][0])
+        ax2.plot(self.i_histogram["Im2"][0][1], self.i_histogram["Im2"][0][0])
+        ax3.plot(self.i_histogram["Im1"][1][1], self.i_histogram["Im1"][1][0])
+        ax4.plot(self.i_histogram["Im2"][1][1], self.i_histogram["Im2"][1][0])
+        ax3.set_yscale("log")
+        ax4.set_yscale("log")
+        ax1.vlines(
+            self.lower_threshold["Im1"],
+            0,
+            self.i_histogram["Im1"][0][0].max(),
+            colors="r",
+        )
+        ax2.vlines(
+            self.lower_threshold["Im2"],
+            0,
+            self.i_histogram["Im2"][0][0].max(),
+            colors="r",
+        )
+        plt.savefig(self.path_name)
+        plt.close(fig)
