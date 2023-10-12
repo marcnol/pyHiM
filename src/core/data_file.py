@@ -115,3 +115,55 @@ class FocalPlaneMatrixFile(DataFile):
             title=self.title,
             output_name=self.path_name,
         )
+
+
+class BlockAlignmentFile(DataFile):
+    def __init__(self, relative_shifts, rms_image, contour):
+        super().__init__()
+        self.extension = "png"
+        self.relative_shifts = relative_shifts
+        self.rms_image = rms_image
+        self.contour = contour
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path, basename):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_block_alignments"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+
+        # plotting
+        fig, axes = plt.subplots(1, 2)
+        ax = axes.ravel()
+        fig.set_size_inches((10, 5))
+
+        cbwindow = 3
+        p_1 = ax[0].imshow(self.relative_shifts, cmap="terrain", vmin=0, vmax=cbwindow)
+        ax[0].plot(self.contour.T[1], self.contour.T[0], linewidth=2, c="k")
+        ax[0].set_title("abs(global-block) shifts, px")
+        fig.colorbar(p_1, ax=ax[0], fraction=0.046, pad=0.04)
+
+        p_2 = ax[1].imshow(
+            self.rms_image,
+            cmap="terrain",
+            vmin=np.min(self.rms_image),
+            vmax=np.max(self.rms_image),
+        )
+        ax[1].plot(self.contour.T[1], self.contour.T[0], linewidth=2, c="k")
+        ax[1].set_title("RMS")
+        fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
+
+        for axe in ax:
+            axe.axis("off")
+
+        fig.savefig(self.path_name)
+
+        plt.close(fig)
+
+    def delete_data(self):
+        self.relative_shifts = None
+        self.rms_image = None
+        self.contour = None

@@ -39,10 +39,11 @@ from skimage.util.shape import view_as_blocks
 from tqdm import tqdm, trange
 
 from core.dask_cluster import try_get_client
+from core.data_file import BlockAlignmentFile
 from core.data_manager import load_json, save_json
 from core.parameters import RegistrationParams, rt_to_filename
 from core.pyhim_logging import print_log, write_string_to_file
-from core.saving import plotting_block_alignment_results, save_image_2d_cmd
+from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import (
     Image,
     image_adjust,
@@ -488,13 +489,9 @@ def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_n
         ) = compute_shift_by_block(
             preprocessed_ref, preprocessed_img, params.blockSize, params.tolerance
         )
-        plotting_block_alignment_results(
-            relative_shifts,
-            rms_image,
-            contour,
-            output_filename,
-            file_name_md,
-        )
+
+        results_to_save.append(BlockAlignmentFile(relative_shifts, rms_image, contour))
+
         # saves mask of valid regions with a correction within the tolerance
         save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
         save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
@@ -518,6 +515,19 @@ def calcul_error(shifted_img, ref_img):
     shifted_img[shifted_img < 0] = 0
     error = np.sum(np.sum(np.abs(ref_img - shifted_img), axis=1))
     return error
+
+
+def tempo_save_data(results_to_save: list, output_filename, out_folder, file_name_md):
+    for data_file in results_to_save:
+        basename = os.path.basename(output_filename)
+        data_file.save(out_folder, basename)
+        data_file.delete_data()
+        if data_file.extension == "png":
+            write_string_to_file(
+                file_name_md,
+                f"{basename}\n ![]({data_file.path_name})\n",
+                "a",
+            )
 
 
 def align_2_files(
@@ -579,6 +589,13 @@ def align_2_files(
         preprocessed_img,
         shifted_img,
         output_filename,
+        file_name_md,
+    )
+
+    tempo_save_data(
+        results_to_save,
+        output_filename,
+        data_path + os.sep + params.folder,
         file_name_md,
     )
 
