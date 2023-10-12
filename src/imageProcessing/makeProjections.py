@@ -60,7 +60,7 @@ class Project(Feature):
                 focus_plane,
             ) = self._projection_laplacian(img, label)
             return [
-                NpyFile(img_projected, 2),
+                NpyFile(img_projected, "_2d"),
                 Png2DFile(img_projected),
                 FocalPlaneMatrixFile(
                     focal_plane_matrix, f"focal plane = {focus_plane:.2f}"
@@ -69,7 +69,7 @@ class Project(Feature):
         # find the correct range for the projection
         img_reduce = self.precise_z_planes(img, mode, label)
         img_projected = self.projection_2d(img_reduce, label)
-        return [NpyFile(img_projected, 2), Png2DFile(img_projected)]
+        return [NpyFile(img_projected, "_2d"), Png2DFile(img_projected)]
 
     # TODO: check and remove unused "label"
     def check_zmax(self, img_size, label):

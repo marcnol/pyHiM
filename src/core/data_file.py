@@ -16,6 +16,7 @@ from skimage import io
 
 from core.pyhim_logging import print_log
 from core.saving import image_show_with_values
+from imageProcessing.imageProcessing import image_adjust
 
 
 class DataFile:
@@ -46,9 +47,9 @@ class TifFile:
 
 
 class NpyFile(DataFile):
-    def __init__(self, npy_data, dimension: int):
+    def __init__(self, npy_data, status: str):
         super().__init__(npy_data)
-        self.dim = dimension
+        self.status = status
         self.extension = "npy"
         self.folder_path = ""
         self.basename = ""
@@ -56,7 +57,7 @@ class NpyFile(DataFile):
 
     def save(self, folder_path: str, basename: str):
         self.folder_path = folder_path + os.sep + "data"
-        self.basename = f"{basename}_{str(self.dim)}d"
+        self.basename = basename + self.status
         self.path_name = (
             self.folder_path + os.sep + self.basename + "." + self.extension
         )
@@ -167,3 +168,113 @@ class BlockAlignmentFile(DataFile):
         self.relative_shifts = None
         self.rms_image = None
         self.contour = None
+
+
+class BothImgRbgFile(DataFile):
+    def __init__(self, image1_uncorrected, image2_corrected_raw):
+        super().__init__()
+        self.extension = "png"
+        self.image1_uncorrected = image1_uncorrected
+        self.image2_corrected_raw = image2_corrected_raw
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def delete_data(self):
+        self.image1_uncorrected = None
+        self.image2_corrected_raw = None
+
+    def save(self, folder_path, basename):
+        """
+        Overlays two images as R and B and saves them to output file
+        """
+        self.folder_path = folder_path
+        self.basename = f"{basename}_overlay_corrected"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+        sz = self.image1_uncorrected.shape
+        img_1, img_2 = (
+            self.image1_uncorrected / self.image1_uncorrected.max(),
+            self.image2_corrected_raw / self.image2_corrected_raw.max(),
+        )
+        img_1, _, _, _, _ = image_adjust(
+            img_1, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        img_2, _, _, _, _ = image_adjust(
+            img_2, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        fig, ax1 = plt.subplots()
+        fig.set_size_inches((30, 30))
+        null_image = np.zeros(sz)
+        rgb = np.dstack([img_1, img_2, null_image])
+        ax1.imshow(rgb)
+        ax1.axis("off")
+        fig.savefig(self.path_name)
+        plt.close(fig)
+
+
+class RefDiffFile(DataFile):
+    def __init__(self, preprocessed_ref, shifted_img, preprocessed_img):
+        super().__init__()
+        self.extension = "png"
+        self.preprocessed_ref = preprocessed_ref
+        self.shifted_img = shifted_img
+        self.preprocessed_img = preprocessed_img
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def delete_data(self):
+        self.preprocessed_ref = None
+        self.shifted_img = None
+        self.preprocessed_img = None
+
+    def save(self, folder_path, basename):
+        """
+        Overlays two images as R and B and saves them to output file
+        """
+        self.folder_path = folder_path
+        self.basename = f"{basename}_referenceDifference"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+
+        img_1, img_2 = (
+            self.preprocessed_ref / self.preprocessed_ref.max(),
+            self.preprocessed_img / self.preprocessed_img.max(),
+        )
+        img_3, img_4 = (
+            self.preprocessed_ref / self.preprocessed_ref.max(),
+            self.shifted_img / self.shifted_img.max(),
+        )
+
+        img_1, _, _, _, _ = image_adjust(
+            img_1, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        img_2, _, _, _, _ = image_adjust(
+            img_2, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        img_3, _, _, _, _ = image_adjust(
+            img_3, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        img_4, _, _, _, _ = image_adjust(
+            img_4, lower_threshold=0.5, higher_threshold=0.9999
+        )
+
+        cmap = "seismic"
+
+        fig, (ax1, ax2) = plt.subplots(1, 2)
+        fig.set_size_inches((60, 30))
+
+        ax1.imshow(img_1 - img_2, cmap=cmap)
+        ax1.axis("off")
+        ax1.set_title("uncorrected")
+
+        ax2.imshow(img_3 - img_4, cmap=cmap)
+        ax2.axis("off")
+        ax2.set_title("corrected")
+
+        fig.savefig(self.path_name)
+
+        plt.close(fig)

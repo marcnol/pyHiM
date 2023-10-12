@@ -39,7 +39,7 @@ from skimage.util.shape import view_as_blocks
 from tqdm import tqdm, trange
 
 from core.dask_cluster import try_get_client
-from core.data_file import BlockAlignmentFile
+from core.data_file import BlockAlignmentFile, BothImgRbgFile, NpyFile, RefDiffFile
 from core.data_manager import load_json, save_json
 from core.parameters import RegistrationParams, rt_to_filename
 from core.pyhim_logging import print_log, write_string_to_file
@@ -425,44 +425,6 @@ def compute_shift_by_block(
     )
 
 
-def save_align_2_files_results(
-    image1_uncorrected,
-    image2_uncorrected,
-    image2_corrected_raw,
-    output_filename,
-    file_name_md,
-):
-    # [displays and saves results]
-
-    # thresholds corrected images for better display and saves
-    image1_uncorrected[image1_uncorrected < 0] = 0
-    image2_uncorrected[image2_uncorrected < 0] = 0
-
-    save_2_images_rgb(
-        image1_uncorrected,
-        image2_corrected_raw,
-        f"{output_filename}_overlay_corrected.png",
-    )
-
-    save_image_differences(
-        image1_uncorrected,
-        image2_uncorrected,
-        image1_uncorrected,
-        image2_corrected_raw,
-        f"{output_filename}_referenceDifference.png",
-    )
-
-    # saves registered fiducial image
-    save_image_2d_cmd(image2_corrected_raw, f"{output_filename}_2d_registered")
-
-    # reports image in MD file
-    write_string_to_file(
-        file_name_md,
-        f"{os.path.basename(output_filename)}\n ![]({output_filename}_overlay_corrected.png)\n ![]({output_filename}_referenceDifference.png)\n",
-        "a",
-    )
-
-
 def img_2d_npy_name_to_tif_name(img_2d_npy_name: str = "_2d.npy"):
     if img_2d_npy_name[-7:] == "_2d.npy":
         return img_2d_npy_name[:-7] + ".tif"
@@ -583,14 +545,12 @@ def align_2_files(
 
     shifted_img = shift_image(preprocessed_img, shift)
     error = calcul_error(shifted_img, preprocessed_ref)
-
-    save_align_2_files_results(
-        preprocessed_ref,
-        preprocessed_img,
-        shifted_img,
-        output_filename,
-        file_name_md,
-    )
+    # thresholds corrected images for better display and saves
+    preprocessed_ref[preprocessed_ref < 0] = 0
+    preprocessed_img[preprocessed_img < 0] = 0
+    results_to_save.append(BothImgRbgFile(preprocessed_ref, shifted_img))
+    results_to_save.append(RefDiffFile(preprocessed_ref, shifted_img, preprocessed_img))
+    results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
 
     tempo_save_data(
         results_to_save,
