@@ -392,8 +392,6 @@ def compute_shift_by_block(
     image2_uncorrected,
     dict_block_size,
     tolerance,
-    output_filename,
-    file_name_md,
 ):
     # [calculates block translations by cross-correlation and gets overall shift by polling]
 
@@ -423,22 +421,16 @@ def compute_shift_by_block(
         tolerance=tolerance,
     )
     diffphase = 0
-    plotting_block_alignment_results(
+
+    return (
+        image1_uncorrected,
+        image2_uncorrected,
+        shift,
+        diffphase,
         relative_shifts,
         rms_image,
         contour,
-        file_name=f"{output_filename}_block_alignments.png",
     )
-    write_string_to_file(
-        file_name_md,
-        f"{os.path.basename(output_filename)}\n ![]({output_filename}_block_alignments.png)\n",
-        "a",
-    )
-    # saves mask of valid regions with a correction within the tolerance
-    save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
-    save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
-
-    return image1_uncorrected, image2_uncorrected, shift, diffphase
 
 
 def save_align_2_files_results(
@@ -488,6 +480,51 @@ def img_2d_npy_name_to_tif_name(img_2d_npy_name: str = "_2d.npy"):
         )
 
 
+def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_name_md):
+    preprocessed_img = preprocess_2d_img(raw_2d_img, params.background_sigma)
+    preprocessed_ref = preprocess_2d_img(reference_2d_img, params.background_sigma)
+
+    if params.alignByBlock:
+        (
+            preprocessed_ref,
+            preprocessed_img,
+            shift,
+            diffphase,
+            relative_shifts,
+            rms_image,
+            contour,
+        ) = compute_shift_by_block(
+            preprocessed_ref, preprocessed_img, params.blockSize, params.tolerance
+        )
+        plotting_block_alignment_results(
+            relative_shifts,
+            rms_image,
+            contour,
+            output_filename,
+            file_name_md,
+        )
+        # saves mask of valid regions with a correction within the tolerance
+        save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
+        save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
+    else:
+        shift, diffphase = compute_global_shift(
+            preprocessed_ref,
+            preprocessed_img,
+            params.lower_threshold,
+            params.higher_threshold,
+            output_filename,
+            file_name_md,
+        )
+
+    return preprocessed_img, preprocessed_ref, shift, diffphase
+
+
+def calcul_error(shifted_img, ref_img):
+    shifted_img[shifted_img < 0] = 0
+    error = np.sum(np.sum(np.abs(ref_img - shifted_img), axis=1))
+    return error
+
+
 def align_2_files(
     img_path_to_register,
     reference_img_path,
@@ -527,52 +564,19 @@ def align_2_files(
     raw_2d_img = np.load(img_path_to_register)
     print_log(f"$ Loading from disk:{os.path.basename(img_path_to_register)}")
 
-    # Normalises images
-    image1_uncorrected = reference_img_path.data_2d / reference_img_path.data_2d.max()
-    image2_uncorrected = raw_2d_img / raw_2d_img.max()
-
-    # removes inhomogeneous background
-    image1_uncorrected = remove_inhomogeneous_background(
-        image1_uncorrected, params.background_sigma
-    )
-    image2_uncorrected = remove_inhomogeneous_background(
-        image2_uncorrected, params.background_sigma
+    preprocessed_img, preprocessed_ref, shift, diffphase = register_2_img(
+        params, raw_2d_img, reference_img_path.data_2d, output_filename, file_name_md
     )
 
-    if not params.alignByBlock:
-        shift, diffphase = compute_global_shift(
-            image1_uncorrected,
-            image2_uncorrected,
-            params.lower_threshold,
-            params.higher_threshold,
-            output_filename,
-            file_name_md,
-        )
-
-    else:
-        (
-            image1_uncorrected,
-            image2_uncorrected,
-            shift,
-            diffphase,
-        ) = compute_shift_by_block(
-            image1_uncorrected,
-            image2_uncorrected,
-            params.blockSize,
-            params.tolerance,
-            output_filename,
-            file_name_md,
-        )
     print_log(f"$ Detected subpixel offset (y, x): {shift} px")
 
-    image2_corrected_raw = shift_image(image2_uncorrected, shift)
-    image2_corrected_raw[image2_corrected_raw < 0] = 0
-    error = np.sum(np.sum(np.abs(image1_uncorrected - image2_corrected_raw), axis=1))
+    shifted_img = shift_image(preprocessed_img, shift)
+    error = calcul_error(shifted_img, preprocessed_ref)
 
     save_align_2_files_results(
-        image1_uncorrected,
-        image2_uncorrected,
-        image2_corrected_raw,
+        preprocessed_ref,
+        preprocessed_img,
+        shifted_img,
         output_filename,
         file_name_md,
     )

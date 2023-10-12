@@ -16,7 +16,7 @@ from stardist import random_label_cmap
 from tifffile import imsave
 from tqdm import trange
 
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, write_string_to_file
 
 np.seterr(divide="ignore", invalid="ignore")
 
@@ -341,8 +341,9 @@ def plot_4_images(allimages, titles=None):
 
 
 def plotting_block_alignment_results(
-    relative_shifts, rms_image, contour, file_name="BlockALignmentResults.png"
+    relative_shifts, rms_image, contour, output_filename: str, file_name_md: str
 ):
+    file_name = f"{output_filename}_block_alignments.png"
     # plotting
     fig, axes = plt.subplots(1, 2)
     ax = axes.ravel()
@@ -367,6 +368,12 @@ def plotting_block_alignment_results(
     fig.savefig(file_name)
 
     plt.close(fig)
+
+    write_string_to_file(
+        file_name_md,
+        f"{os.path.basename(output_filename)}\n ![]({output_filename}_block_alignments.png)\n",
+        "a",
+    )
 
 
 def heatmap(
