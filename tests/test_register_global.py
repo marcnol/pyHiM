@@ -16,10 +16,10 @@ from core.data_manager import extract_files
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
-    compare_npy_files,
-    image_pixel_differences,
     compare_ecsv_files,
     compare_line_by_line,
+    compare_npy_files,
+    image_pixel_differences,
 )
 
 # Build a temporary directory
@@ -38,7 +38,7 @@ def template_test_register_global(mode: str):
     reference_outputs = f"pyhim-small-dataset/register_global/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_align_images)
     reference_files = extract_files(reference_outputs)
-    assert len(generated_files[1]) == len(reference_files[1])
+    assert len(generated_files) == len(reference_files)
     for filepath, short_filename, extension in generated_files:
         filename = f"{filepath}.{extension}"
         tmp_file = os.path.join(generated_align_images, filepath)

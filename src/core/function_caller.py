@@ -327,9 +327,9 @@ def run_pattern(feat, f2p, m_data_m):
     ----------
     feat : Feature
         A sub-class of Feature
-    f2p : ImageFile
+    f2p : TifFile
         A file object with a `load` method.
-        TODO: create a mother class `File` for ImageFile to be generic with other type of data files
+        TODO: create a mother class `File` for TifFile to be generic with other type of data files
     m_data_m : Allow to save outputs
     """
     data = f2p.load()
@@ -337,7 +337,7 @@ def run_pattern(feat, f2p, m_data_m):
     results = feat.run(data, f2p.label)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    m_data_m.save_data(results, feat.find_out_tags(f2p.label), feat.params.folder, f2p)
+    m_data_m.save_data(results, feat.params.folder, f2p.basename)
 
 
 # =============================================================================

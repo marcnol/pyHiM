@@ -23,6 +23,7 @@ import numpy as np
 import scipy.optimize as spo
 from apifish.stack import projection
 
+from core.data_manager import FocalPlaneMatrixFile, NpyFile, Png2DFile
 from core.parameters import ProjectionParams
 from core.pyhim_logging import print_log
 
@@ -35,13 +36,10 @@ class Feature:
         self.required_data = []
         self.required_ref = []
         self.required_table = []
-        self.name:str = None
+        self.name: str = None
 
     def get_required_inputs(self):
         return self.required_data, self.required_ref, self.required_table
-
-    def find_out_tags(self):
-        pass
 
     def run(self):
         pass
@@ -54,23 +52,26 @@ class Project(Feature):
         self.out_folder = self.params.folder
         self.name = "Project"
 
-    def find_out_tags(self, label):
-        tags = ["_2d"]
-        # TODO: Check if label exist
-        # (may be this test have to be done in high level like Pipeline initialization)
-        if self.params.mode == "laplacian":
-            tags.append("_focalPlaneMatrix")
-        return tags
-
     def run(self, img, label: str):
         mode = self.params.mode
         if mode == "laplacian":
-            return self._projection_laplacian(img, label)
+            img_projected, (
+                focal_plane_matrix,
+                focus_plane,
+            ) = self._projection_laplacian(img, label)
+            return [
+                NpyFile(img_projected, 2),
+                Png2DFile(img_projected),
+                FocalPlaneMatrixFile(
+                    focal_plane_matrix, f"focal plane = {focus_plane:.2f}"
+                ),
+            ]
         # find the correct range for the projection
         img_reduce = self.precise_z_planes(img, mode, label)
         img_projected = self.projection_2d(img_reduce, label)
-        return [img_projected]
+        return [NpyFile(img_projected, 2), Png2DFile(img_projected)]
 
+    # TODO: check and remove unused "label"
     def check_zmax(self, img_size, label):
         if self.params.zmax > img_size[0]:
             print_log("$ Setting z max to the last plane")

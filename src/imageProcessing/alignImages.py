@@ -356,12 +356,7 @@ def save_2_images_rgb(img_1, img_2, output_filename):
 
 
 def compute_global_shift(
-    image1_uncorrected,
-    image2_uncorrected,
-    lower_threshold,
-    higher_threshold,
-    output_filename,
-    file_name_md,
+    image1_uncorrected, image2_uncorrected, lower_threshold, higher_threshold
 ):
     # [calculates unique translation for the entire image using cross-correlation]
     (
@@ -380,11 +375,7 @@ def compute_global_shift(
         higher_threshold=higher_threshold,
     )
 
-    # displays intensity histograms
-    display_equalization_histograms(
-        i_histogram, lower_threshold, output_filename, file_name_md
-    )
-    return shift, diffphase
+    return shift, diffphase, i_histogram, lower_threshold
 
 
 def compute_shift_by_block(
@@ -481,6 +472,7 @@ def img_2d_npy_name_to_tif_name(img_2d_npy_name: str = "_2d.npy"):
 
 
 def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_name_md):
+    results_to_save = []
     preprocessed_img = preprocess_2d_img(raw_2d_img, params.background_sigma)
     preprocessed_ref = preprocess_2d_img(reference_2d_img, params.background_sigma)
 
@@ -507,16 +499,19 @@ def register_2_img(params, raw_2d_img, reference_2d_img, output_filename, file_n
         save_image_2d_cmd(rms_image, f"{output_filename}_rmsBlockMap")
         save_image_2d_cmd(relative_shifts, f"{output_filename}_errorAlignmentBlockMap")
     else:
-        shift, diffphase = compute_global_shift(
+        shift, diffphase, i_histogram, lower_threshold = compute_global_shift(
             preprocessed_ref,
             preprocessed_img,
             params.lower_threshold,
             params.higher_threshold,
-            output_filename,
-            file_name_md,
         )
 
-    return preprocessed_img, preprocessed_ref, shift, diffphase
+        # displays intensity histograms
+        display_equalization_histograms(
+            i_histogram, lower_threshold, output_filename, file_name_md
+        )
+
+    return preprocessed_img, preprocessed_ref, shift, diffphase, results_to_save
 
 
 def calcul_error(shifted_img, ref_img):
@@ -564,7 +559,13 @@ def align_2_files(
     raw_2d_img = np.load(img_path_to_register)
     print_log(f"$ Loading from disk:{os.path.basename(img_path_to_register)}")
 
-    preprocessed_img, preprocessed_ref, shift, diffphase = register_2_img(
+    (
+        preprocessed_img,
+        preprocessed_ref,
+        shift,
+        diffphase,
+        results_to_save,
+    ) = register_2_img(
         params, raw_2d_img, reference_img_path.data_2d, output_filename, file_name_md
     )
 

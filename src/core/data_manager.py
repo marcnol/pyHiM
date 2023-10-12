@@ -59,20 +59,103 @@ def extract_files(root: str):
     return files
 
 
-class ImageFile:
-    def __init__(self, path, img_name, ext, label):
+class DataFile:
+    def __init__(self, data=None):
+        self.data = data
+
+    def save(self, folder_path: str, basename: str):
+        pass
+
+    def delete_data(self):
+        self.data = None
+
+
+class TifFile:
+    def __init__(self, path, basename, ext, label):
         self.all_path = path
-        self.name = img_name
+        self.basename = basename
         self.extension = ext
         self.root = self.get_root()
         self.label = label
 
     def get_root(self):
-        length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
+        length = len(self.all_path) - len(self.basename) - 1 - len(self.extension)
         return self.all_path[:length]
 
     def load(self):
         return io.imread(self.all_path).squeeze()
+
+
+class NpyFile(DataFile):
+    def __init__(self, npy_data, dimension: int):
+        super().__init__(npy_data)
+        self.dim = dimension
+        self.extension = "npy"
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path: str, basename: str):
+        self.folder_path = folder_path + os.sep + "data"
+        self.basename = f"{basename}_{str(self.dim)}d"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+        if self.data.shape <= (1, 1):
+            raise ValueError(f"Image is empty! Original file: {basename}.tif")
+        np.save(self.path_name, self.data)
+        print_log(f"$ Image saved to disk: {self.basename}.npy")
+
+
+class Png2DFile(DataFile):
+    def __init__(self, data):
+        super().__init__(data)
+        self.extension = "png"
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path: str, basename: str):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_2d"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+        fig = plt.figure()
+        size = (10, 10)
+        fig.set_size_inches(size)
+        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
+        ax.set_axis_off()
+        norm = ImageNormalize(stretch=SqrtStretch())
+
+        ax.set_title("2D Data")
+
+        fig.add_axes(ax)
+        ax.imshow(self.data, origin="lower", cmap="Greys_r", norm=norm)
+        fig.savefig(self.path_name)
+        plt.close(fig)
+
+
+class FocalPlaneMatrixFile(DataFile):
+    def __init__(self, data, title):
+        super().__init__(data)
+        self.title = title
+        self.extension = "png"
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path: str, basename: str):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_focalPlaneMatrix"
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+        image_show_with_values(
+            [self.data],
+            title=self.title,
+            output_name=self.path_name,
+        )
 
 
 def remove_extension(filename: str):
@@ -99,8 +182,9 @@ class DataManager:
         self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
         self.param_file_path = self.find_param_file(param_file)
-        self.data_images = []
-        self.data_tables = []
+        self.tif_files = []
+        self.ecsv_files = []
+        self.npy_files = []
         self.filename_regex = ""
         self.label_decoder = self.__default_label_decoder()
         self.__processable_labels = {
@@ -111,6 +195,10 @@ class DataManager:
             "RNA": False,
         }
         self.processed_roi = None
+        self.tif_ext = ["tif", "tiff"]
+        self.npy_ext = ["npy"]
+        self.ecsv_ext = ["ecsv", "table", "dat"]
+        self.png_ext = ["png"]
 
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
@@ -234,22 +322,19 @@ class DataManager:
     def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
         print_section("file names")
-        img_ext = ["tif", "tiff"]
-        # TODO: improve to: img_ext = ["tif", "tiff", "npy", "png", "jpg"]
-        table_ext = ["csv", "ecsv", "dat"]
         unrecognized = 0
         for path, name, ext in self.all_files:
-            if ext in img_ext:
+            if ext in self.tif_ext:
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
                 self.add_to_processable_labels(label)
-                self.data_images.append(ImageFile(path, name, ext, label))
-            elif ext in table_ext:
+                self.tif_files.append(TifFile(path, name, ext, label))
+            elif ext in self.ecsv_ext:
                 if "barcode" in name:
                     self.add_to_processable_labels("barcode")
-                self.data_tables.append((path, name, ext))
+                self.ecsv_files.append((path, name, ext))
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):
@@ -392,88 +477,23 @@ class DataManager:
         raise ValueError("fileNameRegExp not found")
 
     def get_inputs(self, labels: list[str]):
-        return [img_file for img_file in self.data_images if img_file.label in labels]
+        return [img_file for img_file in self.tif_files if img_file.label in labels]
 
-    def save_data(
-        self,
-        results: list,
-        tags: list[str],
-        out_folder: str,
-        associated_file: ImageFile,
-    ):
-        if len(results) != len(tags):
-            # TODO: Improuve this possibility, you may be can have just one image but different tags
-            # Because we want plot this image with different ways
-            raise SystemExit(f"len(results) {len(results)} != len(tags) {len(tags)}")
-
-        partial_path = (
-            self.out_path + os.sep + out_folder + os.sep + associated_file.name
-        )
-        for res, tag in zip(results, tags):
-            if tag == "_2d":
-                self._save_2d_npy(res, partial_path)
-                self._save_2d_png(res, partial_path)
-            elif tag == "_focalPlaneMatrix":
-                self._save_focal_plane_matrix(res, partial_path)
-            else:
-                raise SystemExit(f"tag UNRECOGNIZED: {tag}")
-
-    def _save_2d_npy(self, data, partial_path):
-        path_name = f"{partial_path}_2d"
-        split_name = path_name.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + path_name
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
-        if data.shape <= (1, 1):
-            raise ValueError(f"Image is empty! Original file: {partial_path}.tif")
-        np.save(data_file_path, data)
-        print_log(f"$ Image saved to disk: {data_file_path}.npy", "info")
-
-    def _save_2d_png(self, data, partial_path):
-        out_path = f"{partial_path}_2d.png"
-
-        fig = plt.figure()
-        size = (10, 10)
-        fig.set_size_inches(size)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        norm = ImageNormalize(stretch=SqrtStretch())
-
-        ax.set_title("2D Data")
-
-        fig.add_axes(ax)
-        ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
-        fig.savefig(out_path)
-        plt.close(fig)
-        original_filename = os.path.basename(f"{partial_path}.tif")
-        write_string_to_file(
-            self.md_log_file,
-            f"{original_filename}\n ![]({out_path})\n",
-            "a",
-        )
-
-    def _save_focal_plane_matrix(self, data: tuple, partial_path: str):
-        focal_plane_matrix, focus_plane = data
-        out_path = f"{partial_path}_focalPlaneMatrix.png"
-        image_show_with_values(
-            [focal_plane_matrix],
-            title=f"focal plane = {focus_plane:.2f}",
-            output_name=out_path,
-        )
-
-        original_filename = os.path.basename(f"{partial_path}.tif")
-        write_string_to_file(
-            self.md_log_file,
-            f"{original_filename}\n ![]({out_path})\n",
-            "a",
-        )
+    def save_data(self, results: list[DataFile], feature_folder: str, basename: str):
+        for data_file in results:
+            output_folder = self.m_data_path + os.sep + feature_folder
+            data_file.save(output_folder, basename)
+            data_file.delete_data()
+            if data_file.extension in self.npy_ext:
+                self.npy_files.append(
+                    data_file
+                )  # append to a list for next futures Feature run
+            elif data_file.extension in self.png_ext:
+                write_string_to_file(
+                    self.md_log_file,
+                    f"{basename}\n ![]({data_file.path_name})\n",
+                    "a",
+                )
 
 
 def save_json(data, file_name):
