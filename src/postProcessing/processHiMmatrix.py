@@ -32,7 +32,7 @@ from datetime import datetime
 
 import numpy as np
 
-from core.data_manager import save_json
+from core.data_file import save_json
 from core.pyhim_logging import write_string_to_file
 from matrixOperations.HIMmatrixOperations import (
     load_sc_data,

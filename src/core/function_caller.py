@@ -335,7 +335,10 @@ class Pipeline:
                             feat_dict[f2p.label], f2p, reference_file, self.m_data_m
                         )
                     )
-            feat.save_results(results_to_keep)
+
+            merged_results = feat.merge_results(remove_none_from_list(results_to_keep))
+            out_filename = getattr(feat.params, "outputFile", "")
+            self.m_data_m.save_data(merged_results, feat.params.folder, out_filename)
 
 
 def run_pattern(feat, f2p, reference_file, m_data_m):
@@ -359,14 +362,18 @@ def run_pattern(feat, f2p, reference_file, m_data_m):
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
     m_data_m.save_data(results_to_save, feat.params.folder, f2p.basename)
-    results_to_keep["tif_name"] = f2p.tif_name
-    # mg_2d_npy_name_to_tif_name(
-    #     os.path.basename(img_path_to_register)
-    # )
-    results_to_keep["ref_tif_name"] = (
-        reference_file.tif_name if reference_file else None
-    )
+    if results_to_keep is not None:
+        results_to_keep["tif_name"] = f2p.tif_name
+        results_to_keep["cycle"] = f2p.cycle
+        results_to_keep["roi"] = m_data_m.processed_roi
+        results_to_keep["ref_tif_name"] = (
+            reference_file.tif_name if reference_file else None
+        )
     return results_to_keep
+
+
+def remove_none_from_list(list_with_none: list):
+    return [x for x in list_with_none if x is not None]
 
 
 # =============================================================================

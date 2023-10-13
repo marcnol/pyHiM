@@ -40,41 +40,13 @@ class Feature:
         self.name: str = None
 
     def get_required_inputs(self):
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print("DEGUGF")
-        print(self.tif_labels)
-        print(self.npy_labels)
         return self.tif_labels, self.npy_labels, self.required_ref, self.required_table
 
     def run(self):
         pass
 
-    def save_results(self, results):
-        pass
+    def merge_results(self, results):
+        return []
 
 
 class Project(Feature):

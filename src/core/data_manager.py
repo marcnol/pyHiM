@@ -6,7 +6,6 @@ Data manager module
 Manage writing, reading and checking data.
 """
 
-import json
 import os
 import re
 
@@ -224,8 +223,9 @@ class DataManager:
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
+                cycle = parts["cycle"]
                 self.add_to_processable_labels(label)
-                self.tif_files.append(TifFile(path, name, ext, label))
+                self.tif_files.append(TifFile(path, name, ext, label, cycle))
             elif ext in self.ecsv_ext:
                 if "barcode" in name:
                     self.add_to_processable_labels("barcode")
@@ -235,8 +235,12 @@ class DataManager:
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
+                cycle = parts["cycle"]
                 self.add_to_processable_labels(label)
-                self.npy_files.append(NpyFile(None, "_2d", path, name, label))
+                basename = name[:-3]
+                self.npy_files.append(
+                    NpyFile(None, "_2d", cycle, path, basename, label)
+                )
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):
@@ -383,7 +387,7 @@ class DataManager:
             return [
                 img_file for img_file in self.tif_files if img_file.label in tif_labels
             ]
-        elif tif_labels:
+        elif npy_labels:
             return [
                 img_file for img_file in self.npy_files if img_file.label in npy_labels
             ]
@@ -406,23 +410,22 @@ class DataManager:
                     "a",
                 )
 
+    def __find_file_with_this_part(self, label_part, label, file_list):
+        result = None
+        for data_file in file_list:
+            if data_file.label == label and label_part in data_file.basename:
+                result = data_file
+        return result
+
     def load_reference(self, required_ref):
         if not required_ref:
             return None
-
-
-def save_json(data, file_name):
-    """Save a python dict as a JSON file
-
-    Parameters
-    ----------
-    data : dict
-        Data to save
-    file_name : str
-        Output JSON file name
-    """
-    with open(file_name, mode="w", encoding="utf-8") as json_f:
-        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
+        if required_ref["data_type"] == "npy":
+            return self.__find_file_with_this_part(
+                required_ref["label_part"], required_ref["label"], self.npy_files
+            )
+        else:
+            raise ValueError
 
 
 def create_folder(folder_path: str):

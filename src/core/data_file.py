@@ -6,6 +6,7 @@ Data files module
 Manage files operations, depending of DataManager.
 """
 
+import json
 import os
 
 import matplotlib.pyplot as plt
@@ -31,13 +32,14 @@ class DataFile:
 
 
 class TifFile:
-    def __init__(self, path, basename, ext, label):
+    def __init__(self, path, basename, ext, label, cycle):
         self.path_name = path
         self.basename = basename
         self.extension = ext
         self.folder_path = self.get_root()
         self.label = label
         self.tif_name = basename + "." + ext
+        self.cycle = cycle
 
     def get_root(self):
         length = len(self.path_name) - len(self.basename) - 1 - len(self.extension)
@@ -48,7 +50,7 @@ class TifFile:
 
 
 class NpyFile(DataFile):
-    def __init__(self, npy_data, status: str, path="", basename="", label=""):
+    def __init__(self, npy_data, status: str, cycle="", path="", basename="", label=""):
         super().__init__(npy_data)
         self.status = status
         self.extension = "npy"
@@ -56,7 +58,8 @@ class NpyFile(DataFile):
         self.path_name = path
         self.label = label
         self.folder_path = ""
-        self.tif_name = basename[: len(status)] + ".tif"
+        self.tif_name = basename + ".tif"
+        self.cycle = cycle
 
     def get_root(self):
         if self.path_name:
@@ -67,14 +70,64 @@ class NpyFile(DataFile):
 
     def save(self, folder_path: str, basename: str):
         self.folder_path = folder_path + os.sep + "data"
-        self.basename = basename + self.status
+        self.basename = basename
         self.path_name = (
-            self.folder_path + os.sep + self.basename + "." + self.extension
+            self.folder_path
+            + os.sep
+            + self.basename
+            + self.status
+            + "."
+            + self.extension
         )
+        self.cycle = basename.split("_")[2]
         if self.data.shape <= (1, 1):
             raise ValueError(f"Image is empty! Original file: {basename}.tif")
         np.save(self.path_name, self.data)
-        print_log(f"$ Image saved to disk: {self.basename}.npy")
+        print_log(f"$ Image saved to disk: {self.basename + self.status}.npy")
+
+    def load(self):
+        return np.load(self.path_name)
+
+
+class JsonFile(DataFile):
+    def __init__(self, data):
+        super().__init__(data)
+        self.extension = "json"
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path: str, basename: str):
+        self.folder_path = folder_path + os.sep + "data"
+        self.basename = basename
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+        save_json(self.data, self.path_name)
+        print_log(f"$ Saved dictionary to {self.path_name}")
+
+
+class EcsvFile(DataFile):
+    def __init__(self, data):
+        super().__init__(data)
+        self.extension = "table"
+        self.folder_path = ""
+        self.basename = ""
+        self.path_name = ""
+
+    def save(self, folder_path: str, basename: str):
+        self.folder_path = folder_path + os.sep + "data"
+        self.basename = basename
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
+
+        self.data.write(
+            self.path_name,
+            format="ascii.ecsv",
+            overwrite=True,
+        )
+        print_log(f"$ Saved table to {self.path_name}")
 
 
 class Png2DFile(DataFile):
@@ -336,3 +389,17 @@ class EqualizationHistogramsFile(DataFile):
         )
         plt.savefig(self.path_name)
         plt.close(fig)
+
+
+def save_json(data, file_name):
+    """Save a python dict as a JSON file
+
+    Parameters
+    ----------
+    data : dict
+        Data to save
+    file_name : str
+        Output JSON file name
+    """
+    with open(file_name, mode="w", encoding="utf-8") as json_f:
+        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)

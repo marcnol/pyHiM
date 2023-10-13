@@ -3,7 +3,7 @@ import os
 import re
 from tkinter import messagebox
 
-from core.data_manager import save_json
+from core.data_file import save_json
 
 
 def convert_dic_to_string(dic: dict):

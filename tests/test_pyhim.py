@@ -49,7 +49,9 @@ def test_align_images():
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
     )
     out_files = extract_files(out_align_images)
+    tmp_files = extract_files(tmp_align_images)
     assert len(out_files) > 0
+    assert len(out_files) == len(tmp_files)
     for _, short_filename, extension in out_files:
         if extension:
             filename = short_filename + "." + extension

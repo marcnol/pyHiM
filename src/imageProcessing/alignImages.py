@@ -42,11 +42,14 @@ from core.dask_cluster import try_get_client
 from core.data_file import (
     BlockAlignmentFile,
     BothImgRbgFile,
+    EcsvFile,
     EqualizationHistogramsFile,
+    JsonFile,
     NpyFile,
     RefDiffFile,
+    save_json,
 )
-from core.data_manager import load_json, save_json
+from core.data_manager import load_json
 from core.parameters import RegistrationParams, rt_to_filename
 from core.pyhim_logging import print_log, write_string_to_file
 from imageProcessing.imageProcessing import (
@@ -68,12 +71,18 @@ def preprocess_2d_img(img, background_sigma):
 class RegisterGlobal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
-        # self.required_data = ["fiducial"]
-        # self.required_ref = params.referenceFiducial
+        self.npy_labels = ["fiducial"]
+        self.required_ref = {
+            "data_type": "npy",
+            "label_part": params.referenceFiducial,
+            "label": "fiducial",
+        }
         self.out_folder = self.params.folder
         self.name = "RegisterGlobal"
 
     def run(self, raw_2d_img, reference_2d_img):
+        if np.array_equal(raw_2d_img, reference_2d_img, equal_nan=True):
+            return [NpyFile(reference_2d_img, "_2d_registered")], None
         results_to_save = []
         preprocessed_img = preprocess_2d_img(raw_2d_img, self.params.background_sigma)
         preprocessed_ref = preprocess_2d_img(
@@ -128,6 +137,38 @@ class RegisterGlobal(Feature):
 
         results_to_keep = {"shift": shift, "diffphase": diffphase, "error": error}
         return results_to_save, results_to_keep
+
+    def merge_results(self, results: list[dict]):
+        dict_shift_roi = {}
+        alignment_results_table = Table(
+            names=(
+                "aligned file",
+                "reference file",
+                "shift_x",
+                "shift_y",
+                "error",
+                "diffphase",
+            ),
+            dtype=("S2", "S2", "f4", "f4", "f4", "f4"),
+        )
+        for result_dict in results:
+            label_part = result_dict["cycle"]
+            shift = result_dict["shift"]
+            table_entry = [
+                result_dict["tif_name"],
+                result_dict["ref_tif_name"],
+                result_dict["shift"][0],
+                result_dict["shift"][1],
+                result_dict["error"],
+                result_dict["diffphase"],
+            ]
+            dict_shift_roi[label_part] = shift.tolist()
+            alignment_results_table.add_row(table_entry)
+
+        roi = results[0]["roi"]
+        dict_shifts = {f"ROI:{roi}": dict_shift_roi}
+
+        return [JsonFile(dict_shifts), EcsvFile(alignment_results_table)]
 
 
 class ApplyRegisterGlobal(Feature):

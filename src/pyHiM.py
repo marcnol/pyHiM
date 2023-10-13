@@ -91,12 +91,6 @@ def main(command_line_arguments=None):
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
-        # [registers fiducials using a barcode as reference]
-        if "register_global" in pipe.cmds:
-            registration_params = datam.labelled_params[label].registration
-            pipe.align_images(
-                current_param, label, datam.m_data_path, registration_params
-            )
 
         # [applies registration to DAPI and barcodes]
         if "register_global" in pipe.cmds:
