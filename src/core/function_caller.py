@@ -12,7 +12,6 @@ from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.alignImages import (
     ApplyRegisterGlobal,
     RegisterGlobal,
-    align_images_in_current_folder,
     apply_registrations_to_current_folder,
 )
 from imageProcessing.alignImages3D import Drift3D
@@ -216,19 +215,6 @@ class Pipeline:
                 print_log("! [WARNING] Sequential mode: activated")
             else:
                 self.m_dask.create_distributed_client()
-
-    def align_images(self, current_param, label, data_path, registration_params):
-        if (
-            label == "fiducial"
-            and current_param.param_dict["acquisition"]["label"] == "fiducial"
-        ):
-            print_log(f"> Making image registrations for label: {label}")
-            self.manage_parallel_option(
-                align_images_in_current_folder,
-                data_path,
-                current_param,
-                registration_params,
-            )
 
     def align_images_3d(self, current_param, label):
         if (
