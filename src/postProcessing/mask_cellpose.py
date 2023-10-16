@@ -7,11 +7,12 @@ Created on Mon Jul  3 18:05:08 2023
 
 Usage:
     
-    $ ls scan_*ROI.tif | run_cellpose.py --pipe 
+    $ ls scan_*ROI.tif | mask_cellpose.py --gpu
 
 or just for a single file
 
-    run_cellpose.py --input scan_001_DAPI_001_ROI.tif 
+    mask_cellpose.py --input scan_001_DAPI_001_ROI.tif --gpu
+    
 
 """
 import os
@@ -20,13 +21,21 @@ import subprocess
 import select
 import argparse
 import numpy as np
-from cellpose import models
+from cellpose import models, core
 from cellpose.io import imread
 
 
 def parseArguments():
-    parser = argparse.ArgumentParser()
+
+    parser=argparse.ArgumentParser(
+        description='''mask_cellpose.py will segment a TIF file using predermined parameters using cellpose. \n These parameters can be
+        changed using arguments. See below ''',
+        epilog="""All is well that ends well.""")
+    
     parser.add_argument("--input", help="Name of input trace file.")
+    parser.add_argument(
+        "--gpu", help="If used it will use gpu mode", action="store_true"
+    )
     parser.add_argument("--cellprob", help="cellprob threshold. Default = -8.")
     parser.add_argument("--flow", help="flow threshold. Default = 10.")
     parser.add_argument("--stitch", help="stitch threshold. Default = 0.1.")
@@ -41,6 +50,11 @@ def parseArguments():
         p["input"] = args.input
     else:
         p["input"] = None
+
+    if args.gpu:
+        p["gpu"] = [True, None]
+    else:
+        p["gpu"] = [False, None]
 
     if args.cellprob:
         p["cellprob"] = float(args.cellprob)
@@ -82,10 +96,13 @@ def parseArguments():
 
     return p
 
-def run_cellpose_api(image_path, diam, cellprob, flow, stitch,gpu = True,):
+def run_cellpose_api(image_path, diam, cellprob, flow, stitch,gpu = [False,None]):
     
     # model_type='cyto' or 'nuclei' or 'cyto2'
-    model = models.Cellpose(gpu = gpu, model_type='cyto')
+    if gpu[0]:
+        model = models.Cellpose(gpu = gpu[1], model_type='cyto')
+    else:
+        model = models.Cellpose(model_type='cyto')
 
     # list of files
     files = [image_path]
@@ -104,7 +121,7 @@ def run_cellpose_api(image_path, diam, cellprob, flow, stitch,gpu = True,):
                                              stitch_threshold= stitch,
                                              )
 
-    return masks
+    return masks[0]
 
 def run_cellpose(image_path, diam, cellprob, flow, stitch,folder_destination='segmentedObjects'):
     save_folder = os.path.dirname(image_path)
@@ -150,12 +167,15 @@ def run_cellpose(image_path, diam, cellprob, flow, stitch,folder_destination='se
     subprocess.run(move_img, shell=True)
     print(f"$ Moved segmentation file to : {new_mask_name}")
 
-def process_images(cellprob=-8, flow=10, stitch=0.1, diam=50, files=list()):
+def process_images(cellprob=-8, flow=10, stitch=0.1, diam=50, files=list(), gpu = [False,None]):
     print(f"Parameters: diam={diam} | cellprob={cellprob} | flow={flow} | stitch={stitch}\n")
     
     folder_destination = "segmentedObjects"
-    if ~os.path.exists(folder_destination):
+        
+    try:
         os.mkdir(folder_destination)
+    except FileExistsError:
+        print(">>> Output folder exists")
         
     if len(files) > 0:
         print("\n{} trace files to process= {}".format(len(files), "\n".join(map(str, files))))
@@ -166,12 +186,13 @@ def process_images(cellprob=-8, flow=10, stitch=0.1, diam=50, files=list()):
             save_folder = os.path.dirname(file)
 
             # run_cellpose(file, diam, cellprob, flow, stitch,folder_destination=folder_destination)
-            mask = run_cellpose_api(file, diam, cellprob, flow, stitch, gpu=True)
+            mask = run_cellpose_api(file, diam, cellprob, flow, stitch, gpu=gpu)
 
             new_mask_name = (
                 save_folder + folder_destination  + os.sep + os.path.basename(file).split(".")[0] + "_Masks.npy"
             )
-            
+
+            print(f"> Saving output mask image to {new_mask_name}")            
             np.save(new_mask_name,mask)
 
 # =============================================================================
@@ -185,6 +206,13 @@ def main():
 
     print("Remember to activate environment: conda activate cellpose!\n")
 
+    if p["gpu"][0]:
+        use_GPU = core.use_gpu()
+        p["gpu"][1] = use_GPU
+        print('>>> GPU activated? {}'.format(use_GPU))
+    else:
+        print('>>> will use CPU')
+
     # [loops over lists of datafolders]
     process_images(
         cellprob=p["cellprob"],
@@ -192,6 +220,7 @@ def main():
         stitch=p["stitch"],
         diam=p["diam"],
         files=p["files"],
+        gpu = p["gpu"],
     )
 
     print("Finished execution")
