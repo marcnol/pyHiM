@@ -395,6 +395,7 @@ class DataManager:
             return []
 
     def save_data(self, results: list[DataFile], feature_folder: str, basename: str):
+        files_to_keep = []
         for data_file in results:
             output_folder = self.m_data_path + os.sep + feature_folder
             data_file.save(output_folder, basename)
@@ -406,16 +407,14 @@ class DataManager:
                 channel = parts["channel"][:4]
                 data_file.label = self.find_label(basename, channel)
                 data_file.cycle = parts["cycle"]
-
-                self.npy_files.append(
-                    data_file
-                )  # append to a list for next futures Feature run
+                files_to_keep.append(data_file)
             elif data_file.extension in self.png_ext:
                 write_string_to_file(
                     self.md_log_file,
                     f"{basename}\n ![]({data_file.path_name})\n",
                     "a",
                 )
+        return files_to_keep
 
     def __find_file_with_this_part(self, label_part, label, file_list):
         result = None

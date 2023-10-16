@@ -294,6 +294,7 @@ class Pipeline:
 
             self.m_data_m.create_out_structure(feat.out_folder)
             results_to_keep = []
+            files_to_keep = []
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()
@@ -311,20 +312,23 @@ class Pipeline:
                 ]
                 print_session_name(feat.name)
                 # Run workers
-                results_to_keep = client.gather(threads)
+                results_to_keep, files_to_keep = client.gather(threads)
 
             else:
                 print_session_name(feat.name)
                 for f2p in files_to_process:
-                    results_to_keep.append(
-                        run_pattern(
-                            feat_dict[f2p.label], f2p, reference_file, self.m_data_m
-                        )
+                    results, npy_files = run_pattern(
+                        feat_dict[f2p.label], f2p, reference_file, self.m_data_m
                     )
+                    results_to_keep.append(results)
+                    files_to_keep += npy_files
 
             merged_results = feat.merge_results(remove_none_from_list(results_to_keep))
             out_filename = getattr(feat.params, "outputFile", "")
-            self.m_data_m.save_data(merged_results, feat.params.folder, out_filename)
+            npy_files = self.m_data_m.save_data(
+                merged_results, feat.params.folder, out_filename
+            )
+            self.m_data_m.npy_files += files_to_keep + npy_files
 
 
 def run_pattern(feat, f2p, reference_file, m_data_m):
@@ -347,7 +351,9 @@ def run_pattern(feat, f2p, reference_file, m_data_m):
     results_to_save, results_to_keep = feat.run(data, reference)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    m_data_m.save_data(results_to_save, feat.params.folder, f2p.basename)
+    files_to_keep = m_data_m.save_data(
+        results_to_save, feat.params.folder, f2p.basename
+    )
     if results_to_keep is not None:
         results_to_keep["tif_name"] = f2p.tif_name
         results_to_keep["cycle"] = f2p.cycle
@@ -355,7 +361,7 @@ def run_pattern(feat, f2p, reference_file, m_data_m):
         results_to_keep["ref_tif_name"] = (
             reference_file.tif_name if reference_file else None
         )
-    return results_to_keep
+    return results_to_keep, files_to_keep
 
 
 def remove_none_from_list(list_with_none: list):
