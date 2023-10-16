@@ -41,40 +41,30 @@ def test_make_projections():
         assert compare_npy_files(tmp_file, out_file)
 
 
-def test_align_images():
+def test_register_global():
     """Check register_global"""
     main(["-F", tmp_small_inputs, "-C", "register_global", "-S", tmp_stardist_basename])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
     )
-    out_files = extract_files(out_align_images)
+    out_apply_register = (
+        "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/data"
+    )
+    out_files = extract_files(out_align_images) + extract_files(out_apply_register)
     tmp_files = extract_files(tmp_align_images)
     assert len(out_files) > 0
     assert len(out_files) == len(tmp_files)
-    for _, short_filename, extension in out_files:
+    for file_path, short_filename, extension in out_files:
         if extension:
             filename = short_filename + "." + extension
         else:
             filename = short_filename
         tmp_file = os.path.join(tmp_align_images, filename)
-        out_file = os.path.join(out_align_images, filename)
         if extension == "npy":
-            assert compare_npy_files(tmp_file, out_file)
+            assert compare_npy_files(tmp_file, file_path)
         else:
-            assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
-
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
-    out_align_images = (
-        "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/data"
-    )
-    out_files = extract_files(out_align_images)
-    assert len(out_files) > 0
-    for _, short_filename, extension in out_files:
-        filename = short_filename + "." + extension
-        tmp_file = os.path.join(tmp_align_images, filename)
-        out_file = os.path.join(out_align_images, filename)
-        assert compare_npy_files(tmp_file, out_file)
+            assert compare_line_by_line(tmp_file, file_path, shuffled_lines=True)
 
 
 def test_align_images_3d():
