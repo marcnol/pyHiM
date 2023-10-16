@@ -312,7 +312,10 @@ class Pipeline:
                 ]
                 print_session_name(feat.name)
                 # Run workers
-                results_to_keep, files_to_keep = client.gather(threads)
+                collect = client.gather(threads)
+                for results, npy_files in collect:
+                    results_to_keep.append(results)
+                    files_to_keep += npy_files
 
             else:
                 print_session_name(feat.name)
