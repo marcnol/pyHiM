@@ -23,6 +23,7 @@ import numpy as np
 import scipy.optimize as spo
 from apifish.stack import projection
 
+from core.data_file import FocalPlaneMatrixFile, NpyFile, Png2DFile
 from core.parameters import ProjectionParams
 from core.pyhim_logging import print_log
 
@@ -31,68 +32,66 @@ np.seterr(divide="ignore", invalid="ignore")
 
 class Feature:
     def __init__(self, params):
-        self.m_params = params
-        self.required_data = []
+        self.params = params
+        self.tif_labels = []
+        self.npy_labels = []
         self.required_ref = []
         self.required_table = []
+        self.name: str = None
 
     def get_required_inputs(self):
-        return self.required_data, self.required_ref, self.required_table
+        return self.tif_labels, self.npy_labels, self.required_ref, self.required_table
+
+    def run(self):
+        pass
+
+    def merge_results(self, results):
+        return []
 
 
 class Project(Feature):
     def __init__(self, params: ProjectionParams):
         super().__init__(params)
-        self.required_data = ["barcode", "mask", "dapi", "fiducial", "rna"]
-        self.params = params
-        # self.out_folder = params.folder
+        self.tif_labels = ["barcode", "mask", "DAPI", "fiducial", "RNA"]
+        self.out_folder = self.params.folder
+        self.name = "Project"
 
-        # self.block_size = params.get_labeled_dict_value("zProject", "blockSize")
-        # self.display = params.get_labeled_dict_value("zProject", "display")
-        # self.mode = params.get_labeled_dict_value("zProject", "mode")
-        # self.operation = params.get_labeled_dict_value("zProject", "operation")
-        # self.save_image = params.get_labeled_dict_value("zProject", "saveImage")
-        # self.window_security = params.get_labeled_dict_value(
-        #     "zProject", "windowSecurity"
-        # )
-        # self.z_project_option = params.get_labeled_dict_value(
-        #     "zProject", "zProjectOption"
-        # )
-        # self.zmax = params.get_labeled_dict_value("zProject", "zmax")
-        # self.zmin = params.get_labeled_dict_value("zProject", "zmin")
-        # self.zwindows = params.get_labeled_dict_value("zProject", "zwindows")
-
-    def find_out_tags(self, label):
-        tags = ["_2d"]
-        # TODO: Check if label exist
-        # (may be this test have to be done in high level like Pipeline initialization)
-        if self.params.mode == "laplacian":
-            tags.append("_focalPlaneMatrix")
-        return tags
-
-    def run(self, img, label: str):
+    def run(self, img, reference):
         mode = self.params.mode
         if mode == "laplacian":
-            return self._projection_laplacian(img, label)
+            img_projected, (
+                focal_plane_matrix,
+                focus_plane,
+            ) = self._projection_laplacian(img)
+            return [
+                NpyFile(img_projected, "_2d"),
+                Png2DFile(img_projected),
+                FocalPlaneMatrixFile(
+                    focal_plane_matrix, f"focal plane = {focus_plane:.2f}"
+                ),
+            ], {}
         # find the correct range for the projection
-        img_reduce = self.precise_z_planes(img, mode, label)
-        img_projected = self.projection_2d(img_reduce, label)
-        return [img_projected]
+        img_reduce = self.precise_z_planes(img, mode)
+        img_projected = self.projection_2d(img_reduce)
+        return [NpyFile(img_projected, "_2d"), Png2DFile(img_projected)], {}
 
-    def check_zmax(self, img_size, label):
+    # TODO: check and remove unused "label"
+    def check_zmax(self, img_size):
         if self.params.zmax > img_size[0]:
             print_log("$ Setting z max to the last plane")
             self.params.zmax = img_size[0]
 
-    def precise_z_planes(self, img, mode, label):
+    def precise_z_planes(self, img, mode):
         img_size = img.shape
-        self.check_zmax(img_size, label)
+        self.check_zmax(
+            img_size,
+        )
         if mode == "automatic":
-            focus_plane, z_range = self._precise_z_planes_auto(img, label)
+            focus_plane, z_range = self._precise_z_planes_auto(img)
         elif mode == "full":
             focus_plane, z_range = self._precise_z_planes_full(img_size)
         elif mode == "manual":
-            focus_plane, z_range = self._precise_z_planes_manual(label)
+            focus_plane, z_range = self._precise_z_planes_manual()
         else:
             raise ValueError(
                 f"Projection mode UNRECOGNIZED: {mode}\n> Available mode: automatic,full,manual,laplacian"
@@ -100,7 +99,7 @@ class Project(Feature):
         self.__print_img_properties(z_range, img_size, focus_plane)
         return img[z_range[0] : z_range[-1] + 1]
 
-    def _precise_z_planes_auto(self, img, label):
+    def _precise_z_planes_auto(self, img):
         """
         Calculates the focal planes based max standard deviation
         Finds best focal plane by determining the max of the std deviation vs z curve
@@ -158,7 +157,7 @@ class Project(Feature):
         z_range = range(zmin, zmax)
         return focus_plane, z_range
 
-    def _precise_z_planes_manual(self, label):
+    def _precise_z_planes_manual(self):
         # Manual: reads from parameters file
         if self.params.zmin >= self.params.zmax:
             raise SystemExit(
@@ -168,7 +167,7 @@ class Project(Feature):
         z_range = range(self.params.zmin, self.params.zmax)
         return focus_plane, z_range
 
-    def _projection_laplacian(self, img, label):
+    def _projection_laplacian(self, img):
         print_log("Stacking using Laplacian variance...")
         focal_plane_matrix, z_range, block = projection.reinterpolate_focal_plane(
             img, block_size_xy=self.params.block_size, window=self.params.zwindows
@@ -181,7 +180,7 @@ class Project(Feature):
 
         return output, (focal_plane_matrix, z_range[0])
 
-    def projection_2d(self, img, label):
+    def projection_2d(self, img):
         # sums images
         i_collapsed = None
         option = self.params.z_project_option

@@ -27,8 +27,7 @@ np.seterr(divide="ignore", invalid="ignore")
 
 
 class Image:
-    def __init__(self, param=None, current_log=None):
-        self.current_param = param
+    def __init__(self, current_log=None):
         self.log = current_log
         self.data = []
         self.file_name = ""

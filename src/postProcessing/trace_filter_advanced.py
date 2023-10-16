@@ -35,7 +35,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
 
-from core.folder import create_single_folder
+from core.data_manager import create_folder
 
 # matplotlib.use('TkAgg')
 
@@ -808,7 +808,7 @@ if __name__ == "__main__":
     ]  # a fraction of 0.5 means that a maximum of 50% missing barcodes is allowed
 
     print(f"\n$ Will process the following trace files: {data_files}\n")
-    create_single_folder(dest_folder)
+    create_folder(dest_folder)
 
     for file in data_files:
         print(f"$ processing{file}")

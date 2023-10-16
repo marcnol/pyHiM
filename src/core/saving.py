@@ -16,7 +16,7 @@ from stardist import random_label_cmap
 from tifffile import imsave
 from tqdm import trange
 
-from core.pyhim_logging import print_log
+from core.pyhim_logging import print_log, write_string_to_file
 
 np.seterr(divide="ignore", invalid="ignore")
 
@@ -338,35 +338,6 @@ def plot_4_images(allimages, titles=None):
     fig.tight_layout()
 
     return fig
-
-
-def plotting_block_alignment_results(
-    relative_shifts, rms_image, contour, file_name="BlockALignmentResults.png"
-):
-    # plotting
-    fig, axes = plt.subplots(1, 2)
-    ax = axes.ravel()
-    fig.set_size_inches((10, 5))
-
-    cbwindow = 3
-    p_1 = ax[0].imshow(relative_shifts, cmap="terrain", vmin=0, vmax=cbwindow)
-    ax[0].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
-    ax[0].set_title("abs(global-block) shifts, px")
-    fig.colorbar(p_1, ax=ax[0], fraction=0.046, pad=0.04)
-
-    p_2 = ax[1].imshow(
-        rms_image, cmap="terrain", vmin=np.min(rms_image), vmax=np.max(rms_image)
-    )
-    ax[1].plot(contour.T[1], contour.T[0], linewidth=2, c="k")
-    ax[1].set_title("RMS")
-    fig.colorbar(p_2, ax=ax[1], fraction=0.046, pad=0.04)
-
-    for axe in ax:
-        axe.axis("off")
-
-    fig.savefig(file_name)
-
-    plt.close(fig)
 
 
 def heatmap(

@@ -80,34 +80,31 @@ def main():
     raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
     current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")
+    current_folder = current_param.param_dict["rootFolder"]
+    folders_to_remove = []
+    folders_to_remove.append(
+        current_folder
+        + os.sep
+        + current_param.param_dict["common"]["zProject"]["folder"]
+    )
+    folders_to_remove.append(
+        current_folder
+        + os.sep
+        + current_param.param_dict["common"]["alignImages"]["folder"]
+    )
+    folders_to_remove.append(
+        current_folder
+        + os.sep
+        + current_param.param_dict["common"]["segmentedObjects"]["folder"]
+    )
+    folders_to_remove.append(current_folder + os.sep + "buildsPWDmatrix")
 
-    data_folder = Folders(current_param.param_dict["rootFolder"])
-
-    for current_folder in data_folder.list_folders:
-        folders_to_remove = []
-        folders_to_remove.append(
-            current_folder
-            + os.sep
-            + current_param.param_dict["common"]["zProject"]["folder"]
-        )
-        folders_to_remove.append(
-            current_folder
-            + os.sep
-            + current_param.param_dict["common"]["alignImages"]["folder"]
-        )
-        folders_to_remove.append(
-            current_folder
-            + os.sep
-            + current_param.param_dict["common"]["segmentedObjects"]["folder"]
-        )
-        folders_to_remove.append(current_folder + os.sep + "buildsPWDmatrix")
-
-        for new_folder in folders_to_remove:
-            if os.path.isdir(new_folder):
-                shutil.rmtree(new_folder)
-                print(f"{new_folder} removed")
-            else:
-                print(f"{new_folder} does not exist")
+    for new_folder in folders_to_remove:
+        if os.path.isdir(new_folder):
+            shutil.rmtree(new_folder)
+            print(f"{new_folder} removed")
+        else:
+            print(f"{new_folder} does not exist")
 
 
 if __name__ == "__main__":

@@ -2,11 +2,9 @@
 # -*- coding: utf-8 -*-
 """Manage folders for outputs"""
 
-import glob
 import os
-import re
 
-from core.pyhim_logging import print_log
+from core.data_manager import create_folder
 
 # =============================================================================
 # CLASSES
@@ -18,18 +16,10 @@ class Folders:
 
     def __init__(self, master_folder=r"/home/marcnol/Documents/Images"):
         self.master_folder = master_folder
-        self.list_folders = []
 
         # list of sub-folders in rootFilder with images
-        self.z_project_folder = ""
         self.output_folders = {}
         self.output_files = {}
-
-        self.set_folders()
-
-    def set_folders(self):
-        """returns list of directories"""
-        self.list_folders = [self.master_folder]
 
     def create_folder_with_key(self, folder_key_name: str):
         """Create one folder for one type of pyHiM outputs.
@@ -40,8 +30,8 @@ class Folders:
             The key word to access at the folder name inside the parameter file
         """
         folder_path = self.output_folders[folder_key_name]
-        create_single_folder(folder_path)
-        create_single_folder(folder_path + os.sep + "data")
+        create_folder(folder_path)
+        create_folder(folder_path + os.sep + "data")
 
     def create_folders(self, files_folder, current_param):
         """
@@ -63,7 +53,6 @@ class Folders:
         self.output_folders["zProject"] = (
             files_folder + os.sep + current_param.param_dict["zProject"]["folder"]
         )
-        self.create_folder_with_key("zProject")
 
         self._create_folder(files_folder, current_param, "alignImages")
 
@@ -103,45 +92,3 @@ class Folders:
         self.output_files[arg2] = (
             self.output_folders[arg2] + os.sep
         ) + current_param.param_dict[arg2]["outputFile"]
-
-
-def create_single_folder(folder_path):
-    """Create folder with `makedirs` from os module.
-    It's a recursive directory creation function.
-
-    Parameters
-    ----------
-    folder_path : str
-        Relative or absolute path + name of folder
-    """
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print_log(f"$ Folder '{folder_path}' created successfully.")
-    else:
-        print_log(f"! Folder '{folder_path}' already exists.", status="WARN")
-
-
-def retrieve_number_rois_folder(root_folder, reg_exp, ext="tif"):
-    """
-    given a directory and a regular expression, it returns the number of unique rois detected
-
-    Parameters
-    ----------
-    root_folder : string
-    ext : string, optional
-        File extension. The default is 'tif'.
-
-    Returns
-    -------
-    list
-        list of unique rois.
-
-    """
-    files = glob.glob(root_folder + os.sep + "*" + ext)
-    rois = [re.search(reg_exp, x)["roi"] for x in files]
-    return unique(rois)
-
-
-def unique(list_to_sort: list):
-    """function to get unique values"""
-    return list(set(list_to_sort))

@@ -43,7 +43,7 @@ from skimage import exposure, io
 from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders, retrieve_number_rois_folder
+from core.folder import Folders
 from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import _plot_image_3d
@@ -61,17 +61,15 @@ from imageProcessing.segmentMasks import (
 
 
 class Localize3D:
-    def __init__(self, param, current_session, parallel=False):
+    def __init__(self, param, roi_name: str, parallel=False):
         self.current_param = param
-        self.current_session = current_session
         self.parallel = parallel
 
         self.p = {}
-        self.roi_list = []
         self.number_rois = None
         self.dict_shifts = None
         self.dict_shifts_available = None
-        self.roi = None
+        self.roi = roi_name
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.data_folder = None
@@ -450,11 +448,6 @@ class Localize3D:
         # Finds images to process
         files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
-        self.roi_list = retrieve_number_rois_folder(
-            self.current_folder, p["regExp"], ext="tif"
-        )
-        self.number_rois = len(self.roi_list)
-        print_log(f"\n$ Detected {self.number_rois} rois")
         nb_imgs = len(self.current_param.files_to_process)
         print_log(f"$ Number of images to be processed: {nb_imgs}")
 
@@ -469,78 +462,65 @@ class Localize3D:
 
         client = try_get_client()
 
-        if self.number_rois > 0:
-            # loops over rois
-            for roi in self.roi_list:
-                # loads reference fiducial image for this ROI
-                self.roi = roi
+        # loads reference fiducial image for this ROI
+        self.filenames_to_process_list = [
+            x
+            for x in self.current_param.files_to_process
+            if self.current_param.decode_file_parts(os.path.basename(x))["roi"]
+            == self.roi
+            and "RT"
+            in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
+        ]
 
-                self.filenames_to_process_list = [
-                    x
-                    for x in self.current_param.files_to_process
-                    if self.current_param.decode_file_parts(os.path.basename(x))["roi"]
-                    == roi
-                    and "RT"
-                    in self.current_param.decode_file_parts(os.path.basename(x))[
-                        "cycle"
-                    ]
-                ]
-
-                n_files_to_process = len(self.filenames_to_process_list)
-                print_log(f"$ Found {n_files_to_process} files in ROI [{roi}]")
-                print_log(
-                    "$ [roi:cycle] {}".format(
-                        " | ".join(
-                            [
-                                str(
-                                    self.current_param.decode_file_parts(
-                                        os.path.basename(x)
-                                    )["roi"]
-                                )
-                                + ":"
-                                + str(
-                                    self.current_param.decode_file_parts(
-                                        os.path.basename(x)
-                                    )["cycle"]
-                                )
-                                for x in self.filenames_to_process_list
+        n_files_to_process = len(self.filenames_to_process_list)
+        print_log(f"$ Found {n_files_to_process} files in ROI [{self.roi}]")
+        print_log(
+            "$ [roi:cycle] {}".format(
+                " | ".join(
+                    [
+                        str(
+                            self.current_param.decode_file_parts(os.path.basename(x))[
+                                "roi"
                             ]
                         )
-                    )
-                )
-
-                if client is None:
-                    self.inner_parallel_loop = True
-
-                    for file_index, filename_to_process in enumerate(
-                        self.filenames_to_process_list
-                    ):  # self.current_param.files_to_process):
-                        print_log(
-                            f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<"
+                        + ":"
+                        + str(
+                            self.current_param.decode_file_parts(os.path.basename(x))[
+                                "cycle"
+                            ]
                         )
-
-                        output_tables.append(
-                            self.segment_sources_3d_file(filename_to_process)
-                        )
-                else:
-                    self.inner_parallel_loop = False
-                    nb_workers = len(client.scheduler_info()["workers"])
-                    print_log(
-                        f"> Aligning {n_files_to_process} files using {nb_workers} workers..."
-                    )
-
-                    futures = [
-                        client.submit(self.segment_sources_3d_file, x)
                         for x in self.filenames_to_process_list
                     ]
+                )
+            )
+        )
 
-                    output_tables = client.gather(futures)
-                    print_log(
-                        f" > Retrieving {len(output_tables)} results from cluster"
-                    )
+        if client is None:
+            self.inner_parallel_loop = True
 
-                # Merges Tables for different cycles and appends results Table to that of previous ROI
-                output_table_global = vstack([output_table_global] + output_tables)
+            for file_index, filename_to_process in enumerate(
+                self.filenames_to_process_list
+            ):  # self.current_param.files_to_process):
+                print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
+
+                output_tables.append(self.segment_sources_3d_file(filename_to_process))
+        else:
+            self.inner_parallel_loop = False
+            nb_workers = len(client.scheduler_info()["workers"])
+            print_log(
+                f"> Aligning {n_files_to_process} files using {nb_workers} workers..."
+            )
+
+            futures = [
+                client.submit(self.segment_sources_3d_file, x)
+                for x in self.filenames_to_process_list
+            ]
+
+            output_tables = client.gather(futures)
+            print_log(f" > Retrieving {len(output_tables)} results from cluster")
+
+        # Merges Tables for different cycles and appends results Table to that of previous ROI
+        output_table_global = vstack([output_table_global] + output_tables)
 
         print_log(f"$ localize_3d procesing time: {datetime.now() - now}")
 
@@ -577,7 +557,6 @@ class Localize3D:
 
         print_session_name(session_name)
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
-        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -585,7 +564,7 @@ class Localize3D:
         )
 
         # creates output folders and filenames
-        self.current_folder = self.data_folder.list_folders[0]
+        self.current_folder = self.current_param.param_dict["rootFolder"]
 
         self.data_folder.create_folders(self.current_folder, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]
@@ -599,8 +578,6 @@ class Localize3D:
         print_log(f"> Processing Folder: {self.current_folder}")
 
         self.segment_sources_3d_in_folder()
-
-        self.current_session.add(self.current_folder, session_name)
 
         print_log(f"$ segmentedObjects run in {self.current_folder} finished")
 

@@ -16,7 +16,7 @@ import sys
 
 import numpy as np
 
-from core.folder import create_single_folder
+from core.data_manager import create_folder
 from core.parameters import loads_barcode_dict
 from matrixOperations.HIMmatrixOperations import (
     calculate_ensemble_pwd_matrix,
@@ -228,7 +228,7 @@ def main():
         os.getcwd(), output_folder
     )  # Specify the folder path here
 
-    create_single_folder(folder_path)
+    create_folder(folder_path)
 
     n_traces_processed = runtime(
         matrix_files=p["matrix_files"],

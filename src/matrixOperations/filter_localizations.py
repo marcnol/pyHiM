@@ -26,8 +26,6 @@ class FilterLocalizations:
         ----------
         param : class
             Parameters
-        current_session : class
-            session information
         """
 
         self.current_param = param
@@ -126,7 +124,6 @@ class FilterLocalizations:
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
-        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -134,69 +131,69 @@ class FilterLocalizations:
         )
         label = "barcode"
 
-        for current_folder in self.data_folder.list_folders:
-            self.data_folder.create_folders(current_folder, self.current_param)
-            print_log(f"> Processing Folder: {current_folder}")
+        current_folder = self.current_param.param_dict["rootFolder"]
+        self.data_folder.create_folders(current_folder, self.current_param)
+        print_log(f"> Processing Folder: {current_folder}")
 
-            split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
-            if len(split_name) == 1:
-                data_file_path = "data" + os.sep + split_name[0]
-            else:
-                data_file_path = (
-                    (os.sep).join(split_name[:-1])
-                    + os.sep
-                    + "data"
-                    + os.sep
-                    + split_name[-1]
-                )
-            files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
-            if files:
-                for file in files:
-                    self.ndims = 3 if "3D" in os.path.basename(file) else 2
-                    self.setup_filter_values()
+        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
+        if len(split_name) == 1:
+            data_file_path = "data" + os.sep + split_name[0]
+        else:
+            data_file_path = (
+                (os.sep).join(split_name[:-1])
+                + os.sep
+                + "data"
+                + os.sep
+                + split_name[-1]
+            )
+        files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
+        if files:
+            for file in files:
+                self.ndims = 3 if "3D" in os.path.basename(file) else 2
+                self.setup_filter_values()
 
-                    # Loads barcode coordinate Tables
-                    table = LocalizationTable()
-                    barcode_map, unique_barcodes = table.load(file)
+                # Loads barcode coordinate Tables
+                table = LocalizationTable()
+                barcode_map, unique_barcodes = table.load(file)
 
-                    if len(barcode_map) > 0:
-                        # plots and saves original barcode coordinate Tables for safe keeping
-                        new_file = get_file_table_new_name(file)
-                        table.save(new_file, barcode_map)
-                        table.plot_distribution_fluxes(
-                            barcode_map,
-                            [new_file.split(".")[0], "_barcode_stats", ".png"],
-                        )
-                        table.plots_localizations(
-                            barcode_map,
-                            [new_file.split(".")[0], "_barcode_localizations", ".png"],
-                        )
+                if len(barcode_map) > 0:
+                    # plots and saves original barcode coordinate Tables for safe keeping
+                    new_file = get_file_table_new_name(file)
+                    table.save(new_file, barcode_map)
+                    table.plot_distribution_fluxes(
+                        barcode_map,
+                        [new_file.split(".")[0], "_barcode_stats", ".png"],
+                    )
+                    table.plots_localizations(
+                        barcode_map,
+                        [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                    )
 
-                        # processes tables
-                        barcode_map_roi = barcode_map.group_by("ROI #")
-                        number_rois = len(barcode_map_roi.groups.keys)
-                        print_log(f"\n$ rois detected: {number_rois}")
+                    # processes tables
+                    barcode_map_roi = barcode_map.group_by("ROI #")
+                    number_rois = len(barcode_map_roi.groups.keys)
+                    print_log(f"\n$ rois detected: {number_rois}")
 
-                        # Filters barcode coordinate Tables
-                        barcode_map = self.filter_barcode_table(barcode_map)
+                    # Filters barcode coordinate Tables
+                    barcode_map = self.filter_barcode_table(barcode_map)
 
-                        # saves and plots filtered barcode coordinate Tables
-                        table.save(file, barcode_map, comments="filtered")
-                        table.plot_distribution_fluxes(
-                            barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
-                        )
-                        table.plots_localizations(
-                            barcode_map,
-                            [file.split(".")[0], "_barcode_localizations", ".png"],
-                        )
+                    # saves and plots filtered barcode coordinate Tables
+                    table.save(file, barcode_map, comments="filtered")
+                    table.plot_distribution_fluxes(
+                        barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
+                    )
+                    table.plots_localizations(
+                        barcode_map,
+                        [file.split(".")[0], "_barcode_localizations", ".png"],
+                    )
 
-                    else:
-                        print_log(f"\nWARNING>{file} contains an empty table!")
+                else:
+                    print_log(f"\nWARNING>{file} contains an empty table!")
 
-            else:
-                print_log("No barcode tables found!")
+        else:
+            print_log("No barcode tables found!")
 
-            print_log(f"Barcode tables {current_folder} filtered", "info")
+        print_log(f"Barcode tables {current_folder} filtered", "info")
 
 
 def get_file_table_new_name(file):

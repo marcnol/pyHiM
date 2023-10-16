@@ -9,9 +9,13 @@ import os
 
 from core.dask_cluster import DaskCluster
 from core.pyhim_logging import print_log, print_session_name
-from imageProcessing.alignImages import align_images, apply_registrations
+from imageProcessing.alignImages import (
+    ApplyRegisterGlobal,
+    RegisterGlobal,
+    apply_registrations_to_current_folder,
+)
 from imageProcessing.alignImages3D import Drift3D
-from imageProcessing.makeProjections import Project
+from imageProcessing.makeProjections import Feature, Project
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
@@ -133,16 +137,16 @@ class Pipeline:
         labelled_sections = {
             "barcode": [],
             "fiducial": [],
-            "dapi": [],
-            "rna": [],
+            "DAPI": [],
+            "RNA": [],
             "mask": [],
         }
 
         if "project" in self.cmds:
             labelled_sections["barcode"].append("zProject")
             labelled_sections["fiducial"].append("zProject")
-            labelled_sections["dapi"].append("zProject")
-            labelled_sections["rna"].append("zProject")
+            labelled_sections["DAPI"].append("zProject")
+            labelled_sections["RNA"].append("zProject")
             labelled_sections["mask"].append("zProject")
 
         if {
@@ -152,15 +156,15 @@ class Pipeline:
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("alignImages")
             labelled_sections["fiducial"].append("alignImages")
-            labelled_sections["dapi"].append("alignImages")
-            labelled_sections["rna"].append("alignImages")
+            labelled_sections["DAPI"].append("alignImages")
+            labelled_sections["RNA"].append("alignImages")
             labelled_sections["mask"].append("alignImages")
 
         if {"mask_2d", "mask_3d", "localize_2d", "localize_3d"}.intersection(
             set(self.cmds)
         ):
             labelled_sections["barcode"].append("segmentedObjects")
-            labelled_sections["dapi"].append("segmentedObjects")
+            labelled_sections["DAPI"].append("segmentedObjects")
             labelled_sections["mask"].append("segmentedObjects")
 
         if {
@@ -170,19 +174,28 @@ class Pipeline:
             "build_matrix",
         }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("buildsPWDmatrix")
-            labelled_sections["dapi"].append("buildsPWDmatrix")
+            labelled_sections["DAPI"].append("buildsPWDmatrix")
             labelled_sections["mask"].append("buildsPWDmatrix")
 
         self.m_data_m.set_labelled_params(labelled_sections)
 
+    def _init_labelled_feature(
+        self, feature_class_name: Feature, params_attr_name: str
+    ):
+        labelled_feature = {}
+        for label in self.m_data_m.get_processable_labels():
+            params_section = getattr(
+                self.m_data_m.labelled_params[label], params_attr_name
+            )
+            labelled_feature[label] = feature_class_name(params_section)
+        self.features.append(labelled_feature)
+
     def init_features(self):
         if "project" in self.cmds:
-            labelled_feature = {}
-            for label in self.m_data_m.label_to_process:
-                labelled_feature[label] = Project(
-                    self.m_data_m.labelled_params[label].projection
-                )
-            self.features.append(labelled_feature)
+            self._init_labelled_feature(Project, "projection")
+        if "register_global" in self.cmds:
+            self._init_labelled_feature(RegisterGlobal, "registration")
+            self._init_labelled_feature(ApplyRegisterGlobal, "registration")
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
@@ -203,35 +216,26 @@ class Pipeline:
             else:
                 self.m_dask.create_distributed_client()
 
-    def align_images(self, current_param, label):
-        if (
-            label == "fiducial"
-            and current_param.param_dict["acquisition"]["label"] == "fiducial"
-        ):
-            print_log(f"> Making image registrations for label: {label}")
-            self.manage_parallel_option(
-                align_images, current_param, self.m_logger.m_session
-            )
-
     def align_images_3d(self, current_param, label):
         if (
             label == "fiducial"
             and current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
         ):
             print_log(f"> Making 3D image registrations label: {label}")
-            _drift_3d = Drift3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
-            )
+            _drift_3d = Drift3D(current_param, parallel=self.parallel)
             _drift_3d.align_fiducials_3d()
 
-    def apply_registrations(self, current_param, label):
+    def apply_registrations(self, current_param, label, data_path, registration_params):
         if (
             label != "fiducial"
             and current_param.param_dict["acquisition"]["label"] != "fiducial"
         ):
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
-                apply_registrations, current_param, self.m_logger.m_session
+                apply_registrations_to_current_folder,
+                data_path,
+                current_param,
+                registration_params,
             )
 
     def segment_masks(self, current_param, label):
@@ -245,23 +249,19 @@ class Pipeline:
             and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
-            self.manage_parallel_option(
-                segment_masks, current_param, self.m_logger.m_session
-            )
+            self.manage_parallel_option(segment_masks, current_param)
 
-    def segment_masks_3d(self, current_param, label):
+    def segment_masks_3d(self, current_param, label, roi_name: str):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
         ]["operation"]:
             print_log(f"Making 3D image segmentations for label: {label}")
             print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segment_sources_3d = Mask3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
-            )
-            _segment_sources_3d.segment_masks_3d()
+            _segment_sources_3d = Mask3D(current_param, parallel=self.parallel)
+            _segment_sources_3d.segment_masks_3d(roi_name)
 
-    def segment_sources_3d(self, current_param, label):
+    def segment_sources_3d(self, current_param, label, roi_name: str):
         if (
             label == "barcode"
             and "3D" in current_param.param_dict["segmentedObjects"]["operation"]
@@ -270,44 +270,71 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Localize3D(
-                current_param, self.m_logger.m_session, parallel=self.parallel
+                current_param, roi_name, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d()
 
     def process_pwd_matrices(self, current_param, label):
         if label in ("DAPI", "mask"):
-            self.manage_parallel_option(
-                process_pwd_matrices, current_param, self.m_logger.m_session
-            )
+            self.manage_parallel_option(process_pwd_matrices, current_param)
 
     def run(self):  # sourcery skip: remove-pass-body
         for feat_dict in self.features:
             feat = get_a_dict_value(feat_dict)
-            (label_types, required_ref, required_table) = feat.get_required_inputs()
-            # reference = self.m_data_m.load_reference(required_ref)
+            (
+                tif_labels,
+                npy_labels,
+                required_ref,
+                required_table,
+            ) = feat.get_required_inputs()
+            reference_file = self.m_data_m.load_reference(required_ref)
             # table = self.m_data_m.load_table(required_table)
-            files_to_process = self.m_data_m.get_inputs(label_types)
-            self.m_data_m.create_out_structure(feat.params.folder)
+
+            files_to_process = self.m_data_m.get_inputs(tif_labels, npy_labels)
+
+            self.m_data_m.create_out_structure(feat.out_folder)
+            results_to_keep = []
+            files_to_keep = []
             if self.parallel:
                 client = self.m_dask.client
                 # forward_logging are used to allow workers send log msg to client with print_log()
                 client.forward_logging()
                 # Planify, for the future, work to execute in parallel
                 threads = [
-                    client.submit(run_pattern, feat_dict[f2p.label], f2p, self.m_data_m)
+                    client.submit(
+                        run_pattern,
+                        feat_dict[f2p.label],
+                        f2p,
+                        reference_file,
+                        self.m_data_m,
+                    )
                     for f2p in files_to_process
                 ]
-                print_session_name("project")
+                print_session_name(feat.name)
                 # Run workers
-                client.gather(threads)
+                collect = client.gather(threads)
+                for results, npy_files in collect:
+                    results_to_keep.append(results)
+                    files_to_keep += npy_files
 
             else:
-                print_session_name("project")
+                print_session_name(feat.name)
                 for f2p in files_to_process:
-                    run_pattern(feat_dict[f2p.label], f2p, self.m_data_m)
+                    results, npy_files = run_pattern(
+                        feat_dict[f2p.label], f2p, reference_file, self.m_data_m
+                    )
+                    results_to_keep.append(results)
+                    files_to_keep += npy_files
+
+            merged_results = feat.merge_results(remove_none_from_list(results_to_keep))
+            out_filename = getattr(feat.params, "outputFile", "")
+            npy_files = self.m_data_m.save_data(
+                merged_results, feat.params.folder, out_filename
+            )
+            self.m_data_m.npy_files += files_to_keep + npy_files
 
 
-def run_pattern(feat, f2p, m_data_m):
+def run_pattern(feat, f2p, reference_file, m_data_m):
     """Generic pattern for both run mode, sequential and parallel.
     (need to be a function and not a method for parallel running)
 
@@ -315,17 +342,33 @@ def run_pattern(feat, f2p, m_data_m):
     ----------
     feat : Feature
         A sub-class of Feature
-    f2p : ImageFile
+    f2p : TifFile
         A file object with a `load` method.
-        TODO: create a mother class `File` for ImageFile to be generic with other type of data files
+        TODO: create a mother class `File` for TifFile to be generic with other type of data files
     m_data_m : Allow to save outputs
     """
     data = f2p.load()
-    print_log(f"\n> Analysing file: {os.path.basename(f2p.all_path)}")
-    results = feat.run(data, f2p.label)
+
+    reference = reference_file.load() if reference_file else None
+    print_log(f"\n> Analysing file: {os.path.basename(f2p.path_name)}")
+    results_to_save, results_to_keep = feat.run(data, reference)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    m_data_m.save_data(results, feat.find_out_tags(f2p.label), feat.params.folder, f2p)
+    files_to_keep = m_data_m.save_data(
+        results_to_save, feat.params.folder, f2p.basename
+    )
+    if results_to_keep is not None:
+        results_to_keep["tif_name"] = f2p.tif_name
+        results_to_keep["cycle"] = f2p.cycle
+        results_to_keep["roi"] = m_data_m.processed_roi
+        results_to_keep["ref_tif_name"] = (
+            reference_file.tif_name if reference_file else None
+        )
+    return results_to_keep, files_to_keep
+
+
+def remove_none_from_list(list_with_none: list):
+    return [x for x in list_with_none if x is not None]
 
 
 # =============================================================================

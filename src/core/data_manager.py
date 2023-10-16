@@ -6,16 +6,10 @@ Data manager module
 Manage writing, reading and checking data.
 """
 
-import json
 import os
 import re
 
-import matplotlib.pyplot as plt
-import numpy as np
-from astropy.visualization import SqrtStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
-from skimage import io
-
+from core.data_file import DataFile, NpyFile, TifFile
 from core.parameters import AcquisitionParams, Params, deep_dict_update, load_json
 from core.pyhim_logging import (
     print_log,
@@ -24,7 +18,6 @@ from core.pyhim_logging import (
     print_title,
     write_string_to_file,
 )
-from core.saving import image_show_with_values
 
 
 def extract_files(root: str):
@@ -59,22 +52,6 @@ def extract_files(root: str):
     return files
 
 
-class ImageFile:
-    def __init__(self, path, img_name, ext, label):
-        self.all_path = path
-        self.name = img_name
-        self.extension = ext
-        self.root = self.get_root()
-        self.label = label
-
-    def get_root(self):
-        length = len(self.all_path) - len(self.name) - 1 - len(self.extension)
-        return self.all_path[:length]
-
-    def load(self):
-        return io.imread(self.all_path).squeeze()
-
-
 def remove_extension(filename: str):
     fl_split = filename.split(".")
     fl_split.pop()
@@ -99,12 +76,23 @@ class DataManager:
         self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
         self.param_file_path = self.find_param_file(param_file)
-        self.data_images = []
-        self.data_tables = []
+        self.tif_files = []
+        self.ecsv_files = []
+        self.npy_files = []
         self.filename_regex = ""
         self.label_decoder = self.__default_label_decoder()
-        self.label_to_process = []
+        self.__processable_labels = {
+            "fiducial": False,
+            "DAPI": False,
+            "mask": False,
+            "barcode": False,
+            "RNA": False,
+        }
         self.processed_roi = None
+        self.tif_ext = ["tif", "tiff"]
+        self.npy_ext = ["npy"]
+        self.ecsv_ext = ["ecsv", "table", "dat"]
+        self.png_ext = ["png"]
 
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
@@ -161,9 +149,9 @@ class DataManager:
     def __default_label_decoder():
         return {
             "dapi_acq": {
-                "ch00": "dapi",
+                "ch00": "DAPI",
                 "ch01": "fiducial",
-                "ch02": "rna",
+                "ch02": "RNA",
             },
             "mask_acq": {
                 "ch00": "mask",
@@ -206,9 +194,15 @@ class DataManager:
         create_folder(folder_path)
         create_folder(folder_path + os.sep + "data")
 
-    def add_label_to_process(self, label):
-        if label not in self.label_to_process:
-            self.label_to_process.append(label)
+    def add_to_processable_labels(self, label):
+        self.__processable_labels[label] = True
+
+    def get_processable_labels(self):
+        label_list = []
+        for label, value in self.__processable_labels.items():
+            if value:
+                label_list.append(label)
+        return label_list
 
     def check_roi_uniqueness(self, roi_name: str):
         if self.processed_roi is None:
@@ -222,20 +216,31 @@ class DataManager:
     def dispatch_files(self):  # sourcery skip: remove-pass-elif
         """Get all input files and sort by extension type"""
         print_section("file names")
-        img_ext = ["tif", "tiff"]
-        # TODO: improve to: img_ext = ["tif", "tiff", "npy", "png", "jpg"]
-        table_ext = ["csv", "ecsv", "dat"]
         unrecognized = 0
         for path, name, ext in self.all_files:
-            if ext in img_ext:
+            if ext in self.tif_ext:
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
-                self.add_label_to_process(label)
-                self.data_images.append(ImageFile(path, name, ext, label))
-            elif ext in table_ext:
-                self.data_tables.append((path, name, ext))
+                cycle = parts["cycle"]
+                self.add_to_processable_labels(label)
+                self.tif_files.append(TifFile(path, name, ext, label, cycle))
+            elif ext in self.ecsv_ext:
+                if "barcode" in name:
+                    self.add_to_processable_labels("barcode")
+                self.ecsv_files.append((path, name, ext))
+            elif ext in self.npy_ext:
+                parts = self.decode_file_parts(name)
+                self.check_roi_uniqueness(parts["roi"])
+                channel = parts["channel"][:4]
+                label = self.find_label(name, channel)
+                cycle = parts["cycle"]
+                self.add_to_processable_labels(label)
+                basename = name[:-3]
+                self.npy_files.append(
+                    NpyFile(None, "_2d", cycle, path, basename, label)
+                )
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):
@@ -275,11 +280,11 @@ class DataManager:
         return label
 
     def set_label_decoder(self):
-        self.label_decoder["dapi_acq"][self.acquisition_params.DAPI_channel] = "dapi"
+        self.label_decoder["dapi_acq"][self.acquisition_params.DAPI_channel] = "DAPI"
         self.label_decoder["dapi_acq"][
             self.acquisition_params.fiducialDAPI_channel
         ] = "fiducial"
-        self.label_decoder["dapi_acq"][self.acquisition_params.RNA_channel] = "rna"
+        self.label_decoder["dapi_acq"][self.acquisition_params.RNA_channel] = "RNA"
         self.label_decoder["mask_acq"][self.acquisition_params.mask_channel] = "mask"
         self.label_decoder["mask_acq"][
             self.acquisition_params.fiducialMask_channel
@@ -312,13 +317,12 @@ class DataManager:
 
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
-        for label in self.label_to_process:
-            up_label = label.upper() if label in ["rna", "dapi"] else label
-            print_title(f"Params: {up_label}")
+        for label in self.get_processable_labels():
+            print_title(f"Params: {label}")
             self.labelled_params[label] = Params(
                 label,
                 deep_dict_update(
-                    self.raw_dict["common"], self.raw_dict["labels"][up_label]
+                    self.raw_dict["common"], self.raw_dict["labels"][label]
                 ),
                 labelled_sections[label],
             )
@@ -378,103 +382,56 @@ class DataManager:
 
         raise ValueError("fileNameRegExp not found")
 
-    def get_inputs(self, labels: list[str]):
-        return [img_file for img_file in self.data_images if img_file.label in labels]
-
-    def save_data(
-        self,
-        results: list,
-        tags: list[str],
-        out_folder: str,
-        associated_file: ImageFile,
-    ):
-        if len(results) != len(tags):
-            # TODO: Improuve this possibility, you may be can have just one image but different tags
-            # Because we want plot this image with different ways
-            raise SystemExit(f"len(results) {len(results)} != len(tags) {len(tags)}")
-
-        partial_path = (
-            self.out_path + os.sep + out_folder + os.sep + associated_file.name
-        )
-        for res, tag in zip(results, tags):
-            if tag == "_2d":
-                self._save_2d_npy(res, partial_path)
-                self._save_2d_png(res, partial_path)
-            elif tag == "_focalPlaneMatrix":
-                self._save_focal_plane_matrix(res, partial_path)
-            else:
-                raise SystemExit(f"tag UNRECOGNIZED: {tag}")
-
-    def _save_2d_npy(self, data, partial_path):
-        path_name = f"{partial_path}_2d"
-        split_name = path_name.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + path_name
+    def get_inputs(self, tif_labels: list[str], npy_labels: list[str]):
+        if tif_labels:
+            return [
+                img_file for img_file in self.tif_files if img_file.label in tif_labels
+            ]
+        elif npy_labels:
+            return [
+                img_file for img_file in self.npy_files if img_file.label in npy_labels
+            ]
         else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
+            return []
+
+    def save_data(self, results: list[DataFile], feature_folder: str, basename: str):
+        files_to_keep = []
+        for data_file in results:
+            output_folder = self.m_data_path + os.sep + feature_folder
+            data_file.save(output_folder, basename)
+            data_file.delete_data()
+            if data_file.extension in self.npy_ext:
+                parts = self.decode_file_parts(basename)
+
+                self.check_roi_uniqueness(parts["roi"])
+                channel = parts["channel"][:4]
+                data_file.label = self.find_label(basename, channel)
+                data_file.cycle = parts["cycle"]
+                files_to_keep.append(data_file)
+            elif data_file.extension in self.png_ext:
+                write_string_to_file(
+                    self.md_log_file,
+                    f"{basename}\n ![]({data_file.path_name})\n",
+                    "a",
+                )
+        return files_to_keep
+
+    def __find_file_with_this_part(self, label_part, label, file_list):
+        result = None
+        for data_file in file_list:
+            if data_file.label == label and label_part in data_file.basename:
+                result = data_file
+        return result
+
+    def load_reference(self, required_ref):
+        if not required_ref:
+            return None
+        if required_ref["data_type"] == "npy":
+            return self.__find_file_with_this_part(
+                required_ref["label_part"], required_ref["label"], self.npy_files
             )
-        if data.shape <= (1, 1):
-            raise ValueError(f"Image is empty! Original file: {partial_path}.tif")
-        np.save(data_file_path, data)
-        print_log(f"$ Image saved to disk: {data_file_path}.npy", "info")
-
-    def _save_2d_png(self, data, partial_path):
-        out_path = f"{partial_path}_2d.png"
-
-        fig = plt.figure()
-        size = (10, 10)
-        fig.set_size_inches(size)
-        ax = plt.Axes(fig, [0.0, 0.0, 1.0, 1.0])
-        ax.set_axis_off()
-        norm = ImageNormalize(stretch=SqrtStretch())
-
-        ax.set_title("2D Data")
-
-        fig.add_axes(ax)
-        ax.imshow(data, origin="lower", cmap="Greys_r", norm=norm)
-        fig.savefig(out_path)
-        plt.close(fig)
-        original_filename = os.path.basename(f"{partial_path}.tif")
-        write_string_to_file(
-            self.md_log_file,
-            f"{original_filename}\n ![]({out_path})\n",
-            "a",
-        )
-
-    def _save_focal_plane_matrix(self, data: tuple, partial_path: str):
-        focal_plane_matrix, focus_plane = data
-        out_path = f"{partial_path}_focalPlaneMatrix.png"
-        image_show_with_values(
-            [focal_plane_matrix],
-            title=f"focal plane = {focus_plane:.2f}",
-            output_name=out_path,
-        )
-
-        original_filename = os.path.basename(f"{partial_path}.tif")
-        write_string_to_file(
-            self.md_log_file,
-            f"{original_filename}\n ![]({out_path})\n",
-            "a",
-        )
-
-
-def save_json(data, file_name):
-    """Save a python dict as a JSON file
-
-    Parameters
-    ----------
-    data : dict
-        Data to save
-    file_name : str
-        Output JSON file name
-    """
-    with open(file_name, mode="w", encoding="utf-8") as json_f:
-        json.dump(data, json_f, ensure_ascii=False, sort_keys=True, indent=4)
+        else:
+            raise ValueError
 
 
 def create_folder(folder_path: str):

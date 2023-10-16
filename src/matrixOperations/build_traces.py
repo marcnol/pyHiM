@@ -749,8 +749,6 @@ class BuildTraces:
             Parameters
         current_log : class
             logging class.
-        current_session : class
-            session information
 
         Returns
         -------
@@ -800,7 +798,6 @@ def initialize_module(current_param, module_name="build_traces", label="barcode"
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_session_name(module_name)
-    print_log(f"$ folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"## {session_name}\n",

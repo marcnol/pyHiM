@@ -1257,7 +1257,7 @@ def build_pwd_matrix(
             )
 
 
-def process_pwd_matrices(current_param, current_session):
+def process_pwd_matrices(current_param):
     """
     Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
@@ -1267,8 +1267,6 @@ def process_pwd_matrices(current_param, current_session):
         Parameters
     current_log : class
         logging class.
-    current_session : class
-        session information
 
     Returns
     -------
@@ -1280,7 +1278,6 @@ def process_pwd_matrices(current_param, current_session):
     # processes folders and files
     data_folder = Folders(current_param.param_dict["rootFolder"])
     print_session_name(session_name)
-    print_log(f"$ folders read: {len(data_folder.list_folders)}")
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"## {session_name}\n",
@@ -1288,90 +1285,81 @@ def process_pwd_matrices(current_param, current_session):
     )
     label = "barcode"
 
-    for current_folder in data_folder.list_folders:
-        # files_folder=glob.glob(current_folder+os.sep+'*.tif')
-        data_folder.create_folders(current_folder, current_param)
-        print_log(f"> Processing Folder: {current_folder}")
+    current_folder = current_param.param_dict["rootFolder"]
+    data_folder.create_folders(current_folder, current_param)
+    print_log(f"> Processing Folder: {current_folder}")
 
-        available_masks = current_param.param_dict["buildsPWDmatrix"]["masks2process"]
-        print_log(f"> Masks labels: {available_masks}")
+    available_masks = current_param.param_dict["buildsPWDmatrix"]["masks2process"]
+    print_log(f"> Masks labels: {available_masks}")
 
-        for mask_label in available_masks.keys():
-            mask_identifier = available_masks[mask_label]
+    for mask_label in available_masks.keys():
+        mask_identifier = available_masks[mask_label]
 
-            filename_barcode_coordinates = (
-                data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
+        filename_barcode_coordinates = (
+            data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
+        )
+        if os.path.exists(filename_barcode_coordinates):
+            # 2D
+            output_filename = data_folder.output_files["buildsPWDmatrix"]
+            print_log(f"> 2D processing: {output_filename}")
+
+            if "pixelSizeXY" in current_param.param_dict["acquisition"].keys():
+                pixel_size_xy = current_param.param_dict["acquisition"]["pixelSizeXY"]
+                pixel_size = {"x": pixel_size_xy, "y": pixel_size_xy, "z": 0.0}
+            else:
+                pixel_size = {"x": 0.1, "y": 0.1, "z": 0.0}
+
+            build_pwd_matrix(
+                current_param,
+                current_folder,
+                filename_barcode_coordinates,
+                output_filename,
+                data_folder,
+                pixel_size,
+                current_param.param_dict["fileNameMD"],
+                mask_identifier=mask_identifier,
             )
-            if os.path.exists(filename_barcode_coordinates):
-                # 2D
-                output_filename = data_folder.output_files["buildsPWDmatrix"]
-                print_log(f"> 2D processing: {output_filename}")
 
-                if "pixelSizeXY" in current_param.param_dict["acquisition"].keys():
-                    pixel_size_xy = current_param.param_dict["acquisition"][
-                        "pixelSizeXY"
-                    ]
-                    pixel_size = {"x": pixel_size_xy, "y": pixel_size_xy, "z": 0.0}
+        # 3D
+        filename_barcode_coordinates = (
+            data_folder.output_files["segmentedObjects"] + "_3D_" + label + ".dat"
+        )
+        if os.path.exists(filename_barcode_coordinates):
+            output_filename = data_folder.output_files["buildsPWDmatrix"] + "_3D"
+            print_log(f"> 3D processing: {output_filename}")
+
+            if ("pixelSizeZ" in current_param.param_dict["acquisition"].keys()) and (
+                "pixelSizeXY" in current_param.param_dict["acquisition"].keys()
+            ):
+                pixel_size_xy = current_param.param_dict["acquisition"]["pixelSizeXY"]
+
+                if "zBinning" in current_param.param_dict["acquisition"]:
+                    z_binning = current_param.param_dict["acquisition"]["zBinning"]
                 else:
-                    pixel_size = {"x": 0.1, "y": 0.1, "z": 0.0}
+                    z_binning = 1
 
-                build_pwd_matrix(
-                    current_param,
-                    current_folder,
-                    filename_barcode_coordinates,
-                    output_filename,
-                    data_folder,
-                    pixel_size,
-                    current_param.param_dict["fileNameMD"],
-                    mask_identifier=mask_identifier,
+                pixel_size_z = (
+                    z_binning * current_param.param_dict["acquisition"]["pixelSizeZ"]
                 )
 
-            # 3D
-            filename_barcode_coordinates = (
-                data_folder.output_files["segmentedObjects"] + "_3D_" + label + ".dat"
+                pixel_size = {
+                    "x": pixel_size_xy,
+                    "y": pixel_size_xy,
+                    "z": pixel_size_z * z_binning,
+                }
+            else:
+                pixel_size = {"x": 0.1, "y": 0.1, "z": 0.25}
+
+            build_pwd_matrix(
+                current_param,
+                current_folder,
+                filename_barcode_coordinates,
+                output_filename,
+                data_folder,
+                pixel_size,
+                current_param.param_dict["fileNameMD"],
+                ndims=3,
+                mask_identifier=mask_identifier,
             )
-            if os.path.exists(filename_barcode_coordinates):
-                output_filename = data_folder.output_files["buildsPWDmatrix"] + "_3D"
-                print_log(f"> 3D processing: {output_filename}")
 
-                if (
-                    "pixelSizeZ" in current_param.param_dict["acquisition"].keys()
-                ) and ("pixelSizeXY" in current_param.param_dict["acquisition"].keys()):
-                    pixel_size_xy = current_param.param_dict["acquisition"][
-                        "pixelSizeXY"
-                    ]
-
-                    if "zBinning" in current_param.param_dict["acquisition"]:
-                        z_binning = current_param.param_dict["acquisition"]["zBinning"]
-                    else:
-                        z_binning = 1
-
-                    pixel_size_z = (
-                        z_binning
-                        * current_param.param_dict["acquisition"]["pixelSizeZ"]
-                    )
-
-                    pixel_size = {
-                        "x": pixel_size_xy,
-                        "y": pixel_size_xy,
-                        "z": pixel_size_z * z_binning,
-                    }
-                else:
-                    pixel_size = {"x": 0.1, "y": 0.1, "z": 0.25}
-
-                build_pwd_matrix(
-                    current_param,
-                    current_folder,
-                    filename_barcode_coordinates,
-                    output_filename,
-                    data_folder,
-                    pixel_size,
-                    current_param.param_dict["fileNameMD"],
-                    ndims=3,
-                    mask_identifier=mask_identifier,
-                )
-
-            # tights loose ends
-            current_session.add(current_folder, session_name)
-
-            print_log(f"HiM matrix in {current_folder} processed", "info")
+        print_log(f"HiM matrix in {current_folder} processed", "info")

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.6"
+__version__ = "0.8.7"
 
 import os
 import sys
@@ -54,11 +54,28 @@ def main(command_line_arguments=None):
     pipe.run()
 
     # Separate no-refactor routines
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    # No-refactored
+    # \            /
+    #  \          /
+    #   \        /
+    #    \      /
+    #     \    /
+    #      \  /
+    #       \/
+
     print_log("\n\n\n")
     raw_dict = datam.load_user_param()
     global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
-    labels = global_param.param_dict["labels"]
-    print_log(f"$ Labels to process: {list(labels.keys())}")
+    labels = datam.get_processable_labels()
+    print_log(f"$ Labels to process: {labels}")
     for label in labels:
         # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(
@@ -75,13 +92,12 @@ def main(command_line_arguments=None):
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
 
-        # [registers fiducials using a barcode as reference]
-        if "register_global" in pipe.cmds:
-            pipe.align_images(current_param, label)
-
         # [applies registration to DAPI and barcodes]
         if "register_global" in pipe.cmds:
-            pipe.apply_registrations(current_param, label)
+            registration_params = datam.labelled_params[label].registration
+            pipe.apply_registrations(
+                current_param, label, datam.m_data_path, registration_params
+            )
 
         # [aligns fiducials in 3D]
         if "register_local" in pipe.cmds:
@@ -93,11 +109,11 @@ def main(command_line_arguments=None):
 
         # [segments masks in 3D]
         if "mask_3d" in pipe.cmds:
-            pipe.segment_masks_3d(current_param, label)
+            pipe.segment_masks_3d(current_param, label, datam.processed_roi)
 
         # [segments sources in 3D]
         if "localize_3d" in pipe.cmds:
-            pipe.segment_sources_3d(current_param, label)
+            pipe.segment_sources_3d(current_param, label, datam.processed_roi)
 
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds:
@@ -119,8 +135,6 @@ def main(command_line_arguments=None):
         del current_param
 
     # exits
-    logger.m_session.save()
-
     if pipe.parallel:
         pipe.m_dask.cluster.close()
         pipe.m_dask.client.close()

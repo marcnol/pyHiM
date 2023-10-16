@@ -432,7 +432,6 @@ class RegisterLocalizations:
         # processes folders and files
         self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
-        print_log(f"$ folders read: {len(self.data_folder.list_folders)}")
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
