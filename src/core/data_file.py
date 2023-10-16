@@ -79,7 +79,6 @@ class NpyFile(DataFile):
             + "."
             + self.extension
         )
-        self.cycle = basename.split("_")[2]
         if self.data.shape <= (1, 1):
             raise ValueError(f"Image is empty! Original file: {basename}.tif")
         np.save(self.path_name, self.data)

@@ -400,6 +400,13 @@ class DataManager:
             data_file.save(output_folder, basename)
             data_file.delete_data()
             if data_file.extension in self.npy_ext:
+                parts = self.decode_file_parts(basename)
+
+                self.check_roi_uniqueness(parts["roi"])
+                channel = parts["channel"][:4]
+                data_file.label = self.find_label(basename, channel)
+                data_file.cycle = parts["cycle"]
+
                 self.npy_files.append(
                     data_file
                 )  # append to a list for next futures Feature run
