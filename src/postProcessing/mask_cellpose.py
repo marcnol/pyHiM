@@ -19,6 +19,9 @@ import sys
 import subprocess
 import select
 import argparse
+import numpy as np
+from cellpose import models
+from cellpose.io import imread
 
 
 def parseArguments():
@@ -79,13 +82,34 @@ def parseArguments():
 
     return p
 
-
-def run_cellpose(image_path, diam, cellprob, flow, stitch):
-    save_folder = os.path.dirname(image_path)
+def run_cellpose_api(image_path, diam, cellprob, flow, stitch,gpu = True,):
     
-    # if save_folder == "":
-        # save_folder = "./"
+    # model_type='cyto' or 'nuclei' or 'cyto2'
+    model = models.Cellpose(gpu = gpu, model_type='cyto')
 
+    # list of files
+    files = [image_path]
+
+    imgs = [imread(f) for f in files]
+
+    # define CHANNELS to run segementation on
+    channels = [[0,0]]
+
+    # runs model    
+    masks, flows, styles, diams = model.eval(imgs,
+                                             channels=channels,
+                                             diameter=None,
+                                             cellprob_threshold = cellprob,
+                                             flow_threshold=flow,
+                                             stitch_threshold= stitch,
+                                             )
+
+    return masks
+
+def run_cellpose(image_path, diam, cellprob, flow, stitch,folder_destination='segmentedObjects'):
+    save_folder = os.path.dirname(image_path)
+
+    '''
     command = (
         f"cellpose --verbose "
         + f"--image_path {image_path} "
@@ -95,15 +119,27 @@ def run_cellpose(image_path, diam, cellprob, flow, stitch):
         + f"--flow_threshold {flow} "
         + f"--cellprob_threshold {cellprob}"
     )
+    '''
+    
+    command = (
+        f"cellpose --verbose "
+        + f"--image_path {image_path} --no_npy --save_tif "
+        + "--use_gpu "
+        + f"--chan 0 --diameter {diam} "
+        + f"--stitch_threshold {stitch} "
+        + f"--flow_threshold {flow} "
+        + f"--cellprob_threshold {cellprob}"
+    )
+    
     print(f"$ will run: {command}")
     subprocess.run(command, shell=True)
 
     # moves image to new location
-    mask_name = image_path.split(".")[0] + "_seg.npy"
+    mask_name = image_path.split(".")[0] + "_cp_masks.tif" #"_seg.npy"
     print(f"$ Mask image saved at: {mask_name}")
     
     new_mask_name = (
-        save_folder + "segmentedObjects" + os.sep + os.path.basename(image_path).split(".")[0] + "_Masks.npy"
+        save_folder + folder_destination  + os.sep + os.path.basename(image_path).split(".")[0] + "_Masks.tif"
     )
     
     if os.path.exists(new_mask_name):
@@ -116,16 +152,27 @@ def run_cellpose(image_path, diam, cellprob, flow, stitch):
 
 def process_images(cellprob=-8, flow=10, stitch=0.1, diam=50, files=list()):
     print(f"Parameters: diam={diam} | cellprob={cellprob} | flow={flow} | stitch={stitch}\n")
-
+    
+    folder_destination = "segmentedObjects"
+    if ~os.path.exists(folder_destination):
+        os.mkdir(folder_destination)
+        
     if len(files) > 0:
         print("\n{} trace files to process= {}".format(len(files), "\n".join(map(str, files))))
 
         # iterates over traces in folder
         for file in files:
             print(f"> Analyzing image {file}")
+            save_folder = os.path.dirname(file)
 
-            run_cellpose(file, diam, cellprob, flow, stitch)
+            # run_cellpose(file, diam, cellprob, flow, stitch,folder_destination=folder_destination)
+            mask = run_cellpose_api(file, diam, cellprob, flow, stitch, gpu=True)
 
+            new_mask_name = (
+                save_folder + folder_destination  + os.sep + os.path.basename(file).split(".")[0] + "_Masks.npy"
+            )
+            
+            np.save(new_mask_name,mask)
 
 # =============================================================================
 # MAIN
