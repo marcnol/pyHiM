@@ -648,6 +648,8 @@ def make_segmentations(file_name, current_param, data_folder):
     filename_2d_aligned = (
         data_folder.output_folders["alignImages"]
         + os.sep
+        + "data"
+        + os.sep
         + root_filename
         + "_2d_registered.npy"
     )
