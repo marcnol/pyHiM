@@ -715,8 +715,6 @@ def load_alignment_dict(data_folder):
     dict_filename = (
         os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
-    print("dict_filename")
-    print(dict_filename)
     dict_shifts = load_json(dict_filename)
     if dict_shifts is None:
         print_log(f"File with dictionary not found!: {dict_filename}")

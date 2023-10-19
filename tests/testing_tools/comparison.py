@@ -80,7 +80,7 @@ def compare_ecsv_files(
     return is_same
 
 
-def compare_line_by_line(first_file, second_file, shuffled_lines=False):
+def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
     with open(first_file, encoding="utf-8") as f_1:
         with open(second_file, encoding="utf-8") as f_2:
             f1_lines = f_1.read().splitlines()
@@ -97,7 +97,10 @@ def compare_line_by_line(first_file, second_file, shuffled_lines=False):
                             f"SHUFFLE: At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n"
                         )
                 else:
-                    is_same = f1_lines[line_index] == f2_lines[line_index]
+                    is_same = (
+                        f1_lines[line_index][line_start:]
+                        == f2_lines[line_index][line_start:]
+                    )
                     if not is_same:
                         print(
                             f"At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n from {second_file}\n{f2_lines[line_index]}"

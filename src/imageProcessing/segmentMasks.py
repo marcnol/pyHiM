@@ -312,7 +312,7 @@ def segment_source_flat_background(im, current_param):
 
     # estimates sources
     daofind = DAOStarFinder(
-        fwhm=fwhm, threshold=threshold_over_std * std, exclude_border=True
+        fwhm=fwhm, threshold=float(threshold_over_std * std), exclude_border=True
     )
     sources = daofind(im - median)
 
@@ -687,20 +687,19 @@ def make_segmentations(file_name, current_param, data_folder):
                 output, im1_bkg_substracted = segment_source_inhomog_background(
                     im, current_param
                 )
+                # show results
+                show_image_sources(
+                    im,
+                    im1_bkg_substracted,
+                    output,
+                    current_param.param_dict["fileNameMD"],
+                    output_filename,
+                )
             else:
                 print_log(
                     f"# Method <{segmentation_method}> not available for barcode segmentation!"
                 )
                 return Table()
-
-            # show results
-            show_image_sources(
-                im,
-                im1_bkg_substracted,
-                output,
-                current_param.param_dict["fileNameMD"],
-                output_filename,
-            )
 
             # [ formats results Table for output by adding buid, barcode_id, CellID and roi]
 
@@ -719,12 +718,13 @@ def make_segmentations(file_name, current_param, data_folder):
                 np.nan * np.zeros(len(output)), name="zcentroid", dtype=float
             )
 
-            # adds to table
-            output.add_column(col_barcode, index=0)
-            output.add_column(col_roi, index=0)
-            output.add_column(col_buid, index=0)
-            output.add_column(col_cell_id, index=2)
-            output.add_column(zcoord, index=5)
+            if output[0] is not None:
+                # adds to table
+                output.add_column(col_barcode, index=0)
+                output.add_column(col_roi, index=0)
+                output.add_column(col_buid, index=0)
+                output.add_column(col_cell_id, index=2)
+                output.add_column(zcoord, index=5)
 
             # changes format of table
             # for col in output.colnames:
@@ -821,6 +821,8 @@ def segment_masks(current_param, file_name=None):
 
     label = current_param.param_dict["acquisition"]["label"]
     output_file = data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
+    tempo = output_file.split("/")
+    output_file = "/".join(tempo[:-1] + ["data"] + tempo[-1:])
 
     if current_param.param_dict["parallel"]:
         # running in parallel mode
@@ -909,7 +911,6 @@ def _segment_2d_image_by_thresholding(
     # makes threshold matrix
     threshold = np.zeros(image_2d.shape)
     threshold[:] = threshold_over_std * image_2d.max() / 100
-
     # segments objects
     segm = detect_sources(
         image_2d,

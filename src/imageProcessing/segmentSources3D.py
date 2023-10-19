@@ -309,7 +309,6 @@ class Localize3D:
             print_log("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.0, 0.0])
             image_3d_aligned = image_3d
-
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
