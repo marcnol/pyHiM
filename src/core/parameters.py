@@ -483,7 +483,8 @@ class RegistrationParams:
     background_sigma: float = set_default(
         "background_sigma", 3.0
     )  # used to remove inhom background
-    blockSize: int = set_default("blockSize", 256)
+    blockSize: int = set_default("blockSize", 256)  # register_global
+    blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -714,9 +715,10 @@ def load_alignment_dict(data_folder):
     dict_filename = (
         os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
     )
-
+    print("dict_filename")
+    print(dict_filename)
     dict_shifts = load_json(dict_filename)
-    if len(dict_shifts) == 0:
+    if dict_shifts is None:
         print_log(f"File with dictionary not found!: {dict_filename}")
         dict_shifts_available = False
     else:
@@ -761,7 +763,9 @@ def get_dictionary_value(dictionary: dict, key: str, default: str = ""):
     """
     if key in dictionary:
         return dictionary[key]
-    print_log(f"`{key}` not found, default value used: {default}", status="INFO")
+    print_log(
+        f"[WARNING] `{key}` not found, default value used: {default}", status="INFO"
+    )
     return default
 
 
