@@ -101,19 +101,44 @@ def main(command_line_arguments=None):
 
         # [aligns fiducials in 3D]
         if "register_local" in pipe.cmds:
-            pipe.align_images_3d(current_param, label)
+            registration_params = datam.labelled_params[label].registration
+            pipe.align_images_3d(
+                current_param, label, datam.m_data_path, registration_params
+            )
 
         # [segments DAPI and sources in 2D]
         if "mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds:
-            pipe.segment_masks(current_param, label)
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks(
+                current_param, label, datam.m_data_path, segmentation_params
+            )
 
         # [segments masks in 3D]
-        if "mask_3d" in pipe.cmds:
-            pipe.segment_masks_3d(current_param, label, datam.processed_roi)
+        if "mask_3d" in pipe.cmds and (label in ("DAPI", "mask")):
+            print("label")
+            print(label)
+            print("datam.labelled_params")
+            print(datam.labelled_params)
+
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+            )
 
         # [segments sources in 3D]
         if "localize_3d" in pipe.cmds:
-            pipe.segment_sources_3d(current_param, label, datam.processed_roi)
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_sources_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+            )
 
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds:

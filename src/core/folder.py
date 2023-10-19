@@ -33,14 +33,14 @@ class Folders:
         create_folder(folder_path)
         create_folder(folder_path + os.sep + "data")
 
-    def create_folders(self, files_folder, current_param):
+    def create_folders(self, data_path, current_param):
         """
         Creates folders for outputs.
         this function will create all the folders required for processingPipeline
 
         Parameters
         ----------
-        files_folder : string
+        data_path : string
             root_folder
         current_param : Parameters Class
             with filenames of folders to be created
@@ -51,10 +51,10 @@ class Folders:
 
         """
         self.output_folders["zProject"] = (
-            files_folder + os.sep + current_param.param_dict["zProject"]["folder"]
+            data_path + os.sep + current_param.param_dict["zProject"]["folder"]
         )
 
-        self._create_folder(files_folder, current_param, "alignImages")
+        self._create_folder(data_path, current_param, "alignImages")
 
         self.output_files["dictShifts"] = (
             self.output_folders["alignImages"]
@@ -65,18 +65,18 @@ class Folders:
         )
 
         if "segmentedObjects" in current_param.param_dict.keys():
-            self._create_folder(files_folder, current_param, "segmentedObjects")
+            self._create_folder(data_path, current_param, "segmentedObjects")
 
         # backwards compatibility
         if "buildsPWDmatrix" in current_param.param_dict.keys():
             self.output_folders["buildsPWDmatrix"] = (
-                files_folder
+                data_path
                 + os.sep
                 + current_param.param_dict["buildsPWDmatrix"]["folder"]
             )
         else:
             self.output_folders["buildsPWDmatrix"] = (
-                files_folder + os.sep + "buildsPWDmatrix"
+                data_path + os.sep + "buildsPWDmatrix"
             )
         self.create_folder_with_key("buildsPWDmatrix")
         self.output_files["buildsPWDmatrix"] = (
@@ -84,9 +84,9 @@ class Folders:
         )
 
     # TODO: apply this method for each folder creation inside `create_folders`
-    def _create_folder(self, files_folder, current_param, arg2):
+    def _create_folder(self, data_path, current_param, arg2):
         self.output_folders[arg2] = (
-            files_folder + os.sep + current_param.param_dict[arg2]["folder"]
+            data_path + os.sep + current_param.param_dict[arg2]["folder"]
         )
         self.create_folder_with_key(arg2)
         self.output_files[arg2] = (

@@ -241,7 +241,7 @@ class Drift3D:
             self.data_folder
         )
 
-    def align_fiducials_3d_in_folder(self):
+    def align_fiducials_3d_in_folder(self, data_path):
         """
         Refits all the barcode files found in root_folder
 
@@ -337,7 +337,7 @@ class Drift3D:
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
         print_log(f"$ register_local output Table saved in: {data_file_path}")
 
-    def align_fiducials_3d(self):
+    def align_fiducials_3d(self, data_path):
         """
         runs refitting routine in root_folder
 
@@ -363,12 +363,12 @@ class Drift3D:
         self.data_folder.create_folders(self.current_folder, self.current_param)
         self.output_filename = self.data_folder.output_files["alignImages"]
 
-        print_log(f"-------> Processing Folder: {self.current_folder}")
+        print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder()
+        self.align_fiducials_3d_in_folder(data_path)
 
-        print_log(f"HiM matrix in {self.current_folder} processed")
+        print_log(f"HiM matrix in {data_path} processed")
 
         return 0
 

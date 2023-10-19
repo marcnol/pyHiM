@@ -73,7 +73,6 @@ class Localize3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.data_folder = None
-        self.current_folder = None
         self.label = None
         self.output_filename = None
 
@@ -429,7 +428,7 @@ class Localize3D:
 
         return output_table
 
-    def segment_sources_3d_in_folder(self):
+    def segment_sources_3d_in_folder(self, data_path):
         """
         Fits sources in all files in root_folder
 
@@ -445,7 +444,7 @@ class Localize3D:
         print_dict(p)
 
         # Finds images to process
-        files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
+        files_folder = glob.glob(data_path + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
         nb_imgs = len(self.current_param.files_to_process)
         print_log(f"$ Number of images to be processed: {nb_imgs}")
@@ -541,7 +540,7 @@ class Localize3D:
             overwrite=True,
         )
 
-    def segment_sources_3d(self):
+    def segment_sources_3d(self, data_path):
         """
         runs 3D fitting routine in root_folder
 
@@ -555,7 +554,7 @@ class Localize3D:
         # processes folders and files
 
         print_session_name(session_name)
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
+        self.data_folder = Folders(data_path)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -563,9 +562,7 @@ class Localize3D:
         )
 
         # creates output folders and filenames
-        self.current_folder = self.current_param.param_dict["rootFolder"]
-
-        self.data_folder.create_folders(self.current_folder, self.current_param)
+        self.data_folder.create_folders(data_path, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]
         self.output_filename = (
             self.data_folder.output_files["segmentedObjects"]
@@ -574,11 +571,11 @@ class Localize3D:
             + ".dat"
         )
 
-        print_log(f"> Processing Folder: {self.current_folder}")
+        print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_sources_3d_in_folder()
+        self.segment_sources_3d_in_folder(data_path)
 
-        print_log(f"$ segmentedObjects run in {self.current_folder} finished")
+        print_log(f"$ segmentedObjects run in {data_path} finished")
 
         return 0
 

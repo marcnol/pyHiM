@@ -46,7 +46,6 @@ class Mask3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.data_folder = None
-        self.current_folder = ""
         self.label = ""
 
         # parameters from parameters.json
@@ -276,7 +275,7 @@ class Mask3D:
 
         del image_3d_aligned, image_3d, image_3d_0
 
-    def segment_masks_3d_in_folder(self, roi_name: str):
+    def segment_masks_3d_in_folder(self, roi_name: str, data_path):
         """
         Segments 3D Masks in all files in root_folder
 
@@ -292,7 +291,7 @@ class Mask3D:
         print_dict(p)
 
         # Finds images to process
-        files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
+        files_folder = glob.glob(data_path + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
         print_log(f"$ Images to be processed: {self.current_param.files_to_process}")
         nb_imgs = len(self.current_param.files_to_process)
@@ -349,7 +348,7 @@ class Mask3D:
 
         print_log(f"$ mask_3d procesing time: {datetime.now() - now}")
 
-    def segment_masks_3d(self, roi_name: str):
+    def segment_masks_3d(self, roi_name: str, data_path):
         """
         segments 3D masks in root_folder
 
@@ -363,7 +362,7 @@ class Mask3D:
         # processes folders and files
 
         print_session_name(session_name)
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
+        self.data_folder = Folders(data_path)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -371,16 +370,14 @@ class Mask3D:
         )
 
         # creates output folders and filenames
-        self.current_folder = self.current_param.param_dict["rootFolder"]
-
-        self.data_folder.create_folders(self.current_folder, self.current_param)
+        self.data_folder.create_folders(data_path, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]
 
-        print_log(f"> Processing Folder: {self.current_folder}")
+        print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_masks_3d_in_folder(roi_name)
+        self.segment_masks_3d_in_folder(roi_name, data_path)
 
-        print_log(f"$ segmentedObjects run in {self.current_folder} finished")
+        print_log(f"$ segmentedObjects run in {data_path} finished")
 
         return 0
 
