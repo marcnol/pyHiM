@@ -118,7 +118,9 @@ class Drift3D:
         else:
             self.p["zBinning"] = 1
 
-    def align_fiducials_3d_file(self, filename_to_process):
+    def align_fiducials_3d_file(
+        self, filename_to_process, data_path, params: RegistrationParams
+    ):
         """
         Aligns <filename_to_process> fiducial against reference
 
@@ -145,7 +147,7 @@ class Drift3D:
         image_ref_0 = self.image_ref_0
         dict_shifts_available = self.dict_shifts_available
         dict_shifts = self.dict_shifts
-        output_folder = self.data_folder.output_folders["alignImages"]
+        output_folder = data_path + os.sep + params.folder
 
         return _align_fiducials_3d_file(
             filename_to_process,
@@ -286,7 +288,9 @@ class Drift3D:
                         print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
 
                         alignment_results_tables.append(
-                            self.align_fiducials_3d_file(filename_to_process)
+                            self.align_fiducials_3d_file(
+                                filename_to_process, data_path, params
+                            )
                         )
 
                         tra.print_diff()
@@ -299,7 +303,9 @@ class Drift3D:
                     )
 
                     futures = [
-                        client.submit(self.align_fiducials_3d_file, x)
+                        client.submit(
+                            self.align_fiducials_3d_file, x, data_path, params
+                        )
                         for x in self.filenames_to_process_list
                     ]
 

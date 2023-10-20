@@ -169,7 +169,7 @@ class Mask3D:
 
         return binary, segmented_image_3d
 
-    def segment_masks_3d_file(self, filename_to_process):
+    def segment_masks_3d_file(self, filename_to_process, data_path, seg_params):
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -223,7 +223,9 @@ class Mask3D:
         if number_masks > 0:
             output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
             npy_labeled_image_filename = (
-                self.data_folder.output_folders["segmentedObjects"]
+                data_path
+                + os.sep
+                + seg_params.folder
                 + os.sep
                 + "data"
                 + os.sep
@@ -263,7 +265,9 @@ class Mask3D:
 
             # saves figures
             output_filenames = [
-                self.data_folder.output_folders["segmentedObjects"]
+                data_path
+                + os.sep
+                + seg_params.folder
                 + os.sep
                 + os.path.basename(filename_to_process)
                 + x[1]
@@ -275,7 +279,9 @@ class Mask3D:
 
         del image_3d_aligned, image_3d, image_3d_0
 
-    def segment_masks_3d_in_folder(self, roi_name: str, data_path, dict_shifts_path):
+    def segment_masks_3d_in_folder(
+        self, roi_name: str, data_path, dict_shifts_path, seg_params
+    ):
         """
         Segments 3D Masks in all files in root_folder
 
@@ -344,11 +350,11 @@ class Mask3D:
             self.filenames_to_process_list
         ):
             print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
-            self.segment_masks_3d_file(filename_to_process)
+            self.segment_masks_3d_file(filename_to_process, data_path, seg_params)
 
         print_log(f"$ mask_3d procesing time: {datetime.now() - now}")
 
-    def segment_masks_3d(self, roi_name: str, data_path, dict_shifts_path):
+    def segment_masks_3d(self, roi_name: str, data_path, dict_shifts_path, seg_params):
         """
         segments 3D masks in root_folder
 
@@ -375,7 +381,9 @@ class Mask3D:
 
         print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_masks_3d_in_folder(roi_name, data_path, dict_shifts_path)
+        self.segment_masks_3d_in_folder(
+            roi_name, data_path, dict_shifts_path, seg_params
+        )
 
         print_log(f"$ segmentedObjects run in {data_path} finished")
 

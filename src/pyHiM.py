@@ -114,7 +114,11 @@ def main(command_line_arguments=None):
         if "mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds:
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_masks(
-                current_param, label, datam.m_data_path, segmentation_params
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                datam.align_folder,
             )
 
         # [segments masks in 3D]
@@ -167,13 +171,19 @@ def main(command_line_arguments=None):
         # [build traces]
         if "build_traces" in pipe.cmds and label == "barcode":
             segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
             fc.build_traces(
-                current_param, label, datam.m_data_path, segmentation_params
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                matrix_params,
             )
 
         # [builds matrices]
-        if "build_matrix" in pipe.cmds:
-            fc.build_matrix(current_param, label)
+        if "build_matrix" in pipe.cmds and label == "barcode":
+            matrix_params = datam.labelled_params[label].matrix
+            fc.build_matrix(current_param, label, datam.m_data_path, matrix_params)
 
         print_log("\n")
         del current_param

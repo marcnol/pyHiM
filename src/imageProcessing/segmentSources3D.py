@@ -237,7 +237,7 @@ class Localize3D:
 
         return binary, segmented_image_3d
 
-    def segment_sources_3d_file(self, filename_to_process):
+    def segment_sources_3d_file(self, filename_to_process, data_path, seg_params):
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -418,7 +418,9 @@ class Localize3D:
 
             # saves figures
             output_filenames = [
-                self.data_folder.output_folders["segmentedObjects"]
+                data_path
+                + os.sep
+                + seg_params.folder
                 + os.sep
                 + os.path.basename(filename_to_process)
                 + x[1]
@@ -432,7 +434,7 @@ class Localize3D:
 
         return output_table
 
-    def segment_sources_3d_in_folder(self, data_path, dict_shifts_path):
+    def segment_sources_3d_in_folder(self, data_path, dict_shifts_path, seg_params):
         """
         Fits sources in all files in root_folder
 
@@ -505,7 +507,11 @@ class Localize3D:
             ):  # self.current_param.files_to_process):
                 print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
 
-                output_tables.append(self.segment_sources_3d_file(filename_to_process))
+                output_tables.append(
+                    self.segment_sources_3d_file(
+                        filename_to_process, data_path, seg_params
+                    )
+                )
         else:
             self.inner_parallel_loop = False
             nb_workers = len(client.scheduler_info()["workers"])
@@ -514,7 +520,7 @@ class Localize3D:
             )
 
             futures = [
-                client.submit(self.segment_sources_3d_file, x)
+                client.submit(self.segment_sources_3d_file, x, data_path, seg_params)
                 for x in self.filenames_to_process_list
             ]
 
@@ -571,7 +577,7 @@ class Localize3D:
 
         print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_sources_3d_in_folder(data_path, dict_shifts_path)
+        self.segment_sources_3d_in_folder(data_path, dict_shifts_path, params)
 
         print_log(f"$ segmentedObjects run in {data_path} finished")
 

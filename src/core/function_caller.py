@@ -249,7 +249,7 @@ class Pipeline:
             )
 
     def segment_masks(
-        self, current_param, label, data_path, params: SegmentationParams
+        self, current_param, label, data_path, params: SegmentationParams, align_folder
     ):
         if "segmentedObjects" in current_param.param_dict.keys():
             operation = current_param.param_dict["segmentedObjects"]["operation"]
@@ -261,7 +261,9 @@ class Pipeline:
             and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
-            self.manage_parallel_option(segment_masks, current_param, data_path, params)
+            self.manage_parallel_option(
+                segment_masks, current_param, data_path, params, align_folder
+            )
 
     def segment_masks_3d(
         self,
@@ -279,7 +281,9 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Mask3D(current_param, parallel=self.parallel)
-            _segment_sources_3d.segment_masks_3d(roi_name, data_path, dict_shifts_path)
+            _segment_sources_3d.segment_masks_3d(
+                roi_name, data_path, dict_shifts_path, segmentation_params
+            )
 
     def segment_sources_3d(
         self,
@@ -436,7 +440,7 @@ def register_localizations(
         )
 
 
-def build_traces(current_param, label, data_path, segmentation_params):
+def build_traces(current_param, label, data_path, segmentation_params, matrix_params):
     """Build traces
 
     Parameters
@@ -448,10 +452,10 @@ def build_traces(current_param, label, data_path, segmentation_params):
     """
     if label == "barcode":
         build_traces_instance = BuildTraces(current_param)
-        build_traces_instance.run(data_path, segmentation_params)
+        build_traces_instance.run(data_path, segmentation_params, matrix_params)
 
 
-def build_matrix(current_param, label):
+def build_matrix(current_param, label, data_path, matrix_params):
     """Build matrices
 
     Parameters
@@ -463,7 +467,7 @@ def build_matrix(current_param, label):
     """
     if label == "barcode":
         build_matrix_instance = BuildMatrix(current_param)
-        build_matrix_instance.run()
+        build_matrix_instance.run(data_path, matrix_params)
 
 
 def get_a_dict_value(d: dict):

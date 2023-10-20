@@ -641,19 +641,17 @@ def segment_mask_stardist(im, current_param):
     return segm_deblend, labeled
 
 
-def make_segmentations(file_name, current_param, data_folder):
+def make_segmentations(
+    file_name,
+    current_param,
+    data_folder,
+    data_path,
+    seg_params: SegmentationParams,
+    align_folder,
+):
     root_filename = os.path.basename(file_name).split(".")[0]
-    output_filename = (
-        data_folder.output_folders["segmentedObjects"] + os.sep + root_filename
-    )
-    filename_2d_aligned = (
-        data_folder.output_folders["alignImages"]
-        + os.sep
-        + "data"
-        + os.sep
-        + root_filename
-        + "_2d_registered.npy"
-    )
+    output_filename = data_path + os.sep + seg_params.folder + os.sep + root_filename
+    filename_2d_aligned = align_folder + os.sep + root_filename + "_2d_registered.npy"
 
     print_log(f"> searching for {filename_2d_aligned}")
     if os.path.exists(filename_2d_aligned):  # file exists
@@ -665,7 +663,7 @@ def make_segmentations(file_name, current_param, data_folder):
         im_obj = Image()
         im_obj.load_image_2d(
             file_name,
-            data_folder.output_folders["alignImages"],
+            align_folder[:-5],  # remove extra "/data", it's temporary for refactoring
             tag="_2d_registered",
         )
         im = im_obj.data_2d
@@ -683,10 +681,8 @@ def make_segmentations(file_name, current_param, data_folder):
             ]
             print_log(f"\n$ Segmenting barcodes using method: {segmentation_method }")
             if segmentation_method == "flat":
-                print("in flat")
                 output = segment_source_flat_background(im, current_param)
             elif segmentation_method == "inhomogeneous":
-                print("in inhomogeneous")
                 output, im1_bkg_substracted = segment_source_inhomog_background(
                     im, current_param
                 )
@@ -699,12 +695,10 @@ def make_segmentations(file_name, current_param, data_folder):
                     output_filename,
                 )
             else:
-                print("else")
                 print_log(
                     f"# Method <{segmentation_method}> not available for barcode segmentation!"
                 )
                 return Table()
-            print("make_segmentations CONTINU")
             # [ formats results Table for output by adding buid, barcode_id, CellID and roi]
 
             # buid
@@ -766,7 +760,9 @@ def make_segmentations(file_name, current_param, data_folder):
             # show results
             if "labeled" in locals():
                 output_filename_stardist = (
-                    data_folder.output_folders["segmentedObjects"]
+                    data_path
+                    + os.sep
+                    + seg_params.folder
                     + os.sep
                     + root_filename
                     + "_stardist"
@@ -798,7 +794,9 @@ def make_segmentations(file_name, current_param, data_folder):
         return []
 
 
-def segment_masks(current_param, data_path, params: SegmentationParams, file_name=None):
+def segment_masks(
+    current_param, data_path, params: SegmentationParams, align_folder, file_name=None
+):
     session_name = "segmentMasks"
 
     # processes folders and files
@@ -856,6 +854,9 @@ def segment_masks(current_param, data_path, params: SegmentationParams, file_nam
                         filename_to_process,
                         current_param,
                         data_folder,
+                        data_path,
+                        params,
+                        align_folder,
                     )
                 )
 
@@ -893,6 +894,9 @@ def segment_masks(current_param, data_path, params: SegmentationParams, file_nam
                     filename_to_process,
                     current_param,
                     data_folder,
+                    data_path,
+                    params,
+                    align_folder,
                 )
 
                 # gathers results from different barcodes and rois

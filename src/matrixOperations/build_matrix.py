@@ -397,7 +397,7 @@ class BuildMatrix:
         # saves matrix
         self.save_matrices(file)
 
-    def run(self):
+    def run(self, data_path, matrix_params):
         # initializes session_name, data_folder, current_folder
         self.label = "barcode"
         self.data_folder, self.current_folder = initialize_module(
@@ -408,7 +408,9 @@ class BuildMatrix:
         files = [
             x
             for x in glob.glob(
-                self.data_folder.output_folders["buildsPWDmatrix"]
+                data_path
+                + os.sep
+                + matrix_params.folder
                 + os.sep
                 + "data"
                 + os.sep

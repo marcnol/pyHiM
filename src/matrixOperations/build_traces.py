@@ -342,8 +342,7 @@ class BuildTraces:
         print_log(f"$ Coordinates dimensions: {self.ndims}")
 
     def load_mask(
-        self,
-        files_in_folder,
+        self, files_in_folder, data_path, seg_params
     ):  # sourcery skip: use-named-expression
         """
         searches and loads mask files for building chromatin trace
@@ -381,7 +380,9 @@ class BuildTraces:
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
             )
             full_filename_roi_masks = (
-                self.data_folder.output_folders["segmentedObjects"]
+                data_path
+                + os.sep
+                + seg_params.folder
                 + os.sep
                 + "data"
                 + os.sep
@@ -433,11 +434,7 @@ class BuildTraces:
 
         return False
 
-    def assign_masks(
-        self,
-        output_filename,
-        barcode_map,
-    ):
+    def assign_masks(self, output_filename, barcode_map, data_path, seg_params):
         """
         Main function that:
             loads and processes barcode localization files, local alignment file, and masks
@@ -491,7 +488,9 @@ class BuildTraces:
             ]  # need to iterate over the first index
             self.barcode_map_roi = barcode_map.group_by("ROI #").groups[roi]
 
-            if mask_loaded := self.load_mask(tif_files_in_folder):
+            if mask_loaded := self.load_mask(
+                tif_files_in_folder, data_path, seg_params
+            ):
                 print_log(f"> Processing ROI# {self.n_roi}")
 
                 # initializes trace table
@@ -527,7 +526,7 @@ class BuildTraces:
 
                 processing_order += 1
 
-    def build_trace_by_masking(self, barcode_map):
+    def build_trace_by_masking(self, barcode_map, data_path, seg_params, matrix_params):
         print_log(f"> Masks labels: {self.available_masks}")
 
         for mask_label in self.available_masks.keys():
@@ -536,7 +535,9 @@ class BuildTraces:
             tag = f"{str(self.ndims)}D"
 
             output_filename = (
-                self.data_folder.output_folders["buildsPWDmatrix"]
+                data_path
+                + os.sep
+                + matrix_params.folder
                 + os.sep
                 + "data"
                 + os.sep
@@ -547,10 +548,7 @@ class BuildTraces:
             # creates and initializes trace table
             self.trace_table = ChromatinTraceTable()
 
-            self.assign_masks(
-                output_filename,
-                barcode_map,
-            )
+            self.assign_masks(output_filename, barcode_map, data_path, seg_params)
 
             print_log(
                 f"$ Trace built using mask assignment. Output saved in: {self.current_folder}",
@@ -636,10 +634,7 @@ class BuildTraces:
 
         self.barcode_map_roi = data_table
 
-    def build_trace_by_clustering(
-        self,
-        barcode_map,
-    ):
+    def build_trace_by_clustering(self, barcode_map, data_path, matrix_params):
         # decompose by ROI!
         # indexes localization tables by ROI
         barcode_map_roi = barcode_map.group_by("ROI #")
@@ -653,7 +648,9 @@ class BuildTraces:
         tag = f"{str(self.ndims)}D"
 
         output_filename = (
-            self.data_folder.output_folders["buildsPWDmatrix"]
+            data_path
+            + os.sep
+            + matrix_params.folder
             + os.sep
             + "data"
             + os.sep
@@ -711,7 +708,7 @@ class BuildTraces:
             else:
                 print_log("! Warning: table was empty therefore not saved!")
 
-    def launch_analysis(self, file):
+    def launch_analysis(self, file, data_path, seg_params, matrix_params):
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
@@ -728,18 +725,20 @@ class BuildTraces:
             self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
 
         if "masking" in self.tracing_method:
-            self.build_trace_by_masking(barcode_map)
+            self.build_trace_by_masking(
+                barcode_map, data_path, seg_params, matrix_params
+            )
 
         if (
             "clustering" in self.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
-            self.build_trace_by_clustering(barcode_map)
+            self.build_trace_by_clustering(barcode_map, data_path, matrix_params)
         elif self.ndims == 2:
             print_log(
                 f"! Warning: localization files in 2D will not be processed using clustering.\n"
             )
 
-    def run(self, data_path, seg_params):
+    def run(self, data_path, seg_params, matrix_params):
         """
         Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
@@ -784,7 +783,7 @@ class BuildTraces:
             print_log(f"{os.path.basename(file)}")
 
         for file in files:
-            self.launch_analysis(file)
+            self.launch_analysis(file, data_path, seg_params, matrix_params)
 
         print_log(f"$ {len(files)} barcode tables processed in {self.current_folder}")
 

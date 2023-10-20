@@ -96,6 +96,7 @@ class DataManager:
 
         self.dict_shifts_path = ""
         self.local_shifts_path = ""
+        self.align_folder = "" # tempo refactoring attribute
 
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
@@ -245,6 +246,8 @@ class DataManager:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
+                if "_2d_registered.npy" in path: # tempo refactoring condition
+                    self.align_folder = "/".join(path.split("/")[:-1])
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
