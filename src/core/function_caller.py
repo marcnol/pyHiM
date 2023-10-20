@@ -19,7 +19,6 @@ from imageProcessing.makeProjections import Feature, Project
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
-from matrixOperations.alignBarcodesMasks import process_pwd_matrices
 from matrixOperations.build_matrix import BuildMatrix
 from matrixOperations.build_traces import BuildTraces
 from matrixOperations.filter_localizations import FilterLocalizations
@@ -291,10 +290,6 @@ class Pipeline:
                 current_param, roi_name, parallel=self.parallel
             )
             _segment_sources_3d.segment_sources_3d(data_path, dict_shifts_path)
-
-    def process_pwd_matrices(self, current_param, label):
-        if label in ("DAPI", "mask"):
-            self.manage_parallel_option(process_pwd_matrices, current_param)
 
     def run(self):  # sourcery skip: remove-pass-body
         for feat_dict in self.features:
