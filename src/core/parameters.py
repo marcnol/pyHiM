@@ -700,7 +700,7 @@ class Params:
 
 
 def load_alignment_dict(dict_shifts_path):
-    """Load a JSON file with 'dictShifts' in the file name.
+    """Load a JSON file with the shifts
 
     Parameters
     ----------

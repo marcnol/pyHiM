@@ -50,19 +50,8 @@ class Folders:
         None.
 
         """
-        self.output_folders["zProject"] = (
-            data_path + os.sep + current_param.param_dict["zProject"]["folder"]
-        )
 
         self._create_folder(data_path, current_param, "alignImages")
-
-        self.output_files["dictShifts"] = (
-            self.output_folders["alignImages"]
-            + os.sep
-            + "data"
-            + os.sep
-            + current_param.param_dict["alignImages"]["outputFile"]
-        )
 
         if "segmentedObjects" in current_param.param_dict.keys():
             self._create_folder(data_path, current_param, "segmentedObjects")
