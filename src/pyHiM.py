@@ -135,7 +135,7 @@ def main(command_line_arguments=None):
             )
 
         # [segments sources in 3D]
-        if "localize_3d" in pipe.cmds:
+        if "localize_3d" in pipe.cmds and label == "barcode":
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_sources_3d(
                 current_param,
