@@ -216,14 +216,16 @@ class Pipeline:
             else:
                 self.m_dask.create_distributed_client()
 
-    def align_images_3d(self, current_param, label, data_path, registration_params):
+    def align_images_3d(
+        self, current_param, label, data_path, registration_params, dict_shifts_path
+    ):
         if (
             label == "fiducial"
             and current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
         ):
             print_log(f"> Making 3D image registrations label: {label}")
             _drift_3d = Drift3D(current_param, parallel=self.parallel)
-            _drift_3d.align_fiducials_3d(data_path)
+            _drift_3d.align_fiducials_3d(data_path, dict_shifts_path)
 
     def apply_registrations(self, current_param, label, data_path, registration_params):
         if (
@@ -252,7 +254,13 @@ class Pipeline:
             self.manage_parallel_option(segment_masks, current_param, data_path)
 
     def segment_masks_3d(
-        self, current_param, label, roi_name: str, data_path, segmentation_params
+        self,
+        current_param,
+        label,
+        roi_name: str,
+        data_path,
+        segmentation_params,
+        dict_shifts_path,
     ):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
@@ -261,10 +269,16 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Mask3D(current_param, parallel=self.parallel)
-            _segment_sources_3d.segment_masks_3d(roi_name, data_path)
+            _segment_sources_3d.segment_masks_3d(roi_name, data_path, dict_shifts_path)
 
     def segment_sources_3d(
-        self, current_param, label, roi_name: str, data_path, segmentation_params
+        self,
+        current_param,
+        label,
+        roi_name: str,
+        data_path,
+        segmentation_params,
+        dict_shifts_path,
     ):
         if (
             label == "barcode"
@@ -276,7 +290,7 @@ class Pipeline:
             _segment_sources_3d = Localize3D(
                 current_param, roi_name, parallel=self.parallel
             )
-            _segment_sources_3d.segment_sources_3d(data_path)
+            _segment_sources_3d.segment_sources_3d(data_path, dict_shifts_path)
 
     def process_pwd_matrices(self, current_param, label):
         if label in ("DAPI", "mask"):

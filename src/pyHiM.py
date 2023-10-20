@@ -103,7 +103,11 @@ def main(command_line_arguments=None):
         if "register_local" in pipe.cmds:
             registration_params = datam.labelled_params[label].registration
             pipe.align_images_3d(
-                current_param, label, datam.m_data_path, registration_params
+                current_param,
+                label,
+                datam.m_data_path,
+                registration_params,
+                datam.dict_shifts_path,
             )
 
         # [segments DAPI and sources in 2D]
@@ -127,6 +131,7 @@ def main(command_line_arguments=None):
                 datam.processed_roi,
                 datam.m_data_path,
                 segmentation_params,
+                datam.dict_shifts_path,
             )
 
         # [segments sources in 3D]
@@ -138,6 +143,7 @@ def main(command_line_arguments=None):
                 datam.processed_roi,
                 datam.m_data_path,
                 segmentation_params,
+                datam.dict_shifts_path,
             )
 
         # [filters barcode localization table]

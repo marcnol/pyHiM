@@ -94,6 +94,8 @@ class DataManager:
         self.ecsv_ext = ["ecsv", "table", "dat"]
         self.png_ext = ["png"]
 
+        self.dict_shifts_path = ""
+
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
         # pylint: disable=no-member
@@ -241,6 +243,10 @@ class DataManager:
                 self.npy_files.append(
                     NpyFile(None, "_2d", cycle, path, basename, label)
                 )
+            elif ext == "json" and name == self.raw_dict.get("common", {}).get(
+                "alignImages", {}
+            ).get("outputFile"):
+                self.dict_shifts_path = path
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):

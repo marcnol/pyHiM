@@ -219,7 +219,7 @@ class Drift3D:
             )
         )
 
-    def load_dict_shifts(self):
+    def load_dict_shifts(self, dict_shifts_path):
         """
         Lods dictionary of XY shifts
 
@@ -238,10 +238,10 @@ class Drift3D:
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
-            self.data_folder
+            dict_shifts_path
         )
 
-    def align_fiducials_3d_in_folder(self, data_path):
+    def align_fiducials_3d_in_folder(self, data_path, dict_shifts_path):
         """
         Refits all the barcode files found in root_folder
 
@@ -259,7 +259,7 @@ class Drift3D:
         self.current_param.find_files_to_process(files_folder)
 
         # loads dictinary of shifts
-        self.load_dict_shifts()
+        self.load_dict_shifts(dict_shifts_path)
 
         # creates Table that will hold results
         alignment_results_table_global = create_output_table()
@@ -337,7 +337,7 @@ class Drift3D:
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
         print_log(f"$ register_local output Table saved in: {data_file_path}")
 
-    def align_fiducials_3d(self, data_path):
+    def align_fiducials_3d(self, data_path, dict_shifts_path):
         """
         runs refitting routine in root_folder
 
@@ -366,7 +366,7 @@ class Drift3D:
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder(data_path)
+        self.align_fiducials_3d_in_folder(data_path, dict_shifts_path)
 
         print_log(f"HiM matrix in {data_path} processed")
 

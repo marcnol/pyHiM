@@ -275,7 +275,7 @@ class Mask3D:
 
         del image_3d_aligned, image_3d, image_3d_0
 
-    def segment_masks_3d_in_folder(self, roi_name: str, data_path):
+    def segment_masks_3d_in_folder(self, roi_name: str, data_path, dict_shifts_path):
         """
         Segments 3D Masks in all files in root_folder
 
@@ -299,7 +299,7 @@ class Mask3D:
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
-            self.data_folder
+            dict_shifts_path
         )
 
         roi = roi_name
@@ -348,7 +348,7 @@ class Mask3D:
 
         print_log(f"$ mask_3d procesing time: {datetime.now() - now}")
 
-    def segment_masks_3d(self, roi_name: str, data_path):
+    def segment_masks_3d(self, roi_name: str, data_path, dict_shifts_path):
         """
         segments 3D masks in root_folder
 
@@ -375,7 +375,7 @@ class Mask3D:
 
         print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_masks_3d_in_folder(roi_name, data_path)
+        self.segment_masks_3d_in_folder(roi_name, data_path, dict_shifts_path)
 
         print_log(f"$ segmentedObjects run in {data_path} finished")
 

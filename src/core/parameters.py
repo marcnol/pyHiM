@@ -699,28 +699,26 @@ class Params:
                 )
 
 
-def load_alignment_dict(data_folder):
+def load_alignment_dict(dict_shifts_path):
     """Load a JSON file with 'dictShifts' in the file name.
 
     Parameters
     ----------
-    data_folder : Folders
-        Folders object
+    dict_shifts_path : str
+        Path to access at the shift dictionary, calculated by register_global
 
     Returns
     -------
     (dict,dict)
         Shift dictionaries
     """
-    dict_filename = (
-        os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
-    )
-    dict_shifts = load_json(dict_filename)
+
+    dict_shifts = load_json(dict_shifts_path)
     if dict_shifts is None:
-        print_log(f"File with dictionary not found!: {dict_filename}")
+        print_log(f"File with dictionary not found!: {dict_shifts_path}")
         dict_shifts_available = False
     else:
-        print_log(f"Dictionary File loaded: {dict_filename}")
+        print_log(f"Dictionary File loaded: {dict_shifts_path}")
         dict_shifts_available = True
 
     return dict_shifts, dict_shifts_available

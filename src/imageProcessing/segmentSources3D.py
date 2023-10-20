@@ -428,7 +428,7 @@ class Localize3D:
 
         return output_table
 
-    def segment_sources_3d_in_folder(self, data_path):
+    def segment_sources_3d_in_folder(self, data_path, dict_shifts_path):
         """
         Fits sources in all files in root_folder
 
@@ -451,7 +451,7 @@ class Localize3D:
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
-            self.data_folder
+            dict_shifts_path
         )
 
         # creates Table that will hold results
@@ -540,7 +540,7 @@ class Localize3D:
             overwrite=True,
         )
 
-    def segment_sources_3d(self, data_path):
+    def segment_sources_3d(self, data_path, dict_shifts_path):
         """
         runs 3D fitting routine in root_folder
 
@@ -573,7 +573,7 @@ class Localize3D:
 
         print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_sources_3d_in_folder(data_path)
+        self.segment_sources_3d_in_folder(data_path, dict_shifts_path)
 
         print_log(f"$ segmentedObjects run in {data_path} finished")
 
