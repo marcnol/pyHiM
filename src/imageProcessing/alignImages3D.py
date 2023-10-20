@@ -48,6 +48,7 @@ from skimage.registration import phase_cross_correlation
 from core.dask_cluster import try_get_client
 from core.folder import Folders
 from core.parameters import (
+    RegistrationParams,
     get_dictionary_value,
     load_alignment_dict,
     print_dict,
@@ -85,7 +86,6 @@ class Drift3D:
         self.inner_parallel_loop = None
         self.data_folder = None
         self.current_folder = None
-        self.output_filename = None
 
         self.p["blockSizeXY"] = 128
         self.p["upsample_factor"] = 100
@@ -241,7 +241,9 @@ class Drift3D:
             dict_shifts_path
         )
 
-    def align_fiducials_3d_in_folder(self, data_path, dict_shifts_path):
+    def align_fiducials_3d_in_folder(
+        self, data_path, dict_shifts_path, params: RegistrationParams
+    ):
         """
         Refits all the barcode files found in root_folder
 
@@ -315,19 +317,17 @@ class Drift3D:
 
         # saves Table with all shifts
 
-        path_name = self.data_folder.output_files["alignImages"].split(".")[0]
-        split_name = path_name.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + path_name + "_block3D.dat"
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-                + "_block3D.dat"
-            )
+        path_name = (
+            data_path
+            + os.sep
+            + params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + params.outputFile
+        )
+        data_file_path = path_name + "_block3D.dat"
+
         alignment_results_table_global.write(
             data_file_path,
             format="ascii.ecsv",
@@ -337,7 +337,9 @@ class Drift3D:
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
         print_log(f"$ register_local output Table saved in: {data_file_path}")
 
-    def align_fiducials_3d(self, data_path, dict_shifts_path):
+    def align_fiducials_3d(
+        self, data_path, params: RegistrationParams, dict_shifts_path
+    ):
         """
         runs refitting routine in root_folder
 
@@ -361,12 +363,11 @@ class Drift3D:
         self.current_folder = self.current_param.param_dict["rootFolder"]
 
         self.data_folder.create_folders(self.current_folder, self.current_param)
-        self.output_filename = self.data_folder.output_files["alignImages"]
 
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder(data_path, dict_shifts_path)
+        self.align_fiducials_3d_in_folder(data_path, dict_shifts_path, params)
 
         print_log(f"HiM matrix in {data_path} processed")
 

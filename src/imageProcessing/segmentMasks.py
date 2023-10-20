@@ -64,6 +64,7 @@ from tqdm import trange
 
 from core.dask_cluster import try_get_client
 from core.folder import Folders
+from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
@@ -797,7 +798,7 @@ def make_segmentations(file_name, current_param, data_folder):
         return []
 
 
-def segment_masks(current_param, data_path, file_name=None):
+def segment_masks(current_param, data_path, params: SegmentationParams, file_name=None):
     session_name = "segmentMasks"
 
     # processes folders and files
@@ -822,10 +823,19 @@ def segment_masks(current_param, data_path, file_name=None):
     print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
     label = current_param.param_dict["acquisition"]["label"]
-    output_file = data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
-    tempo = output_file.split("/")
-    output_file = "/".join(tempo[:-1] + ["data"] + tempo[-1:])
 
+    output_file = (
+        data_path
+        + os.sep
+        + params.folder
+        + os.sep
+        + "data"
+        + os.sep
+        + params.outputFile
+        + "_"
+        + label
+        + ".dat"
+    )
     if current_param.param_dict["parallel"]:
         # running in parallel mode
         client = get_client()

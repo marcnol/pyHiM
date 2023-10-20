@@ -739,7 +739,7 @@ class BuildTraces:
                 f"! Warning: localization files in 2D will not be processed using clustering.\n"
             )
 
-    def run(self):
+    def run(self, data_path, seg_params):
         """
         Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
@@ -764,19 +764,16 @@ class BuildTraces:
         print_log(f"> Masks labels: {self.available_masks}")
 
         # iterates over barcode localization tables in the current folder
-
-        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
-        files = list(glob.glob(data_file_path + "_*" + self.label + ".dat"))
+        data_file_base = (
+            data_path
+            + os.sep
+            + seg_params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base + "_*" + self.label + ".dat"))
 
         if not files:
             print_log("$ No localization table found to process!", "WARN")

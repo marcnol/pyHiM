@@ -44,7 +44,12 @@ from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
 from core.folder import Folders
-from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
+from core.parameters import (
+    SegmentationParams,
+    get_dictionary_value,
+    load_alignment_dict,
+    print_dict,
+)
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import _plot_image_3d
 from imageProcessing.alignImages import apply_xy_shift_3d_images
@@ -73,7 +78,6 @@ class Localize3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.data_folder = None
-        self.label = None
         self.output_filename = None
 
         # parameters from parameters.json
@@ -523,24 +527,15 @@ class Localize3D:
         print_log(f"$ localize_3d procesing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
-        split_name = self.output_filename.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
         output_table_global.write(
-            data_file_path,
+            self.output_filename,
             format="ascii.ecsv",
             overwrite=True,
         )
 
-    def segment_sources_3d(self, data_path, dict_shifts_path):
+    def segment_sources_3d(
+        self, data_path, dict_shifts_path, params: SegmentationParams
+    ):
         """
         runs 3D fitting routine in root_folder
 
@@ -563,12 +558,15 @@ class Localize3D:
 
         # creates output folders and filenames
         self.data_folder.create_folders(data_path, self.current_param)
-        self.label = self.current_param.param_dict["acquisition"]["label"]
         self.output_filename = (
-            self.data_folder.output_files["segmentedObjects"]
-            + "_3D_"
-            + self.label
-            + ".dat"
+            data_path
+            + os.sep
+            + params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + params.outputFile
+            + "_3D_barcode.dat"
         )
 
         print_log(f"> Processing Folder: {data_path}")

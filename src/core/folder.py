@@ -19,7 +19,6 @@ class Folders:
 
         # list of sub-folders in rootFilder with images
         self.output_folders = {}
-        self.output_files = {}
 
     def create_folder_with_key(self, folder_key_name: str):
         """Create one folder for one type of pyHiM outputs.
@@ -68,9 +67,6 @@ class Folders:
                 data_path + os.sep + "buildsPWDmatrix"
             )
         self.create_folder_with_key("buildsPWDmatrix")
-        self.output_files["buildsPWDmatrix"] = (
-            self.output_folders["buildsPWDmatrix"] + os.sep + "buildsPWDmatrix"
-        )
 
     # TODO: apply this method for each folder creation inside `create_folders`
     def _create_folder(self, data_path, current_param, arg2):
@@ -78,6 +74,3 @@ class Folders:
             data_path + os.sep + current_param.param_dict[arg2]["folder"]
         )
         self.create_folder_with_key(arg2)
-        self.output_files[arg2] = (
-            self.output_folders[arg2] + os.sep
-        ) + current_param.param_dict[arg2]["outputFile"]

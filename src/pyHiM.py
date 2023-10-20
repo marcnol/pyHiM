@@ -147,16 +147,29 @@ def main(command_line_arguments=None):
             )
 
         # [filters barcode localization table]
-        if "filter_localizations" in pipe.cmds:
-            fc.filter_localizations(current_param, label)
+        if "filter_localizations" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            fc.filter_localizations(
+                current_param, label, datam.m_data_path, segmentation_params
+            )
 
         # [registers barcode localization table]
-        if "register_localizations" in pipe.cmds:
-            fc.register_localizations(current_param, label)
+        if "register_localizations" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            fc.register_localizations(
+                current_param,
+                label,
+                datam.m_data_path,
+                datam.local_shifts_path,
+                segmentation_params,
+            )
 
         # [build traces]
-        if "build_traces" in pipe.cmds:
-            fc.build_traces(current_param, label)
+        if "build_traces" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            fc.build_traces(
+                current_param, label, datam.m_data_path, segmentation_params
+            )
 
         # [builds matrices]
         if "build_matrix" in pipe.cmds:

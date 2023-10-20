@@ -253,32 +253,15 @@ class RegisterLocalizations:
 
         return barcode_map
 
-    def load_local_alignment(self):
+    def load_local_alignment(self, data_path, local_shifts_path):
         if self.current_param.param_dict["alignImages"]["localAlignment"] != "None":
-            return self._load_local_alignment()
+            return self._load_local_alignment(data_path, local_shifts_path)
         print_log("\n\n$ localAlignment option set to `None`")
         return False, Table()
 
-    def _load_local_alignment(self):
+    def _load_local_alignment(self, data_path, local_shifts_path):
         mode = self.current_param.param_dict["alignImages"]["localAlignment"]
-        tempo_local_alignment_filename = (
-            self.data_folder.output_files["alignImages"].split(".")[0]
-            + "_"
-            + mode
-            + ".dat"
-        )
-        split_name = tempo_local_alignment_filename.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
-        self.local_alignment_filename = data_file_path
+        self.local_alignment_filename = local_shifts_path
 
         if os.path.exists(self.local_alignment_filename):
             self.alignment_results_table = Table.read(
@@ -417,7 +400,7 @@ class RegisterLocalizations:
             [file.split(".")[0], "_registered", "_barcode_comparisons", ".png"],
         )
 
-    def register(self):
+    def register(self, data_path, local_shifts_path, seg_params):
         """
         Function that registers barcodes using a local drift correction table produced by *register_local*
 
@@ -444,7 +427,7 @@ class RegisterLocalizations:
         print_log(f"> Processing Folder: {current_folder}")
 
         # Loads localAlignment if it exists otherwise it exits with error
-        self.load_local_alignment()
+        self.load_local_alignment(data_path, local_shifts_path)
 
         if not self.alignment_results_table_read:
             print_log(
@@ -454,20 +437,16 @@ class RegisterLocalizations:
                 f"ERROR: Expected to find: {self.local_alignment_filename}--> Aborting."
             )
 
-        # iterates over barcode localization tables in the current folder
-
-        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
-        files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
+        data_file_base = (
+            data_path
+            + os.sep
+            + seg_params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base + "_*" + label + ".dat"))
 
         if not files:
             print_log("No localization table found to process!")

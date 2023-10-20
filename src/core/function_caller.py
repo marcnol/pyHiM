@@ -8,6 +8,7 @@ Module for high level function calling
 import os
 
 from core.dask_cluster import DaskCluster
+from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, print_session_name
 from imageProcessing.alignImages import (
     ApplyRegisterGlobal,
@@ -159,9 +160,15 @@ class Pipeline:
             labelled_sections["RNA"].append("alignImages")
             labelled_sections["mask"].append("alignImages")
 
-        if {"mask_2d", "mask_3d", "localize_2d", "localize_3d"}.intersection(
-            set(self.cmds)
-        ):
+        if {
+            "mask_2d",
+            "mask_3d",
+            "localize_2d",
+            "localize_3d",
+            "filter_localizations",
+            "register_localizations",
+            "build_traces",
+        }.intersection(set(self.cmds)):
             labelled_sections["barcode"].append("segmentedObjects")
             labelled_sections["DAPI"].append("segmentedObjects")
             labelled_sections["mask"].append("segmentedObjects")
@@ -224,7 +231,9 @@ class Pipeline:
         ):
             print_log(f"> Making 3D image registrations label: {label}")
             _drift_3d = Drift3D(current_param, parallel=self.parallel)
-            _drift_3d.align_fiducials_3d(data_path, dict_shifts_path)
+            _drift_3d.align_fiducials_3d(
+                data_path, registration_params, dict_shifts_path
+            )
 
     def apply_registrations(self, current_param, label, data_path, registration_params):
         if (
@@ -239,7 +248,9 @@ class Pipeline:
                 registration_params,
             )
 
-    def segment_masks(self, current_param, label, data_path, segmentation_params):
+    def segment_masks(
+        self, current_param, label, data_path, params: SegmentationParams
+    ):
         if "segmentedObjects" in current_param.param_dict.keys():
             operation = current_param.param_dict["segmentedObjects"]["operation"]
         else:
@@ -250,7 +261,7 @@ class Pipeline:
             and current_param.param_dict["acquisition"]["label"] != "RNA"
             and "2D" in operation
         ):
-            self.manage_parallel_option(segment_masks, current_param, data_path)
+            self.manage_parallel_option(segment_masks, current_param, data_path, params)
 
     def segment_masks_3d(
         self,
@@ -289,7 +300,9 @@ class Pipeline:
             _segment_sources_3d = Localize3D(
                 current_param, roi_name, parallel=self.parallel
             )
-            _segment_sources_3d.segment_sources_3d(data_path, dict_shifts_path)
+            _segment_sources_3d.segment_sources_3d(
+                data_path, dict_shifts_path, segmentation_params
+            )
 
     def run(self):  # sourcery skip: remove-pass-body
         for feat_dict in self.features:
@@ -389,7 +402,7 @@ def remove_none_from_list(list_with_none: list):
 # =============================================================================
 
 
-def filter_localizations(current_param, label):
+def filter_localizations(current_param, label, data_path, segmentation_params):
     """Filters barcode localization table
 
     Parameters
@@ -401,10 +414,12 @@ def filter_localizations(current_param, label):
     """
     if label == "barcode":
         filter_localizations_instance = FilterLocalizations(current_param)
-        filter_localizations_instance.filter_folder()
+        filter_localizations_instance.filter_folder(data_path, segmentation_params)
 
 
-def register_localizations(current_param, label):
+def register_localizations(
+    current_param, label, data_path, local_shifts_path, segmentation_params
+):
     """Registers barcode localization table
 
     Parameters
@@ -416,10 +431,12 @@ def register_localizations(current_param, label):
     """
     if label == "barcode":
         register_localizations_instance = RegisterLocalizations(current_param)
-        register_localizations_instance.register()
+        register_localizations_instance.register(
+            data_path, local_shifts_path, segmentation_params
+        )
 
 
-def build_traces(current_param, label):
+def build_traces(current_param, label, data_path, segmentation_params):
     """Build traces
 
     Parameters
@@ -431,7 +448,7 @@ def build_traces(current_param, label):
     """
     if label == "barcode":
         build_traces_instance = BuildTraces(current_param)
-        build_traces_instance.run()
+        build_traces_instance.run(data_path, segmentation_params)
 
 
 def build_matrix(current_param, label):

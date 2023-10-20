@@ -95,6 +95,7 @@ class DataManager:
         self.png_ext = ["png"]
 
         self.dict_shifts_path = ""
+        self.local_shifts_path = ""
 
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
@@ -229,7 +230,18 @@ class DataManager:
                 self.add_to_processable_labels(label)
                 self.tif_files.append(TifFile(path, name, ext, label, cycle))
             elif ext in self.ecsv_ext:
-                if "barcode" in name:
+                name_to_find = (
+                    self.raw_dict.get("common", {})
+                    .get("alignImages", {})
+                    .get("outputFile")
+                    + "_"
+                    + self.raw_dict.get("common", {})
+                    .get("alignImages", {})
+                    .get("localAlignment")
+                )
+                if ext == "dat" and name == name_to_find:
+                    self.local_shifts_path = path
+                elif "barcode" in name:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
