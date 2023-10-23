@@ -77,7 +77,6 @@ class Localize3D:
         self.roi = roi_name
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
-        self.data_folder = None
         self.output_filename = None
 
         # parameters from parameters.json
@@ -555,7 +554,6 @@ class Localize3D:
         # processes folders and files
 
         print_session_name(session_name)
-        self.data_folder = Folders(data_path)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -563,7 +561,6 @@ class Localize3D:
         )
 
         # creates output folders and filenames
-        self.data_folder.create_folders(data_path, self.current_param)
         self.output_filename = (
             data_path
             + os.sep

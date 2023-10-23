@@ -84,7 +84,6 @@ class Drift3D:
         self.dict_shifts = None
         self.dict_shifts_available = None
         self.inner_parallel_loop = None
-        self.data_folder = None
         self.current_folder = None
 
         self.p["blockSizeXY"] = 128
@@ -358,7 +357,6 @@ class Drift3D:
 
         # processes folders and files
         print_session_name(session_name)
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -367,8 +365,6 @@ class Drift3D:
 
         # creates output folders and filenames
         self.current_folder = self.current_param.param_dict["rootFolder"]
-
-        self.data_folder.create_folders(self.current_folder, self.current_param)
 
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel

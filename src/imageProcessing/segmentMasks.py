@@ -644,7 +644,6 @@ def segment_mask_stardist(im, current_param):
 def make_segmentations(
     file_name,
     current_param,
-    data_folder,
     data_path,
     seg_params: SegmentationParams,
     align_folder,
@@ -804,7 +803,6 @@ def segment_masks(
         f'\n===================={session_name}:{current_param.param_dict["acquisition"]["label"]}====================\n'
     )
 
-    data_folder = Folders(data_path)
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
@@ -813,7 +811,6 @@ def segment_masks(
     barcodes_coordinates = Table()
 
     files_folder = glob.glob(data_path + os.sep + "*.tif")
-    data_folder.create_folders(data_path, current_param)
 
     # generates lists of files to process
     current_param.find_files_to_process(files_folder)
@@ -853,7 +850,6 @@ def segment_masks(
                         make_segmentations,
                         filename_to_process,
                         current_param,
-                        data_folder,
                         data_path,
                         params,
                         align_folder,
@@ -893,7 +889,6 @@ def segment_masks(
                 output = make_segmentations(
                     filename_to_process,
                     current_param,
-                    data_folder,
                     data_path,
                     params,
                     align_folder,

@@ -24,9 +24,18 @@ from astropy.table import Table
 from tqdm import trange
 
 from core.folder import Folders
+from core.parameters import MatrixParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable, decode_rois
+from imageProcessing.makeProjections import Feature
 from matrixOperations.filter_localizations import get_file_table_new_name
+
+
+class RegisterLocalizationsTempo(Feature):
+    def __init__(self, params: MatrixParams):
+        super().__init__(params)
+        self.out_folder = self.params.folder
+        self.name = "RegisterLocalizations"
 
 
 class RegisterLocalizations:
@@ -45,7 +54,6 @@ class RegisterLocalizations:
         self.alignment_results_table = None
         self.dict_error_block_masks = None
         self.ndims = None
-        self.data_folder = None
 
         if "toleranceDrift" in self.current_param.param_dict["buildsPWDmatrix"]:
             self.tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
@@ -413,7 +421,6 @@ class RegisterLocalizations:
         session_name = "register_localizations"
 
         # processes folders and files
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
@@ -423,7 +430,6 @@ class RegisterLocalizations:
         label = "barcode"
 
         current_folder = self.current_param.param_dict["rootFolder"]
-        self.data_folder.create_folders(current_folder, self.current_param)
         print_log(f"> Processing Folder: {current_folder}")
 
         # Loads localAlignment if it exists otherwise it exits with error

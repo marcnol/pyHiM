@@ -649,27 +649,33 @@ class MatrixParams:
 class Params:
     def __init__(self, label: str, labelled_dict: dict, sections: List[str]):
         self.my_label = label
+        self.acquisition = None
+        self.projection = None
+        self.registration = None
+        self.segmentation = None
+        self.matrix = None
+
         if "acquisition" in sections:
             print_section("acquisition")
             # pylint: disable=no-member
             self.acquisition = AcquisitionParams.from_dict(labelled_dict["acquisition"])
-        if "zProject" in sections:
+        if "projection" in sections:
             print_section("zProject")
             # pylint: disable=no-member
             self.projection = ProjectionParams.from_dict(labelled_dict["zProject"])
-        if "alignImages" in sections:
+        if "registration" in sections:
             print_section("alignImages")
             # pylint: disable=no-member
             self.registration = RegistrationParams.from_dict(
                 labelled_dict["alignImages"]
             )
-        if "segmentedObjects" in sections:
+        if "segmentation" in sections:
             print_section("segmentedObjects")
             # pylint: disable=no-member
             self.segmentation = SegmentationParams.from_dict(
                 labelled_dict["segmentedObjects"]
             )
-        if "buildsPWDmatrix" in sections:
+        if "matrix" in sections:
             print_section("buildsPWDmatrix")
             # pylint: disable=no-member
             self.matrix = MatrixParams.from_dict(labelled_dict["buildsPWDmatrix"])

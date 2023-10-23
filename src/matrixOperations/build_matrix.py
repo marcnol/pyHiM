@@ -36,9 +36,9 @@ from astropy.table import unique
 from sklearn.metrics import pairwise_distances
 from tqdm.contrib import tzip
 
-from core.parameters import get_dictionary_value
+from core.parameters import MatrixParams, get_dictionary_value
 from core.pyhim_logging import print_log
-from matrixOperations.build_traces import initialize_module
+from imageProcessing.makeProjections import Feature
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
@@ -46,9 +46,12 @@ from matrixOperations.HIMmatrixOperations import (
     plot_matrix,
 )
 
-# =============================================================================
-# CLASSES
-# =============================================================================
+
+class BuildMatrixTempo(Feature):
+    def __init__(self, params: MatrixParams):
+        super().__init__(params)
+        self.out_folder = self.params.folder
+        self.name = "BuildMatrix"
 
 
 class BuildMatrix:
@@ -398,11 +401,8 @@ class BuildMatrix:
         self.save_matrices(file)
 
     def run(self, data_path, matrix_params):
-        # initializes session_name, data_folder, current_folder
         self.label = "barcode"
-        self.data_folder, self.current_folder = initialize_module(
-            self.current_param, module_name="build_matrix", label=self.label
-        )
+        self.current_folder = self.current_param.param_dict["rootFolder"]
 
         # reads chromatin traces
         files = [

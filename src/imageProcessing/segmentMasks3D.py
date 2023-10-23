@@ -45,7 +45,6 @@ class Mask3D:
         self.dict_shifts_available = None
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
-        self.data_folder = None
         self.label = ""
 
         # parameters from parameters.json
@@ -368,7 +367,6 @@ class Mask3D:
         # processes folders and files
 
         print_session_name(session_name)
-        self.data_folder = Folders(data_path)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -376,7 +374,6 @@ class Mask3D:
         )
 
         # creates output folders and filenames
-        self.data_folder.create_folders(data_path, self.current_param)
         self.label = self.current_param.param_dict["acquisition"]["label"]
 
         print_log(f"> Processing Folder: {data_path}")

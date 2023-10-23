@@ -50,20 +50,18 @@ from skimage.segmentation import expand_labels
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from core.folder import Folders
-from core.parameters import get_dictionary_value
-from core.pyhim_logging import (
-    print_dashes,
-    print_log,
-    print_session_name,
-    write_string_to_file,
-)
+from core.parameters import MatrixParams, get_dictionary_value
+from core.pyhim_logging import print_dashes, print_log
 from imageProcessing.localization_table import LocalizationTable
+from imageProcessing.makeProjections import Feature
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
-# =============================================================================
-# CLASSES
-# =============================================================================
+
+class BuildTracesTempo(Feature):
+    def __init__(self, params: MatrixParams):
+        super().__init__(params)
+        self.out_folder = self.params.folder
+        self.name = "BuildTraces"
 
 
 class BuildTraces:
@@ -446,8 +444,6 @@ class BuildTraces:
         output_filename : string
         self.current_param : Parameters Class
         self.current_folder : string
-        self.data_folder : Folder Class
-            information to find barcode localizations, local drift corrections and masks
 
         self.pixel_size : dict, optional
             pixel_size = {'x': pixelSizeXY,
@@ -754,11 +750,8 @@ class BuildTraces:
         None.
 
         """
-        # initializes session_name, data_folder, current_folder
         self.label = "barcode"
-        self.data_folder, self.current_folder = initialize_module(
-            self.current_param, module_name="build_traces", label=self.label
-        )
+        self.current_folder = self.current_param.param_dict["rootFolder"]
 
         print_log(f"> Masks labels: {self.available_masks}")
 
@@ -786,25 +779,6 @@ class BuildTraces:
             self.launch_analysis(file, data_path, seg_params, matrix_params)
 
         print_log(f"$ {len(files)} barcode tables processed in {self.current_folder}")
-
-
-def initialize_module(current_param, module_name="build_traces", label="barcode"):
-    session_name = module_name
-
-    # processes folders and files
-    data_folder = Folders(current_param.param_dict["rootFolder"])
-    print_session_name(module_name)
-    write_string_to_file(
-        current_param.param_dict["fileNameMD"],
-        f"## {session_name}\n",
-        "a",
-    )
-
-    current_folder = current_param.param_dict["rootFolder"]
-    data_folder.create_folders(current_folder, current_param)
-    print_log(f"> Processing Folder: {current_folder}")
-
-    return data_folder, current_folder
 
 
 def debug_mask_filename(

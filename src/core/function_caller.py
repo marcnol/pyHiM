@@ -10,20 +10,30 @@ import os
 from core.dask_cluster import DaskCluster
 from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, print_session_name
+from imageProcessing import localize_3d, mask_3d
 from imageProcessing.alignImages import (
     ApplyRegisterGlobal,
     RegisterGlobal,
     apply_registrations_to_current_folder,
 )
 from imageProcessing.alignImages3D import Drift3D
+from imageProcessing.localize_2d import Localize2D
 from imageProcessing.makeProjections import Feature, Project
+from imageProcessing.mask_2d import Mask2D
+from imageProcessing.register_local import RegisterLocal
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
-from matrixOperations.build_matrix import BuildMatrix
-from matrixOperations.build_traces import BuildTraces
-from matrixOperations.filter_localizations import FilterLocalizations
-from matrixOperations.register_localizations import RegisterLocalizations
+from matrixOperations.build_matrix import BuildMatrix, BuildMatrixTempo
+from matrixOperations.build_traces import BuildTraces, BuildTracesTempo
+from matrixOperations.filter_localizations import (
+    FilterLocalizations,
+    FilterLocalizationsTempo,
+)
+from matrixOperations.register_localizations import (
+    RegisterLocalizations,
+    RegisterLocalizationsTempo,
+)
 
 
 class Pipeline:
@@ -134,7 +144,7 @@ class Pipeline:
 
     def set_params_from_cmds(self):
         # TODO: precise association cmd<->section
-        labelled_sections = {
+        self.labelled_sections = {
             "barcode": [],
             "fiducial": [],
             "DAPI": [],
@@ -143,22 +153,22 @@ class Pipeline:
         }
 
         if "project" in self.cmds:
-            labelled_sections["barcode"].append("zProject")
-            labelled_sections["fiducial"].append("zProject")
-            labelled_sections["DAPI"].append("zProject")
-            labelled_sections["RNA"].append("zProject")
-            labelled_sections["mask"].append("zProject")
+            self.labelled_sections["barcode"].append("projection")
+            self.labelled_sections["fiducial"].append("projection")
+            self.labelled_sections["DAPI"].append("projection")
+            self.labelled_sections["RNA"].append("projection")
+            self.labelled_sections["mask"].append("projection")
 
         if {
             "register_global",
             "register_local",
             "register_localizations",
         }.intersection(set(self.cmds)):
-            labelled_sections["barcode"].append("alignImages")
-            labelled_sections["fiducial"].append("alignImages")
-            labelled_sections["DAPI"].append("alignImages")
-            labelled_sections["RNA"].append("alignImages")
-            labelled_sections["mask"].append("alignImages")
+            self.labelled_sections["barcode"].append("registration")
+            self.labelled_sections["fiducial"].append("registration")
+            self.labelled_sections["DAPI"].append("registration")
+            self.labelled_sections["RNA"].append("registration")
+            self.labelled_sections["mask"].append("registration")
 
         if {
             "mask_2d",
@@ -169,9 +179,9 @@ class Pipeline:
             "register_localizations",
             "build_traces",
         }.intersection(set(self.cmds)):
-            labelled_sections["barcode"].append("segmentedObjects")
-            labelled_sections["DAPI"].append("segmentedObjects")
-            labelled_sections["mask"].append("segmentedObjects")
+            self.labelled_sections["barcode"].append("segmentation")
+            self.labelled_sections["DAPI"].append("segmentation")
+            self.labelled_sections["mask"].append("segmentation")
 
         if {
             "filter_localizations",
@@ -179,21 +189,28 @@ class Pipeline:
             "build_traces",
             "build_matrix",
         }.intersection(set(self.cmds)):
-            labelled_sections["barcode"].append("buildsPWDmatrix")
-            labelled_sections["DAPI"].append("buildsPWDmatrix")
-            labelled_sections["mask"].append("buildsPWDmatrix")
+            self.labelled_sections["barcode"].append("matrix")
+            self.labelled_sections["DAPI"].append("matrix")
+            self.labelled_sections["mask"].append("matrix")
 
-        self.m_data_m.set_labelled_params(labelled_sections)
+        self.m_data_m.set_labelled_params(self.labelled_sections)
 
     def _init_labelled_feature(
         self, feature_class_name: Feature, params_attr_name: str
     ):
         labelled_feature = {}
         for label in self.m_data_m.get_processable_labels():
-            params_section = getattr(
-                self.m_data_m.labelled_params[label], params_attr_name
-            )
-            labelled_feature[label] = feature_class_name(params_section)
+            if params_attr_name in self.labelled_sections[label]:
+                print("DEBUG label")
+                print(label)
+                print("DEBUG self.m_data_m.labelled_params[label].__dict__")
+                print(self.m_data_m.labelled_params[label].__dict__)
+                print("DEBUG params_attr_name")
+                print(params_attr_name)
+                params_section = getattr(
+                    self.m_data_m.labelled_params[label], params_attr_name
+                )
+                labelled_feature[label] = feature_class_name(params_section)
         self.features.append(labelled_feature)
 
     def init_features(self):
@@ -202,6 +219,24 @@ class Pipeline:
         if "register_global" in self.cmds:
             self._init_labelled_feature(RegisterGlobal, "registration")
             self._init_labelled_feature(ApplyRegisterGlobal, "registration")
+        if "register_local" in self.cmds:
+            self._init_labelled_feature(RegisterLocal, "registration")
+        if "mask_2d" in self.cmds:
+            self._init_labelled_feature(Mask2D, "segmentation")
+        if "localize_2d" in self.cmds:
+            self._init_labelled_feature(Localize2D, "segmentation")
+        if "mask_3d" in self.cmds:
+            self._init_labelled_feature(mask_3d.Mask3D, "segmentation")
+        if "localize_3d" in self.cmds:
+            self._init_labelled_feature(localize_3d.Localize3D, "segmentation")
+        if "filter_localizations" in self.cmds:
+            self._init_labelled_feature(FilterLocalizationsTempo, "matrix")
+        if "register_localizations" in self.cmds:
+            self._init_labelled_feature(RegisterLocalizationsTempo, "matrix")
+        if "build_traces" in self.cmds:
+            self._init_labelled_feature(BuildTracesTempo, "matrix")
+        if "build_matrix" in self.cmds:
+            self._init_labelled_feature(BuildMatrixTempo, "matrix")
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
