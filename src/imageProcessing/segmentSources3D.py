@@ -43,7 +43,6 @@ from skimage import exposure, io
 from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
 from core.parameters import (
     SegmentationParams,
     get_dictionary_value,

@@ -22,7 +22,6 @@ from datetime import datetime
 import numpy as np
 from skimage import io
 
-from core.folder import Folders
 from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import plot_raw_images_and_labels

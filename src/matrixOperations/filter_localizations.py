@@ -14,7 +14,6 @@ import os
 
 from tqdm import trange
 
-from core.folder import Folders
 from core.parameters import MatrixParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable

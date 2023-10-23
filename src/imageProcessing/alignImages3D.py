@@ -46,7 +46,6 @@ from skimage import io
 from skimage.registration import phase_cross_correlation
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
 from core.parameters import (
     RegistrationParams,
     get_dictionary_value,

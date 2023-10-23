@@ -63,7 +63,6 @@ from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
 from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
