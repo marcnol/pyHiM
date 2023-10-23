@@ -14,7 +14,7 @@ import os
 
 from tqdm import trange
 
-from core.parameters import MatrixParams
+from core.parameters import MatrixParams, RegistrationParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
 from imageProcessing.makeProjections import Feature
@@ -94,7 +94,9 @@ class FilterLocalizations:
 
         return barcode_map
 
-    def setup_filter_values(self):
+    def setup_filter_values(
+        self, reg_params: RegistrationParams, matrix_params: MatrixParams
+    ):
         """
         Returns
         -------
@@ -104,20 +106,20 @@ class FilterLocalizations:
             Minimum flux to keep barcode localization
 
         """
-        flux_key = "flux_min_3D" if self.ndims == 3 else "flux_min"
-        if flux_key in self.current_param.param_dict["buildsPWDmatrix"]:
-            self.flux_min = self.current_param.param_dict["buildsPWDmatrix"][flux_key]
+        if self.ndims == 3:
+            self.flux_min = matrix_params.flux_min_3D
         else:
-            self.flux_min = 0
-            print_log(f"# Flux min not found. Set to {self.flux_min}!")
+            self.flux_min = matrix_params.flux_min
 
-        if "blockSize" in self.current_param.param_dict["alignImages"]:
-            self.block_size = self.current_param.param_dict["alignImages"]["blockSize"]
-        else:
-            self.block_size = 256
-            print_log(f"# blockSize not found. Set to {self.block_size}!")
+        self.block_size = reg_params.blockSize
 
-    def filter_folder(self, data_path, seg_params):
+    def filter_folder(
+        self,
+        data_path,
+        seg_params,
+        reg_params: RegistrationParams,
+        matrix_params: MatrixParams,
+    ):
         """
         Function that filters barcodes using a number of user-provided parameters
 
@@ -153,11 +155,11 @@ class FilterLocalizations:
         if files:
             for file in files:
                 self.ndims = 3 if "3D" in os.path.basename(file) else 2
-                self.setup_filter_values()
+                self.setup_filter_values(reg_params, matrix_params)
 
                 # Loads barcode coordinate Tables
                 table = LocalizationTable()
-                barcode_map, unique_barcodes = table.load(file)
+                barcode_map, _ = table.load(file)
 
                 if len(barcode_map) > 0:
                     # plots and saves original barcode coordinate Tables for safe keeping

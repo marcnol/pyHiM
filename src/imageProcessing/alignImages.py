@@ -22,11 +22,9 @@ import os
 import sys
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
-from dask.distributed import get_client
 from numpy import linalg as LA
 from photutils import Background2D, MedianBackground
 from scipy.ndimage import shift as shift_image
@@ -47,11 +45,10 @@ from core.data_file import (
     JsonFile,
     NpyFile,
     RefDiffFile,
-    save_json,
 )
 from core.data_manager import load_json
-from core.parameters import RegistrationParams, rt_to_filename
-from core.pyhim_logging import print_log, write_string_to_file
+from core.parameters import RegistrationParams
+from core.pyhim_logging import print_log
 from imageProcessing.imageProcessing import (
     Image,
     image_adjust,
@@ -412,10 +409,10 @@ def calcul_error(shifted_img, ref_img):
 
 def apply_registrations_to_filename(
     filename_to_process,
-    current_param,
     dict_shifts,
     data_path,
     params: RegistrationParams,
+    roi_name,
 ):
     """
     Applies registration of filename_to_process
@@ -424,7 +421,6 @@ def apply_registrations_to_filename(
     ----------
     filename_to_process : string
         file to apply registration to
-    current_param : Parameters class
     dict_shifts : Dictionnary
         contains the shifts to be applied to all rois
 
@@ -434,16 +430,15 @@ def apply_registrations_to_filename(
 
     """
     # gets shift from dictionary
-    roi = current_param.decode_file_parts(os.path.basename(filename_to_process))["roi"]
 
     label = os.path.basename(filename_to_process).split("_")[2]  # to FIX
 
     try:
-        shift_array = dict_shifts[f"ROI:{roi}"][label]
+        shift_array = dict_shifts[f"ROI:{roi_name}"][label]
     except KeyError:
         shift_array = None
         print_log(
-            f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
+            f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {label}"
         )
 
     if shift_array is not None:
@@ -452,7 +447,9 @@ def apply_registrations_to_filename(
         im_obj = Image()
         im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
-        print_log(f"$ Image registered using ROI:{roi}, label:{label}, shift={shift}")
+        print_log(
+            f"$ Image registered using ROI:{roi_name}, label:{label}, shift={shift}"
+        )
 
         # saves registered 2D image
         im_obj.save_image_2d(
@@ -460,24 +457,24 @@ def apply_registrations_to_filename(
             tag="_2d_registered",
         )
 
-    elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
+    elif label == params.referenceFiducial:
         im_obj = Image()
         im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
         im_obj.save_image_2d(
             data_path + os.sep + params.folder,
             tag="_2d_registered",
         )
-        print_log(f"$ Saving image for referenceRT ROI:{roi}, label:{label}")
+        print_log(f"$ Saving image for referenceRT ROI:{roi_name}, label:{label}")
 
     else:
         print_log(
-            f"# No shift found in dictionary for ROI:{roi}, label:{label}",
+            f"# No shift found in dictionary for ROI:{roi_name}, label:{label}",
             status="WARN",
         )
 
 
 def apply_registrations_to_current_folder(
-    data_path, current_param, params: RegistrationParams
+    data_path, current_param, params: RegistrationParams, roi_name
 ):
     """
     This function will
@@ -525,10 +522,10 @@ def apply_registrations_to_current_folder(
             print_log(f"\n$ About to process file {i} \\ {n_files}")
             apply_registrations_to_filename(
                 filename_to_process,
-                current_param,
                 dict_shifts,
                 data_path,
                 params,
+                roi_name,
             )
 
 

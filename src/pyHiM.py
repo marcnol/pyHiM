@@ -73,7 +73,6 @@ def main(command_line_arguments=None):
 
     print_log("\n\n\n")
     raw_dict = datam.load_user_param()
-    global_param = Parameters(raw_dict, root_folder=datam.m_data_path)
     labels = datam.get_processable_labels()
     print_log(f"$ Labels to process: {labels}")
     for label in labels:
@@ -85,9 +84,7 @@ def main(command_line_arguments=None):
             stardist_basename=datam.m_stardist_basename,
         )
 
-        print_analyzing_label(
-            f"Analyzing label: {current_param.param_dict['acquisition']['label']}"
-        )
+        print_analyzing_label(f"Analyzing label: {label}")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
@@ -96,7 +93,11 @@ def main(command_line_arguments=None):
         if "register_global" in pipe.cmds:
             registration_params = datam.labelled_params[label].registration
             pipe.apply_registrations(
-                current_param, label, datam.m_data_path, registration_params
+                current_param,
+                label,
+                datam.m_data_path,
+                registration_params,
+                datam.processed_roi,
             )
 
         # [aligns fiducials in 3D]
@@ -108,6 +109,8 @@ def main(command_line_arguments=None):
                 datam.m_data_path,
                 registration_params,
                 datam.dict_shifts_path,
+                datam.processed_roi,
+                datam.acquisition_params.zBinning,
             )
 
         # [segments DAPI and sources in 2D]
@@ -123,6 +126,7 @@ def main(command_line_arguments=None):
 
         # [segments masks in 3D]
         if "mask_3d" in pipe.cmds and (label in ("DAPI", "mask")):
+            registration_params = datam.labelled_params[label].registration
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_masks_3d(
                 current_param,
@@ -131,10 +135,14 @@ def main(command_line_arguments=None):
                 datam.m_data_path,
                 segmentation_params,
                 datam.dict_shifts_path,
+                datam.acquisition_params,
+                registration_params,
             )
 
         # [segments sources in 3D]
         if "localize_3d" in pipe.cmds and label == "barcode":
+            projection_params = datam.labelled_params[label].projection
+            registration_params = datam.labelled_params[label].registration
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_sources_3d(
                 current_param,
@@ -143,24 +151,38 @@ def main(command_line_arguments=None):
                 datam.m_data_path,
                 segmentation_params,
                 datam.dict_shifts_path,
+                datam.acquisition_params,
+                projection_params,
+                registration_params,
             )
 
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds and label == "barcode":
+            registration_params = datam.labelled_params[label].registration
             segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
             fc.filter_localizations(
-                current_param, label, datam.m_data_path, segmentation_params
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                registration_params,
+                matrix_params,
             )
 
         # [registers barcode localization table]
         if "register_localizations" in pipe.cmds and label == "barcode":
+            registration_params = datam.labelled_params[label].registration
             segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
             fc.register_localizations(
                 current_param,
                 label,
                 datam.m_data_path,
                 datam.local_shifts_path,
                 segmentation_params,
+                registration_params,
+                matrix_params,
             )
 
         # [build traces]
@@ -173,12 +195,19 @@ def main(command_line_arguments=None):
                 datam.m_data_path,
                 segmentation_params,
                 matrix_params,
+                datam.acquisition_params,
             )
 
         # [builds matrices]
         if "build_matrix" in pipe.cmds and label == "barcode":
             matrix_params = datam.labelled_params[label].matrix
-            fc.build_matrix(current_param, label, datam.m_data_path, matrix_params)
+            fc.build_matrix(
+                current_param,
+                label,
+                datam.m_data_path,
+                matrix_params,
+                datam.acquisition_params,
+            )
 
         print_log("\n")
         del current_param

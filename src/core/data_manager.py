@@ -96,9 +96,10 @@ class DataManager:
 
         self.dict_shifts_path = ""
         self.local_shifts_path = ""
-        self.align_folder = "" # tempo refactoring attribute
+        self.align_folder = ""  # tempo refactoring attribute
 
         self.raw_dict = self.load_user_param_with_structure()
+        self.set_stardist_basename()
         print_section("acquisition")
         # pylint: disable=no-member
         self.acquisition_params = AcquisitionParams.from_dict(
@@ -107,6 +108,25 @@ class DataManager:
         self.labelled_params = {}
 
         self.set_up()
+
+    def set_stardist_basename(self):
+        stardict = {
+            "common": {
+                "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
+            },
+            "labels": {
+                "barcode": {
+                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
+                },
+                "DAPI": {
+                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
+                },
+                "mask": {
+                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
+                },
+            },
+        }
+        self.raw_dict = deep_dict_update(self.raw_dict, stardict)
 
     @staticmethod
     def __set_data_path(data_path):
@@ -246,7 +266,7 @@ class DataManager:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
-                if "_2d_registered.npy" in path: # tempo refactoring condition
+                if "_2d_registered.npy" in path:  # tempo refactoring condition
                     self.align_folder = "/".join(path.split("/")[:-1])
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])

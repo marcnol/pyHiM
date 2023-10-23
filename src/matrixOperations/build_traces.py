@@ -50,7 +50,7 @@ from skimage.segmentation import expand_labels
 from tqdm import trange
 from tqdm.contrib import tzip
 
-from core.parameters import MatrixParams, get_dictionary_value
+from core.parameters import AcquisitionParams, MatrixParams
 from core.pyhim_logging import print_dashes, print_log
 from imageProcessing.localization_table import LocalizationTable
 from imageProcessing.makeProjections import Feature
@@ -65,10 +65,10 @@ class BuildTracesTempo(Feature):
 
 
 class BuildTraces:
-    def __init__(self, param):
+    def __init__(self, param, acq_params: AcquisitionParams):
         self.current_param = param
 
-        self.initialize_parameters()
+        self.initialize_parameters(acq_params)
 
         # initialize with default values
         self.current_folder = []
@@ -85,46 +85,14 @@ class BuildTraces:
             f"maskID_{str(mask)}": [] for mask in range(self.number_masks + 1)
         }
 
-    def initialize_parameters(self):
+    def initialize_parameters(self, acq_params: AcquisitionParams):
         # initializes parameters from current_param
 
-        self.tracing_method = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "tracing_method",
-            default=["masking"],
-        )
-        self.z_binning = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "zBinning", default=1
-        )
-        self.pixel_size_xy = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
-        )
-        self.pixel_size_z_0 = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
-        )
+        self.z_binning = acq_params.zBinning
+        self.pixel_size_xy = acq_params.pixelSizeXY
+        self.pixel_size_z_0 = acq_params.pixelSizeZ
         self.pixel_size_z = self.z_binning * self.pixel_size_z_0
-        self.available_masks = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "masks2process",
-            default={"nuclei": "DAPI"},
-        )
         self.log_name_md = self.current_param.param_dict["fileNameMD"]
-        self.mask_expansion = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "mask_expansion",
-            default=8,
-        )
-        self.kdtree_distance_threshold_mum = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "KDtree_distance_threshold_mum",
-            default=1,
-        )
-
-        self.z_offset = get_dictionary_value(
-            self.current_param.param_dict["buildsPWDmatrix"],
-            "z_offset",
-            default=2.0,
-        )
 
     def initialize_lists(self):
         (
@@ -145,7 +113,7 @@ class BuildTraces:
             [],
         )
 
-    def align_by_masking(self):
+    def align_by_masking(self, matrix_params: MatrixParams):
         """
         Assigns barcodes to masks and creates <n_barcodes_in_mask>
         And by filling in the "Cell #" key of barcode_map_roi
@@ -185,8 +153,6 @@ class BuildTraces:
         for i in trange(
             len(self.barcode_map_roi.groups[0])
         ):  # i is the index of the barcode in barcode_map_roi
-            barcode = self.barcode_map_roi.groups[0]["Barcode #"][i]
-
             # gets xyz coordinates
             x_corrected = self.barcode_map_roi.groups[0]["ycentroid"][i]
             y_corrected = self.barcode_map_roi.groups[0]["xcentroid"][i]
@@ -199,7 +165,7 @@ class BuildTraces:
             # binarizes coordinate
             y_int = binarize_coordinate(y_corrected)
             x_int = binarize_coordinate(x_corrected)
-            z_int = binarize_coordinate(z_corrected) + int(self.z_offset)
+            z_int = binarize_coordinate(z_corrected) + int(matrix_params.z_offset)
 
             # finds what mask label this barcode is sitting on
             if np.isnan(x_int) or np.isnan(y_int) or np.isnan(z_int):
@@ -250,14 +216,12 @@ class BuildTraces:
                 | discarded: {self.n_cells_unassigned}"
         )
 
-    def build_vector(self, group_keys, x, y, z):
+    def build_vector(self, x, y, z):
         """
         Builds vector from coordinates
 
         Parameters
         ----------
-        group_keys : list
-            list of headers in the barcodes table
         x : float
             x coordinates
         y : float
@@ -303,11 +267,7 @@ class BuildTraces:
             barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups
         ):
             if key["CellID #"] > 1:  # excludes trace 0 as this is background
-                group_keys, cell_id, roi = (
-                    group.keys(),
-                    key["CellID #"],
-                    group["ROI #"].data[0],
-                )
+                cell_id, roi = (key["CellID #"], group["ROI #"].data[0])
                 trace_id = str(uuid.uuid4())
 
                 # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
@@ -318,7 +278,7 @@ class BuildTraces:
                 )
 
                 # gets vector in nm
-                r_mum = self.build_vector(group_keys, x, y, z)
+                r_mum = self.build_vector(x, y, z)
 
                 for i in range(x.shape[0]):
                     entry = [
@@ -340,7 +300,12 @@ class BuildTraces:
         print_log(f"$ Coordinates dimensions: {self.ndims}")
 
     def load_mask(
-        self, files_in_folder, data_path, seg_params
+        self,
+        files_in_folder,
+        data_path,
+        seg_params,
+        acq_params: AcquisitionParams,
+        matrix_params: MatrixParams,
     ):  # sourcery skip: use-named-expression
         """
         searches and loads mask files for building chromatin trace
@@ -359,9 +324,7 @@ class BuildTraces:
         """
 
         # finds files with cell masks
-        channel = self.current_param.param_dict["acquisition"][
-            f"{self.mask_type}_channel"
-        ]
+        channel = getattr(acq_params, f"{self.mask_type}_channel")
 
         files_to_process = [
             file
@@ -394,7 +357,7 @@ class BuildTraces:
 
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.masks = expand_labels(
-                    segmented_masks, distance=self.mask_expansion
+                    segmented_masks, distance=matrix_params.mask_expansion
                 )
 
                 # initializes masks
@@ -408,9 +371,7 @@ class BuildTraces:
                     full_filename_roi_masks,
                     self.mask_identifier,
                     self.n_roi,
-                    label=self.current_param.param_dict["acquisition"][
-                        f"{self.mask_identifier[:4]}_channel"
-                    ],
+                    label=getattr(acq_params, f"{self.mask_identifier[:4]}_channel"),
                 )
 
         else:
@@ -425,14 +386,20 @@ class BuildTraces:
                 "None",
                 self.mask_identifier,
                 self.n_roi,
-                label=self.current_param.param_dict["acquisition"][
-                    f"{self.mask_identifier[:4]}_channel"
-                ],
+                label=getattr(acq_params, f"{self.mask_identifier[:4]}_channel"),
             )
 
         return False
 
-    def assign_masks(self, output_filename, barcode_map, data_path, seg_params):
+    def assign_masks(
+        self,
+        output_filename,
+        barcode_map,
+        data_path,
+        seg_params,
+        acq_params: AcquisitionParams,
+        matrix_params: MatrixParams,
+    ):
         """
         Main function that:
             loads and processes barcode localization files, local alignment file, and masks
@@ -484,8 +451,8 @@ class BuildTraces:
             ]  # need to iterate over the first index
             self.barcode_map_roi = barcode_map.group_by("ROI #").groups[roi]
 
-            if mask_loaded := self.load_mask(
-                tif_files_in_folder, data_path, seg_params
+            if self.load_mask(
+                tif_files_in_folder, data_path, seg_params, acq_params, matrix_params
             ):
                 print_log(f"> Processing ROI# {self.n_roi}")
 
@@ -493,7 +460,7 @@ class BuildTraces:
                 self.trace_table.initialize()
 
                 # finds what barcodes are in each cell mask
-                self.align_by_masking()
+                self.align_by_masking(matrix_params)
                 print_log(
                     f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1} out of {self.number_masks}\n"
                 )
@@ -522,11 +489,18 @@ class BuildTraces:
 
                 processing_order += 1
 
-    def build_trace_by_masking(self, barcode_map, data_path, seg_params, matrix_params):
-        print_log(f"> Masks labels: {self.available_masks}")
+    def build_trace_by_masking(
+        self,
+        barcode_map,
+        data_path,
+        seg_params,
+        matrix_params,
+        acq_params: AcquisitionParams,
+    ):
+        print_log(f"> Masks labels: {matrix_params.masks2process}")
 
-        for mask_label in self.available_masks.keys():
-            self.mask_identifier = self.available_masks[mask_label]
+        for mask_label in matrix_params.masks2process.keys():
+            self.mask_identifier = matrix_params.masks2process[mask_label]
             self.mask_type = "DAPI" if "DAPI" in self.mask_identifier else "mask"
             tag = f"{str(self.ndims)}D"
 
@@ -544,16 +518,21 @@ class BuildTraces:
             # creates and initializes trace table
             self.trace_table = ChromatinTraceTable()
 
-            self.assign_masks(output_filename, barcode_map, data_path, seg_params)
+            self.assign_masks(
+                output_filename,
+                barcode_map,
+                data_path,
+                seg_params,
+                acq_params,
+                matrix_params,
+            )
 
             print_log(
                 f"$ Trace built using mask assignment. Output saved in: {self.current_folder}",
                 "info",
             )
 
-    def group_localizations_by_coordinate(
-        self,
-    ):
+    def group_localizations_by_coordinate(self, matrix_params: MatrixParams):
         """
         Uses a KDTree to group detections by it's coordinates, given a certain distance threshold
         Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.dat)
@@ -606,8 +585,7 @@ class BuildTraces:
         x_tree = KDTree(coordinates)
 
         ## set distance thresold
-        r = self.kdtree_distance_threshold_mum
-
+        r = matrix_params.KDtree_distance_threshold_mum
         # Groups points when they're less than r away
         points = [x_tree.query_ball_point(element, r, p=2.0) for element in coordinates]
 
@@ -630,7 +608,9 @@ class BuildTraces:
 
         self.barcode_map_roi = data_table
 
-    def build_trace_by_clustering(self, barcode_map, data_path, matrix_params):
+    def build_trace_by_clustering(
+        self, barcode_map, data_path, matrix_params: MatrixParams
+    ):
         # decompose by ROI!
         # indexes localization tables by ROI
         barcode_map_roi = barcode_map.group_by("ROI #")
@@ -670,7 +650,7 @@ class BuildTraces:
             self.trace_table.initialize()
 
             # build traces by spatial clustering
-            self.group_localizations_by_coordinate()
+            self.group_localizations_by_coordinate(matrix_params)
             print_log(f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1}\n")
 
             # builds sc_distance_table
@@ -704,7 +684,14 @@ class BuildTraces:
             else:
                 print_log("! Warning: table was empty therefore not saved!")
 
-    def launch_analysis(self, file, data_path, seg_params, matrix_params):
+    def launch_analysis(
+        self,
+        file,
+        data_path,
+        seg_params,
+        matrix_params: MatrixParams,
+        acq_params: AcquisitionParams,
+    ):
         # loads barcode coordinate Tables
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
@@ -720,21 +707,21 @@ class BuildTraces:
             self.ndims = 2
             self.pixel_size = {"x": self.pixel_size_xy, "y": self.pixel_size_xy, "z": 0}
 
-        if "masking" in self.tracing_method:
+        if "masking" in matrix_params.tracing_method:
             self.build_trace_by_masking(
-                barcode_map, data_path, seg_params, matrix_params
+                barcode_map, data_path, seg_params, matrix_params, acq_params
             )
 
         if (
-            "clustering" in self.tracing_method and self.ndims == 3
+            "clustering" in matrix_params.tracing_method and self.ndims == 3
         ):  # for now it only runs for 3D data
             self.build_trace_by_clustering(barcode_map, data_path, matrix_params)
         elif self.ndims == 2:
             print_log(
-                f"! Warning: localization files in 2D will not be processed using clustering.\n"
+                "! Warning: localization files in 2D will not be processed using clustering.\n"
             )
 
-    def run(self, data_path, seg_params, matrix_params):
+    def run(self, data_path, seg_params, matrix_params, acq_params: AcquisitionParams):
         """
         Function that assigns barcode localizations to masks and constructs single cell cummulative PWD matrix.
 
@@ -753,7 +740,7 @@ class BuildTraces:
         self.label = "barcode"
         self.current_folder = self.current_param.param_dict["rootFolder"]
 
-        print_log(f"> Masks labels: {self.available_masks}")
+        print_log(f"> Masks labels: {matrix_params.masks2process}")
 
         # iterates over barcode localization tables in the current folder
         data_file_base = (
@@ -776,7 +763,7 @@ class BuildTraces:
             print_log(f"{os.path.basename(file)}")
 
         for file in files:
-            self.launch_analysis(file, data_path, seg_params, matrix_params)
+            self.launch_analysis(file, data_path, seg_params, matrix_params, acq_params)
 
         print_log(f"$ {len(files)} barcode tables processed in {self.current_folder}")
 

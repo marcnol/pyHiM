@@ -17,9 +17,10 @@ uses the core routines of pyHiM to convert a trace file to a matrix in a standal
 import argparse
 import select
 import sys
-from datetime import datetime
+
 import numpy as np
 
+from core.parameters import AcquisitionParams
 from matrixOperations.build_matrix import BuildMatrix
 
 # =============================================================================
@@ -31,8 +32,11 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("-F", "--outputFolder", help="Output folder, Default: PWD")
     parser.add_argument("--input", help="Name of input trace file.")
-    parser.add_argument("--distance_threshold", help="Threshold for the maximum distance allowed. Default: np.inf")
-   
+    parser.add_argument(
+        "--distance_threshold",
+        help="Threshold for the maximum distance allowed. Default: np.inf",
+    )
+
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
@@ -49,7 +53,7 @@ def parse_arguments():
         p["input"] = args.input
     else:
         p["input"] = None
-    
+
     if args.distance_threshold:
         p["distance_threshold"] = float(args.distance_threshold)
     else:
@@ -83,7 +87,7 @@ def parse_arguments():
     return p
 
 
-def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict(), distance_threshold = np.inf):
+def runtime(trace_files=[], colormaps=dict(), distance_threshold=np.inf):
     if len(trace_files) < 1:
         print(
             "! Error: no trace file provided. Please either use pipe or the --input option to provide a filename."
@@ -104,8 +108,12 @@ def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict(), distance_thr
             # converts trace to matrix
 
             param = dict()
-            new_matrix = BuildMatrix(param, colormaps=colormaps)
-            new_matrix.launch_analysis(trace_file,distance_threshold=distance_threshold)
+            # pylint: disable=no-member
+            acq_params = AcquisitionParams.from_dict({})
+            new_matrix = BuildMatrix(param, acq_params, colormaps=colormaps)
+            new_matrix.launch_analysis(
+                trace_file, distance_threshold=distance_threshold
+            )
 
     return len(trace_files)
 
@@ -116,15 +124,14 @@ def runtime(folder, N_barcodes=2, trace_files=[], colormaps=dict(), distance_thr
 
 
 def main():
-    begin_time = datetime.now()
-
     # [parsing arguments]
     p = parse_arguments()
 
     # [loops over lists of datafolders]
-    folder = p["rootFolder"]
     n_traces_processed = runtime(
-        folder, trace_files=p["trace_files"], colormaps=p["colormaps"],distance_threshold=p["distance_threshold"]
+        trace_files=p["trace_files"],
+        colormaps=p["colormaps"],
+        distance_threshold=p["distance_threshold"],
     )
 
     print(f"Processed <{n_traces_processed}> trace(s)")

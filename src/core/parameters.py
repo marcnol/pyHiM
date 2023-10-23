@@ -245,7 +245,6 @@ class Parameters:
         Dict with file_parts.
 
         """
-        file_parts = {}
         # decodes regular expressions
         regex = self.param_dict.get("acquisition").get("fileNameRegExp")
         return re.search(regex, file_name) if regex else None
@@ -311,13 +310,6 @@ class Parameters:
                     "flux_min": 10,  # min flux to keeep object
                     "flux_min_3D": 0.1,  # min flux to keeep object
                     "KDtree_distance_threshold_mum": 1,  # distance threshold used to build KDtree
-                    # colormaps used for plotting matrices
-                    "colormaps": {
-                        "PWD_KDE": "terrain",
-                        "PWD_median": "terrain",
-                        "contact": "coolwarm",
-                        "Nmatrix": "Blues",
-                    },
                     # zxy tolerance used for block drift correction, in px
                     "toleranceDrift": [3, 1, 1],
                     # if True it will removed uncorrected localizations,
@@ -485,6 +477,7 @@ class RegistrationParams:
     )  # used to remove inhom background
     blockSize: int = set_default("blockSize", 256)  # register_global
     blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
+    upsample_factor: int = set_default("upsample_factor", 100)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -622,16 +615,6 @@ class MatrixParams:
     KDtree_distance_threshold_mum: int = set_default(
         "KDtree_distance_threshold_mum", 1
     )  # distance threshold used to build KDtree
-    # colormaps used for plotting matrices
-    colormaps: Dict[str, str] = set_default(
-        "colormaps",
-        {
-            "PWD_KDE": "terrain",
-            "PWD_median": "terrain",
-            "contact": "coolwarm",
-            "Nmatrix": "Blues",
-        },
-    )
     # zxy tolerance used for block drift correction, in px
     toleranceDrift: Union[int, List[int]] = set_default("toleranceDrift", [3, 1, 1])
     # if True it will removed uncorrected localizations,
@@ -639,6 +622,7 @@ class MatrixParams:
     remove_uncorrected_localizations: bool = set_default(
         "remove_uncorrected_localizations", True
     )
+    z_offset: float = set_default("z_offset", 2.0)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -797,38 +781,6 @@ def loads_barcode_dict(file_name):
             bc_dict = barcode_type
 
     return bc_dict
-
-
-def rt_to_filename(current_param, reference_barcode):
-    """
-    Finds the files in a list that contain the ReferenceBarcode in their name
-    Also returs the ROI of each file in this list
-
-
-    Parameters
-    ----------
-    current_param : class
-        parameters class.
-    reference_barcode : string
-        reference barcode name
-
-    Returns
-    -------
-    filenames_with_ref_barcode : list
-        list of files with reference barcode in their name
-    roi_list : list
-        list of rois.
-
-    """
-    filenames_with_ref_barcode = []
-    roi_list = {}
-
-    for file in current_param.files_to_process:
-        if reference_barcode in file.split("_"):
-            filenames_with_ref_barcode.append(file)
-            file_parts = current_param.decode_file_parts(os.path.basename(file))
-            roi_list[file] = file_parts["roi"]
-    return filenames_with_ref_barcode, roi_list
 
 
 def deep_dict_update(main_dict: dict, new_dict: dict):

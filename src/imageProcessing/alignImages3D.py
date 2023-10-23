@@ -46,14 +46,8 @@ from skimage import io
 from skimage.registration import phase_cross_correlation
 
 from core.dask_cluster import try_get_client
-from core.parameters import (
-    RegistrationParams,
-    get_dictionary_value,
-    load_alignment_dict,
-    print_dict,
-    rt_to_filename,
-)
-from core.pyhim_logging import print_log, print_session_name, write_string_to_file
+from core.parameters import RegistrationParams, load_alignment_dict, print_dict
+from core.pyhim_logging import print_log, print_session_name
 from core.saving import plot_3d_shift_matrices, plot_4_images
 from imageProcessing.alignImages import (
     apply_xy_shift_3d_images,
@@ -69,55 +63,28 @@ from imageProcessing.makeProjections import reinterpolate_z
 
 
 class Drift3D:
-    def __init__(self, param, parallel=False):
+    def __init__(self, param, registration_params, parallel=False):
         self.current_param = param
+        self.reg_params = registration_params
         self.window = 3
         self.parallel = parallel
         self.p = {}
         self.image_ref_0 = None
         self.image_ref = None
         self.filenames_to_process_list = []
-        self.filenames_with_ref_barcode = []
-        self.roi_list = []
-        self.number_rois = None
+        self.filenames_with_ref_barcode = ""
         self.dict_shifts = None
         self.dict_shifts_available = None
         self.inner_parallel_loop = None
-        self.current_folder = None
-
-        self.p["blockSizeXY"] = 128
-        self.p["upsample_factor"] = 100
-        self.p["lower_threshold"] = 0.9
-        self.p["higher_threshold"] = 0.9999
-
-        self.p["blockSizeXY"] = get_dictionary_value(
-            self.current_param.param_dict["alignImages"], "blockSizeXY", default=128
-        )
-        self.p["lower_threshold"] = get_dictionary_value(
-            self.current_param.param_dict["alignImages"],
-            "3D_lower_threshold",
-            default=0.9,
-        )
-        self.p["higher_threshold"] = get_dictionary_value(
-            self.current_param.param_dict["alignImages"],
-            "3D_higher_threshold",
-            default=0.9999,
-        )
-
-        self.p["axes2Plot"] = range(3)
-        self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
-            "referenceFiducial"
-        ]
-
-        if "zBinning" in self.current_param.param_dict["acquisition"]:
-            self.p["zBinning"] = self.current_param.param_dict["acquisition"][
-                "zBinning"
-            ]
-        else:
-            self.p["zBinning"] = 1
 
     def align_fiducials_3d_file(
-        self, filename_to_process, data_path, params: RegistrationParams
+        self,
+        filename_to_process,
+        data_path,
+        params: RegistrationParams,
+        roi_name,
+        cycle_name,
+        z_binning,
     ):
         """
         Aligns <filename_to_process> fiducial against reference
@@ -132,14 +99,6 @@ class Drift3D:
         alignment_results_table = create_output_table()
 
         # excludes the reference fiducial and processes files in the same ROI
-        roi = self.current_param.decode_file_parts(
-            os.path.basename(filename_to_process)
-        )["roi"]
-        label = str(
-            self.current_param.decode_file_parts(os.path.basename(filename_to_process))[
-                "cycle"
-            ]
-        )
         inner_parallel_loop = self.inner_parallel_loop
         image_ref = self.image_ref
         image_ref_0 = self.image_ref_0
@@ -151,19 +110,23 @@ class Drift3D:
             filename_to_process,
             alignment_results_table,
             p,
-            roi,
-            label,
+            roi_name,
+            cycle_name,
             inner_parallel_loop,
             image_ref,
             image_ref_0,
             dict_shifts,
             dict_shifts_available,
             output_folder,
+            params,
+            z_binning,
         )
 
-    def load_reference_fiducial(self, filename_reference):
+    def load_reference_fiducial(
+        self, filename_reference, z_binning, lower_threshold_3d, higher_threshold_3d
+    ):
         """
-        Loads Reference fiducial image and reports on the number of cycles to process for this reference
+        Loads Reference fiducial image
 
         Returns
         -------
@@ -172,14 +135,13 @@ class Drift3D:
         """
 
         self.p["fileNameReference"] = filename_reference
-        self.p["ROI"] = self.roi_list[filename_reference]
         print_log(f"Loading reference 3D image: {filename_reference}")
 
         self.image_ref_0, self.image_ref = load_n_preprocess_image(
             filename_reference,
-            self.p["zBinning"],
-            self.p["lower_threshold"],
-            self.p["higher_threshold"],
+            z_binning,
+            lower_threshold_3d,
+            higher_threshold_3d,
             parallel_execution=False,
         )
 
@@ -187,37 +149,7 @@ class Drift3D:
             self.image_ref_0, axis=0
         )  # replaces 3D with a 2D projection
 
-        self.filenames_to_process_list = [
-            x
-            for x in self.current_param.files_to_process
-            if (x != filename_reference)
-            and self.current_param.decode_file_parts(os.path.basename(x))["roi"]
-            == self.p["ROI"]
-        ]
-
-        print_log(
-            f"$ Found {len(self.filenames_to_process_list)} files in ROI: {self.p['ROI']}"
-        )
-        print_log(
-            "$ [roi:cycle] {}".format(
-                "|".join(
-                    [
-                        str(
-                            self.current_param.decode_file_parts(os.path.basename(x))[
-                                "roi"
-                            ]
-                        )
-                        + ":"
-                        + str(
-                            self.current_param.decode_file_parts(os.path.basename(x))[
-                                "cycle"
-                            ]
-                        )
-                        for x in self.filenames_to_process_list
-                    ]
-                )
-            )
-        )
+        print_log(f"$ Found {len(self.filenames_to_process_list)} files.")
 
     def load_dict_shifts(self, dict_shifts_path):
         """
@@ -228,13 +160,11 @@ class Drift3D:
         None.
 
         """
-        print_log(f"""\nReference barcode: {self.p["referenceBarcode"]}""")
-        self.filenames_with_ref_barcode, self.roi_list = rt_to_filename(
-            self.current_param, self.p["referenceBarcode"]
-        )
+        print_log(f"""\nReference barcode: {self.reg_params.referenceFiducial}""")
 
-        self.number_rois = len(self.roi_list)
-        print_log(f"\nDetected {self.number_rois} rois")
+        for file in self.current_param.files_to_process:
+            if self.reg_params.referenceFiducial in file.split("_"):
+                self.filenames_with_ref_barcode = file
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
@@ -242,7 +172,12 @@ class Drift3D:
         )
 
     def align_fiducials_3d_in_folder(
-        self, data_path, dict_shifts_path, params: RegistrationParams
+        self,
+        data_path,
+        dict_shifts_path,
+        params: RegistrationParams,
+        roi_name,
+        z_binning,
     ):
         """
         Refits all the barcode files found in root_folder
@@ -257,7 +192,7 @@ class Drift3D:
         tra = tracker.SummaryTracker()
 
         # gets files to process
-        files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
+        files_folder = glob.glob(data_path + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
 
         # loads dictinary of shifts
@@ -269,55 +204,70 @@ class Drift3D:
 
         client = try_get_client()
 
-        if self.number_rois > 0:
-            # loops over rois
-            for filename_reference in self.filenames_with_ref_barcode:
-                # loads reference fiducial image for this ROI
-                self.load_reference_fiducial(filename_reference)
-                number_files = len(self.filenames_to_process_list)
+        # loads reference fiducial image for this ROI
+        self.load_reference_fiducial(
+            self.filenames_with_ref_barcode,
+            z_binning,
+            params._3D_lower_threshold,
+            params._3D_higher_threshold,
+        )
+        self.filenames_to_process_list = [
+            x
+            for x in self.current_param.files_to_process
+            if (x != self.filenames_with_ref_barcode)
+        ]
+        number_files = len(self.filenames_to_process_list)
+        tra.print_diff()
+
+        if client is None:
+            self.inner_parallel_loop = True
+            for file_index, filename_to_process in enumerate(
+                self.filenames_to_process_list
+            ):
+                print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
+
+                alignment_results_tables.append(
+                    self.align_fiducials_3d_file(
+                        filename_to_process,
+                        data_path,
+                        params,
+                        roi_name,
+                        find_cycle(self.current_param, filename_to_process),
+                        z_binning,
+                    )
+                )
+
                 tra.print_diff()
 
-                # for file_index, filename_to_process in enumerate(self.current_param.files_to_process):
-                if client is None:
-                    self.inner_parallel_loop = True
-                    for file_index, filename_to_process in enumerate(
-                        self.filenames_to_process_list
-                    ):
-                        print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
+        else:
+            self.inner_parallel_loop = False
+            nb_workers = len(client.scheduler_info()["workers"])
+            print_log(f"> Aligning {number_files} files using {nb_workers} workers...")
 
-                        alignment_results_tables.append(
-                            self.align_fiducials_3d_file(
-                                filename_to_process, data_path, params
-                            )
-                        )
-
-                        tra.print_diff()
-
-                else:
-                    self.inner_parallel_loop = False
-                    nb_workers = len(client.scheduler_info()["workers"])
-                    print_log(
-                        f"> Aligning {number_files} files using {nb_workers} workers..."
-                    )
-
-                    futures = [
-                        client.submit(
-                            self.align_fiducials_3d_file, x, data_path, params
-                        )
-                        for x in self.filenames_to_process_list
-                    ]
-
-                    alignment_results_tables = client.gather(futures)
-                    print_log(
-                        f"> Retrieving {len(alignment_results_tables)} results from cluster"
-                    )
-
-                    # del futures
-
-                # Merges Tables for different cycles and appends results Table to that of previous ROI
-                alignment_results_table_global = vstack(
-                    [alignment_results_table_global] + alignment_results_tables
+            futures = [
+                client.submit(
+                    self.align_fiducials_3d_file,
+                    x,
+                    data_path,
+                    params,
+                    roi_name,
+                    find_cycle(self.current_param, x),
+                    z_binning,
                 )
+                for x in self.filenames_to_process_list
+            ]
+
+            alignment_results_tables = client.gather(futures)
+            print_log(
+                f"> Retrieving {len(alignment_results_tables)} results from cluster"
+            )
+
+            # del futures
+
+        # Merges Tables for different cycles and appends results Table to that of previous ROI
+        alignment_results_table_global = vstack(
+            [alignment_results_table_global] + alignment_results_tables
+        )
 
         # saves Table with all shifts
 
@@ -342,7 +292,12 @@ class Drift3D:
         print_log(f"$ register_local output Table saved in: {data_file_path}")
 
     def align_fiducials_3d(
-        self, data_path, params: RegistrationParams, dict_shifts_path
+        self,
+        data_path,
+        params: RegistrationParams,
+        dict_shifts_path,
+        roi_name,
+        z_binning,
     ):
         """
         runs refitting routine in root_folder
@@ -356,19 +311,13 @@ class Drift3D:
 
         # processes folders and files
         print_session_name(session_name)
-        write_string_to_file(
-            self.current_param.param_dict["fileNameMD"],
-            f"## {session_name}\n",
-            "a",
-        )
-
-        # creates output folders and filenames
-        self.current_folder = self.current_param.param_dict["rootFolder"]
 
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder(data_path, dict_shifts_path, params)
+        self.align_fiducials_3d_in_folder(
+            data_path, dict_shifts_path, params, roi_name, z_binning
+        )
 
         print_log(f"HiM matrix in {data_path} processed")
 
@@ -378,6 +327,10 @@ class Drift3D:
 # =============================================================================
 #   FUNCTIONS
 # =============================================================================
+
+
+def find_cycle(param, filename):
+    return str(param.decode_file_parts(os.path.basename(filename))["cycle"])
 
 
 def load_n_preprocess_image(
@@ -411,21 +364,23 @@ def _align_fiducials_3d_file(
     alignment_results_table,
     p,
     roi,
-    label,
+    cycle_name,
     inner_parallel_loop,
     image_ref,
     image_ref_0,
     dict_shifts,
     dict_shifts_available,
     output_folder,
+    params: RegistrationParams,
+    z_binning,
 ):
     # - load  and preprocesses 3D fiducial file
-    print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{label}]<<<")
+    print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{cycle_name}]<<<")
     image_3d_0, image_3d = load_n_preprocess_image(
         filename_to_process,
-        p["zBinning"],
-        p["lower_threshold"],
-        p["higher_threshold"],
+        z_binning,
+        params._3D_lower_threshold,
+        params._3D_higher_threshold,
         parallel_execution=inner_parallel_loop,
     )
 
@@ -445,12 +400,12 @@ def _align_fiducials_3d_file(
     if dict_shifts_available:
         # uses existing shift calculated by align_images
         try:
-            shift = dict_shifts["ROI:" + roi][label]
+            shift = dict_shifts["ROI:" + roi][cycle_name]
             print_log("> Applying existing XY shift...")
         except KeyError:
             shift = None
             print_log(
-                f"Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}",
+                f"Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, cycle: {cycle_name}",
                 status="WARN",
             )
     if not dict_shifts_available or shift is None:
@@ -459,7 +414,7 @@ def _align_fiducials_3d_file(
 
         print_log("> Calculating XY shift...")
         shift, _, _ = phase_cross_correlation(
-            images_2d[0], images_2d[1], upsample_factor=p["upsample_factor"]
+            images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
         )
 
     # applies XY shift to 3D stack
@@ -479,7 +434,7 @@ def _align_fiducials_3d_file(
     # ---------------------------
     print_log("> Block-aligning images in 3D...")
     shift_matrices, block_ref, block_target = image_block_alignment_3d(
-        images, block_size_xy=p["blockSizeXY"], upsample_factor=p["upsample_factor"]
+        images, block_size_xy=params.blockSizeXY, upsample_factor=params.upsample_factor
     )
     del images  # deletes image list to save memory
 
@@ -488,7 +443,7 @@ def _align_fiducials_3d_file(
 
     # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
     outputs = []
-    for axis in p["axes2Plot"]:
+    for axis in range(3):
         outputs.append(
             combine_blocks_image_by_reprojection(
                 block_ref, block_target, shift_matrices=shift_matrices, axis1=axis
@@ -509,7 +464,7 @@ def _align_fiducials_3d_file(
 
     titles = ["Z-projection", "X-projection", "Y-projection"]
 
-    for axis, output, i in zip(ax, outputs, p["axes2Plot"]):
+    for axis, output, i in zip(ax, outputs, range(3)):
         axis.imshow(output[0])
         axis.set_title(titles[i])
 
@@ -540,7 +495,7 @@ def _align_fiducials_3d_file(
     # -------------
     # dict with shift_matrix and NRMSEmatrix: https://en.wikipedia.org/wiki/Root-mean-square_deviation
     # These matrices can be used to apply and assess zxy corrections for any pixel in the 3D image
-    # reference file,aligned file,ROI,label,block_i,block_j,shift_z,shift_x,shift_y,quality_xy,quality_zy,quality_zx
+    # reference file,aligned file,ROI,cycle,block_i,block_j,shift_z,shift_x,shift_y,quality_xy,quality_zy,quality_zx
     num_blocks, block_xy = block_ref.shape[0], block_ref.shape[-1]
     for i in range(num_blocks):
         for j in range(num_blocks):
@@ -549,7 +504,7 @@ def _align_fiducials_3d_file(
                 os.path.basename(filename_to_process),
                 int(block_xy),
                 int(roi),
-                label,
+                cycle_name,
                 i,
                 j,
                 shift_matrices[0][i, j],

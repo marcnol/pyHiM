@@ -36,7 +36,7 @@ from astropy.table import unique
 from sklearn.metrics import pairwise_distances
 from tqdm.contrib import tzip
 
-from core.parameters import MatrixParams, get_dictionary_value
+from core.parameters import AcquisitionParams, MatrixParams
 from core.pyhim_logging import print_log
 from imageProcessing.makeProjections import Feature
 from matrixOperations.chromatin_trace_table import ChromatinTraceTable
@@ -55,56 +55,39 @@ class BuildMatrixTempo(Feature):
 
 
 class BuildMatrix:
-    def __init__(self, param, colormaps=dict()):
+    def __init__(self, param, acq_params: AcquisitionParams, colormaps=dict()):
         self.current_param = param
-        self.colormaps = colormaps
+        self.colormaps = (
+            colormaps
+            if colormaps
+            else {
+                "PWD_KDE": "terrain",
+                "PWD_median": "terrain",
+                "contact": "coolwarm",
+                "Nmatrix": "Blues",
+            }
+        )
 
-        self.initialize_parameters()
+        self.initialize_parameters(acq_params)
 
         # initialize with default values
         self.current_folder = []
         self.log_name_md = "trace_to_matrix.log"
 
-    def initialize_parameters(self):
+    def initialize_parameters(self, acq_params: AcquisitionParams):
         # initializes parameters from current_param
         # TODO: Check this condition
         if not isinstance(self.current_param, dict):
-            # if len(self.current_param.param_dict)>0:
-            self.tracing_method = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"],
-                "tracing_method",
-                default="masking",
-            )
-            self.z_binning = get_dictionary_value(
-                self.current_param.param_dict["acquisition"], "zBinning", default=1
-            )
-            self.pixel_size_xy = get_dictionary_value(
-                self.current_param.param_dict["acquisition"], "pixelSizeXY", default=0.1
-            )
-            self.pixel_size_z_0 = get_dictionary_value(
-                self.current_param.param_dict["acquisition"], "pixelSizeZ", default=0.25
-            )
+            self.z_binning = acq_params.zBinning
+            self.pixel_size_xy = acq_params.pixelSizeXY
+            self.pixel_size_z_0 = acq_params.pixelSizeZ
             self.pixel_size_z = self.z_binning * self.pixel_size_z_0
             self.pixel_size = [
                 self.pixel_size_xy,
                 self.pixel_size_xy,
                 self.pixel_size_z,
             ]
-            self.available_masks = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"],
-                "masks2process",
-                default={"nuclei": "DAPI"},
-            )
             self.log_name_md = self.current_param.param_dict["fileNameMD"]
-            self.mask_expansion = get_dictionary_value(
-                self.current_param.param_dict["buildsPWDmatrix"],
-                "mask_expansion",
-                default=8,
-            )
-
-            self.colormaps = self.current_param.param_dict["buildsPWDmatrix"][
-                "colormaps"
-            ]
 
     def calculate_pwd_single_mask(self, x, y, z):
         """
@@ -173,9 +156,7 @@ class BuildMatrix:
         # loops over traces
         print_log("> Processing traces...", "INFO")
         data_traces = self.trace_table.data.group_by("Trace_ID")
-        for trace, trace_id, itrace in tzip(
-            data_traces.groups, data_traces.groups.keys, range(number_matrices)
-        ):
+        for trace, itrace in tzip(data_traces.groups, range(number_matrices)):
             barcodes_to_process = trace["Barcode #"].data
 
             # gets lists of x, y and z coordinates for barcodes assigned to a cell mask
