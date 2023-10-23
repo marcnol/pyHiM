@@ -646,6 +646,7 @@ def make_segmentations(
     data_path,
     seg_params: SegmentationParams,
     align_folder,
+    label,
 ):
     root_filename = os.path.basename(file_name).split(".")[0]
     output_filename = data_path + os.sep + seg_params.folder + os.sep + root_filename
@@ -655,7 +656,6 @@ def make_segmentations(
     if os.path.exists(filename_2d_aligned):  # file exists
         # TODO: use decode_file_parts with the regex --> should be done with DataManager
         roi = os.path.basename(file_name).split("_")[3]
-        label = current_param.param_dict["acquisition"]["label"]
 
         # loading registered 2D projection
         im_obj = Image()
@@ -793,18 +793,21 @@ def make_segmentations(
 
 
 def segment_masks(
-    current_param, data_path, params: SegmentationParams, align_folder, file_name=None
+    current_param,
+    data_path,
+    params: SegmentationParams,
+    align_folder,
+    label,
+    file_name=None,
 ):
     session_name = "segmentMasks"
 
     # processes folders and files
-    print_log(
-        f'\n===================={session_name}:{current_param.param_dict["acquisition"]["label"]}====================\n'
-    )
+    print_log(f"\n===================={session_name}:{label}====================\n")
 
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
+        f"""## {session_name}: {label}\n""",
         "a",
     )
     barcodes_coordinates = Table()
@@ -815,8 +818,6 @@ def segment_masks(
     current_param.find_files_to_process(files_folder)
     print_log(f"> Processing Folder: {data_path}")
     print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
-
-    label = current_param.param_dict["acquisition"]["label"]
 
     output_file = (
         data_path
@@ -852,6 +853,7 @@ def segment_masks(
                         data_path,
                         params,
                         align_folder,
+                        label,
                     )
                 )
 
@@ -891,6 +893,7 @@ def segment_masks(
                     data_path,
                     params,
                     align_folder,
+                    label,
                 )
 
                 # gathers results from different barcodes and rois

@@ -44,7 +44,6 @@ class Mask3D:
         self.dict_shifts_available = None
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
-        self.label = ""
 
         # parameters from parameters.json
         self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
@@ -167,12 +166,11 @@ class Mask3D:
 
         return binary, segmented_image_3d
 
-    def segment_masks_3d_file(self, filename_to_process, data_path, seg_params):
+    def segment_masks_3d_file(
+        self, filename_to_process, data_path, seg_params, roi_name
+    ):
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
-        roi = self.current_param.decode_file_parts(
-            os.path.basename(filename_to_process)
-        )["roi"]
         label = str(
             self.current_param.decode_file_parts(os.path.basename(filename_to_process))[
                 "cycle"
@@ -180,7 +178,7 @@ class Mask3D:
         )
 
         # load  and preprocesses 3D fiducial file
-        print_log(f"\n\n>>>Processing roi:[{roi}] cycle:[{label}]<<<")
+        print_log(f"\n\n>>>Processing roi:[{roi_name}] cycle:[{label}]<<<")
         print_log(f"$ File:{os.path.basename(filename_to_process)}")
         image_3d_0 = io.imread(filename_to_process).squeeze()
 
@@ -193,12 +191,12 @@ class Mask3D:
         if self.dict_shifts_available:
             # uses existing shift calculated by align_images
             try:
-                shift = self.dict_shifts[f"ROI:{roi}"][label]
+                shift = self.dict_shifts[f"ROI:{roi_name}"][label]
                 print_log("> Applying existing XY shift...")
             except KeyError as e:
                 shift = None
                 raise SystemExit(
-                    f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
+                    f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {label}"
                 ) from e
 
         # applies XY shift to 3D stack
@@ -306,12 +304,12 @@ class Mask3D:
             dict_shifts_path
         )
 
-        roi = roi_name
         # loads reference fiducial image for this ROI
         self.filenames_to_process_list = [
             x
             for x in self.current_param.files_to_process
-            if self.current_param.decode_file_parts(os.path.basename(x))["roi"] == roi
+            if self.current_param.decode_file_parts(os.path.basename(x))["roi"]
+            == roi_name
             and (
                 "DAPI"
                 in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
@@ -320,7 +318,7 @@ class Mask3D:
             )
         ]
         n_files_to_process = len(self.filenames_to_process_list)
-        print_log(f"$ Found {n_files_to_process} files in ROI [{roi}]")
+        print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}]")
         print_log(
             "$ [roi:cycle] {}".format(
                 " | ".join(
@@ -348,7 +346,9 @@ class Mask3D:
             self.filenames_to_process_list
         ):
             print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
-            self.segment_masks_3d_file(filename_to_process, data_path, seg_params)
+            self.segment_masks_3d_file(
+                filename_to_process, data_path, seg_params, roi_name
+            )
 
         print_log(f"$ mask_3d procesing time: {datetime.now() - now}")
 
@@ -371,9 +371,6 @@ class Mask3D:
             f"## {session_name}\n",
             "a",
         )
-
-        # creates output folders and filenames
-        self.label = self.current_param.param_dict["acquisition"]["label"]
 
         print_log(f"> Processing Folder: {data_path}")
 

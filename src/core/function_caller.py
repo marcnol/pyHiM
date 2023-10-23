@@ -265,10 +265,7 @@ class Pipeline:
             )
 
     def apply_registrations(self, current_param, label, data_path, registration_params):
-        if (
-            label != "fiducial"
-            and current_param.param_dict["acquisition"]["label"] != "fiducial"
-        ):
+        if label != "fiducial":
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
                 apply_registrations_to_current_folder,
@@ -285,13 +282,9 @@ class Pipeline:
         else:
             operation = [""]
 
-        if (
-            label != "RNA"
-            and current_param.param_dict["acquisition"]["label"] != "RNA"
-            and "2D" in operation
-        ):
+        if label != "RNA" and "2D" in operation:
             self.manage_parallel_option(
-                segment_masks, current_param, data_path, params, align_folder
+                segment_masks, current_param, data_path, params, align_folder, label
             )
 
     def segment_masks_3d(
