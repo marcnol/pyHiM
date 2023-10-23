@@ -201,12 +201,6 @@ class Pipeline:
         labelled_feature = {}
         for label in self.m_data_m.get_processable_labels():
             if params_attr_name in self.labelled_sections[label]:
-                print("DEBUG label")
-                print(label)
-                print("DEBUG self.m_data_m.labelled_params[label].__dict__")
-                print(self.m_data_m.labelled_params[label].__dict__)
-                print("DEBUG params_attr_name")
-                print(params_attr_name)
                 params_section = getattr(
                     self.m_data_m.labelled_params[label], params_attr_name
                 )

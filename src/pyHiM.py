@@ -123,11 +123,6 @@ def main(command_line_arguments=None):
 
         # [segments masks in 3D]
         if "mask_3d" in pipe.cmds and (label in ("DAPI", "mask")):
-            print("label")
-            print(label)
-            print("datam.labelled_params")
-            print(datam.labelled_params)
-
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_masks_3d(
                 current_param,
