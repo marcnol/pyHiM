@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Check the non regression of RegisterGlobal feature
-"""
+Check the non regression of RegisterLocal feature"""
 
 import os
 import shutil
@@ -21,18 +20,18 @@ from tests.testing_tools.comparison import (
 
 # Build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
-# Define a "register_global" directory inside the temp dir
-tmp_register_global_in = os.path.join(tmp_dir.name, "register_global")
-# Copy the modes & IN/OUT structure for register_global inside the "register_global" temp dir
-shutil.copytree("pyhim-small-dataset/register_global/IN", tmp_register_global_in)
+# Define a "register_local" directory inside the temp dir
+tmp_register_local_in = os.path.join(tmp_dir.name, "register_local")
+# Copy the modes & IN/OUT structure for register_local inside the "register_local" temp dir
+shutil.copytree("pyhim-small-dataset/register_local/IN", tmp_register_local_in)
 
 
-def template_test_register_global(mode: str):
-    """Check RegisterGlobal feature with all possibilities"""
-    inputs = os.path.join(tmp_register_global_in, mode)
-    main(["-F", inputs, "-C", "register_global"])
+def template_test_register_local(mode: str):
+    """Check RegisterLocal feature with all possibilities"""
+    inputs = os.path.join(tmp_register_local_in, mode)
+    main(["-F", inputs, "-C", "register_local"])
     generated_align_images = os.path.join(inputs, "alignImages")
-    reference_outputs = f"pyhim-small-dataset/register_global/OUT/{mode}/alignImages/"
+    reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
     generated_files = extract_files(generated_align_images)
     reference_files = extract_files(reference_outputs)
     assert len(generated_files) == len(reference_files)
@@ -47,15 +46,15 @@ def template_test_register_global(mode: str):
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
-        elif extension == "table":
+        elif extension == "table" or extension == "dat":
             assert compare_ecsv_files(tmp_file, out_file)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
 
 
-def test_global_alignement():
-    template_test_register_global("global")
+def test_with_global_done():
+    template_test_register_local("with_global")
 
 
-def test_align_by_block():
-    template_test_register_global("block")
+def test_without_register_global():
+    template_test_register_local("alone")

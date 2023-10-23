@@ -43,8 +43,12 @@ from skimage import exposure, io
 from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
-from core.parameters import get_dictionary_value, load_alignment_dict, print_dict
+from core.parameters import (
+    SegmentationParams,
+    get_dictionary_value,
+    load_alignment_dict,
+    print_dict,
+)
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import _plot_image_3d
 from imageProcessing.alignImages import apply_xy_shift_3d_images
@@ -72,9 +76,6 @@ class Localize3D:
         self.roi = roi_name
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
-        self.data_folder = None
-        self.current_folder = None
-        self.label = None
         self.output_filename = None
 
         # parameters from parameters.json
@@ -234,7 +235,7 @@ class Localize3D:
 
         return binary, segmented_image_3d
 
-    def segment_sources_3d_file(self, filename_to_process):
+    def segment_sources_3d_file(self, filename_to_process, data_path, seg_params):
         p = self.p
         # excludes the reference fiducial and processes files in the same ROI
         roi = self.current_param.decode_file_parts(
@@ -309,7 +310,6 @@ class Localize3D:
             print_log("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.0, 0.0])
             image_3d_aligned = image_3d
-
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
@@ -416,7 +416,9 @@ class Localize3D:
 
             # saves figures
             output_filenames = [
-                self.data_folder.output_folders["segmentedObjects"]
+                data_path
+                + os.sep
+                + seg_params.folder
                 + os.sep
                 + os.path.basename(filename_to_process)
                 + x[1]
@@ -430,7 +432,7 @@ class Localize3D:
 
         return output_table
 
-    def segment_sources_3d_in_folder(self):
+    def segment_sources_3d_in_folder(self, data_path, dict_shifts_path, seg_params):
         """
         Fits sources in all files in root_folder
 
@@ -446,14 +448,14 @@ class Localize3D:
         print_dict(p)
 
         # Finds images to process
-        files_folder = glob.glob(self.current_folder + os.sep + "*.tif")
+        files_folder = glob.glob(data_path + os.sep + "*.tif")
         self.current_param.find_files_to_process(files_folder)
         nb_imgs = len(self.current_param.files_to_process)
         print_log(f"$ Number of images to be processed: {nb_imgs}")
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
-            self.data_folder
+            dict_shifts_path
         )
 
         # creates Table that will hold results
@@ -503,7 +505,11 @@ class Localize3D:
             ):  # self.current_param.files_to_process):
                 print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
 
-                output_tables.append(self.segment_sources_3d_file(filename_to_process))
+                output_tables.append(
+                    self.segment_sources_3d_file(
+                        filename_to_process, data_path, seg_params
+                    )
+                )
         else:
             self.inner_parallel_loop = False
             nb_workers = len(client.scheduler_info()["workers"])
@@ -512,7 +518,7 @@ class Localize3D:
             )
 
             futures = [
-                client.submit(self.segment_sources_3d_file, x)
+                client.submit(self.segment_sources_3d_file, x, data_path, seg_params)
                 for x in self.filenames_to_process_list
             ]
 
@@ -525,24 +531,15 @@ class Localize3D:
         print_log(f"$ localize_3d procesing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid loosing computed data
-        split_name = self.output_filename.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
         output_table_global.write(
-            data_file_path,
+            self.output_filename,
             format="ascii.ecsv",
             overwrite=True,
         )
 
-    def segment_sources_3d(self):
+    def segment_sources_3d(
+        self, data_path, dict_shifts_path, params: SegmentationParams
+    ):
         """
         runs 3D fitting routine in root_folder
 
@@ -556,7 +553,6 @@ class Localize3D:
         # processes folders and files
 
         print_session_name(session_name)
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -564,22 +560,22 @@ class Localize3D:
         )
 
         # creates output folders and filenames
-        self.current_folder = self.current_param.param_dict["rootFolder"]
-
-        self.data_folder.create_folders(self.current_folder, self.current_param)
-        self.label = self.current_param.param_dict["acquisition"]["label"]
         self.output_filename = (
-            self.data_folder.output_files["segmentedObjects"]
-            + "_3D_"
-            + self.label
-            + ".dat"
+            data_path
+            + os.sep
+            + params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + params.outputFile
+            + "_3D_barcode.dat"
         )
 
-        print_log(f"> Processing Folder: {self.current_folder}")
+        print_log(f"> Processing Folder: {data_path}")
 
-        self.segment_sources_3d_in_folder()
+        self.segment_sources_3d_in_folder(data_path, dict_shifts_path, params)
 
-        print_log(f"$ segmentedObjects run in {self.current_folder} finished")
+        print_log(f"$ segmentedObjects run in {data_path} finished")
 
         return 0
 

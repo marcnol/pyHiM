@@ -483,7 +483,8 @@ class RegistrationParams:
     background_sigma: float = set_default(
         "background_sigma", 3.0
     )  # used to remove inhom background
-    blockSize: int = set_default("blockSize", 256)
+    blockSize: int = set_default("blockSize", 256)  # register_global
+    blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
@@ -648,27 +649,33 @@ class MatrixParams:
 class Params:
     def __init__(self, label: str, labelled_dict: dict, sections: List[str]):
         self.my_label = label
+        self.acquisition = None
+        self.projection = None
+        self.registration = None
+        self.segmentation = None
+        self.matrix = None
+
         if "acquisition" in sections:
             print_section("acquisition")
             # pylint: disable=no-member
             self.acquisition = AcquisitionParams.from_dict(labelled_dict["acquisition"])
-        if "zProject" in sections:
+        if "projection" in sections:
             print_section("zProject")
             # pylint: disable=no-member
             self.projection = ProjectionParams.from_dict(labelled_dict["zProject"])
-        if "alignImages" in sections:
+        if "registration" in sections:
             print_section("alignImages")
             # pylint: disable=no-member
             self.registration = RegistrationParams.from_dict(
                 labelled_dict["alignImages"]
             )
-        if "segmentedObjects" in sections:
+        if "segmentation" in sections:
             print_section("segmentedObjects")
             # pylint: disable=no-member
             self.segmentation = SegmentationParams.from_dict(
                 labelled_dict["segmentedObjects"]
             )
-        if "buildsPWDmatrix" in sections:
+        if "matrix" in sections:
             print_section("buildsPWDmatrix")
             # pylint: disable=no-member
             self.matrix = MatrixParams.from_dict(labelled_dict["buildsPWDmatrix"])
@@ -698,29 +705,26 @@ class Params:
                 )
 
 
-def load_alignment_dict(data_folder):
-    """Load a JSON file with 'dictShifts' in the file name.
+def load_alignment_dict(dict_shifts_path):
+    """Load a JSON file with the shifts
 
     Parameters
     ----------
-    data_folder : Folders
-        Folders object
+    dict_shifts_path : str
+        Path to access at the shift dictionary, calculated by register_global
 
     Returns
     -------
     (dict,dict)
         Shift dictionaries
     """
-    dict_filename = (
-        os.path.splitext(data_folder.output_files["dictShifts"])[0] + ".json"
-    )
 
-    dict_shifts = load_json(dict_filename)
-    if len(dict_shifts) == 0:
-        print_log(f"File with dictionary not found!: {dict_filename}")
+    dict_shifts = load_json(dict_shifts_path)
+    if dict_shifts is None:
+        print_log(f"File with dictionary not found!: {dict_shifts_path}")
         dict_shifts_available = False
     else:
-        print_log(f"Dictionary File loaded: {dict_filename}")
+        print_log(f"Dictionary File loaded: {dict_shifts_path}")
         dict_shifts_available = True
 
     return dict_shifts, dict_shifts_available
@@ -761,7 +765,9 @@ def get_dictionary_value(dictionary: dict, key: str, default: str = ""):
     """
     if key in dictionary:
         return dictionary[key]
-    print_log(f"`{key}` not found, default value used: {default}", status="INFO")
+    print_log(
+        f"[WARNING] `{key}` not found, default value used: {default}", status="INFO"
+    )
     return default
 
 

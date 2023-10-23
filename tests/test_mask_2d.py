@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Check the non regression of RegisterGlobal feature
-"""
+Check the non regression of Mask2D feature"""
 
 import os
 import shutil
@@ -21,18 +20,21 @@ from tests.testing_tools.comparison import (
 
 # Build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
-# Define a "register_global" directory inside the temp dir
-tmp_register_global_in = os.path.join(tmp_dir.name, "register_global")
-# Copy the modes & IN/OUT structure for register_global inside the "register_global" temp dir
-shutil.copytree("pyhim-small-dataset/register_global/IN", tmp_register_global_in)
+# Define a "mask_2d" directory inside the temp dir
+tmp_mask_2d_in = os.path.join(tmp_dir.name, "mask_2d")
+# Copy the modes & IN/OUT structure for mask_2d inside the "mask_2d" temp dir
+shutil.copytree("pyhim-small-dataset/mask_2d/IN", tmp_mask_2d_in)
+
+tmp_stardist_basename = os.path.join(tmp_dir.name, "stardist_models")
+shutil.copytree("pyhim-small-dataset/resources/stardist_models", tmp_stardist_basename)
 
 
-def template_test_register_global(mode: str):
-    """Check RegisterGlobal feature with all possibilities"""
-    inputs = os.path.join(tmp_register_global_in, mode)
-    main(["-F", inputs, "-C", "register_global"])
-    generated_align_images = os.path.join(inputs, "alignImages")
-    reference_outputs = f"pyhim-small-dataset/register_global/OUT/{mode}/alignImages/"
+def template_test_mask_2d(mode: str):
+    """Check Mask2D feature with all possibilities"""
+    inputs = os.path.join(tmp_mask_2d_in, mode)
+    main(["-F", inputs, "-C", "mask_2d", "-S", tmp_stardist_basename])
+    generated_align_images = os.path.join(inputs, "segmentedObjects")
+    reference_outputs = f"pyhim-small-dataset/mask_2d/OUT/{mode}/segmentedObjects/"
     generated_files = extract_files(generated_align_images)
     reference_files = extract_files(reference_outputs)
     assert len(generated_files) == len(reference_files)
@@ -47,15 +49,23 @@ def template_test_register_global(mode: str):
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
-        elif extension == "table":
+        elif extension == "table" or extension == "dat":
             assert compare_ecsv_files(tmp_file, out_file)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
 
 
-def test_global_alignement():
-    template_test_register_global("global")
+def test_inhomogeneous_only():
+    template_test_mask_2d("inhomogeneous_only")
 
 
-def test_align_by_block():
-    template_test_register_global("block")
+def test_inhomogeneous_tesselation():
+    template_test_mask_2d("inhomogeneous_tesselation")
+
+
+def test_stardist_only():
+    template_test_mask_2d("stardist_only")
+
+
+def test_stardist_tesselation():
+    template_test_mask_2d("stardist_tesselation")

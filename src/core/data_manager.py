@@ -94,6 +94,10 @@ class DataManager:
         self.ecsv_ext = ["ecsv", "table", "dat"]
         self.png_ext = ["png"]
 
+        self.dict_shifts_path = ""
+        self.local_shifts_path = ""
+        self.align_folder = "" # tempo refactoring attribute
+
         self.raw_dict = self.load_user_param_with_structure()
         print_section("acquisition")
         # pylint: disable=no-member
@@ -227,10 +231,23 @@ class DataManager:
                 self.add_to_processable_labels(label)
                 self.tif_files.append(TifFile(path, name, ext, label, cycle))
             elif ext in self.ecsv_ext:
-                if "barcode" in name:
+                name_to_find = (
+                    self.raw_dict.get("common", {})
+                    .get("alignImages", {})
+                    .get("outputFile")
+                    + "_"
+                    + self.raw_dict.get("common", {})
+                    .get("alignImages", {})
+                    .get("localAlignment")
+                )
+                if ext == "dat" and name == name_to_find:
+                    self.local_shifts_path = path
+                elif "barcode" in name:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
+                if "_2d_registered.npy" in path: # tempo refactoring condition
+                    self.align_folder = "/".join(path.split("/")[:-1])
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
@@ -241,6 +258,10 @@ class DataManager:
                 self.npy_files.append(
                     NpyFile(None, "_2d", cycle, path, basename, label)
                 )
+            elif ext == "json" and name == self.raw_dict.get("common", {}).get(
+                "alignImages", {}
+            ).get("outputFile"):
+                self.dict_shifts_path = path
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
             ):

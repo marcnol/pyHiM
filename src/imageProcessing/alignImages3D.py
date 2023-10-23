@@ -46,8 +46,8 @@ from skimage import io
 from skimage.registration import phase_cross_correlation
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
 from core.parameters import (
+    RegistrationParams,
     get_dictionary_value,
     load_alignment_dict,
     print_dict,
@@ -83,9 +83,7 @@ class Drift3D:
         self.dict_shifts = None
         self.dict_shifts_available = None
         self.inner_parallel_loop = None
-        self.data_folder = None
         self.current_folder = None
-        self.output_filename = None
 
         self.p["blockSizeXY"] = 128
         self.p["upsample_factor"] = 100
@@ -118,7 +116,9 @@ class Drift3D:
         else:
             self.p["zBinning"] = 1
 
-    def align_fiducials_3d_file(self, filename_to_process):
+    def align_fiducials_3d_file(
+        self, filename_to_process, data_path, params: RegistrationParams
+    ):
         """
         Aligns <filename_to_process> fiducial against reference
 
@@ -145,7 +145,7 @@ class Drift3D:
         image_ref_0 = self.image_ref_0
         dict_shifts_available = self.dict_shifts_available
         dict_shifts = self.dict_shifts
-        output_folder = self.data_folder.output_folders["alignImages"]
+        output_folder = data_path + os.sep + params.folder
 
         return _align_fiducials_3d_file(
             filename_to_process,
@@ -219,7 +219,7 @@ class Drift3D:
             )
         )
 
-    def load_dict_shifts(self):
+    def load_dict_shifts(self, dict_shifts_path):
         """
         Lods dictionary of XY shifts
 
@@ -238,10 +238,12 @@ class Drift3D:
 
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
-            self.data_folder
+            dict_shifts_path
         )
 
-    def align_fiducials_3d_in_folder(self):
+    def align_fiducials_3d_in_folder(
+        self, data_path, dict_shifts_path, params: RegistrationParams
+    ):
         """
         Refits all the barcode files found in root_folder
 
@@ -259,7 +261,7 @@ class Drift3D:
         self.current_param.find_files_to_process(files_folder)
 
         # loads dictinary of shifts
-        self.load_dict_shifts()
+        self.load_dict_shifts(dict_shifts_path)
 
         # creates Table that will hold results
         alignment_results_table_global = create_output_table()
@@ -284,7 +286,9 @@ class Drift3D:
                         print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
 
                         alignment_results_tables.append(
-                            self.align_fiducials_3d_file(filename_to_process)
+                            self.align_fiducials_3d_file(
+                                filename_to_process, data_path, params
+                            )
                         )
 
                         tra.print_diff()
@@ -297,7 +301,9 @@ class Drift3D:
                     )
 
                     futures = [
-                        client.submit(self.align_fiducials_3d_file, x)
+                        client.submit(
+                            self.align_fiducials_3d_file, x, data_path, params
+                        )
                         for x in self.filenames_to_process_list
                     ]
 
@@ -315,19 +321,17 @@ class Drift3D:
 
         # saves Table with all shifts
 
-        path_name = self.data_folder.output_files["alignImages"].split(".")[0]
-        split_name = path_name.split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + path_name + "_block3D.dat"
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-                + "_block3D.dat"
-            )
+        path_name = (
+            data_path
+            + os.sep
+            + params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + params.outputFile
+        )
+        data_file_path = path_name + "_block3D.dat"
+
         alignment_results_table_global.write(
             data_file_path,
             format="ascii.ecsv",
@@ -337,7 +341,9 @@ class Drift3D:
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
         print_log(f"$ register_local output Table saved in: {data_file_path}")
 
-    def align_fiducials_3d(self):
+    def align_fiducials_3d(
+        self, data_path, params: RegistrationParams, dict_shifts_path
+    ):
         """
         runs refitting routine in root_folder
 
@@ -350,7 +356,6 @@ class Drift3D:
 
         # processes folders and files
         print_session_name(session_name)
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
@@ -360,15 +365,12 @@ class Drift3D:
         # creates output folders and filenames
         self.current_folder = self.current_param.param_dict["rootFolder"]
 
-        self.data_folder.create_folders(self.current_folder, self.current_param)
-        self.output_filename = self.data_folder.output_files["alignImages"]
-
-        print_log(f"-------> Processing Folder: {self.current_folder}")
+        print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder()
+        self.align_fiducials_3d_in_folder(data_path, dict_shifts_path, params)
 
-        print_log(f"HiM matrix in {self.current_folder} processed")
+        print_log(f"HiM matrix in {data_path} processed")
 
         return 0
 

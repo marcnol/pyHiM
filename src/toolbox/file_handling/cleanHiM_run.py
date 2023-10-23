@@ -24,9 +24,7 @@ import glob
 import os
 import shutil
 
-from core.data_manager import DataManager
-from core.folder import Folders
-from core.parameters import Parameters
+from core.parameters import load_json
 
 # =============================================================================
 # MAIN
@@ -76,28 +74,13 @@ def main():
                 print(f"File deleted: {f} ")
             except OSError as e:
                 print(f"Error: {f} : {e.strerror}")
-    datam = DataManager(root_folder)
-    raw_dict = datam.load_user_param()
     # Removes directories produced during previous runs
-    current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label="")
-    current_folder = current_param.param_dict["rootFolder"]
     folders_to_remove = []
-    folders_to_remove.append(
-        current_folder
-        + os.sep
-        + current_param.param_dict["common"]["zProject"]["folder"]
-    )
-    folders_to_remove.append(
-        current_folder
-        + os.sep
-        + current_param.param_dict["common"]["alignImages"]["folder"]
-    )
-    folders_to_remove.append(
-        current_folder
-        + os.sep
-        + current_param.param_dict["common"]["segmentedObjects"]["folder"]
-    )
-    folders_to_remove.append(current_folder + os.sep + "buildsPWDmatrix")
+    folders_to_remove.append(root_folder + os.sep + "zProject")
+    folders_to_remove.append(root_folder + os.sep + "Project")
+    folders_to_remove.append(root_folder + os.sep + "alignImages")
+    folders_to_remove.append(root_folder + os.sep + "segmentedObjects")
+    folders_to_remove.append(root_folder + os.sep + "buildsPWDmatrix")
 
     for new_folder in folders_to_remove:
         if os.path.isdir(new_folder):

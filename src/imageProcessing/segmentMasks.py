@@ -63,7 +63,7 @@ from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
 
 from core.dask_cluster import try_get_client
-from core.folder import Folders
+from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
@@ -312,7 +312,7 @@ def segment_source_flat_background(im, current_param):
 
     # estimates sources
     daofind = DAOStarFinder(
-        fwhm=fwhm, threshold=threshold_over_std * std, exclude_border=True
+        fwhm=fwhm, threshold=float(threshold_over_std * std), exclude_border=True
     )
     sources = daofind(im - median)
 
@@ -640,17 +640,16 @@ def segment_mask_stardist(im, current_param):
     return segm_deblend, labeled
 
 
-def make_segmentations(file_name, current_param, data_folder):
+def make_segmentations(
+    file_name,
+    current_param,
+    data_path,
+    seg_params: SegmentationParams,
+    align_folder,
+):
     root_filename = os.path.basename(file_name).split(".")[0]
-    output_filename = (
-        data_folder.output_folders["segmentedObjects"] + os.sep + root_filename
-    )
-    filename_2d_aligned = (
-        data_folder.output_folders["alignImages"]
-        + os.sep
-        + root_filename
-        + "_2d_registered.npy"
-    )
+    output_filename = data_path + os.sep + seg_params.folder + os.sep + root_filename
+    filename_2d_aligned = align_folder + os.sep + root_filename + "_2d_registered.npy"
 
     print_log(f"> searching for {filename_2d_aligned}")
     if os.path.exists(filename_2d_aligned):  # file exists
@@ -662,7 +661,7 @@ def make_segmentations(file_name, current_param, data_folder):
         im_obj = Image()
         im_obj.load_image_2d(
             file_name,
-            data_folder.output_folders["alignImages"],
+            align_folder[:-5],  # remove extra "/data", it's temporary for refactoring
             tag="_2d_registered",
         )
         im = im_obj.data_2d
@@ -685,21 +684,19 @@ def make_segmentations(file_name, current_param, data_folder):
                 output, im1_bkg_substracted = segment_source_inhomog_background(
                     im, current_param
                 )
+                # show results
+                show_image_sources(
+                    im,
+                    im1_bkg_substracted,
+                    output,
+                    current_param.param_dict["fileNameMD"],
+                    output_filename,
+                )
             else:
                 print_log(
                     f"# Method <{segmentation_method}> not available for barcode segmentation!"
                 )
                 return Table()
-
-            # show results
-            show_image_sources(
-                im,
-                im1_bkg_substracted,
-                output,
-                current_param.param_dict["fileNameMD"],
-                output_filename,
-            )
-
             # [ formats results Table for output by adding buid, barcode_id, CellID and roi]
 
             # buid
@@ -717,12 +714,13 @@ def make_segmentations(file_name, current_param, data_folder):
                 np.nan * np.zeros(len(output)), name="zcentroid", dtype=float
             )
 
-            # adds to table
-            output.add_column(col_barcode, index=0)
-            output.add_column(col_roi, index=0)
-            output.add_column(col_buid, index=0)
-            output.add_column(col_cell_id, index=2)
-            output.add_column(zcoord, index=5)
+            if output[0] is not None:
+                # adds to table
+                output.add_column(col_barcode, index=0)
+                output.add_column(col_roi, index=0)
+                output.add_column(col_buid, index=0)
+                output.add_column(col_cell_id, index=2)
+                output.add_column(zcoord, index=5)
 
             # changes format of table
             # for col in output.colnames:
@@ -760,7 +758,9 @@ def make_segmentations(file_name, current_param, data_folder):
             # show results
             if "labeled" in locals():
                 output_filename_stardist = (
-                    data_folder.output_folders["segmentedObjects"]
+                    data_path
+                    + os.sep
+                    + seg_params.folder
                     + os.sep
                     + root_filename
                     + "_stardist"
@@ -792,7 +792,9 @@ def make_segmentations(file_name, current_param, data_folder):
         return []
 
 
-def segment_masks(current_param, file_name=None):
+def segment_masks(
+    current_param, data_path, params: SegmentationParams, align_folder, file_name=None
+):
     session_name = "segmentMasks"
 
     # processes folders and files
@@ -800,7 +802,6 @@ def segment_masks(current_param, file_name=None):
         f'\n===================={session_name}:{current_param.param_dict["acquisition"]["label"]}====================\n'
     )
 
-    data_folder = Folders(current_param.param_dict["rootFolder"])
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
         f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
@@ -808,18 +809,27 @@ def segment_masks(current_param, file_name=None):
     )
     barcodes_coordinates = Table()
 
-    current_folder = current_param.param_dict["rootFolder"]
-    files_folder = glob.glob(current_folder + os.sep + "*.tif")
-    data_folder.create_folders(current_folder, current_param)
+    files_folder = glob.glob(data_path + os.sep + "*.tif")
 
     # generates lists of files to process
     current_param.find_files_to_process(files_folder)
-    print_log(f"> Processing Folder: {current_folder}")
+    print_log(f"> Processing Folder: {data_path}")
     print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
     label = current_param.param_dict["acquisition"]["label"]
-    output_file = data_folder.output_files["segmentedObjects"] + "_" + label + ".dat"
 
+    output_file = (
+        data_path
+        + os.sep
+        + params.folder
+        + os.sep
+        + "data"
+        + os.sep
+        + params.outputFile
+        + "_"
+        + label
+        + ".dat"
+    )
     if current_param.param_dict["parallel"]:
         # running in parallel mode
         client = get_client()
@@ -839,7 +849,9 @@ def segment_masks(current_param, file_name=None):
                         make_segmentations,
                         filename_to_process,
                         current_param,
-                        data_folder,
+                        data_path,
+                        params,
+                        align_folder,
                     )
                 )
 
@@ -876,7 +888,9 @@ def segment_masks(current_param, file_name=None):
                 output = make_segmentations(
                     filename_to_process,
                     current_param,
-                    data_folder,
+                    data_path,
+                    params,
+                    align_folder,
                 )
 
                 # gathers results from different barcodes and rois
@@ -907,7 +921,6 @@ def _segment_2d_image_by_thresholding(
     # makes threshold matrix
     threshold = np.zeros(image_2d.shape)
     threshold[:] = threshold_over_std * image_2d.max() / 100
-
     # segments objects
     segm = detect_sources(
         image_2d,

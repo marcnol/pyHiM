@@ -14,9 +14,17 @@ import os
 
 from tqdm import trange
 
-from core.folder import Folders
+from core.parameters import MatrixParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable
+from imageProcessing.makeProjections import Feature
+
+
+class FilterLocalizationsTempo(Feature):
+    def __init__(self, params: MatrixParams):
+        super().__init__(params)
+        self.out_folder = self.params.folder
+        self.name = "FilterLocalizations"
 
 
 class FilterLocalizations:
@@ -109,7 +117,7 @@ class FilterLocalizations:
             self.block_size = 256
             print_log(f"# blockSize not found. Set to {self.block_size}!")
 
-    def filter_folder(self):
+    def filter_folder(self, data_path, seg_params):
         """
         Function that filters barcodes using a number of user-provided parameters
 
@@ -122,31 +130,26 @@ class FilterLocalizations:
         session_name = "filter_localizations"
 
         # processes folders and files
-        self.data_folder = Folders(self.current_param.param_dict["rootFolder"])
         print_session_name(session_name)
         write_string_to_file(
             self.current_param.param_dict["fileNameMD"],
             f"## {session_name}\n",
             "a",
         )
-        label = "barcode"
 
         current_folder = self.current_param.param_dict["rootFolder"]
-        self.data_folder.create_folders(current_folder, self.current_param)
         print_log(f"> Processing Folder: {current_folder}")
 
-        split_name = self.data_folder.output_files["segmentedObjects"].split(os.sep)
-        if len(split_name) == 1:
-            data_file_path = "data" + os.sep + split_name[0]
-        else:
-            data_file_path = (
-                (os.sep).join(split_name[:-1])
-                + os.sep
-                + "data"
-                + os.sep
-                + split_name[-1]
-            )
-        files = list(glob.glob(data_file_path + "_*" + label + ".dat"))
+        data_file_base = (
+            data_path
+            + os.sep
+            + seg_params.folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base + "_*barcode.dat"))
         if files:
             for file in files:
                 self.ndims = 3 if "3D" in os.path.basename(file) else 2

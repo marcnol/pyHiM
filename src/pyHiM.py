@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.7"
+__version__ = "0.8.8"
 
 import os
 import sys
@@ -101,35 +101,84 @@ def main(command_line_arguments=None):
 
         # [aligns fiducials in 3D]
         if "register_local" in pipe.cmds:
-            pipe.align_images_3d(current_param, label)
+            registration_params = datam.labelled_params[label].registration
+            pipe.align_images_3d(
+                current_param,
+                label,
+                datam.m_data_path,
+                registration_params,
+                datam.dict_shifts_path,
+            )
 
         # [segments DAPI and sources in 2D]
         if "mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds:
-            pipe.segment_masks(current_param, label)
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                datam.align_folder,
+            )
 
         # [segments masks in 3D]
-        if "mask_3d" in pipe.cmds:
-            pipe.segment_masks_3d(current_param, label, datam.processed_roi)
+        if "mask_3d" in pipe.cmds and (label in ("DAPI", "mask")):
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+                datam.dict_shifts_path,
+            )
 
         # [segments sources in 3D]
-        if "localize_3d" in pipe.cmds:
-            pipe.segment_sources_3d(current_param, label, datam.processed_roi)
+        if "localize_3d" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_sources_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+                datam.dict_shifts_path,
+            )
 
         # [filters barcode localization table]
-        if "filter_localizations" in pipe.cmds:
-            fc.filter_localizations(current_param, label)
+        if "filter_localizations" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            fc.filter_localizations(
+                current_param, label, datam.m_data_path, segmentation_params
+            )
 
         # [registers barcode localization table]
-        if "register_localizations" in pipe.cmds:
-            fc.register_localizations(current_param, label)
+        if "register_localizations" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            fc.register_localizations(
+                current_param,
+                label,
+                datam.m_data_path,
+                datam.local_shifts_path,
+                segmentation_params,
+            )
 
         # [build traces]
-        if "build_traces" in pipe.cmds:
-            fc.build_traces(current_param, label)
+        if "build_traces" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
+            fc.build_traces(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                matrix_params,
+            )
 
         # [builds matrices]
-        if "build_matrix" in pipe.cmds:
-            fc.build_matrix(current_param, label)
+        if "build_matrix" in pipe.cmds and label == "barcode":
+            matrix_params = datam.labelled_params[label].matrix
+            fc.build_matrix(current_param, label, datam.m_data_path, matrix_params)
 
         print_log("\n")
         del current_param
