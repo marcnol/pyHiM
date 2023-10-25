@@ -104,7 +104,7 @@ class Drift3D:
         image_ref_0 = self.image_ref_0
         dict_shifts_available = self.dict_shifts_available
         dict_shifts = self.dict_shifts
-        output_folder = data_path + os.sep + params.folder
+        output_folder = data_path + os.sep + params.register_local_folder
 
         return _align_fiducials_3d_file(
             filename_to_process,
@@ -274,7 +274,7 @@ class Drift3D:
         path_name = (
             data_path
             + os.sep
-            + params.folder
+            + params.register_local_folder
             + os.sep
             + "data"
             + os.sep

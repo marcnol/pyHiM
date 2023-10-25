@@ -139,19 +139,29 @@ class FilterLocalizations:
             "a",
         )
 
-        current_folder = self.current_param.param_dict["rootFolder"]
+        current_folder = data_path
         print_log(f"> Processing Folder: {current_folder}")
 
-        data_file_base = (
+        data_file_base_2d = (
             data_path
             + os.sep
-            + seg_params.folder
+            + seg_params.localize_2d_folder
             + os.sep
             + "data"
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base + "_*barcode.dat"))
+        data_file_base_3d = (
+            data_path
+            + os.sep
+            + seg_params.localize_3d_folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base_2d + "_*barcode.dat"))
+        files += list(glob.glob(data_file_base_3d + "_*barcode.dat"))
         if files:
             for file in files:
                 self.ndims = 3 if "3D" in os.path.basename(file) else 2

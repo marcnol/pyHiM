@@ -74,7 +74,7 @@ class RegisterGlobal(Feature):
             "label_part": params.referenceFiducial,
             "label": "fiducial",
         }
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.register_global_folder
         self.name = "RegisterGlobal"
 
     def run(self, raw_2d_img, reference_2d_img):
@@ -174,7 +174,7 @@ class ApplyRegisterGlobal(Feature):
         # self.required_data = ["barcode", "mask", "DAPI", "RNA"]
         # self.required_ref = params.referenceFiducial
         # self.required_table = ["shift"]
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.register_global_folder
         self.name = "ApplyRegisterGlobal"
 
     # def run(self, raw_2d_img, dict_shifts:dict, raw_label:str="RT42", roi_name:str = "001"):
@@ -453,7 +453,7 @@ def apply_registrations_to_filename(
 
         # saves registered 2D image
         im_obj.save_image_2d(
-            data_path + os.sep + params.folder,
+            data_path + os.sep + params.register_global_folder,
             tag="_2d_registered",
         )
 
@@ -461,7 +461,7 @@ def apply_registrations_to_filename(
         im_obj = Image()
         im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
         im_obj.save_image_2d(
-            data_path + os.sep + params.folder,
+            data_path + os.sep + params.register_global_folder,
             tag="_2d_registered",
         )
         print_log(f"$ Saving image for referenceRT ROI:{roi_name}, label:{label}")
@@ -498,7 +498,7 @@ def apply_registrations_to_current_folder(
     dict_filename = (
         data_path
         + os.sep
-        + params.folder
+        + params.register_global_folder
         + os.sep
         + "data"
         + os.sep
@@ -508,6 +508,7 @@ def apply_registrations_to_current_folder(
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
         print_log(f"# File with dictionary not found!: {dict_filename}")
+        raise ValueError(f"# File with dictionary not found!: {dict_filename}")
     else:
         print_log(f"$ Dictionary File loaded: {dict_filename}")
 

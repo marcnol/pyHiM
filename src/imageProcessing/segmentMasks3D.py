@@ -22,6 +22,7 @@ from datetime import datetime
 import numpy as np
 from skimage import io
 
+from core.data_manager import create_folder
 from core.parameters import AcquisitionParams, SegmentationParams, load_alignment_dict
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import plot_raw_images_and_labels
@@ -98,17 +99,17 @@ class Mask3D:
             mode="remove",
         )
 
-        # drifts 3D stack in XY
-        if self.dict_shifts_available:
-            # uses existing shift calculated by align_images
-            try:
-                shift = self.dict_shifts[f"ROI:{roi_name}"][label]
-                print_log("> Applying existing XY shift...")
-            except KeyError as e:
-                shift = None
-                raise SystemExit(
-                    f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {label}"
-                ) from e
+        # # drifts 3D stack in XY
+        # if self.dict_shifts_available:
+        # uses existing shift calculated by align_images
+        try:
+            shift = self.dict_shifts[f"ROI:{roi_name}"][label]
+            print_log("> Applying existing XY shift...")
+        except KeyError as e:
+            shift = None
+            raise SystemExit(
+                f"# Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {label}"
+            ) from e
 
         # applies XY shift to 3D stack
         if label != reference_fiducial:
@@ -129,22 +130,31 @@ class Mask3D:
 
         if number_masks > 0:
             output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
-            npy_labeled_image_filename = (
+            npy_labeled_image_base_2d = (
                 data_path
                 + os.sep
-                + seg_params.folder
+                + seg_params.mask_2d_folder
+                + os.sep
+                + "data"
+                + os.sep
+            )
+            npy_labeled_image_filename_2d = (
+                npy_labeled_image_base_2d
+                + os.path.basename(filename_to_process).split(".")[0]
+                + output_extension["2D"]
+                + ".npy"
+            )
+            npy_labeled_image_base_3d = (
+                data_path
+                + os.sep
+                + seg_params.mask_3d_folder
                 + os.sep
                 + "data"
                 + os.sep
                 + os.path.basename(filename_to_process)
             )
-            npy_labeled_image_filename_2d = (
-                npy_labeled_image_filename.split(".")[0]
-                + output_extension["2D"]
-                + ".npy"
-            )
             npy_labeled_image_filename_3d = (
-                npy_labeled_image_filename.split(".")[0]
+                npy_labeled_image_base_3d.split(".")[0]
                 + output_extension["3D"]
                 + ".npy"
             )
@@ -157,32 +167,37 @@ class Mask3D:
 
             # saves 2D image
             segmented_image_2d = np.max(segmented_image_3d, axis=0)
+            create_folder(npy_labeled_image_base_2d)
             np.save(npy_labeled_image_filename_2d, segmented_image_2d)
 
             # represents image in 3D with localizations
             print_log("> plotting outputs...")
 
-            figures = []
-            figures.append(
-                [
-                    plot_image_3d(image_3d_aligned, segmented_image_3d),
-                    output_extension["3D"] + ".png",
-                ]
-            )
+            # figures = []
+            # figures.append(
+            #     [
+            fig = plot_image_3d(image_3d_aligned, segmented_image_3d)
+            end_file = output_extension["3D"] + ".png"
+            #     ]
+            # )
 
             # saves figures
-            output_filenames = [
+            # output_filenames = [
+            output_filename = (
                 data_path
                 + os.sep
-                + seg_params.folder
+                + seg_params.mask_3d_folder
                 + os.sep
                 + os.path.basename(filename_to_process)
-                + x[1]
-                for x in figures
-            ]
+                + end_file
+            )
+            #     + x[1]
+            #     for x in figures
+            # ]
 
-            for fig, file in zip(figures, output_filenames):
-                fig[0].savefig(file)
+            # for fig, file in zip(figures, output_filenames):
+            # fig[0].savefig(file)
+            fig.savefig(output_filename)
 
         del image_3d_aligned, image_3d, image_3d_0
 

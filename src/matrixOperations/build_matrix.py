@@ -383,7 +383,7 @@ class BuildMatrix:
 
     def run(self, data_path, matrix_params):
         self.label = "barcode"
-        self.current_folder = self.current_param.param_dict["rootFolder"]
+        self.current_folder = data_path
 
         # reads chromatin traces
         files = [

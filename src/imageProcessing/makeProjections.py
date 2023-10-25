@@ -33,6 +33,7 @@ np.seterr(divide="ignore", invalid="ignore")
 class Feature:
     def __init__(self, params):
         self.params = params
+        self.out_folder = None
         self.tif_labels = []
         self.npy_labels = []
         self.required_ref = []

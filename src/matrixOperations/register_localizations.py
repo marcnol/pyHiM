@@ -403,7 +403,7 @@ class RegisterLocalizations:
         )
         label = "barcode"
 
-        current_folder = self.current_param.param_dict["rootFolder"]
+        current_folder = data_path
         print_log(f"> Processing Folder: {current_folder}")
 
         # Loads localAlignment if it exists otherwise it exits with error
@@ -417,16 +417,26 @@ class RegisterLocalizations:
                 f"ERROR: Expected to find: {self.local_alignment_filename}--> Aborting."
             )
 
-        data_file_base = (
+        data_file_base_2d = (
             data_path
             + os.sep
-            + seg_params.folder
+            + seg_params.localize_2d_folder
             + os.sep
             + "data"
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base + "_*" + label + ".dat"))
+        data_file_base_3d = (
+            data_path
+            + os.sep
+            + seg_params.localize_3d_folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base_2d + "_*" + label + ".dat"))
+        files += list(glob.glob(data_file_base_3d + "_*" + label + ".dat"))
 
         if not files:
             print_log("No localization table found to process!")

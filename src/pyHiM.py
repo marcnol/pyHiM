@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.8"
+__version__ = "0.8.9"
 
 import os
 import sys
@@ -114,7 +114,11 @@ def main(command_line_arguments=None):
             )
 
         # [segments DAPI and sources in 2D]
-        if "mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds:
+        if (
+            ("mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds)
+            and label != "RNA"
+            and label != "fiducial"
+        ):
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_masks(
                 current_param,

@@ -8,8 +8,9 @@ Manage writing, reading and checking data.
 
 import os
 import re
+from dataclasses import asdict
 
-from core.data_file import DataFile, NpyFile, TifFile
+from core.data_file import DataFile, NpyFile, TifFile, save_json
 from core.parameters import AcquisitionParams, Params, deep_dict_update, load_json
 from core.pyhim_logging import (
     print_log,
@@ -110,23 +111,30 @@ class DataManager:
         self.set_up()
 
     def set_stardist_basename(self):
-        stardict = {
-            "common": {
-                "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
-            },
-            "labels": {
-                "barcode": {
+        if self.m_stardist_basename:
+            stardict = {
+                "common": {
                     "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
                 },
-                "DAPI": {
-                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
+                "labels": {
+                    "barcode": {
+                        "segmentedObjects": {
+                            "stardist_basename": self.m_stardist_basename
+                        }
+                    },
+                    "DAPI": {
+                        "segmentedObjects": {
+                            "stardist_basename": self.m_stardist_basename
+                        }
+                    },
+                    "mask": {
+                        "segmentedObjects": {
+                            "stardist_basename": self.m_stardist_basename
+                        }
+                    },
                 },
-                "mask": {
-                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
-                },
-            },
-        }
-        self.raw_dict = deep_dict_update(self.raw_dict, stardict)
+            }
+            self.raw_dict = deep_dict_update(self.raw_dict, stardict)
 
     @staticmethod
     def __set_data_path(data_path):
@@ -187,8 +195,8 @@ class DataManager:
             },
         }
 
-    def load_user_param_with_structure(self):
-        dict_structure = {
+    def create_dict_structure(self):
+        return {
             "common": {
                 "acquisition": {},
                 "zProject": {},
@@ -204,6 +212,9 @@ class DataManager:
                 "mask": {},
             },
         }
+
+    def load_user_param_with_structure(self):
+        dict_structure = self.create_dict_structure()
         return deep_dict_update(dict_structure, self.load_user_param())
 
     def create_out_structure(self, folder_name: str):
@@ -266,18 +277,23 @@ class DataManager:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
-                if "_2d_registered.npy" in path:  # tempo refactoring condition
-                    self.align_folder = "/".join(path.split("/")[:-1])
                 parts = self.decode_file_parts(name)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 label = self.find_label(name, channel)
                 cycle = parts["cycle"]
                 self.add_to_processable_labels(label)
-                basename = name[:-3]
-                self.npy_files.append(
-                    NpyFile(None, "_2d", cycle, path, basename, label)
-                )
+                if "_2d_registered.npy" in path:  # tempo refactoring condition
+                    self.align_folder = "/".join(path.split("/")[:-1])
+                    basename = name[: -len("_2d_registered")]
+                    self.npy_files.append(
+                        NpyFile(None, "_2d_registered", cycle, path, basename, label)
+                    )
+                elif "_2d.npy" in path:
+                    basename = name[:-3]
+                    self.npy_files.append(
+                        NpyFile(None, "_2d", cycle, path, basename, label)
+                    )
             elif ext == "json" and name == self.raw_dict.get("common", {}).get(
                 "alignImages", {}
             ).get("outputFile"):
@@ -356,6 +372,22 @@ class DataManager:
         print_log(f"$ Parameters file read: {self.param_file_path}")
         return params
 
+    def save_parameters_used(self):
+        dict_struct = self.create_dict_structure()
+        dict_struct["common"]["acquisition"] = asdict(self.acquisition_params)
+        for label, params in self.labelled_params.items():
+            label_dict = params.print_as_dict()
+            for section, param_names in label_dict.items():  # for each section
+                for key, val in param_names.items():  # for each parameter
+                    rez = dict_struct["common"][section].get(key, None)
+                    if rez is not None and rez != val:
+                        dict_struct["labels"][label] = deep_dict_update(
+                            dict_struct["labels"][label], {section: {key: val}}
+                        )
+                    else:
+                        dict_struct["common"][section][key] = val
+        save_json(dict_struct, os.path.join(self.m_data_path, "parameters_used.json"))
+
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
         for label in self.get_processable_labels():
@@ -368,6 +400,7 @@ class DataManager:
                 labelled_sections[label],
             )
         print_log("\n$ [Params] Initialisation done.\n")
+        self.save_parameters_used()
 
     # TODO: clean this
     def set_up(self):
@@ -442,8 +475,9 @@ class DataManager:
             data_file.save(output_folder, basename)
             data_file.delete_data()
             if data_file.extension in self.npy_ext:
+                if "_2d_registered.npy" in data_file.path_name:
+                    self.align_folder = "/".join(data_file.path_name.split("/")[:-1])
                 parts = self.decode_file_parts(basename)
-
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]
                 data_file.label = self.find_label(basename, channel)
@@ -455,6 +489,8 @@ class DataManager:
                     f"{basename}\n ![]({data_file.path_name})\n",
                     "a",
                 )
+            elif data_file.extension == "json":
+                self.dict_shifts_path = data_file.path_name
         return files_to_keep
 
     def __find_file_with_this_part(self, label_part, label, file_list):

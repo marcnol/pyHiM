@@ -340,10 +340,11 @@ class BuildTraces:
             filename_roi_masks = (
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
             )
+            # TODO: Check if we don't forget to allow a 3D masks loading ?
             full_filename_roi_masks = (
                 data_path
                 + os.sep
-                + seg_params.folder
+                + seg_params.mask_2d_folder
                 + os.sep
                 + "data"
                 + os.sep
@@ -738,21 +739,31 @@ class BuildTraces:
 
         """
         self.label = "barcode"
-        self.current_folder = self.current_param.param_dict["rootFolder"]
+        self.current_folder = data_path
 
         print_log(f"> Masks labels: {matrix_params.masks2process}")
 
         # iterates over barcode localization tables in the current folder
-        data_file_base = (
+        data_file_base_2d = (
             data_path
             + os.sep
-            + seg_params.folder
+            + seg_params.localize_2d_folder
             + os.sep
             + "data"
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base + "_*" + self.label + ".dat"))
+        data_file_base_3d = (
+            data_path
+            + os.sep
+            + seg_params.localize_3d_folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base_2d + "_*" + self.label + ".dat"))
+        files += list(glob.glob(data_file_base_3d + "_*" + self.label + ".dat"))
 
         if not files:
             print_log("$ No localization table found to process!", "WARN")

@@ -160,10 +160,6 @@ class Localize3D:
         p = self.p
 
         if p["3Dmethod"] == "stardist":
-            print("""DEBUG p["stardist_basename"]""")
-            print(p["stardist_basename"])
-            print("""DEBUG p["stardist_network"]""")
-            print(p["stardist_network"])
             binary, segmented_image_3d = _segment_3d_volumes_stardist(
                 image_3d_aligned,
                 deblend_3d=True,
@@ -370,7 +366,7 @@ class Localize3D:
             output_filenames = [
                 data_path
                 + os.sep
-                + seg_params.folder
+                + seg_params.localize_3d_folder
                 + os.sep
                 + os.path.basename(filename_to_process)
                 + x[1]
@@ -515,7 +511,7 @@ class Localize3D:
         self.output_filename = (
             data_path
             + os.sep
-            + params.folder
+            + params.localize_3d_folder
             + os.sep
             + "data"
             + os.sep

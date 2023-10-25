@@ -7,7 +7,7 @@ Classes and functions for file management
 import json
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from os import path
 from typing import Dict, List, Union
 
@@ -449,7 +449,12 @@ class RegistrationParams:
     """alignImages section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = set_default("folder", "alignImages")  # output folder
+    register_global_folder: str = set_default(
+        "register_global_folder", "alignImages"
+    )  # output folder
+    register_local_folder: str = set_default(
+        "register_local_folder", "alignImages"
+    )  # output folder
     outputFile: str = set_default("outputFile", "register_global")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
     localAlignment: str = set_default(
@@ -468,10 +473,10 @@ class RegistrationParams:
     higher_threshold: float = set_default("higher_threshold", 0.9999999)
     # lower threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
-    _3D_lower_threshold: float = 0.9
+    _3D_lower_threshold: float = set_default("_3D_lower_threshold", None)
     # higher threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
-    _3D_higher_threshold: float = 0.9999
+    _3D_higher_threshold: float = set_default("_3D_higher_threshold", None)
     background_sigma: float = set_default(
         "background_sigma", 3.0
     )  # used to remove inhom background
@@ -481,12 +486,17 @@ class RegistrationParams:
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
-        self._3D_lower_threshold = warn_pop(
-            self.unknown_params, "3D_lower_threshold", 0.9
+        self._3D_lower_threshold = (
+            warn_pop(self.unknown_params, "3D_lower_threshold", 0.9)
+            if self._3D_lower_threshold is None
+            else self._3D_lower_threshold
         )
-        self._3D_higher_threshold = warn_pop(
-            self.unknown_params, "3D_higher_threshold", 0.9999
+        self._3D_higher_threshold = (
+            warn_pop(self.unknown_params, "3D_higher_threshold", 0.9999)
+            if self._3D_higher_threshold is None
+            else self._3D_higher_threshold
         )
+
         if self.unknown_params:  # if dict isn't empty
             print_unknown_params(self.unknown_params)
 
@@ -497,7 +507,18 @@ class SegmentationParams:
     """segmentedObjects section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = set_default("folder", "segmentedObjects")  # output folder
+    mask_2d_folder: str = set_default(
+        "mask_2d_folder", "segmentedObjects"
+    )  # output mask_2d folder
+    mask_3d_folder: str = set_default(
+        "mask_3d_folder", "segmentedObjects"
+    )  # output folder
+    localize_2d_folder: str = set_default(
+        "localize_2d_folder", "segmentedObjects"
+    )  # output folder
+    localize_3d_folder: str = set_default(
+        "localize_3d_folder", "segmentedObjects"
+    )  # output folder
     operation: str = set_default("operation", "2D,3D")  # options: 2D or 3D
     outputFile: str = set_default("outputFile", "segmentedObjects")
     background_method: str = set_default(
@@ -565,32 +586,90 @@ class SegmentationParams:
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
-        self._3Dmethod = warn_pop(self.unknown_params, "3Dmethod", None)
-        self._3DGaussianfitWindow = warn_pop(
-            self.unknown_params, "3DGaussianfitWindow", None
+        self._3Dmethod = (
+            warn_pop(self.unknown_params, "3Dmethod", None)
+            if self._3Dmethod is None
+            else self._3Dmethod
         )
-        self._3dAP_window = warn_pop(self.unknown_params, "3dAP_window", None)
-        self._3dAP_flux_min = warn_pop(self.unknown_params, "3dAP_flux_min", None)
-        self._3dAP_brightest = warn_pop(self.unknown_params, "3dAP_brightest", None)
-        self._3dAP_distTolerance = warn_pop(
-            self.unknown_params, "3dAP_distTolerance", None
+        self._3DGaussianfitWindow = (
+            warn_pop(self.unknown_params, "3DGaussianfitWindow", None)
+            if self._3DGaussianfitWindow is None
+            else self._3DGaussianfitWindow
         )
-        self._3D_threshold_over_std = warn_pop(
-            self.unknown_params, "3D_threshold_over_std", None
+        self._3dAP_window = (
+            warn_pop(self.unknown_params, "3dAP_window", None)
+            if self._3dAP_window is None
+            else self._3dAP_window
         )
-        self._3D_sigma = warn_pop(self.unknown_params, "3D_sigma", None)
-        self._3D_boxSize = warn_pop(self.unknown_params, "3D_boxSize", None)
-        self._3D_area_min = warn_pop(self.unknown_params, "3D_area_min", None)
-        self._3D_area_max = warn_pop(self.unknown_params, "3D_area_max", None)
-        self._3D_nlevels = warn_pop(self.unknown_params, "3D_nlevels", None)
-        self._3D_contrast = warn_pop(self.unknown_params, "3D_contrast", None)
-        self._3D_psf_z = warn_pop(self.unknown_params, "3D_psf_z", None)
-        self._3D_psf_yx = warn_pop(self.unknown_params, "3D_psf_yx", None)
-        self._3D_lower_threshold = warn_pop(
-            self.unknown_params, "3D_lower_threshold", None
+        self._3dAP_flux_min = (
+            warn_pop(self.unknown_params, "3dAP_flux_min", None)
+            if self._3dAP_flux_min is None
+            else self._3dAP_flux_min
         )
-        self._3D_higher_threshold = warn_pop(
-            self.unknown_params, "3D_higher_threshold", None
+        self._3dAP_brightest = (
+            warn_pop(self.unknown_params, "3dAP_brightest", None)
+            if self._3dAP_brightest is None
+            else self._3dAP_brightest
+        )
+        self._3dAP_distTolerance = (
+            warn_pop(self.unknown_params, "3dAP_distTolerance", None)
+            if self._3dAP_distTolerance is None
+            else self._3dAP_distTolerance
+        )
+        self._3D_threshold_over_std = (
+            warn_pop(self.unknown_params, "3D_threshold_over_std", None)
+            if self._3D_threshold_over_std is None
+            else self._3D_threshold_over_std
+        )
+        self._3D_sigma = (
+            warn_pop(self.unknown_params, "3D_sigma", None)
+            if self._3D_sigma is None
+            else self._3D_sigma
+        )
+        self._3D_boxSize = (
+            warn_pop(self.unknown_params, "3D_boxSize", None)
+            if self._3D_boxSize is None
+            else self._3D_boxSize
+        )
+        self._3D_area_min = (
+            warn_pop(self.unknown_params, "3D_area_min", None)
+            if self._3D_area_min is None
+            else self._3D_area_min
+        )
+        self._3D_area_max = (
+            warn_pop(self.unknown_params, "3D_area_max", None)
+            if self._3D_area_max is None
+            else self._3D_area_max
+        )
+        self._3D_nlevels = (
+            warn_pop(self.unknown_params, "3D_nlevels", None)
+            if self._3D_nlevels is None
+            else self._3D_nlevels
+        )
+        self._3D_contrast = (
+            warn_pop(self.unknown_params, "3D_contrast", None)
+            if self._3D_contrast is None
+            else self._3D_contrast
+        )
+        self._3D_psf_z = (
+            warn_pop(self.unknown_params, "3D_psf_z", None)
+            if self._3D_psf_z is None
+            else self._3D_psf_z
+        )
+        self._3D_psf_yx = (
+            warn_pop(self.unknown_params, "3D_psf_yx", None)
+            if self._3D_psf_yx is None
+            else self._3D_psf_yx
+        )
+        self._3D_lower_threshold = (
+            warn_pop(self.unknown_params, "3D_lower_threshold", None)
+            if self._3D_lower_threshold is None
+            else self._3D_lower_threshold
+        )
+        self._3D_higher_threshold = (
+            warn_pop(self.unknown_params, "3D_higher_threshold", None)
+            if self._3D_higher_threshold is None
+            else self._3D_higher_threshold
         )
         if self.unknown_params:
             print_unknown_params(self.unknown_params)
@@ -602,7 +681,7 @@ class MatrixParams:
     """buildsPWDmatrix section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = set_default("folder", "buildsPWDmatrix")  # output folder
+    folder: str = set_default("folder", "tracing")  # output folder
     # available methods: masking, clustering
     tracing_method: List[str] = set_default("tracing_method", ["masking", "clustering"])
     # Expands masks until they collide by a max of 'mask_expansion' pixels
@@ -687,6 +766,20 @@ class Params:
                     f"! Unused parameters detected, it's probably a deprecated section: {unused_params}",
                     status="WARN",
                 )
+
+    def print_as_dict(self):
+        result = {}
+        if not self.acquisition is None:
+            result["acquisition"] = asdict(self.acquisition)
+        if not self.projection is None:
+            result["zProject"] = asdict(self.projection)
+        if not self.registration is None:
+            result["alignImages"] = asdict(self.registration)
+        if not self.segmentation is None:
+            result["segmentedObjects"] = asdict(self.segmentation)
+        if not self.matrix is None:
+            result["buildsPWDmatrix"] = asdict(self.matrix)
+        return result
 
 
 def load_alignment_dict(dict_shifts_path):

@@ -59,6 +59,7 @@ def main():
         tmp_img = glob.glob(root_folder + os.sep + "tmp.png")
         il_model = glob.glob(root_folder + os.sep + "infoList_model.json")
         params_model = glob.glob(root_folder + os.sep + "parameters_model.json")
+        params_model += glob.glob(root_folder + os.sep + "parameters_used.json")
 
         for f in (
             markdown_files
@@ -77,17 +78,25 @@ def main():
     # Removes directories produced during previous runs
     folders_to_remove = []
     folders_to_remove.append(root_folder + os.sep + "zProject")
-    folders_to_remove.append(root_folder + os.sep + "Project")
     folders_to_remove.append(root_folder + os.sep + "alignImages")
     folders_to_remove.append(root_folder + os.sep + "segmentedObjects")
     folders_to_remove.append(root_folder + os.sep + "buildsPWDmatrix")
+    # Add new routine names
+    folders_to_remove.append(root_folder + os.sep + "project")
+    folders_to_remove.append(root_folder + os.sep + "register_global")
+    folders_to_remove.append(root_folder + os.sep + "register_local")
+    folders_to_remove.append(root_folder + os.sep + "mask_2d")
+    folders_to_remove.append(root_folder + os.sep + "mask_3d")
+    folders_to_remove.append(root_folder + os.sep + "localize_2d")
+    folders_to_remove.append(root_folder + os.sep + "localize_3d")
+    folders_to_remove.append(root_folder + os.sep + "tracing")
 
     for new_folder in folders_to_remove:
         if os.path.isdir(new_folder):
             shutil.rmtree(new_folder)
             print(f"{new_folder} removed")
-        else:
-            print(f"{new_folder} does not exist")
+        # else:
+        #     print(f"{new_folder} does not exist")
 
 
 if __name__ == "__main__":

@@ -605,7 +605,6 @@ def make_segmentations(
     label,
 ):
     root_filename = os.path.basename(file_name).split(".")[0]
-    output_filename = data_path + os.sep + seg_params.folder + os.sep + root_filename
     filename_2d_aligned = align_folder + os.sep + root_filename + "_2d_registered.npy"
 
     print_log(f"> searching for {filename_2d_aligned}")
@@ -630,6 +629,13 @@ def make_segmentations(
         ##########################################
 
         if label == "barcode" and [i for i in root_filename.split("_") if "RT" in i]:
+            output_filename = (
+                data_path
+                + os.sep
+                + seg_params.localize_2d_folder
+                + os.sep
+                + root_filename
+            )
             segmentation_method = seg_params.background_method
             print_log(f"\n$ Segmenting barcodes using method: {segmentation_method }")
             if segmentation_method == "flat":
@@ -680,7 +686,10 @@ def make_segmentations(
             # for col in output.colnames:
             #    output[col].info.format = '%.8g'  # for consistent table output
 
-        elif label in ("DAPI", "mask"):  # and root_filename.split("_")[2] == "DAPI":
+        elif label in ("DAPI", "mask"):
+            output_filename = (
+                data_path + os.sep + seg_params.mask_2d_folder + os.sep + root_filename
+            )
             if seg_params.background_method == "flat":
                 output = segment_mask_inhomog_background(im, seg_params)
             elif seg_params.background_method == "inhomogeneous":
@@ -702,7 +711,7 @@ def make_segmentations(
                 output_filename_stardist = (
                     data_path
                     + os.sep
-                    + seg_params.folder
+                    + seg_params.mask_2d_folder
                     + os.sep
                     + root_filename
                     + "_stardist"
@@ -761,10 +770,10 @@ def segment_masks(
     print_log(f"> Processing Folder: {data_path}")
     print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
-    output_file = (
+    barcode_out_file = (
         data_path
         + os.sep
-        + params.folder
+        + params.localize_2d_folder
         + os.sep
         + "data"
         + os.sep
@@ -813,9 +822,9 @@ def segment_masks(
 
                 # saves results together into a single Table
                 barcodes_coordinates.write(
-                    output_file, format="ascii.ecsv", overwrite=True
+                    barcode_out_file, format="ascii.ecsv", overwrite=True
                 )
-            print_log(f"$ File {output_file} written to file.")
+            print_log(f"$ File {barcode_out_file} written to file.")
             print_log(f'$ Detected spots: {",".join([str(x) for x in detected_spots])}')
 
     else:
@@ -842,9 +851,9 @@ def segment_masks(
                 if label == "barcode":
                     barcodes_coordinates = vstack([barcodes_coordinates, output])
                     barcodes_coordinates.write(
-                        output_file, format="ascii.ecsv", overwrite=True
+                        barcode_out_file, format="ascii.ecsv", overwrite=True
                     )
-                    print_log(f"$ File {output_file} written to file.")
+                    print_log(f"$ File {barcode_out_file} written to file.")
 
     return 0
 

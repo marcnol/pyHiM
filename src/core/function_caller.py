@@ -421,7 +421,7 @@ class Pipeline:
             merged_results = feat.merge_results(remove_none_from_list(results_to_keep))
             out_filename = getattr(feat.params, "outputFile", "")
             npy_files = self.m_data_m.save_data(
-                merged_results, feat.params.folder, out_filename
+                merged_results, feat.out_folder, out_filename
             )
             self.m_data_m.npy_files += files_to_keep + npy_files
 
@@ -446,9 +446,7 @@ def run_pattern(feat, f2p, reference_file, m_data_m):
     results_to_save, results_to_keep = feat.run(data, reference)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    files_to_keep = m_data_m.save_data(
-        results_to_save, feat.params.folder, f2p.basename
-    )
+    files_to_keep = m_data_m.save_data(results_to_save, feat.out_folder, f2p.basename)
     if results_to_keep is not None:
         results_to_keep["tif_name"] = f2p.tif_name
         results_to_keep["cycle"] = f2p.cycle
