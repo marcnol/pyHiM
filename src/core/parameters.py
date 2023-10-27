@@ -773,16 +773,18 @@ class Params:
 
     def print_as_dict(self):
         result = {}
-        if not self.acquisition is None:
-            result["acquisition"] = asdict(self.acquisition)
-        if not self.projection is None:
-            result["zProject"] = asdict(self.projection)
-        if not self.registration is None:
-            result["alignImages"] = asdict(self.registration)
-        if not self.segmentation is None:
-            result["segmentedObjects"] = asdict(self.segmentation)
-        if not self.matrix is None:
-            result["buildsPWDmatrix"] = asdict(self.matrix)
+        attr_to_print = [
+            (self.acquisition, "acquisition"),
+            (self.projection, "zProject"),
+            (self.registration, "alignImages"),
+            (self.segmentation, "segmentedObjects"),
+            (self.matrix, "buildsPWDmatrix"),
+        ]
+        for attribute, key in attr_to_print:
+            if not attribute is None:
+                result[key] = asdict(attribute)
+                # remove "unknown_params" section
+                result[key].pop("unknown_params", None)
         return result
 
 

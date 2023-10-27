@@ -372,9 +372,11 @@ class DataManager:
         print_log(f"$ Parameters file read: {self.param_file_path}")
         return params
 
-    def save_parameters_used(self):
+    def save_parameters_loaded(self):
         dict_struct = self.create_dict_structure()
         dict_struct["common"]["acquisition"] = asdict(self.acquisition_params)
+        # remove "unknown_params" section
+        dict_struct["common"]["acquisition"].pop("unknown_params", None)
         for label, params in self.labelled_params.items():
             label_dict = params.print_as_dict()
             for section, param_names in label_dict.items():  # for each section
@@ -386,7 +388,7 @@ class DataManager:
                         )
                     else:
                         dict_struct["common"][section][key] = val
-        save_json(dict_struct, os.path.join(self.m_data_path, "parameters_used.json"))
+        save_json(dict_struct, os.path.join(self.m_data_path, "parameters_loaded.json"))
 
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
@@ -400,7 +402,7 @@ class DataManager:
                 labelled_sections[label],
             )
         print_log("\n$ [Params] Initialisation done.\n")
-        self.save_parameters_used()
+        self.save_parameters_loaded()
 
     # TODO: clean this
     def set_up(self):
