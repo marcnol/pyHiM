@@ -160,6 +160,7 @@ class Pipeline:
 
         if {
             "project",
+            "register_global",
             "mask_3d",
             "localize_3d",
         }.intersection(set(self.cmds)):
@@ -283,7 +284,13 @@ class Pipeline:
             )
 
     def apply_registrations(
-        self, current_param, label, data_path, registration_params, roi_name
+        self,
+        current_param,
+        label,
+        data_path,
+        registration_params,
+        roi_name,
+        projection_params,
     ):
         if label != "fiducial":
             print_log(f"> Applying image registrations for label: {label}")
@@ -293,6 +300,7 @@ class Pipeline:
                 current_param,
                 registration_params,
                 roi_name,
+                projection_params,
             )
 
     def segment_masks(

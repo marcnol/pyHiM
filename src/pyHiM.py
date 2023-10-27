@@ -91,6 +91,7 @@ def main(command_line_arguments=None):
 
         # [applies registration to DAPI and barcodes]
         if "register_global" in pipe.cmds:
+            projection_params = datam.labelled_params[label].projection
             registration_params = datam.labelled_params[label].registration
             pipe.apply_registrations(
                 current_param,
@@ -98,6 +99,7 @@ def main(command_line_arguments=None):
                 datam.m_data_path,
                 registration_params,
                 datam.processed_roi,
+                projection_params,
             )
 
         # [aligns fiducials in 3D]

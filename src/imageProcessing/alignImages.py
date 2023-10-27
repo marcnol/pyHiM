@@ -47,7 +47,7 @@ from core.data_file import (
     RefDiffFile,
 )
 from core.data_manager import load_json
-from core.parameters import RegistrationParams
+from core.parameters import ProjectionParams, RegistrationParams
 from core.pyhim_logging import print_log
 from imageProcessing.imageProcessing import (
     Image,
@@ -413,6 +413,7 @@ def apply_registrations_to_filename(
     data_path,
     params: RegistrationParams,
     roi_name,
+    projection_params: ProjectionParams,
 ):
     """
     Applies registration of filename_to_process
@@ -445,7 +446,9 @@ def apply_registrations_to_filename(
         shift = np.asarray(shift_array)
         # loads 2D image and applies registration
         im_obj = Image()
-        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
+        im_obj.load_image_2d(
+            filename_to_process, data_path + os.sep + projection_params.folder
+        )
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
         print_log(
             f"$ Image registered using ROI:{roi_name}, label:{label}, shift={shift}"
@@ -459,7 +462,9 @@ def apply_registrations_to_filename(
 
     elif label == params.referenceFiducial:
         im_obj = Image()
-        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
+        im_obj.load_image_2d(
+            filename_to_process, data_path + os.sep + projection_params.folder
+        )
         im_obj.save_image_2d(
             data_path + os.sep + params.register_global_folder,
             tag="_2d_registered",
@@ -474,7 +479,11 @@ def apply_registrations_to_filename(
 
 
 def apply_registrations_to_current_folder(
-    data_path, current_param, params: RegistrationParams, roi_name
+    data_path,
+    current_param,
+    params: RegistrationParams,
+    roi_name,
+    projection_params: ProjectionParams,
 ):
     """
     This function will
@@ -527,6 +536,7 @@ def apply_registrations_to_current_folder(
                 data_path,
                 params,
                 roi_name,
+                projection_params,
             )
 
 
