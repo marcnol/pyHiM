@@ -562,112 +562,116 @@ class SegmentationParams:
     # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
     centroidDifference_max: int = set_default("centroidDifference_max", 5)
     # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
-    _3Dmethod: str = "thresholding"
+    _3Dmethod: str = set_default("_3Dmethod", None)
     # z-profile Fit: window size to extract subVolume, px.
     # 3 means subvolume will be 7x7.
-    _3DGaussianfitWindow: int = 3
+    _3DGaussianfitWindow: int = set_default("_3DGaussianfitWindow", None)
     # constructs a YZ image by summing from xPlane-window:xPlane+window
-    _3dAP_window: int = 5
-    _3dAP_flux_min: int = 2  # # threshold to keep a source detected in YZ
-    _3dAP_brightest: int = 100  # number of sources sought in each YZ plane
+    _3dAP_window: int = set_default("_3dAP_window", None)
+    _3dAP_flux_min: int = set_default(
+        "_3dAP_flux_min", None
+    )  # # threshold to keep a source detected in YZ
+    _3dAP_brightest: int = set_default(
+        "_3dAP_brightest", None
+    )  # number of sources sought in each YZ plane
     # px dist to attribute a source localized in YZ to one localized in XY
-    _3dAP_distTolerance: int = 1
-    _3D_threshold_over_std: int = 5
-    _3D_sigma: int = 3
-    _3D_boxSize: int = 32
-    _3D_area_min: int = 10
-    _3D_area_max: int = 250
-    _3D_nlevels: int = 64
-    _3D_contrast: float = 0.001
-    _3D_psf_z: int = 500
-    _3D_psf_yx: int = 200
-    _3D_lower_threshold: float = 0.99
-    _3D_higher_threshold: float = 0.9999
+    _3dAP_distTolerance: int = set_default("_3dAP_distTolerance", None)
+    _3D_threshold_over_std: int = set_default("_3D_threshold_over_std", None)
+    _3D_sigma: int = set_default("_3D_sigma", None)
+    _3D_boxSize: int = set_default("_3D_boxSize", None)
+    _3D_area_min: int = set_default("_3D_area_min", None)
+    _3D_area_max: int = set_default("_3D_area_max", None)
+    _3D_nlevels: int = set_default("_3D_nlevels", None)
+    _3D_contrast: float = set_default("_3D_contrast", None)
+    _3D_psf_z: int = set_default("_3D_psf_z", None)
+    _3D_psf_yx: int = set_default("_3D_psf_yx", None)
+    _3D_lower_threshold: float = set_default("_3D_lower_threshold", None)
+    _3D_higher_threshold: float = set_default("_3D_higher_threshold", None)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
         self._3Dmethod = (
-            warn_pop(self.unknown_params, "3Dmethod", None)
+            warn_pop(self.unknown_params, "3Dmethod", "thresholding")
             if self._3Dmethod is None
             else self._3Dmethod
         )
         self._3DGaussianfitWindow = (
-            warn_pop(self.unknown_params, "3DGaussianfitWindow", None)
+            warn_pop(self.unknown_params, "3DGaussianfitWindow", 3)
             if self._3DGaussianfitWindow is None
             else self._3DGaussianfitWindow
         )
         self._3dAP_window = (
-            warn_pop(self.unknown_params, "3dAP_window", None)
+            warn_pop(self.unknown_params, "3dAP_window", 5)
             if self._3dAP_window is None
             else self._3dAP_window
         )
         self._3dAP_flux_min = (
-            warn_pop(self.unknown_params, "3dAP_flux_min", None)
+            warn_pop(self.unknown_params, "3dAP_flux_min", 2)
             if self._3dAP_flux_min is None
             else self._3dAP_flux_min
         )
         self._3dAP_brightest = (
-            warn_pop(self.unknown_params, "3dAP_brightest", None)
+            warn_pop(self.unknown_params, "3dAP_brightest", 100)
             if self._3dAP_brightest is None
             else self._3dAP_brightest
         )
         self._3dAP_distTolerance = (
-            warn_pop(self.unknown_params, "3dAP_distTolerance", None)
+            warn_pop(self.unknown_params, "3dAP_distTolerance", 1)
             if self._3dAP_distTolerance is None
             else self._3dAP_distTolerance
         )
         self._3D_threshold_over_std = (
-            warn_pop(self.unknown_params, "3D_threshold_over_std", None)
+            warn_pop(self.unknown_params, "3D_threshold_over_std", 5)
             if self._3D_threshold_over_std is None
             else self._3D_threshold_over_std
         )
         self._3D_sigma = (
-            warn_pop(self.unknown_params, "3D_sigma", None)
+            warn_pop(self.unknown_params, "3D_sigma", 3)
             if self._3D_sigma is None
             else self._3D_sigma
         )
         self._3D_boxSize = (
-            warn_pop(self.unknown_params, "3D_boxSize", None)
+            warn_pop(self.unknown_params, "3D_boxSize", 32)
             if self._3D_boxSize is None
             else self._3D_boxSize
         )
         self._3D_area_min = (
-            warn_pop(self.unknown_params, "3D_area_min", None)
+            warn_pop(self.unknown_params, "3D_area_min", 10)
             if self._3D_area_min is None
             else self._3D_area_min
         )
         self._3D_area_max = (
-            warn_pop(self.unknown_params, "3D_area_max", None)
+            warn_pop(self.unknown_params, "3D_area_max", 250)
             if self._3D_area_max is None
             else self._3D_area_max
         )
         self._3D_nlevels = (
-            warn_pop(self.unknown_params, "3D_nlevels", None)
+            warn_pop(self.unknown_params, "3D_nlevels", 64)
             if self._3D_nlevels is None
             else self._3D_nlevels
         )
         self._3D_contrast = (
-            warn_pop(self.unknown_params, "3D_contrast", None)
+            warn_pop(self.unknown_params, "3D_contrast", 0.001)
             if self._3D_contrast is None
             else self._3D_contrast
         )
         self._3D_psf_z = (
-            warn_pop(self.unknown_params, "3D_psf_z", None)
+            warn_pop(self.unknown_params, "3D_psf_z", 500)
             if self._3D_psf_z is None
             else self._3D_psf_z
         )
         self._3D_psf_yx = (
-            warn_pop(self.unknown_params, "3D_psf_yx", None)
+            warn_pop(self.unknown_params, "3D_psf_yx", 200)
             if self._3D_psf_yx is None
             else self._3D_psf_yx
         )
         self._3D_lower_threshold = (
-            warn_pop(self.unknown_params, "3D_lower_threshold", None)
+            warn_pop(self.unknown_params, "3D_lower_threshold", 0.99)
             if self._3D_lower_threshold is None
             else self._3D_lower_threshold
         )
         self._3D_higher_threshold = (
-            warn_pop(self.unknown_params, "3D_higher_threshold", None)
+            warn_pop(self.unknown_params, "3D_higher_threshold", 0.9999)
             if self._3D_higher_threshold is None
             else self._3D_higher_threshold
         )
