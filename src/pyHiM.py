@@ -162,6 +162,23 @@ def main(command_line_arguments=None):
                 registration_params,
             )
 
+        print_log("\n")
+        del current_param
+
+    for label in labels:
+        # sets parameters with old way (temporary during pyHiM restructuration)
+        current_param = Parameters(
+            raw_dict,
+            root_folder=datam.m_data_path,
+            label=label,
+            stardist_basename=datam.m_stardist_basename,
+        )
+
+        print_analyzing_label(f"Analyzing label: {label}")
+
+        current_param.param_dict["parallel"] = pipe.parallel
+        current_param.param_dict["fileNameMD"] = logger.md_filename
+
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds and label == "barcode":
             registration_params = datam.labelled_params[label].registration
