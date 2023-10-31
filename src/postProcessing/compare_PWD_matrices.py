@@ -194,8 +194,12 @@ def plots_distributions(x, y, output_filename = 'violin_plot.png', y_axis_label=
     
 
     '''
-    X = [x.copy(), y.copy()]
-        
+    # performs Wilcoxon rank sum test
+    a, p_value = scipy.stats.ranksums(x, y)
+
+    # X = [x.copy(), y.copy()]
+    X = [np.log(x.copy()), np.log(y.copy())]
+    
     # removes zeros from both vectors
     X = [remove_zeros(x0) for x0 in X]
     
@@ -204,7 +208,7 @@ def plots_distributions(x, y, output_filename = 'violin_plot.png', y_axis_label=
 
     # plots datasets
 
-    ax=sns.violinplot(data = X).set(title=y_axis_label + ' distributions')
+    ax=sns.violinplot(data = X).set(title=y_axis_label + f' distributions. WX P-value = {p_value:.2e}' )
     plt.xlabel('datasets')
     plt.ylabel(y_axis_label)
     
