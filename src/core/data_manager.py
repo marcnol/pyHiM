@@ -277,23 +277,28 @@ class DataManager:
                     self.add_to_processable_labels("barcode")
                 self.ecsv_files.append((path, name, ext))
             elif ext in self.npy_ext:
-                parts = self.decode_file_parts(name)
-                self.check_roi_uniqueness(parts["roi"])
-                channel = parts["channel"][:4]
-                label = self.find_label(name, channel)
-                cycle = parts["cycle"]
-                self.add_to_processable_labels(label)
-                if "_2d_registered.npy" in path:  # tempo refactoring condition
-                    self.align_folder = "/".join(path.split("/")[:-1])
-                    basename = name[: -len("_2d_registered")]
-                    self.npy_files.append(
-                        NpyFile(None, "_2d_registered", cycle, path, basename, label)
-                    )
-                elif "_2d.npy" in path:
-                    basename = name[:-3]
-                    self.npy_files.append(
-                        NpyFile(None, "_2d", cycle, path, basename, label)
-                    )
+                try:
+                    parts = self.decode_file_parts(name)
+                    self.check_roi_uniqueness(parts["roi"])
+                    channel = parts["channel"][:4]
+                    label = self.find_label(name, channel)
+                    cycle = parts["cycle"]
+                    self.add_to_processable_labels(label)
+                    if "_2d_registered.npy" in path:  # tempo refactoring condition
+                        self.align_folder = "/".join(path.split("/")[:-1])
+                        basename = name[: -len("_2d_registered")]
+                        self.npy_files.append(
+                            NpyFile(
+                                None, "_2d_registered", cycle, path, basename, label
+                            )
+                        )
+                    elif "_2d.npy" in path:
+                        basename = name[:-3]
+                        self.npy_files.append(
+                            NpyFile(None, "_2d", cycle, path, basename, label)
+                        )
+                except ValueError:
+                    unrecognized += 1
             elif ext == "json" and name == self.raw_dict.get("common", {}).get(
                 "alignImages", {}
             ).get("outputFile"):
@@ -445,18 +450,16 @@ class DataManager:
                     f"Filename: {file_name}\nDoesn't match with regex: {self.filename_regex}"
                 )
             if parts["runNumber"] is None:
-                raise ValueError(
-                    f"'runNumber' part not found in this file:\n{file_name}"
-                )
+                raise KeyError(f"'runNumber' part not found in this file:\n{file_name}")
             if parts["cycle"] is None:
-                raise ValueError(f"'cycle' part not found in this file:\n{file_name}")
+                raise KeyError(f"'cycle' part not found in this file:\n{file_name}")
             if parts["roi"] is None:
-                raise ValueError(f"'roi' part not found in this file:\n{file_name}")
+                raise KeyError(f"'roi' part not found in this file:\n{file_name}")
             if parts["channel"] is None:
-                raise ValueError(f"'channel' part not found in this file:\n{file_name}")
+                raise KeyError(f"'channel' part not found in this file:\n{file_name}")
             return parts
 
-        raise ValueError("fileNameRegExp not found")
+        raise NameError("fileNameRegExp not found")
 
     def get_inputs(self, tif_labels: list[str], npy_labels: list[str]):
         if tif_labels:
