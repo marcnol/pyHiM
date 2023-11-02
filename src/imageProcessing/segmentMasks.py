@@ -192,7 +192,7 @@ def _segment_source_inhomog_background(
     )
 
     im1_bkg_substracted = im - bkg.background
-    mean, median, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
+    _, _, std = sigma_clipped_stats(im1_bkg_substracted, sigma=3.0)
 
     # estimates sources
     daofind = DAOStarFinder(
@@ -206,15 +206,13 @@ def _segment_source_inhomog_background(
     return sources, im1_bkg_substracted
 
 
-def segment_source_inhomog_background(im, current_param):
+def segment_source_inhomog_background(im, seg_params: SegmentationParams):
     """
     Wrapper for function that segments barcodes by estimating inhomogeneous background
     Parameters
     ----------
     im : NPY 2D
         image to be segmented
-    current_param : Parameters
-        parameters object.
 
     Returns
     -------
@@ -243,18 +241,12 @@ def segment_source_inhomog_background(im, current_param):
     img_bkc_substracted: 2D NPY array with background substracted image
     """
 
-    threshold_over_std = current_param.param_dict["segmentedObjects"][
-        "threshold_over_std"
-    ]
-    fwhm = current_param.param_dict["segmentedObjects"]["fwhm"]
-    brightest = current_param.param_dict["segmentedObjects"][
-        "brightest"
-    ]  # keeps brightest sources
+    threshold_over_std = seg_params.threshold_over_std
+    fwhm = seg_params.fwhm
+    brightest = seg_params.brightest  # keeps brightest sources
 
     # sigma_clip = SigmaClip(sigma=3.0)
-    sigma_clip = SigmaClip(
-        sigma=current_param.param_dict["segmentedObjects"]["background_sigma"]
-    )
+    sigma_clip = SigmaClip(sigma=seg_params.background_sigma)
 
     sources, im1_bkg_substracted = _segment_source_inhomog_background(
         im, threshold_over_std, fwhm, brightest, sigma_clip
@@ -262,15 +254,13 @@ def segment_source_inhomog_background(im, current_param):
     return sources, im1_bkg_substracted
 
 
-def segment_source_flat_background(im, current_param):
+def segment_source_flat_background(im, seg_params: SegmentationParams):
     """
     Segments barcodes using flat background
     Parameters
     ----------
     im : NPY 2D
         image to be segmented
-    current_param : Parameters
-        parameters object.
 
     Returns
     -------
@@ -299,15 +289,11 @@ def segment_source_flat_background(im, current_param):
     img_bkc_substracted: 2D NPY array with background substracted image
     """
 
-    threshold_over_std = current_param.param_dict["segmentedObjects"][
-        "threshold_over_std"
-    ]
-    fwhm = current_param.param_dict["segmentedObjects"]["fwhm"]
+    threshold_over_std = seg_params.threshold_over_std
+    fwhm = seg_params.fwhm
 
     # removes background
-    _, median, std = sigma_clipped_stats(
-        im, current_param.param_dict["segmentedObjects"]["background_sigma"]
-    )
+    _, median, std = sigma_clipped_stats(im, seg_params.background_sigma)
     im1_bkg_substracted = im - median
 
     # estimates sources
@@ -481,7 +467,7 @@ def get_tessellation(xy, img_shape):
     return Voronoi(xy)
 
 
-def segment_mask_inhomog_background(im, current_param):
+def segment_mask_inhomog_background(im, seg_params: SegmentationParams):
     """
     Function used for segmenting masks with the ASTROPY library that uses image processing
 
@@ -489,8 +475,6 @@ def segment_mask_inhomog_background(im, current_param):
     ----------
     im : 2D np array
         image to be segmented.
-    current_param : Parameters class
-        parameters.
 
     Returns
     -------
@@ -499,9 +483,7 @@ def segment_mask_inhomog_background(im, current_param):
     """
     # removes background
     threshold = detect_threshold(im, nsigma=2.0)
-    sigma_clip = SigmaClip(
-        sigma=current_param.param_dict["segmentedObjects"]["background_sigma"]
-    )
+    sigma_clip = SigmaClip(sigma=seg_params.background_sigma)
 
     bkg_estimator = MedianBackground()
     bkg = Background2D(
@@ -512,13 +494,10 @@ def segment_mask_inhomog_background(im, current_param):
         bkg_estimator=bkg_estimator,
     )
     threshold = bkg.background + (
-        current_param.param_dict["segmentedObjects"]["threshold_over_std"]
-        * bkg.background_rms
+        seg_params.threshold_over_std * bkg.background_rms
     )  # background-only error image, typically 1.0
 
-    sigma = (
-        current_param.param_dict["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma
-    )  # FWHM = 3.
+    sigma = seg_params.fwhm * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
     kernel.normalize()
 
@@ -526,7 +505,7 @@ def segment_mask_inhomog_background(im, current_param):
     segm = detect_sources(
         im,
         threshold,
-        npixels=current_param.param_dict["segmentedObjects"]["area_min"],
+        npixels=seg_params.area_min,
         filter_kernel=kernel,
     )
 
@@ -538,9 +517,7 @@ def segment_mask_inhomog_background(im, current_param):
     segm_deblend = deblend_sources(
         im,
         segm,
-        npixels=current_param.param_dict["segmentedObjects"][
-            "area_min"
-        ],  # typically 50 for masks
+        npixels=seg_params.area_min,  # typically 50 for masks
         filter_kernel=kernel,
         nlevels=32,
         contrast=0.001,  # try 0.2 or 0.3
@@ -552,10 +529,7 @@ def segment_mask_inhomog_background(im, current_param):
         # take regions with large enough areas
         area = segm_deblend.get_area(label)
         # print_log('label {}, with area {}'.format(label,area))
-        if (
-            area < current_param.param_dict["segmentedObjects"]["area_min"]
-            or area > current_param.param_dict["segmentedObjects"]["area_max"]
-        ):
+        if area < seg_params.area_min or area > seg_params.area_max:
             segm_deblend.remove_label(label=label)
             # print_log('label {} removed'.format(label))
 
@@ -565,7 +539,7 @@ def segment_mask_inhomog_background(im, current_param):
     return segm_deblend
 
 
-def segment_mask_stardist(im, current_param):
+def segment_mask_stardist(im, seg_params: SegmentationParams):
     """
     Function used for segmenting masks with the STARDIST package that uses Deep Convolutional Networks
 
@@ -573,8 +547,6 @@ def segment_mask_stardist(im, current_param):
     ----------
     im : 2D np array
         image to be segmented.
-    current_param : Parameters class
-        parameters.
 
     Returns
     -------
@@ -583,20 +555,7 @@ def segment_mask_stardist(im, current_param):
     """
 
     np.random.seed(6)
-
-    # removes background
-    # threshold = detect_threshold(im, nsigma=2.0)
-    # sigma_clip = SigmaClip(sigma = current_param.param_dict["segmentedObjects"]["background_sigma"])
-
-    # bkg_estimator = MedianBackground()
-    # bkg = Background2D(im, (64, 64), filter_size=(3, 3), sigma_clip=sigma_clip, bkg_estimator=bkg_estimator,)
-    # threshold = bkg.background + (
-    #     current_param.param_dict["segmentedObjects"]["threshold_over_std"] * bkg.background_rms
-    # )  # background-only error image, typically 1.0
-
-    sigma = (
-        current_param.param_dict["segmentedObjects"]["fwhm"] * gaussian_fwhm_to_sigma
-    )  # FWHM = 3.
+    sigma = seg_params.fwhm * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
     kernel.normalize()
 
@@ -610,8 +569,8 @@ def segment_mask_stardist(im, current_param):
 
     model = StarDist2D(
         None,
-        name=current_param.param_dict["segmentedObjects"]["stardist_network"],
-        basedir=current_param.param_dict["segmentedObjects"]["stardist_basename"],
+        name=seg_params.stardist_network,
+        basedir=seg_params.stardist_basename,
     )
 
     img = normalize(im, 1, 99.8, axis=axis_norm)
@@ -628,10 +587,7 @@ def segment_mask_stardist(im, current_param):
     for label in segm_deblend.labels:
         # take regions with large enough areas
         area = segm_deblend.get_area(label)
-        if (
-            area < current_param.param_dict["segmentedObjects"]["area_min"]
-            or area > current_param.param_dict["segmentedObjects"]["area_max"]
-        ):
+        if area < seg_params.area_min or area > seg_params.area_max:
             segm_deblend.remove_label(label=label)
 
     # relabel so masks numbers are consecutive
@@ -646,16 +602,15 @@ def make_segmentations(
     data_path,
     seg_params: SegmentationParams,
     align_folder,
+    label,
 ):
     root_filename = os.path.basename(file_name).split(".")[0]
-    output_filename = data_path + os.sep + seg_params.folder + os.sep + root_filename
     filename_2d_aligned = align_folder + os.sep + root_filename + "_2d_registered.npy"
 
     print_log(f"> searching for {filename_2d_aligned}")
     if os.path.exists(filename_2d_aligned):  # file exists
         # TODO: use decode_file_parts with the regex --> should be done with DataManager
         roi = os.path.basename(file_name).split("_")[3]
-        label = current_param.param_dict["acquisition"]["label"]
 
         # loading registered 2D projection
         im_obj = Image()
@@ -674,15 +629,20 @@ def make_segmentations(
         ##########################################
 
         if label == "barcode" and [i for i in root_filename.split("_") if "RT" in i]:
-            segmentation_method = current_param.param_dict["segmentedObjects"][
-                "background_method"
-            ]
+            output_filename = (
+                data_path
+                + os.sep
+                + seg_params.localize_2d_folder
+                + os.sep
+                + root_filename
+            )
+            segmentation_method = seg_params.background_method
             print_log(f"\n$ Segmenting barcodes using method: {segmentation_method }")
             if segmentation_method == "flat":
-                output = segment_source_flat_background(im, current_param)
+                output = segment_source_flat_background(im, seg_params)
             elif segmentation_method == "inhomogeneous":
                 output, im1_bkg_substracted = segment_source_inhomog_background(
-                    im, current_param
+                    im, seg_params
                 )
                 # show results
                 show_image_sources(
@@ -726,22 +686,16 @@ def make_segmentations(
             # for col in output.colnames:
             #    output[col].info.format = '%.8g'  # for consistent table output
 
-        elif label in ("DAPI", "mask"):  # and root_filename.split("_")[2] == "DAPI":
-            if (
-                current_param.param_dict["segmentedObjects"]["background_method"]
-                == "flat"
-            ):
-                output = segment_mask_inhomog_background(im, current_param)
-            elif (
-                current_param.param_dict["segmentedObjects"]["background_method"]
-                == "inhomogeneous"
-            ):
-                output = segment_mask_inhomog_background(im, current_param)
-            elif (
-                current_param.param_dict["segmentedObjects"]["background_method"]
-                == "stardist"
-            ):
-                output, labeled = segment_mask_stardist(im, current_param)
+        elif label in ("DAPI", "mask"):
+            output_filename = (
+                data_path + os.sep + seg_params.mask_2d_folder + os.sep + root_filename
+            )
+            if seg_params.background_method == "flat":
+                output = segment_mask_inhomog_background(im, seg_params)
+            elif seg_params.background_method == "inhomogeneous":
+                output = segment_mask_inhomog_background(im, seg_params)
+            elif seg_params.background_method == "stardist":
+                output, labeled = segment_mask_stardist(im, seg_params)
             else:
                 print_log(
                     "# segmentedObjects/background_method not specified in json file"
@@ -749,10 +703,7 @@ def make_segmentations(
                 output = np.zeros(1)
                 return output
 
-            if (
-                "tesselation" in current_param.param_dict["segmentedObjects"].keys()
-                and current_param.param_dict["segmentedObjects"]["tesselation"]
-            ):
+            if seg_params.tesselation:
                 _, output = tessellate_masks(output)
 
             # show results
@@ -760,7 +711,7 @@ def make_segmentations(
                 output_filename_stardist = (
                     data_path
                     + os.sep
-                    + seg_params.folder
+                    + seg_params.mask_2d_folder
                     + os.sep
                     + root_filename
                     + "_stardist"
@@ -793,18 +744,21 @@ def make_segmentations(
 
 
 def segment_masks(
-    current_param, data_path, params: SegmentationParams, align_folder, file_name=None
+    current_param,
+    data_path,
+    params: SegmentationParams,
+    align_folder,
+    label,
+    file_name=None,
 ):
     session_name = "segmentMasks"
 
     # processes folders and files
-    print_log(
-        f'\n===================={session_name}:{current_param.param_dict["acquisition"]["label"]}====================\n'
-    )
+    print_log(f"\n===================={session_name}:{label}====================\n")
 
     write_string_to_file(
         current_param.param_dict["fileNameMD"],
-        f"""## {session_name}: {current_param.param_dict["acquisition"]["label"]}\n""",
+        f"""## {session_name}: {label}\n""",
         "a",
     )
     barcodes_coordinates = Table()
@@ -816,12 +770,10 @@ def segment_masks(
     print_log(f"> Processing Folder: {data_path}")
     print_log(f"> Files to Segment: {len(current_param.files_to_process)}\n")
 
-    label = current_param.param_dict["acquisition"]["label"]
-
-    output_file = (
+    barcode_out_file = (
         data_path
         + os.sep
-        + params.folder
+        + params.localize_2d_folder
         + os.sep
         + "data"
         + os.sep
@@ -852,6 +804,7 @@ def segment_masks(
                         data_path,
                         params,
                         align_folder,
+                        label,
                     )
                 )
 
@@ -869,9 +822,9 @@ def segment_masks(
 
                 # saves results together into a single Table
                 barcodes_coordinates.write(
-                    output_file, format="ascii.ecsv", overwrite=True
+                    barcode_out_file, format="ascii.ecsv", overwrite=True
                 )
-            print_log(f"$ File {output_file} written to file.")
+            print_log(f"$ File {barcode_out_file} written to file.")
             print_log(f'$ Detected spots: {",".join([str(x) for x in detected_spots])}')
 
     else:
@@ -891,15 +844,16 @@ def segment_masks(
                     data_path,
                     params,
                     align_folder,
+                    label,
                 )
 
                 # gathers results from different barcodes and rois
                 if label == "barcode":
                     barcodes_coordinates = vstack([barcodes_coordinates, output])
                     barcodes_coordinates.write(
-                        output_file, format="ascii.ecsv", overwrite=True
+                        barcode_out_file, format="ascii.ecsv", overwrite=True
                     )
-                    print_log(f"$ File {output_file} written to file.")
+                    print_log(f"$ File {barcode_out_file} written to file.")
 
     return 0
 

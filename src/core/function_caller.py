@@ -8,7 +8,13 @@ Module for high level function calling
 import os
 
 from core.dask_cluster import DaskCluster
-from core.parameters import SegmentationParams
+from core.parameters import (
+    AcquisitionParams,
+    MatrixParams,
+    ProjectionParams,
+    RegistrationParams,
+    SegmentationParams,
+)
 from core.pyhim_logging import print_log, print_session_name
 from imageProcessing import localize_3d, mask_3d
 from imageProcessing.alignImages import (
@@ -152,7 +158,12 @@ class Pipeline:
             "mask": [],
         }
 
-        if "project" in self.cmds:
+        if {
+            "project",
+            "register_global",
+            "mask_3d",
+            "localize_3d",
+        }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("projection")
             self.labelled_sections["fiducial"].append("projection")
             self.labelled_sections["DAPI"].append("projection")
@@ -163,6 +174,8 @@ class Pipeline:
             "register_global",
             "register_local",
             "register_localizations",
+            "mask_3d",
+            "localize_3d",
         }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("registration")
             self.labelled_sections["fiducial"].append("registration")
@@ -252,29 +265,43 @@ class Pipeline:
                 self.m_dask.create_distributed_client()
 
     def align_images_3d(
-        self, current_param, label, data_path, registration_params, dict_shifts_path
+        self,
+        current_param,
+        label,
+        data_path,
+        registration_params: RegistrationParams,
+        dict_shifts_path,
+        roi_name,
+        z_binning,
     ):
-        if (
-            label == "fiducial"
-            and current_param.param_dict["alignImages"]["localAlignment"] == "block3D"
-        ):
+        if label == "fiducial" and registration_params.localAlignment == "block3D":
             print_log(f"> Making 3D image registrations label: {label}")
-            _drift_3d = Drift3D(current_param, parallel=self.parallel)
-            _drift_3d.align_fiducials_3d(
-                data_path, registration_params, dict_shifts_path
+            _drift_3d = Drift3D(
+                current_param, registration_params, parallel=self.parallel
             )
+            local_shifts_path = _drift_3d.align_fiducials_3d(
+                data_path, registration_params, dict_shifts_path, roi_name, z_binning
+            )
+            self.m_data_m.local_shifts_path = local_shifts_path
 
-    def apply_registrations(self, current_param, label, data_path, registration_params):
-        if (
-            label != "fiducial"
-            and current_param.param_dict["acquisition"]["label"] != "fiducial"
-        ):
+    def apply_registrations(
+        self,
+        current_param,
+        label,
+        data_path,
+        registration_params,
+        roi_name,
+        projection_params,
+    ):
+        if label != "fiducial":
             print_log(f"> Applying image registrations for label: {label}")
             self.manage_parallel_option(
                 apply_registrations_to_current_folder,
                 data_path,
                 current_param,
                 registration_params,
+                roi_name,
+                projection_params,
             )
 
     def segment_masks(
@@ -285,13 +312,9 @@ class Pipeline:
         else:
             operation = [""]
 
-        if (
-            label != "RNA"
-            and current_param.param_dict["acquisition"]["label"] != "RNA"
-            and "2D" in operation
-        ):
+        if label != "RNA" and "2D" in operation:
             self.manage_parallel_option(
-                segment_masks, current_param, data_path, params, align_folder
+                segment_masks, current_param, data_path, params, align_folder, label
             )
 
     def segment_masks_3d(
@@ -302,6 +325,8 @@ class Pipeline:
         data_path,
         segmentation_params,
         dict_shifts_path,
+        acq_params: AcquisitionParams,
+        reg_params: RegistrationParams,
     ):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
@@ -309,9 +334,17 @@ class Pipeline:
             print_log(f"Making 3D image segmentations for label: {label}")
             print_log(f">>>>>>Label in functionCaller:{label}")
 
-            _segment_sources_3d = Mask3D(current_param, parallel=self.parallel)
+            _segment_sources_3d = Mask3D(
+                current_param,
+                parallel=self.parallel,
+            )
             _segment_sources_3d.segment_masks_3d(
-                roi_name, data_path, dict_shifts_path, segmentation_params
+                roi_name,
+                data_path,
+                dict_shifts_path,
+                segmentation_params,
+                acq_params,
+                reg_params.referenceFiducial,
             )
 
     def segment_sources_3d(
@@ -322,6 +355,9 @@ class Pipeline:
         data_path,
         segmentation_params,
         dict_shifts_path,
+        acq_params: AcquisitionParams,
+        proj_params: ProjectionParams,
+        reg_params: RegistrationParams,
     ):
         if (
             label == "barcode"
@@ -331,7 +367,13 @@ class Pipeline:
             print_log(f">>>>>>Label in functionCaller:{label}")
 
             _segment_sources_3d = Localize3D(
-                current_param, roi_name, parallel=self.parallel
+                current_param,
+                roi_name,
+                acq_params,
+                proj_params,
+                reg_params,
+                segmentation_params,
+                parallel=self.parallel,
             )
             _segment_sources_3d.segment_sources_3d(
                 data_path, dict_shifts_path, segmentation_params
@@ -388,7 +430,7 @@ class Pipeline:
             merged_results = feat.merge_results(remove_none_from_list(results_to_keep))
             out_filename = getattr(feat.params, "outputFile", "")
             npy_files = self.m_data_m.save_data(
-                merged_results, feat.params.folder, out_filename
+                merged_results, feat.out_folder, out_filename
             )
             self.m_data_m.npy_files += files_to_keep + npy_files
 
@@ -413,9 +455,7 @@ def run_pattern(feat, f2p, reference_file, m_data_m):
     results_to_save, results_to_keep = feat.run(data, reference)
     # TODO: Include different type of inputs like reference image for registration or data table like ECSV
     # results = feat.run(data, reference, table)
-    files_to_keep = m_data_m.save_data(
-        results_to_save, feat.params.folder, f2p.basename
-    )
+    files_to_keep = m_data_m.save_data(results_to_save, feat.out_folder, f2p.basename)
     if results_to_keep is not None:
         results_to_keep["tif_name"] = f2p.tif_name
         results_to_keep["cycle"] = f2p.cycle
@@ -435,7 +475,14 @@ def remove_none_from_list(list_with_none: list):
 # =============================================================================
 
 
-def filter_localizations(current_param, label, data_path, segmentation_params):
+def filter_localizations(
+    current_param,
+    label,
+    data_path,
+    segmentation_params,
+    reg_params: RegistrationParams,
+    matrix_params: MatrixParams,
+):
     """Filters barcode localization table
 
     Parameters
@@ -447,11 +494,19 @@ def filter_localizations(current_param, label, data_path, segmentation_params):
     """
     if label == "barcode":
         filter_localizations_instance = FilterLocalizations(current_param)
-        filter_localizations_instance.filter_folder(data_path, segmentation_params)
+        filter_localizations_instance.filter_folder(
+            data_path, segmentation_params, reg_params, matrix_params
+        )
 
 
 def register_localizations(
-    current_param, label, data_path, local_shifts_path, segmentation_params
+    current_param,
+    label,
+    data_path,
+    local_shifts_path,
+    segmentation_params,
+    reg_params: RegistrationParams,
+    matrix_params: MatrixParams,
 ):
     """Registers barcode localization table
 
@@ -463,13 +518,22 @@ def register_localizations(
         Only 'barcode' are accepted
     """
     if label == "barcode":
-        register_localizations_instance = RegisterLocalizations(current_param)
+        register_localizations_instance = RegisterLocalizations(
+            current_param, matrix_params
+        )
         register_localizations_instance.register(
-            data_path, local_shifts_path, segmentation_params
+            data_path, local_shifts_path, segmentation_params, reg_params
         )
 
 
-def build_traces(current_param, label, data_path, segmentation_params, matrix_params):
+def build_traces(
+    current_param,
+    label,
+    data_path,
+    segmentation_params,
+    matrix_params: MatrixParams,
+    acq_params: AcquisitionParams,
+):
     """Build traces
 
     Parameters
@@ -480,11 +544,15 @@ def build_traces(current_param, label, data_path, segmentation_params, matrix_pa
         Only 'barcode' are accepted
     """
     if label == "barcode":
-        build_traces_instance = BuildTraces(current_param)
-        build_traces_instance.run(data_path, segmentation_params, matrix_params)
+        build_traces_instance = BuildTraces(current_param, acq_params)
+        build_traces_instance.run(
+            data_path, segmentation_params, matrix_params, acq_params
+        )
 
 
-def build_matrix(current_param, label, data_path, matrix_params):
+def build_matrix(
+    current_param, label, data_path, matrix_params, acq_params: AcquisitionParams
+):
     """Build matrices
 
     Parameters
@@ -495,7 +563,7 @@ def build_matrix(current_param, label, data_path, matrix_params):
         Only 'barcode' are accepted
     """
     if label == "barcode":
-        build_matrix_instance = BuildMatrix(current_param)
+        build_matrix_instance = BuildMatrix(current_param, acq_params)
         build_matrix_instance.run(data_path, matrix_params)
 
 

@@ -44,8 +44,10 @@ from skimage.measure import regionprops
 
 from core.dask_cluster import try_get_client
 from core.parameters import (
+    AcquisitionParams,
+    ProjectionParams,
+    RegistrationParams,
     SegmentationParams,
-    get_dictionary_value,
     load_alignment_dict,
     print_dict,
 )
@@ -65,7 +67,16 @@ from imageProcessing.segmentMasks import (
 
 
 class Localize3D:
-    def __init__(self, param, roi_name: str, parallel=False):
+    def __init__(
+        self,
+        param,
+        roi_name: str,
+        acq_params: AcquisitionParams,
+        proj_params: ProjectionParams,
+        reg_params: RegistrationParams,
+        seg_params: SegmentationParams,
+        parallel=False,
+    ):
         self.current_param = param
         self.parallel = parallel
 
@@ -79,105 +90,42 @@ class Localize3D:
         self.output_filename = None
 
         # parameters from parameters.json
-        self.p["referenceBarcode"] = self.current_param.param_dict["alignImages"][
-            "referenceFiducial"
-        ]
-        self.p["brightest"] = self.current_param.param_dict["segmentedObjects"][
-            "brightest"
-        ]
-        self.p["blockSizeXY"] = self.current_param.param_dict["zProject"]["blockSize"]
-        self.p["regExp"] = self.current_param.param_dict["acquisition"][
-            "fileNameRegExp"
-        ]
-        self.p["zBinning"] = get_dictionary_value(
-            self.current_param.param_dict["acquisition"], "zBinning", default=1
-        )
+        self.p["referenceBarcode"] = reg_params.referenceFiducial
+        self.p["brightest"] = seg_params.brightest
+        self.p["blockSizeXY"] = proj_params.block_size
+        self.p["regExp"] = acq_params.fileNameRegExp
+        self.p["zBinning"] = acq_params.zBinning
 
-        self.p["zWindow"] = int(
-            self.current_param.param_dict["zProject"]["zwindows"] / self.p["zBinning"]
-        )
-        self.p["pixelSizeXY"] = self.current_param.param_dict["acquisition"][
-            "pixelSizeXY"
-        ]
-        self.p["pixelSizeZ"] = self.current_param.param_dict["acquisition"][
-            "pixelSizeZ"
-        ]
+        self.p["zWindow"] = int(proj_params.zwindows / self.p["zBinning"])
+        self.p["pixelSizeXY"] = acq_params.pixelSizeXY
+        self.p["pixelSizeZ"] = acq_params.pixelSizeZ
 
         # decides what segmentation method to use
-        self.p["3Dmethod"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3Dmethod",
-            default="thresholding",
-        )
-        self.p["reducePlanes"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "reducePlanes",
-            default=True,
-        )
+        self.p["3Dmethod"] = seg_params._3Dmethod
+        self.p["reducePlanes"] = seg_params.reducePlanes
 
         # parameters used for 3D segmentation and deblending
-        self.p["threshold_over_std"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_threshold_over_std",
-            default=1,
-        )
-        self.p["sigma"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_sigma", default=3
-        )
-        box_size = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_boxSize", default=32
-        )
+        self.p["threshold_over_std"] = seg_params._3D_threshold_over_std
+        self.p["sigma"] = seg_params._3D_sigma
+        box_size = seg_params._3D_boxSize
         self.p["boxSize"] = (box_size, box_size)
-        self.p["area_min"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_area_min", default=3
-        )
-        self.p["area_max"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_area_max",
-            default=1000,
-        )
-        self.p["nlevels"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_nlevels", default=64
-        )
-        self.p["contrast"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_contrast",
-            default=0.001,
-        )
+        self.p["area_min"] = seg_params._3D_area_min
+        self.p["area_max"] = seg_params._3D_area_max
+        self.p["nlevels"] = seg_params._3D_nlevels
+        self.p["contrast"] = seg_params._3D_contrast
 
         # parameters for stardist
-        self.p["stardist_basename"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "stardist_basename",
-            default="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
-        )
-        self.p["stardist_network"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "stardist_network3D",
-            default="stardist_18032021_single_loci",
-        )
-
+        self.p["stardist_basename"] = seg_params.stardist_basename
+        self.p["stardist_network"] = seg_params.stardist_network3D
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000 * self.p["pixelSizeZ"] * self.p["zBinning"])
         self.p["voxel_size_yx"] = float(1000 * self.p["pixelSizeXY"])
-        self.p["psf_z"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_psf_z", default=500
-        )
-        self.p["psf_yx"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"], "3D_psf_yx", default=200
-        )
+        self.p["psf_z"] = seg_params._3D_psf_z
+        self.p["psf_yx"] = seg_params._3D_psf_yx
 
         # range used for adjusting image levels during pre-precessing
-        self.p["lower_threshold"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_lower_threshold",
-            default=0.9,
-        )
-        self.p["higher_threshold"] = get_dictionary_value(
-            self.current_param.param_dict["segmentedObjects"],
-            "3D_higher_threshold",
-            default=0.9999,
-        )
+        self.p["lower_threshold"] = seg_params._3D_lower_threshold
+        self.p["higher_threshold"] = seg_params._3D_higher_threshold
 
         # parameters used for plotting 3D image
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
@@ -418,7 +366,7 @@ class Localize3D:
             output_filenames = [
                 data_path
                 + os.sep
-                + seg_params.folder
+                + seg_params.localize_3d_folder
                 + os.sep
                 + os.path.basename(filename_to_process)
                 + x[1]
@@ -563,7 +511,7 @@ class Localize3D:
         self.output_filename = (
             data_path
             + os.sep
-            + params.folder
+            + params.localize_3d_folder
             + os.sep
             + "data"
             + os.sep

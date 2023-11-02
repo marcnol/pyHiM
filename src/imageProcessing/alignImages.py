@@ -22,11 +22,9 @@ import os
 import sys
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
-from dask.distributed import get_client
 from numpy import linalg as LA
 from photutils import Background2D, MedianBackground
 from scipy.ndimage import shift as shift_image
@@ -47,11 +45,10 @@ from core.data_file import (
     JsonFile,
     NpyFile,
     RefDiffFile,
-    save_json,
 )
 from core.data_manager import load_json
-from core.parameters import RegistrationParams, rt_to_filename
-from core.pyhim_logging import print_log, write_string_to_file
+from core.parameters import ProjectionParams, RegistrationParams
+from core.pyhim_logging import print_log
 from imageProcessing.imageProcessing import (
     Image,
     image_adjust,
@@ -77,7 +74,7 @@ class RegisterGlobal(Feature):
             "label_part": params.referenceFiducial,
             "label": "fiducial",
         }
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.register_global_folder
         self.name = "RegisterGlobal"
 
     def run(self, raw_2d_img, reference_2d_img):
@@ -177,7 +174,7 @@ class ApplyRegisterGlobal(Feature):
         # self.required_data = ["barcode", "mask", "DAPI", "RNA"]
         # self.required_ref = params.referenceFiducial
         # self.required_table = ["shift"]
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.register_global_folder
         self.name = "ApplyRegisterGlobal"
 
     # def run(self, raw_2d_img, dict_shifts:dict, raw_label:str="RT42", roi_name:str = "001"):
@@ -412,10 +409,11 @@ def calcul_error(shifted_img, ref_img):
 
 def apply_registrations_to_filename(
     filename_to_process,
-    current_param,
     dict_shifts,
     data_path,
     params: RegistrationParams,
+    roi_name,
+    projection_params: ProjectionParams,
 ):
     """
     Applies registration of filename_to_process
@@ -424,7 +422,6 @@ def apply_registrations_to_filename(
     ----------
     filename_to_process : string
         file to apply registration to
-    current_param : Parameters class
     dict_shifts : Dictionnary
         contains the shifts to be applied to all rois
 
@@ -434,50 +431,59 @@ def apply_registrations_to_filename(
 
     """
     # gets shift from dictionary
-    roi = current_param.decode_file_parts(os.path.basename(filename_to_process))["roi"]
 
     label = os.path.basename(filename_to_process).split("_")[2]  # to FIX
 
     try:
-        shift_array = dict_shifts[f"ROI:{roi}"][label]
+        shift_array = dict_shifts[f"ROI:{roi_name}"][label]
     except KeyError:
         shift_array = None
         print_log(
-            f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi}, label: {label}"
+            f"$ Could not find dictionary with alignment parameters for this ROI: ROI:{roi_name}, label: {label}"
         )
 
     if shift_array is not None:
         shift = np.asarray(shift_array)
         # loads 2D image and applies registration
         im_obj = Image()
-        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
+        im_obj.load_image_2d(
+            filename_to_process, data_path + os.sep + projection_params.folder
+        )
         im_obj.data_2d = shift_image(im_obj.data_2d, shift)
-        print_log(f"$ Image registered using ROI:{roi}, label:{label}, shift={shift}")
+        print_log(
+            f"$ Image registered using ROI:{roi_name}, label:{label}, shift={shift}"
+        )
 
         # saves registered 2D image
         im_obj.save_image_2d(
-            data_path + os.sep + params.folder,
+            data_path + os.sep + params.register_global_folder,
             tag="_2d_registered",
         )
 
-    elif label == current_param.param_dict["alignImages"]["referenceFiducial"]:
+    elif label == params.referenceFiducial:
         im_obj = Image()
-        im_obj.load_image_2d(filename_to_process, data_path + os.sep + "zProject")
+        im_obj.load_image_2d(
+            filename_to_process, data_path + os.sep + projection_params.folder
+        )
         im_obj.save_image_2d(
-            data_path + os.sep + params.folder,
+            data_path + os.sep + params.register_global_folder,
             tag="_2d_registered",
         )
-        print_log(f"$ Saving image for referenceRT ROI:{roi}, label:{label}")
+        print_log(f"$ Saving image for referenceRT ROI:{roi_name}, label:{label}")
 
     else:
         print_log(
-            f"# No shift found in dictionary for ROI:{roi}, label:{label}",
+            f"# No shift found in dictionary for ROI:{roi_name}, label:{label}",
             status="WARN",
         )
 
 
 def apply_registrations_to_current_folder(
-    data_path, current_param, params: RegistrationParams
+    data_path,
+    current_param,
+    params: RegistrationParams,
+    roi_name,
+    projection_params: ProjectionParams,
 ):
     """
     This function will
@@ -501,7 +507,7 @@ def apply_registrations_to_current_folder(
     dict_filename = (
         data_path
         + os.sep
-        + params.folder
+        + params.register_global_folder
         + os.sep
         + "data"
         + os.sep
@@ -511,6 +517,7 @@ def apply_registrations_to_current_folder(
     dict_shifts = load_json(dict_filename)
     if len(dict_shifts) == 0:
         print_log(f"# File with dictionary not found!: {dict_filename}")
+        raise ValueError(f"# File with dictionary not found!: {dict_filename}")
     else:
         print_log(f"$ Dictionary File loaded: {dict_filename}")
 
@@ -525,10 +532,11 @@ def apply_registrations_to_current_folder(
             print_log(f"\n$ About to process file {i} \\ {n_files}")
             apply_registrations_to_filename(
                 filename_to_process,
-                current_param,
                 dict_shifts,
                 data_path,
                 params,
+                roi_name,
+                projection_params,
             )
 
 

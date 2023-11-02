@@ -9,5 +9,5 @@ from imageProcessing.makeProjections import Feature
 class Mask2D(Feature):
     def __init__(self, params: SegmentationParams):
         super().__init__(params)
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.mask_2d_folder
         self.name = "Mask2D"

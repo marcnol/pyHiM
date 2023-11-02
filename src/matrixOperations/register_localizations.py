@@ -23,7 +23,7 @@ import numpy as np
 from astropy.table import Table
 from tqdm import trange
 
-from core.parameters import MatrixParams
+from core.parameters import MatrixParams, RegistrationParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from imageProcessing.localization_table import LocalizationTable, decode_rois
 from imageProcessing.makeProjections import Feature
@@ -38,7 +38,7 @@ class RegisterLocalizationsTempo(Feature):
 
 
 class RegisterLocalizations:
-    def __init__(self, param):
+    def __init__(self, param, matrix_params: MatrixParams):
         """
         Parameters
         ----------
@@ -54,42 +54,26 @@ class RegisterLocalizations:
         self.dict_error_block_masks = None
         self.ndims = None
 
-        if "toleranceDrift" in self.current_param.param_dict["buildsPWDmatrix"]:
-            self.tolerance_drift = self.current_param.param_dict["buildsPWDmatrix"][
-                "toleranceDrift"
-            ]
-            if isinstance(self.tolerance_drift, int):
-                # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
-                self.tolerance_drift = (
-                    self.tolerance_drift,
-                    self.tolerance_drift,
-                    self.tolerance_drift,
-                )
-            elif len(self.tolerance_drift) != 3:
-                self.tolerance_drift = (
-                    3,
-                    1,
-                    1,
-                )  # defines default anisotropic tolerance_drift (z,x,y)
-            elif isinstance(self.tolerance_drift, list):
-                self.tolerance_drift = tuple(self.tolerance_drift)
-        else:
+        self.tolerance_drift = matrix_params.toleranceDrift
+        if isinstance(self.tolerance_drift, int):
+            # defines a tuple suitable for anisotropic tolerance_drift (z,x,y)
+            self.tolerance_drift = (
+                self.tolerance_drift,
+                self.tolerance_drift,
+                self.tolerance_drift,
+            )
+        elif len(self.tolerance_drift) != 3:
             self.tolerance_drift = (
                 3,
                 1,
                 1,
             )  # defines default anisotropic tolerance_drift (z,x,y)
-            print_log(f"# toleranceDrift not found. Set to {self.tolerance_drift}!")
+        elif isinstance(self.tolerance_drift, list):
+            self.tolerance_drift = tuple(self.tolerance_drift)
 
-        if (
-            "remove_uncorrected_localizations"
-            in self.current_param.param_dict["buildsPWDmatrix"]
-        ):
-            self.remove_uncorrected_localizations = self.current_param.param_dict[
-                "buildsPWDmatrix"
-            ]["remove_uncorrected_localizations"]
-        else:
-            self.remove_uncorrected_localizations = True
+        self.remove_uncorrected_localizations = (
+            matrix_params.remove_uncorrected_localizations
+        )
 
         if self.remove_uncorrected_localizations:
             print_log("# Uncorrected localizations will be removed!!")
@@ -171,7 +155,7 @@ class RegisterLocalizations:
 
         return zxy_corrected, quality_correction
 
-    def register_barcodes(self, barcode_map):
+    def register_barcodes(self, barcode_map, reg_params: RegistrationParams):
         """
         This function will take a barcode_map and a Table of 3D alignments to register barcode coordinates
 
@@ -181,16 +165,8 @@ class RegisterLocalizations:
 
         """
 
-        reference_fiducial = self.current_param.param_dict["alignImages"][
-            "referenceFiducial"
-        ]
-
-        if "blockSize" in self.current_param.param_dict["alignImages"]:
-            block_size = self.current_param.param_dict["alignImages"]["blockSize"]
-        else:
-            block_size = 256
-            print_log(f"# blockSize not found. Set to {block_size}!")
-
+        reference_fiducial = reg_params.referenceFiducial
+        block_size = reg_params.blockSize
         print_log(
             f"\n$ Parameters:\n Blocksize = {block_size}\n Tolerance = {self.tolerance_drift}\n Reference barcode = {reference_fiducial}"
         )
@@ -214,10 +190,7 @@ class RegisterLocalizations:
             zxy_uncorrected = [z_uncorrected, x_uncorrected, y_uncorrected]
             rt_barcode = f"RT{str(barcode)}"
 
-            if (
-                rt_barcode
-                != self.current_param.param_dict["alignImages"]["referenceFiducial"]
-            ):
+            if rt_barcode != reg_params.referenceFiducial:
                 zxy_corrected, quality_correction = self.search_local_shift(
                     roi, barcode, zxy_uncorrected
                 )
@@ -260,14 +233,14 @@ class RegisterLocalizations:
 
         return barcode_map
 
-    def load_local_alignment(self, data_path, local_shifts_path):
-        if self.current_param.param_dict["alignImages"]["localAlignment"] != "None":
-            return self._load_local_alignment(data_path, local_shifts_path)
+    def load_local_alignment(self, local_shifts_path, reg_params: RegistrationParams):
+        if reg_params.localAlignment != "None":
+            return self._load_local_alignment(local_shifts_path, reg_params)
         print_log("\n\n$ localAlignment option set to `None`")
         return False, Table()
 
-    def _load_local_alignment(self, data_path, local_shifts_path):
-        mode = self.current_param.param_dict["alignImages"]["localAlignment"]
+    def _load_local_alignment(self, local_shifts_path, reg_params: RegistrationParams):
+        mode = reg_params.localAlignment
         self.local_alignment_filename = local_shifts_path
 
         if os.path.exists(self.local_alignment_filename):
@@ -286,7 +259,7 @@ class RegisterLocalizations:
             print_log(
                 f"\n\n# Warning: could not find localAlignment: {self.local_alignment_filename}"
             )
-            print_log(f"\tProceeding with only global alignments...")
+            print_log("\tProceeding with only global alignments...")
 
             self.alignment_results_table_read = False
             self.alignment_results_table = Table()
@@ -352,7 +325,7 @@ class RegisterLocalizations:
         self.dict_error_block_masks = dict_error_block_masks
         return True
 
-    def register_barcode_map_file(self, file):
+    def register_barcode_map_file(self, file, reg_params: RegistrationParams):
         self.ndims = 3 if "3D" in os.path.basename(file) else 2
         # loads barcode coordinate Tables
         table = LocalizationTable()
@@ -390,7 +363,7 @@ class RegisterLocalizations:
             print_log(f"\nProcessing barcode localization Table for ROI: {n_roi}")
 
             # registers localizations
-            barcode_map = self.register_barcodes(barcode_map)
+            barcode_map = self.register_barcodes(barcode_map, reg_params)
 
         # saves and plots registered barcode coordinate Tables
         table.save(file, barcode_map, comments="registered")
@@ -407,7 +380,9 @@ class RegisterLocalizations:
             [file.split(".")[0], "_registered", "_barcode_comparisons", ".png"],
         )
 
-    def register(self, data_path, local_shifts_path, seg_params):
+    def register(
+        self, data_path, local_shifts_path, seg_params, reg_params: RegistrationParams
+    ):
         """
         Function that registers barcodes using a local drift correction table produced by *register_local*
 
@@ -428,11 +403,11 @@ class RegisterLocalizations:
         )
         label = "barcode"
 
-        current_folder = self.current_param.param_dict["rootFolder"]
+        current_folder = data_path
         print_log(f"> Processing Folder: {current_folder}")
 
         # Loads localAlignment if it exists otherwise it exits with error
-        self.load_local_alignment(data_path, local_shifts_path)
+        self.load_local_alignment(local_shifts_path, reg_params)
 
         if not self.alignment_results_table_read:
             print_log(
@@ -442,22 +417,32 @@ class RegisterLocalizations:
                 f"ERROR: Expected to find: {self.local_alignment_filename}--> Aborting."
             )
 
-        data_file_base = (
+        data_file_base_2d = (
             data_path
             + os.sep
-            + seg_params.folder
+            + seg_params.localize_2d_folder
             + os.sep
             + "data"
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base + "_*" + label + ".dat"))
+        data_file_base_3d = (
+            data_path
+            + os.sep
+            + seg_params.localize_3d_folder
+            + os.sep
+            + "data"
+            + os.sep
+            + seg_params.outputFile
+        )
+        files = list(glob.glob(data_file_base_2d + "_*" + label + ".dat"))
+        files += list(glob.glob(data_file_base_3d + "_*" + label + ".dat"))
 
         if not files:
             print_log("No localization table found to process!")
             return
 
         for file in files:
-            self.register_barcode_map_file(file)
+            self.register_barcode_map_file(file, reg_params)
 
         print_log(f" {len(files)} barcode tables processed in {current_folder}")

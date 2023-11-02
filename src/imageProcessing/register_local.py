@@ -9,5 +9,5 @@ from imageProcessing.makeProjections import Feature
 class RegisterLocal(Feature):
     def __init__(self, params: RegistrationParams):
         super().__init__(params)
-        self.out_folder = self.params.folder
+        self.out_folder = self.params.register_local_folder
         self.name = "RegisterLocal"
