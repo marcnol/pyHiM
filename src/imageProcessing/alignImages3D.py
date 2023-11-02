@@ -280,16 +280,18 @@ class Drift3D:
             + os.sep
             + params.outputFile
         )
-        data_file_path = path_name + "_block3D.dat"
+        local_shifts_path = path_name + "_block3D.dat"
 
         alignment_results_table_global.write(
-            data_file_path,
+            local_shifts_path,
             format="ascii.ecsv",
             overwrite=True,
         )
 
         print_log(f"$ register_local procesing time: {datetime.now() - now}")
-        print_log(f"$ register_local output Table saved in: {data_file_path}")
+        print_log(f"$ register_local output Table saved in: {local_shifts_path}")
+
+        return local_shifts_path
 
     def align_fiducials_3d(
         self,
@@ -315,13 +317,13 @@ class Drift3D:
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
 
-        self.align_fiducials_3d_in_folder(
+        local_shifts_path = self.align_fiducials_3d_in_folder(
             data_path, dict_shifts_path, params, roi_name, z_binning
         )
 
         print_log(f"HiM matrix in {data_path} processed")
 
-        return 0
+        return local_shifts_path
 
 
 # =============================================================================

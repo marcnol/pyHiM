@@ -279,9 +279,10 @@ class Pipeline:
             _drift_3d = Drift3D(
                 current_param, registration_params, parallel=self.parallel
             )
-            _drift_3d.align_fiducials_3d(
+            local_shifts_path = _drift_3d.align_fiducials_3d(
                 data_path, registration_params, dict_shifts_path, roi_name, z_binning
             )
+            self.m_data_m.local_shifts_path = local_shifts_path
 
     def apply_registrations(
         self,

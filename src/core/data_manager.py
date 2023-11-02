@@ -496,6 +496,7 @@ class DataManager:
                 )
             elif data_file.extension == "json":
                 self.dict_shifts_path = data_file.path_name
+            # TODO: Add a self.local_shifts_path setter when register_local will be refactored
         return files_to_keep
 
     def __find_file_with_this_part(self, label_part, label, file_list):
