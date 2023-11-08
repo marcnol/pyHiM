@@ -119,7 +119,7 @@ def filter_trace(trace, label, action):
     if "all" not in action:  # otherwise it keeps all rows
         # finds rows to remove
         for index, trace_row in enumerate(trace.data):
-            labels = trace_row["label"]
+            labels = list(trace_row["label"].split(","))
             if ("unlabeled" in action) and (label in labels):
                 # removes labeled
                 rows_to_remove.append(index)
