@@ -153,7 +153,7 @@ def Wilcoxon_matrix(m1,m2,uniqueBarcodes,):
         return result
 
 def plot_Wilcoxon_matrix(m1,m2,uniqueBarcodes,
-                            normalize='none', 
+                            normalize=1, 
                             ratio=True, 
                             c_scale=0.6,
                             axisLabel=True,
@@ -167,6 +167,11 @@ def plot_Wilcoxon_matrix(m1,m2,uniqueBarcodes,
 
     cmtitle = "log10(p-value)"
     fig_title = "Wilcoxon's rank sum test"
+    print(f"$ normalization factor: {normalize}")
+    
+    m2 = m2 / normalize
+
+    print(f"$ max_m1 = {np.nanmax(m1)} \t max_m2 = {np.nanmax(m2)}")
         
     result = Wilcoxon_matrix(m1,m2,uniqueBarcodes,)
 
@@ -201,8 +206,8 @@ def normalize_matrix(m1, m2, mode='none'):
     print("$ Normalization: {}".format(mode))
 
     if "maximum" in mode:  # normalizes by maximum
-        m1_norm = np.nanmax(m1)
-        m2_norm = np.nanmax(m2)
+        m1_norm = 1.0 #np.nanmax(m1)
+        m2_norm = np.nanmax(m2)/np.nanmax(m1)
     elif len(mode.split(",")) > 1:  # normalizes by bin
         N = mode.split(",")
         m1_norm = 1
@@ -220,7 +225,7 @@ def normalize_matrix(m1, m2, mode='none'):
     m1 = m1 / m1_norm
     m2 = m2 / m2_norm
 
-    return m1, m2
+    return m1, m2, m2_norm
 
 def plot_2d_matrix_simple(
     ifigure,
@@ -320,8 +325,9 @@ def plot_matrix_difference(m1,
 
     _m1, _m2 = m1.copy(), m2.copy()
 
-    _m1, _m2 = normalize_matrix(_m1, _m2, mode)
+    _m1, _m2, _ = normalize_matrix(_m1, _m2, mode)
 
+    print(f"$ max_m1 = {np.nanmax(_m1)} \t max_m2 = {np.nanmax(_m2)}")
     if ratio == True:
         matrix = np.log2(_m1 / _m2)
         cmtitle = "log(ratio)"
@@ -334,7 +340,7 @@ def plot_matrix_difference(m1,
         print(f'$ calculating difference')
 
       
-    print("Clim used: {}\n".format(c_scale))
+    print("$ Clim used: {}\n".format(c_scale))
 
     f1_ax1_im = plot_2d_matrix_simple(
         f_1,
@@ -381,7 +387,10 @@ def plot_mixed_matrix(m1,m2,uniqueBarcodes,
         mode = "none"
     else:
         mode = normalize
-    # _m1, _m2 = normalize_matrix(_m1, _m2, mode)
+    
+    _m1, _m2, _ = normalize_matrix(_m1, _m2, mode)
+    print(f"$ max_m1 = {np.nanmax(_m1)} \t max_m2 = {np.nanmax(_m2)}")
+
     matrix2 = _m1
 
     fig_title = 'mixed matrix'

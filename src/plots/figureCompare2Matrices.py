@@ -31,6 +31,7 @@ from plotting_functions import (
     plot_matrix_difference, 
     plot_mixed_matrix,
     plot_Wilcoxon_matrix,
+    normalize_matrix,
     )
 
 
@@ -313,10 +314,18 @@ def main():
 
 
         if "proximity" not in run_parameters["dist_calc_mode"]:
+
+            if "none" in run_parameters["normalize"]:  # sets default operation
+                mode = "none"
+            else:
+                mode = run_parameters["normalize"]
+            
+            m1, m2, m2_norm = normalize_matrix(m1, m2, mode)
+            
             plot_Wilcoxon_matrix(m1_sc,
                                     m2_sc,
                                     uniqueBarcodes,
-                                    normalize=run_parameters["normalize"],
+                                    normalize=m2_norm,
                                     axisLabel = run_parameters["axisLabel"],
                                     fontsize=run_parameters["fontsize"],
                                     axis_ticks=run_parameters["axisTicks"],
