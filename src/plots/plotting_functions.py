@@ -200,7 +200,9 @@ def plot_Wilcoxon_matrix(m1,m2,uniqueBarcodes,
         n_datasets=2,
     )
     plt.savefig(outputFileName+"_Wilcoxon"+plottingFileExtension)
-    print("Output figure: {}".format(outputFileName))
+    print("$ Output figure: {}".format(outputFileName+"_Wilcoxon"+plottingFileExtension))
+    np.save(outputFileName+"_Wilcoxon"+'.npy',result)
+    print("$ Output data: {}".format(outputFileName+"_Wilcoxon"+'.npy'))
 
 def normalize_matrix(m1, m2, mode='none'):
     print("$ Normalization: {}".format(mode))
