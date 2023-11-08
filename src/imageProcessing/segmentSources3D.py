@@ -115,7 +115,15 @@ class Localize3D:
         self.p["contrast"] = seg_params._3D_contrast
 
         # parameters for stardist
-        self.p["stardist_basename"] = seg_params.stardist_basename
+
+        if os.path.exists(seg_params.stardist_basename):
+            base_dir = seg_params.stardist_basename
+        else:
+            base_dir = (
+                os.path.dirname(os.path.realpath(__file__))
+                + "/../../ressources/stardist_models"
+            )
+        self.p["stardist_basename"] = base_dir
         self.p["stardist_network"] = seg_params.stardist_network3D
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000 * self.p["pixelSizeZ"] * self.p["zBinning"])

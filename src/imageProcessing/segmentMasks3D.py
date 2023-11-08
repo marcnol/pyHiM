@@ -60,12 +60,19 @@ class Mask3D:
         # ).rstrip("/")
 
     def _segment_3d_volumes(self, image_3d_aligned, seg_params: SegmentationParams):
+        if os.path.exists(seg_params.stardist_basename):
+            base_dir = seg_params.stardist_basename
+        else:
+            base_dir = (
+                os.path.dirname(os.path.realpath(__file__))
+                + "/../../ressources/stardist_models"
+            )
         binary, segmented_image_3d = _segment_3d_masks(
             image_3d_aligned,
             axis_norm=(0, 1, 2),
             pmin=1,
             pmax=99.8,
-            model_dir=seg_params.stardist_basename,
+            model_dir=base_dir,
             model_name=seg_params.stardist_network3D,
         )
 

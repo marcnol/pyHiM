@@ -32,7 +32,8 @@ shutil.copytree("pyhim-small-dataset/resources/stardist_models", tmp_stardist_ba
 def template_test_localize_2d(mode: str):
     """Check Localize2D feature with all possibilities"""
     inputs = os.path.join(tmp_localize_2d_in, mode)
-    main(["-F", inputs, "-C", "localize_2d", "-S", tmp_stardist_basename])
+    # main(["-F", inputs, "-C", "localize_2d", "-S", tmp_stardist_basename])
+    main(["-F", inputs, "-C", "localize_2d"])
     generated_align_images = os.path.join(inputs, "segmentedObjects")
     reference_outputs = f"pyhim-small-dataset/localize_2d/OUT/{mode}/segmentedObjects/"
     generated_files = extract_files(generated_align_images)
