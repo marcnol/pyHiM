@@ -66,14 +66,12 @@ class DataManager:
         self,
         data_path: str,
         md_file: str = "",
-        stardist_basename: str = "",
         param_file: str = None,
     ):
         print_session_name("DataManager initialisation")
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
         self.md_log_file = md_file
-        self.m_stardist_basename = stardist_basename
         self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
         self.param_file_path = self.find_param_file(param_file)
@@ -100,7 +98,6 @@ class DataManager:
         self.align_folder = ""  # tempo refactoring attribute
 
         self.raw_dict = self.load_user_param_with_structure()
-        self.set_stardist_basename()
         print_section("acquisition")
         # pylint: disable=no-member
         self.acquisition_params = AcquisitionParams.from_dict(
@@ -109,32 +106,6 @@ class DataManager:
         self.labelled_params = {}
 
         self.set_up()
-
-    def set_stardist_basename(self):
-        if self.m_stardist_basename:
-            stardict = {
-                "common": {
-                    "segmentedObjects": {"stardist_basename": self.m_stardist_basename}
-                },
-                "labels": {
-                    "barcode": {
-                        "segmentedObjects": {
-                            "stardist_basename": self.m_stardist_basename
-                        }
-                    },
-                    "DAPI": {
-                        "segmentedObjects": {
-                            "stardist_basename": self.m_stardist_basename
-                        }
-                    },
-                    "mask": {
-                        "segmentedObjects": {
-                            "stardist_basename": self.m_stardist_basename
-                        }
-                    },
-                },
-            }
-            self.raw_dict = deep_dict_update(self.raw_dict, stardict)
 
     @staticmethod
     def __set_data_path(data_path):

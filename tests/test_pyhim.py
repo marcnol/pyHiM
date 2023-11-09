@@ -102,7 +102,7 @@ def test_segment_masks_3d():
 # TODO: Find a way to test this module
 # def test_segment_sources_3d():
 #     """Check localize_3d"""
-#     main(["-F", tmp_small_inputs, "-C", "localize_3d", "-S", tmp_stardist_basename])
+#     main(["-F", tmp_small_inputs, "-C", "localize_3d"])
 #     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
 #     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
 #     out_files = extract_files(out_segmented_objects)

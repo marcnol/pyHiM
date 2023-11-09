@@ -32,7 +32,6 @@ shutil.copytree("pyhim-small-dataset/resources/stardist_models", tmp_stardist_ba
 def template_test_localize_3d(mode: str):
     """Check Localize3D feature with all possibilities"""
     inputs = os.path.join(tmp_localize_3d_in, mode)
-    # main(["-F", inputs, "-C", "localize_3d", "-S", tmp_stardist_basename])
     main(["-F", inputs, "-C", "localize_3d"])
     generated_align_images = os.path.join(inputs, "segmentedObjects")
     reference_outputs = f"pyhim-small-dataset/localize_3d/OUT/{mode}/segmentedObjects/"
