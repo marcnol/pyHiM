@@ -51,13 +51,7 @@ def _parse_run_args(command_line_arguments):
         help="Thread number to run with parallel mode. \
             If none or 1, then it will run with sequential mode.",
     )
-    parser.add_argument(
-        "-S",
-        "--stardist_basename",
-        type=str,
-        default=None,
-        help="Replace all stardist_basename from parameters.json",
-    )
+
     parser.add_argument(
         "-P",
         "--parameters",
@@ -80,7 +74,6 @@ class RunArgs:
         self.cmd_list = self.parse_cmd(parsed_args.cmd)
         self.thread_nbr = parsed_args.threads
         self.parallel = self.thread_nbr > 1
-        self.stardist_basename = parsed_args.stardist_basename
         self.params_path = parsed_args.parameters
         self._check_consistency()
 
@@ -111,9 +104,6 @@ class RunArgs:
         if not isinstance(self.thread_nbr, int) or self.thread_nbr < 1:
             raise SystemExit(f"Number of threads ({self.thread_nbr}): INVALID.")
 
-        if self.stardist_basename and not os.path.isdir(self.stardist_basename):
-            raise SystemExit(f"Stardist basename ({self.stardist_basename}) NOT FOUND.")
-
         if self.params_path is not None and not os.path.isfile(self.params_path):
             raise SystemExit(f"Input parameters file ({self.data_path}) NOT FOUND.")
 
@@ -134,7 +124,6 @@ class RunArgs:
         to_print += tab_spacer("rootFolder", str(self.data_path))
         if self.params_path:
             to_print += tab_spacer("parameters", str(self.params_path))
-        to_print += tab_spacer("stardist_basename", str(self.stardist_basename))
         to_print += tab_spacer("threads", str(self.thread_nbr))
         to_print += tab_spacer("parallel", str(self.parallel))
         to_print += tab_spacer("cmd", str(self.cmd_list))

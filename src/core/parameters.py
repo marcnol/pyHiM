@@ -41,35 +41,17 @@ class Parameters:
     Old way, used before pyHiM restructuration.
     """
 
-    def __init__(
-        self,
-        raw_dict,
-        root_folder="./",
-        label="",
-        stardist_basename=None,
-    ):
+    def __init__(self, raw_dict, root_folder="./", label=""):
         self.files_to_process = []
         self.param_dict = self.complete_with_default(raw_dict)
         if label:
             self.param_dict = self.get_labelled_params(label)
-        self.set_stardist_basename(stardist_basename)
         self.param_dict["rootFolder"] = root_folder
         self.file_parts = {}
 
     def complete_with_default(self, raw_dict):
         default = self.get_standard_parameters()
         return deep_dict_update(default, raw_dict)
-
-    def set_stardist_basename(self, stardist_basename: str):
-        if stardist_basename is not None:
-            if self.param_dict.get("common", False):
-                self.param_dict["common"]["segmentedObjects"][
-                    "stardist_basename"
-                ] = stardist_basename
-            else:
-                self.param_dict["segmentedObjects"][
-                    "stardist_basename"
-                ] = stardist_basename
 
     def get_sectioned_params(self, section_name: str):
         tempo = self.param_dict["common"].get(section_name)

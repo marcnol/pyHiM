@@ -27,7 +27,7 @@ tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 
 def test_make_projections():
     """Check 'project'"""
-    main(["-F", tmp_small_inputs, "-C", "project", "-S", tmp_stardist_basename])
+    main(["-F", tmp_small_inputs, "-C", "project"])
     tmp_z_project = os.path.join(tmp_small_inputs, "zProject/data")
     out_z_project = (
         "pyhim-small-dataset/resources/small_dataset/OUT/makeProjections/data"
@@ -43,7 +43,7 @@ def test_make_projections():
 
 def test_register_global():
     """Check register_global"""
-    main(["-F", tmp_small_inputs, "-C", "register_global", "-S", tmp_stardist_basename])
+    main(["-F", tmp_small_inputs, "-C", "register_global"])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
@@ -69,7 +69,7 @@ def test_register_global():
 
 def test_align_images_3d():
     """Check register_local"""
-    main(["-F", tmp_small_inputs, "-C", "register_local", "-S", tmp_stardist_basename])
+    main(["-F", tmp_small_inputs, "-C", "register_local"])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages3D/data"
@@ -85,7 +85,7 @@ def test_align_images_3d():
 
 def test_segment_masks_3d():
     """Check mask_3d"""
-    main(["-F", tmp_small_inputs, "-C", "mask_3d", "-S", tmp_stardist_basename])
+    main(["-F", tmp_small_inputs, "-C", "mask_3d"])
     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects/data")
     out_segmented_objects = (
         "pyhim-small-dataset/resources/small_dataset/OUT/segmentMasks3D/data"
@@ -102,7 +102,7 @@ def test_segment_masks_3d():
 # TODO: Find a way to test this module
 # def test_segment_sources_3d():
 #     """Check localize_3d"""
-#     main(["-F", tmp_small_inputs, "-C", "localize_3d", "-S", tmp_stardist_basename])
+#     main(["-F", tmp_small_inputs, "-C", "localize_3d"])
 #     tmp_segmented_objects = os.path.join(tmp_small_inputs, "segmentedObjects")
 #     out_segmented_objects = "pyhim-small-dataset/resources/small_dataset/OUT/segmentSources3D/"
 #     out_files = extract_files(out_segmented_objects)

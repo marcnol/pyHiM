@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.9"
+__version__ = "0.8.10"
 
 import os
 import sys
@@ -44,7 +44,6 @@ def main(command_line_arguments=None):
     datam = DataManager(
         run_args.data_path,
         logger.md_filename,
-        stardist_basename=run_args.stardist_basename,
         param_file=run_args.params_path,
     )
 
@@ -77,12 +76,7 @@ def main(command_line_arguments=None):
     print_log(f"$ Labels to process: {labels}")
     for label in labels:
         # sets parameters with old way (temporary during pyHiM restructuration)
-        current_param = Parameters(
-            raw_dict,
-            root_folder=datam.m_data_path,
-            label=label,
-            stardist_basename=datam.m_stardist_basename,
-        )
+        current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
         print_analyzing_label(f"Analyzing label: {label}")
 
@@ -167,12 +161,7 @@ def main(command_line_arguments=None):
 
     for label in labels:
         # sets parameters with old way (temporary during pyHiM restructuration)
-        current_param = Parameters(
-            raw_dict,
-            root_folder=datam.m_data_path,
-            label=label,
-            stardist_basename=datam.m_stardist_basename,
-        )
+        current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
         print_analyzing_label(f"Analyzing label: {label}")
 
