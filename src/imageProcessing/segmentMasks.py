@@ -1087,8 +1087,8 @@ def _segment_3d_masks(
     axis_norm=(0, 1, 2),
     pmin=1,
     pmax=99.8,
-    model_dir="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-    model_name="stardist_20210625_deconvolved",
+    model_dir=None,
+    model_name=None,
 ):
     """
     Parameters
@@ -1097,10 +1097,10 @@ def _segment_3d_masks(
         3D raw image to be segmented
 
     model_dir : List of strings, optional
-        paths of all models directory, the default is ["/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"]
+        paths of all models directory, the default is None
 
     model_name : List of strings, optional
-        names of all models, the default is ['stardist_20210625_deconvolved']
+        names of all models, the default is None
 
     """
 

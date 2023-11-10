@@ -28,12 +28,11 @@ nano $HOME/.bashrc
 4. Add the following line to the end
 
 ```sh
-export PATH="$PATH:$HOME/Repositories/pyHiM/src"
-export PATH="$PATH:$HOME/Repositories/pyHiM/src/fileProcessing"
-export PATH="$PATH:$HOME/Repositories/pyHiM/src/postProcessing"
+export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src"
+export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src/toolbox/file_handling"
+export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src/postProcessing"
 
-export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src"
-
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/repo-marcnol/pyHiM/src"
 export MPLBACKEND=agg
 ```
 
@@ -62,17 +61,7 @@ conda update anaconda
 
 ## Automatically configure pyHiM
 
-Run the ```installation.sh``` script by typing in the command line:
-
-```sh
-bash installation.sh
-```
-
-If you encounter problems, follow the manual installation (below).
-
-## Semi-automatic configuration
-
-Run this command in your terminal within the root 
+Run this command in your terminal:
 
 ```sh
 conda env create -f environment.yml
@@ -84,55 +73,6 @@ If you get this error:
 
 You solve by running `pip install dask[complete] distributed --upgrade`.
 ```
-
-## Manual configuration
-
-To manually install the necessary packages using conda, run:
-
-```sh
-conda create --name pyHiM python=3.7.2 dask numpy matplotlib astropy scikit-learn pandas
-conda activate pyHiM
-conda install photutils -c astropy
-pip install mrc roipoly opencv-python tqdm stardist csbdeep pympler
-pip install --upgrade tensorflow
-```
-
-Remember to activate the environment before running *pyHiM*:
-
-```sh
-conda activate pyHiM
-```
-
-## Upgrade scikit-image to development version
-
-Depending on whether you already had a version of scikit-image installed, you may need to upgrade it. For this, uninstall any existing installations:
-
-```
-pip uninstall scikit-image
-```
-
-or, on conda-based systems:
-
-```
-conda uninstall scikit-image
-```
-
-Now, clone scikit-image on your local computer, and install:
-
-```
-git clone https://github.com/scikit-image/scikit-image.git
-cd scikit-image
-pip install -e .
-```
-
-To update the installation:
-
-```
-git pull  # Grab latest source
-pip install -e .  # Reinstall
-```
-
-You should be set!
 
 ## Install apifish module
 
@@ -176,6 +116,48 @@ Update `PYTHONPATH` env variable, for fileProcessing scripts documentation, by a
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
 ```
 
+## Test pyHiM
+
+- The tests use the `pytest` module.
+- The test resources are inside `pyhim-small-dataset`. It's a sub-module of pyHiM, so to get the dataset you need to run:
+  * `git submodule update --init --recursive`
+  OR
+  * `git clone --recurse-submodules <HTTPS/SSH>`
+
+- To run the tests:
+  * ```bash
+  cd ~Repositories/pyHiM/
+  conda activate pyhiM39
+  pytest tests/ -vv
+  ```
+
+## Additional installation to generate documentation
+
+```sh
+conda install sphinx
+conda install -c conda-forge myst-parser
+conda install -c conda-forge sphinxcontrib-mermaid
+conda install -c conda-forge sphinx-panels
+conda install -c conda-forge sphinx_rtd_theme
+```
+Update `PYTHONPATH` env variable, for fileProcessing scripts documentation, by adding the following line to your local ~/.bashrc
+
+```sh
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
+```
+
+## Build documentation locally
+Install in your conda env:
+```bash
+pip install nbsphinx ipython sphinx-book-theme
+conda install pandoc
+```
+Generate documentation:
+```bash
+cd docs/
+make html
+```
+A `build/html/` folder has been created with a `index.html` file inside, open it with your favorite browser.
 
 ## Script installation for super-computer centers (e.g. Meso-LR)
 
@@ -211,68 +193,3 @@ git checkout development
 ln -s $HOME/Repositories/pyHiM/src/toolbox/file_handling/cleanHiM_run.py $HOME/bin/cleanHiM
 
 ```
-
-## Test run
-
-There are two ways to do a test run in this version of *pyHiM*
-
-### pytest
-
-The first is to use the **pytest** module. For this, you need to first configure the location of the test datasets by
-
-```sh
-cd tests/standardTests
-python create_testDataJSON.py -F location_of_test_dataset
-```
-
-For instance if your debug dataset is in ```/mnt/grey/DATA/users/marcnol/test_HiM/testDataset``` then running
-
-```sh
-python create_testDataJSON.py -F /mnt/grey/DATA/users/marcnol/test_HiM/testDataset
-```
-
-Now go to the *pyHiM* root directory (e.g. ```cd /home/marcnol/Repositories/pyHiM```) and run
-
-```
-pytest
-```
-
-
-
-### Test the installation
-
-If you want to go for a test run, do the following:
-
-- Download a test dataset from: [test dataset](https://zenodo.org/record/6351755)
-
-- Open a terminal and cd into the folder with this dataset, for instance:
-
-  ```sh
-  cd /mnt/grey/DATA/users/marcnol/test_HiM/testDataset
-  ```
-
-- Copy a model `parameters.json` file into the data folder.
-- Run `pyHiM` by executing the following command:
-
-```bash
-pyHiM.py -F .
-```
-
-If you want to run it in your data directory, then copy the configuration files to the directory where you want to run *pyHiM*
-
-```bash
-cp /home/Repositories/pyHiM/src/toolbox/parameter_file/parameters*json path-to-your-directory
-```
-
-## Build documentation locally
-Install in your conda env:
-```bash
-pip install nbsphinx ipython sphinx-book-theme
-conda install pandoc
-```
-Generate documentation:
-```bash
-cd docs/
-make html
-```
-A `build/html/` folder has been created with a `index.html` file inside, open it with your favorite browser.

@@ -49,16 +49,6 @@ class Mask3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
 
-        # parameters from parameters.json
-
-        # parameters used for 3D segmentation and deblending
-        # parameters for stardist
-        # self.p["stardist_basename"] = get_dictionary_value(
-        #     self.current_param.param_dict["segmentedObjects"],
-        #     "stardist_basename",
-        #     default="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-        # ).rstrip("/")
-
     def _segment_3d_volumes(self, image_3d_aligned, seg_params: SegmentationParams):
         if seg_params.stardist_basename is not None and os.path.exists(
             seg_params.stardist_basename
