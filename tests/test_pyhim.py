@@ -21,7 +21,6 @@ tmp_dir = tempfile.TemporaryDirectory()
 tmp_resources = os.path.join(tmp_dir.name, "resources")
 shutil.copytree("pyhim-small-dataset/resources", tmp_resources)
 tmp_small_inputs = os.path.join(tmp_resources, "small_dataset/IN")
-tmp_stardist_basename = os.path.join(tmp_resources, "stardist_models")
 tmp_traces_inputs = os.path.join(tmp_resources, "traces_dataset/IN")
 
 

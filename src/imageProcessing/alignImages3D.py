@@ -41,7 +41,6 @@ from datetime import datetime
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.table import Table, vstack
-from pympler import tracker
 from skimage import io
 from skimage.registration import phase_cross_correlation
 
@@ -189,7 +188,6 @@ class Drift3D:
         """
         now = datetime.now()
         print_dict(self.p)
-        tra = tracker.SummaryTracker()
 
         # gets files to process
         files_folder = glob.glob(data_path + os.sep + "*.tif")
@@ -217,7 +215,6 @@ class Drift3D:
             if (x != self.filenames_with_ref_barcode)
         ]
         number_files = len(self.filenames_to_process_list)
-        tra.print_diff()
 
         if client is None:
             self.inner_parallel_loop = True
@@ -236,8 +233,6 @@ class Drift3D:
                         z_binning,
                     )
                 )
-
-                tra.print_diff()
 
         else:
             self.inner_parallel_loop = False
@@ -518,12 +513,10 @@ def _align_fiducials_3d_file(
             ]
             alignment_results_table.add_row(table_entry)
 
-    print_log(f"Erasing {len(dir()) - 1} variables\n")
+    # Erasing variables, TODO: check if it's necessary
     for var in dir():
         if var != "alignment_results_table":
             del var
-
-    print_log(f"Variables still alive: {dir()}")
 
     return alignment_results_table
 

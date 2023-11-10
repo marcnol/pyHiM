@@ -144,17 +144,15 @@ class RunArgs:
         List[str]
             A Python list of commands
         """
-        default_commands = cls.get_3d_commands()
         if cmd:
             if cmd == "2D":
-                cmd_list = cls.get_2d_commands()
+                return cls.get_2d_commands()
             elif cmd == "3D":
-                cmd_list = cls.get_3d_commands()
+                return cls.get_3d_commands()
             else:
-                cmd_list = cmd.split(",")
-        else:
-            cmd_list = default_commands
-        return cmd_list
+                return cmd.split(",")
+        # else by default give every commands:
+        return cls.get_available_commands()
 
     @staticmethod
     def get_available_commands():

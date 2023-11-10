@@ -175,13 +175,17 @@ class FilterLocalizations:
                     # plots and saves original barcode coordinate Tables for safe keeping
                     new_file = get_file_table_new_name(file)
                     table.save(new_file, barcode_map)
+                    # remove ext + split path
+                    filepath_split = new_file.split(".")[0].split(os.sep)
+                    filepath_split.remove("data")
+                    filepath_without_data_folder = (os.sep).join(filepath_split)
                     table.plot_distribution_fluxes(
                         barcode_map,
-                        [new_file.split(".")[0], "_barcode_stats", ".png"],
+                        [filepath_without_data_folder, "_stats", ".png"],
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                        [filepath_without_data_folder, "", ".png"],
                     )
 
                     # processes tables
@@ -194,12 +198,17 @@ class FilterLocalizations:
 
                     # saves and plots filtered barcode coordinate Tables
                     table.save(file, barcode_map, comments="filtered")
+                    filepath_split = file.split(".")[0].split(
+                        os.sep
+                    )  # remove ext + split path
+                    filepath_split.remove("data")
+                    filepath_without_data_folder = (os.sep).join(filepath_split)
                     table.plot_distribution_fluxes(
-                        barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
+                        barcode_map, [filepath_without_data_folder, "_stats", ".png"]
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [file.split(".")[0], "_barcode_localizations", ".png"],
+                        [filepath_without_data_folder, "", ".png"],
                     )
 
                 else:
@@ -218,8 +227,8 @@ def get_file_table_new_name(file):
         new_version = 0
     else:
         version_numbers = [
-            int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
+            int(x.split("_version_")[1].split(".")[0]) for x in existing_versions
         ]
 
         new_version = max(version_numbers) + 1 if version_numbers else 0
-    return file.split(".dat")[0] + "_version_" + str(new_version) + "_.dat"
+    return file.split(".dat")[0] + "_version_" + str(new_version) + ".dat"

@@ -49,31 +49,29 @@ class Mask3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
 
-        # parameters from parameters.json
-
-        # parameters used for 3D segmentation and deblending
-        # parameters for stardist
-        # self.p["stardist_basename"] = get_dictionary_value(
-        #     self.current_param.param_dict["segmentedObjects"],
-        #     "stardist_basename",
-        #     default="/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-        # ).rstrip("/")
-
     def _segment_3d_volumes(self, image_3d_aligned, seg_params: SegmentationParams):
-        if os.path.exists(seg_params.stardist_basename):
+        if seg_params.stardist_basename is not None and os.path.exists(
+            seg_params.stardist_basename
+        ):
             base_dir = seg_params.stardist_basename
         else:
             base_dir = (
                 os.path.dirname(os.path.realpath(__file__))
                 + "/../../ressources/stardist_models"
             )
+        if seg_params.stardist_network3D is not None and os.path.exists(
+            os.path.join(base_dir, seg_params.stardist_network3D)
+        ):
+            model_name = seg_params.stardist_network3D
+        else:
+            model_name = "DAPI_3D_stardist_17032021_deconvolved"
         binary, segmented_image_3d = _segment_3d_masks(
             image_3d_aligned,
             axis_norm=(0, 1, 2),
             pmin=1,
             pmax=99.8,
             model_dir=base_dir,
-            model_name=seg_params.stardist_network3D,
+            model_name=model_name,
         )
 
         return binary, segmented_image_3d

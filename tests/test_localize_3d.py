@@ -25,9 +25,6 @@ tmp_localize_3d_in = os.path.join(tmp_dir.name, "localize_3d")
 # Copy the modes & IN/OUT structure for localize_3d inside the "localize_3d" temp dir
 shutil.copytree("pyhim-small-dataset/localize_3d/IN", tmp_localize_3d_in)
 
-tmp_stardist_basename = os.path.join(tmp_dir.name, "stardist_models")
-shutil.copytree("pyhim-small-dataset/resources/stardist_models", tmp_stardist_basename)
-
 
 def template_test_localize_3d(mode: str):
     """Check Localize3D feature with all possibilities"""
