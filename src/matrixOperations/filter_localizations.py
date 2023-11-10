@@ -175,12 +175,10 @@ class FilterLocalizations:
                     # plots and saves original barcode coordinate Tables for safe keeping
                     new_file = get_file_table_new_name(file)
                     table.save(new_file, barcode_map)
-                    filepath_split = new_file.split(".")[0].split(
-                        os.sep
-                    )  # remove ext + split path
-                    filepath_without_data_folder = (os.sep).join(
-                        filepath_split.remove("data")
-                    )
+                    # remove ext + split path
+                    filepath_split = new_file.split(".")[0].split(os.sep)
+                    filepath_split.remove("data")
+                    filepath_without_data_folder = (os.sep).join(filepath_split)
                     table.plot_distribution_fluxes(
                         barcode_map,
                         [filepath_without_data_folder, "_stats", ".png"],
@@ -203,9 +201,8 @@ class FilterLocalizations:
                     filepath_split = file.split(".")[0].split(
                         os.sep
                     )  # remove ext + split path
-                    filepath_without_data_folder = (os.sep).join(
-                        filepath_split.remove("data")
-                    )
+                    filepath_split.remove("data")
+                    filepath_without_data_folder = (os.sep).join(filepath_split)
                     table.plot_distribution_fluxes(
                         barcode_map, [filepath_without_data_folder, "_stats", ".png"]
                     )
