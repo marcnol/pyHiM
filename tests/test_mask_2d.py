@@ -25,9 +25,6 @@ tmp_mask_2d_in = os.path.join(tmp_dir.name, "mask_2d")
 # Copy the modes & IN/OUT structure for mask_2d inside the "mask_2d" temp dir
 shutil.copytree("pyhim-small-dataset/mask_2d/IN", tmp_mask_2d_in)
 
-tmp_stardist_basename = os.path.join(tmp_dir.name, "stardist_models")
-shutil.copytree("pyhim-small-dataset/resources/stardist_models", tmp_stardist_basename)
-
 
 def template_test_mask_2d(mode: str):
     """Check Mask2D feature with all possibilities"""

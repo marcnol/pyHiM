@@ -566,18 +566,22 @@ def segment_mask_stardist(im, seg_params: SegmentationParams):
         print_log(
             f'> Normalizing image channels {"jointly" if axis_norm is None or 2 in axis_norm else "independently"}.'
         )
-    if os.path.exists(seg_params.stardist_basename):
+    if seg_params.stardist_basename is not None and os.path.exists(
+        seg_params.stardist_basename
+    ):
         base_dir = seg_params.stardist_basename
     else:
         base_dir = (
             os.path.dirname(os.path.realpath(__file__))
             + "/../../ressources/stardist_models"
         )
-    model = StarDist2D(
-        None,
-        name=seg_params.stardist_network,
-        basedir=base_dir,
-    )
+    if seg_params.stardist_network is not None and os.path.exists(
+        os.path.join(base_dir, seg_params.stardist_network)
+    ):
+        model_name = seg_params.stardist_network
+    else:
+        model_name = "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2"
+    model = StarDist2D(None, name=model_name, basedir=base_dir)
 
     img = normalize(im, 1, 99.8, axis=axis_norm)
     labeled, _ = model.predict_instances(img)

@@ -233,14 +233,18 @@ class DataManager:
                 self.add_to_processable_labels(label)
                 self.tif_files.append(TifFile(path, name, ext, label, cycle))
             elif ext in self.ecsv_ext:
-                name_to_find = (
+                register_out_file = (
                     self.raw_dict.get("common", {})
                     .get("alignImages", {})
                     .get("outputFile")
-                    + "_"
-                    + self.raw_dict.get("common", {})
+                )
+                register_local_alignment = (
+                    self.raw_dict.get("common", {})
                     .get("alignImages", {})
                     .get("localAlignment")
+                )
+                name_to_find = (
+                    str(register_out_file) + "_" + str(register_local_alignment)
                 )
                 if ext == "dat" and name == name_to_find:
                     self.local_shifts_path = path
@@ -371,7 +375,6 @@ class DataManager:
         for label in self.get_processable_labels():
             print_title(f"Params: {label}")
             self.labelled_params[label] = Params(
-                label,
                 deep_dict_update(
                     self.raw_dict["common"], self.raw_dict["labels"][label]
                 ),

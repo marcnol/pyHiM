@@ -116,15 +116,23 @@ class Localize3D:
 
         # parameters for stardist
 
-        if os.path.exists(seg_params.stardist_basename):
+        if seg_params.stardist_basename is not None and os.path.exists(
+            seg_params.stardist_basename
+        ):
             base_dir = seg_params.stardist_basename
         else:
             base_dir = (
                 os.path.dirname(os.path.realpath(__file__))
                 + "/../../ressources/stardist_models"
             )
+        if seg_params.stardist_network3D is not None and os.path.exists(
+            os.path.join(base_dir, seg_params.stardist_network3D)
+        ):
+            model_name = seg_params.stardist_network3D
+        else:
+            model_name = "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
         self.p["stardist_basename"] = base_dir
-        self.p["stardist_network"] = seg_params.stardist_network3D
+        self.p["stardist_network"] = model_name
         # parameters used for 3D gaussian fitting
         self.p["voxel_size_z"] = float(1000 * self.p["pixelSizeZ"] * self.p["zBinning"])
         self.p["voxel_size_yx"] = float(1000 * self.p["pixelSizeXY"])

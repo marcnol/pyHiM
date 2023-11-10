@@ -72,7 +72,6 @@ class BuildMatrix:
 
         # initialize with default values
         self.current_folder = []
-        self.log_name_md = "trace_to_matrix.log"
 
     def initialize_parameters(self, acq_params: AcquisitionParams):
         # initializes parameters from current_param

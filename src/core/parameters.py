@@ -4,6 +4,7 @@
 Classes and functions for file management
 """
 
+import copy
 import json
 import os
 import re
@@ -303,11 +304,6 @@ class Parameters:
                     "operation": "2D,3D",  # options: 2D or 3D
                     "outputFile": "segmentedObjects",
                     "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
-                    "stardist_basename": "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks",
-                    # network for 2D barcode segmentation
-                    "stardist_network": "stardist_nc14_nrays:64_epochs:40_grid:2",
-                    # network for 3D barcode segmentation
-                    "stardist_network3D": "stardist_nc14_nrays:64_epochs:40_grid:2",
                     "tesselation": True,  # tesselates masks
                     "background_sigma": 3.0,  # used to remove inhom background
                     "threshold_over_std": 1.0,  # threshold used to detect sources
@@ -359,10 +355,11 @@ class Parameters:
 
 
 def warn_default(key, val):
-    print_log(
-        f"""! key NOT FOUND inside parameters.json: "{key}"\n\t\t  Default value used: {val}""",
-        status="WARN",
-    )
+    if val != "None":
+        print_log(
+            f"""! key NOT FOUND inside parameters.json: "{key}"\n\t\t  Default value used: {val}""",
+            status="WARN",
+        )
     return val
 
 
@@ -373,6 +370,7 @@ def warn_pop(dico: dict, key: str, default):
 
 
 def set_default(key: str, val):
+    # pylint: disable=invalid-field-call
     return field(default_factory=lambda: warn_default(key, val))
 
 
@@ -382,13 +380,13 @@ class AcquisitionParams:
     """acquisition section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
-    DAPI_channel: str = set_default("DAPI_channel", "ch00")
-    RNA_channel: str = set_default("RNA_channel", "ch02")
-    barcode_channel: str = set_default("barcode_channel", "ch01")
-    mask_channel: str = set_default("mask_channel", "ch01")
-    fiducialBarcode_channel: str = set_default("fiducialBarcode_channel", "ch00")
-    fiducialMask_channel: str = set_default("fiducialMask_channel", "ch00")
-    fiducialDAPI_channel: str = set_default("fiducialDAPI_channel", "ch01")
+    DAPI_channel: str = set_default("DAPI_channel", "None")
+    RNA_channel: str = set_default("RNA_channel", "None")
+    barcode_channel: str = set_default("barcode_channel", "None")
+    mask_channel: str = set_default("mask_channel", "None")
+    fiducialBarcode_channel: str = set_default("fiducialBarcode_channel", "None")
+    fiducialMask_channel: str = set_default("fiducialMask_channel", "None")
+    fiducialDAPI_channel: str = set_default("fiducialDAPI_channel", "None")
     fileNameRegExp: str = set_default(
         "fileNameRegExp",
         "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
@@ -455,10 +453,12 @@ class RegistrationParams:
     higher_threshold: float = set_default("higher_threshold", 0.9999999)
     # lower threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
-    _3D_lower_threshold: float = set_default("_3D_lower_threshold", None)
+    _3D_lower_threshold: Union[float, str] = set_default("_3D_lower_threshold", "None")
     # higher threshold to adjust image intensity levels
     # before xcorrelation for Alignment3D
-    _3D_higher_threshold: float = set_default("_3D_higher_threshold", None)
+    _3D_higher_threshold: Union[float, str] = set_default(
+        "_3D_higher_threshold", "None"
+    )
     background_sigma: float = set_default(
         "background_sigma", 3.0
     )  # used to remove inhom background
@@ -470,12 +470,12 @@ class RegistrationParams:
     def __post_init__(self):
         self._3D_lower_threshold = (
             warn_pop(self.unknown_params, "3D_lower_threshold", 0.9)
-            if self._3D_lower_threshold is None
+            if self._3D_lower_threshold == "None"
             else self._3D_lower_threshold
         )
         self._3D_higher_threshold = (
             warn_pop(self.unknown_params, "3D_higher_threshold", 0.9999)
-            if self._3D_higher_threshold is None
+            if self._3D_higher_threshold == "None"
             else self._3D_higher_threshold
         )
 
@@ -506,17 +506,11 @@ class SegmentationParams:
     background_method: str = set_default(
         "background_method", "inhomogeneous"
     )  # flat or inhomogeneous or stardist
-    stardist_basename: str = set_default(
-        "stardist_basename", "/mnt/grey/DATA/users/marcnol/pyHiM_AI_models/networks"
-    )
-    # network for 2D barcode segmentation
-    stardist_network: str = set_default(
-        "stardist_network", "stardist_nc14_nrays:64_epochs:40_grid:2"
-    )
-    # network for 3D barcode segmentation
-    stardist_network3D: str = set_default(
-        "stardist_network3D", "stardist_nc14_nrays:64_epochs:40_grid:2"
-    )
+    stardist_basename: str = set_default("stardist_basename", "None")
+    # network for 2D mask segmentation
+    stardist_network: str = set_default("stardist_network", "None")
+    # network for 3D mask or barcode segmentation
+    stardist_network3D: str = set_default("stardist_network3D", "None")
     tesselation: bool = set_default("tesselation", True)  # tesselates masks
     background_sigma: float = set_default(
         "background_sigma", 3.0
@@ -544,117 +538,121 @@ class SegmentationParams:
     # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
     centroidDifference_max: int = set_default("centroidDifference_max", 5)
     # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
-    _3Dmethod: str = set_default("_3Dmethod", None)
+    _3Dmethod: str = set_default("_3Dmethod", "None")
     # z-profile Fit: window size to extract subVolume, px.
     # 3 means subvolume will be 7x7.
-    _3DGaussianfitWindow: int = set_default("_3DGaussianfitWindow", None)
+    _3DGaussianfitWindow: Union[int, str] = set_default("_3DGaussianfitWindow", "None")
     # constructs a YZ image by summing from xPlane-window:xPlane+window
-    _3dAP_window: int = set_default("_3dAP_window", None)
-    _3dAP_flux_min: int = set_default(
-        "_3dAP_flux_min", None
+    _3dAP_window: Union[int, str] = set_default("_3dAP_window", "None")
+    _3dAP_flux_min: Union[int, str] = set_default(
+        "_3dAP_flux_min", "None"
     )  # # threshold to keep a source detected in YZ
-    _3dAP_brightest: int = set_default(
-        "_3dAP_brightest", None
+    _3dAP_brightest: Union[int, str] = set_default(
+        "_3dAP_brightest", "None"
     )  # number of sources sought in each YZ plane
     # px dist to attribute a source localized in YZ to one localized in XY
-    _3dAP_distTolerance: int = set_default("_3dAP_distTolerance", None)
-    _3D_threshold_over_std: int = set_default("_3D_threshold_over_std", None)
-    _3D_sigma: int = set_default("_3D_sigma", None)
-    _3D_boxSize: int = set_default("_3D_boxSize", None)
-    _3D_area_min: int = set_default("_3D_area_min", None)
-    _3D_area_max: int = set_default("_3D_area_max", None)
-    _3D_nlevels: int = set_default("_3D_nlevels", None)
-    _3D_contrast: float = set_default("_3D_contrast", None)
-    _3D_psf_z: int = set_default("_3D_psf_z", None)
-    _3D_psf_yx: int = set_default("_3D_psf_yx", None)
-    _3D_lower_threshold: float = set_default("_3D_lower_threshold", None)
-    _3D_higher_threshold: float = set_default("_3D_higher_threshold", None)
+    _3dAP_distTolerance: Union[int, str] = set_default("_3dAP_distTolerance", "None")
+    _3D_threshold_over_std: Union[int, str] = set_default(
+        "_3D_threshold_over_std", "None"
+    )
+    _3D_sigma: Union[int, str] = set_default("_3D_sigma", "None")
+    _3D_boxSize: Union[int, str] = set_default("_3D_boxSize", "None")
+    _3D_area_min: Union[int, str] = set_default("_3D_area_min", "None")
+    _3D_area_max: Union[int, str] = set_default("_3D_area_max", "None")
+    _3D_nlevels: Union[int, str] = set_default("_3D_nlevels", "None")
+    _3D_contrast: Union[float, str] = set_default("_3D_contrast", "None")
+    _3D_psf_z: Union[int, str] = set_default("_3D_psf_z", "None")
+    _3D_psf_yx: Union[int, str] = set_default("_3D_psf_yx", "None")
+    _3D_lower_threshold: Union[float, str] = set_default("_3D_lower_threshold", "None")
+    _3D_higher_threshold: Union[float, str] = set_default(
+        "_3D_higher_threshold", "None"
+    )
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
         self._3Dmethod = (
             warn_pop(self.unknown_params, "3Dmethod", "thresholding")
-            if self._3Dmethod is None
+            if self._3Dmethod == "None"
             else self._3Dmethod
         )
         self._3DGaussianfitWindow = (
             warn_pop(self.unknown_params, "3DGaussianfitWindow", 3)
-            if self._3DGaussianfitWindow is None
+            if self._3DGaussianfitWindow == "None"
             else self._3DGaussianfitWindow
         )
         self._3dAP_window = (
             warn_pop(self.unknown_params, "3dAP_window", 5)
-            if self._3dAP_window is None
+            if self._3dAP_window == "None"
             else self._3dAP_window
         )
         self._3dAP_flux_min = (
             warn_pop(self.unknown_params, "3dAP_flux_min", 2)
-            if self._3dAP_flux_min is None
+            if self._3dAP_flux_min == "None"
             else self._3dAP_flux_min
         )
         self._3dAP_brightest = (
             warn_pop(self.unknown_params, "3dAP_brightest", 100)
-            if self._3dAP_brightest is None
+            if self._3dAP_brightest == "None"
             else self._3dAP_brightest
         )
         self._3dAP_distTolerance = (
             warn_pop(self.unknown_params, "3dAP_distTolerance", 1)
-            if self._3dAP_distTolerance is None
+            if self._3dAP_distTolerance == "None"
             else self._3dAP_distTolerance
         )
         self._3D_threshold_over_std = (
             warn_pop(self.unknown_params, "3D_threshold_over_std", 5)
-            if self._3D_threshold_over_std is None
+            if self._3D_threshold_over_std == "None"
             else self._3D_threshold_over_std
         )
         self._3D_sigma = (
             warn_pop(self.unknown_params, "3D_sigma", 3)
-            if self._3D_sigma is None
+            if self._3D_sigma == "None"
             else self._3D_sigma
         )
         self._3D_boxSize = (
             warn_pop(self.unknown_params, "3D_boxSize", 32)
-            if self._3D_boxSize is None
+            if self._3D_boxSize == "None"
             else self._3D_boxSize
         )
         self._3D_area_min = (
             warn_pop(self.unknown_params, "3D_area_min", 10)
-            if self._3D_area_min is None
+            if self._3D_area_min == "None"
             else self._3D_area_min
         )
         self._3D_area_max = (
             warn_pop(self.unknown_params, "3D_area_max", 250)
-            if self._3D_area_max is None
+            if self._3D_area_max == "None"
             else self._3D_area_max
         )
         self._3D_nlevels = (
             warn_pop(self.unknown_params, "3D_nlevels", 64)
-            if self._3D_nlevels is None
+            if self._3D_nlevels == "None"
             else self._3D_nlevels
         )
         self._3D_contrast = (
             warn_pop(self.unknown_params, "3D_contrast", 0.001)
-            if self._3D_contrast is None
+            if self._3D_contrast == "None"
             else self._3D_contrast
         )
         self._3D_psf_z = (
             warn_pop(self.unknown_params, "3D_psf_z", 500)
-            if self._3D_psf_z is None
+            if self._3D_psf_z == "None"
             else self._3D_psf_z
         )
         self._3D_psf_yx = (
             warn_pop(self.unknown_params, "3D_psf_yx", 200)
-            if self._3D_psf_yx is None
+            if self._3D_psf_yx == "None"
             else self._3D_psf_yx
         )
         self._3D_lower_threshold = (
             warn_pop(self.unknown_params, "3D_lower_threshold", 0.99)
-            if self._3D_lower_threshold is None
+            if self._3D_lower_threshold == "None"
             else self._3D_lower_threshold
         )
         self._3D_higher_threshold = (
             warn_pop(self.unknown_params, "3D_higher_threshold", 0.9999)
-            if self._3D_higher_threshold is None
+            if self._3D_higher_threshold == "None"
             else self._3D_higher_threshold
         )
         if self.unknown_params:
@@ -696,8 +694,7 @@ class MatrixParams:
 
 
 class Params:
-    def __init__(self, label: str, labelled_dict: dict, sections: List[str]):
-        self.my_label = label
+    def __init__(self, labelled_dict: dict, sections: List[str]):
         self.acquisition = None
         self.projection = None
         self.registration = None
@@ -763,7 +760,7 @@ class Params:
             (self.matrix, "buildsPWDmatrix"),
         ]
         for attribute, key in attr_to_print:
-            if not attribute is None:
+            if not (attribute is None or attribute == "None"):
                 result[key] = asdict(attribute)
                 # remove "unknown_params" section
                 result[key].pop("unknown_params", None)
@@ -880,9 +877,10 @@ def deep_dict_update(main_dict: dict, new_dict: dict):
     dict
         The main_dict overwrite by new_dict value
     """
+    main_deep_copy = copy.deepcopy(main_dict)
     for key, value in new_dict.items():
         if isinstance(value, dict):
-            main_dict[key] = deep_dict_update(main_dict.get(key, {}), value)
+            main_deep_copy[key] = deep_dict_update(main_deep_copy.get(key, {}), value)
         else:
-            main_dict[key] = value
-    return main_dict
+            main_deep_copy[key] = value
+    return main_deep_copy
