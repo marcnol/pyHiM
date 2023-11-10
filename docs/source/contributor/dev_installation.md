@@ -125,11 +125,12 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src/fileProcessing"
   * `git clone --recurse-submodules <HTTPS/SSH>`
 
 - To run the tests:
-  * ```bash
-  cd ~Repositories/pyHiM/
-  conda activate pyhiM39
-  pytest tests/ -vv
-  ```
+
+```bash
+cd ~Repositories/pyHiM/
+conda activate pyhiM39
+pytest tests/ -vv
+```
 
 ## Additional installation to generate documentation
 
