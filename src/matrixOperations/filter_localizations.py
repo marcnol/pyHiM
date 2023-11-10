@@ -175,13 +175,19 @@ class FilterLocalizations:
                     # plots and saves original barcode coordinate Tables for safe keeping
                     new_file = get_file_table_new_name(file)
                     table.save(new_file, barcode_map)
+                    filepath_split = new_file.split(".")[0].split(
+                        os.sep
+                    )  # remove ext + split path
+                    filepath_without_data_folder = (os.sep).join(
+                        filepath_split.remove("data")
+                    )
                     table.plot_distribution_fluxes(
                         barcode_map,
-                        [new_file.split(".")[0], "_stats", ".png"],
+                        [filepath_without_data_folder, "_stats", ".png"],
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [new_file.split(".")[0], "", ".png"],
+                        [filepath_without_data_folder, "", ".png"],
                     )
 
                     # processes tables
@@ -194,12 +200,18 @@ class FilterLocalizations:
 
                     # saves and plots filtered barcode coordinate Tables
                     table.save(file, barcode_map, comments="filtered")
+                    filepath_split = file.split(".")[0].split(
+                        os.sep
+                    )  # remove ext + split path
+                    filepath_without_data_folder = (os.sep).join(
+                        filepath_split.remove("data")
+                    )
                     table.plot_distribution_fluxes(
-                        barcode_map, [file.split(".")[0], "_stats", ".png"]
+                        barcode_map, [filepath_without_data_folder, "_stats", ".png"]
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [file.split(".")[0], "", ".png"],
+                        [filepath_without_data_folder, "", ".png"],
                     )
 
                 else:
