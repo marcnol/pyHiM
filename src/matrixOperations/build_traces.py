@@ -478,9 +478,12 @@ class BuildTraces:
 
                     self.trace_table.save(output_table_filename, self.trace_table.data)
 
+                    filepath_split = output_table_filename.split(".")[0].split(os.sep)
+                    filepath_split.remove("data")
+                    filepath_without_data_folder = (os.sep).join(filepath_split)
                     # plots results
                     self.trace_table.plots_traces(
-                        [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
+                        [filepath_without_data_folder, "_traces_XYZ", ".png"],
                         masks=self.masks,
                     )
 
@@ -673,9 +676,12 @@ class BuildTraces:
                 )
                 self.trace_table.save(output_table_filename, self.trace_table.data)
 
+                filepath_split = output_table_filename.split(".")[0].split(os.sep)
+                filepath_split.remove("data")
+                filepath_without_data_folder = (os.sep).join(filepath_split)
                 # plots results
                 self.trace_table.plots_traces(
-                    [output_table_filename.split(".")[0], "_traces_XYZ", ".png"],
+                    [filepath_without_data_folder, "_traces_XYZ", ".png"],
                     masks=self.masks,
                 )
 

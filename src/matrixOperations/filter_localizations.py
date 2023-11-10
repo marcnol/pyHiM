@@ -231,4 +231,4 @@ def get_file_table_new_name(file):
         ]
 
         new_version = max(version_numbers) + 1 if version_numbers else 0
-    return file.split(".dat")[0] + "_version_" + str(new_version) + "_.dat"
+    return file.split(".dat")[0] + "_version_" + str(new_version) + ".dat"

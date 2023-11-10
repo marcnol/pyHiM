@@ -241,7 +241,12 @@ class BuildMatrix:
 
         """
         number_rois = 1  # by default we plot one ROI at a time.
-        output_filename = file.split(".")[0] + "_Matrix"
+
+        filepath_split = file.split(".")[0].split(os.sep)
+        filepath_split.remove("data")
+        filepath_without_data_folder = (os.sep).join(filepath_split)
+        output_filename = filepath_without_data_folder + "_Matrix"
+
         clim_scale = 1.0  # factor to multiply the clim by. If 1, the clim will be the mean of the PWD distribution of the whole map
         pixel_size = 1  # this is 1 as coordinates are in microns.
         n_cells = self.sc_matrix.shape[2]
