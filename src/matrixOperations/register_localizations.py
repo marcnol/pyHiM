@@ -368,16 +368,16 @@ class RegisterLocalizations:
         # saves and plots registered barcode coordinate Tables
         table.save(file, barcode_map, comments="registered")
         table.plot_distribution_fluxes(
-            barcode_map, [file.split(".")[0], "_registered", "_barcode_stats", ".png"]
+            barcode_map, [file.split(".")[0], "_registered", "_stats", ".png"]
         )
         table.plots_localizations(
             barcode_map,
-            [file.split(".")[0], "_registered", "_barcode_localizations", ".png"],
+            [file.split(".")[0], "_registered", "", ".png"],
         )
         table.compares_localizations(
             barcode_map,
             barcode_map_full_unregistered,
-            [file.split(".")[0], "_registered", "_barcode_comparisons", ".png"],
+            [file.split(".")[0], "_registered", "_comparisons", ".png"],
         )
 
     def register(

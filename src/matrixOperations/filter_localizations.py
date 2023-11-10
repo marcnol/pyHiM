@@ -177,11 +177,11 @@ class FilterLocalizations:
                     table.save(new_file, barcode_map)
                     table.plot_distribution_fluxes(
                         barcode_map,
-                        [new_file.split(".")[0], "_barcode_stats", ".png"],
+                        [new_file.split(".")[0], "_stats", ".png"],
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [new_file.split(".")[0], "_barcode_localizations", ".png"],
+                        [new_file.split(".")[0], "", ".png"],
                     )
 
                     # processes tables
@@ -195,11 +195,11 @@ class FilterLocalizations:
                     # saves and plots filtered barcode coordinate Tables
                     table.save(file, barcode_map, comments="filtered")
                     table.plot_distribution_fluxes(
-                        barcode_map, [file.split(".")[0], "_barcode_stats", ".png"]
+                        barcode_map, [file.split(".")[0], "_stats", ".png"]
                     )
                     table.plots_localizations(
                         barcode_map,
-                        [file.split(".")[0], "_barcode_localizations", ".png"],
+                        [file.split(".")[0], "", ".png"],
                     )
 
                 else:
