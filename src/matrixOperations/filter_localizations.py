@@ -227,7 +227,7 @@ def get_file_table_new_name(file):
         new_version = 0
     else:
         version_numbers = [
-            int(x.split("_version_")[1].split("_")[0]) for x in existing_versions
+            int(x.split("_version_")[1].split(".")[0]) for x in existing_versions
         ]
 
         new_version = max(version_numbers) + 1 if version_numbers else 0

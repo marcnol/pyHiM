@@ -78,14 +78,14 @@ class Pipeline:
                     status="WARN",
                 )
                 cmds.append("register_global")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "register_local",
                 "registerlocal",
                 "alignimages3d",
                 "alignimage3d",
             ]:
                 cmds.append("register_local")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "mask_2d",
                 "mask2d",
                 "masks_2d",
@@ -94,14 +94,14 @@ class Pipeline:
                 "segmentmask",
             ]:
                 cmds.append("mask_2d")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "localize_2d",
                 "localize2d",
                 "segmentmasks",
                 "segmentmask",
             ]:
                 cmds.append("localize_2d")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "mask_3d",
                 "mask3d",
                 "masks_3d",
@@ -110,35 +110,35 @@ class Pipeline:
                 "segmentmask3d",
             ]:
                 cmds.append("mask_3d")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "localize_3d",
                 "localize3d",
                 "segmentsource3d",
                 "segmentsources3d",
             ]:
                 cmds.append("localize_3d")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "filter_localizations",
                 "filter_localization",
                 "filterlocalizations",
                 "filterlocalization",
             ]:
                 cmds.append("filter_localizations")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "register_localizations",
                 "register_localization",
                 "registerlocalizations",
                 "registerlocalization",
             ]:
                 cmds.append("register_localizations")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "build_traces",
                 "build_trace",
                 "buildtrace",
                 "buildtraces",
             ]:
                 cmds.append("build_traces")
-            if cmd.lower() in [
+            elif cmd.lower() in [
                 "build_matrix",
                 "buildmatrix",
                 "build_matrices",
@@ -221,29 +221,43 @@ class Pipeline:
         self.features.append(labelled_feature)
 
     def init_features(self):
+        ordered_routines = []
         if "project" in self.cmds:
             self._init_labelled_feature(Project, "projection")
+            ordered_routines.append("project")
         if "register_global" in self.cmds:
             self._init_labelled_feature(RegisterGlobal, "registration")
             self._init_labelled_feature(ApplyRegisterGlobal, "registration")
+            ordered_routines.append("register_global")
         if "register_local" in self.cmds:
             self._init_labelled_feature(RegisterLocal, "registration")
+            ordered_routines.append("register_local")
         if "mask_2d" in self.cmds:
             self._init_labelled_feature(Mask2D, "segmentation")
+            ordered_routines.append("mask_2d")
         if "localize_2d" in self.cmds:
             self._init_labelled_feature(Localize2D, "segmentation")
+            ordered_routines.append("localize_2d")
         if "mask_3d" in self.cmds:
             self._init_labelled_feature(mask_3d.Mask3D, "segmentation")
+            ordered_routines.append("mask_3d")
         if "localize_3d" in self.cmds:
             self._init_labelled_feature(localize_3d.Localize3D, "segmentation")
+            ordered_routines.append("localize_3d")
         if "filter_localizations" in self.cmds:
             self._init_labelled_feature(FilterLocalizationsTempo, "matrix")
+            ordered_routines.append("filter_localizations")
         if "register_localizations" in self.cmds:
             self._init_labelled_feature(RegisterLocalizationsTempo, "matrix")
+            ordered_routines.append("register_localizations")
         if "build_traces" in self.cmds:
             self._init_labelled_feature(BuildTracesTempo, "matrix")
+            ordered_routines.append("build_traces")
         if "build_matrix" in self.cmds:
             self._init_labelled_feature(BuildMatrixTempo, "matrix")
+            ordered_routines.append("build_matrix")
+
+        print_log(f"$ Ordered list of routines to run:\n{ordered_routines}")
 
     def manage_parallel_option(self, feature, *args, **kwargs):
         if not self.parallel:
