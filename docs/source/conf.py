@@ -24,7 +24,6 @@ autodoc_mock_imports = [
     "scipy",
     "sklearn",
     "photutils",
-    "cv2",
     "stardist",
     "csbdeep",
     "numba",
