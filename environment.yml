@@ -217,7 +217,6 @@ dependencies:
       - mrc==0.2.0
       - numba==0.55.1
       - oauthlib==3.2.0
-      - opencv-python==4.5.5.62
       - opt-einsum==3.3.0
       - protobuf==3.19.4
       - pyasn1==0.4.8

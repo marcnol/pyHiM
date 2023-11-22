@@ -21,7 +21,6 @@ import glob
 import os
 import sys
 
-import cv2
 import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
@@ -245,39 +244,23 @@ def align_images_by_blocks(
     upsample_factor=100,
     min_number_pollsters=4,
     tolerance=0.1,
-    use_cv2=False,
     shift_error_tolerance=5,
 ):
     block_1 = view_as_blocks(img_1, block_size)
     block_2 = view_as_blocks(img_2, block_size)
-
-    if use_cv2:
-        warp_matrix = np.eye(2, 3, dtype=np.float32)
-        warp_mode = cv2.MOTION_TRANSLATION
-
     shift_image_norm = np.zeros((block_1.shape[0], block_1.shape[1]))
     shifted_image = np.zeros((block_1.shape[0], block_1.shape[1], 2))
     rms_image = np.zeros((block_1.shape[0], block_1.shape[1]))
 
     for i in trange(block_1.shape[0]):
         for j in range(block_1.shape[1]):
-            if not use_cv2:
-                # using Scimage registration functions
-                shift, _, _ = phase_cross_correlation(
-                    block_1[i, j], block_2[i, j], upsample_factor=upsample_factor
-                )
-                shift_image_norm[i, j] = LA.norm(shift)
-                shifted_image[i, j, 0], shifted_image[i, j, 1] = shift[0], shift[1]
-                img_2_aligned = shift_image(img_2, shift)
-            else:
-                # uses CV2 cause it is 20 times faster than Scimage
-                _, warp_matrix = align_cv2(block_1[i, j], block_2[i, j], warp_mode)
-                shift_image_norm[i, j] = LA.norm(warp_matrix[:, 2])
-                shifted_image[i, j, 0], shifted_image[i, j, 1] = (
-                    warp_matrix[:, 2][0],
-                    warp_matrix[:, 2][1],
-                )
-                img_2_aligned = apply_correction(img_2, warp_matrix)
+            # using Scimage registration functions
+            shift, _, _ = phase_cross_correlation(
+                block_1[i, j], block_2[i, j], upsample_factor=upsample_factor
+            )
+            shift_image_norm[i, j] = LA.norm(shift)
+            shifted_image[i, j, 0], shifted_image[i, j, 1] = shift[0], shift[1]
+            img_2_aligned = shift_image(img_2, shift)
 
             rms_image[i, j] = np.sum(np.sum(np.abs(img_1 - img_2_aligned), axis=1))
 
@@ -806,49 +789,4 @@ def align_2_images_cross_correlation(
         image2_corrected,
         image1_adjusted,
         image2_adjusted,
-    )
-
-
-def align_cv2(im1, im2, warp_mode):
-    # Define 2x3 or 3x3 matrices and initialize the matrix to identity
-    if warp_mode == cv2.MOTION_HOMOGRAPHY:
-        warp_matrix = np.eye(3, 3, dtype=np.float32)
-    else:
-        warp_matrix = np.eye(2, 3, dtype=np.float32)
-
-    # Specify the number of iterations.
-    number_of_iterations = 1000  # 5000
-
-    # Specify the threshold of the increment
-    # in the correlation coefficient between two iterations
-    termination_eps = 1e-10
-
-    # Define termination criteria
-    criteria = (
-        cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
-        number_of_iterations,
-        termination_eps,
-    )
-
-    # Run the ECC algorithm. The results are stored in warp_matrix.
-    try:
-        cc, warp_matrix = cv2.findTransformECC(
-            im1, im2, warp_matrix, warp_mode, criteria, inputMask=None, gaussFiltSize=1
-        )
-    except TypeError:
-        cc, warp_matrix = cv2.findTransformECC(
-            im1, im2, warp_matrix, warp_mode, criteria
-        )
-    except cv2.error:
-        cc = 0
-        # print_log('Warning: find transform failed. Set warp as identity')
-
-    return cc, warp_matrix
-
-
-def apply_correction(im2, warp_matrix):
-    sz = im2.shape
-
-    return cv2.warpAffine(
-        im2, warp_matrix, (sz[1], sz[0]), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP
     )
