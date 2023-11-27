@@ -42,22 +42,8 @@ Make sure you change ```.../Repositories/...``` with your directory name (step 1
 
 ## Install conda
 
-1. In the Downloads directory, run follow command (or download the package from [conda installation script](https://www.anaconda.com/products/individual)):
-```
-wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
-```
-2. Now, run the installation:
-```
-bash Anaconda3-2020.02-Linux-x86_64.sh
-```
-
-3. Accept all the questions and default installation folder.
-
-4. Then update anaconda:
-```bash
-bash
-conda update anaconda
-```
+Follow the Miniconda instructions:
+https://docs.conda.io/projects/miniconda/en/latest/index.html#quick-command-line-install
 
 ## Automatically configure pyHiM
 
