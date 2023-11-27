@@ -14,7 +14,6 @@ import argparse
 # %% imports and plotting settings
 import os
 
-import cv2
 import matplotlib
 
 # from mayavi.mlab import *
@@ -86,14 +85,7 @@ def parse_arguments():
         help="Use if you want ensembleMatrix to be plotted alongside sc matrices",
         action="store_true",
     )
-    parser.add_argument(
-        "--video", help="Use if you want to output video", action="store_true"
-    )
-    parser.add_argument(
-        "--videoAllcells",
-        help="Use if you want all nRows**2 single cells to take part of the video",
-        action="store_true",
-    )
+
     parser.add_argument(
         "--plotHistogramMatrix",
         help="Use if you want to plot the PWD histograms for all bin combinations. This is slow!",
@@ -200,16 +192,6 @@ def parse_arguments():
     else:
         run_parameters["ensembleMatrix"] = False
 
-    if args.video:
-        run_parameters["video"] = args.video
-    else:
-        run_parameters["video"] = False
-
-    if args.videoAllcells:
-        run_parameters["videoAllcells"] = args.videoAllcells
-    else:
-        run_parameters["videoAllcells"] = False
-
     if args.plotHistogramMatrix:
         run_parameters["plotHistogramMatrix"] = args.plotHistogramMatrix
     else:
@@ -270,46 +252,6 @@ def visualize3D(coordinates, colors=[], cmap="hsv", title=[], output="visualize3
     ax.set_zticklabels(())
     fig.savefig(output)
     plt.close(fig)
-
-
-# def visualize3D_mayavi(coordinates,colors=[],cmap='hsv',title=[],output='visualize3D.png'):
-
-#     fig = plt.figure()
-#     fig.set_size_inches((10, 10))
-
-#     ax = plt.axes(projection='3d')
-
-#     ax = plt.axes(projection='3d')
-
-#     xdata, ydata, zdata, barcode_id = [],[],[], []
-#     for i,r in enumerate(coordinates):
-#         xdata.append(r[0])
-#         ydata.append(r[1])
-#         zdata.append(r[2])
-#         barcode_id.append(i)
-
-#     if len(colors)==0:
-#         colors=np.arange(coordinates.shape[0])
-#         colors=colors.flatten()
-
-#     # points3d()
-#     points3d(xdata, ydata, zdata, np.ones(coordinates.shape[0]), colormap="hsv", scale_factor=.1)
-#     plot3d(xdata, ydata, zdata,tube_radius=0.01, colormap='Spectral')
-
-#     ax.plot3D(xdata, ydata, zdata, 'black')
-#     pos=ax.scatter3D(xdata, ydata, zdata, c=colors,
-#                       s=200,
-#                       cmap=cmap,
-#                       marker='o',
-#                       edgecolors = 'k',
-#                       linewidths=2,
-#                       alpha=0.7) #'terrain_r'
-#     ax.set_xlabel('x')
-#     ax.set_ylabel('y')
-#     ax.set_zlabel('z')
-#     ax.set_title(title)
-#     fig.savefig(output)
-#     plt.close(fig)
 
 
 def visualize2D(
@@ -517,31 +459,6 @@ def plotsSubplot_sc_matrices(him_data, nRows, output="subplotMatrices.png"):
     plt.savefig(output)
     plt.close(fig)
     return cell_id, sc_matrix
-
-
-def makesVideo(folder, video_name, searchPattern):
-    images = [
-        img
-        for img in os.listdir(os.path.dirname(folder))
-        if img.endswith(".png") and searchPattern in img
-    ]
-    if len(images) > 0:
-        frame = cv2.imread(os.path.join(os.path.dirname(folder), images[0]))
-        height, width, layers = frame.shape
-
-        video = cv2.VideoWriter(video_name, 0, 5, (width, height))
-
-        for image in images:
-            video.write(cv2.imread(os.path.join(os.path.dirname(folder), image)))
-
-        cv2.destroyAllWindows()
-        video.release()
-    else:
-        print(
-            "Sorry, no images found fitting the pattern {} in this folder: {}".format(
-                searchPattern, folder
-            )
-        )
 
 
 def plotsBarcodesPerCell(sc_matrix, run_parameters, outputFileNameRoot="./"):
@@ -793,27 +710,6 @@ def main():
                 plotTrajectories(
                     him_data, run_parameters, outputFileNameRoot, cell_id, sc_matrix
                 )
-
-    # "makes video of SC matrix for selected cells"
-    if run_parameters["video"]:
-        print("\n>>>Making video<<<\n")
-        if run_parameters["videoAllcells"]:
-            searchPattern = "_scMostPWD:"
-            for cell_id in cellID_most_PWDs:
-                plot_sc_matrix(
-                    him_data,
-                    cell_id,
-                    run_parameters,
-                    outputFileNameRoot,
-                    ensembleMatrix=run_parameters["ensembleMatrix"],
-                    searchPattern=searchPattern,
-                )
-        else:
-            searchPattern = "_scMatrix:"
-
-        video_name = os.path.dirname(outputFileNameRoot) + os.sep + "video.avi"
-
-        makesVideo(outputFileNameRoot, video_name, searchPattern)
 
     print("\nDone\n\n")
 
