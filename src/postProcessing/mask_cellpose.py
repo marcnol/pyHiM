@@ -50,6 +50,9 @@ def parseArguments():
     parser.add_argument("--stitch", help="stitch threshold. Default = 0.1.")
     parser.add_argument("--diam", help="diameter. Default = 50.")
     parser.add_argument(
+        "--model", help="pretrained_model to use for running. Default: “cyto”."
+    )
+    parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
 
@@ -92,6 +95,11 @@ def parseArguments():
     else:
         p["diam"] = 50
 
+    if args.diam:
+        p["model"] = str(args.model)
+    else:
+        p["model"] = "cyto"
+
     p["files"] = []
     if args.pipe:
         p["pipe"] = True
@@ -113,12 +121,14 @@ def parseArguments():
     return p
 
 
-def run_cellpose_api(image_path, diam, cellprob, flow, stitch, gpu=[False, None]):
+def run_cellpose_api(
+    image_path, diam, cellprob, flow, stitch, gpu=[False, None], pretrained_model="cyto"
+):
     # model_type='cyto' or 'nuclei' or 'cyto2'
     if gpu[0]:
-        model = models.Cellpose(gpu=gpu[1], model_type="cyto")
+        model = models.Cellpose(gpu=gpu[1], model_type=pretrained_model)
     else:
-        model = models.Cellpose(model_type="cyto")
+        model = models.Cellpose(model_type=pretrained_model)
 
     # list of files
     files = [image_path]
@@ -132,7 +142,7 @@ def run_cellpose_api(image_path, diam, cellprob, flow, stitch, gpu=[False, None]
     masks, flows, styles, diams = model.eval(
         imgs,
         channels=channels,
-        diameter=None,
+        diameter=diam,
         cellprob_threshold=cellprob,
         flow_threshold=flow,
         stitch_threshold=stitch,
@@ -150,6 +160,7 @@ def run_cellpose(
     stitch,
     folder_destination="segmentedObjects",
     gpu=[False, None],
+    pretrained_model="cyto",
 ):
     save_folder = os.path.dirname(image_path)
 
@@ -160,6 +171,7 @@ def run_cellpose(
         + f"--stitch_threshold {stitch} "
         + f"--flow_threshold {flow} "
         + f"--cellprob_threshold {cellprob}"
+        + f"--pretrained_model {pretrained_model}"
     )
 
     if gpu[0]:
@@ -184,6 +196,7 @@ def process_images(
     files=list(),
     gpu=[False, None],
     cli=False,
+    pretrained_model="cyto",
 ):
     print(
         f"Parameters: diam={diam} | cellprob={cellprob} | flow={flow} | stitch={stitch}\n"
@@ -218,10 +231,17 @@ def process_images(
                     stitch,
                     folder_destination=folder_destination,
                     gpu=gpu,
+                    pretrained_model=pretrained_model,
                 )
             else:
                 mask = run_cellpose_api(
-                    file_registered, diam, cellprob, flow, stitch, gpu=gpu
+                    file_registered,
+                    diam,
+                    cellprob,
+                    flow,
+                    stitch,
+                    gpu=gpu,
+                    pretrained_model=pretrained_model,
                 )
 
             new_mask_name = (
@@ -269,6 +289,7 @@ def main():
         files=p["files"],
         gpu=p["gpu"],
         cli=p["cli"],
+        pretrained_model=p["model"],
     )
 
     print("Finished execution")
