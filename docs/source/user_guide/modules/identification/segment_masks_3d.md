@@ -1,5 +1,5 @@
 # mask_3d
-*Segments masks in 3D*
+*Segments masks in 3D* 
 
 ## Invoke
 Inside the folder with your input data, run:

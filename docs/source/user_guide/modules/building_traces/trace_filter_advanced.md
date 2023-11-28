@@ -18,12 +18,33 @@ How to use it:
 
   ```sh
   # Call trace_filter from rootFolder to process all Trace files in `buildPWDmatrix`
-  $ trace_filter.py --input my_trace.ecsv --N_barcodes 5
+  $ trace_filter.py -- N_barcodes 2
   ```
 
-  This will remove traces with less than 5 barcodes.
+  this will process all  `Trace` files in `buildPWDmatrix`
 
   
+
+- Example 2: using cat or ls to provide a specific list of Trace files to process
+
+  ```sh
+  # either make list of files to process and write it in a file
+  $ cat files_to_combine 
+  folder1/Trace_3D_barcode_KDtree_ROI:15.ecsv
+  folder2/Trace_3D_barcode_KDtree_ROI:6.ecsv
+  
+  # then pipe these files into trace_combinator
+  $ cat files_to_combine | trace_combinator.py --N_barcodes 2 --pipe
+  
+  # OR use `ls` to select which files you want to combine
+  $ ls folder1/Trace*3D*6.ecsv
+  folder1/Trace_3D_barcode_KDtree_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:DAPI_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:mask0_ROI:6.ecsv
+  
+  # then pipe these files into trace_combinator
+  $ ls folder1/Trace*3D*6.ecsv | trace_combinator.py --N_barcodes 2 --pipe
+  ```
+
+
 
 **Relevant options**
 
