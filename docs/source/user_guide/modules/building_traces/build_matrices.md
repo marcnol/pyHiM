@@ -3,7 +3,7 @@
 *This script will build single-cell pair-wise distance (PWD) matrices, proximity frequency maps, and N-matrices from each `Trace_` file in the `buildsPWDmatrix` folder. *
 
 ## Invoke
-Inside the folder with your input data, run:
+Inside the folder with your input data, run: 
 ```shell
 pyhim -C build_matrix
 ```

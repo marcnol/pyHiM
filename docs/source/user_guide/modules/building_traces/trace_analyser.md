@@ -16,8 +16,8 @@ To analyze all trace files in `buildPWDmatrix`:
 ```
 $  trace_analyzer.py
 ```
-  
-Example:
+
+Example: 
 
 ```
 $ trace_analyzer.py --input Trace_3D_barcode_mask:DAPI_ROI:1_filtered.ecsv
