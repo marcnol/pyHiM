@@ -1,4 +1,4 @@
-# trace_filter
+# trace_filter_advanced
 
 This script is intended to filter trace files. 
 
