@@ -8,7 +8,7 @@
 
 ## Documentation
 
-Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/). 
+Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/) and [tutorials](https://pyhim.readthedocs.io/en/latest/getting_started/tutorials.html) illustrating the main steps of pyHiM analysis pipeline. 
 
 To install, please follow the instructions [here](https://pyhim.readthedocs.io/en/latest/getting_started/quick_install.html).
 
