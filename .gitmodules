@@ -1,0 +1,3 @@
+[submodule "pyhim-small-dataset"]
+	path = pyhim-small-dataset
+	url = git@github.com:XDevos/pyhim-small-dataset.git

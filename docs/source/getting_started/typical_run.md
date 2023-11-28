@@ -7,15 +7,15 @@
   This folder will be called the `input_directory`
   ```
   
-- Copy or create a file named `infoList.json` into your `input_directory`. 
+- Copy or create a file named `parameters.json` into your `input_directory`. 
   
   ```{note}
-   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip an example here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/master/modelParameterFiles_JSON/infoList.json).
+   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip an example here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/toolbox/parameter_file/parameters.json).
   ```
   
-- Update the `infoList.json` file to indicate the **reference cycle** used for drift correction. 
+- Update the `parameters.json` file to indicate the **reference cycle** used for drift correction. 
   ```{note}
-  This can be done by manually editing the `infoList.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
+  This can be done by manually editing the `parameters.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
   ```
 
 ## Basic run
@@ -68,14 +68,12 @@ options:
   -h, --help        show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                     Folder with images
-  -C CMD, --cmd CMD Comma-separated list of routines to run
-                    (order matters !): 
-                    makeProjections alignImages 
-                    appliesRegistrations alignImages3D 
-                    segmentMasks segmentMasks3D
-                    segmentSources3D buildHiMmatrix optional: 
-                    [filter_localizations register_localizations 
-                    build_traces build_matrix]
+  -C CMD, --cmd CMD Comma-separated list of routines to run: 
+                     project  register_global register_local  
+                     mask_2d localize_2d 
+                     mask_3d localize_3d 
+                     filter_localizations register_localizations 
+                     build_traces build_matrix
   --threads THREADS Number of threads to run in parallel mode. 
                     If none, then it will run with one thread.
 
@@ -87,7 +85,7 @@ options:
 
 - ```-C or --cmd``` is an optional argument that can be used to run a specific set of functions detailed as a **comma separated list without space**. 
   ```{note}
-  The mode of action will be determined from the `infoList.json` [configuration file](tutorials/configuration_file.md).
+  The mode of action will be determined from the `parameters.json` [configuration file](tutorials/configuration_file.md).
   ```
 
 - ```--threads``` will ask *pyHiM* to run in parallel using multiple threads in your computer or computer cluster. 

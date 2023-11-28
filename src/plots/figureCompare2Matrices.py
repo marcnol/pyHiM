@@ -7,178 +7,244 @@ Created on Fri Jun  5 09:24:51 2020
 """
 
 
-#%% imports and plotting settings
-import os
-import numpy as np
 import argparse
 
+# %% imports and plotting settings
+import os
+
+
 # import matplotlib as plt
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import json, csv
-from matrixOperations.HIMmatrixOperations import plotDistanceHistograms, plotMatrix
+import numpy as np
+import sys
 
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
-    plotsEnsemble3wayContactMatrix,
-    calculate3wayContactMatrix,
-    getMultiContact,
+    AnalysisHiMMatrix,
+    calculate_ensemble_pwd_matrix,
+    list_sc_to_keep,
+    plot_matrix,
 )
 
-from matrixOperations.HIMmatrixOperations import analysisHiMmatrix, listsSCtoKeep, calculatesEnsemblePWDmatrix
+from plotting_functions import (
+    gets_matrix, 
+    plot_2d_matrix_simple,
+    plot_matrix_difference, 
+    plot_mixed_matrix,
+    plot_Wilcoxon_matrix,
+    normalize_matrix,
+    )
 
-#%% define and loads datasets
+
+    
+# %% define and loads datasets
 
 
-def parseArguments():
+def parse_arguments():
     # [parsing arguments]
     parser = argparse.ArgumentParser()
-    parser.add_argument("-F1", "--rootFolder1", help="Folder with dataset 1")
-    parser.add_argument("-F2", "--rootFolder2", help="Folder with dataset 2")
     parser.add_argument("-O", "--outputFolder", help="Folder for outputs")
-
     parser.add_argument(
-        "-P", "--parameters", help="Provide name of parameter files. folders2Load.json assumed as default",
+        "-T1", "--input1", help="Filename of single-cell PWD matrices in Numpy"
     )
-    parser.add_argument("-A1", "--label1", help="Add name of label for dataset 1 (e.g. doc)")
-    parser.add_argument("-W1", "--action1", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
-    parser.add_argument("-A2", "--label2", help="Add name of label for dataset 1  (e.g. doc)")
-    parser.add_argument("-W2", "--action2", help="Select: [all], [labeled] or [unlabeled] cells plotted for dataset 1 ")
+    parser.add_argument(
+        "-T2", "--input2", help="Filename of single-cell PWD matrices in Numpy"
+    )
+    parser.add_argument(
+        "-U", "--uniqueBarcodes", help="csv file with list of unique barcodes"
+    )
+    
     parser.add_argument("--fontsize", help="Size of fonts to be used in matrix")
-    parser.add_argument("--axisLabel", help="Use if you want a label in x and y", action="store_true")
-    parser.add_argument("--axisTicks", help="Use if you want axes ticks", action="store_true")
-    parser.add_argument("--ratio", help="Does ratio between matrices. Default: difference", action="store_true")
-    parser.add_argument("--cAxis", help="absolute cAxis value for colormap")
-    parser.add_argument("--plottingFileExtension", help="By default: svg. Other options: pdf, png")
+    parser.add_argument(
+        "--axisLabel", help="Use if you want a label in x and y", action="store_true"
+    )
+    parser.add_argument(
+        "--axisTicks", help="Use if you want axes ticks", action="store_true"
+    )
+    parser.add_argument(
+        "--ratio",
+        help="Does ratio between matrices. Default: difference",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--plottingFileExtension", help="By default: svg. Other options: pdf, png"
+    )
     parser.add_argument(
         "--normalize",
         help="Matrix normalization factor: maximum, none, single value (normalize 2nd matrix by), bin pair e.g. 1,2",
     )
-    parser.add_argument("--inputMatrix", help="Source of input matrix: contact (default), PWD, iPWD")
     parser.add_argument("--pixelSize", help="pixelSize in microns")
+    parser.add_argument(
+        "--matrix_norm_mode",
+        help="Matrix normalization mode. Can be n_cells (default) or nonNANs",
+    )
+    parser.add_argument(
+        "--dist_calc_mode",
+        help="Mode used to calculate the mean distance. Can be either 'median', 'KDE' or 'proximity'. Default: median",
+    )
+    parser.add_argument("--proximity_threshold", help="proximity threshold in um")
+    
+    parser.add_argument("--cMax", help="Colormap max scale. Default: automatic")
+    parser.add_argument(
+        "--scalingParameter",
+        help="Scaling parameter. Dafault: 1",
+    )
+    parser.add_argument(
+        "--shuffle",
+        help="Provide shuffle vector: 0,1,2,3... of the same size or smaller than the original matrix. No spaces! comma-separated!",
+    )
 
-    runParameters = {}
+    parser.add_argument("--cMin", help="Colormap min cscale. Default: 0")
+    parser.add_argument("--cmap", help="Colormap. Default: coolwarm")
+
+    run_parameters = {}
 
     args = parser.parse_args()
 
-    if args.rootFolder1:
-        rootFolder1 = args.rootFolder1
+    if args.input1:
+        run_parameters["input1"] = args.input1
     else:
-        rootFolder1 = "."
+        print(
+            ">> ERROR: you must provide a filename with the single cell PWD matrices in Numpy format"
+        )
+        sys.exit(-1)
 
-    if args.rootFolder2:
-        rootFolder2 = args.rootFolder2
-        runParameters["run2Datasets"] = True
+    if args.input2:
+        run_parameters["input2"] = args.input2
     else:
-        rootFolder2 = "."
-        runParameters["run2Datasets"] = False
-
+        print(
+            ">> ERROR: you must provide a filename with the single cell PWD matrices in Numpy format"
+        )
+        sys.exit(-1)
+        
+    if args.uniqueBarcodes:
+        run_parameters["uniqueBarcodes"] = args.uniqueBarcodes
+    else:
+        print(">> ERROR: you must provide a CSV file with the unique barcodes used")
+        sys.exit(-1)
+        
     if args.outputFolder:
-        outputFolder = args.outputFolder
+        run_parameters["outputFolder"] = args.outputFolder
     else:
-        outputFolder = "none"
+        run_parameters["outputFolder"] = "plots"
 
-    if args.parameters:
-        runParameters["parametersFileName"] = args.parameters
+    if args.proximity_threshold:
+        run_parameters["proximity_threshold"] = float(args.proximity_threshold)
     else:
-        runParameters["parametersFileName"] = "folders2Load.json"
-
-    if args.label1:
-        runParameters["label1"] = args.label1
+        run_parameters["proximity_threshold"] = 0.25
+        
+    if args.cmap:
+        run_parameters["cmap"] = args.cmap
     else:
-        runParameters["label1"] = "doc"
-
-    if args.label2:
-        runParameters["label2"] = args.label2
-    else:
-        runParameters["label2"] = "NE"
-
-    if args.action1:
-        runParameters["action1"] = args.action1
-    else:
-        runParameters["action1"] = "labeled"
-
-    if args.action2:
-        runParameters["action2"] = args.action2
-    else:
-        runParameters["action2"] = "labeled"
-
+        run_parameters["cmap"] = "coolwarm"
+        
     if args.fontsize:
-        runParameters["fontsize"] = args.fontsize
+        run_parameters["fontsize"] = args.fontsize
     else:
-        runParameters["fontsize"] = 12
+        run_parameters["fontsize"] = 12
 
     if args.pixelSize:
-        runParameters["pixelSize"] = args.pixelSize
+        run_parameters["pixelSize"] = args.pixelSize
     else:
-        runParameters["pixelSize"] = 0.1
+        run_parameters["pixelSize"] = 1
 
     if args.axisLabel:
-        runParameters["axisLabel"] = args.axisLabel
+        run_parameters["axisLabel"] = args.axisLabel
     else:
-        runParameters["axisLabel"] = False
+        run_parameters["axisLabel"] = True
 
     if args.axisTicks:
-        runParameters["axisTicks"] = args.axisTicks
+        run_parameters["axisTicks"] = args.axisTicks
     else:
-        runParameters["axisTicks"] = False
+        run_parameters["axisTicks"] = True
 
     if args.ratio:
-        runParameters["ratio"] = args.ratio
+        run_parameters["ratio"] = args.ratio
     else:
-        runParameters["ratio"] = False
-
-    if args.cAxis:
-        runParameters["cAxis"] = [float(i) for i in args.cAxis.split(",")]
-    else:
-        runParameters["cAxis"] = 0.6
+        run_parameters["ratio"] = False
 
     if args.plottingFileExtension:
-        runParameters["plottingFileExtension"] = "." + args.plottingFileExtension
+        run_parameters["plottingFileExtension"] = "." + args.plottingFileExtension
     else:
-        runParameters["plottingFileExtension"] = ".svg"
+        run_parameters["plottingFileExtension"] = ".svg"
 
     if args.normalize:
-        runParameters["normalize"] = args.normalize
+        run_parameters["normalize"] = args.normalize
     else:
-        runParameters["normalize"] = "none"
+        run_parameters["normalize"] = "none"
 
-    if args.inputMatrix:
-        runParameters["inputMatrix"] = args.inputMatrix
+    if args.dist_calc_mode:
+        run_parameters["dist_calc_mode"] = args.dist_calc_mode
     else:
-        runParameters["inputMatrix"] = "contact"
+        run_parameters["dist_calc_mode"] = "median"
 
-    print("Input Folders:{}, {}".format(rootFolder1, rootFolder2))
-    print("Input parameters:{}".format(runParameters))
+    if run_parameters["dist_calc_mode"] == 'proximity':
+        run_parameters["cmtitle"] = 'proximity frequency'
+    else:
+        run_parameters["cmtitle"] = 'distance, um'
+        
+    if args.matrix_norm_mode:
+        run_parameters["matrix_norm_mode"] = args.matrix_norm_mode
+    else:
+        run_parameters[
+            "matrix_norm_mode"
+        ] = "n_cells"  # norm: n_cells (default), nonNANs
 
-    return rootFolder1, rootFolder2, outputFolder, runParameters
+    if args.cMax:
+        run_parameters["cMax"] = float(args.cMax)
+    else:
+        run_parameters["cMax"] = 0.0
+
+    if args.scalingParameter:
+        run_parameters["scalingParameter"] = args.scalingParameter
+    else:
+        run_parameters["scalingParameter"] = 1
+    
+    if args.shuffle:
+        run_parameters["shuffle"] = args.shuffle
+    else:
+        run_parameters["shuffle"] = 0
+    
+    if args.cMin:
+        run_parameters["cMin"] = float(args.cMin)
+    else:
+        run_parameters["cMin"] = 0.0
+        
+    print("Input parameters:{}".format(run_parameters))
+
+    return run_parameters
 
 
-def normalizeMatrix(m1, m2, mode):
+def gets_ensemble_matrix(run_parameters,scPWDMatrix_filename=''):
 
-    print("Normalization: {}".format(mode))
+                   
+    (sc_matrix,
+     uniqueBarcodes,
+     cScale, 
+     n_cells, 
+     outputFileName,
+     fileNameEnding) = gets_matrix(run_parameters,
+                scPWDMatrix_filename = scPWDMatrix_filename,
+                uniqueBarcodes=run_parameters["uniqueBarcodes"])
+                                   
+    meansc_matrix = plot_matrix(
+        sc_matrix,
+        uniqueBarcodes,
+        run_parameters["pixelSize"],
+        1,
+        outputFileName,
+        "log",
+        figtitle="Map: " + run_parameters["dist_calc_mode"],
+        mode=run_parameters["dist_calc_mode"],  # median or KDE
+        clim=cScale,
+        c_min=run_parameters["cMin"],
+        n_cells=n_cells,
+        c_m=run_parameters["cmap"],
+        cmtitle=run_parameters["cmtitle"],
+        filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
+        font_size=run_parameters["fontsize"],
+    )
 
-    if "maximum" in mode:  # normalizes by maximum
-        m1_norm = m1.max()
-        m2_norm = m2.max()
-    elif len(mode.split(",")) > 1:  # normalizes by bin
-        N = mode.split(",")
-        m1_norm = 1
-        m2_norm = m2[int(N[0]), int(N[1])] / m1[int(N[0]), int(N[1])]
-    elif "none" in mode:  # no normalization
-        m1_norm = 1
-        m2_norm = 1
-    else:  # normalizes by given factor
-        normFactor = float(mode)
-        m1_norm = 1
-        m2_norm = normFactor
-
-    print("Normalizations: m1= {} | m2={}".format(m1_norm, m2_norm))
-
-    m1 = m1 / m1_norm
-    m2 = m2 / m2_norm
-
-    return m1, m2
+    return sc_matrix, meansc_matrix, uniqueBarcodes, cScale, n_cells, outputFileName, fileNameEnding
 
 
 # =============================================================================
@@ -186,184 +252,93 @@ def normalizeMatrix(m1, m2, mode):
 # =============================================================================
 
 def main():
+    
+    run_parameters = parse_arguments()
+    print("*"*50)
+    # creates output folder
+    if not os.path.exists(run_parameters["outputFolder"]):
+        os.mkdir(run_parameters["outputFolder"])
+        print("Folder created: {}".format(run_parameters["outputFolder"]))
+        
+    # loads matrices
+    (m1_sc,
+     m1,
+     uniqueBarcodes,
+     cScale1, 
+     n_cells1, 
+     outputFileName1,
+     fileNameEnding) = gets_ensemble_matrix(run_parameters,
+                scPWDMatrix_filename = run_parameters["input1"])
+    print("-"*50)
 
-    rootFolder1, rootFolder2, outputFolder, runParameters = parseArguments()
-
-    HiMdata1 = analysisHiMmatrix(runParameters, rootFolder1)
-    HiMdata1.runParameters["action"] = HiMdata1.runParameters["action1"]
-    HiMdata1.runParameters["label"] = HiMdata1.runParameters["label1"]
-    HiMdata1.loadData()
-    nCells = HiMdata1.nCellsLoaded()
-    HiMdata1.retrieveSCmatrix()
-
-    HiMdata2 = analysisHiMmatrix(runParameters, rootFolder2)
-    HiMdata2.runParameters["action"] = HiMdata2.runParameters["action2"]
-    HiMdata2.runParameters["label"] = HiMdata2.runParameters["label2"]
-    HiMdata2.loadData()
-    nCells2 = HiMdata2.nCellsLoaded()
-    HiMdata2.retrieveSCmatrix()
-
-    # cScale1 = HiMdata1.data['ensembleContactProbability'].max() / runParameters['cAxis']
-    # cScale2 = HiMdata2.data['ensembleContactProbability'].max() / runParameters['scalingParameter']
-    # print('scalingParameters={}'.format(runParameters["scalingParameter"] ))
-
-    if outputFolder == "none":
-        outputFolder = HiMdata1.dataFolder
-
-    outputFileName1 = (
-        outputFolder
-        + os.sep
-        + "Fig_ratio2HiMmatrices"
-        + "_dataset1:"
-        + HiMdata1.datasetName
-        + "_label1:"
-        + runParameters["label1"]
-        + "_action1:"
-        + runParameters["action1"]
-        + "_dataset2:"
-        + HiMdata2.datasetName
-        + "_label2:"
-        + runParameters["label2"]
-        + "_action2:"
-        + runParameters["action2"]
-        + runParameters["plottingFileExtension"]
-    )
-
-    outputFileName2 = (
-        outputFolder
-        + os.sep
-        + "Fig_mixedHiMmatrices"
-        + "_dataset1:"
-        + HiMdata1.datasetName
-        + "_label1:"
-        + runParameters["label1"]
-        + "_action1:"
-        + runParameters["action1"]
-        + "_dataset2:"
-        + HiMdata2.datasetName
-        + "_label2:"
-        + runParameters["label2"]
-        + "_action2:"
-        + runParameters["action2"]
-    )
-
-    if "contact" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.data["ensembleContactProbability"]
-        m2 = HiMdata2.data["ensembleContactProbability"]
-    elif "iPWD" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.SCmatrixSelected
-        m2 = HiMdata2.SCmatrixSelected
-        cells2Plot1 = listsSCtoKeep(runParameters, HiMdata1.data["SClabeledCollated"])
-        cells2Plot2 = listsSCtoKeep(runParameters, HiMdata2.data["SClabeledCollated"])
-        dataset1 = list(HiMdata1.ListData.keys())[0]
-        dataset2 = list(HiMdata2.ListData.keys())[0]
-        m1, _ = calculatesEnsemblePWDmatrix(
-            m1, runParameters["pixelSize"], cells2Plot1, mode=HiMdata1.ListData[dataset1]["PWD_mode"]
-        )
-        m2, _ = calculatesEnsemblePWDmatrix(
-            m2, runParameters["pixelSize"], cells2Plot2, mode=HiMdata2.ListData[dataset2]["PWD_mode"]
-        )
-        m1 = np.reciprocal(m1)
-        m2 = np.reciprocal(m2)
-    elif "PWD" in runParameters["inputMatrix"]:
-        m1 = HiMdata1.SCmatrixSelected
-        m2 = HiMdata2.SCmatrixSelected
-        cells2Plot1 = listsSCtoKeep(runParameters, HiMdata1.data["SClabeledCollated"])
-        cells2Plot2 = listsSCtoKeep(runParameters, HiMdata2.data["SClabeledCollated"])
-        dataset1 = list(HiMdata1.ListData.keys())[0]
-        dataset2 = list(HiMdata2.ListData.keys())[0]
-        m1, _ = calculatesEnsemblePWDmatrix(
-            m1, runParameters["pixelSize"], cells2Plot1, mode=HiMdata1.ListData[dataset1]["PWD_mode"]
-        )
-        m2, _ = calculatesEnsemblePWDmatrix(
-            m2, runParameters["pixelSize"], cells2Plot2, mode=HiMdata2.ListData[dataset2]["PWD_mode"]
-        )
-
+    (m2_sc,
+     m2,
+     uniqueBarcodes,
+     cScale2, 
+     n_cells2, 
+     outputFileName2,
+     fileNameEnding) = gets_ensemble_matrix(run_parameters,
+                scPWDMatrix_filename = run_parameters["input2"])
+                         
+    # plots results               
     if m1.shape == m2.shape:
+        
+        plot_matrix_difference(m1,
+                               m2,
+                               uniqueBarcodes,
+                               normalize=run_parameters["normalize"],
+                               ratio = run_parameters["ratio"],
+                               c_scale = run_parameters["cMax"],
+                               axisLabel = run_parameters["axisLabel"],
+                               fontsize=run_parameters["fontsize"],
+                               axis_ticks=run_parameters["axisTicks"],
+                               outputFileName = outputFileName1,
+                               fig_title=run_parameters["cmtitle"],
+                               plottingFileExtension=run_parameters["plottingFileExtension"],
+                               n_cells=n_cells1+n_cells2,
+                               cmap=run_parameters["cmap"],
+                               )
+        
+        plot_mixed_matrix(m1,m2,uniqueBarcodes,
+                               normalize=run_parameters["normalize"],
+                               axisLabel = run_parameters["axisLabel"],
+                               fontsize=run_parameters["fontsize"],
+                               axis_ticks=run_parameters["axisTicks"],
+                               cAxis=run_parameters["cMax"],
+                               outputFileName = outputFileName1,
+                               fig_title=run_parameters["cmtitle"],
+                               plottingFileExtension=run_parameters["plottingFileExtension"],
+                               n_cells=n_cells1+n_cells2,
+                               cmap=run_parameters["cmap"],                               
+                               )
 
-        fig1 = plt.figure(constrained_layout=True)
-        spec1 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f1 = fig1.add_subplot(spec1[0, 0])  # 16
 
-        if "none" in runParameters["normalize"]:  # sets default operation
-            mode = "maximum"
-        else:
-            mode = runParameters["normalize"]
+        if "proximity" not in run_parameters["dist_calc_mode"]:
 
-        _m1, _m2 = m1.copy(), m2.copy()
-
-        _m1, _m2 = normalizeMatrix(_m1, _m2, mode)
-
-        if runParameters["ratio"] == True:
-            matrix = np.log(_m1 / _m2)
-            cmtitle = "log(ratio)"
-        else:
-            matrix = _m1 - _m2
-            cmtitle = "difference"
-
-        if len(runParameters["cAxis"]) == 2:
-            cScale = runParameters["cAxis"][1]
-        else:
-            cScale = runParameters["cAxis"][0]
-        print("Clim used: {}\n".format(cScale))
-
-        f1_ax1_im = HiMdata1.plot2DMatrixSimple(
-            f1,
-            matrix,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
-            cmtitle=cmtitle,
-            cMin=-cScale,
-            cMax=cScale,
-            fontsize=runParameters["fontsize"],
-            colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="RdBu",
-        )
-        plt.savefig(outputFileName1)
-        print("Output figure: {}".format(outputFileName1))
-        # plt.close()
-
-        # plots mixed matrix
-        fig2 = plt.figure(constrained_layout=True)
-        spec2 = gridspec.GridSpec(ncols=1, nrows=1, figure=fig1)
-        f2 = fig2.add_subplot(spec2[0, 0])  # 16
-
-        # plots mixed matrix
-        _m1, _m2 = m1.copy(), m2.copy()
-
-        if "none" in runParameters["normalize"]:  # sets default operation
-            mode = "none"
-        else:
-            mode = runParameters["normalize"]
-        _m1, _m2 = normalizeMatrix(_m1, _m2, mode)
-        matrix2 = _m1
-
-        for i in range(matrix2.shape[0]):
-            for j in range(0, i):
-                matrix2[i, j] = _m2[i, j]
-
-        HiMdata1.plot2DMatrixSimple(
-            f2,
-            matrix2,
-            list(HiMdata1.data["uniqueBarcodes"]),
-            runParameters["axisLabel"],
-            runParameters["axisLabel"],
-            cmtitle="probability",
-            cMin=0,
-            cMax=runParameters["cAxis"][0],
-            fontsize=runParameters["fontsize"],
-            colorbar=True,
-            axisTicks=runParameters["axisTicks"],
-            cm="coolwarm",
-        )
-        plt.savefig(outputFileName2 + runParameters["plottingFileExtension"])
-        np.save(outputFileName2 + ".npy", matrix2)
-        print("Output figure: {}".format(outputFileName2 + runParameters["plottingFileExtension"]))
-
+            if "none" in run_parameters["normalize"]:  # sets default operation
+                mode = "none"
+            else:
+                mode = run_parameters["normalize"]
+            
+            m1, m2, m2_norm = normalize_matrix(m1, m2, mode)
+            
+            plot_Wilcoxon_matrix(m1_sc,
+                                    m2_sc,
+                                    uniqueBarcodes,
+                                    normalize=m2_norm,
+                                    axisLabel = run_parameters["axisLabel"],
+                                    fontsize=run_parameters["fontsize"],
+                                    axis_ticks=run_parameters["axisTicks"],
+                                    outputFileName = outputFileName1,
+                                    fig_title=run_parameters["cmtitle"],
+                                    plottingFileExtension=run_parameters["plottingFileExtension"],
+                                    n_cells=n_cells1+n_cells2,
+                                    cmap=run_parameters["cmap"],                               
+                                    )
+            
     else:
         print("Error: matrices do not have the same dimensions!")
+
 
 if __name__ == "__main__":
     main()

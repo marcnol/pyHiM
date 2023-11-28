@@ -18,6 +18,7 @@ building_traces/build_traces
 building_traces/trace_selector
 building_traces/trace_combinator
 building_traces/trace_filter
+building_traces/trace_analyser
 building_traces/build_matrices
 ```
 
@@ -51,7 +52,7 @@ The ```processesPWDmatrices``` script:
 
 **Invoke**
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 If you want to run this function exclusively, run *pyHiM* using the ```-C buildHiMmatrix``` argument.
 
@@ -62,11 +63,12 @@ optional arguments:
   -h, --help            show this help message and exit
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
                         Folder with images
-  -C CMD, --cmd CMD     Comma-separated list of routines to run (order matters!): 
-  						makeProjections, appliesRegistrations,
-                        alignImages,alignImages3D, segmentMasks,
-                        segmentSources3D,refitBarcodes3D,
-                        localDriftCorrection,projectBarcodes,buildHiMmatrix
+  -C CMD, --cmd CMD     Comma-separated list of routines to run: 
+  						       project register_global register_local  
+                     mask_2d localize_2d 
+                     mask_3d localize_3d 
+                     filter_localizations register_localizations 
+                     build_traces build_matrix
   --threads THREADS     Number of threads to run in parallel mode. If none,
                         then it will run with one thread.
 ```

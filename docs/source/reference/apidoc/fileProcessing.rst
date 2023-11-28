@@ -4,14 +4,6 @@ fileProcessing package
 Submodules
 ----------
 
-fileProcessing.changeRT\_infoList module
-----------------------------------------
-
-.. automodule:: fileProcessing.changeRT_infoList
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 fileProcessing.cleanHiM\_run module
 -----------------------------------
 

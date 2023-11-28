@@ -144,3 +144,42 @@ To restore the branch, use:
 ```shell
 git checkout -b <branch> <sha>
 ```
+
+## Git squash
+*If you want to squash working/insignificant commits from your <dev_branch>.*
+
+0. You can store your branch history in an over-branch for your first time:
+```bash
+git checkout dev_branch
+git pull dev_branch
+git branch save/dev_branch
+```
+
+1. Get an overview of your latest commits using `git log` or the GitHub interface.
+
+2. Identify the commit that you want to keep, and copy the hash of the previous (older) commit. 
+![hash selected](../_static/contributor/git-log-hash-selected-simplify.png)
+
+3. Make an interactive rebase:
+```bash
+git rebase -i <older-commit-hash>
+```
+
+4. It's open a text editor (as image below), edit `pick` to `squash` for each commit that you want to squash within the top commit. Save, exit.
+![Rebase example](../_static/contributor/rebase-example.png)
+
+5. An other text editor are open with the list of commit messages, edit them. Save, exit.
+
+6. Check if it's good with a new `git log` or with a `git diff <commit1> <commit2>`.
+
+7. Apply changes on the remote repository:
+```bash
+git push -f
+```
+
+![Git squash end](../_static/contributor/git-squash-end.png)
+
+8. Delete your save branch:
+```bash
+git branch -D save/dev_branch
+```

@@ -54,7 +54,7 @@
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -97,11 +97,11 @@ optional arguments:
 {
     "dataset_name": {
         "Folders": [
-            "/mnt/disk2/marcnol/data/Experiment_4/0_Embryo/buildsPWDmatrix",
-            "/mnt/disk2/marcnol/data/Experiment_4/1_Embryo/buildsPWDmatrix",
-            "/mnt/disk2/marcnol/data/Experiment_4/2_Embryo/buildsPWDmatrix",
-            "/mnt/disk2/marcnol/data/Experiment_4/4_Embryo/buildsPWDmatrix",
-            "/mnt/disk2/marcnol/data/Experiment_4/5_Embryo/buildsPWDmatrix"
+            "/user_disk/data/Experiment_4/0_Embryo/buildsPWDmatrix",
+            "/user_disk/data/Experiment_4/1_Embryo/buildsPWDmatrix",
+            "/user_disk/data/Experiment_4/2_Embryo/buildsPWDmatrix",
+            "/user_disk/data/Experiment_4/4_Embryo/buildsPWDmatrix",
+            "/user_disk/data/Experiment_4/5_Embryo/buildsPWDmatrix"
         ],
         "PWD_clim": 1.4,
         "PWD_mode": "median",

@@ -10,7 +10,7 @@ pyhim -C register_localizations
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -19,7 +19,7 @@ pyhim -C register_localizations
 
 ## Relevant options
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 ```
 "toleranceDrift": 1 # tolerance drift in pixels. Above this value localizations will not be locally registered

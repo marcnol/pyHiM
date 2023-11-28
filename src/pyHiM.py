@@ -1,135 +1,251 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Apr  4 09:11:01 2020
+"""Main file of pyHiM, include the top-level mechanism."""
 
-@author: marcnol
+__version__ = "0.8.11"
 
-This file contains routines to process Hi-M datasets
-
-"""
-# =============================================================================
-# IMPORTS
-# =============================================================================q
-
+import os
+import sys
 from datetime import datetime
 
-# to remove in a future version
-import warnings
-warnings.filterwarnings("ignore")
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+import apifish
+import dask.distributed
 
-from fileProcessing.fileManagement import Parameters, printLog
-from fileProcessing.functionCaller import HiMfunctionCaller, HiM_parseArguments
+import core.function_caller as fc
+from core.data_manager import DataManager
+from core.parameters import Parameters
+from core.pyhim_logging import Logger, print_analyzing_label, print_log
+from core.run_args import RunArgs
 
-# =============================================================================
-# MAIN
-# =============================================================================
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-def main():
+
+def main(command_line_arguments=None):
+    """Main function of pyHiM
+
+    Parameters
+    ----------
+    command_line_arguments : List[str], optional
+        Used to give inputs for the runtime when you call this function like a module.
+        For example, to test the pyHiM run from tests folder.
+        By default None.
+    """
     begin_time = datetime.now()
 
-    runParameters=HiM_parseArguments()
+    run_args = RunArgs(command_line_arguments)
 
-    HiM = HiMfunctionCaller(runParameters, sessionName="HiM_analysis")
-    HiM.initialize()
-    session1, log1=HiM.session1, HiM.log1
+    logger = Logger(
+        run_args.data_path,
+        parallel=run_args.parallel,
+        session_name="HiM_analysis",
+        init_msg=run_args.args_to_str(),
+    )
 
-    HiM.lauchDaskScheduler(threadsRequested = runParameters["threads"],maximumLoad=0.8)
-    param = Parameters(rootFolder = runParameters["rootFolder"], fileName = 'infoList.json')
-    labels=param.param['labels']
+    datam = DataManager(
+        run_args.data_path,
+        logger.md_filename,
+        param_file=run_args.params_path,
+    )
 
-    printLog('$ Started logging to: {}'.format(HiM.logFile))
-    printLog("$ labels to process: {}\n".format(labels))
+    pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)
+    pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
-    for label in labels:#range(len(HiM.labels2Process)):
+    pipe.run()
 
-        # sets parameters
-        param = Parameters(rootFolder = runParameters["rootFolder"], label = label, fileName = 'infoList.json')
+    # Separate no-refactor routines
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    #      ||
+    # No-refactored
+    # \            /
+    #  \          /
+    #   \        /
+    #    \      /
+    #     \    /
+    #      \  /
+    #       \/
 
-        printLog("--------------------------------------------------------------------------")
-        printLog(">                  Analyzing label: {}           ".format(param.param["acquisition"]["label"]))
-        printLog("--------------------------------------------------------------------------")
+    print_log("\n\n\n")
+    raw_dict = datam.load_user_param()
+    labels = datam.get_processable_labels()
+    print_log(f"$ Labels to process: {labels}")
+    for label in labels:
+        # sets parameters with old way (temporary during pyHiM restructuration)
+        current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
-        param.param['parallel']=HiM.parallel
-        param.param['fileNameMD']=HiM.fileNameMD
+        print_analyzing_label(f"Analyzing label: {label}")
 
-        # [projects 3D images in 2d]
-        if "makeProjections" in runParameters["cmd"]:
-            HiM.makeProjections(param)
-
-        # [registers fiducials using a barcode as reference]
-        if "alignImages" in runParameters["cmd"]:
-            HiM.alignImages(param, label)
+        current_param.param_dict["parallel"] = pipe.parallel
+        current_param.param_dict["fileNameMD"] = logger.md_filename
 
         # [applies registration to DAPI and barcodes]
-        if "appliesRegistrations" in runParameters["cmd"]:
-            HiM.appliesRegistrations(param, label)
+        if "register_global" in pipe.cmds:
+            projection_params = datam.labelled_params[label].projection
+            registration_params = datam.labelled_params[label].registration
+            pipe.apply_registrations(
+                current_param,
+                label,
+                datam.m_data_path,
+                registration_params,
+                datam.processed_roi,
+                projection_params,
+            )
 
         # [aligns fiducials in 3D]
-        if "alignImages3D" in runParameters["cmd"]:
-            HiM.alignImages3D(param, label)
+        if "register_local" in pipe.cmds:
+            registration_params = datam.labelled_params[label].registration
+            pipe.align_images_3d(
+                current_param,
+                label,
+                datam.m_data_path,
+                registration_params,
+                datam.dict_shifts_path,
+                datam.processed_roi,
+                datam.acquisition_params.zBinning,
+            )
 
         # [segments DAPI and sources in 2D]
-        if "segmentMasks" in runParameters["cmd"]:
-            HiM.segmentMasks(param, label)
+        if (
+            ("mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds)
+            and label != "RNA"
+            and label != "fiducial"
+        ):
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                datam.align_folder,
+            )
 
         # [segments masks in 3D]
-        if "segmentMasks3D" in runParameters["cmd"]:
-            HiM.segmentMasks3D(param, label)
+        if "mask_3d" in pipe.cmds and (label in ("DAPI", "mask")):
+            registration_params = datam.labelled_params[label].registration
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_masks_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+                datam.dict_shifts_path,
+                datam.acquisition_params,
+                registration_params,
+            )
 
         # [segments sources in 3D]
-        if "segmentSources3D" in runParameters["cmd"]:
-            HiM.segmentSources3D(param, label)
+        if "localize_3d" in pipe.cmds and label == "barcode":
+            projection_params = datam.labelled_params[label].projection
+            registration_params = datam.labelled_params[label].registration
+            segmentation_params = datam.labelled_params[label].segmentation
+            pipe.segment_sources_3d(
+                current_param,
+                label,
+                datam.processed_roi,
+                datam.m_data_path,
+                segmentation_params,
+                datam.dict_shifts_path,
+                datam.acquisition_params,
+                projection_params,
+                registration_params,
+            )
 
-        # [2D projects all barcodes in an ROI]
-        if "projectBarcodes" in runParameters["cmd"]:
-            HiM.projectsBarcodes(param, label)
+        print_log("\n")
+        del current_param
 
-        # [refits spots in 3D]
-        if "refitBarcodes3D" in runParameters["cmd"]:
-            HiM.refitBarcodes(param, label)
+    for label in labels:
+        # sets parameters with old way (temporary during pyHiM restructuration)
+        current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
-        # [local drift correction]
-        if "localDriftCorrection" in runParameters["cmd"]:
-            HiM.localDriftCorrection(param, label)
+        print_analyzing_label(f"Analyzing label: {label}")
+
+        current_param.param_dict["parallel"] = pipe.parallel
+        current_param.param_dict["fileNameMD"] = logger.md_filename
 
         # [filters barcode localization table]
-        if "filter_localizations" in runParameters["cmd"]:
-            HiM.filter_localizations(param, label)
+        if "filter_localizations" in pipe.cmds and label == "barcode":
+            registration_params = datam.labelled_params[label].registration
+            segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
+            fc.filter_localizations(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                registration_params,
+                matrix_params,
+            )
 
         # [registers barcode localization table]
-        if "register_localizations" in runParameters["cmd"]:
-            HiM.register_localizations(param, label)
+        if "register_localizations" in pipe.cmds and label == "barcode":
+            registration_params = datam.labelled_params[label].registration
+            segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
+            fc.register_localizations(
+                current_param,
+                label,
+                datam.m_data_path,
+                datam.local_shifts_path,
+                segmentation_params,
+                registration_params,
+                matrix_params,
+            )
 
         # [build traces]
-        if "build_traces" in runParameters["cmd"]:
-            HiM.build_traces(param, label)
+        if "build_traces" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            matrix_params = datam.labelled_params[label].matrix
+            fc.build_traces(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                matrix_params,
+                datam.acquisition_params,
+            )
 
         # [builds matrices]
-        if "build_matrix" in runParameters["cmd"]:
-            HiM.build_matrix(param, label)
+        if "build_matrix" in pipe.cmds and label == "barcode":
+            matrix_params = datam.labelled_params[label].matrix
+            fc.build_matrix(
+                current_param,
+                label,
+                datam.m_data_path,
+                matrix_params,
+                datam.acquisition_params,
+            )
 
-        # [builds PWD matrix for all folders with images]
-        if "buildHiMmatrix" in runParameters["cmd"]:
-            HiM.processesPWDmatrices(param, label)
-
-        print("\n")
-        del param
+        print_log("\n")
+        del current_param
 
     # exits
-    HiM.session1.save(HiM.log1)
-    printLog("\n===================={}====================\n".format("Normal termination"))
+    if pipe.parallel:
+        pipe.m_dask.cluster.close()
+        pipe.m_dask.client.close()
 
-    if runParameters["parallel"]:
-        HiM.cluster.close()
-        HiM.client.close()
+    del pipe
 
-    del HiM
+    print_log("\n==================== Normal termination ====================\n")
+    print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
-    printLog("Elapsed time: {}".format(datetime.now() - begin_time))
+
+def check_version_compatibily():
+    if apifish.__version__ < "0.6.4dev":
+        sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
+    if dask.distributed.__version__ < "2023.4.1":
+        sys.exit(
+            "ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] \
+                (pip install -U distributed)"
+        )
 
 
 if __name__ == "__main__":
+    print(f"[VERSION] pyHiM {__version__}")
+    check_version_compatibily()
     main()
