@@ -248,10 +248,15 @@ def runtime(
                     trace.trace_remove_label(label)
                     file_tag='not:' + label
                     
-            # saves output trace
-            outputfile = (
-                trace_file.split(".")[0] + "_" + tag + "_" + file_tag + ".ecsv"
-            )
+                    # saves output trace
+                    outputfile = (
+                        trace_file.split(".")[0] + "_" + tag + "_" + file_tag + ".ecsv"
+                    )
+            else:
+
+                outputfile = (
+                    trace_file.split(".")[0] + "_" + tag + ".ecsv"
+                )
             trace.save(outputfile, trace.data, comments=", ".join(comments))
             print(f"$ Saved output trace file at: {outputfile}")
     else:
