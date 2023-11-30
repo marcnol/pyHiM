@@ -37,9 +37,14 @@ def template_test_register_global(mode: str):
     reference_files = extract_files(reference_outputs)
     assert len(generated_files) == len(reference_files)
     for filepath, short_filename, extension in generated_files:
-        filename = f"{filepath}.{extension}"
-        tmp_file = os.path.join(generated_align_images, filepath)
-        out_file = os.path.join(reference_outputs, filepath)
+        if "data" in filepath.split(os.sep):
+            filename = f"data{os.sep}{short_filename}.{extension}"
+        else:
+            filename = f"{short_filename}.{extension}"
+        tmp_file = os.path.join(generated_align_images, filename)
+        out_file = os.path.join(reference_outputs, filename)
+        print(tmp_file)
+        print(out_file)
         assert os.path.exists(out_file)
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
