@@ -91,7 +91,9 @@ def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_sta
             is_same = f1_length == f2_length
             while is_same and (line_index < f1_length):
                 if shuffled_lines:
-                    is_same = f1_lines[line_index] in f2_lines
+                    is_same = f1_lines[line_index][line_start:] in [
+                        f_l[line_start:] for f_l in f2_lines
+                    ]
                     if not is_same:
                         print(
                             f"SHUFFLE: At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n"
