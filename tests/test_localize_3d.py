@@ -56,6 +56,7 @@ def template_test_localize_3d(mode: str):
                 tmp_file,
                 out_file,
                 line_start=len("e5c550de-d381-4b63-99d3-736ca7e549d9"),
+                shuffled_lines=True,
             )
         elif extension == "table":
             assert compare_ecsv_files(tmp_file, out_file)
