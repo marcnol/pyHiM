@@ -98,7 +98,7 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |3dAP_flux_min|Set threshold to keep a source detected in YZ|
 |3dAP_window|construct a YZ image by summing from xPlane-window:xPlane+window|
 |3DGaussianfitWindow|Set size of window in xy to extract 3D subVolume, in px. 3 means subvolume will be 7x7.|
-|3Dmethod|Select which segmentation method to use between `stardist` or just by thresholding|
+|3Dmethod|Select which segmentation method to use for the 3D source segmentation between `stardist` or just by thresholding|
 
 
 ### 5. buildsPWDmatrix

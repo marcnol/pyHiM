@@ -65,7 +65,7 @@
             "_3D_psf_z": 500,
             "_3D_sigma": 3,
             "_3D_threshold_over_std": 5,
-            "_3Dmethod": "thresholding",
+            "_3Dmethod": "stardist",
             "_3dAP_brightest": 100,
             "_3dAP_distTolerance": 1,
             "_3dAP_flux_min": 2,
@@ -112,7 +112,6 @@
         "RNA": {},
         "barcode": {
             "segmentedObjects": {
-                "_3Dmethod": "stardist",
                 "area_max": 500,
                 "background_method": "inhomogeneous",
                 "tesselation": true
