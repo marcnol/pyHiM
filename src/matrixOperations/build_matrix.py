@@ -87,6 +87,8 @@ class BuildMatrix:
                 self.pixel_size_z,
             ]
             self.log_name_md = self.current_param.param_dict["fileNameMD"]
+        else:
+            self.log_name_md = "trace_to_matrix.md"
 
     def calculate_pwd_single_mask(self, x, y, z):
         """
@@ -243,7 +245,10 @@ class BuildMatrix:
         number_rois = 1  # by default we plot one ROI at a time.
 
         filepath_split = file.split(".")[0].split(os.sep)
-        filepath_split.remove("data")
+        try:
+            filepath_split.remove("data")
+        except ValueError:
+            pass
         filepath_without_data_folder = (os.sep).join(filepath_split)
         output_filename = filepath_without_data_folder + "_Matrix"
 
