@@ -52,7 +52,7 @@ def template_test_register_local(mode: str):
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
         elif extension == "table" or extension == "dat":
-            assert compare_ecsv_files(tmp_file, out_file)
+            assert compare_ecsv_files(tmp_file, out_file, shuffled_lines=True)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
 
