@@ -238,11 +238,6 @@ def main(command_line_arguments=None):
 def check_version_compatibily():
     if apifish.__version__ < "0.6.4dev":
         sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
-    if dask.distributed.__version__ < "2023.4.1":
-        sys.exit(
-            "ERROR: dask[distributed] version: deprecated. \nPlease update dask[distributed] \
-                (pip install -U distributed)"
-        )
 
 
 if __name__ == "__main__":

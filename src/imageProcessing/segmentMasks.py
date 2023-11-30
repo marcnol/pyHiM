@@ -61,7 +61,7 @@ from skimage.util.apply_parallel import apply_parallel
 from stardist import random_label_cmap
 from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
-
+from astropy.convolution import convolve
 from core.dask_cluster import try_get_client
 from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
@@ -70,7 +70,7 @@ from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_
 
 np.seterr(divide="ignore", invalid="ignore")
 
-matplotlib.rcParams["image.interpolation"] = None
+matplotlib.rcParams["image.interpolation"] = "none"
 
 
 # =============================================================================
@@ -500,13 +500,12 @@ def segment_mask_inhomog_background(im, seg_params: SegmentationParams):
     sigma = seg_params.fwhm * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
     kernel.normalize()
-
+    data = convolve(im, kernel, mask=None, normalize_kernel=True)
     # estimates masks and deblends
     segm = detect_sources(
-        im,
+        data,
         threshold,
-        npixels=seg_params.area_min,
-        filter_kernel=kernel,
+        npixels=seg_params.area_min
     )
 
     # removes masks too close to border
@@ -515,10 +514,9 @@ def segment_mask_inhomog_background(im, seg_params: SegmentationParams):
     )  # TODO: parameter to add to parameters.json ?
 
     segm_deblend = deblend_sources(
-        im,
+        data,
         segm,
         npixels=seg_params.area_min,  # typically 50 for masks
-        filter_kernel=kernel,
         nlevels=32,
         contrast=0.001,  # try 0.2 or 0.3
         relabel=True,
@@ -885,12 +883,13 @@ def _segment_2d_image_by_thresholding(
     # makes threshold matrix
     threshold = np.zeros(image_2d.shape)
     threshold[:] = threshold_over_std * image_2d.max() / 100
+    if kernel is not None:
+        data = convolve(image_2d, kernel, mask=None, normalize_kernel=True)
     # segments objects
     segm = detect_sources(
-        image_2d,
+        data,
         threshold,
         npixels=area_min,
-        filter_kernel=kernel,
     )
 
     if segm.nlabels <= 0:
@@ -903,10 +902,9 @@ def _segment_2d_image_by_thresholding(
         return segm.data
 
     segm_deblend = deblend_sources(
-        image_2d,
+        data,
         segm,
         npixels=area_min,  # watch out, this is per plane!
-        filter_kernel=kernel,
         nlevels=nlevels,
         contrast=contrast,
         relabel=True,
