@@ -41,8 +41,6 @@ def template_test_project(mode: str):
             filename = f"{short_filename}.{extension}"
         tmp_file = os.path.join(generated_z_project, filename)
         out_file = os.path.join(reference_outputs, filename)
-        print(tmp_file)
-        print(out_file)
         assert os.path.exists(tmp_file)
         assert os.path.exists(out_file)
         if extension == "npy":

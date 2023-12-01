@@ -42,8 +42,6 @@ def template_test_localize_2d(mode: str):
             filename = f"{short_filename}.{extension}"
         tmp_file = os.path.join(generated_align_images, filename)
         out_file = os.path.join(reference_outputs, filename)
-        print(tmp_file)
-        print(out_file)
         assert os.path.exists(out_file)
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
