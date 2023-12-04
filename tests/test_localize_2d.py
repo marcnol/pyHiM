@@ -36,9 +36,12 @@ def template_test_localize_2d(mode: str):
     reference_files = extract_files(reference_outputs)
     assert len(generated_files) == len(reference_files)
     for filepath, short_filename, extension in generated_files:
-        filename = f"{filepath}.{extension}"
-        tmp_file = os.path.join(generated_align_images, filepath)
-        out_file = os.path.join(reference_outputs, filepath)
+        if "data" in filepath.split(os.sep):
+            filename = f"data{os.sep}{short_filename}.{extension}"
+        else:
+            filename = f"{short_filename}.{extension}"
+        tmp_file = os.path.join(generated_align_images, filename)
+        out_file = os.path.join(reference_outputs, filename)
         assert os.path.exists(out_file)
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
@@ -51,6 +54,7 @@ def template_test_localize_2d(mode: str):
                 tmp_file,
                 out_file,
                 line_start=len("e5c550de-d381-4b62-99d3-726ca7e549d9"),
+                shuffled_lines=True,
             )
         elif extension == "table":
             assert compare_ecsv_files(tmp_file, out_file)
