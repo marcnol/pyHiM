@@ -37,3 +37,10 @@ outputs images:
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | ![image-20220210221852444](../../../_static/user_guide/image-20220210221852444.png) | ![image-20220210221942291](../../../_static/user_guide/image-20220210221942291.png) |
 | ![image-20220210222028835](../../../_static/user_guide/image-20220210222028835.png) | ![image-20220210222006297](../../../_static/user_guide/image-20220210222006297.png) |
+
+
+
+*Alignment accuracy*
+
+This provides a map of all barcode localizations in an ROI, colorcoded by the accuracy of localization. Colorbar scale is in pixels.
+

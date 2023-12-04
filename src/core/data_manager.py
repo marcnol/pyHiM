@@ -476,7 +476,7 @@ class DataManager:
     def __find_file_with_this_part(self, label_part, label, file_list):
         result = None
         for data_file in file_list:
-            if data_file.label == label and label_part in data_file.basename:
+            if data_file.label == label and label_part in data_file.basename.split("_"):
                 result = data_file
         return result
 

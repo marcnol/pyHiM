@@ -317,8 +317,8 @@ class Parameters:
                     "intensity_max": 59,  # max int to keeep object
                     "area_min": 50,  # min area to keeep object
                     "area_max": 500,  # max area to keeep object
-                    # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
-                    "3Dmethod": "thresholding",
+                    # options: 'thresholding' or 'stardist'
+                    "3Dmethod": "stardist",
                     "residual_max": 2.5,  # z-profile Fit: max residuals to keeep object
                     "sigma_max": 5,  # z-profile Fit: max sigma 3D fitting to keeep object
                     # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
@@ -539,7 +539,7 @@ class SegmentationParams:
     )  # z-profile Fit: max sigma 3D fitting to keeep object
     # z-profile Fit: max diff between Moment and z-gaussian fits to keeep object
     centroidDifference_max: int = set_default("centroidDifference_max", 5)
-    # options: 'thresholding' or 'stardist', 'zASTROPY', 'zProfile'
+    # options: 'thresholding' or 'stardist'
     _3Dmethod: str = set_default("_3Dmethod", "None")
     # z-profile Fit: window size to extract subVolume, px.
     # 3 means subvolume will be 7x7.
@@ -573,7 +573,7 @@ class SegmentationParams:
 
     def __post_init__(self):
         self._3Dmethod = (
-            warn_pop(self.unknown_params, "3Dmethod", "thresholding")
+            warn_pop(self.unknown_params, "3Dmethod", "stardist")
             if self._3Dmethod == "None"
             else self._3Dmethod
         )
