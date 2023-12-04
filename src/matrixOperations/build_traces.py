@@ -331,30 +331,55 @@ class BuildTraces:
             for file in files_in_folder
             if self.current_param.decode_file_parts(file)["channel"]
             == channel  # typically "ch00"
-            and self.mask_identifier in os.path.basename(file).split("_")
+            and self.mask_identifier.split("_")[0] in os.path.basename(file).split("_")
             and int(self.current_param.decode_file_parts(file)["roi"]) == self.n_roi
         ]
 
         if files_to_process:
             # loads file with cell masks
-            filename_roi_masks = (
+            filename_masks_2d = (
                 os.path.basename(files_to_process[0]).split(".")[0] + "_Masks.npy"
             )
+            filename_masks_3d = (
+                os.path.basename(files_to_process[0]).split(".")[0] + "_3Dmasks.npy"
+            )
             # TODO: Check if we don't forget to allow a 3D masks loading ?
-            full_filename_roi_masks = (
+            full_filename_masks_2d = (
                 data_path
                 + os.sep
                 + seg_params.mask_2d_folder
                 + os.sep
                 + "data"
                 + os.sep
-                + filename_roi_masks
+                + filename_masks_2d
+            )
+            full_filename_masks_3d = (
+                data_path
+                + os.sep
+                + seg_params.mask_3d_folder
+                + os.sep
+                + "data"
+                + os.sep
+                + filename_masks_3d
             )
 
-            if os.path.exists(full_filename_roi_masks):
+            if "3D" in self.mask_identifier.split("_"):
+                full_filename_masks = full_filename_masks_3d
+                print_log("3D masks used !")
+            elif "2D" in self.mask_identifier.split("_"):
+                full_filename_masks = full_filename_masks_2d
+                print_log("2D masks used !")
+            elif self.ndims == 3 and os.path.exists(full_filename_masks_3d):
+                full_filename_masks = full_filename_masks_3d
+                print_log("3D masks used !")
+            else:
+                full_filename_masks = full_filename_masks_2d
+                print_log("2D masks used !")
+
+            if os.path.exists(full_filename_masks):
                 # loads and initializes masks
-                segmented_masks = read_array(full_filename_roi_masks)
-                print_log(f"$ loaded mask file: {full_filename_roi_masks}")
+                segmented_masks = read_array(full_filename_masks)
+                print_log(f"$ loaded mask file: {full_filename_masks}")
 
                 # expands mask without overlap by a maximmum of 'distance' pixels
                 self.masks = expand_labels(
@@ -364,16 +389,16 @@ class BuildTraces:
                 # initializes masks
                 self.initializes_masks(self.masks)
                 return True
-
             else:
                 # Could not find a file with masks to assign. Report and continue with next ROI
                 debug_mask_filename(
                     files_in_folder,
-                    full_filename_roi_masks,
-                    self.mask_identifier,
+                    full_filename_masks,
+                    self.mask_identifier.split("_")[0],
                     self.n_roi,
                     label=getattr(acq_params, f"{self.mask_identifier[:4]}_channel"),
                 )
+                return False
 
         else:
             print_log(
@@ -385,12 +410,11 @@ class BuildTraces:
             debug_mask_filename(
                 files_in_folder,
                 "None",
-                self.mask_identifier,
+                self.mask_identifier.split("_")[0],
                 self.n_roi,
                 label=getattr(acq_params, f"{self.mask_identifier[:4]}_channel"),
             )
-
-        return False
+            return False
 
     def assign_masks(
         self,
@@ -474,7 +498,7 @@ class BuildTraces:
 
                 if len(self.trace_table.data) > 0:
                     # saves trace table with results per ROI
-                    output_table_filename = f"{output_filename}_{self.label}_mask:{str(self.mask_identifier)}_ROI:{str(self.n_roi)}.ecsv"
+                    output_table_filename = f"{output_filename}_{self.label}_mask:{str(self.mask_identifier.split('_')[0])}_ROI:{str(self.n_roi)}.ecsv"
 
                     self.trace_table.save(output_table_filename, self.trace_table.data)
 
@@ -770,7 +794,8 @@ class BuildTraces:
         )
         files = list(glob.glob(data_file_base_2d + "_*" + self.label + ".dat"))
         files += list(glob.glob(data_file_base_3d + "_*" + self.label + ".dat"))
-
+        # remove duplicate path, it's possible for example if 2d and 3d folder have same name
+        files = list(set(files))
         if not files:
             print_log("$ No localization table found to process!", "WARN")
             return
@@ -786,10 +811,10 @@ class BuildTraces:
 
 
 def debug_mask_filename(
-    files_in_folder, full_filename_roi_masks, mask_identifier, n_roi, label=""
+    files_in_folder, full_filename_masks, mask_identifier, n_roi, label=""
 ):
     print_log(f"# Error, no mask file found for ROI: {n_roi}\n")
-    print_log(f"# File I was searching for: {full_filename_roi_masks}")
+    print_log(f"# File I was searching for: {full_filename_masks}")
     print_log("# Debug: ")
     for file in files_in_folder:
         if (
