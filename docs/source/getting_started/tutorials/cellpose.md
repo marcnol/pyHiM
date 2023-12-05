@@ -4,7 +4,7 @@
 
 ## Installation
 
-full instructions: https://github.com/mouseland/cellpose
+full instructions: [GitHub page of cellpose](https://github.com/mouseland/cellpose)
 
 ```sh
 conda create --name cellpose python=3.8  
@@ -58,6 +58,7 @@ Cellpose parameters can be changed by providing them as arguments to `mask_cellp
   --flow FLOW          flow threshold. Default = 10.
   --stitch STITCH      stitch threshold. Default = 0.1.
   --diam DIAM          diameter. Default = 50.
+  --model MODEL        pretrained_model to use for running. Default: “cyto”.
 ```
 
 Example:
