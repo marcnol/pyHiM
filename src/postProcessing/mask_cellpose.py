@@ -201,11 +201,12 @@ def process_images(
     print(
         f"Parameters: diam={diam} | cellprob={cellprob} | flow={flow} | stitch={stitch}\n"
     )
-
-    folder_destination = "mask_3d" + os.sep + "data"
-
+    params = load_params()
+    folder_mask_2d = params["common"]["segmentedObjects"].get("mask_2d_folder","mask_2d") + os.sep + "data"
+    folder_mask_3d = params["common"]["segmentedObjects"].get("mask_3d_folder","mask_3d") + os.sep + "data"
     try:
-        os.makedirs(folder_destination)
+        os.makedirs(folder_mask_2d)
+        os.makedirs(folder_mask_3d)
     except FileExistsError:
         print(">>> Output folder exists")
 
@@ -229,7 +230,7 @@ def process_images(
                     cellprob,
                     flow,
                     stitch,
-                    folder_destination=folder_destination,
+                    folder_destination=folder_mask_3d,
                     gpu=gpu,
                     pretrained_model=pretrained_model,
                 )
@@ -243,23 +244,40 @@ def process_images(
                     gpu=gpu,
                     pretrained_model=pretrained_model,
                 )
+            # Delete tempo registered file
+            os.unlink(file_registered)
 
+            # Save msk in 3D
             new_mask_name = (
                 save_folder
-                + folder_destination
+                + folder_mask_3d
                 + os.sep
                 + os.path.basename(file_registered).split(".")[0]
-                + "_Masks.npy"
+                + "_3Dmasks.npy"
             )
-
             if os.path.exists(new_mask_name):
                 subprocess.run(f"mv {new_mask_name} {new_mask_name}_old", shell=True)
                 print(
                     f"Warning: File already exists, we moved it to: {new_mask_name}_old"
                 )
-
             print(f"> Saving output mask image to {new_mask_name}")
             np.save(new_mask_name, mask)
+
+            # Save it also in 2D
+            mask_2d_name = (
+                save_folder
+                + folder_mask_2d
+                + os.sep
+                + os.path.basename(file_registered).split(".")[0]
+                + "_Masks.npy"
+            )
+            if os.path.exists(mask_2d_name):
+                subprocess.run(f"mv {mask_2d_name} {mask_2d_name}_old", shell=True)
+                print(
+                    f"Warning: File already exists, we moved it to: {mask_2d_name}_old"
+                )
+            print(f"> Saving output mask image to {mask_2d_name}")
+            np.save(mask_2d_name, np.max(mask, axis=0))
 
 
 # =============================================================================
@@ -320,7 +338,7 @@ def load_json(file_name):
         with open(file_name, encoding="utf-8") as json_file:
             return json.load(json_file)
     print(f"[WARNING] path {file_name} doesn't exist!")
-    return None
+    raise ValueError
 
 
 def _shift_xy_mask_3d(image, shift):
@@ -330,22 +348,22 @@ def _shift_xy_mask_3d(image, shift):
     shift_3d[0], shift_3d[1], shift_3d[2] = 0, shift[0], shift[1]
     return shift_image(image, shift_3d)
 
-
-def shift_3d_mask(mask_3d_path):
-    roi_name = find_roi_name_in_path(mask_3d_path)
-    label = find_label_in_path(mask_3d_path)
+def load_params():
     # loads dicShifts with shifts for all rois and all labels
     if os.path.exists("parameters.json"):
         print("Load parameters.json")
-        params = load_json("parameters.json")
+        return load_json("parameters.json")
     elif os.path.exists("infoList.json"):
         print(
             "[WARNING] 'infoList.json' is a DEPRECATED file name, please rename it 'parameters.json'"
         )
         print("Load infoList.json")
-        params = load_json("infoList.json")
+        return load_json("infoList.json")
     else:
         raise ValueError("[ERROR] 'parameters.json' file not found.")
+
+def get_dict_shifts():
+    params = load_params()
     dict_shifts_path = (
         params["common"]["alignImages"].get("register_global_folder", "register_global")
         + os.sep
@@ -354,8 +372,12 @@ def shift_3d_mask(mask_3d_path):
         + params["common"]["alignImages"].get("outputFile", "shifts")
         + ".json"
     )
-    dict_shifts = load_json(dict_shifts_path)
+    return load_json(dict_shifts_path)
 
+def shift_3d_mask(mask_3d_path):
+    roi_name = find_roi_name_in_path(mask_3d_path)
+    label = find_label_in_path(mask_3d_path)
+    dict_shifts = get_dict_shifts()
     # uses existing shift calculated by align_images
     try:
         shift = dict_shifts[f"ROI:{roi_name}"][label]
