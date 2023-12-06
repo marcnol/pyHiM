@@ -251,7 +251,7 @@ class Parameters:
                     "pixelSizeZ": 0.25,
                 },  # barcode, fiducial
                 "zProject": {
-                    "folder": "zProject",  # output folder
+                    "folder": "project",  # output folder
                     "mode": "full",  # full, manual, automatic, laplacian
                     "blockSize": 256,
                     "display": True,
@@ -262,8 +262,9 @@ class Parameters:
                     "zProjectOption": "MIP",  # sum or MIP
                 },
                 "alignImages": {
-                    "folder": "alignImages",  # output folder
-                    "outputFile": "register_global",
+                    "register_global_folder": "register_global",
+                    "register_local_folder": "register_local",
+                    "outputFile": "shifts",
                     "referenceFiducial": "RT27",
                     "localAlignment": "block3D",  # options: None, mask2D, block3D
                     "alignByBlock": True,  # alignByBlock True will perform block alignment
@@ -285,7 +286,7 @@ class Parameters:
                     "blockSize": 256,
                 },
                 "buildsPWDmatrix": {
-                    "folder": "buildsPWDmatrix",  # output folder
+                    "folder": "tracing",  # output folder
                     # available methods: masking, clustering
                     "tracing_method": ["masking", "clustering"],
                     # Expands masks until they collide by a max of 'mask_expansion' pixels
@@ -300,7 +301,10 @@ class Parameters:
                     "remove_uncorrected_localizations": True,
                 },
                 "segmentedObjects": {
-                    "folder": "segmentedObjects",  # output folder
+                    "localize_2d_folder": "localize_2d",
+                    "localize_3d_folder": "localize_3d",
+                    "mask_2d_folder": "mask_2d",
+                    "mask_3d_folder": "mask_3d",
                     "operation": "2D,3D",  # options: 2D or 3D
                     "outputFile": "segmentedObjects",
                     "background_method": "inhomogeneous",  # flat or inhomogeneous or stardist
@@ -407,7 +411,7 @@ class ProjectionParams:
     """zProject section of parameters.json parameter file."""
 
     # pylint: disable=invalid-name
-    folder: str = set_default("folder", "zProject")  # output folder
+    folder: str = set_default("folder", "project")  # output folder
     mode: str = set_default("mode", "full")  # full, manual, automatic, laplacian
     block_size: int = set_default("block_size", 256)
     display: bool = set_default("display", True)
@@ -430,12 +434,12 @@ class RegistrationParams:
 
     # pylint: disable=invalid-name
     register_global_folder: str = set_default(
-        "register_global_folder", "alignImages"
+        "register_global_folder", "register_global"
     )  # output folder
     register_local_folder: str = set_default(
-        "register_local_folder", "alignImages"
+        "register_local_folder", "register_local"
     )  # output folder
-    outputFile: str = set_default("outputFile", "register_global")
+    outputFile: str = set_default("outputFile", "shifts")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
     localAlignment: str = set_default(
         "localAlignment", "block3D"
@@ -490,19 +494,17 @@ class SegmentationParams:
 
     # pylint: disable=invalid-name
     mask_2d_folder: str = set_default(
-        "mask_2d_folder", "segmentedObjects"
+        "mask_2d_folder", "mask_2d"
     )  # output mask_2d folder
-    mask_3d_folder: str = set_default(
-        "mask_3d_folder", "segmentedObjects"
-    )  # output folder
+    mask_3d_folder: str = set_default("mask_3d_folder", "mask_3d")  # output folder
     localize_2d_folder: str = set_default(
-        "localize_2d_folder", "segmentedObjects"
+        "localize_2d_folder", "localize_2d"
     )  # output folder
     localize_3d_folder: str = set_default(
-        "localize_3d_folder", "segmentedObjects"
+        "localize_3d_folder", "localize_3d"
     )  # output folder
     operation: str = set_default("operation", "2D,3D")  # options: 2D or 3D
-    outputFile: str = set_default("outputFile", "segmentedObjects")
+    outputFile: str = set_default("outputFile", "localizations")
     background_method: str = set_default(
         "background_method", "inhomogeneous"
     )  # flat or inhomogeneous or stardist

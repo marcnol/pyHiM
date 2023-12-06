@@ -280,7 +280,7 @@ class Mask3D:
         for file_index, filename_to_process in enumerate(
             self.filenames_to_process_list
         ):
-            print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
+            print_log(f"\n\n>>>Iteration: {file_index+1}/{n_files_to_process}<<<")
             self.segment_masks_3d_file(
                 filename_to_process,
                 data_path,

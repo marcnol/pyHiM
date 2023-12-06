@@ -221,7 +221,7 @@ class Drift3D:
             for file_index, filename_to_process in enumerate(
                 self.filenames_to_process_list
             ):
-                print_log(f"\n\n>>>Iteration: {file_index}/{number_files}<<<")
+                print_log(f"\n\n>>>Iteration: {file_index+1}/{number_files}<<<")
 
                 alignment_results_tables.append(
                     self.align_fiducials_3d_file(

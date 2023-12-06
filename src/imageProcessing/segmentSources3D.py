@@ -467,7 +467,7 @@ class Localize3D:
             for file_index, filename_to_process in enumerate(
                 self.filenames_to_process_list
             ):  # self.current_param.files_to_process):
-                print_log(f"\n\n>>>Iteration: {file_index}/{n_files_to_process}<<<")
+                print_log(f"\n\n>>>Iteration: {file_index+1}/{n_files_to_process}<<<")
 
                 output_tables.append(
                     self.segment_sources_3d_file(
