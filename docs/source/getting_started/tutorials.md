@@ -36,7 +36,7 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/jupyter_logo.svg
+    .. image:: ../_static/jupyter_logo.png
 
     ^^^^^^^^^^
 
@@ -50,7 +50,7 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/cellpose_logo.svg
+    .. image:: ../_static/logo_cellpose.png
 
     ^^^^^^^^^^
 
@@ -61,6 +61,20 @@
     .. link-button:: tutorials/cellpose
             :type: ref
             :text: Cellpose for pyHiM
+            :classes: btn-block btn-info stretched-link text-white
+
+    ---
+    .. image:: ../_static/stardist_logo.jpg
+
+    ^^^^^^^^^^
+
+    Use a home made stardist model to segment 3D masks and localize 3D spots
+
+    +++
+
+    .. link-button:: tutorials/stardist
+            :type: ref
+            :text: Stardist for pyHiM
             :classes: btn-block btn-info stretched-link text-white
 ```
 
