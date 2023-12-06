@@ -7,7 +7,7 @@ This scripts implements a simpler version of trace_combinator, the objective is 
 This just takes a list of trace files and merges them together 
 
 ```
-$ ls Trace*.ecsv | trace_merge.py
+$ ls Trace*.ecsv | trace_merge
 ```
 
 outputs
@@ -15,7 +15,7 @@ outputs
 ChromatinTraceTable() object and output .ecsv formatted file with assembled trace tables.
 
 ```
-usage: trace_combinator.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+usage: trace_combinator [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
                            [-W ACTION] [--saveMatrix] [--ndims NDIMS]
                            [--method METHOD] [--pipe]
 

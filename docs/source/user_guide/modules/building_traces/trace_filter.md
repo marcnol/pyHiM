@@ -18,7 +18,7 @@ How to use it:
 
   ```sh
   # Call trace_filter from rootFolder to process all Trace files in `buildPWDmatrix`
-  $ trace_filter.py --input my_trace.ecsv --N_barcodes 5
+  $ trace_filter --input my_trace.ecsv --N_barcodes 5
   ```
 
   This will remove traces with less than 5 barcodes.

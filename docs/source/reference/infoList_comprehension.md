@@ -73,7 +73,7 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |fwhm|Set source size (in pixels); "The full-width half-maximum (FWHM) of the major axis of the Gaussian kernel in units of pixels." ([photutils.DAOStarFinder](https://photutils.readthedocs.io/en/stable/api/photutils.detection.DAOStarFinder.html))|
 |intensity_max|Set max intensity to keep object|
 |intensity_min|Set min intensity to keep object|
-|operation|Select 2D or 3D method of segmentation for DAPI and barcode label; Process secondary masks in processSNDchannel.py for RNA label|
+|operation|Select 2D or 3D method of segmentation for DAPI and barcode label; Process secondary masks in `process_snd_channel` script for RNA label|
 |outputFile|Set a base name for output files|
 |residual_max|Set maximum difference between axial spot intensity and gaussian fit|
 |sigma_max|Set maximum gaussian fit sigma allowed (axial spot intensity)|

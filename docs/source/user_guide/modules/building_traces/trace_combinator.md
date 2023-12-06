@@ -27,7 +27,7 @@
   folder1/Trace_3D_barcode_KDtree_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:DAPI_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:mask0_ROI:6.ecsv
   
   # then pipe these files into trace_combinator
-  $ ls folder1/Trace*3D*6.ecsv | trace_combinator.py --pipe
+  $ ls folder1/Trace*3D*6.ecsv | trace_combinator --pipe
   ```
 
   this will process the three `Trace` files listed using `ls`.
@@ -43,7 +43,7 @@
   folder2/Trace_3D_barcode_KDtree_ROI:6.ecsv
   
   # then pipe these files into trace_combinator
-  $ cat files_to_combine | trace_combinator.py --pipe
+  $ cat files_to_combine | trace_combinator --pipe
   ```
 
   this will process the files within `files_to_combine`.
@@ -72,7 +72,7 @@
 ## Relevant options
 
 ```
-usage: trace_combinator.py [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
+usage: trace_combinator [-h] [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL]
                            [-W ACTION] [--saveMatrix] [--ndims NDIMS]
                            [--method METHOD] [--pipe]
 

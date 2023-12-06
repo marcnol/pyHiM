@@ -470,7 +470,7 @@ Usage: trace_combinator [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
 
 ### trace_selector.py
 
-This scipt loads a trace file and a number of numpy masks, and assings them the labels produced by `processSNDchannel.py`.
+This scipt loads a trace file and a number of numpy masks, and assings them the labels produced by `process_snd_channel`.
 
 ```
 Usage: trace_selector [-F ROOTFOLDER] [--pixel_size]

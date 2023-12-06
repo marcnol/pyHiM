@@ -4,6 +4,8 @@
 
 ## Installation
 
+ First, download the [`mask_cellpose.py` script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/postProcessing/mask_cellpose.py). 
+
 full instructions: [GitHub page of cellpose](https://github.com/mouseland/cellpose)
 
 ```sh
@@ -17,7 +19,7 @@ python -m pip install cellpose[gui]
 Before performing the segmentation, you need to apply `project` & `register_global` routines inside the folder containing the images of your masks:
 ```bash
 conda activate pyHiM
-pyHiM.py -C project,register_global
+pyhim -C project,register_global
 ```
 
 ## Cellpose script for pyHiM
@@ -31,10 +33,10 @@ To segment your masks with cellpose in the pyHiM context, you need to run the `m
 
 The parameters are set by default. They were optimized for late embryos but also seem to work well for tissues.
 
-Run this command inside the folder containing the masks:
+Run this command inside the folder containing the masks with the path of your [downloaded script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/postProcessing/mask_cellpose.py):
 ```bash
 conda activate cellpose
-mask_cellpose.py --input <your_mask_name.tif>
+python3 <path/to/>mask_cellpose.py --input <your_mask_name.tif>
 ```
 
 The script produce an `NPY` file inside the folder `segmentedObjects/data/`.
@@ -98,5 +100,5 @@ After, go back to the pyHiM conda environment and you can run the next routines 
 
 ```bash
 conda activate pyHiM
-pyHiM.py -C register_local,localize_3d,filter_localizations,register_localizations,build_traces,build_matrix
+pyhim -C register_local,localize_3d,filter_localizations,register_localizations,build_traces,build_matrix
 ```

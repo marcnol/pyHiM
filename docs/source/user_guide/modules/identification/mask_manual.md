@@ -13,7 +13,7 @@ If no graphical interface is displayed, try to install:
 ## Invoke
 To process 
 ```shell
-$ mask_manual.py --input my_image.tif --label mylabel
+$ mask_manual --input my_image.tif --label mylabel
 ```
 
 

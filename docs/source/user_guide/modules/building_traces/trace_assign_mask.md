@@ -7,7 +7,7 @@ Use `trace_assign_mask` to assign specific *labels* to chromatin traces in a tra
 ## Invoke
 
 ```bash
-$ trace_assign_mask.py --input trace_file.ecsv --mask_file my_mask.npy --label mymask
+$ trace_assign_mask --input trace_file.ecsv --mask_file my_mask.npy --label mymask
 ```
 
 This will apply the label `mymask` to traces falling within the masks of the file `my_mask.npy`. The output will be a trace file with the extension `labeled`.
@@ -17,7 +17,7 @@ This will apply the label `mymask` to traces falling within the masks of the fil
 Multiple mask files can be provided using piping.
 
 ```bash
-$ ls my_traces*.ecsv | trace_assign_mask.py --mask_file my_mask.npy --pipe  --label mymask
+$ ls my_traces*.ecsv | trace_assign_mask --mask_file my_mask.npy --pipe  --label mymask
 ```
 
 In this case the `mymask` will be applied to multiple trace files.
@@ -27,7 +27,7 @@ In this case the `mymask` will be applied to multiple trace files.
 ## Relevant options
 
 ```
-usage: trace_assign_mask.py [-h] [--input INPUT] [--mask_file MASK_FILE] [--pixel_size PIXEL_SIZE] [--label LABEL]
+usage: trace_assign_mask [-h] [--input INPUT] [--mask_file MASK_FILE] [--pixel_size PIXEL_SIZE] [--label LABEL]
                             [--pipe]
 
 optional arguments:

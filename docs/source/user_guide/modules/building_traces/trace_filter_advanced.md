@@ -18,7 +18,7 @@ How to use it:
 
   ```sh
   # Call trace_filter from rootFolder to process all Trace files in `buildPWDmatrix`
-  $ trace_filter.py -- N_barcodes 2
+  $ trace_filter -- N_barcodes 2
   ```
 
   this will process all  `Trace` files in `buildPWDmatrix`
@@ -34,14 +34,14 @@ How to use it:
   folder2/Trace_3D_barcode_KDtree_ROI:6.ecsv
   
   # then pipe these files into trace_combinator
-  $ cat files_to_combine | trace_combinator.py --N_barcodes 2 --pipe
+  $ cat files_to_combine | trace_combinator --N_barcodes 2 --pipe
   
   # OR use `ls` to select which files you want to combine
   $ ls folder1/Trace*3D*6.ecsv
   folder1/Trace_3D_barcode_KDtree_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:DAPI_ROI:6.ecsv  folder1/Trace_3D_barcode_mask:mask0_ROI:6.ecsv
   
   # then pipe these files into trace_combinator
-  $ ls folder1/Trace*3D*6.ecsv | trace_combinator.py --N_barcodes 2 --pipe
+  $ ls folder1/Trace*3D*6.ecsv | trace_combinator --N_barcodes 2 --pipe
   ```
 
 

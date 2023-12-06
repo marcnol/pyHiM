@@ -8,19 +8,19 @@
 To analyse a single or a list of unrelated files:
 
 ```
-$ ls buildsPWDmatrix/Trace_2D_barcode_mask:mask0_ROI:2.ecsv | trace_analyzer.py --pipe
+$ ls buildsPWDmatrix/Trace_2D_barcode_mask:mask0_ROI:2.ecsv | trace_analyzer --pipe
 ```
 
 To analyze all trace files in `buildPWDmatrix`:
 
 ```
-$  trace_analyzer.py
+$  trace_analyzer
 ```
 
 Example: 
 
 ```
-$ trace_analyzer.py --input Trace_3D_barcode_mask:DAPI_ROI:1_filtered.ecsv
+$ trace_analyzer --input Trace_3D_barcode_mask:DAPI_ROI:1_filtered.ecsv
 ```
 
 will analyze the trace file and produce several outputs, including:

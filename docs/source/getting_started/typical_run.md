@@ -15,7 +15,7 @@
   
 - Update the `parameters.json` file to indicate the **reference cycle** used for drift correction. 
   ```{note}
-  This can be done by manually editing the `parameters.json` file or by running the graphical user interface provided in the script: `function_parameters.py` ([tutorial here](tutorials/configuration_file.md)).
+  This can be done by manually editing the `parameters.json` file or by running the graphical user interface provided in the script: `pyhim_parameters` ([tutorial here](tutorials/configuration_file.md)).
   ```
 
 ## Basic run

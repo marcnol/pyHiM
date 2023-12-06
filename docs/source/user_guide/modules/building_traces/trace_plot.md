@@ -21,13 +21,13 @@ installs:
 ### Invoke
 
 ```bash
-$ ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot.py --pipe --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
+$ ls Trace_3D_barcode_KDtree_ROI:1.ecsv | trace_plot --pipe --selected_trace 5b1e6f89-0362-4312-a7ed-fc55ae98a0a5
 ```
 
 this pipes the file 'Trace_3D_barcode_KDtree_ROI:1.ecsv' into trace_plot and then selects a trace for conversion.
 
 ```bash
-$ trace_plot.py --input Trace_3D_barcode_KDtree_ROI:1.ecsv --all
+$ trace_plot --input Trace_3D_barcode_KDtree_ROI:1.ecsv --all
 ```
 
 this plots all traces in the trace file.
