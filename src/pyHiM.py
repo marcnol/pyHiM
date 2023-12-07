@@ -110,10 +110,8 @@ def main(command_line_arguments=None):
             )
 
         # [segments DAPI and sources in 2D]
-        if (
-            ("mask_2d" in pipe.cmds or "localize_2d" in pipe.cmds)
-            and label != "RNA"
-            and label != "fiducial"
+        if ("mask_2d" in pipe.cmds and (label in ("DAPI", "mask"))) or (
+            "localize_2d" in pipe.cmds and label == "barcode"
         ):
             segmentation_params = datam.labelled_params[label].segmentation
             pipe.segment_masks(
