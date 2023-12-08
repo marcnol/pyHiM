@@ -30,9 +30,9 @@ def template_test_register_local(mode: str):
     """Check RegisterLocal feature with all possibilities"""
     inputs = os.path.join(tmp_register_local_in, mode)
     main(["-F", inputs, "-C", "register_local"])
-    generated_align_images = os.path.join(inputs, "alignImages")
+    generated_register_local = os.path.join(inputs, "alignImages")
     reference_outputs = f"pyhim-small-dataset/register_local/OUT/{mode}/alignImages/"
-    generated_files = extract_files(generated_align_images)
+    generated_files = extract_files(generated_register_local)
     reference_files = extract_files(reference_outputs)
     assert len(generated_files) == len(reference_files)
     for filepath, short_filename, extension in generated_files:
@@ -40,7 +40,7 @@ def template_test_register_local(mode: str):
             filename = f"data{os.sep}{short_filename}.{extension}"
         else:
             filename = f"{short_filename}.{extension}"
-        tmp_file = os.path.join(generated_align_images, filename)
+        tmp_file = os.path.join(generated_register_local, filename)
         out_file = os.path.join(reference_outputs, filename)
         assert os.path.exists(out_file)
         if extension == "npy":

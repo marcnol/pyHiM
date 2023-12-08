@@ -498,7 +498,7 @@ class BuildTraces:
 
                 if len(self.trace_table.data) > 0:
                     # saves trace table with results per ROI
-                    output_table_filename = f"{output_filename}_{self.label}_mask:{str(self.mask_identifier.split('_')[0])}_ROI:{str(self.n_roi)}.ecsv"
+                    output_table_filename = f"{output_filename}_{self.label}_mask-{str(self.mask_identifier.split('_')[0])}_ROI-{str(self.n_roi)}.ecsv"
 
                     self.trace_table.save(output_table_filename, self.trace_table.data)
 
@@ -694,7 +694,7 @@ class BuildTraces:
                     + "_"
                     + self.label
                     + "_KDtree"
-                    + "_ROI:"
+                    + "_ROI-"
                     + str(self.n_roi)
                     + ".ecsv"
                 )

@@ -260,7 +260,7 @@ class DataManager:
                     cycle = parts["cycle"]
                     self.add_to_processable_labels(label)
                     if "_2d_registered.npy" in path:  # tempo refactoring condition
-                        self.align_folder = "/".join(path.split("/")[:-1])
+                        self.align_folder = os.sep.join(path.split(os.sep)[:-1])
                         basename = name[: -len("_2d_registered")]
                         self.npy_files.append(
                             NpyFile(
@@ -455,7 +455,9 @@ class DataManager:
             data_file.delete_data()
             if data_file.extension in self.npy_ext:
                 if "_2d_registered.npy" in data_file.path_name:
-                    self.align_folder = "/".join(data_file.path_name.split("/")[:-1])
+                    self.align_folder = os.sep.join(
+                        data_file.path_name.split(os.sep)[:-1]
+                    )
                 parts = self.decode_file_parts(basename)
                 self.check_roi_uniqueness(parts["roi"])
                 channel = parts["channel"][:4]

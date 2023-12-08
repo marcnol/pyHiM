@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.8.12"
+version = "0.8.13.dev8"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -25,7 +25,7 @@ keywords = ["astropy",
               "scipy",
               "tifffile"
               ]
-dependencies = ["apifish",
+dependencies = ["apifish >= 0.6.4.dev0",
                 "dataclasses-json",
                 "astropy >= 4.3.1",
                 "csbdeep >= 0.6.3",
@@ -83,5 +83,11 @@ mask_manual = "postProcessing.mask_manual:main"
 # NOT have to specify this line.
 include-package-data = true
 
+# [tool.setuptools.packages.find]
+# where = ["ressources"]
+
 [tool.setuptools.package-data]
-parameter_file = ["*.png", "*.json"]
+"toolbox.parameter_file" = ["*.png", "*.json"]
+"stardist_models.DAPI_2D_stardist_nc14_nrays64_epochs40_grid2" = ["*.h5", "*.json"]
+"stardist_models.DAPI_3D_stardist_17032021_deconvolved" = ["*.h5", "*.json"]
+"stardist_models.PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01" = ["*.h5", "*.json"]

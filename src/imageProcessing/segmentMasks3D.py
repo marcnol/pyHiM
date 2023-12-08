@@ -55,10 +55,12 @@ class Mask3D:
         ):
             base_dir = seg_params.stardist_basename
         else:
-            base_dir = (
-                os.path.dirname(os.path.realpath(__file__))
-                + "/../../ressources/stardist_models"
+            base_dir = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                os.pardir,
+                "stardist_models",
             )
+
         if seg_params.stardist_network3D is not None and os.path.exists(
             os.path.join(base_dir, seg_params.stardist_network3D)
         ):

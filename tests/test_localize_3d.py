@@ -30,7 +30,7 @@ def template_test_localize_3d(mode: str):
     """Check Localize3D feature with all possibilities"""
     inputs = os.path.join(tmp_localize_3d_in, mode)
     main(["-F", inputs, "-C", "localize_3d"])
-    generated_align_images = os.path.join(inputs, "segmentedObjects")
+    generated_align_images = os.path.join(inputs, "localize_3d")
     reference_outputs = f"pyhim-small-dataset/localize_3d/OUT/{mode}/segmentedObjects/"
     generated_files = extract_files(generated_align_images)
     reference_files = extract_files(reference_outputs)

@@ -31,7 +31,7 @@ import matplotlib
 import matplotlib.pylab as plt
 import matplotlib.pyplot as plt
 import numpy as np
-from astropy.convolution import Gaussian2DKernel
+from astropy.convolution import Gaussian2DKernel, convolve
 from astropy.stats import SigmaClip, gaussian_fwhm_to_sigma, sigma_clipped_stats
 from astropy.table import Column, Table, vstack
 from astropy.visualization import SqrtStretch, simple_norm
@@ -61,7 +61,7 @@ from skimage.util.apply_parallel import apply_parallel
 from stardist import random_label_cmap
 from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
-from astropy.convolution import convolve
+
 from core.dask_cluster import try_get_client
 from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
@@ -502,11 +502,7 @@ def segment_mask_inhomog_background(im, seg_params: SegmentationParams):
     kernel.normalize()
     data = convolve(im, kernel, mask=None, normalize_kernel=True)
     # estimates masks and deblends
-    segm = detect_sources(
-        data,
-        threshold,
-        npixels=seg_params.area_min
-    )
+    segm = detect_sources(data, threshold, npixels=seg_params.area_min)
 
     # removes masks too close to border
     segm.remove_border_labels(
@@ -569,16 +565,15 @@ def segment_mask_stardist(im, seg_params: SegmentationParams):
     ):
         base_dir = seg_params.stardist_basename
     else:
-        base_dir = (
-            os.path.dirname(os.path.realpath(__file__))
-            + "/../../ressources/stardist_models"
+        base_dir = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)), os.pardir, "stardist_models"
         )
     if seg_params.stardist_network is not None and os.path.exists(
         os.path.join(base_dir, seg_params.stardist_network)
     ):
         model_name = seg_params.stardist_network
     else:
-        model_name = "DAPI_2D_stardist_nc14_nrays:64_epochs:40_grid:2"
+        model_name = "DAPI_2D_stardist_nc14_nrays64_epochs40_grid2"
     model = StarDist2D(None, name=model_name, basedir=base_dir)
 
     img = normalize(im, 1, 99.8, axis=axis_norm)
