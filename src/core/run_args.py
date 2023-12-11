@@ -69,7 +69,9 @@ class RunArgs:
     def __init__(self, command_line_arguments):
         print_log("\n-----------------------------------------------------------------")
         parsed_args = _parse_run_args(command_line_arguments)
-        self.data_path = parsed_args.rootFolder
+        self.data_path = (
+            parsed_args.rootFolder if parsed_args.rootFolder != "." else os.getcwd()
+        )
         self._is_docker()
         self.cmd_list = self.parse_cmd(parsed_args.cmd)
         self.thread_nbr = parsed_args.threads
