@@ -725,16 +725,18 @@ def make_segmentations(
                     current_param.param_dict["fileNameMD"],
                     output_filename_stardist,
                 )
+                # saves output 2d zProjection as matrix
+                save_image_2d_cmd(labeled, f"{output_filename}_Masks")
+            else:
+                show_image_masks(
+                    im,
+                    output,
+                    current_param.param_dict["fileNameMD"],
+                    output_filename,
+                )
+                # saves output 2d zProjection as matrix
+                save_image_2d_cmd(output, f"{output_filename}_Masks")
 
-            show_image_masks(
-                im,
-                output,
-                current_param.param_dict["fileNameMD"],
-                output_filename,
-            )
-
-            # saves output 2d zProjection as matrix
-            save_image_2d_cmd(output, f"{output_filename}_Masks")
         else:
             output = []
         del im_obj
