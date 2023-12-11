@@ -25,31 +25,18 @@ def _parse_run_args(command_line_arguments):
     """
     parser = ArgumentParser()
 
+    parser.add_argument(
+        "-C",
+        "--cmd",
+        help="Comma-separated list of routines to run.\nDEFAULT: project,register_global,register_local,mask_2d,localize_2d,mask_3d,localize_3d,filter_localizations,register_localizations,build_traces,build_matrix",
+    )
     # Data path
     parser.add_argument(
         "-F",
         "--rootFolder",
         type=str,
         default=os.getcwd(),
-        help="Folder path with input images",
-    )
-    parser.add_argument(
-        "-C",
-        "--cmd",
-        help="Comma-separated list of routines to run (without space !): \n\
-                                project register_global register_local \n\
-                                mask_2d localize_2d mask_3d localize_3d \n\
-                                filter_localizations register_localizations \n\
-                                build_traces build_matrix",
-    )
-    # Number of threads
-    parser.add_argument(
-        "-T",
-        "--threads",
-        type=int,
-        default=1,
-        help="Thread number to run with parallel mode. \
-            If none or 1, then it will run with sequential mode.",
+        help="Folder path with input images.\nDEFAULT: Current directory",
     )
 
     parser.add_argument(
@@ -57,7 +44,15 @@ def _parse_run_args(command_line_arguments):
         "--parameters",
         type=str,
         default=None,
-        help="Path of your parameters.json file. If none, pyHiM expect this file inside your current folder.",
+        help="Path of the parameters.json file.\nDEFAULT: pyHiM expect this file inside your current directory",
+    )
+    # Number of threads
+    parser.add_argument(
+        "-T",
+        "--threads",
+        type=int,
+        default=1,
+        help="Thread number to run with parallel mode.\nDEFAULT: 1 (sequential mode)",
     )
 
     return parser.parse_args(command_line_arguments)

@@ -13,7 +13,7 @@ conda activate pyHiM
 Replace `pyHiM` by your `environment name` if you called it something else.
 ```
 
-2. Install a tool to manage jupyter notebook like [JupyterLab](https://jupyter.org/install#jupyterlab):
+2. Install a tool to manage jupyter notebook like [JupyterLab: <img src="../../_static/getting_started/Download-Icon.png" width="50"/>](https://jupyter.org/install#jupyterlab)
 ```sh
 conda install jupyterlab
 ```
@@ -27,7 +27,7 @@ ipython kernel install --user --name=pyHiM-kernel
 
 ## Open tutorial with JupyterLab
 
-1. To download and unzip the pyHiM notebook with its python file, [click here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/tree/development/docs/source/getting_started/tutorials/notebooks).
+1. To download and unzip the pyHiM notebook with its python file, [click here: <img src="../../_static/getting_started/Download-Icon.png" width="50"/>](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/tree/development/docs/source/getting_started/tutorials/notebooks)
 
 2. Open a terminal inside your downloaded folder and activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM
 ```sh
