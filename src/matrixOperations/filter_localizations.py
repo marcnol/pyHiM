@@ -94,9 +94,7 @@ class FilterLocalizations:
 
         return barcode_map
 
-    def setup_filter_values(
-        self, reg_params: RegistrationParams, matrix_params: MatrixParams
-    ):
+    def setup_filter_values(self, matrix_params: MatrixParams):
         """
         Returns
         -------
@@ -111,13 +109,10 @@ class FilterLocalizations:
         else:
             self.flux_min = matrix_params.flux_min
 
-        self.block_size = reg_params.blockSize
-
     def filter_folder(
         self,
         data_path,
         seg_params,
-        reg_params: RegistrationParams,
         matrix_params: MatrixParams,
     ):
         """
@@ -165,7 +160,7 @@ class FilterLocalizations:
         if files:
             for file in files:
                 self.ndims = 3 if "3D" in os.path.basename(file) else 2
-                self.setup_filter_values(reg_params, matrix_params)
+                self.setup_filter_values(matrix_params)
 
                 # Loads barcode coordinate Tables
                 table = LocalizationTable()
