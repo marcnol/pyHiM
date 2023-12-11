@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.8.14"
+__version__ = "0.9.0"
 
 import os
 import sys
@@ -52,24 +52,7 @@ def main(command_line_arguments=None):
 
     pipe.run()
 
-    # Separate no-refactor routines
-    #      ||
-    #      ||
-    #      ||
-    #      ||
-    #      ||
-    #      ||
-    #      ||
-    #      ||
     # No-refactored
-    # \            /
-    #  \          /
-    #   \        /
-    #    \      /
-    #     \    /
-    #      \  /
-    #       \/
-
     print_log("\n\n\n")
     raw_dict = datam.load_user_param()
     labels = datam.get_processable_labels()
@@ -233,12 +216,6 @@ def main(command_line_arguments=None):
     print_log(f"Elapsed time: {datetime.now() - begin_time}")
 
 
-def check_version_compatibily():
-    if apifish.__version__ < "0.6.4dev":
-        sys.exit("ERROR: Please update apifish (git checkout development && git pull)")
-
-
 if __name__ == "__main__":
     print(f"[VERSION] pyHiM {__version__}")
-    check_version_compatibily()
     main()
