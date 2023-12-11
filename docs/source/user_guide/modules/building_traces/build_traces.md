@@ -1,7 +1,7 @@
 # build_traces
 
 ## Invoke
-Inside the folder with your input data, run:
+Inside the folder with your input data, run: 
 ```shell
 pyhim -C build_traces
 ```
@@ -12,7 +12,7 @@ pyhim -C build_traces
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -22,13 +22,13 @@ pyhim -C build_traces
 
 ## Relevant options
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 ```
 "tracing_method": ["masking","clustering"], # list of methods it will use
 "mask_expansion": 8,# number of pixels masks will be expanded to assign localizations
 "masks2process":{"nuclei":"DAPI","mask1":"mask0"}, # masks identities to process
-"KDtree_distance_threshold_mum": 1,# threshold distance used for KDtree clustering
+"KDtree_distance_threshold_mum": 1, # threshold distance used for KDtree clustering
 ```
 
 Output images:

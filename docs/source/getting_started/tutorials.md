@@ -36,7 +36,7 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/jupyter_logo.svg
+    .. image:: ../_static/jupyter_logo.png
 
     ^^^^^^^^^^
 
@@ -48,6 +48,34 @@
             :type: ref
             :text: Jupyter notebook tutorial
             :classes: btn-block btn-info stretched-link text-white
+
+    ---
+    .. image:: ../_static/logo_cellpose.png
+
+    ^^^^^^^^^^
+
+    Running cellpose to create 3D masks for pyHiM
+
+    +++
+
+    .. link-button:: tutorials/cellpose
+            :type: ref
+            :text: Cellpose for pyHiM
+            :classes: btn-block btn-info stretched-link text-white
+
+    ---
+    .. image:: ../_static/stardist_logo.jpg
+
+    ^^^^^^^^^^
+
+    Use a home made stardist model to segment 3D masks and localize 3D spots
+
+    +++
+
+    .. link-button:: tutorials/stardist
+            :type: ref
+            :text: Stardist for pyHiM
+            :classes: btn-block btn-info stretched-link text-white
 ```
 
 ```{toctree}
@@ -58,4 +86,5 @@
 tutorials/configuration_file
 tutorials/notebooks/full_pyHiM_run.ipynb
 tutorials/run_pyhim_nb
+tutorials/cellpose
 ```

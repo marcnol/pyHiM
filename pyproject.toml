@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.7.1"
+version = "0.9.0"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -14,7 +14,6 @@ keywords = ["astropy",
               "dask",
               "matplotlib",
               "numpy",
-              "opencv-python",
               "numba",
               "photutils",
               "roipoly",
@@ -26,15 +25,15 @@ keywords = ["astropy",
               "scipy",
               "tifffile"
               ]
-dependencies = ["apifish",
+dependencies = ["apifish >= 0.6.4.dev0",
+                "dataclasses-json",
                 "astropy >= 4.3.1",
                 "csbdeep >= 0.6.3",
-                "dask[distributed] >= 2021.10.0",
+                "dask[distributed] >= 2023.4.1",
                 "matplotlib == 3.5.1",
                 "numba >= 0.54.1",
                 "numpy >= 1.19.5",
-                "opencv-python >= 4.5.3.56",
-                "photutils == 1.1.0",
+                "photutils >= 1.1.0",
                 "pympler >= 1.0.1",
                 "roipoly >= 0.5.3",
                 "scikit-image == 0.19.2",
@@ -51,21 +50,19 @@ Homepage = "https://github.com/marcnol/pyHiM"
 
 [project.scripts]
 pyhim = "pyHiM:main"
-change_rt_infolist = "fileProcessing.changeRT_infoList:main"
-clean_him_run = "fileProcessing.cleanHiM_run:main"
-lndir = "fileProcessing.lndir:main"
-run_him_cluster = "fileProcessing.runHiM_cluster:main"
-unzip_him_run = "fileProcessing.unzipHiM_run:main"
-zip_him_run = "fileProcessing.zipHiM_run:main"
-image_preprocessing = "imageProcessing.imagePreProcessing:main"
-image_segment_spots = "imageProcessing.imageSegmentSpots:main"
+clean_him_run = "toolbox.file_handling.cleanHiM_run:main"
+lndir = "toolbox.file_handling.lndir:main"
+run_him_cluster = "toolbox.runHiM_cluster:main"
+unzip_him_run = "toolbox.file_handling.unzipHiM_run:main"
+zip_him_run = "toolbox.file_handling.zipHiM_run:main"
+image_preprocessing = "toolbox.imagePreProcessing:main"
+image_segment_spots = "toolbox.imageSegmentSpots:main"
 figure_3_way_interactions = "plots.figure3wayInteractions:main"
 figure_4_m_matrix = "plots.figure4Mmatrix:main"
 figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
 figure_him_matrix = "plots.figureHiMmatrix:main"
 figure_n_him_matrices = "plots.figureN_HiMmatrices:main"
 figure_single_cell = "plots.figureSingleCell:main"
-process_segment_masks_3d = "postProcessing.process_segmentMasks3D:main"
 process_him_matrix = "postProcessing.processHiMmatrix:main"
 process_snd_channel = "postProcessing.processSNDchannel:main"
 trace_analyzer = "postProcessing.trace_analyzer:main"
@@ -73,6 +70,11 @@ trace_combinator = "postProcessing.trace_combinator:main"
 trace_filter = "postProcessing.trace_filter:main"
 trace_selector = "postProcessing.trace_selector:main"
 pyhim_parameters = "parameter_file.pyhim_parameters:main"
+trace_assign_mask = "postProcessing.trace_assign_mask:main"
+trace_merge = "postProcessing.trace_merge:main"
+trace_plot = "postProcessing.trace_plot:main"
+trace_to_matrix = "postProcessing.trace_to_matrix:main"
+mask_manual = "postProcessing.mask_manual:main"
 
 
 [tool.setuptools]
@@ -81,5 +83,11 @@ pyhim_parameters = "parameter_file.pyhim_parameters:main"
 # NOT have to specify this line.
 include-package-data = true
 
+# [tool.setuptools.packages.find]
+# where = ["ressources"]
+
 [tool.setuptools.package-data]
-parameter_file = ["*.png", "*.json"]
+"toolbox.parameter_file" = ["*.png", "*.json"]
+"stardist_models.DAPI_2D_stardist_nc14_nrays64_epochs40_grid2" = ["*.h5", "*.json"]
+"stardist_models.DAPI_3D_stardist_17032021_deconvolved" = ["*.h5", "*.json"]
+"stardist_models.PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01" = ["*.h5", "*.json"]

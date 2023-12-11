@@ -1,12 +1,12 @@
-# segmentSources3D
+# localize_3d
 
 *Segments sources in 3D*
 
 ## Invoke
 
-Inside the folder with your input data, run:
+Inside the folder with your input data, run: 
 ```shell
-pyhim -C segmentSources3D
+pyhim -C localize_3d
 ```
 
 ![localization](../../../_static/from_tuto/localization.png)
@@ -15,7 +15,7 @@ pyhim -C segmentSources3D
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 |<image_name>.tif|2..n|Yes|3D images|
 
 ## Outputs

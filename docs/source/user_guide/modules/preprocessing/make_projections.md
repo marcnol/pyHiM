@@ -1,4 +1,4 @@
-# makeProjections
+# project
 
 *Projects 3D images in 2D*
 
@@ -6,7 +6,7 @@
 
 Inside the folder with your input data, run:
 ```shell
-pyhim -C makeProjections
+pyhim -C project
 ```
 
 ![projection](../../../_static/from_tuto/projection.png)
@@ -15,7 +15,7 @@ pyhim -C makeProjections
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 |<image_name>.tif|2..n|Yes|3D images to project in 2D.|
 
 ## Outputs
@@ -24,7 +24,7 @@ pyhim -C makeProjections
 |<image_name>.tif|2..n|2D images|
 
 ## Relevant options
-Parameters to run this script will be read from the ```zProject``` field of ```infoList.json```
+Parameters to run this script will be read from the ```zProject``` field of ```parameters.json```
 
 
 |Name|Option|Description|

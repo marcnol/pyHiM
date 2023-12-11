@@ -44,14 +44,6 @@ imageProcessing.imageSegmentSpots module
    :undoc-members:
    :show-inheritance:
 
-imageProcessing.localDriftCorrection module
--------------------------------------------
-
-.. automodule:: imageProcessing.localDriftCorrection
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 imageProcessing.localization\_table module
 ------------------------------------------
 

@@ -1,7 +1,6 @@
 name: pyHiM39
 channels:
   - conda-forge
-  - astropy
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
@@ -22,8 +21,8 @@ dependencies:
   - brunsli=0.1=h2531618_0
   - bzip2=1.0.8=h7b6447c_0
   - c-ares=1.18.1=h7f8727e_0
-  - ca-certificates=2021.10.8=ha878542_0
-  - certifi=2021.10.8=py39hf3d152e_1
+  - ca-certificates=2022.10.11=h06a4308_0
+  - certifi=2022.12.7=py39h06a4308_0
   - cffi=1.15.0=py39hd667e15_1
   - cfitsio=3.470=hf0d0db6_6
   - charls=2.2.0=h2531618_0
@@ -34,10 +33,7 @@ dependencies:
   - cryptography=36.0.0=py39h9ce1e76_0
   - cycler=0.11.0=pyhd3eb1b0_0
   - cytoolz=0.11.0=py39h27cfd23_0
-  - dask=2021.10.0=pyhd3eb1b0_0
-  - dask-core=2021.10.0=pyhd3eb1b0_0
   - dbus=1.13.18=hb2f20db_0
-  - distributed=2021.10.0=py39h06a4308_0
   - docutils=0.17.1=py39h06a4308_1
   - expat=2.4.1=h2531618_2
   - fontconfig=2.13.1=h6c09931_0
@@ -56,7 +52,6 @@ dependencies:
   - imagecodecs=2021.8.26=py39h4cda21f_0
   - imageio=2.9.0=pyhd3eb1b0_0
   - imagesize=1.3.0=pyhd3eb1b0_0
-  - importlib-metadata=4.8.2=py39h06a4308_0
   - importlib_metadata=4.8.2=hd3eb1b0_0
   - importlib_resources=5.2.0=pyhd3eb1b0_1
   - iniconfig=1.1.1=pyhd3eb1b0_0
@@ -93,7 +88,6 @@ dependencies:
   - libxcb=1.14=h7b6447c_0
   - libxml2=2.9.12=h03d6c58_0
   - libzopfli=1.0.3=he6710b0_0
-  - locket=0.2.1=py39h06a4308_1
   - lz4-c=1.9.3=h295c915_1
   - markdown-it-py=2.0.1=pyhd8ed1ab_0
   - markupsafe=2.0.1=py39h27cfd23_0
@@ -116,7 +110,7 @@ dependencies:
   - numpy-base=1.21.2=py39h79a1101_0
   - olefile=0.46=pyhd3eb1b0_0
   - openjpeg=2.4.0=h3ad879b_0
-  - openssl=1.1.1m=h7f8727e_0
+  - openssl=1.1.1s=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandas=1.3.5=py39h8c16a72_0
   - partd=1.2.0=pyhd3eb1b0_0
@@ -124,7 +118,7 @@ dependencies:
   - pcre=8.45=h295c915_0
   - photutils=1.1.0=py39hce5d2b2_2
   - pillow=8.4.0=py39h5aabda8_0
-  - pip=21.2.4=py39h06a4308_0
+  - pip=22.3.1=py39h06a4308_0
   - pluggy=1.0.0=py39h06a4308_0
   - psutil=5.8.0=py39h27cfd23_1
   - py=1.10.0=pyhd3eb1b0_0
@@ -193,49 +187,57 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - yaml=0.2.5=h7b6447c_0
   - zfp=0.5.5=h295c915_6
-  - zict=2.0.0=pyhd3eb1b0_0
   - zipp=3.7.0=pyhd3eb1b0_0
   - zlib=1.2.11=h7f8727e_4
   - zstd=1.4.9=haebb681_0
   - pip:
-    - absl-py==1.0.0
-    - astunparse==1.6.3
-    - cachetools==5.0.0
-    - charset-normalizer==2.0.11
-    - csbdeep==0.6.3
-    - flatbuffers==2.0
-    - gast==0.5.3
-    - google-auth==2.6.0
-    - google-auth-oauthlib==0.4.6
-    - google-pasta==0.2.0
-    - grpcio==1.43.0
-    - h5py==3.6.0
-    - keras==2.8.0
-    - keras-preprocessing==1.1.2
-    - libclang==13.0.0
-    - llvmlite==0.38.0
-    - markdown==3.3.6
-    - mrc==0.2.0
-    - numba==0.55.1
-    - oauthlib==3.2.0
-    - opencv-python==4.5.5.62
-    - opt-einsum==3.3.0
-    - protobuf==3.19.4
-    - pyasn1==0.4.8
-    - pyasn1-modules==0.2.8
-    - pympler==1.0.1
-    - requests-oauthlib==1.3.1
-    - roipoly==0.5.3
-    - rsa==4.8
-    - stardist==0.7.3
-    - tensorboard==2.8.0
-    - tensorboard-data-server==0.6.1
-    - tensorboard-plugin-wit==1.8.1
-    - tensorflow==2.8.0
-    - tensorflow-io-gcs-filesystem==0.24.0
-    - termcolor==1.1.0
-    - tf-estimator-nightly==2.8.0.dev2021122109
-    - tqdm==4.62.3
-    - werkzeug==2.0.2
-    - wrapt==1.13.3
-prefix: /home/xdevos/anaconda3/envs/pyHiM39
+      - absl-py==1.0.0
+      - astunparse==1.6.3
+      - cachetools==5.0.0
+      - charset-normalizer==2.0.11
+      - csbdeep==0.6.3
+      - dask==2023.9.1
+      - dataclasses-json==0.6.0
+      - distributed==2023.9.1
+      - flatbuffers==2.0
+      - gast==0.5.3
+      - google-auth==2.6.0
+      - google-auth-oauthlib==0.4.6
+      - google-pasta==0.2.0
+      - grpcio==1.43.0
+      - h5py==3.6.0
+      - importlib-metadata==6.8.0
+      - keras==2.8.0
+      - keras-preprocessing==1.1.2
+      - libclang==13.0.0
+      - llvmlite==0.38.0
+      - locket==1.0.0
+      - markdown==3.3.6
+      - marshmallow==3.20.1
+      - mrc==0.2.0
+      - numba==0.55.1
+      - oauthlib==3.2.0
+      - opt-einsum==3.3.0
+      - protobuf==3.19.4
+      - pyasn1==0.4.8
+      - pyasn1-modules==0.2.8
+      - pympler==1.0.1
+      - requests-oauthlib==1.3.1
+      - roipoly==0.5.3
+      - rsa==4.8
+      - stardist==0.7.3
+      - tensorboard==2.8.0
+      - tensorboard-data-server==0.6.1
+      - tensorboard-plugin-wit==1.8.1
+      - tensorflow==2.8.0
+      - tensorflow-addons==0.21.0
+      - tensorflow-io-gcs-filesystem==0.24.0
+      - termcolor==1.1.0
+      - tf-estimator-nightly==2.8.0.dev2021122109
+      - tqdm==4.62.3
+      - typeguard==2.13.3
+      - typing-inspect==0.9.0
+      - werkzeug==2.0.2
+      - wrapt==1.13.3
+      - zict==3.0.0
+prefix: /home/user/anaconda3/envs/pyHiM39

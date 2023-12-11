@@ -10,7 +10,7 @@ pyhim -C register_localizations
 
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
-|infoList.json|1|Yes|Parameter file.|
+|parameters.json|1|Yes|Parameter file.|
 
 ## Outputs
 |Name shape|Quantity|Description|
@@ -19,7 +19,7 @@ pyhim -C register_localizations
 
 ## Relevant options
 
-Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```infoList.json```.
+Parameters to run this script will be read from the ```buildsPWDmatrix``` field of ```parameters.json```.
 
 ```
 "toleranceDrift": 1 # tolerance drift in pixels. Above this value localizations will not be locally registered
@@ -37,3 +37,10 @@ outputs images:
 | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | ![image-20220210221852444](../../../_static/user_guide/image-20220210221852444.png) | ![image-20220210221942291](../../../_static/user_guide/image-20220210221942291.png) |
 | ![image-20220210222028835](../../../_static/user_guide/image-20220210222028835.png) | ![image-20220210222006297](../../../_static/user_guide/image-20220210222006297.png) |
+
+
+
+*Alignment accuracy*
+
+This provides a map of all barcode localizations in an ROI, colorcoded by the accuracy of localization. Colorbar scale is in pixels.
+

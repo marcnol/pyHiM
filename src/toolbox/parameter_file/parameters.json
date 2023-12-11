@@ -1,0 +1,127 @@
+{
+    "common": {
+        "acquisition": {
+            "DAPI_channel": "ch00",
+            "RNA_channel": "ch02",
+            "barcode_channel": "ch01",
+            "fiducialBarcode_channel": "ch00",
+            "fiducialDAPI_channel": "ch01",
+            "fiducialMask_channel": "ch00",
+            "fileNameRegExp": "scan_(?P<runNumber>[0-9]+)_(?P<cycle>[\\w|-]+)_(?P<roi>[0-9]+)_ROI_converted_decon_(?P<channel>[\\w|-]+).tif",
+            "mask_channel": "ch01",
+            "pixelSizeXY": 0.1,
+            "pixelSizeZ": 0.25,
+            "zBinning": 2
+        },
+        "alignImages": {
+            "_3D_higher_threshold": 0.9999,
+            "_3D_lower_threshold": 0.9,
+            "alignByBlock": true,
+            "background_sigma": 3.0,
+            "blockSize": 128,
+            "blockSizeXY": 128,
+            "higher_threshold": 0.9999999,
+            "localAlignment": "block3D",
+            "lower_threshold": 0.999,
+            "outputFile": "shifts",
+            "referenceFiducial": "RT18",
+            "register_global_folder": "register_global",
+            "register_local_folder": "register_local",
+            "tolerance": 0.1,
+            "upsample_factor": 100
+        },
+        "buildsPWDmatrix": {
+            "KDtree_distance_threshold_mum": 1,
+            "flux_min": 10,
+            "flux_min_3D": 10.0,
+            "folder": "tracing",
+            "mask_expansion": 0,
+            "masks2process": {
+                "nuclei": "DAPI",
+                "mask1": "mask1"
+            },
+            "remove_uncorrected_localizations": true,
+            "toleranceDrift": [
+                3,
+                1,
+                1
+            ],
+            "tracing_method": [
+                "masking",
+                "clustering"
+            ],
+            "z_offset": 2.0
+        },
+        "segmentedObjects": {
+            "_3DGaussianfitWindow": 3,
+            "_3D_area_max": 250,
+            "_3D_area_min": 10,
+            "_3D_boxSize": 32,
+            "_3D_contrast": 0.001,
+            "_3D_higher_threshold": 0.9999,
+            "_3D_lower_threshold": 0.99,
+            "_3D_nlevels": 64,
+            "_3D_psf_yx": 200,
+            "_3D_psf_z": 500,
+            "_3D_sigma": 3,
+            "_3D_threshold_over_std": 5,
+            "_3Dmethod": "stardist",
+            "_3dAP_brightest": 100,
+            "_3dAP_distTolerance": 1,
+            "_3dAP_flux_min": 2,
+            "_3dAP_window": 5,
+            "area_max": 700,
+            "area_min": 50,
+            "background_method": "stardist",
+            "background_sigma": 3.0,
+            "brightest": 1100,
+            "centroidDifference_max": 5,
+            "fwhm": 3.0,
+            "intensity_max": 59,
+            "intensity_min": 0,
+            "localize_2d_folder": "localize_2d",
+            "localize_3d_folder": "localize_3d",
+            "mask_2d_folder": "mask_2d",
+            "mask_3d_folder": "mask_3d",
+            "operation": "2D,3D",
+            "outputFile": "localizations",
+            "reducePlanes": false,
+            "residual_max": 2.5,
+            "sigma_max": 5,
+            "tesselation": false,
+            "threshold_over_std": 1.0
+        },
+        "zProject": {
+            "block_size": 128,
+            "display": true,
+            "folder": "project",
+            "mode": "manual",
+            "window_security": 2,
+            "z_project_option": "MIP",
+            "zmax": 70,
+            "zmin": 1,
+            "zwindows": 70
+        }
+    },
+    "labels": {
+        "DAPI": {
+            "zProject": {
+                "z_project_option": "sum"
+            }
+        },
+        "RNA": {},
+        "barcode": {
+            "segmentedObjects": {
+                "area_max": 500,
+                "background_method": "inhomogeneous",
+                "tesselation": true
+            }
+        },
+        "fiducial": {},
+        "mask": {
+            "segmentedObjects": {
+                "area_max": 175
+            }
+        }
+    }
+}
