@@ -17,8 +17,6 @@ from core.parameters import Parameters
 from core.pyhim_logging import Logger, print_analyzing_label, print_log
 from core.run_args import RunArgs
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-
 
 def main(command_line_arguments=None):
     """Main function of pyHiM
