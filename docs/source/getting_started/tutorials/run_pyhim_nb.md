@@ -4,10 +4,12 @@
 
 ## Install and configure JupyterLab
 
-1. Activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM:
+1. Activate your [conda environment](../quick_install.md#create-conda-environment) for pyHiM:
+
 ```sh
 conda activate pyHiM
 ```
+
 
 ```{note}
 Replace `pyHiM` by your `environment name` if you called it something else.
@@ -29,7 +31,7 @@ ipython kernel install --user --name=pyHiM-kernel
 
 1. To download and unzip the pyHiM notebook with its python file, [click here: <img src="../../_static/getting_started/Download-Icon.png" width="50"/>](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/tree/development/docs/source/getting_started/tutorials/notebooks)
 
-2. Open a terminal inside your downloaded folder and activate your [conda environment](../quick_install.md#create-conda-enviroment) for pyHiM
+2. Open a terminal inside your downloaded folder and activate your [conda environment](../quick_install.md#create-conda-environment) for pyHiM
 ```sh
 conda activate pyHiM
 ```

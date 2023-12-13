@@ -14,7 +14,6 @@ We recommend to download the lighter version `miniconda` if you only intend to u
 - [Installing conda on Windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
 - [Installing conda on macOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
 
-
 ## Create conda environment
 
 Open a **terminal** (for Windows user: from the Start menu, open the **Anaconda Prompt**). Create a conda environment and activate it:

@@ -41,9 +41,10 @@ from matrixOperations.HIMmatrixOperations import (
     shuffle_matrix,
 )
 
-from plotting_functions import gets_matrix
+from .plotting_functions import gets_matrix
 
 # %% define and loads datasets
+
 
 def parse_arguments():
     # [parsing arguments]
@@ -180,6 +181,7 @@ def parse_arguments():
 # MAIN
 # =============================================================================
 
+
 def main():
     print(">>> Producing HiM matrix")
 
@@ -188,15 +190,19 @@ def main():
     if not os.path.exists(run_parameters["outputFolder"]):
         os.mkdir(run_parameters["outputFolder"])
         print("Folder created: {}".format(run_parameters["outputFolder"]))
-        
-    (sc_matrix,
-     uniqueBarcodes,
-     cScale, 
-     n_cells, 
-     outputFileName,
-     fileNameEnding) = gets_matrix(run_parameters,
-                scPWDMatrix_filename = run_parameters["scPWDMatrix_filename"],
-                uniqueBarcodes=run_parameters["uniqueBarcodes"])
+
+    (
+        sc_matrix,
+        uniqueBarcodes,
+        cScale,
+        n_cells,
+        outputFileName,
+        fileNameEnding,
+    ) = gets_matrix(
+        run_parameters,
+        scPWDMatrix_filename=run_parameters["scPWDMatrix_filename"],
+        uniqueBarcodes=run_parameters["uniqueBarcodes"],
+    )
 
     meansc_matrix = plot_matrix(
         sc_matrix,
@@ -215,7 +221,7 @@ def main():
         filename_ending=fileNameEnding + run_parameters["plottingFileExtension"],
         font_size=run_parameters["fontsize"],
     )
-    
+
     print("Output figure: {}".format(outputFileName))
 
     # saves output matrix in NPY format
