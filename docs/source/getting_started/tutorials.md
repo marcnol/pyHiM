@@ -4,7 +4,7 @@
 
 .. panels::
     :card: + intro-card text-center
-    :column: col-lg-6 col-md-6 col-sm-6 col-xs-12 p-2
+    :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
     ---
     .. image:: ../_static/filetype-json.svg
@@ -12,7 +12,7 @@
 
     ^^^^^^^^^^^^^^^
 
-    Discover how personalise parameters.
+    How to customise settings
 
     +++
 
@@ -22,11 +22,11 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/getting_started_tutorials_full_pyhim_run_3d_25_0.png
+    .. image:: ../_static/getting_started/getting_started_tutorials_full_pyhim_run_3d_25_0.png
 
     ^^^^^^^^^^
 
-    Tutorial for 3D analysis of sequential DNA-FISH data (Hi-M) with pyHiM.
+    Tutorial for 3D analysis of sequential DNA-FISH data (Hi-M) with pyHiM
 
     +++
 
@@ -36,21 +36,22 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/jupyter_logo.png
+    .. image:: ../_static/getting_started/jupyter_logo.png
+       :width: 150
 
     ^^^^^^^^^^
 
-    How run pyHiM tutorial with jupyter-notebook.
+    First steps with Jupyter Notebook
 
     +++
 
     .. link-button:: tutorials/run_pyhim_nb
             :type: ref
-            :text: Jupyter notebook tutorial
+            :text: Jupyter Notebook
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/logo_cellpose.png
+    .. image:: ../_static/getting_started/logo_cellpose.png
 
     ^^^^^^^^^^
 
@@ -65,6 +66,7 @@
 
     ---
     .. image:: ../_static/stardist_logo.jpg
+       :width: 150
 
     ^^^^^^^^^^
 
@@ -75,6 +77,21 @@
     .. link-button:: tutorials/stardist
             :type: ref
             :text: Stardist for pyHiM
+            :classes: btn-block btn-info stretched-link text-white
+
+    ---
+    .. image:: ../_static/getting_started/install.png
+       :width: 150
+
+    ^^^^^^^^^^
+
+    Full test run in CLI
+
+    +++
+
+    .. link-button:: tutorials/test_installation
+            :type: ref
+            :text: Test installation
             :classes: btn-block btn-info stretched-link text-white
 ```
 
@@ -87,4 +104,6 @@ tutorials/configuration_file
 tutorials/notebooks/full_pyHiM_run.ipynb
 tutorials/run_pyhim_nb
 tutorials/cellpose
+tutorials/stardist
+tutorials/test_installation
 ```

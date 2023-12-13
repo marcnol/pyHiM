@@ -494,7 +494,6 @@ def filter_localizations(
     label,
     data_path,
     segmentation_params,
-    reg_params: RegistrationParams,
     matrix_params: MatrixParams,
 ):
     """Filters barcode localization table
@@ -509,7 +508,7 @@ def filter_localizations(
     if label == "barcode":
         filter_localizations_instance = FilterLocalizations(current_param)
         filter_localizations_instance.filter_folder(
-            data_path, segmentation_params, reg_params, matrix_params
+            data_path, segmentation_params, matrix_params
         )
 
 

@@ -1,43 +1,38 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
 """
-Created on Wed Feb  9 14:11:58 2022
-
-@author: marcnol
-
-This script will build chromatin traces using a segmentObjects_barcode table
+This script will build chromatin traces using a segmentObjects_barcode table.
 
 The methods that will be implemented are:
-    1= assigment by mask (either DAPI mask or other)
-    2= spatial clusterization using KDtree. This method is mask-free.
 
+- 1 = assigment by mask (either DAPI mask or other)
+- 2 = spatial clusterization using KDtree. This method is mask-free.
 
+Method 1 iterates over rois:
 
-Method 1:
-    - iterates over rois
-        - assigns barcode localizations to masks
-        - applies local drift correction, if available
-        - removes localizations using flux and driftTolerance
-        - calculates the pair-wise distances for each single-cell mask
-        - outputs are:
-            - Table with #cell #PWD #coordinates (e.g. buildsPWDmatrix_3D_order:0_ROI:1.ecsv)
-            - NPY array with single cell PWD single cell matrices (e.g. buildsPWDmatrix_3D_HiMscMatrix.npy)
-            - NPY array with barcode identities (e.g. buildsPWDmatrix_3D_uniqueBarcodes.ecsv)
-            - the files with no "3D" tag contain data analyzed using 2D localizations.
+- assigns barcode localizations to masks
+- applies local drift correction, if available
+- removes localizations using flux and driftTolerance
+- calculates the pair-wise distances for each single-cell mask
 
-    - Single-cell results are combined together to calculate:
-        - Distribution of pairwise distance for each barcode combination
-        - Ensemble mean pairwise distance matrix using mean of distribution
-        - Ensemble mean pairwise distance matrix using Kernel density estimation
-        - Ensemble Hi-M matrix using a predefined threshold
-        - For each of these files, there is an image in PNG format saved. Images containing "3D" are for 3D other are for 2D.
+Outputs are:
 
+- Table with #cell #PWD #coordinates (e.g. buildsPWDmatrix_3D_order:0_ROI:1.ecsv)
+- NPY array with single cell PWD single cell matrices (e.g. buildsPWDmatrix_3D_HiMscMatrix.npy)
+- NPY array with barcode identities (e.g. buildsPWDmatrix_3D_uniqueBarcodes.ecsv)
+- the files with no "3D" tag contain data analyzed using 2D localizations.
+
+Single-cell results are combined together to calculate:
+
+- Distribution of pairwise distance for each barcode combination
+- Ensemble mean pairwise distance matrix using mean of distribution
+- Ensemble mean pairwise distance matrix using Kernel density estimation
+- Ensemble Hi-M matrix using a predefined threshold
+- For each of these files, there is an image in PNG format saved. Images containing "3D" are for 3D other are for 2D.
 
 """
 
-# =============================================================================
-# IMPORTS
-# =============================================================================
 
 import glob
 import os

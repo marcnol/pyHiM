@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 import os
 import sys
@@ -151,7 +151,6 @@ def main(command_line_arguments=None):
 
         # [filters barcode localization table]
         if "filter_localizations" in pipe.cmds and label == "barcode":
-            registration_params = datam.labelled_params[label].registration
             segmentation_params = datam.labelled_params[label].segmentation
             matrix_params = datam.labelled_params[label].matrix
             fc.filter_localizations(
@@ -159,7 +158,6 @@ def main(command_line_arguments=None):
                 label,
                 datam.m_data_path,
                 segmentation_params,
-                registration_params,
                 matrix_params,
             )
 

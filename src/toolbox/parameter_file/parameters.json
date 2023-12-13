@@ -24,7 +24,7 @@
             "localAlignment": "block3D",
             "lower_threshold": 0.999,
             "outputFile": "shifts",
-            "referenceFiducial": "RT18",
+            "referenceFiducial": "RT26",
             "register_global_folder": "register_global",
             "register_local_folder": "register_local",
             "tolerance": 0.1,
@@ -32,13 +32,12 @@
         },
         "buildsPWDmatrix": {
             "KDtree_distance_threshold_mum": 1,
-            "flux_min": 10,
+            "flux_min": 2,
             "flux_min_3D": 10.0,
             "folder": "tracing",
             "mask_expansion": 0,
             "masks2process": {
-                "nuclei": "DAPI",
-                "mask1": "mask1"
+                "nuclei": "DAPI"
             },
             "remove_uncorrected_localizations": true,
             "toleranceDrift": [
@@ -118,10 +117,6 @@
             }
         },
         "fiducial": {},
-        "mask": {
-            "segmentedObjects": {
-                "area_max": 175
-            }
-        }
+        "mask": {}
     }
 }
