@@ -36,7 +36,7 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/getting_started/jupyter_logo.png
+    .. image:: tutorials/notebooks/_static/jupyter_logo.png
        :width: 150
 
     ^^^^^^^^^^
