@@ -20,26 +20,10 @@ imageProcessing.alignImages3D module
    :undoc-members:
    :show-inheritance:
 
-imageProcessing.imagePreProcessing module
------------------------------------------
-
-.. automodule:: imageProcessing.imagePreProcessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 imageProcessing.imageProcessing module
 --------------------------------------
 
 .. automodule:: imageProcessing.imageProcessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-imageProcessing.imageSegmentSpots module
-----------------------------------------
-
-.. automodule:: imageProcessing.imageSegmentSpots
    :members:
    :undoc-members:
    :show-inheritance:
@@ -56,22 +40,6 @@ imageProcessing.makeProjections module
 --------------------------------------
 
 .. automodule:: imageProcessing.makeProjections
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-imageProcessing.projectsBarcodes module
----------------------------------------
-
-.. automodule:: imageProcessing.projectsBarcodes
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-imageProcessing.refitBarcodes3D module
---------------------------------------
-
-.. automodule:: imageProcessing.refitBarcodes3D
    :members:
    :undoc-members:
    :show-inheritance:

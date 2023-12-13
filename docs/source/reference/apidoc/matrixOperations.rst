@@ -12,14 +12,6 @@ matrixOperations.HIMmatrixOperations module
    :undoc-members:
    :show-inheritance:
 
-matrixOperations.alignBarcodesMasks module
-------------------------------------------
-
-.. automodule:: matrixOperations.alignBarcodesMasks
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 matrixOperations.build\_matrix module
 -------------------------------------
 
