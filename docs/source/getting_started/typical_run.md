@@ -62,21 +62,23 @@ pyhim -h
 The output should look as follows:
 
 ```sh
-usage: pyhim [-h] [-F ROOTFOLDER] [-C CMD] [--threads THREADS]
+usage: pyhim [-h] [-C CMD] [-F ROOTFOLDER] [-P PARAMETERS] [-T THREADS]
 
-options:
-  -h, --help        show this help message and exit
+optional arguments:
+  -h, --help            show this help message and exit
+  -C CMD, --cmd CMD     Comma-separated list of routines to run. DEFAULT: 
+                        project,register_global,register_local,mask_2d,
+                        localize_2d,mask_3d,localize_3d,filter_localizations,
+                        register_localizations,build_traces,build_matrix
   -F ROOTFOLDER, --rootFolder ROOTFOLDER
-                    Folder with images
-  -C CMD, --cmd CMD Comma-separated list of routines to run: 
-                     project  register_global register_local  
-                     mask_2d localize_2d 
-                     mask_3d localize_3d 
-                     filter_localizations register_localizations 
-                     build_traces build_matrix
-  --threads THREADS Number of threads to run in parallel mode. 
-                    If none, then it will run with one thread.
-
+                        Folder path with input images. DEFAULT: Current
+                        directory
+  -P PARAMETERS, --parameters PARAMETERS
+                        Path of the parameters.json file. DEFAULT: pyHiM
+                        expect this file inside your current directory
+  -T THREADS, --threads THREADS
+                        Thread number to run with parallel mode. DEFAULT: 1
+                        (sequential mode)
 ```
 
 
