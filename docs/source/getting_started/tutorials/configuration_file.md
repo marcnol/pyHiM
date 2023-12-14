@@ -1,4 +1,4 @@
-# Configuration file `(parameters.json)`
+# Parameters file
 
 *All pyHiM parameters are gathered in a single configuration file called `parameters.json`.* 
 

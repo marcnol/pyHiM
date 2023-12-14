@@ -2,6 +2,8 @@
 
 *A jupyter notebook is an interactive file where you can find both markdown text and executable code with its outputs displayed.*
 
+*The main pyHiM tutorial is in this format.*
+
 ## Install and configure JupyterLab
 
 1. Activate your [conda environment](../quick_install.md#create-conda-environment) for pyHiM:
