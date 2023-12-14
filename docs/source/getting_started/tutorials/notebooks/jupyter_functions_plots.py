@@ -12,59 +12,55 @@ import shutil
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import numpy as np
-from IPython.core.display import HTML
-from IPython.display import Image
 from matplotlib import rcParams
-from tifffile import TiffWriter
 
 
-def copy_localization_table(Input_folder):
-    source = os.path.join(Input_folder, "localizations_3D_barcode_example.dat")
+def copy_localization_table(input_folder):
+    source = os.path.join(input_folder, "localizations_3D_barcode_example.dat")
     dest = os.path.join(
-        Input_folder,
+        input_folder,
         "analysis_localizations",
         "localize_3d",
         "data",
         "localizations_3D_barcode.dat",
     )
     folder_path = os.path.join(
-        Input_folder, "analysis_localizations", "localize_3d", "data"
+        input_folder, "analysis_localizations", "localize_3d", "data"
     )
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     shutil.copyfile(source, dest)
 
     # copy the parameters.json in new root
-    source = os.path.join(Input_folder, "parameters.json")
-    dest = os.path.join(Input_folder, "analysis_localizations", "parameters.json")
+    source = os.path.join(input_folder, "parameters.json")
+    dest = os.path.join(input_folder, "analysis_localizations", "parameters.json")
     shutil.copyfile(source, dest)
 
 
-def plot_zprojection(Input_folder, RTs_references, titles, datatype):
+def plot_zprojection(input_folder, rt_references, titles, datatype):
     # Figure size in inches optional
     rcParams["figure.figsize"] = 15, 15
 
     # Enter in the folder contaning the zProjected output images
-    os.chdir(Input_folder + "project")
+    os.chdir(input_folder + "project")
 
     if datatype == "DAPI":
         # Create list of images
-        img_A = glob.glob("*DAPI*" + "*ch01*" + ".png")
-        img_B = glob.glob("*DAPI*" + "*ch00*" + ".png")
-        Concat_images = [img_A, img_B]
+        img_a = glob.glob("*DAPI*" + "*ch01*" + ".png")
+        img_b = glob.glob("*DAPI*" + "*ch00*" + ".png")
+        concat_images = [img_a, img_b]
 
     if datatype == "RT":
         # Create list of images
-        img_A = glob.glob("*" + RTs_references + "*" + "*ch00*" + ".png")
-        img_B = glob.glob("*" + RTs_references + "*" + "*ch01*" + ".png")
-        Concat_images = [img_A, img_B]
+        img_a = glob.glob("*" + rt_references + "*" + "*ch00*" + ".png")
+        img_b = glob.glob("*" + rt_references + "*" + "*ch01*" + ".png")
+        concat_images = [img_a, img_b]
 
     # plots images
-    fig, ax = plt.subplots(1, 2)
-    for x, file in enumerate(Concat_images):
+    _, ax = plt.subplots(1, 2)
+    for x, file in enumerate(concat_images):
         # Read images
-        Image = mpimg.imread(Input_folder + "project" + os.sep + file[0])[
+        Image = mpimg.imread(input_folder + "project" + os.sep + file[0])[
             0:1000, 0:1000
         ]
         # Display images
@@ -72,59 +68,58 @@ def plot_zprojection(Input_folder, RTs_references, titles, datatype):
         ax[x].imshow(Image)
 
 
-def plot_alignment(Input_folder, RTs_references, titles):
+def plot_alignment(input_folder, rt_references, titles):
     # Figure size in inches optional
     rcParams["figure.figsize"] = 15, 10
 
     # Create list of images
-    jpgFilenamesList_RTs_alignement_Difference = glob.glob(
-        Input_folder
+    png_file_list_rt_align_diff = glob.glob(
+        input_folder
         + "register_global"
         + os.sep
         + "*"
-        + RTs_references
+        + rt_references
         + "*"
         + "_referenceDifference.png"
     )
-    jpgFilenamesList_RTs_alignement_overlay = glob.glob(
-        Input_folder
+    png_list_rt_align_overlay = glob.glob(
+        input_folder
         + "register_global"
         + os.sep
         + "*"
-        + RTs_references
+        + rt_references
         + "*"
         + "_overlay"
         + "*"
         + ".png"
     )
 
-    img_A = mpimg.imread(jpgFilenamesList_RTs_alignement_Difference[0])[
+    img_a = mpimg.imread(png_file_list_rt_align_diff[0])[
         1000:2000, 1000:2000
     ]  # Zoom in the region of interest
-    img_B = mpimg.imread(jpgFilenamesList_RTs_alignement_Difference[0])[
+    img_b = mpimg.imread(png_file_list_rt_align_diff[0])[
         1000:2000, 3500:4500
     ]  # Zoom in the region of interest
-    img_C = (
-        mpimg.imread(jpgFilenamesList_RTs_alignement_overlay[0])[1000:2000, 700:1700]
-        * 5
+    img_c = (
+        mpimg.imread(png_list_rt_align_overlay[0])[1000:2000, 700:1700] * 5
     )  # Zoom in the region of interest
 
     # Concatenates images
-    Concat_images = [img_A, img_B, img_C]
+    concat_images = [img_a, img_b, img_c]
 
     # Plot
-    fig, ax = plt.subplots(1, 3)
+    _, ax = plt.subplots(1, 3)
     for x, file in enumerate(titles):
         # Read images
-        Image = Concat_images[x]
+        image = concat_images[x]
         # Display images
-        ax[x].set_title(titles[x])
-        ax[x].imshow(Image)
+        ax[x].set_title(file)
+        ax[x].imshow(image)
 
 
-def show_plot(titles, imgs, files):
+def show_plot(titles, imgs):
     if len(imgs) > 1:
-        fig, ax = plt.subplots(1, 2)
+        _, ax = plt.subplots(1, 2)
         for title, img, axis in zip(titles, imgs, ax):
             axis.set_title(title)
             axis.imshow(img)
@@ -134,13 +129,13 @@ def show_plot(titles, imgs, files):
 
 
 def show_plot_traces(titles, imgs, scales):
-    fig, ax = plt.subplots(1, 2)
+    _, ax = plt.subplots(1, 2)
     for title, img, axis, sca in zip(titles, imgs, ax, scales):
         axis.set_title(title + " (μm)")
         axis.imshow(img, extent=(0, sca, 0, sca))
 
 
-def plot_segment_object(Input_folder, titles, datatype, RTs_references=""):
+def plot_segment_object(input_folder, titles, datatype, rt_references=""):
     # Figure size in inches optional
     rcParams["figure.figsize"] = 15, 10
 
@@ -148,11 +143,11 @@ def plot_segment_object(Input_folder, titles, datatype, RTs_references=""):
         if datatype == "RT":
             # Create list of images
             files = glob.glob(
-                Input_folder
+                input_folder
                 + "localize_3d"
                 + os.sep
                 + "*"
-                + RTs_references
+                + rt_references
                 + "*"
                 + "_3DimageNlocalizations.png"
             )
@@ -161,18 +156,18 @@ def plot_segment_object(Input_folder, titles, datatype, RTs_references=""):
         if datatype == "DAPI":
             # Create list of images
             files = glob.glob(
-                Input_folder + "mask_3d" + os.sep + "*" + "DAPI" + "*" + "_3Dmasks.png"
+                input_folder + "mask_3d" + os.sep + "*" + "DAPI" + "*" + "_3Dmasks.png"
             )
             imgs = [mpimg.imread(files[0])[1500:3600, 500:4500]]
 
         print(f"$ Will plot: {files}")
 
         # Plots images
-        show_plot(titles, imgs, files)
+        show_plot(titles, imgs)
 
     elif datatype == "TRACES":
         # Create list of images
-        tracing_folder = os.path.join(Input_folder, "tracing")
+        tracing_folder = os.path.join(input_folder, "tracing")
         files = glob.glob(
             tracing_folder + os.sep + "*" + "KDtree" + "*" + "_XYZ" + "*" + ".png"
         )
@@ -214,4 +209,4 @@ def plot_matrix(input_folder, data_type="proximity"):
 
     if len(files) > 0:
         img = mpimg.imread(files[0])
-        show_plot(titles, [img], "-")
+        show_plot(titles, [img])
