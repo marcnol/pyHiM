@@ -25,7 +25,7 @@ conda install jupyterlab
 3. We recommend to create a specific kernel to run pyHiM on JupyterLab with the good environment:
 
 ```
-conda install ipykernel matplotlib
+conda install ipykernel
 ipython kernel install --user --name=pyHiM-kernel
 ```
 

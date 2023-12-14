@@ -42,7 +42,7 @@ def plot_zprojection(input_folder, rt_references, titles, datatype):
     rcParams["figure.figsize"] = 15, 15
 
     # Enter in the folder contaning the zProjected output images
-    os.chdir(input_folder + "project")
+    os.chdir(os.path.join(input_folder, "project"))
 
     if datatype == "DAPI":
         # Create list of images
@@ -60,7 +60,7 @@ def plot_zprojection(input_folder, rt_references, titles, datatype):
     _, ax = plt.subplots(1, 2)
     for x, file in enumerate(concat_images):
         # Read images
-        Image = mpimg.imread(input_folder + "project" + os.sep + file[0])[
+        Image = mpimg.imread(os.path.join(input_folder, "project", file[0]))[
             0:1000, 0:1000
         ]
         # Display images
@@ -72,26 +72,13 @@ def plot_alignment(input_folder, rt_references, titles):
     # Figure size in inches optional
     rcParams["figure.figsize"] = 15, 10
 
+    reg_folder = os.path.join(input_folder, "register_global")
     # Create list of images
     png_file_list_rt_align_diff = glob.glob(
-        input_folder
-        + "register_global"
-        + os.sep
-        + "*"
-        + rt_references
-        + "*"
-        + "_referenceDifference.png"
+        reg_folder + os.sep + "*" + rt_references + "*" + "_referenceDifference.png"
     )
     png_list_rt_align_overlay = glob.glob(
-        input_folder
-        + "register_global"
-        + os.sep
-        + "*"
-        + rt_references
-        + "*"
-        + "_overlay"
-        + "*"
-        + ".png"
+        reg_folder + os.sep + "*" + rt_references + "*" + "_overlay" + "*" + ".png"
     )
 
     img_a = mpimg.imread(png_file_list_rt_align_diff[0])[
@@ -141,10 +128,10 @@ def plot_segment_object(input_folder, titles, datatype, rt_references=""):
 
     if datatype == "DAPI" or datatype == "RT":
         if datatype == "RT":
+            loc_folder = os.path.join(input_folder, "localize_3d")
             # Create list of images
             files = glob.glob(
-                input_folder
-                + "localize_3d"
+                loc_folder
                 + os.sep
                 + "*"
                 + rt_references
@@ -154,9 +141,10 @@ def plot_segment_object(input_folder, titles, datatype, rt_references=""):
             imgs = [mpimg.imread(files[0])[500:4500, 500:4500]]
 
         if datatype == "DAPI":
+            mask_folder = os.path.join(input_folder, "mask_3d")
             # Create list of images
             files = glob.glob(
-                input_folder + "mask_3d" + os.sep + "*" + "DAPI" + "*" + "_3Dmasks.png"
+                mask_folder + os.sep + "*" + "DAPI" + "*" + "_3Dmasks.png"
             )
             imgs = [mpimg.imread(files[0])[1500:3600, 500:4500]]
 
@@ -196,13 +184,9 @@ def plot_matrix(input_folder, data_type="proximity"):
     elif data_type == "proximity":
         files = glob.glob(tracing_folder + os.sep + "*HiMmatrix.png")
     elif data_type.split(",")[0] == "3D_alignments":
+        reg_folder = os.path.join(input_folder, "register_local")
         files = glob.glob(
-            input_folder
-            + "register_local"
-            + os.sep
-            + "*"
-            + data_type.split(",")[1]
-            + "*3Dalignments.png"
+            reg_folder + os.sep + "*" + data_type.split(",")[1] + "*3Dalignments.png"
         )
 
     titles = [data_type]
