@@ -10,7 +10,7 @@
 
     ---
     .. image:: tutorials/notebooks/_static/jupyter_logo.png
-       :width: 150
+       :height: 200
 
     ^^^^^^^^^^
 
@@ -24,7 +24,8 @@
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: ../_static/getting_started/getting_started_tutorials_full_pyhim_run_3d_25_0.png
+    .. image:: ../_static/spot2matrix.png
+       :height: 200
 
     ^^^^^^^^^^
 

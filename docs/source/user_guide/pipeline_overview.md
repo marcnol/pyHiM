@@ -46,13 +46,11 @@ The default pipeline is composed of the following routines:
 5. [**localize_2d:**](modules/identification/segment_masks.md) Segments 2D aligned barcodes.
 6. [**mask_3d:**](modules/identification/segment_masks_3d.md) Segments masks in 3D.
 7. [**localize_3d:**](modules/identification/segment_sources_3d.md) Applies 2D shift, computed at `register_global` step, to 3D barcodes. Then segments them in 3D.
-<!-- TODO: Update buildHiMmatrix to filter_loc,register_loc,build_trace,build_matrix -->
-8. [**buildHiMmatrix:**](modules/building_traces.md) Filters the segmentation results, associates barcode coordinates with the relevant mask and calculates the pairwise distance (PWD) matrix for each mask.
+8. [**filter_localizations:**](modules/building_traces/filter_localizations.md) Filters the localizations in 2D and 3D.
+9. [**register_localizations:**](modules/building_traces/register_localizations.md) Registers the 3D localizations with the local shifts.
+10. [**build_traces:**](modules/building_traces/build_traces.md) Associates barcode coordinates with the relevant mask.
+11. [**build_matrix:**](modules/building_traces/build_matrices.md) Calculates the pairwise distance (PWD) matrix for each trace.
 
 ```{note}
 You can find a description of all routines inside [next section](fundamental.md).
 ```
-
-Some routines only involve specific labels:
-
-![default_pipeline_screenshot](../_static/default_pipeline.png)

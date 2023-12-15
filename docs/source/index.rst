@@ -12,11 +12,12 @@ Getting started
 
 .. panels::
     :card: + intro-card text-center
+    :body: text-center p-2
     :column: col-lg-4 col-md-4 col-sm-6 col-xs-12 p-2
 
     ---
     .. image:: getting_started/tutorials/notebooks/_static/Download-Icon.png
-       :height: 100
+       :height: 180
 
     +++
 
@@ -26,8 +27,8 @@ Getting started
             :classes: btn-block btn-info stretched-link text-white
 
     ---
-    .. image:: getting_started/tutorials/notebooks/_static/jupyter_logo.png
-       :height: 100
+    .. image:: _static/spot2matrix.png
+       :height: 180
 
     +++
 
@@ -38,7 +39,7 @@ Getting started
 
     ---
     .. image:: _static/index_getting_started.svg
-       :height: 100
+       :height: 180
 
     +++
 
@@ -104,8 +105,8 @@ Main features
             :classes: stretched-link
     
     ---
-    .. image:: _static/trace_zoom.svg
-       :height: 100
+    .. image:: _static/trace_zoom.png
+       :height: 90
 
     +++
 
