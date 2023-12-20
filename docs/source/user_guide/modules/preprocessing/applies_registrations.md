@@ -1,4 +1,4 @@
-# register_global 2
+# Apply registration
 *Applies registration to DAPI and barcodes*
 
 ## Invoke
