@@ -359,8 +359,8 @@ class BuildMatrix:
 
         print_log(f"$ saved: {output_filename}_uniqueBarcodes.ecsv")
 
-        np.save(f"{output_filename}_Nmatrix.npy", self.n_matrix)
-        print_log(f"$ saved: {output_filename}_Nmatrix.npy")
+        # np.save(f"{output_filename}_Nmatrix.npy", self.n_matrix)
+        # print_log(f"$ saved: {output_filename}_Nmatrix.npy")
 
     def launch_analysis(self, file, distance_threshold=np.inf):
         """
@@ -382,10 +382,10 @@ class BuildMatrix:
         )  # mean min last
 
         # calculates N-matrix: number of PWD distances for each barcode combination
-        self.calculate_n_matrix()
+        # self.calculate_n_matrix()
 
         # runs plotting operations
-        self.plots_all_matrices(file)
+        # self.plots_all_matrices(file)
 
         # saves matrix
         self.save_matrices(file)
