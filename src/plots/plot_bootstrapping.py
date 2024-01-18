@@ -34,14 +34,13 @@ import sys
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+from plotting_functions import bootstraps_matrix, gets_matrix, plot_2d_matrix_simple
 
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_matrix,
     shuffle_matrix,
 )
-
-from .plotting_functions import bootstraps_matrix, gets_matrix, plot_2d_matrix_simple
 
 # %% define and loads datasets
 

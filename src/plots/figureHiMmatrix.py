@@ -34,14 +34,13 @@ import os
 import sys
 
 import numpy as np
+from plotting_functions import gets_matrix
 
 from matrixOperations.HIMmatrixOperations import (
     calculate_contact_probability_matrix,
     plot_matrix,
     shuffle_matrix,
 )
-
-from .plotting_functions import gets_matrix
 
 # %% define and loads datasets
 

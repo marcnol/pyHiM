@@ -15,6 +15,14 @@ import sys
 
 # import matplotlib as plt
 import numpy as np
+from plotting_functions import (
+    gets_matrix,
+    normalize_matrix,
+    plot_2d_matrix_simple,
+    plot_matrix_difference,
+    plot_mixed_matrix,
+    plot_Wilcoxon_matrix,
+)
 
 # import scaleogram as scg
 from matrixOperations.HIMmatrixOperations import (
@@ -22,15 +30,6 @@ from matrixOperations.HIMmatrixOperations import (
     calculate_ensemble_pwd_matrix,
     list_sc_to_keep,
     plot_matrix,
-)
-
-from .plotting_functions import (
-    gets_matrix,
-    normalize_matrix,
-    plot_2d_matrix_simple,
-    plot_matrix_difference,
-    plot_mixed_matrix,
-    plot_Wilcoxon_matrix,
 )
 
 # %% define and loads datasets
