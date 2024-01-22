@@ -4,6 +4,7 @@ sphinx-rtd-theme >= 0.5.2
 myst-parser >= 0.17.0
 sphinx-panels >= 0.6.0
 sphinxcontrib-mermaid >= 0.7.1
+sphinxcontrib-applehelp <= 1.0.7
 nbsphinx
 sphinx-book-theme
 ipython
