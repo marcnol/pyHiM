@@ -250,7 +250,7 @@ class Localize3D:
             )
 
         # drifts 3D stack in XY
-        shift = None
+        shift, skip_alignment = None, False
         if self.dict_shifts_available and label != p["referenceBarcode"]:
             # uses existing shift calculated by align_images
             try:
@@ -260,13 +260,15 @@ class Localize3D:
                 shift = None
 
         if shift is None and label != p["referenceBarcode"]:
-            raise SystemExit(
-                f"> Existing with ERROR: Could not find dictionary with alignment \
-                    parameters for this ROI: ROI:{self.roi}, label: {label}"
+            skip_alignment = True
+            print_log(
+                f"> WARNING: Could not find dictionary with alignment \
+                    parameters for this ROI: ROI:{self.roi}, label: {label}\
+                    and will therefore proceed without alignment !"
             )
 
         # applies XY shift to 3D stack
-        if label != p["referenceBarcode"]:
+        if label != p["referenceBarcode"] and skip_alignment == False:
             print_log(f"$ Applies shift = [{shift[0]:.2f} ,{shift[1]:.2f}]")
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
@@ -275,6 +277,7 @@ class Localize3D:
             print_log("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.0, 0.0])
             image_3d_aligned = image_3d
+        
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
