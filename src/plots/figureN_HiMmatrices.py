@@ -12,7 +12,7 @@ import argparse
 import json
 
 # %% imports and plotting settings
-import os
+import os, sys
 
 import matplotlib.gridspec as gridspec
 
@@ -103,12 +103,12 @@ def parse_arguments():
     if args.outputFolder:
         output_folder = args.outputFolder
     else:
-        output_folder = "none"
+        output_folder = "output_figureNHiMmatrices"
 
     if args.parameters:
         run_parameters["parametersFileName"] = args.parameters
     else:
-        run_parameters["parametersFileName"] = "folders_to_load.json"
+        run_parameters["parametersFileName"] = "folders2Load.json"
 
     if args.label:
         run_parameters["label"] = args.label
@@ -444,6 +444,11 @@ def plotHiMLineProfile(list_data, run_parameters, data_sets):
             )
             print("Output written to {}".format(outputFileName1))
             fig1.savefig(outputFileName1)
+            
+            #saves output as NPZ
+            outputFileName_npz = run_parameters["outputFileName"].replace(
+                "png", "npz")
+            np.savez(outputFileName_npz,matrixSegmentAnchor=matrixSegmentAnchor,unique_barcodes=unique_barcodes,segmentLabels=segmentLabels)
 
             if "barcodes2plot" in list_data[idata_set].keys():
                 barcodes2plot = list_data[idata_set]["barcodes2plot"]
@@ -611,13 +616,23 @@ def main():
     filename_list_data_json = (
         run_parameters["rootFolder"] + os.sep + run_parameters["parametersFileName"]
     )
-    with open(filename_list_data_json, encoding="utf-8") as json_file:
-        list_data = json.load(json_file)
-
+    if os.path.exists(filename_list_data_json):
+        with open(filename_list_data_json, encoding="utf-8") as json_file:
+            list_data = json.load(json_file)
+    else:
+        print(f"! File does not exist: {filename_list_data_json}")
+        sys.exit(-1)
     data_sets = list(list_data.keys())
+    
     if run_parameters["outputFolder"] == "none":
         run_parameters["outputFolder"] = run_parameters["rootFolder"]
+    else:
+        print("$ outputfolder: {}".format(run_parameters["outputFolder"]))
 
+
+    if not os.path.exists(run_parameters["outputFolder"]):
+        os.makedirs(run_parameters["outputFolder"])
+        
     run_parameters["outputFileName"] = (
         run_parameters["outputFolder"]
         + os.sep
@@ -629,11 +644,11 @@ def main():
         + run_parameters["plottingFileExtension"]
     )
 
-    plotMultipleHiMmatrices(list_data, run_parameters, data_sets)
+    # plotMultipleHiMmatrices(list_data, run_parameters, data_sets)
 
     plotHiMLineProfile(list_data, run_parameters, data_sets)
 
-    plotTADs(list_data, run_parameters, data_sets)
+    # plotTADs(list_data, run_parameters, data_sets)
 
     print("\nDone\n\n")
 
