@@ -165,8 +165,9 @@ class RegisterGlobal(Feature):
             roi = results[0]["roi"]
             dict_shifts = {f"ROI:{roi}": dict_shift_roi}
         except IndexError:
-            sys.exit(f"! Error, results dictionary seems empty: {results}")
-
+            raise SystemExit(
+                f"! Error, results dictionary seems empty: {results}"
+            )
         return [JsonFile(dict_shifts), EcsvFile(alignment_results_table)]
 
 
