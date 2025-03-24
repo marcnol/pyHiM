@@ -506,6 +506,7 @@ class ChromatinTraceTable:
         file_name="barcode_stats",
         kind="violin",
         norm=True,
+        format="png",
     ):
         """
         plots the collecive_bracode stats (see previous function)
@@ -550,8 +551,10 @@ class ChromatinTraceTable:
             fig.colorbar(
                 pos, ax=ax1, location="bottom", anchor=(0.5, 1), shrink=0.4, label=label
             )
-
-        fig.savefig(f"{file_name}.png")
+        print(
+            f"$ Exporting relative barcode frequencies figure to: {file_name}.{format}"
+        )
+        fig.savefig(f"{file_name}.{format}")
 
     # TODO Rename this here and in `plots_barcode_statistics`
     def _extracted_from_plots_barcode_statistics_38(self, ax1, data, sorted_barcodes):
