@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "0.10.0"
+version = "1.0.dev0"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
@@ -71,7 +71,6 @@ trace_filter = "postProcessing.trace_filter:main"
 trace_selector = "postProcessing.trace_selector:main"
 pyhim_parameters = "parameter_file.pyhim_parameters:main"
 trace_assign_mask = "postProcessing.trace_assign_mask:main"
-trace_merge = "postProcessing.trace_merge:main"
 trace_plot = "postProcessing.trace_plot:main"
 trace_to_matrix = "postProcessing.trace_to_matrix:main"
 mask_manual = "postProcessing.mask_manual:main"

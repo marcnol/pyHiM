@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "0.10.0"
+__version__ = "1.0.dev0"
 
 from datetime import datetime
 

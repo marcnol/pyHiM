@@ -100,14 +100,6 @@ postProcessing.trace\_filter\_advanced module
    :undoc-members:
    :show-inheritance:
 
-postProcessing.trace\_merge module
-----------------------------------
-
-.. automodule:: postProcessing.trace_merge
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 postProcessing.trace\_plot module
 ---------------------------------
 
