@@ -139,10 +139,13 @@ def parse_arguments():
         "--label", help="Select traces containing this label, removes all other traces."
     )
 
-    parser.add_argument("--localization_file", help="Name of input localizations file.")
+    parser.add_argument(
+        "--localization_file", default=None, help="Name of input localizations file."
+    )
     parser.add_argument(
         "--intensity_min",
         type=float,
+        default=0.0,
         help="Minimum intensity threshold for localizations.",
     )
 
@@ -215,11 +218,8 @@ def parse_arguments():
     else:
         p["label"] = None
 
-    if args.localization_file:
-        p["localization_file"] = args.localization_file
-
-    if args.intensity_min:
-        p["intensity_min"] = args.intensity_min
+    p["localization_file"] = args.localization_file
+    p["intensity_min"] = args.intensity_min
 
     p["trace_files"] = []
     if args.pipe:
@@ -269,10 +269,12 @@ def runtime(
             )
         )
 
-    if intensity_min and localizations_file:
+    if localizations_file:
         localization_table = LocalizationTable()
         localizations_data, _ = localization_table.load(localizations_file)
         print(f"$ Loaded localizations table with: {len(localizations_data)} rows")
+
+    if localizations_file and intensity_min:
 
         # Plot intensity distribution to help user choose a threshold
         intensities = [row["peak"] for row in localizations_data]
@@ -294,7 +296,10 @@ def runtime(
 
             # remove duplicated spots
             if remove_duplicate_spots:
-                trace.remove_duplicates()
+                if localizations_file:
+                    trace.remove_duplicates_loc(localization_table=localizations_data)
+                else:
+                    trace.remove_duplicates()
 
             # filters trace by minimum number of barcodes
             if N_barcodes > 1:

@@ -660,7 +660,7 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats,
-                file_name=f"{trace_file}_before",
+                file_name=f"{trace_file.split('.')[0]}_before_filtering",
                 kind="matrix",
                 norm=True,
             )
@@ -700,9 +700,6 @@ class ChromatinTraceTable:
 
             if len(trace_table_new) > 0:
                 trace_table_indexed = trace_table_new.group_by("Trace_ID")
-            #     number_traces_left = len(trace_table_indexed.groups)
-            # else:
-            #     number_traces_left = 0
 
             print(
                 f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {len(trace_table_indexed.groups)}"
@@ -714,7 +711,7 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats_new,
-                file_name=f"{trace_file}_filtered",
+                file_name=f"{trace_file.split('.')[0]}_filtered",
                 kind="matrix",
                 norm=False,
             )
@@ -723,8 +720,90 @@ class ChromatinTraceTable:
             print("! Error: you are trying to filter an empty trace table!")
         self.data = trace_table_new
 
+    def remove_duplicates_loc(self, localization_table=None):
+        """
+        Removes duplicated barcodes within each trace.
+        If a localization_table is provided, keeps only the spot with the highest intensity ("peak").
+        Otherwise, removes all instances of duplicated barcodes.
+
+        Parameters
+        ----------
+        localization_table : astropy Table, optional
+            Localization table with 'Buid' and 'peak' columns. Used to select spot with highest intensity.
+
+        Returns
+        -------
+        Updates self.data with filtered trace table.
+        """
+        trace_table = self.data
+        trace_table_new = trace_table.copy()
+        print("\n$ Removing duplicated barcodes within traces...")
+
+        if len(trace_table) == 0:
+            print("! Error: you are trying to filter an empty trace table!")
+            return
+
+        trace_table_indexed = trace_table.group_by("Trace_ID")
+        trace_table.add_index("Spot_ID")  # Add index for faster lookup
+        rows_to_remove = []
+
+        if localization_table is not None:
+            print("$ Using intensity to resolve duplicates...")
+            localization_table.add_index("Buid")
+
+            for trace in tqdm(trace_table_indexed.groups):
+                barcode_groups = trace.group_by("Barcode #").groups
+                for group in barcode_groups:
+                    if len(group) == 1:
+                        continue  # no duplicates
+
+                    peaks = []
+                    for row in group:
+                        spot_id = row["Spot_ID"]
+                        try:
+                            peak = localization_table.loc[spot_id]["peak"]
+                        except KeyError:
+                            peak = -1
+                        peaks.append(peak)
+
+                    max_idx = peaks.index(max(peaks))
+                    for idx, row in enumerate(group):
+                        if idx != max_idx:
+                            global_idx = trace_table.loc_indices[row["Spot_ID"]]
+                            rows_to_remove.append(global_idx)
+
+        else:
+            print(
+                "$ No localization table provided. Removing all instances of duplicated barcodes."
+            )
+
+            for trace in trace_table_indexed.groups:
+                barcode_groups = trace.group_by("Barcode #").groups
+                for group in barcode_groups:
+                    if len(group) <= 1:
+                        continue
+                    for row in group:
+                        global_idx = trace_table.loc_indices[row["Spot_ID"]]
+                        rows_to_remove.append(global_idx)
+
+        trace_table_new.remove_rows(rows_to_remove)
+
+        print(f"$ Number of rows to remove: {len(rows_to_remove)}")
+
+        if len(trace_table_new) > 0:
+            number_traces_left = len(trace_table_new.group_by("Trace_ID").groups)
+        else:
+            number_traces_left = 0
+
+        print(
+            f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {number_traces_left}"
+        )
+
+        self.data = trace_table_new
+
     def remove_duplicates(
         self,
+        localizations_file=None,
     ):  # sourcery skip: extract-method
         """
         removes duplicated (identical) spots
@@ -740,7 +819,7 @@ class ChromatinTraceTable:
         """
         trace_table = self.data
         trace_table_new = trace_table.copy()
-        print("\n$ Removing duplicated barcodes...")
+        print("\n$ Removing duplicated barcodes within traces...")
         if len(trace_table) > 0:
             # indexes trace file
             trace_table_indexed = trace_table.group_by("Spot_ID")

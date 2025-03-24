@@ -167,6 +167,7 @@ def run(p):
         collected_tables,
         comments="appended_loc_files=" + str(number_loc_tables),
     )
+    print(f"$ Saved merged file to: {output_file}")
 
     print("Finished execution")
 
