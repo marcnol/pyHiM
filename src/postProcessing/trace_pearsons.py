@@ -322,9 +322,14 @@ def plot_correlation_matrix(
     # Adjust layout and save
     plt.tight_layout()
     plt.savefig(output_filename, dpi=300)
-    plt.close()
+    print(f"$ Saved correlation matrix as {output_filename}")
 
-    print(f"Saved correlation matrix as {output_filename}")
+    np.save(output_filename.split(".")[0] + ".npy", matrix)
+    print(
+        f"$ Saved correlation matrix data in NPY format: {output_filename.split('.')[0]+'.npy'}"
+    )
+
+    plt.close()
 
 
 def main():
