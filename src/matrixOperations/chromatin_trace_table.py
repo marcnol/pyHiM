@@ -751,7 +751,7 @@ class ChromatinTraceTable:
             print("$ Using intensity to resolve duplicates...")
             localization_table.add_index("Buid")
 
-            for trace in trace_table_indexed.groups:
+            for trace in tqdm(trace_table_indexed.groups):
                 barcode_groups = trace.group_by("Barcode #").groups
                 for group in barcode_groups:
                     if len(group) == 1:
