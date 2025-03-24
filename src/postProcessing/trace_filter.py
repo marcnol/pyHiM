@@ -297,7 +297,7 @@ def runtime(
             # remove duplicated spots
             if remove_duplicate_spots:
                 if localizations_file:
-                    trace.remove_duplicates_loc(localization_table=localization_table)
+                    trace.remove_duplicates_loc(localization_table=localizations_data)
                 else:
                     trace.remove_duplicates()
 

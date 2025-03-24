@@ -744,6 +744,7 @@ class ChromatinTraceTable:
             return
 
         trace_table_indexed = trace_table.group_by("Trace_ID")
+        trace_table.add_index("Spot_ID")  # Add index for faster lookup
         rows_to_remove = []
 
         if localization_table is not None:
@@ -768,7 +769,7 @@ class ChromatinTraceTable:
                     max_idx = peaks.index(max(peaks))
                     for idx, row in enumerate(group):
                         if idx != max_idx:
-                            global_idx = trace_table.index(row)
+                            global_idx = trace_table.loc_indices[row["Spot_ID"]]
                             rows_to_remove.append(global_idx)
 
         else:
@@ -782,7 +783,7 @@ class ChromatinTraceTable:
                     if len(group) <= 1:
                         continue
                     for row in group:
-                        global_idx = trace_table.index(row)
+                        global_idx = trace_table.loc_indices[row["Spot_ID"]]
                         rows_to_remove.append(global_idx)
 
         trace_table_new.remove_rows(rows_to_remove)
@@ -818,7 +819,7 @@ class ChromatinTraceTable:
         """
         trace_table = self.data
         trace_table_new = trace_table.copy()
-        print("\n$ Removing duplicated barcodes...")
+        print("\n$ Removing duplicated barcodes within traces...")
         if len(trace_table) > 0:
             # indexes trace file
             trace_table_indexed = trace_table.group_by("Spot_ID")
