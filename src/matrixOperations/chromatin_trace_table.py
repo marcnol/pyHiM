@@ -660,7 +660,7 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats,
-                file_name=f"{trace_file}_before",
+                file_name=f"{trace_file.split('.')[0]}_before_filtering",
                 kind="matrix",
                 norm=True,
             )
@@ -700,9 +700,6 @@ class ChromatinTraceTable:
 
             if len(trace_table_new) > 0:
                 trace_table_indexed = trace_table_new.group_by("Trace_ID")
-            #     number_traces_left = len(trace_table_indexed.groups)
-            # else:
-            #     number_traces_left = 0
 
             print(
                 f"$ After filtering, I see \n spots: {len(trace_table_new)} \n traces: {len(trace_table_indexed.groups)}"
@@ -714,7 +711,7 @@ class ChromatinTraceTable:
             # plots statistics of barcodes and saves in file
             self.plots_barcode_statistics(
                 collective_barcode_stats_new,
-                file_name=f"{trace_file}_filtered",
+                file_name=f"{trace_file.split('.')[0]}_filtered",
                 kind="matrix",
                 norm=False,
             )

@@ -139,10 +139,13 @@ def parse_arguments():
         "--label", help="Select traces containing this label, removes all other traces."
     )
 
-    parser.add_argument("--localization_file", help="Name of input localizations file.")
+    parser.add_argument(
+        "--localization_file", default=None, help="Name of input localizations file."
+    )
     parser.add_argument(
         "--intensity_min",
         type=float,
+        default=0.0,
         help="Minimum intensity threshold for localizations.",
     )
 
@@ -215,11 +218,8 @@ def parse_arguments():
     else:
         p["label"] = None
 
-    if args.localization_file:
-        p["localization_file"] = args.localization_file
-
-    if args.intensity_min:
-        p["intensity_min"] = args.intensity_min
+    p["localization_file"] = args.localization_file
+    p["intensity_min"] = args.intensity_min
 
     p["trace_files"] = []
     if args.pipe:
