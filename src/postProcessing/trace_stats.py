@@ -35,10 +35,12 @@ def compute_trace_statistics(trace_file):
     # Compute statistics
     num_unique_rois = len(set(trace_table.data["ROI #"]))
     num_unique_traces = len(set(trace_table.data["Trace_ID"]))
+    num_unique_barcodes = len(set(trace_table.data["Barcode #"]))
 
     print(f"Statistics for {trace_file}:")
     print(f"- Number of unique ROIs: {num_unique_rois}")
     print(f"- Number of unique chromatin traces: {num_unique_traces}")
+    print(f"- Number of unique barcodes: {num_unique_barcodes}")
 
 
 def main():
