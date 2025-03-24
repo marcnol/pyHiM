@@ -156,28 +156,28 @@ def get_barcode_statistics(trace, output_filename="test_barcodes.png"):
 
     distributions = [trace_lengths, number_unique_barcodes, number_repeated_barcodes]
     axis_x_labels = [
-        "number of barcodes",
-        "number of unique barcodes",
-        "number of repeated barcodes",
+        "$N_{barcodes}$",
+        "$N_{unique-barcodes}$",
+        "$N_{repeated-barcodes}$",
     ]
     number_plots = len(distributions)
 
     fig = plt.figure(constrained_layout=True)
-    im_size = 10
+    im_size = 8
     fig.set_size_inches((im_size * number_plots, im_size))
     gs = fig.add_gridspec(1, number_plots)
     axes = [fig.add_subplot(gs[0, i]) for i in range(number_plots)]
 
     for axis, distribution, xlabel in zip(axes, distributions, axis_x_labels):
         axis.hist(distribution, alpha=0.3)
-        axis.set_xlabel(xlabel)
-        axis.set_ylabel("counts")
+        axis.set_xlabel(xlabel, fontsize=30)
+        axis.set_ylabel("counts", fontsize=30)
         axis.set_title(
-            "n = "
-            + str(len(distribution))
-            + " | median = "
-            + str(np.median(distribution))
+            f"n = {str(len(distribution))} | median = {str(np.median(distribution))}",
+            fontsize=20,
         )
+
+    fig.suptitle("Trace statistics", fontsize=40)
 
     plt.savefig(output_filename)
 
@@ -274,29 +274,24 @@ def barcode_detection_efficiency(trace, output_prefix="barcode_detection_efficie
         for barcode in all_barcodes:
             barcode_presence[barcode].append(1 if barcode in present else 0)
 
-    # Bootstrap detection frequencies
-    detection_stats = {}
+    # Bootstrap detection frequencies (generate bootstrapped mean values)
+    detection_bootstrap_distributions = {}
     for barcode, detections in barcode_presence.items():
         detections = np.array(detections)
-        means = [
+        boot_means = [
             np.mean(np.random.choice(detections, size=n_traces, replace=True))
             for _ in range(bootstrap_iterations)
         ]
-        detection_stats[barcode] = {
-            "mean": np.mean(detections),
-            "ci_lower": np.percentile(means, 2.5),
-            "ci_upper": np.percentile(means, 97.5),
-            "distribution": detections,
-        }
+        detection_bootstrap_distributions[barcode] = boot_means
 
     # Plotting
-    sorted_barcodes = sorted(detection_stats.keys())
+    sorted_barcodes = sorted(detection_bootstrap_distributions.keys())
     num_barcodes = len(sorted_barcodes)
-    max_per_row = 25
+    max_per_row = 50
     n_rows = (num_barcodes - 1) // max_per_row + 1
 
-    fig_height = 5 * n_rows
-    fig = plt.figure(figsize=(20, fig_height))
+    fig_height = 6 * n_rows
+    fig = plt.figure(figsize=(24, fig_height))
     gs = GridSpec(n_rows, 1, figure=fig)
 
     for row in range(n_rows):
@@ -304,18 +299,23 @@ def barcode_detection_efficiency(trace, output_prefix="barcode_detection_efficie
         start = row * max_per_row
         end = min(start + max_per_row, num_barcodes)
         barcodes_row = sorted_barcodes[start:end]
-        data = [detection_stats[bc]["distribution"] for bc in barcodes_row]
+        data = [detection_bootstrap_distributions[bc] for bc in barcodes_row]
 
-        ax.violinplot(data, showmedians=True)
-        ax.set_xticks(np.arange(1, len(barcodes_row) + 1))
+        positions = np.arange(1, len(barcodes_row) + 1)
+        ax.violinplot(data, showmedians=True, positions=positions)
+        ax.set_xticks(positions)
         ax.set_xticklabels(barcodes_row)
-        ax.set_ylabel("Detection frequency")
+        ax.set_xlim(0.5, len(barcodes_row) + 0.5)
+        ax.set_ylabel("Detection frequency", fontsize=30)
+        ax.set_xlabel("barcode IDs", fontsize=30)
         ax.set_ylim(0, 1)
-        ax.set_title(f"Barcodes {start + 1} to {end}")
+        ax.set_title(
+            f"Number of traces = {n_traces} | barcodes {start + 1}-{end}", fontsize=20
+        )
 
     fig.tight_layout()
     fig.savefig(f"{output_prefix}.png")
-    print(f"$ Saved overall barcode detection efficiency plot to: {output_prefix}.png")
+    print(f"$ Saved overall barcode detection plot to: {output_prefix}.png")
 
 
 def analyze_trace(trace, trace_file, plotXYZ=False):
@@ -348,7 +348,7 @@ def analyze_trace(trace, trace_file, plotXYZ=False):
     )
 
     # Compute and plot neighbor distances
-    output_filename = [trace_file.split(".")[0], "_neighbor_distances", ".png"]
+    output_filename = [trace_file.split(".")[0], "_first_neighbor_distances", ".png"]
     mean_dx, mean_dy, mean_dz, std_dx, std_dy, std_dz = plot_neighbor_distances(
         trace, "".join(output_filename)
     )
@@ -359,7 +359,9 @@ def analyze_trace(trace, trace_file, plotXYZ=False):
     # Plots how often barcodes are repeated in a single trace
     collective_barcode_stats = trace.barcode_statistics(trace_table)
     trace.plots_barcode_statistics(
-        collective_barcode_stats, file_name=trace_file + "_stats", kind="matrix"
+        collective_barcode_stats,
+        file_name=trace_file.split(".")[0] + "_relative_barcode_frequencies",
+        kind="matrix",
     )
 
 

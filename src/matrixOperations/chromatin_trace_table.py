@@ -530,7 +530,7 @@ class ChromatinTraceTable:
         fig, (ax1) = plt.subplots(nrows=1, ncols=1, figsize=(15, 15))
 
         label, density = ("frequency", True) if norm else ("counts", False)
-        ax1.set_title("Distribution of barcodes per trace")
+        ax1.set_title("Relative barcode frequencies", fontsize=30)
 
         if "violin" in kind:
             self._extracted_from_plots_barcode_statistics_38(ax1, data, sorted_barcodes)
@@ -543,10 +543,10 @@ class ChromatinTraceTable:
                 )
             bin_number = list(bins)
             pos = ax1.imshow(np.transpose(matrix), cmap="Reds")
-            ax1.set_xticks(np.arange(matrix.shape[0]), sorted_barcodes)
-            ax1.set_yticks(np.arange(0, len(bins)), bin_number)
-            ax1.set_ylabel("number of barcodes")
-            ax1.set_xlabel("barcode id")
+            ax1.set_xticks(np.arange(matrix.shape[0]), sorted_barcodes, fontsize=15)
+            ax1.set_yticks(np.arange(0, len(bins)), bin_number, fontsize=15)
+            ax1.set_ylabel("number of barcodes", fontsize=25)
+            ax1.set_xlabel("barcode IDs", fontsize=25)
             fig.colorbar(
                 pos, ax=ax1, location="bottom", anchor=(0.5, 1), shrink=0.4, label=label
             )
