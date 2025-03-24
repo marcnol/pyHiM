@@ -269,10 +269,12 @@ def runtime(
             )
         )
 
-    if intensity_min and localizations_file:
+    if localizations_file:
         localization_table = LocalizationTable()
         localizations_data, _ = localization_table.load(localizations_file)
         print(f"$ Loaded localizations table with: {len(localizations_data)} rows")
+
+    if localizations_file and intensity_min:
 
         # Plot intensity distribution to help user choose a threshold
         intensities = [row["peak"] for row in localizations_data]
@@ -294,7 +296,10 @@ def runtime(
 
             # remove duplicated spots
             if remove_duplicate_spots:
-                trace.remove_duplicates()
+                if localizations_file:
+                    trace.remove_duplicates_loc(localization_table=localization_table)
+                else:
+                    trace.remove_duplicates()
 
             # filters trace by minimum number of barcodes
             if N_barcodes > 1:
