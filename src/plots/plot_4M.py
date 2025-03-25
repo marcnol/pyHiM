@@ -193,7 +193,9 @@ def bootstrap_colocalization(
     return barcode_means, barcode_sems
 
 
-def plot_frequencies(mean_frequencies, sem_frequencies, anchor_barcodes, output_file):
+def plot_frequencies(
+    mean_frequencies, sem_frequencies, anchor_barcodes, output_file, x_min=0, x_max=0
+):
     """Plots colocalization frequencies for multiple anchors separately."""
 
     # Make sure anchor_barcodes is a list for consistent processing
@@ -227,7 +229,12 @@ def plot_frequencies(mean_frequencies, sem_frequencies, anchor_barcodes, output_
         plt.xticks(fontsize=10, rotation=90)
         plt.yticks(fontsize=10)
         plt.legend(fontsize=8)
-        # plt.tight_layout()
+
+        # Set x-axis limits
+        _x_min = x_min if x_min is not None else min(barcodes) - 1
+        _x_max = x_max if x_max is not None else max(barcodes) + 1
+        plt.xlim(_x_min, _x_max)
+
         plt.grid(True)
 
         output_filename = f"{output_file.split('.')[0]}_anchor_{anchor}.png"
@@ -269,6 +276,10 @@ def main():
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
+
+    parser.add_argument("--x_min", type=int, default=None, help="xscale minimum")
+    parser.add_argument("--x_max", type=int, default=None, help="xscale maximum")
+
     args = parser.parse_args()
 
     trace_files = []
@@ -299,7 +310,14 @@ def main():
             barcode_means, barcode_sems = bootstrap_colocalization(
                 trace.data, args.anchors, args.cutoff, args.bootstrapping_cycles
             )
-            plot_frequencies(barcode_means, barcode_sems, args.anchors, args.output)
+            plot_frequencies(
+                barcode_means,
+                barcode_sems,
+                args.anchors,
+                args.output,
+                x_min=args.x_min,
+                x_max=args.x_max,
+            )
 
     else:
         print("\nNo trace files were detected")

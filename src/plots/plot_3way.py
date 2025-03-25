@@ -256,7 +256,13 @@ def bootstrap_threeway_colocalization(
 
 
 def plot_threeway_matrix(
-    pair_means, pair_sems, anchor_barcode, output_file, distance_cutoff=0.2
+    pair_means,
+    pair_sems,
+    anchor_barcode,
+    output_file,
+    distance_cutoff=0.2,
+    vmin=None,
+    vmax=None,
 ):
     """
     Creates a heatmap of three-way co-localization frequencies using matplotlib.
@@ -310,8 +316,12 @@ def plot_threeway_matrix(
         mean_matrix,
         interpolation="nearest",
         cmap=cmap,
-        vmin=0,
-        vmax=0.9 * mean_matrix.max() if mean_matrix.max() > 0 else 1,
+        vmin=vmin if vmin is not None else 0,
+        vmax=(
+            vmax
+            if vmax is not None
+            else (0.9 * mean_matrix.max() if mean_matrix.max() > 0 else 1)
+        ),
     )
 
     # Set up the axes with the correct labels
@@ -327,6 +337,16 @@ def plot_threeway_matrix(
     ax.set_xticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
     ax.set_yticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
     ax.grid(which="minor", color="w", linestyle="-", linewidth=1)
+
+    # Add perpendicular lines for the anchor barcode NOT WORKING
+    if anchor_barcode in barcode_to_idx:
+        anchor_idx = barcode_to_idx[anchor_barcode]
+
+        # Horizontal line across the anchor barcode row
+        ax.axhline(y=anchor_idx, color="black", linestyle="-", linewidth=2, alpha=0.7)
+
+        # Vertical line across the anchor barcode column
+        ax.axvline(x=anchor_idx, color="black", linestyle="-", linewidth=2, alpha=0.7)
 
     # Add colorbar
     cbar = fig.colorbar(im, ax=ax)
@@ -405,8 +425,13 @@ def args_parser():
         "--input", required=True, help="Path to input trace table (ECSV format)."
     )
     parser.add_argument(
-        "--anchor", type=int, required=True, help="Anchor barcode number."
+        "--anchors",
+        type=int,
+        nargs="+",
+        required=True,
+        help="List of anchor barcode numbers.",
     )
+
     parser.add_argument(
         "--cutoff",
         type=float,
@@ -414,6 +439,14 @@ def args_parser():
         default=0.2,
         help="Distance cutoff for co-localization. Default = 0.2 um",
     )
+
+    parser.add_argument(
+        "--vmin", type=float, default=None, help="Minimum value for colormap scale."
+    )
+    parser.add_argument(
+        "--vmax", type=float, default=None, help="Maximum value for colormap scale."
+    )
+
     parser.add_argument(
         "--bootstrapping_cycles",
         type=int,
@@ -454,28 +487,30 @@ def main():
             trace.initialize()
             trace.load(trace_file)
 
-            print(
-                f"Computing three-way co-localization for anchor barcode: {args.anchor}"
-            )
             print(f"Using distance cutoff: {args.cutoff} µm")
             print(f"Performing {args.bootstrapping_cycles} bootstrap iterations")
 
-            # Run the bootstrap analysis
-            pair_means, pair_sems = bootstrap_threeway_colocalization(
-                trace.data,
-                args.anchor,
-                args.cutoff,
-                n_bootstrap=args.bootstrapping_cycles,
-            )
+            for anchor in args.anchors:
+                print(f"\nRunning analysis for anchor: {anchor}")
 
-            # Create the plots
-            plot_threeway_matrix(
-                pair_means,
-                pair_sems,
-                args.anchor,
-                args.output,
-                distance_cutoff=args.cutoff,
-            )
+                # Run the bootstrap analysis
+                pair_means, pair_sems = bootstrap_threeway_colocalization(
+                    trace.data,
+                    anchor,
+                    args.cutoff,
+                    n_bootstrap=args.bootstrapping_cycles,
+                )
+
+                # Create the plots
+                plot_threeway_matrix(
+                    pair_means,
+                    pair_sems,
+                    anchor,
+                    args.output,
+                    distance_cutoff=args.cutoff,
+                    vmin=args.vmin,
+                    vmax=args.vmax,
+                )
 
     else:
         print("\nNo trace files were detected")
