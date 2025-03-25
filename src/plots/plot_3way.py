@@ -338,6 +338,16 @@ def plot_threeway_matrix(
     ax.set_yticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
     ax.grid(which="minor", color="w", linestyle="-", linewidth=1)
 
+    # Add perpendicular lines for the anchor barcode NOT WORKING
+    if anchor_barcode in barcode_to_idx:
+        anchor_idx = barcode_to_idx[anchor_barcode]
+
+        # Horizontal line across the anchor barcode row
+        ax.axhline(y=anchor_idx, color="black", linestyle="-", linewidth=2, alpha=0.7)
+
+        # Vertical line across the anchor barcode column
+        ax.axvline(x=anchor_idx, color="black", linestyle="-", linewidth=2, alpha=0.7)
+
     # Add colorbar
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Co-localization frequency", fontsize=12)
