@@ -10,9 +10,9 @@
 
 We recommend to download the lighter version `miniconda` if you only intend to use pyHiM without developing new applications.
 
-- [Installing conda on Linux](https://conda.io/projects/conda/en/latest/user-guide/install/linux.html)
-- [Installing conda on Windows](https://conda.io/projects/conda/en/latest/user-guide/install/windows.html)
-- [Installing conda on macOS](https://docs.conda.io/projects/conda/en/latest/user-guide/install/macos.html)
+- [Installing conda on Linux](https://conda.io/projects/conda/en/stable/user-guide/install/linux.html)
+- [Installing conda on Windows](https://conda.io/projects/conda/en/stable/user-guide/install/windows.html)
+- [Installing conda on macOS](https://docs.conda.io/projects/conda/en/stable/user-guide/install/macos.html)
 
 ## Create conda environment
 

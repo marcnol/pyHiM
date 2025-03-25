@@ -9,13 +9,13 @@
 
 ## Documentation
 
-Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/) and [tutorials](https://pyhim.readthedocs.io/en/latest/getting_started/tutorials.html) illustrating the main steps of pyHiM analysis pipeline.
+Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/stable/) and [tutorials](https://pyhim.readthedocs.io/en/stable/getting_started/tutorials.html) illustrating the main steps of pyHiM analysis pipeline.
 
-To install, please follow the instructions [here](https://pyhim.readthedocs.io/en/latest/getting_started/quick_install.html).
+To install, please follow the instructions [here](https://pyhim.readthedocs.io/en/stable/getting_started/quick_install.html).
 
-After you installed *pyHiM*, you may want to consult a [guide](https://pyhim.readthedocs.io/en/latest/user_guide/pyhim_presentation.html) on how to use it.
+After you installed *pyHiM*, you may want to consult a [guide](https://pyhim.readthedocs.io/en/stable/user_guide/pyhim_presentation.html) on how to use it.
 
-If you are a developer, follow instructions [here](https://pyhim.readthedocs.io/en/latest/contributor/dev_env.html).
+If you are a developer, follow instructions [here](https://pyhim.readthedocs.io/en/stable/contributor/dev_env.html).
 
 ## Publications
 

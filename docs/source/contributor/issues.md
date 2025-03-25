@@ -46,9 +46,9 @@ git checkout -b doc/name_of_my_branch
 
 ### 4. Fix what you want
 
-You're reading the [online documentation](https://pyhim.readthedocs.io/en/latest/index.html) and you find something to fix:
+You're reading the [online documentation](https://pyhim.readthedocs.io/en/stable/index.html) and you find something to fix:
 
-- Check your web link like https://pyhim.readthedocs.io/en/latest/**user_guide/pyhim_presentation**.html
+- Check your web link like https://pyhim.readthedocs.io/en/stable/**user_guide/pyhim_presentation**.html
 - With your file editor, go to `pyHiM` > `docs` > `source` > **user_guide > pyhim_presentation**.md
 - Fix what you want
 

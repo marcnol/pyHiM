@@ -3,7 +3,7 @@
 
 ## Global structure
 
-Each section in `common` represents a step of pyHiM processing. Parameters are defined by default in `common` in their corresponding sections. If you want to change a parameter just for one channel, go to `labels` and you can overwrite the parameter value in the channel of your choice (an example [here](https://pyhim.readthedocs.io/en/latest/getting_started/tutorials/configuration_file.html#manually)).
+Each section in `common` represents a step of pyHiM processing. Parameters are defined by default in `common` in their corresponding sections. If you want to change a parameter just for one channel, go to `labels` and you can overwrite the parameter value in the channel of your choice (an example [here](https://pyhim.readthedocs.io/en/stable/getting_started/tutorials/configuration_file.html#manually)).
 
 ## Parameter overview by section
 *Parameters are sort by alphabetical order.*
