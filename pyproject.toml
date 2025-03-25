@@ -4,45 +4,49 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "1.0.dev0"
+version = "1.0.0.dev1"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
-authors = [{ name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" }]
+authors = [
+    { name = "Marcelo Nollmann", email = "marcelo.nollmann@cbs.cnrs.fr" },
+]
 license = { file = "LICENSE" }
-keywords = ["astropy",
-              "csbdeep",
-              "dask",
-              "matplotlib",
-              "numpy",
-              "numba",
-              "photutils",
-              "roipoly",
-              "scikit-learn",
-              "scikit-image",
-              "stardist",
-              "pympler",
-              "tqdm",
-              "scipy",
-              "tifffile"
-              ]
-dependencies = ["apifish >= 0.6.4.dev0",
-                "dataclasses-json",
-                "astropy >= 4.3.1",
-                "csbdeep >= 0.6.3",
-                "dask[distributed] >= 2023.4.1",
-                "matplotlib == 3.5.1",
-                "numba >= 0.54.1",
-                "numpy >= 1.19.5",
-                "photutils >= 1.1.0",
-                "pympler >= 1.0.1",
-                "roipoly >= 0.5.3",
-                "scikit-image == 0.19.2",
-                "scikit-learn >= 1.1.1",
-                "scipy >= 1.10.3",
-                "stardist >= 0.7.3",
-                "tifffile >= 2021.10.10",
-                "tqdm >= 4.63.0"
-                ]
+keywords = [
+    "astropy",
+    "csbdeep",
+    "dask",
+    "matplotlib",
+    "numpy",
+    "numba",
+    "photutils",
+    "roipoly",
+    "scikit-learn",
+    "scikit-image",
+    "stardist",
+    "pympler",
+    "tqdm",
+    "scipy",
+    "tifffile",
+]
+dependencies = [
+    "apifish >= 0.6.4.dev0",
+    "dataclasses-json",
+    "astropy >= 4.3.1",
+    "csbdeep >= 0.6.3",
+    "dask[distributed] >= 2023.4.1",
+    "matplotlib == 3.5.1",
+    "numba >= 0.54.1",
+    "numpy >= 1.19.5",
+    "photutils >= 1.1.0",
+    "pympler >= 1.0.1",
+    "roipoly >= 0.5.3",
+    "scikit-image == 0.19.2",
+    "scikit-learn >= 1.1.1",
+    "scipy >= 1.10.3",
+    "stardist >= 0.7.3",
+    "tifffile >= 2021.10.10",
+    "tqdm >= 4.63.0",
+]
 requires-python = ">=3.9"
 
 [project.urls]
@@ -52,13 +56,12 @@ Homepage = "https://github.com/marcnol/pyHiM"
 pyhim = "pyHiM:main"
 clean_him_run = "toolbox.file_handling.cleanHiM_run:main"
 lndir = "toolbox.file_handling.lndir:main"
-run_him_cluster = "toolbox.runHiM_cluster:main"
 unzip_him_run = "toolbox.file_handling.unzipHiM_run:main"
 zip_him_run = "toolbox.file_handling.zipHiM_run:main"
 image_preprocessing = "toolbox.imagePreProcessing:main"
 image_segment_spots = "toolbox.imageSegmentSpots:main"
-figure_3_way_interactions = "plots.figure3wayInteractions:main"
-figure_4_m_matrix = "plots.figure4Mmatrix:main"
+figure_3_way_interactions = "plots.plot_3way:main"
+figure_4_m_matrix = "plots.plot_4M:main"
 figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
 figure_him_matrix = "plots.figureHiMmatrix:main"
 figure_n_him_matrices = "plots.figureN_HiMmatrices:main"
@@ -87,6 +90,12 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 "toolbox.parameter_file" = ["*.png", "*.json"]
-"stardist_models.DAPI_2D_stardist_nc14_nrays64_epochs40_grid2" = ["*.h5", "*.json"]
+"stardist_models.DAPI_2D_stardist_nc14_nrays64_epochs40_grid2" = [
+    "*.h5",
+    "*.json",
+]
 "stardist_models.DAPI_3D_stardist_17032021_deconvolved" = ["*.h5", "*.json"]
-"stardist_models.PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01" = ["*.h5", "*.json"]
+"stardist_models.PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01" = [
+    "*.h5",
+    "*.json",
+]

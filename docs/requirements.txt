@@ -12,7 +12,6 @@ sphinxcontrib-qthelp <= 1.0.6
 nbsphinx
 sphinx-book-theme
 ipython
-
+dataclasses-json
 numpy >= 1.18.1
 matplotlib >= 3.1.3
-scikit-image >= 0.17.2

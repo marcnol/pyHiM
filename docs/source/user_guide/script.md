@@ -57,14 +57,6 @@ optional arguments:
                         Unzip files inside folders of current directory
 ```
 
-### runHiM_cluster.py
-
-Launches *pyHiM* on a cluster using slurm `srun`.
-
-```
-Usage: run_him_cluster
-```
-
 ## Plotting scripts
 
 
@@ -122,7 +114,7 @@ Usage figure_him_matrix [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 ```
 
 
-### figure4Mmatrix.py
+### plot_4M.py
 Creates proximity frequency 4M profiles from a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
 
 ```
@@ -221,7 +213,7 @@ Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 ```
 
-### figure3wayInteractions.py
+### plot_3way.py
 
 Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `processHiMmatrix.py` script.
 

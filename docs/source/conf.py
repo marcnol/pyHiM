@@ -29,12 +29,17 @@ autodoc_mock_imports = [
     "numba",
     "pylab",
     "skimage",
+    "pandas",
+    "seaborn",
+    "roipoly",
+    "cellpose",
 ]
 
 sys.path.insert(0, os.path.abspath("../../src/"))
-sys.path.insert(0, os.path.abspath("../../src/postProcessing"))
-sys.path.insert(0, os.path.abspath("../../src/toolbox"))
-sys.path.insert(0, os.path.abspath("../../src/toolbox/file_handling"))
+sys.path.insert(0, os.path.abspath("../../src/postProcessing/"))
+sys.path.insert(0, os.path.abspath("../../src/toolbox/"))
+sys.path.insert(0, os.path.abspath("../../src/toolbox/file_handling/"))
+sys.path.insert(0, os.path.abspath("../../src/plots/"))
 
 # -- Project information -----------------------------------------------------
 
@@ -43,7 +48,9 @@ copyright = "2022, Marcelo Nollmann, Xavier Devos"
 author = "Marcelo Nollmann, Xavier Devos"
 
 # The full version, including alpha/beta/rc tags
-release = "1.0.dev0"
+from _version import __version__  # noqa: E402
+
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

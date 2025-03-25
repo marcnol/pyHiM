@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-__version__ = "1.0.dev0"
-
 from datetime import datetime
 
 import core.function_caller as fc
+from _version import __version__
 from core.data_manager import DataManager
 from core.parameters import Parameters
 from core.pyhim_logging import Logger, print_analyzing_label, print_log

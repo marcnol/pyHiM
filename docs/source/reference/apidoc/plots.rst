@@ -4,18 +4,18 @@ plots package
 Submodules
 ----------
 
-plots.figure3wayInteractions module
+plots.plot_3way module
 -----------------------------------
 
-.. automodule:: plots.figure3wayInteractions
+.. automodule:: plots.plot_3way
    :members:
    :undoc-members:
    :show-inheritance:
 
-plots.figure4Mmatrix module
+plots.plot_4M module
 ---------------------------
 
-.. automodule:: plots.figure4Mmatrix
+.. automodule:: plots.plot_4M
    :members:
    :undoc-members:
    :show-inheritance:

@@ -20,14 +20,6 @@ toolbox.imageSegmentSpots module
    :undoc-members:
    :show-inheritance:
 
-toolbox.runHiM\_cluster module
-------------------------------
-
-.. automodule:: toolbox.runHiM_cluster
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
