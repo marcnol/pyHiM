@@ -28,14 +28,6 @@ plots.figureCompare2Matrices module
    :undoc-members:
    :show-inheritance:
 
-plots.figureHiMmatrix module
-----------------------------
-
-.. automodule:: plots.figureHiMmatrix
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 plots.figureN\_HiMmatrices module
 ---------------------------------
 

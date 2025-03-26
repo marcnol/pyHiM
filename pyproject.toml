@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyhim"
-version = "1.0.0.dev1"
+version = "1.0.0.dev2"
 description = "Pipeline and functions to analyse multiplexed DNA-FISH data"
 readme = "README.md"
 authors = [
@@ -63,7 +63,6 @@ image_segment_spots = "toolbox.imageSegmentSpots:main"
 figure_3_way_interactions = "plots.plot_3way:main"
 figure_4_m_matrix = "plots.plot_4M:main"
 figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
-figure_him_matrix = "plots.figureHiMmatrix:main"
 figure_n_him_matrices = "plots.figureN_HiMmatrices:main"
 figure_single_cell = "plots.figureSingleCell:main"
 process_him_matrix = "postProcessing.processHiMmatrix:main"

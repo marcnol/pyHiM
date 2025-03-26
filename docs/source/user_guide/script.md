@@ -59,61 +59,6 @@ optional arguments:
 
 ## Plotting scripts
 
-
-### figureHiMmatrix.py
-
-Produces and plots a HiM matrix for a given dataset.
-
-```
-Usage figure_him_matrix [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
-						 [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
-						 [--axisTicks] [--barcodes] [--scalingParameter]
-						 [--cScale] [--plottingFileExtension] [--shuffle]
-						 [--scalogram] [--inputMatrix] [--pixelSize]
-						 [--cmap] [--PWDmode]
-	 -F ROOTFOLDER, --rootFolder ROOTFOLDER
-		 Folder with datasets
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A LABEL, --label LABEL
-		 Name of label
-	 -W ACTION, --action ACTION
-		 Selects: all, labeled or unlabeled for the datasets.
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --barcodes
-		 Display barcode images
-	 --scalingParameter
-		 Scaling parameter of colormap
-	 --cScale
-		 Colormap absolute scale
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	 --shuffle
-		 Provide shuffle vector: 0,1,2,3,.. of the same size or
-		 smaller than the original matrix.
-	 --scalogram
-		 Display scalogram image
-	 --inputMatrix
-		 Select plot type among one of the following: PWD, contact, iPWD.
-		 Default: contact
-	 --pixelSize
-		 Pixel size in µm
-	 --cmap
-		 Select colormap. Default: coolwarm
-	 --PWDmode
-		 Mode used to calculate the mean distance.
-		 Options are: 'median' or 'KDE'. Default: 'median'
-```
-
-
 ### plot_4M.py
 Creates proximity frequency 4M profiles from a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
 
