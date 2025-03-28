@@ -65,6 +65,12 @@ def parse_arguments():
         default="trace_correlation_matrix.png",
         help="Output filename for the correlation matrix plot (default: trace_correlation_matrix.png)",
     )
+    parser.add_argument(
+        "--vmin", type=float, default=-10, help="Minimum value for colormap scaling"
+    )
+    parser.add_argument(
+        "--vmax", type=float, default=10, help="Maximum value for colormap scaling"
+    )
 
     trace_files = []
     if select.select([sys.stdin], [], [], 0.0)[0]:
@@ -269,7 +275,7 @@ def compare_distance_maps(distance_maps):
 
 
 def plot_correlation_matrix(
-    files, matrix, output_filename="trace_correlation_matrix.png"
+    files, matrix, output_filename="trace_correlation_matrix.png", vmin=-10, vmax=10
 ):
     """
     Plot a correlation matrix between files with unique identifiers as labels.
@@ -298,8 +304,10 @@ def plot_correlation_matrix(
     fig, ax = plt.subplots(figsize=(10, 8))
 
     # Plot the matrix with dynamic color range
-    vmin = np.min(matrix)
-    vmax = np.max(matrix)
+    if vmin == -10:
+        vmin = np.min(matrix)
+    if vmax == 10:
+        vmax = np.max(matrix)
     im = ax.imshow(matrix, cmap="RdBu", interpolation="nearest", vmin=vmin, vmax=vmax)
 
     # Add colorbar
@@ -358,7 +366,9 @@ def main():
     print(corr_matrix)
 
     # Plot and save the correlation matrix
-    plot_correlation_matrix(files, corr_matrix, output_filename=args.output)
+    plot_correlation_matrix(
+        files, corr_matrix, output_filename=args.output, vmin=args.vmin, vmax=args.vmax
+    )
 
 
 if __name__ == "__main__":
