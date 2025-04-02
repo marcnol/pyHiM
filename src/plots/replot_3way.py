@@ -117,14 +117,31 @@ def plot_threeway_matrix(
     ax.set_yticks(np.arange(-0.5, n_barcodes, 1), minor=True)
     ax.grid(which="minor", color="w", linestyle="-", linewidth=1)
 
+    # previous_anchor_barcode_list = [
+    #    int(label_map[x]) - int(anchor_barcode) for x in label_map.keys()
+    # ]
+    # index_closest_to_zero = min(
+    #    enumerate(previous_anchor_barcode_list), key=lambda x: abs(x[1])
+    # )[0]
+    # previous_anchor_barcode = label_map[str(index_closest_to_zero)]
     previous_anchor_barcode_list = [
         int(label_map[x]) - int(anchor_barcode) for x in label_map.keys()
     ]
-    index_closest_to_zero = min(
-        enumerate(previous_anchor_barcode_list), key=lambda x: abs(x[1])
-    )[0]
-    previous_anchor_barcode = label_map[str(index_closest_to_zero)]
-    # print(f"> previous_anchor_barcode: {previous_anchor_barcode}\n index_closest_to_zero= {index_closest_to_zero}\n ")
+
+    # Keep only values that are less than 0 (i.e., label_map[x] < anchor_barcode)
+    negative_differences = [
+        (i, diff) for i, diff in enumerate(previous_anchor_barcode_list) if diff < 0
+    ]
+
+    if negative_differences:
+        index_closest_to_zero = min(negative_differences, key=lambda x: abs(x[1]))[0]
+        previous_anchor_barcode = label_map[str(index_closest_to_zero)]
+    else:
+        previous_anchor_barcode = (
+            None  # Or handle the "no lower value" case appropriately
+        )
+
+    print(f"> previous_anchor_barcode: {previous_anchor_barcode}")
 
     if str(previous_anchor_barcode) in idx_to_barcode.values():
         anchor_idx = list(idx_to_barcode.values()).index(str(previous_anchor_barcode))
