@@ -338,7 +338,7 @@ def plot_threeway_matrix(
     ax.set_yticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
     ax.grid(which="minor", color="w", linestyle="-", linewidth=1)
 
-    # Add perpendicular lines for the anchor barcode NOT WORKING
+    # Add perpendicular lines for the anchor barcode
     if anchor_barcode in barcode_to_idx:
         anchor_idx = barcode_to_idx[anchor_barcode]
 

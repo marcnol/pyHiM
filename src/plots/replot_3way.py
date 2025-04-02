@@ -2,9 +2,53 @@
 # -*- coding: utf-8 -*-
 
 """
-Replot 3-way co-localization matrix from saved .npy file
+marcnol Apr 2 2025
+
+# replot_3way.py
+
+This script allows you to replot three-way co-localization matrices from saved `.npy` files. It visualizes the frequency
+of co-localization between barcodes with reference to an anchor barcode, highlighting the anchor's position with
+perpendicular lines on the heatmap.
+
+## Dependencies
+
+- Python 3.x
+- NumPy
+- Matplotlib
+- Standard Python libraries: argparse, os, re, select, sys, csv
+
+## Basic Usage
+
+```bash
+python replot_3way_matrix.py --input path/to/matrix1.npy path/to/matrix2.npy
+```
+
+### Arguments
+
+--input: Specifies one or more .npy matrix files to process. These files should contain
+co-localization frequency data saved as NumPy arrays.
+
+--pipe: Enables reading filenames from standard input (stdin), allowing integration with
+shell commands like find or ls. When this flag is present, the script will read lines
+from stdin and process any that end with ".npy".
+
+--vmin: Sets the minimum value for the color scale of the heatmap. Values below this
+threshold will be clamped to the same color. If not specified, defaults to 0.
+
+--vmax: Sets the maximum value for the color scale of the heatmap. Values above this
+threshold will be clamped to the same color. If not specified, defaults to 90% of the
+maximum value in the matrix.
+
+--cmap: Specifies the colormap to use for the heatmap visualization. Accepts any valid
+Matplotlib colormap name. Default is "RdBu" (red-blue).
+
+--label_map_file: Path to a text file containing barcode labels, one per line. This allows
+mapping numeric indices to meaningful barcode identifiers in the plot. The file should
+contain one barcode number per row.
+
 """
 import argparse
+import csv
 import os
 import re
 import select
@@ -22,45 +66,32 @@ def plot_threeway_matrix(
     vmin=None,
     vmax=None,
     cmap="RdBu",
+    label_map=None,
 ):
-    """
-    Creates a heatmap of three-way co-localization frequencies using matplotlib.
 
-    Parameters:
-    ----------
-    pair_means : dict
-        Dictionary with (barcode1, barcode2) tuples as keys and mean frequencies as values
-    anchor_barcode : int
-        The anchor barcode number
-    output_file : str
-        Output file name for the plot
-    """
-    # Get all unique barcodes from the pairs
+    # print(f" anchor: {anchor_barcode}\n label map: {label_map}")
+
     all_barcodes = set()
     for b1, b2 in pair_means.keys():
         all_barcodes.add(b1)
         all_barcodes.add(b2)
 
-    # Sort barcodes for consistent matrix indexing
     sorted_barcodes = sorted(all_barcodes)
     n_barcodes = len(sorted_barcodes)
-
-    # Create empty matrices for means
     mean_matrix = np.zeros((n_barcodes, n_barcodes))
-
-    # Create a mapping from barcode to matrix index
     barcode_to_idx = {b: i for i, b in enumerate(sorted_barcodes)}
+    idx_to_barcode = {
+        i: label_map[str(i)] if label_map else str(b)
+        for i, b in enumerate(sorted_barcodes)
+    }
 
-    # Fill the matrices with the computed values
     for (b1, b2), mean_val in pair_means.items():
         i, j = barcode_to_idx[b1], barcode_to_idx[b2]
         mean_matrix[i, j] = mean_val
-        mean_matrix[j, i] = mean_val  # Mirror the matrix (symmetric)
+        mean_matrix[j, i] = mean_val
 
-    # Create the figure and subplots for the mean frequencies
     fig, ax = plt.subplots(figsize=(10, 8))
 
-    # Plot the mean heatmap using matplotlib
     im = ax.imshow(
         mean_matrix,
         interpolation="nearest",
@@ -73,39 +104,40 @@ def plot_threeway_matrix(
         ),
     )
 
-    # Set up the axes with the correct labels
-    ax.set_xticks(np.arange(len(sorted_barcodes)))
-    ax.set_yticks(np.arange(len(sorted_barcodes)))
-    ax.set_xticklabels(sorted_barcodes, fontsize=10)
-    ax.set_yticklabels(sorted_barcodes, fontsize=10)
+    tick_labels = [idx_to_barcode[i] for i in range(n_barcodes)]
+    # print(f"$ sorted_barcodes = {sorted_barcodes} \n idx_to_barcode= {idx_to_barcode}\n tick_labels: {tick_labels}")
 
-    # Rotate the tick labels and set their alignment
+    ax.set_xticks(np.arange(n_barcodes))
+    ax.set_yticks(np.arange(n_barcodes))
+    ax.set_xticklabels(tick_labels, fontsize=10)
+    ax.set_yticklabels(tick_labels, fontsize=10)
     plt.setp(ax.get_xticklabels(), rotation=90, ha="right", rotation_mode="anchor")
 
-    # Add grid lines
-    ax.set_xticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
-    ax.set_yticks(np.arange(-0.5, len(sorted_barcodes), 1), minor=True)
+    ax.set_xticks(np.arange(-0.5, n_barcodes, 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, n_barcodes, 1), minor=True)
     ax.grid(which="minor", color="w", linestyle="-", linewidth=1)
 
-    # Add perpendicular lines for the anchor barcode NOT WORKING
-    if anchor_barcode in barcode_to_idx:
-        anchor_idx = barcode_to_idx[anchor_barcode]
+    previous_anchor_barcode_list = [
+        int(label_map[x]) - int(anchor_barcode) for x in label_map.keys()
+    ]
+    index_closest_to_zero = min(
+        enumerate(previous_anchor_barcode_list), key=lambda x: abs(x[1])
+    )[0]
+    previous_anchor_barcode = label_map[str(index_closest_to_zero)]
+    # print(f"> previous_anchor_barcode: {previous_anchor_barcode}\n index_closest_to_zero= {index_closest_to_zero}\n ")
 
-        # Horizontal line across the anchor barcode row
+    if str(previous_anchor_barcode) in idx_to_barcode.values():
+        anchor_idx = list(idx_to_barcode.values()).index(str(previous_anchor_barcode))
         ax.axhline(
-            y=anchor_idx - 0.5, color="black", linestyle="-", linewidth=2, alpha=0.7
+            y=anchor_idx + 0.5, color="black", linestyle="-", linewidth=2, alpha=0.7
         )
-
-        # Vertical line across the anchor barcode column
         ax.axvline(
-            x=anchor_idx - 0.5, color="black", linestyle="-", linewidth=2, alpha=0.7
+            x=anchor_idx + 0.5, color="black", linestyle="-", linewidth=2, alpha=0.7
         )
 
-    # Add colorbar
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label("Co-localization frequency", fontsize=12)
 
-    # Add title and labels
     ax.set_title(
         f"3-way co-localization with anchor {anchor_barcode}\n(distance cutoff: {distance_cutoff} µm)",
         fontsize=14,
@@ -113,12 +145,8 @@ def plot_threeway_matrix(
     ax.set_xlabel("Barcode #", fontsize=14)
     ax.set_ylabel("Barcode #", fontsize=14)
 
-    # Adjust layout and saves npy matrix and image
     plt.tight_layout()
     output_filename = f"{output_file.split('.')[0]}_anchor_{anchor_barcode}_replot"
-
-    np.save(f"{output_filename}.npy", mean_matrix)
-
     plt.savefig(f"{output_filename}.png", dpi=300)
     print(f"Saved three-way co-localization heatmap to: {output_filename}")
     plt.close()
@@ -146,7 +174,31 @@ def args_parser():
     parser.add_argument(
         "--cmap", default="RdBu", help="Matplotlib colormap (default: RdBu)"
     )
+    parser.add_argument(
+        "--label_map_file", help="Text file with barcode numbers per row"
+    )
     return parser.parse_args()
+
+
+def load_list(file_name, anchor):
+    with open(file_name, newline="", encoding="utf-8") as csvfile:
+        spamreader = csv.reader(csvfile, delimiter=" ", quotechar="|")
+        idx_to_barcode = {}
+        index = 0
+        for row in spamreader:
+            if anchor != int(row[0]):
+                idx_to_barcode[str(index)] = row[0]
+                index += 1
+    return idx_to_barcode
+
+
+def load_label_map(filepath, anchor):
+    try:
+        idx_to_barcode = load_list(filepath, anchor)
+        return idx_to_barcode
+    except Exception as e:
+        print(f"Error loading barcode list file: {e}")
+        return None
 
 
 def main():
@@ -171,12 +223,23 @@ def main():
         print(f"Loading matrix: {npy_file}")
         matrix = np.load(npy_file)
         anchor = extract_anchor(npy_file)
+        print(f"$ anchor: {anchor}")
+
+        label_map = (
+            load_label_map(args.label_map_file, anchor) if args.label_map_file else None
+        )
+
+        if label_map is not None:
+            # Remove anchor from label_map
+            for k, v in list(label_map.items()):
+                if v == str(anchor):
+                    label_map.pop(k)
+                    break
 
         if anchor == -1:
             print(f"Could not determine anchor from filename: {npy_file}")
             continue
 
-        # Simulate a fake pair_means dictionary from the symmetric matrix
         n = matrix.shape[0]
         barcodes = list(range(n))
         pair_means = {}
@@ -194,6 +257,7 @@ def main():
             vmin=args.vmin,
             vmax=args.vmax,
             cmap=args.cmap,
+            label_map=label_map,
         )
 
 
