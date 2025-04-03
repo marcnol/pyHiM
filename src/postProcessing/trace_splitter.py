@@ -23,7 +23,7 @@ Arguments:
 Dependencies:
     - numpy
     - sklearn.cluster (KMeans)
-    - matrixOperations.chromatin_trace_table (for trace table management)
+    - traceratops.core.chromatin_trace_table (for trace table management)
     - uuid (for unique Trace_ID generation)
 """
 
@@ -35,10 +35,7 @@ import uuid
 
 import numpy as np
 from sklearn.cluster import KMeans
-
-from matrixOperations.chromatin_trace_table import (  # Import the class
-    ChromatinTraceTable,
-)
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 
 def parse_arguments():

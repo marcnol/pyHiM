@@ -28,14 +28,6 @@ matrixOperations.build\_traces module
    :undoc-members:
    :show-inheritance:
 
-matrixOperations.chromatin\_trace\_table module
------------------------------------------------
-
-.. automodule:: matrixOperations.chromatin_trace_table
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 matrixOperations.filter\_localizations module
 ---------------------------------------------
 

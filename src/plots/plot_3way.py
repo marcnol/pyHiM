@@ -71,8 +71,7 @@ import numpy as np
 
 # Removed seaborn import
 from tqdm import tqdm
-
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 
 def compute_threeway_colocalization(trace_table, anchor_barcode, distance_cutoff):

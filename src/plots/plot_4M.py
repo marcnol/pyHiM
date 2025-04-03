@@ -69,8 +69,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
-
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 
 def compute_colocalization(trace_table, anchor_barcode, distance_cutoff):

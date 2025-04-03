@@ -209,7 +209,6 @@ Documentation
    :caption: Reference
    :hidden:
 
-   reference/Chromatin_trace_table
    reference/pyhim_class_diagram
    reference/infoList_comprehension
    reference/apidoc/modules

@@ -26,9 +26,9 @@ import select
 import sys
 
 import numpy as np
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 from imageProcessing.imageProcessing import Image
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 # =============================================================================
 # FUNCTIONS

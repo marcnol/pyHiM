@@ -42,8 +42,7 @@ from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import pearsonr
-
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 
 def parse_arguments():
