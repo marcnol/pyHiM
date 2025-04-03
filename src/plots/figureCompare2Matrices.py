@@ -18,8 +18,7 @@ from plotting_functions import (
     plot_mixed_matrix,
     plot_Wilcoxon_matrix,
 )
-
-from matrixOperations.HIMmatrixOperations import plot_matrix
+from traceratops.core.him_matrix_operations import plot_matrix
 
 
 def parse_arguments():

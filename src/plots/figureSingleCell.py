@@ -22,8 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import GridSearchCV, LeaveOneOut
 from sklearn.neighbors import KernelDensity
-
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     AnalysisHiMMatrix,
     get_barcodes_per_cell,
     get_coordinates_from_pwd_matrix,

@@ -13,8 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import bootstrap, ranksums
 from tqdm import trange
-
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     calculate_contact_probability_matrix,
     shuffle_matrix,
 )

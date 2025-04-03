@@ -4,14 +4,6 @@ matrixOperations package
 Submodules
 ----------
 
-matrixOperations.HIMmatrixOperations module
--------------------------------------------
-
-.. automodule:: matrixOperations.HIMmatrixOperations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 matrixOperations.build\_matrix module
 -------------------------------------
 

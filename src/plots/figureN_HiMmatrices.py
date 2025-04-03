@@ -15,8 +15,7 @@ import os
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
-
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     AnalysisHiMMatrix,
     calculate_contact_probability_matrix,
     list_sc_to_keep,

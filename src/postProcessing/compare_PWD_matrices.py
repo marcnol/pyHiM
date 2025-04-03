@@ -21,8 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 import seaborn as sns
-
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     calculate_contact_probability_matrix,
     calculate_ensemble_pwd_matrix,
 )

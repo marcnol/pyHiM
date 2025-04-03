@@ -15,13 +15,13 @@ import select
 import sys
 
 import numpy as np
-
-from core.data_manager import create_folder
-from core.parameters import loads_barcode_dict
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     calculate_ensemble_pwd_matrix,
     distances_2_coordinates,
 )
+
+from core.data_manager import create_folder
+from core.parameters import loads_barcode_dict
 
 
 def parse_arguments():
