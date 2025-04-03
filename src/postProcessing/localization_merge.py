@@ -61,7 +61,7 @@ import os
 import select
 import sys
 
-from imageProcessing.localization_table import LocalizationTable
+from traceratops.core.localization_table import LocalizationTable
 
 # =============================================================================
 # FUNCTIONS

@@ -88,8 +88,7 @@ import sys
 
 import numpy as np
 from traceratops.core.chromatin_trace_table import ChromatinTraceTable
-
-from imageProcessing.localization_table import LocalizationTable
+from traceratops.core.localization_table import LocalizationTable
 
 # =============================================================================
 # FUNCTIONS

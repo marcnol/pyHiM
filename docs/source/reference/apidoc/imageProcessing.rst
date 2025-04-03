@@ -28,13 +28,6 @@ imageProcessing.imageProcessing module
    :undoc-members:
    :show-inheritance:
 
-imageProcessing.localization\_table module
-------------------------------------------
-
-.. automodule:: imageProcessing.localization_table
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 imageProcessing.makeProjections module
 --------------------------------------
