@@ -4,7 +4,7 @@
 
 ## Installation
 
- First, download the [`mask_cellpose.py` script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/postProcessing/mask_cellpose.py).
+ First, download the [`mask_cellpose.py` script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/pyHi-M/pyHiM/blob/development/src/postProcessing/mask_cellpose.py).
 
 full instructions: [GitHub page of cellpose](https://github.com/mouseland/cellpose)
 
@@ -33,7 +33,7 @@ To segment your masks with cellpose in the pyHiM context, you need to run the `m
 
 The parameters are set by default. They were optimized for late embryos but also seem to work well for tissues.
 
-Run this command inside the folder containing the masks with the path of your [downloaded script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/postProcessing/mask_cellpose.py):
+Run this command inside the folder containing the masks with the path of your [downloaded script](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/pyHi-M/pyHiM/blob/development/src/postProcessing/mask_cellpose.py):
 ```bash
 conda activate cellpose
 python3 <path/to/>mask_cellpose.py --input <your_mask_name.tif>

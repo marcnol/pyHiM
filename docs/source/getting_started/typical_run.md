@@ -10,7 +10,7 @@
 - Copy or create a file named `parameters.json` into your `input_directory`.
 
   ```{note}
-   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip an example here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/blob/development/src/toolbox/parameter_file/parameters.json).
+   This file contains all the input parameters required to run `pyHiM`. [You can download and unzip an example here](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/pyHi-M/pyHiM/blob/development/src/toolbox/parameter_file/parameters.json).
   ```
 
 - Update the `parameters.json` file to indicate the **reference cycle** used for drift correction.

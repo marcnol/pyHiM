@@ -11,7 +11,7 @@ You can find a global description of each parameter in the [reference guide](../
 - Copy an `parameters.json` file in the folder where you want to run `pyHiM`.
 
 ```{note}
-A typical example can be find on [GitHub <img src="../../_static/getting_started/Download-Icon.png" width="50"/>](https://github.com/marcnol/pyHiM/blob/development/src/toolbox/parameter_file/parameters.json)
+A typical example can be find on [GitHub <img src="../../_static/getting_started/Download-Icon.png" width="50"/>](https://github.com/pyHi-M/pyHiM/blob/development/src/toolbox/parameter_file/parameters.json)
 ```
 
 - With a text editor, update the relevant parameters. For example, the  name of the `referenceFiducial` needs to be changed according to your experiment settings.

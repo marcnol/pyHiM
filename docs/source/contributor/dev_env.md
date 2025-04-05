@@ -2,7 +2,7 @@
 
 ## Source code
 
-Code and issues are hosted on GitHub in [marcnol/pyHiM repository](https://github.com/marcnol/pyHiM).
+Code and issues are hosted on GitHub in [pyHi-M/pyHiM repository](https://github.com/pyHi-M/pyHiM).
 If you want to contribute with code, checkout: [development process page](./dev_process.md).
 
 ## Dependencies

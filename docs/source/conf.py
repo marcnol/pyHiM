@@ -89,7 +89,7 @@ html_theme = "sphinx_book_theme"
 html_context = {"default_mode": "light"}
 
 html_theme_options = {
-    "repository_url": "https://github.com/marcnol/pyHiM",
+    "repository_url": "https://github.com/pyHi-M/pyHiM",
     "use_repository_button": True,
     "use_edit_page_button": False,
     "path_to_docs": "docs",
