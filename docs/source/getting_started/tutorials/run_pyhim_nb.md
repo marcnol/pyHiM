@@ -31,7 +31,7 @@ ipython kernel install --user --name=pyHiM-kernel
 
 ## Open tutorial with JupyterLab
 
-1. To download and unzip the pyHiM notebook with its python file, [click here: <img src="notebooks/_static/Download-Icon.png" width="50"/>](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/marcnol/pyHiM/tree/development/docs/source/getting_started/tutorials/notebooks)
+1. To download and unzip the pyHiM notebook with its python file, [click here: <img src="notebooks/_static/Download-Icon.png" width="50"/>](https://minhaskamal.github.io/DownGit/#/home?url=https://github.com/pyHi-M/pyHiM/tree/development/docs/source/getting_started/tutorials/notebooks)
 
 2. Open a terminal inside your downloaded folder and activate your [conda environment](../quick_install.md#create-conda-environment) for pyHiM
 ```sh

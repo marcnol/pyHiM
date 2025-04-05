@@ -13,7 +13,7 @@ import argparse
 import os
 import sys
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 
 def parse_arguments():

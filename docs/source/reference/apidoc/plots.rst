@@ -52,14 +52,6 @@ plots.plot\_bootstrapping module
    :undoc-members:
    :show-inheritance:
 
-plots.plotting\_functions module
---------------------------------
-
-.. automodule:: plots.plotting_functions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

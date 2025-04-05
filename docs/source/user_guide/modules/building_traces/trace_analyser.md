@@ -26,8 +26,8 @@ $ trace_analyzer --input Trace_3D_barcode_mask:DAPI_ROI:1_filtered.ecsv
 will analyze the trace file and produce several outputs, including:
 
 
-![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_traces_XYZ_ROI3](https://github.com/marcnol/pyHiM/assets/341757/2b3f32f2-d9a6-41c8-98b7-372cc60a0439)
+![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_traces_XYZ_ROI3](https://github.com/pyHi-M/pyHiM/assets/341757/2b3f32f2-d9a6-41c8-98b7-372cc60a0439)
 
-![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_trace_statistics](https://github.com/marcnol/pyHiM/assets/341757/281cf895-d043-422c-a7c1-5fc7dcbbf857)
+![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_trace_statistics](https://github.com/pyHi-M/pyHiM/assets/341757/281cf895-d043-422c-a7c1-5fc7dcbbf857)
 
-![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_xyz_statistics](https://github.com/marcnol/pyHiM/assets/341757/c33e6a4b-0678-4f1e-b1cd-8834e0779560)
+![Trace_3D_barcode_mask:DAPI_ROI:3_filtered_xyz_statistics](https://github.com/pyHi-M/pyHiM/assets/341757/c33e6a4b-0678-4f1e-b1cd-8834e0779560)

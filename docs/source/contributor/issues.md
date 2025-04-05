@@ -1,6 +1,6 @@
 # Reporting bugs and feature requests
 
-The issue tracking system is available on GitHub in the [marcnol/pyHiM repository](https://github.com/marcnol/pyHiM/issues).
+The issue tracking system is available on GitHub in the [pyHi-M/pyHiM repository](https://github.com/pyHi-M/pyHiM/issues).
 
 ## For documentation reviewer
 
@@ -16,11 +16,11 @@ cd $HOME/Repositories
 Choose your clone method between HTTPS or SSH key:
 - HTTPS
     ```bash
-    git clone https://github.com/marcnol/pyHiM.git
+    git clone https://github.com/pyHi-M/pyHiM.git
     ```
 - SSH
     ```bash
-    git clone git@github.com:marcnol/pyHiM.git
+    git clone git@github.com:pyHi-M/pyHiM.git
     ```
 
 ### 2. Switch on the documentation branch
@@ -57,7 +57,7 @@ You're reading the [online documentation](https://pyhim.readthedocs.io/en/stable
 - `git add -A`
 - `git commit -m "write your message here"`
 - `git push`
-- Create a pull request [on github](https://github.com/marcnol/pyHiM/pulls)
+- Create a pull request [on github](https://github.com/pyHi-M/pyHiM/pulls)
 - wait for a developer to validate the PR
 
 ### THANKS!

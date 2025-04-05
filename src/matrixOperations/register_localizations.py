@@ -22,10 +22,10 @@ import sys
 import numpy as np
 from astropy.table import Table
 from tqdm import trange
+from traceratops.core.localization_table import LocalizationTable, decode_rois
 
 from core.parameters import MatrixParams, RegistrationParams
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
-from imageProcessing.localization_table import LocalizationTable, decode_rois
 from imageProcessing.makeProjections import Feature
 from matrixOperations.filter_localizations import get_file_table_new_name
 

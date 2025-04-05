@@ -29,7 +29,7 @@ import os
 import select
 import sys
 
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 # =============================================================================
 # FUNCTIONS

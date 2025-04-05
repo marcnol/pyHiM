@@ -18,7 +18,6 @@ The main method for building chromatin traces is `build_traces`.
 Chromatin trace tables can be post-processed using multiple scripts:
 
 - `trace_analyser`: quantifies several quantities from a trace table.
-- `trace_filter`: applies simple filtering methods to a trace table.
 - `trace_filter_advanced`: applies advanced filtering to trace tables.
 - `trace_assign_mask`: assigns a label to traces using a user-provided mask file.
 - `trace_combinator`: combines/merges multiple trace tables (e.g. from different replicates or FOVs) using the folder architecture of pyHiM.
@@ -41,7 +40,6 @@ building_traces/filter_localizations
 building_traces/register_localizations
 building_traces/build_traces
 building_traces/trace_analyser
-building_traces/trace_filter
 building_traces/trace_filter_advanced
 building_traces/trace_assign_mask
 building_traces/trace_combinator

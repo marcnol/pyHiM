@@ -56,10 +56,11 @@ import os
 import select
 import sys
 
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.him_matrix_operations import write_xyz_2_pdb
+
 from core.data_manager import create_folder
 from core.parameters import loads_barcode_dict
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
-from matrixOperations.HIMmatrixOperations import write_xyz_2_pdb
 
 # =============================================================================
 # FUNCTIONS

@@ -31,10 +31,7 @@ import sys
 from datetime import datetime
 
 import numpy as np
-
-from core.data_file import save_json
-from core.pyhim_logging import write_string_to_file
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.him_matrix_operations import (
     load_sc_data,
     load_sc_data_matlab,
     plot_ensemble_3_way_contact_matrix,
@@ -43,6 +40,9 @@ from matrixOperations.HIMmatrixOperations import (
     plot_single_contact_probability_matrix,
     plot_single_pwd_matrice,
 )
+
+from core.data_file import save_json
+from core.pyhim_logging import write_string_to_file
 
 # Olivier
 csv.field_size_limit(sys.maxsize)

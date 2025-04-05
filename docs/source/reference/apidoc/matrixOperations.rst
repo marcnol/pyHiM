@@ -4,14 +4,6 @@ matrixOperations package
 Submodules
 ----------
 
-matrixOperations.HIMmatrixOperations module
--------------------------------------------
-
-.. automodule:: matrixOperations.HIMmatrixOperations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 matrixOperations.build\_matrix module
 -------------------------------------
 
@@ -24,14 +16,6 @@ matrixOperations.build\_traces module
 -------------------------------------
 
 .. automodule:: matrixOperations.build_traces
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-matrixOperations.chromatin\_trace\_table module
------------------------------------------------
-
-.. automodule:: matrixOperations.chromatin_trace_table
    :members:
    :undoc-members:
    :show-inheritance:

@@ -24,6 +24,10 @@ conda activate pyHiM
 
 ## Install pyHiM
 
+```{warning}
+To use the latest version (development), please follow the [developer installation](../contributor/dev_installation.md).
+```
+
 ```bash
 pip install pyhim
 ```

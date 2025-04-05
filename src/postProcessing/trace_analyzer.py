@@ -23,7 +23,7 @@ A Python script for analyzing chromatin trace files. The script loads trace file
 - sys
 - matplotlib
 - numpy
-- matrixOperations.chromatin_trace_table (ChromatinTraceTable class)
+- traceratops.core.chromatin_trace_table (ChromatinTraceTable class)
 
 ## Arguments
 
@@ -79,8 +79,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.gridspec import GridSpec
-
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 
 font = {"weight": "normal", "size": 22}
 

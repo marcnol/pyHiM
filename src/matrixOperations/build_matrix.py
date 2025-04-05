@@ -35,16 +35,16 @@ import numpy as np
 from astropy.table import unique
 from sklearn.metrics import pairwise_distances
 from tqdm.contrib import tzip
-
-from core.parameters import AcquisitionParams, MatrixParams
-from core.pyhim_logging import print_log
-from imageProcessing.makeProjections import Feature
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
-from matrixOperations.HIMmatrixOperations import (
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.him_matrix_operations import (
     calculate_contact_probability_matrix,
     plot_distance_histograms,
     plot_matrix,
 )
+
+from core.parameters import AcquisitionParams, MatrixParams
+from core.pyhim_logging import print_log
+from imageProcessing.makeProjections import Feature
 
 
 class BuildMatrixTempo(Feature):

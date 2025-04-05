@@ -45,12 +45,12 @@ from skimage.measure import label
 from skimage.segmentation import expand_labels
 from tqdm import trange
 from tqdm.contrib import tzip
+from traceratops.core.chromatin_trace_table import ChromatinTraceTable
+from traceratops.core.localization_table import LocalizationTable
 
 from core.parameters import AcquisitionParams, MatrixParams
 from core.pyhim_logging import print_dashes, print_log
-from imageProcessing.localization_table import LocalizationTable
 from imageProcessing.makeProjections import Feature
-from matrixOperations.chromatin_trace_table import ChromatinTraceTable
 
 
 class BuildTracesTempo(Feature):

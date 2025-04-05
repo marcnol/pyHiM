@@ -10,13 +10,13 @@ cd $HOME/Repositories
 ```
 
 2. Choose your clone method between HTTPS or SSH key:
-    - HTTPS
+    - HTTPS (For latest version user)
       ```bash
-      git clone https://github.com/marcnol/pyHiM.git
+      git clone https://github.com/pyHi-M/pyHiM.git
       ```
-    - SSH
+    - SSH (ONLY for developer)
       ```bash
-      git clone git@github.com:marcnol/pyHiM.git
+      git clone git@github.com:pyHi-M/pyHiM.git
       ```
 
 3. Open your $HOME/.bashrc using nano
@@ -28,11 +28,11 @@ nano $HOME/.bashrc
 4. Add the following line to the end
 
 ```sh
-export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src"
-export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src/toolbox/file_handling"
-export PATH="$PATH:$HOME/Repositories/repo-marcnol/pyHiM/src/postProcessing"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src/toolbox/file_handling"
+export PATH="$PATH:$HOME/Repositories/pyHiM/src/postProcessing"
 
-export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/repo-marcnol/pyHiM/src"
+export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src"
 export MPLBACKEND=agg
 ```
 
@@ -43,7 +43,7 @@ Make sure you change ```.../Repositories/...``` with your directory name (step 1
 ## Install conda
 
 Follow the Miniconda instructions:
-https://docs.conda.io/projects/miniconda/en/latest/index.html#quick-command-line-install
+[Installing miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions)
 
 ## Automatically configure pyHiM
 
@@ -60,7 +60,29 @@ If you get this error:
 You solve by running `pip install dask[complete] distributed --upgrade`.
 ```
 
-## Install apifish module
+## Install **traceratops**
+
+- For latest version user:
+
+```sh
+conda activate pyhim39
+cd $HOME/Repositories
+git clone https://github.com/pyHi-M/traceratops.git
+cd $HOME/Repositories/traceratops
+pip install -e .
+```
+
+- ONLY for developer:
+
+```sh
+conda activate pyhim39
+cd $HOME/Repositories
+git clone git@github.com:pyHi-M/traceratops.git
+cd $HOME/Repositories/traceratops
+pip install -e ".[dev]"
+```
+
+## Install **apifish**
 
 1. Navigate where you want install apifish
 ```bash
@@ -87,6 +109,8 @@ cd apiFISH && git checkout development
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 ```
 
+---
+
 ## Test pyHiM
 
 - The tests use the `pytest` module.
@@ -99,9 +123,11 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 
 ```bash
 cd ~Repositories/pyHiM/
-conda activate pyhiM39
+conda activate pyhim39
 pytest tests/ -vv
 ```
+
+---
 
 ## Additional installation to generate documentation
 
@@ -158,7 +184,7 @@ echo 'export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"'  >> ~/.bashrc
 
 # clone pyHiM
 cd $HOME/Repositories
-git clone git@github.com:marcnol/pyHiM.git
+git clone git@github.com:pyHi-M/pyHiM.git
 git checkout development
 
 # settings
