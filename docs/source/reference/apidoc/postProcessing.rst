@@ -4,22 +4,6 @@ postProcessing package
 Submodules
 ----------
 
-postProcessing.analyze\_localizations module
---------------------------------------------
-
-.. automodule:: postProcessing.analyze_localizations
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-postProcessing.compare\_PWD\_matrices module
---------------------------------------------
-
-.. automodule:: postProcessing.compare_PWD_matrices
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 postProcessing.mask\_cellpose module
 ------------------------------------
 
