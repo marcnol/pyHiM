@@ -100,14 +100,6 @@ postProcessing.trace\_plot module
    :undoc-members:
    :show-inheritance:
 
-postProcessing.trace\_to\_matrix module
----------------------------------------
-
-.. automodule:: postProcessing.trace_to_matrix
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

@@ -45,5 +45,4 @@ building_traces/trace_assign_mask
 building_traces/trace_combinator
 building_traces/trace_plot
 building_traces/build_matrices
-building_traces/trace_to_matrix
 ```

@@ -73,7 +73,6 @@ trace_selector = "postProcessing.trace_selector:main"
 pyhim_parameters = "parameter_file.pyhim_parameters:main"
 trace_assign_mask = "postProcessing.trace_assign_mask:main"
 trace_plot = "postProcessing.trace_plot:main"
-trace_to_matrix = "postProcessing.trace_to_matrix:main"
 mask_manual = "postProcessing.mask_manual:main"
 
 
