@@ -52,14 +52,6 @@ postProcessing.processHiMmatrix module
    :undoc-members:
    :show-inheritance:
 
-postProcessing.pwd\_matrix\_2\_pdb module
------------------------------------------
-
-.. automodule:: postProcessing.pwd_matrix_2_pdb
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   
 Module contents
 ---------------
 
