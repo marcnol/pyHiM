@@ -75,15 +75,7 @@ postProcessing.trace\_assign\_mask module
    :members:
    :undoc-members:
    :show-inheritance:
-
-postProcessing.trace\_combinator module
----------------------------------------
-
-.. automodule:: postProcessing.trace_combinator
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   
 Module contents
 ---------------
 

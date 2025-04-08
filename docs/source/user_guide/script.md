@@ -380,31 +380,6 @@ Usage: process_snd_channel [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 		Clear all masks
 ```
 
-### trace_combinator.py
-This script combines trace tables from different experiments/ROIs into a single trace table. The folders containing the trace tables of the experiments to be combined are provided as a JSON file. It is possible to select only a subset of trace tables within the folders provided using the `methods` parameter. Merged trace table is outputted in the buildPWDmatrix folder.
-
-Outputs: ChromatinTraceTable() object and output .ecsv formatted file with assembled trace tables.
-
-```
-Usage: trace_combinator [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
-						   [--saveMatrix] [--ndims] [--method]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		Folder with folders2Load.json file
-	-P PARAMETERS, --parameters PARAMETERS
-		File with parameters. Default: folders2Load.json
-	-A LABEL, --labal LABEL
-		Name of label for the dataset
-	-W ACTION, --action ACTION
-		Selects: all, labeled or unlabeled for the datasets.
-	--saveMatrix
-		Saves the combined PWD matrix from all datasets. Default: False
-	--ndims
-		Dimensions of the trace (2 or 3). Default: 3
-	--method
-		Method or mask ID used for tracing: KDtree, mask, mask0
-```
-
 ### trace_selector.py
 
 This script loads a trace file and a number of numpy masks, and assigns them the labels produced by `process_snd_channel`.
