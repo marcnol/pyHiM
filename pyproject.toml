@@ -72,7 +72,6 @@ trace_combinator = "postProcessing.trace_combinator:main"
 trace_selector = "postProcessing.trace_selector:main"
 pyhim_parameters = "parameter_file.pyhim_parameters:main"
 trace_assign_mask = "postProcessing.trace_assign_mask:main"
-trace_plot = "postProcessing.trace_plot:main"
 mask_manual = "postProcessing.mask_manual:main"
 
 

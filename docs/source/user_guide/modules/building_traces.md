@@ -43,6 +43,5 @@ building_traces/trace_analyser
 building_traces/trace_filter_advanced
 building_traces/trace_assign_mask
 building_traces/trace_combinator
-building_traces/trace_plot
 building_traces/build_matrices
 ```

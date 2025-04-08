@@ -92,14 +92,6 @@ postProcessing.trace\_filter\_advanced module
    :undoc-members:
    :show-inheritance:
 
-postProcessing.trace\_plot module
----------------------------------
-
-.. automodule:: postProcessing.trace_plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
