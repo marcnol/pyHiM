@@ -59,14 +59,6 @@ postProcessing.pwd\_matrix\_2\_pdb module
    :members:
    :undoc-members:
    :show-inheritance:
-
-postProcessing.trace\_analyzer module
--------------------------------------
-
-.. automodule:: postProcessing.trace_analyzer
-   :members:
-   :undoc-members:
-   :show-inheritance:
    
 Module contents
 ---------------
