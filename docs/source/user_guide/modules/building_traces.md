@@ -40,6 +40,5 @@ building_traces/filter_localizations
 building_traces/register_localizations
 building_traces/build_traces
 building_traces/trace_analyser
-building_traces/trace_assign_mask
 building_traces/build_matrices
 ```

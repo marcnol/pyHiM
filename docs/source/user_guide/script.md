@@ -380,19 +380,6 @@ Usage: process_snd_channel [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 		Clear all masks
 ```
 
-### trace_selector.py
-
-This script loads a trace file and a number of numpy masks, and assigns them the labels produced by `process_snd_channel`.
-
-```
-Usage: trace_selector [-F ROOTFOLDER] [--pixel_size]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		Folder with fimages
-	--pixel_size
-		Lateral pixel size in microns. Default = 0.1
-```
-
 ### npy_to_tiff
 
 This script will convert Numpy array files into imageJ-readable TIFs. Images will be rescaled to (0, 2^14) range and will be histogram normalized using `skimage.exposure.equalize_adapthist()`.
