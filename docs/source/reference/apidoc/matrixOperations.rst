@@ -4,10 +4,10 @@ matrixOperations package
 Submodules
 ----------
 
-matrixOperations.build\_matrix module
+matrixOperations.build\_matrix\_tempo module
 -------------------------------------
 
-.. automodule:: matrixOperations.build_matrix
+.. automodule:: matrixOperations.build_matrix_tempo
    :members:
    :undoc-members:
    :show-inheritance:

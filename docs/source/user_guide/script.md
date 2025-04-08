@@ -160,7 +160,7 @@ Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 ### plot_3way.py
 
-Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `processHiMmatrix.py` script.
+Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `process_him_matrix.py` script.
 
 ```
 Usage: figure_3_way_interactions [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
@@ -321,47 +321,6 @@ Usage: figure_single_cell [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 
 ## Post-processing scripts
 
-### processHiMmatrix.py
-
-This script performs the post-processing of one or more datasets previously analysed with *pyHiM*, defined in the `folders2Load.json` file.
-
-It performs the following operations:
-- Merges datasets from different experiments.
-- Calculates and plots ensemble pairwise distance (PWD) matrix.
-- Calculates and plots the inverse of the PWD matrix.
-- Calculates and plots contact probability matrix for each dataset.
-- Calculates and plots ensemble contact probability matrix.
-- Calculates and plots tensemble 3-way contact probability matrix for the set of anchors defined in the `folders2Load.json` file.
-- Optional: Reads MATLAB single-cell PWD matrices and performs all previous operations.
-
-```
-Usage: process_him_matrix [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
-						   [--matlab] [--saveMatrix] [--getStructure] [--pixelSize]
-						   [--HiMnormalization] [--d3]
-Optional arguments:
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-			Folder with folders2Load.json file
-	-P PARAMETERS, --parameters PARAMETERS
-			File with parameters. Default: folders2Load.json
-	-A LABEL, --labal LABEL
-			Name of label for the dataset
-	-W ACTION, --action ACTION
-			Selects: all, labeled or unlabeled for the datasets.
-	--matlab
-			Loads MATLAB data (e.g. .mat files)
-	--saveMatrix
-			Saves the combined PWD matrix from all datasets. Default: False
-	--getStructure
-			Multi-dimensional scaling to get coordinates from PWDs. Default: False
-	--pixelSize
-			Specify images pixel size. Default: 100 nm.
-	--HiMnormalization
-			Normalization of contact matrix: nonNANs (default) or nCells.
-	--d3
-			Loads data segmented in 3D. Default: False
-```
-
 ### processSNDchannel.py
 
 This script will:
@@ -378,44 +337,6 @@ Usage: process_snd_channel [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
 		Add manual segmentation
 	--cleanAllMasks
 		Clear all masks
-```
-
-### trace_combinator.py
-This script combines trace tables from different experiments/ROIs into a single trace table. The folders containing the trace tables of the experiments to be combined are provided as a JSON file. It is possible to select only a subset of trace tables within the folders provided using the `methods` parameter. Merged trace table is outputted in the buildPWDmatrix folder.
-
-Outputs: ChromatinTraceTable() object and output .ecsv formatted file with assembled trace tables.
-
-```
-Usage: trace_combinator [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
-						   [--saveMatrix] [--ndims] [--method]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		Folder with folders2Load.json file
-	-P PARAMETERS, --parameters PARAMETERS
-		File with parameters. Default: folders2Load.json
-	-A LABEL, --labal LABEL
-		Name of label for the dataset
-	-W ACTION, --action ACTION
-		Selects: all, labeled or unlabeled for the datasets.
-	--saveMatrix
-		Saves the combined PWD matrix from all datasets. Default: False
-	--ndims
-		Dimensions of the trace (2 or 3). Default: 3
-	--method
-		Method or mask ID used for tracing: KDtree, mask, mask0
-```
-
-### trace_selector.py
-
-This script loads a trace file and a number of numpy masks, and assigns them the labels produced by `process_snd_channel`.
-
-```
-Usage: trace_selector [-F ROOTFOLDER] [--pixel_size]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		Folder with fimages
-	--pixel_size
-		Lateral pixel size in microns. Default = 0.1
 ```
 
 ### npy_to_tiff

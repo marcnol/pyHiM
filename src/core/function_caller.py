@@ -7,6 +7,8 @@ Module for high level function calling
 
 import os
 
+from traceratops.core.build_matrix import BuildMatrix
+
 from core.dask_cluster import DaskCluster
 from core.parameters import (
     AcquisitionParams,
@@ -30,7 +32,7 @@ from imageProcessing.register_local import RegisterLocal
 from imageProcessing.segmentMasks import segment_masks
 from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
-from matrixOperations.build_matrix import BuildMatrix, BuildMatrixTempo
+from matrixOperations.build_matrix_tempo import BuildMatrixTempo
 from matrixOperations.build_traces import BuildTraces, BuildTracesTempo
 from matrixOperations.filter_localizations import (
     FilterLocalizations,
@@ -614,7 +616,12 @@ def build_matrix(
         Only 'barcode' are accepted
     """
     if label == "barcode":
-        build_matrix_instance = BuildMatrix(current_param, acq_params)
+        acq_params_dict = {
+            "zBinning": acq_params.zBinning,
+            "pixelSizeXY": acq_params.pixelSizeXY,
+            "pixelSizeZ": acq_params.pixelSizeZ,
+        }
+        build_matrix_instance = BuildMatrix(current_param, acq_params_dict)
         build_matrix_instance.run(data_path, matrix_params)
 
 
