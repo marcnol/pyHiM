@@ -19,9 +19,9 @@ import select
 import sys
 
 import numpy as np
+from traceratops.core.build_matrix import BuildMatrix
 
 from core.parameters import AcquisitionParams
-from matrixOperations.build_matrix import BuildMatrix
 
 # =============================================================================
 # FUNCTIONS
@@ -29,7 +29,9 @@ from matrixOperations.build_matrix import BuildMatrix
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="uses the core routines of pyHiM to convert a trace file to a matrix in a standalone script"
+    )
     parser.add_argument("-F", "--outputFolder", help="Output folder, Default: PWD")
     parser.add_argument("--input", help="Name of input trace file.")
     parser.add_argument(
@@ -41,9 +43,11 @@ def parse_arguments():
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
 
-    p = {}
+    return parser
 
-    args = parser.parse_args()
+
+def create_dict_args(args):
+    p = {}
     if args.outputFolder:
         p["rootFolder"] = args.outputFolder
     else:
@@ -110,7 +114,12 @@ def runtime(trace_files=[], colormaps=dict(), distance_threshold=np.inf):
             param = dict()
             # pylint: disable=no-member
             acq_params = AcquisitionParams.from_dict({})
-            new_matrix = BuildMatrix(param, acq_params, colormaps=colormaps)
+            acq_params_dict = {
+                "zBinning": acq_params.zBinning,
+                "pixelSizeXY": acq_params.pixelSizeXY,
+                "pixelSizeZ": acq_params.pixelSizeZ,
+            }
+            new_matrix = BuildMatrix(param, acq_params_dict, colormaps=colormaps)
             new_matrix.launch_analysis(
                 trace_file, distance_threshold=distance_threshold
             )
@@ -125,7 +134,9 @@ def runtime(trace_files=[], colormaps=dict(), distance_threshold=np.inf):
 
 def main():
     # [parsing arguments]
-    p = parse_arguments()
+    parser = parse_arguments()
+    args = parser.parse_args()
+    p = create_dict_args(args)
 
     # [loops over lists of datafolders]
     n_traces_processed = runtime(
