@@ -1,23 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Usage:
-
-$ trace_filter.py --input Trace.ecsv --N_barcodes 3 --fraction_missing_barcodes -0.5 --overlapping_threshold 0.03
-
-will analyze 'Trace.ecsv' and remove traces with:
-
-
-- less than 3 barcodes
-- fraction of missing barcodes < 0.5
-- barcodes closer than 0.03 um will be merged.
-
-
-outputs:
-
-.ecsv trace table file with the '_filtered' tag appended.
-
-
+Advanced script based on trace_filter.
 """
 
 import argparse
@@ -34,14 +18,11 @@ from astropy.table import Table
 from sklearn.metrics import pairwise_distances
 from sklearn.neighbors import KDTree
 from tqdm import tqdm
-
-from core.data_manager import create_folder
-
-# matplotlib.use('TkAgg')
+from traceratops.core.io_manager import create_folder
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-F", "--rootFolder", help="Folder with images")
     parser.add_argument(
         "-O", "--output", help="Tag to add to the output file. Default = filtered"
@@ -59,21 +40,19 @@ def parse_arguments():
     parser.add_argument(
         "--pipe", help="inputs Trace file list from stdin (pipe)", action="store_true"
     )
+    return parser
 
+
+def create_dict_args(args):
     p = {}
-
-    args = parser.parse_args()
     if args.output:
         p["output"] = args.output
     else:
         p["output"] = "filtered"
-
-    args = parser.parse_args()
     if args.rootFolder:
         p["rootFolder"] = args.rootFolder
     else:
         p["rootFolder"] = "."
-
     if args.input:
         p["input"] = args.input
     else:
@@ -793,7 +772,9 @@ class FilterTraces:
 
 if __name__ == "__main__":
     # [parsing arguments]
-    p = parse_arguments()
+    parser = parse_arguments()
+    args = parser.parse_args()
+    p = create_dict_args(args)
 
     # parameters for the data - from the HiM astropy output files.
     # ------------------------------------------------------------
