@@ -44,14 +44,6 @@ postProcessing.npy\_to\_tiff module
    :undoc-members:
    :show-inheritance:
 
-postProcessing.processHiMmatrix module
---------------------------------------
-
-.. automodule:: postProcessing.processHiMmatrix
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

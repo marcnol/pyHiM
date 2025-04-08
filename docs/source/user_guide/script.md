@@ -160,7 +160,7 @@ Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 ### plot_3way.py
 
-Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `processHiMmatrix.py` script.
+Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `process_him_matrix.py` script.
 
 ```
 Usage: figure_3_way_interactions [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
@@ -320,47 +320,6 @@ Usage: figure_single_cell [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 ```
 
 ## Post-processing scripts
-
-### processHiMmatrix.py
-
-This script performs the post-processing of one or more datasets previously analysed with *pyHiM*, defined in the `folders2Load.json` file.
-
-It performs the following operations:
-- Merges datasets from different experiments.
-- Calculates and plots ensemble pairwise distance (PWD) matrix.
-- Calculates and plots the inverse of the PWD matrix.
-- Calculates and plots contact probability matrix for each dataset.
-- Calculates and plots ensemble contact probability matrix.
-- Calculates and plots tensemble 3-way contact probability matrix for the set of anchors defined in the `folders2Load.json` file.
-- Optional: Reads MATLAB single-cell PWD matrices and performs all previous operations.
-
-```
-Usage: process_him_matrix [-F ROOTFOLDER] [-P PARAMETERS] [-A LABEL] [-W ACTION]
-						   [--matlab] [--saveMatrix] [--getStructure] [--pixelSize]
-						   [--HiMnormalization] [--d3]
-Optional arguments:
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-			Folder with folders2Load.json file
-	-P PARAMETERS, --parameters PARAMETERS
-			File with parameters. Default: folders2Load.json
-	-A LABEL, --labal LABEL
-			Name of label for the dataset
-	-W ACTION, --action ACTION
-			Selects: all, labeled or unlabeled for the datasets.
-	--matlab
-			Loads MATLAB data (e.g. .mat files)
-	--saveMatrix
-			Saves the combined PWD matrix from all datasets. Default: False
-	--getStructure
-			Multi-dimensional scaling to get coordinates from PWDs. Default: False
-	--pixelSize
-			Specify images pixel size. Default: 100 nm.
-	--HiMnormalization
-			Normalization of contact matrix: nonNANs (default) or nCells.
-	--d3
-			Loads data segmented in 3D. Default: False
-```
 
 ### processSNDchannel.py
 
