@@ -44,14 +44,6 @@ plots.figureSingleCell module
    :undoc-members:
    :show-inheritance:
 
-plots.plot\_bootstrapping module
---------------------------------
-
-.. automodule:: plots.plot_bootstrapping
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 
