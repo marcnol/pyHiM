@@ -59,52 +59,6 @@ optional arguments:
 
 ## Plotting scripts
 
-### plot_4M.py
-Creates proximity frequency 4M profiles from a given list of anchors (similar analysis to a 4C experiment, but using HiM data). Works with up to two datasets.
-
-```
-Usage: figure_4_m_matrix [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2] [-O OUTPUTFOLDER]
-						 [-P PARAMETERS] [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
-						 [-W2 ACTION2] [--fontsize] [--axisLabel] [--axisTicks]
-						 [--splines] [--cAxis] [--plottingFileExtension]
-						 [--legend] [--normalize]
-
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --splines
-		 Plots data using spline interpolations
-	 --cAxis
-		 Absolute axis value for colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	 --legend
-		 Shows legends for datasets in plot
-	 --normalize
-		 Matrix normalization factor: maximum, none, single value. Default: none
-```
-
 ### figureCompare2Matrices.py
 Comparison of proximity matrices. Plots either the ratio or the difference between two HiM matrices. It also plots both matrices together, with one in the upper triangle, and the other in the lower triangle.
 

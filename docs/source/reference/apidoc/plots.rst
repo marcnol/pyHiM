@@ -12,14 +12,6 @@ plots.plot_3way module
    :undoc-members:
    :show-inheritance:
 
-plots.plot_4M module
----------------------------
-
-.. automodule:: plots.plot_4M
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 plots.figureCompare2Matrices module
 -----------------------------------
 
