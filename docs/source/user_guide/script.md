@@ -112,59 +112,6 @@ Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 ```
 
-### figureN_HiMmatrices.py
-Plots several (`N`) HiM matrices in the same plot, using `N` datasets specified in `folders2Load.json`.
-
-It also plots a submatrix representing the difference in contact probability for a subset of barcodes compared to a particular dataset. The subset of barcodes and the reference dataset are defined in `folders2Load.json` by the options `barcodes2plot` and `plotSegment_anchor`, respectively.
-
-```
-Usage figure_n_him_matrices [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
-							 [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
-							 [--axisTicks] [--barcodes] [--scalingParameter]
-							 [--plottingFileExtension] [--shuffle] [--scalogram]
-							 [--type] [--pixelSize] [--cAxis] [--ratio]
-							 [--normalizeMatrix]
-	 -F ROOTFOLDER, --rootFolder ROOTFOLDER
-		 Folder with datasets
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A LABEL, --label LABEL
-		 Name of label
-	 -W ACTION, --action ACTION
-		 Selects: all, labeled or unlabeled for the datasets.
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --barcodes
-		 Display barcode images
-	 --scalingParameter
-		 Scaling parameter of colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	 --shuffle
-		 Provide shuffle vector: 0,1,2,3,.. of the same size or
-		 smaller than the original matrix.
-	 --scalogram
-		 Display scalogram image
-	 --type
-		 Select plot type among one of the following: PWD, contact, iPWD
-	 --pixelSize
-		 Pixel size in µm
-	 --cAxis
-		 Absolute axis value for colormap
-	 --ratio
-		 Calculates ration between matrices for submatrices plots.
-		 Default: difference
-	 --normalizeMatrix
-		 Normalize matrices by maximum. Default: True
-```
-
 ## Post-processing scripts
 
 ### processSNDchannel.py
