@@ -39,7 +39,6 @@ sys.path.insert(0, os.path.abspath("../../src/"))
 sys.path.insert(0, os.path.abspath("../../src/postProcessing/"))
 sys.path.insert(0, os.path.abspath("../../src/toolbox/"))
 sys.path.insert(0, os.path.abspath("../../src/toolbox/file_handling/"))
-sys.path.insert(0, os.path.abspath("../../src/plots/"))
 
 # -- Project information -----------------------------------------------------
 
