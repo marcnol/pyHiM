@@ -20,14 +20,6 @@ plots.figureN\_HiMmatrices module
    :undoc-members:
    :show-inheritance:
 
-plots.figureSingleCell module
------------------------------
-
-.. automodule:: plots.figureSingleCell
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

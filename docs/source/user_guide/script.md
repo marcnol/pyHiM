@@ -165,68 +165,6 @@ Usage figure_n_him_matrices [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
 		 Normalize matrices by maximum. Default: True
 ```
 
-### figureSingleCell.py
-This scripts:
-- produces movies and trajectories from single cell PWD matrices.
-- calculates barcode detection efficiencies and number of barcodes per cell.
-- plots single cell matrices.
-- plots distance histograms and distributions of Rg.
-
-
-```
-Usage: figure_single_cell [-F ROOTFOLDER] [-O OUTPUTFOLDER] [-P PARAMETERS]
-						   [-A LABEL] [-W ACTION] [--fontsize] [--axisLabel]
-						   [--axisTicks] [--barcodes] [--nRows] [--pixelSize]
-						   [--maxDistance] [--plottingFileExtension] [--shuffle]
-						   [--ensembleMatrix] [--video] [--videoAllcells]
-						   [--plotHistogramMatrix] [--minNumberPWD] [--threshold]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		 Folder with datasets
-	-O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	-P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	-A LABEL, --label LABEL
-		 Name of label
-	-W ACTION, --action ACTION
-		 Selects: all, labeled or unlabeled for the datasets.
-	--fontsize
-		 Size of fonts to be used in plots
-	--axisLabel
-		 Select optional label in x and y axis
-	--axisTicks
-		 Display axis ticks
-	--barcodes
-		 Display barcode images
-	--nRows
-		 The number of cells is determined by nRows^2. Default: 10
-	--pixelSize
-		 Pixel size in microns. Default: 0.1 microns
-	--maxDistance
-		 Maximum distance for histograms in microns. Default: 4 microns
-	--plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	--shuffle
-		 Provide shuffle vector: 0,1,2,3,.. of the same size or
-		 smaller than the original matrix.
-	--ensembleMatrix
-		Use if ensemble matrix should be plot alongside single cell
-		matrices
-	--video
-		Use if you want to output video
-	--videoAllcells
-		Use if you want all nRows^2 single cells to be output in video
-	--plotHistogramMatrix
-		Use if you want to plot the PWD histograms for all bin combinations
-	--minNumberPWD
-		Minimum number of PWD to calculate radius of gyration Rg. Default: 6
-	--threshold
-		Maximum accepted PWD (in pixels) to calculate radius of gyration Rg.
-		Default: 8
-```
-
 ## Post-processing scripts
 
 ### processSNDchannel.py
