@@ -60,8 +60,6 @@ unzip_him_run = "toolbox.file_handling.unzipHiM_run:main"
 zip_him_run = "toolbox.file_handling.zipHiM_run:main"
 image_preprocessing = "toolbox.imagePreProcessing:main"
 image_segment_spots = "toolbox.imageSegmentSpots:main"
-figure_compare_2_matrices = "plots.figureCompare2Matrices:main"
-process_snd_channel = "postProcessing.processSNDchannel:main"
 pyhim_parameters = "parameter_file.pyhim_parameters:main"
 mask_manual = "postProcessing.mask_manual:main"
 

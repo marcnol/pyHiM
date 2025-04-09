@@ -57,80 +57,8 @@ optional arguments:
                         Unzip files inside folders of current directory
 ```
 
-## Plotting scripts
-
-### figureCompare2Matrices.py
-Comparison of proximity matrices. Plots either the ratio or the difference between two HiM matrices. It also plots both matrices together, with one in the upper triangle, and the other in the lower triangle.
-
-```
-Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
-								 [-O OUTPUTFOLDER] [-P PARAMETERS]
-							     [-A1 LABEL1] [-A2 LABEL2] [-W1 ACTION1]
-							     [-W2 ACTION2] [--fontsize] [--axisLabel]
-							     [--axisTicks] [--ratio] [--cAxis]
-							     [--plottingFileExtension] [--normalize]
-							     [--inputMatrix] [--pixelSize]
-
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --axisLabel
-		 Select optional label in x and y axis
-	 --axisTicks
-		 Display axis ticks
-	 --ratio
-		 Performs the ratio between matrices. Default: difference
-	 --cAxis
-		 Absolute axis value for colormap
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	 --normalize
-		 Matrix normalization factor: maximum, none, single value,
-		 bin pair. Default: none
-	 --inputMatrix
-		 Source of input matrix: contact (default), PWD matrix,
-		 iPWD matrix
-	 --pixelSize
-		 Pixel size in microns. Default: 0.1 microns
-
-```
 
 ## Post-processing scripts
-
-### processSNDchannel.py
-
-This script will:
-- allow the user to manually draw ROI based on secondary labels, such as RNA-FISH images.
-- use the ROIs defined by the user to attribute labels to traces.
-
-
-```
-Usage: process_snd_channel [-F ROOTFOLDER] [-A ADDMASK] [--cleanAllMasks]
-
-	-F ROOTFOLDER, --rootFolder ROOTFOLDER
-		Folder with images
-	-A ADDMASK, --addMask ADDMASK
-		Add manual segmentation
-	--cleanAllMasks
-		Clear all masks
-```
 
 ### npy_to_tiff
 
