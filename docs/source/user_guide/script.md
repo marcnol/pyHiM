@@ -112,52 +112,6 @@ Usage: figure_compare_2_matrices [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
 
 ```
 
-### plot_3way.py
-
-Plots 3-way proximity probability matrices for a given anchor (or set of anchors), as defined in the folders2Load.json configuration file. Comparative analysis can be performed for two datasets simultaneously. The calculation of 3-way proximity probability matrices needs to be previously performed using the `process_him_matrix.py` script.
-
-```
-Usage: figure_3_way_interactions [-F1 ROOTFOLDER1] [-F2 ROOTFOLDER2]
-								 [-O OUTPUTFOLDER] [-P PARAMETERS]
-								 [-P2 PARAMETERS2] [-A1 LABEL1] [-A2 LABEL2]
-								 [-W1 ACTION1] [-W2 ACTION2] [--fontsize]
-								 [--scalingParameter] [--colorbar]
-								 [--plottingFileExtension] [--normalize]
-
-	-F1 ROOTFOLDER1, --rootFolder1 ROOTFOLDER1
-		 Folder with dataset 1
-	-F2 ROOTFOLDER2, --rootFolder2 ROOTFOLDER2
-		 Folder with dataset 2
-	 -O OUTPUTFOLDER, --outputFolder OUTPUTFOLDER
-		 Folder for outputs
-	 -P PARAMETERS, --parameters PARAMETERS
-		 Name of parameters file. Default: folders2Load.json
-	 -P2 PARAMETERS2, --parameters2 PARAMETERS2
-		 Name of parameters file for dataset 2. Default: folders2Load.json
-	 -A1 LABEL1, --label1 LABEL1
-		 Name of label for dataset 1
-	 -A2 LABEL2, --label2 LABEL2
-		 Name of label for dataset 2
-	 -W1 ACTION1, --action1 ACTION1
-		 Selects: all, labeled or unlabeled for dataset 1
-	 -W2 ACTION2, --action2 ACTION2
-		 Selects: all, labeled or unlabeled for dataset 2
-	 --fontsize
-		 Size of fonts to be used in plots
-	 --scalingParameter
-		 Scaling parameter of the colormap
-	 --colorbar
-		 Use if a colorbar is required
-	 --plottingFileExtension
-		 Select file extension to save images. Default: svg.
-		 Other options: pdf, png
-	 --normalize
-		 Normalizes matrices by their maximum.
-
-```
-
-
-
 ### figureN_HiMmatrices.py
 Plots several (`N`) HiM matrices in the same plot, using `N` datasets specified in `folders2Load.json`.
 

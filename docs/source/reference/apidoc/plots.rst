@@ -4,14 +4,6 @@ plots package
 Submodules
 ----------
 
-plots.plot_3way module
------------------------------------
-
-.. automodule:: plots.plot_3way
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 plots.figureCompare2Matrices module
 -----------------------------------
 
