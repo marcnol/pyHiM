@@ -31,8 +31,8 @@ import uuid
 from datetime import datetime
 
 import numpy as np
-from apifish.detection.spot_modeling import fit_subpixel
-from apifish.stack import projection
+from apifish.identification.spot_modeling import fit_subpixel
+from apifish.image import projection
 from astropy.table import Table, vstack
 from skimage import exposure, io
 from skimage.measure import regionprops

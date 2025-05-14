@@ -39,7 +39,7 @@ import os
 import uuid
 
 import numpy as np
-from apifish.stack.io import read_array
+from apifish.image.io import read_array
 from scipy.spatial import KDTree
 from skimage.measure import label
 from skimage.segmentation import expand_labels

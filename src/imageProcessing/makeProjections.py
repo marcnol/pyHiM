@@ -21,7 +21,7 @@ Operation will be defined in the parameters file. Options are:
 
 import numpy as np
 import scipy.optimize as spo
-from apifish.stack import projection
+from apifish.image import projection
 
 from core.data_file import FocalPlaneMatrixFile, NpyFile, Png2DFile
 from core.parameters import ProjectionParams
