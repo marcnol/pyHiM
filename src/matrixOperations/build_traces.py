@@ -39,7 +39,7 @@ import os
 import uuid
 
 import numpy as np
-from apifish.stack.io import read_array
+from apifish.image.io import read_array
 from scipy.spatial import KDTree
 from skimage.measure import label
 from skimage.segmentation import expand_labels
@@ -501,7 +501,7 @@ class BuildTraces:
                     # saves trace table with results per ROI
                     output_table_filename = f"{output_filename}_{self.label}_mask-{str(self.mask_identifier.split('_')[0])}_ROI-{str(self.n_roi)}.ecsv"
 
-                    self.trace_table.save(output_table_filename, self.trace_table.data)
+                    self.trace_table.save(output_table_filename)
 
                     filepath_split = output_table_filename.split(".")[0].split(os.sep)
                     filepath_split.remove("data")
@@ -699,7 +699,7 @@ class BuildTraces:
                     + str(self.n_roi)
                     + ".ecsv"
                 )
-                self.trace_table.save(output_table_filename, self.trace_table.data)
+                self.trace_table.save(output_table_filename)
 
                 filepath_split = output_table_filename.split(".")[0].split(os.sep)
                 filepath_split.remove("data")
