@@ -225,14 +225,14 @@ class Localize3D:
             _, z_range, _ = projection.reinterpolate_focal_plane(
                 image_3d_0, block_size_xy=p["blockSizeXY"], window=p["zWindow"]
             )
-            z_offset = z_range[1][0]
+            z_correction = z_range[1][0]
             image_3d = image_3d_0[z_range[1], :, :].copy()
             print_log(
                 f"$ Focal plane found: {z_range[0]}, z_range = {z_range[1]}, image_size = {image_3d.shape}"
             )
         else:
             image_3d = image_3d_0.copy()
-            z_offset = 0
+            z_correction = 0
             print_log(f"$ z_range used = 0-{image_3d.shape[0]}")
 
         # preprocesses image by background subtraction and level normalization
@@ -340,7 +340,7 @@ class Localize3D:
                     0,
                     int(label.split("RT")[1]),
                     i,
-                    z + z_offset,
+                    z + z_correction,
                     y,
                     x,
                     sharpness[i],

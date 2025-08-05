@@ -161,7 +161,9 @@ class BuildTraces:
             # binarizes coordinate
             y_int = binarize_coordinate(y_corrected)
             x_int = binarize_coordinate(x_corrected)
-            z_int = binarize_coordinate(z_corrected) + int(matrix_params.z_offset)
+            z_int = binarize_coordinate(
+                z_corrected + matrix_params.z_offset / self.z_binning
+            )
 
             # finds what mask label this barcode is sitting on
             if np.isnan(x_int) or np.isnan(y_int) or np.isnan(z_int):
