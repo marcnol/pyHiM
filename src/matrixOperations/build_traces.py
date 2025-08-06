@@ -61,10 +61,22 @@ class BuildTracesTempo(Feature):
 
 
 class BuildTraces:
-    def __init__(self, param, acq_params: AcquisitionParams):
+    def __init__(
+        self, param, acq_params: AcquisitionParams, matrix_params: MatrixParams
+    ):
         self.current_param = param
 
         self.initialize_parameters(acq_params)
+        self.mask_pixel_size_xy = (
+            matrix_params.mask_pixel_size_xy
+            if matrix_params.mask_pixel_size_xy
+            else self.pixel_size_xy
+        )
+        self.mask_pixel_size_z = (
+            matrix_params.mask_pixel_size_z
+            if matrix_params.mask_pixel_size_z
+            else self.pixel_size_z
+        )
 
         # initialize with default values
         self.current_folder = []
@@ -156,13 +168,20 @@ class BuildTraces:
             if self.ndims == 2:
                 z_corrected = self.barcode_map_roi.groups[0]["zcentroid"][i] = 0.0
             else:
-                z_corrected = self.barcode_map_roi.groups[0]["zcentroid"][i]
+                z_corrected = (
+                    self.barcode_map_roi.groups[0]["zcentroid"][i]
+                    + matrix_params.z_offset / self.z_binning
+                )
 
-            # binarizes coordinate
-            y_int = binarize_coordinate(y_corrected)
-            x_int = binarize_coordinate(x_corrected)
-            z_int = binarize_coordinate(
-                z_corrected + matrix_params.z_offset / self.z_binning
+            # binarizes coordinates and project them in the mask referential
+            x_int, y_int, z_int = project_spot_coord_in_mask_ref(
+                x_corrected,
+                y_corrected,
+                z_corrected,
+                self.pixel_size_xy,
+                self.pixel_size_z,
+                self.mask_pixel_size_xy,
+                self.mask_pixel_size_z,
             )
 
             # finds what mask label this barcode is sitting on
@@ -838,3 +857,15 @@ def debug_mask_filename(
 
 def binarize_coordinate(x):
     return np.nan if np.isnan(x) else int(x)
+
+
+def project_spot_coord_in_mask_ref(
+    x, y, z, pixel_size_xy, pixel_size_z, mask_pixel_size_xy, mask_pixel_size_z
+):
+    x_int = binarize_coordinate(x * pixel_size_xy / mask_pixel_size_xy)
+    y_int = binarize_coordinate(y * pixel_size_xy / mask_pixel_size_xy)
+    if pixel_size_z and mask_pixel_size_z:
+        z_int = binarize_coordinate(z * pixel_size_z / mask_pixel_size_z)
+    else:
+        z_int = 0
+    return x_int, y_int, z_int
