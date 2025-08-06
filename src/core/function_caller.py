@@ -597,7 +597,7 @@ def build_traces(
         Only 'barcode' are accepted
     """
     if label == "barcode":
-        build_traces_instance = BuildTraces(current_param, acq_params)
+        build_traces_instance = BuildTraces(current_param, acq_params, matrix_params)
         build_traces_instance.run(
             data_path, segmentation_params, matrix_params, acq_params
         )
