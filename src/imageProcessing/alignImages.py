@@ -24,6 +24,7 @@ import sys
 import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
+from joblib import Parallel, delayed
 from numpy import linalg as LA
 from photutils import Background2D, MedianBackground
 from scipy.ndimage import shift as shift_image
@@ -33,7 +34,7 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.metrics import structural_similarity as ssim
 from skimage.registration import phase_cross_correlation
 from skimage.util.shape import view_as_blocks
-from tqdm import tqdm, trange
+from tqdm import trange
 
 from core.dask_cluster import try_get_client
 from core.data_file import (
@@ -606,6 +607,30 @@ def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     return shift_matrices, block_ref, block_target
 
 
+def _process_block(i, j, block_ref, block_target, shift_matrices, axis1, blue):
+    imgs = [block_ref[i, j]]
+    if shift_matrices is not None:
+        shift_3d = np.array([x[i, j] for x in shift_matrices])
+        imgs.append(shift_image(block_target[i, j], shift_3d))
+    else:
+        imgs.append(block_target[i, j])
+
+    imgs = [np.sum(x, axis=axis1) for x in imgs]
+    imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs]
+    imgs = [
+        image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0] for x in imgs
+    ]
+
+    nrmse_val = normalized_root_mse(imgs[0], imgs[1], normalization="euclidean")
+    mse_val = mean_squared_error(imgs[0], imgs[1])
+    ssim_val = ssim(imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min())
+
+    imgs.append(blue)
+    rgb = np.dstack(imgs)
+
+    return (i, j, rgb, nrmse_val, mse_val, ssim_val)
+
+
 def combine_blocks_image_by_reprojection(
     block_ref, block_target, shift_matrices=None, axis1=0
 ):
@@ -663,45 +688,21 @@ def combine_blocks_image_by_reprojection(
 
     # reassembles image
     # takes one plane block
-    for i, i_slice in enumerate(tqdm(slice_coordinates[0])):
-        for j, j_slice in enumerate(slice_coordinates[1]):
-            imgs = [block_ref[i, j]]
-            if shift_matrices is not None:
-                shift_3d = np.array(
-                    [x[i, j] for x in shift_matrices]
-                )  # gets 3D shift from block decomposition
-                imgs.append(
-                    shift_image(block_target[i, j], shift_3d)
-                )  # realigns and appends to image list
-            else:
-                imgs.append(
-                    block_target[i, j]
-                )  # appends original target with no re-alignment
+    block_args = [
+        (i, j, block_ref, block_target, shift_matrices, axis1, blue)
+        for i in range(number_blocks)
+        for j in range(number_blocks)
+    ]
 
-            imgs = [np.sum(x, axis=axis1) for x in imgs]  # projects along axis1
-            imgs = [
-                exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs
-            ]  # rescales intensity values
-            imgs = [
-                image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0]
-                for x in imgs
-            ]  # adjusts pixel intensities
+    results = Parallel(n_jobs=-1)(delayed(_process_block)(*args) for args in block_args)
 
-            nrmse_as_blocks[i, j] = normalized_root_mse(
-                imgs[0], imgs[1], normalization="euclidean"
-            )
-            mse_as_blocks[i, j] = mean_squared_error(imgs[0], imgs[1])
-            ssim_as_blocks[i, j] = ssim(
-                imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()
-            )
-
-            imgs.append(blue)  # appends last channel with grid
-
-            rgb = np.dstack(imgs)  # makes block rgb image
-
-            output[i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :] = (
-                rgb  # inserts block into final rgb stack
-            )
+    for i, j, rgb, nrmse, mse, ssim_ in results:
+        i_slice = slice_coordinates[0][i]
+        j_slice = slice_coordinates[1][j]
+        output[i_slice[0] : i_slice[-1] + 1, j_slice[0] : j_slice[-1] + 1, :] = rgb
+        nrmse_as_blocks[i, j] = nrmse
+        mse_as_blocks[i, j] = mse
+        ssim_as_blocks[i, j] = ssim_
 
     return output, ssim_as_blocks, mse_as_blocks, nrmse_as_blocks
 
