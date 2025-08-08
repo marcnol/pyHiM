@@ -61,6 +61,7 @@ class DaskCluster:
             n_workers=self.n_threads,
             threads_per_worker=1,
             memory_limit="64GB",
+            processes=True,
         )
         self.client = Client(self.cluster)
 

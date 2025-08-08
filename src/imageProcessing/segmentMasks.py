@@ -13,23 +13,15 @@ after image segmentation.
 
 """
 
-
-# =============================================================================
-# IMPORTS
-# =============================================================================
-
-# ---- stardist
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import glob
+import hashlib
 import os
 import time
 import uuid
 
-# ---- stardist
 import matplotlib
-
-# import matplotlib.pylab as plt
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.convolution import Gaussian2DKernel, convolve
@@ -39,7 +31,8 @@ from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
 from csbdeep.data import PadAndCropResizer
 from csbdeep.utils import normalize
-from csbdeep.utils.tf import limit_gpu_memory
+
+# from csbdeep.utils.tf import limit_gpu_memory
 from dask.distributed import get_client
 from matplotlib.path import Path
 from photutils import (
@@ -60,7 +53,8 @@ from skimage.measure import regionprops
 from skimage.segmentation import watershed
 from skimage.util.apply_parallel import apply_parallel
 from stardist import random_label_cmap
-from stardist.models import StarDist2D, StarDist3D
+
+# from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
 
 from core.dask_cluster import try_get_client
@@ -74,9 +68,21 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # ignore tensorflow logging
 matplotlib.rcParams["image.interpolation"] = "none"
 
 
-# =============================================================================
-# FUNCTIONS
-# =============================================================================
+def _assign_gpu_by_worker(default_gpu_ids="0,1"):
+    gpu_ids_str = os.environ.get("PYHIM_GPU_IDS", default_gpu_ids)
+    gpu_ids = [g.strip() for g in gpu_ids_str.split(",") if g.strip() != ""]
+    try:
+        from dask.distributed import get_worker
+
+        wid = str(get_worker().id)
+    except Exception:
+        wid = str(os.getpid())
+    if not gpu_ids:
+        return
+    # Hash -> index GPU
+    idx = int(hashlib.sha1(wid.encode()).hexdigest(), 16) % len(gpu_ids)
+    chosen = gpu_ids[idx]
+    os.environ["CUDA_VISIBLE_DEVICES"] = chosen
 
 
 def _show_image_sources(
@@ -549,6 +555,19 @@ def segment_mask_stardist(im, seg_params: SegmentationParams):
 
     """
 
+    _assign_gpu_by_worker()
+    # Import here (after GPU choice)
+    import tensorflow as tf
+
+    # from csbdeep.utils.tf import limit_gpu_memory
+    from stardist.models import StarDist2D
+
+    gpus = tf.config.list_physical_devices("GPU")
+    for g in gpus:
+        try:
+            tf.config.experimental.set_memory_growth(g, True)
+        except Exception:
+            pass
     np.random.seed(6)
     sigma = seg_params.fwhm * gaussian_fwhm_to_sigma  # FWHM = 3.
     kernel = Gaussian2DKernel(sigma, x_size=3, y_size=3)
@@ -933,12 +952,25 @@ def _segment_3d_volumes_stardist(
     model_dir="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
     model_name="stardist_18032021_single_loci",
 ):
+
+    _assign_gpu_by_worker()
+    # Import here (after GPU choice)
+    import tensorflow as tf
+    from csbdeep.utils.tf import limit_gpu_memory
+    from stardist.models import StarDist3D
+
+    gpus = tf.config.list_physical_devices("GPU")
+    for g in gpus:
+        try:
+            tf.config.experimental.set_memory_growth(g, True)
+        except Exception:
+            pass
     number_planes = image_3d.shape[0]
 
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
     print_log(f"> Segmenting {number_planes} planes using 1 worker...")
     print_log(f"> Loading model {model_name} from {model_dir}...")
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
     model = StarDist3D(None, name=model_name, basedir=model_dir)
     limit_gpu_memory(None, allow_growth=True)
@@ -1099,6 +1131,18 @@ def _segment_3d_masks(
         names of all models, the default is None
 
     """
+    _assign_gpu_by_worker()
+    # Import here (after GPU choice)
+    import tensorflow as tf
+    from csbdeep.utils.tf import limit_gpu_memory
+    from stardist.models import StarDist3D
+
+    gpus = tf.config.list_physical_devices("GPU")
+    for g in gpus:
+        try:
+            tf.config.experimental.set_memory_growth(g, True)
+        except Exception:
+            pass
 
     np.random.seed(6)
 
@@ -1107,7 +1151,7 @@ def _segment_3d_masks(
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
     print_log(f"> Segmenting {number_planes} planes using 1 worker...")
     print_log(f"> Loading model {model_name} from {model_dir}...")
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
 
     # Load the model
     # --------------

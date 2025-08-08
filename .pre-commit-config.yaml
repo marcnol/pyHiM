@@ -18,14 +18,14 @@ repos:
 
   # isort for Import Sorting
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.0
+    rev: 6.0.1
     hooks:
       - id: isort
         args: ["--profile", "black"] # Ensures compatibility with Black
 
   # Flake8 for Linting
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.1.1
+    rev: 7.3.0
     hooks:
       - id: flake8
         args: ["--max-line-length=88", "--ignore=E501,W503,E203"]  # Match Black's line length
@@ -40,6 +40,6 @@ repos:
 
   # Pip-audit for Dependency Security
   - repo: https://github.com/pypa/pip-audit
-    rev: v2.8.0
+    rev: v2.9.0
     hooks:
       - id: pip-audit  # Checks for vulnerabilities in Python dependencies
