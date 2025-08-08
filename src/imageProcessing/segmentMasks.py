@@ -16,7 +16,6 @@ after image segmentation.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import glob
-import hashlib
 import os
 import time
 import uuid
@@ -68,21 +67,21 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # ignore tensorflow logging
 matplotlib.rcParams["image.interpolation"] = "none"
 
 
-def _assign_gpu_by_worker(default_gpu_ids="0,1"):
-    gpu_ids_str = os.environ.get("PYHIM_GPU_IDS", default_gpu_ids)
-    gpu_ids = [g.strip() for g in gpu_ids_str.split(",") if g.strip() != ""]
-    try:
-        from dask.distributed import get_worker
+# def _assign_gpu_by_worker(default_gpu_ids="0,1"):
+#     gpu_ids_str = os.environ.get("PYHIM_GPU_IDS", default_gpu_ids)
+#     gpu_ids = [g.strip() for g in gpu_ids_str.split(",") if g.strip() != ""]
+#     try:
+#         from dask.distributed import get_worker
 
-        wid = str(get_worker().id)
-    except Exception:
-        wid = str(os.getpid())
-    if not gpu_ids:
-        return
-    # Hash -> index GPU
-    idx = int(hashlib.sha1(wid.encode()).hexdigest(), 16) % len(gpu_ids)
-    chosen = gpu_ids[idx]
-    os.environ["CUDA_VISIBLE_DEVICES"] = chosen
+#         wid = str(get_worker().id)
+#     except Exception:
+#         wid = str(os.getpid())
+#     if not gpu_ids:
+#         return
+#     # Hash -> index GPU
+#     idx = int(hashlib.sha1(wid.encode()).hexdigest(), 16) % len(gpu_ids)
+#     chosen = gpu_ids[idx]
+#     os.environ["CUDA_VISIBLE_DEVICES"] = chosen
 
 
 def _show_image_sources(
@@ -555,9 +554,12 @@ def segment_mask_stardist(im, seg_params: SegmentationParams):
 
     """
 
-    _assign_gpu_by_worker()
+    # _assign_gpu_by_worker()
     # Import here (after GPU choice)
     import tensorflow as tf
+
+    print_log(f"[GPU] CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')}")
+    print_log(f"[GPU] TF sees: {tf.config.list_physical_devices('GPU')}")
 
     # from csbdeep.utils.tf import limit_gpu_memory
     from stardist.models import StarDist2D
@@ -953,9 +955,12 @@ def _segment_3d_volumes_stardist(
     model_name="stardist_18032021_single_loci",
 ):
 
-    _assign_gpu_by_worker()
+    # _assign_gpu_by_worker()
     # Import here (after GPU choice)
     import tensorflow as tf
+
+    print_log(f"[GPU] CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')}")
+    print_log(f"[GPU] TF sees: {tf.config.list_physical_devices('GPU')}")
     from csbdeep.utils.tf import limit_gpu_memory
     from stardist.models import StarDist3D
 
@@ -1131,9 +1136,12 @@ def _segment_3d_masks(
         names of all models, the default is None
 
     """
-    _assign_gpu_by_worker()
+    # _assign_gpu_by_worker()
     # Import here (after GPU choice)
     import tensorflow as tf
+
+    print_log(f"[GPU] CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES')}")
+    print_log(f"[GPU] TF sees: {tf.config.list_physical_devices('GPU')}")
     from csbdeep.utils.tf import limit_gpu_memory
     from stardist.models import StarDist3D
 
