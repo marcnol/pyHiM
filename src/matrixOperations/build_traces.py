@@ -399,15 +399,14 @@ class BuildTraces:
                 print_log(f"$ loaded mask file: {full_filename_masks}")
 
                 if matrix_params.mask_expansion:
-                    # expands mask without overlap by a maximum of 'distance' pixels
-                    self.masks = expand_labels(
-                        segmented_masks, distance=matrix_params.mask_expansion
-                    )
-
                     # Generate new labels for each connected component to ensure each label is assigned to 1 mask only.
                     self.masks = label(
                         self.masks > 0, connectivity=1
                     )  # Relabel masks uniquely
+                    # expands mask without overlap by a maximum of 'distance' pixels
+                    self.masks = expand_labels(
+                        segmented_masks, distance=matrix_params.mask_expansion
+                    )
                 else:
                     self.masks = segmented_masks
 
