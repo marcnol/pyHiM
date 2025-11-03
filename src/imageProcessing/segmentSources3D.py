@@ -33,9 +33,10 @@ from datetime import datetime
 import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
 from apifish.image import projection
-from astropy.table import Table, vstack
+from astropy.table import vstack
 from skimage import exposure, io
 from skimage.measure import regionprops
+from traceratops.core.localization_table import LocalizationTable, create_output_table
 
 from core.dask_cluster import try_get_client
 from core.parameters import (
@@ -392,7 +393,9 @@ class Localize3D:
 
         return output_table
 
-    def segment_sources_3d_in_folder(self, data_path, dict_shifts_path, seg_params):
+    def segment_sources_3d_in_folder(
+        self, data_path, dict_shifts_path, seg_params, keep_ecsv=False
+    ):
         """
         Fits sources in all files in root_folder
 
@@ -491,11 +494,15 @@ class Localize3D:
         print_log(f"$ localize_3d processing time: {datetime.now() - now}")
 
         # saves Table with all shifts in every iteration to avoid losing computed data
-        output_table_global.write(
-            self.output_filename,
-            format="ascii.ecsv",
-            overwrite=True,
-        )
+        if keep_ecsv:
+            output_table_global.write(
+                self.output_filename,
+                format="ascii.ecsv",
+                overwrite=True,
+            )
+        else:  # 4DN format
+            table = LocalizationTable()
+            table.save(self.output_filename, output_table_global, format="4dn")
 
     def segment_sources_3d(
         self, data_path, dict_shifts_path, params: SegmentationParams
@@ -653,45 +660,3 @@ def get_mask_properties(
     else:
         # creates output lists to return
         return [], [], [], [], [], [], [], [], []
-
-
-def create_output_table():
-    output = Table(
-        names=(
-            "Buid",
-            "ROI #",
-            "CellID #",
-            "Barcode #",
-            "id",
-            "zcentroid",
-            "xcentroid",
-            "ycentroid",
-            "sharpness",
-            "roundness1",
-            "roundness2",
-            "npix",
-            "sky",
-            "peak",
-            "flux",
-            "mag",
-        ),
-        dtype=(
-            "S2",
-            "int",
-            "int",
-            "int",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-        ),
-    )
-    return output

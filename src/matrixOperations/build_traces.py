@@ -793,8 +793,8 @@ class BuildTraces:
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base_2d + "_*" + self.label + ".dat"))
-        files += list(glob.glob(data_file_base_3d + "_*" + self.label + ".dat"))
+        files = list(glob.glob(data_file_base_2d + "_*" + self.label + ".*"))
+        files += list(glob.glob(data_file_base_3d + "_*" + self.label + ".*"))
         # remove duplicate path, it's possible for example if 2d and 3d folder have same name
         files = list(set(files))
         if not files:

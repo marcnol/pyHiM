@@ -350,7 +350,7 @@ class RegisterLocalizations:
 
         # preserves original copy of table for safe keeping
         new_file = get_file_table_new_name(file)
-        table.save(new_file, barcode_map_full)
+        table.save(new_file, barcode_map_full, format="4dn")
         barcode_map_full_unregistered = barcode_map_full.copy()
 
         # indexes table by ROI
@@ -366,7 +366,7 @@ class RegisterLocalizations:
             barcode_map = self.register_barcodes(barcode_map, reg_params)
 
         # saves and plots registered barcode coordinate Tables
-        table.save(file, barcode_map, comments="registered")
+        table.save(file, barcode_map, comments="registered", format="4dn")
         filepath_split = file.split(".")[0].split(os.sep)  # remove ext + split path
         filepath_split.remove("data")
         filepath_without_data_folder = (os.sep).join(filepath_split)
@@ -438,8 +438,8 @@ class RegisterLocalizations:
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base_2d + "_*" + label + ".dat"))
-        files += list(glob.glob(data_file_base_3d + "_*" + label + ".dat"))
+        files = list(glob.glob(data_file_base_2d + "_*" + label + ".*"))
+        files += list(glob.glob(data_file_base_3d + "_*" + label + ".*"))
 
         if not files:
             print_log("No localization table found to process!")

@@ -155,8 +155,8 @@ class FilterLocalizations:
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base_2d + "_*barcode.dat"))
-        files += list(glob.glob(data_file_base_3d + "_*barcode.dat"))
+        files = list(glob.glob(data_file_base_2d + "_*barcode.*"))
+        files += list(glob.glob(data_file_base_3d + "_*barcode.*"))
         if files:
             for file in files:
                 self.ndims = 3 if "3D" in os.path.basename(file) else 2
@@ -169,7 +169,7 @@ class FilterLocalizations:
                 if len(barcode_map) > 0:
                     # plots and saves original barcode coordinate Tables for safe keeping
                     new_file = get_file_table_new_name(file)
-                    table.save(new_file, barcode_map)
+                    table.save(new_file, barcode_map, format="4dn")
                     # remove ext + split path
                     filepath_split = new_file.split(".")[0].split(os.sep)
                     filepath_split.remove("data")
@@ -192,7 +192,7 @@ class FilterLocalizations:
                     barcode_map = self.filter_barcode_table(barcode_map)
 
                     # saves and plots filtered barcode coordinate Tables
-                    table.save(file, barcode_map, comments="filtered")
+                    table.save(file, barcode_map, comments="filtered", format="4dn")
                     filepath_split = file.split(".")[0].split(
                         os.sep
                     )  # remove ext + split path
