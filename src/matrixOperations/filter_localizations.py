@@ -216,7 +216,7 @@ class FilterLocalizations:
 
 
 def get_file_table_new_name(file):
-    existing_versions = glob.glob(file.split(".")[0] + "_version_*.dat")
+    existing_versions = glob.glob(file.split(".")[0] + "_version_*.*")
 
     if len(existing_versions) < 1:
         new_version = 0
@@ -226,4 +226,4 @@ def get_file_table_new_name(file):
         ]
 
         new_version = max(version_numbers) + 1 if version_numbers else 0
-    return file.split(".dat")[0] + "_version_" + str(new_version) + ".dat"
+    return file.split(".")[0] + "_version_" + str(new_version)
