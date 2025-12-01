@@ -29,6 +29,7 @@ import glob
 import os
 import uuid
 from datetime import datetime
+from typing import Optional
 
 import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
@@ -83,6 +84,7 @@ class Localize3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.output_filename = None
+        self.single_file_to_process = None
 
         # parameters from parameters.json
         self.p["referenceBarcode"] = reg_params.referenceFiducial
@@ -434,6 +436,18 @@ class Localize3D:
             in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
         ]
 
+        if self.single_file_to_process:
+            self.filenames_to_process_list = [
+                x
+                for x in self.filenames_to_process_list
+                if os.path.basename(x) == self.single_file_to_process
+            ]
+            if not self.filenames_to_process_list:
+                raise SystemExit(
+                    f"Requested file '{self.single_file_to_process}' was not found"
+                    f" among the files to process in ROI [{self.roi}]."
+                )
+
         n_files_to_process = len(self.filenames_to_process_list)
         print_log(f"$ Found {n_files_to_process} files in ROI [{self.roi}]")
         print_log(
@@ -498,7 +512,11 @@ class Localize3D:
         )
 
     def segment_sources_3d(
-        self, data_path, dict_shifts_path, params: SegmentationParams
+        self,
+        data_path,
+        dict_shifts_path,
+        params: SegmentationParams,
+        single_file_to_process: Optional[str] = None,
     ):
         """
         runs 3D fitting routine in root_folder
@@ -520,6 +538,14 @@ class Localize3D:
         )
 
         # creates output folders and filenames
+        self.single_file_to_process = single_file_to_process
+        output_file_prefix = params.outputFile
+        if self.single_file_to_process:
+            base_name = os.path.splitext(
+                os.path.basename(self.single_file_to_process)
+            )[0]
+            output_file_prefix = f"{output_file_prefix}_{base_name}"
+
         self.output_filename = (
             data_path
             + os.sep
@@ -527,7 +553,7 @@ class Localize3D:
             + os.sep
             + "data"
             + os.sep
-            + params.outputFile
+            + output_file_prefix
             + "_3D_barcode.dat"
         )
 

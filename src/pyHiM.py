@@ -39,7 +39,9 @@ def main(command_line_arguments=None):
         param_file=run_args.params_path,
     )
 
-    pipe = fc.Pipeline(datam, run_args.cmd_list, run_args.parallel, logger)
+    pipe = fc.Pipeline(
+        datam, run_args.cmd_list, run_args.parallel, logger, run_args.input_file
+    )
     pipe.lauch_dask_scheduler(threads_requested=run_args.thread_nbr, maximum_load=0.8)
 
     pipe.run()

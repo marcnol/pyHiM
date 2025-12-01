@@ -55,6 +55,16 @@ def _parse_run_args(command_line_arguments):
         help="Thread number to run with parallel mode.\nDEFAULT: 1 (sequential mode)",
     )
 
+    parser.add_argument(
+        "-I",
+        "--inputFile",
+        type=str,
+        default=None,
+        help="Optional name of a single image file to process. When provided,\n"
+        "        pyHiM will restrict processing to this file (when compatible\n"
+        "        with the selected command).",
+    )
+
     return parser.parse_args(command_line_arguments)
 
 
@@ -72,6 +82,7 @@ class RunArgs:
         self.thread_nbr = parsed_args.threads
         self.parallel = self.thread_nbr > 1
         self.params_path = parsed_args.parameters
+        self.input_file = parsed_args.inputFile
         self._check_consistency()
 
     def _is_docker(self):
@@ -124,6 +135,8 @@ class RunArgs:
         to_print += tab_spacer("threads", str(self.thread_nbr))
         to_print += tab_spacer("parallel", str(self.parallel))
         to_print += tab_spacer("cmd", str(self.cmd_list))
+        if self.input_file:
+            to_print += tab_spacer("inputFile", str(self.input_file))
 
         return to_print
 
