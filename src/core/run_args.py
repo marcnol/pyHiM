@@ -60,9 +60,11 @@ def _parse_run_args(command_line_arguments):
         "--inputFile",
         type=str,
         default=None,
-        help="Optional name of a single image file to process. When provided,\n"
-        "        pyHiM will restrict processing to this file (when compatible\n"
-        "        with the selected command).",
+        help=(
+            "Optional name of a single image file to process. When provided,\n"
+            "pyHiM will restrict processing to this file (when compatible\n"
+            "with the selected command)."
+        ),
     )
 
     return parser.parse_args(command_line_arguments)
