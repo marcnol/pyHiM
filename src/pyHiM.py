@@ -33,6 +33,8 @@ def main(command_line_arguments=None):
         init_msg=run_args.args_to_str(),
     )
 
+    _log_available_gpus()
+
     datam = DataManager(
         run_args.data_path,
         logger.md_filename,
@@ -216,8 +218,17 @@ def main(command_line_arguments=None):
 
     del pipe
 
-    print_log("\n==================== Normal termination ====================\n")
-    print_log(f"Elapsed time: {datetime.now() - begin_time}")
+def _log_available_gpus():
+    try:
+        import tensorflow as tf
+
+        gpus = tf.config.list_physical_devices("GPU")
+        print_log(f"TensorFlow detected {len(gpus)} GPU(s) available.")
+    except Exception as exc:  # pragma: no cover - best effort reporting
+        print_log(
+            f"Unable to determine GPU availability via TensorFlow: {exc}",
+            status="WARN",
+        )
 
 
 if __name__ == "__main__":
