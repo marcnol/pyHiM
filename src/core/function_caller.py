@@ -47,7 +47,7 @@ from matrixOperations.register_localizations import (
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(self, data_m, cmd_list, is_parallel, logger):
+    def __init__(self, data_m, cmd_list, is_parallel, logger, input_file=None):
         self.m_data_m = data_m
         self.cmds = self.interpret_cmd_list(cmd_list)
         self.set_params_from_cmds()
@@ -55,6 +55,7 @@ class Pipeline:
         self.m_logger = logger
         self.m_dask = None
         self.features = []
+        self.input_file = input_file
         self.init_features()
 
     def interpret_cmd_list(self, cmd_list):
@@ -430,7 +431,10 @@ class Pipeline:
                 parallel=self.parallel,
             )
             _segment_sources_3d.segment_sources_3d(
-                data_path, dict_shifts_path, segmentation_params
+                data_path,
+                dict_shifts_path,
+                segmentation_params,
+                single_file_to_process=self.input_file,
             )
 
     def run(self):  # sourcery skip: remove-pass-body
