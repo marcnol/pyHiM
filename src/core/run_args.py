@@ -193,6 +193,7 @@ class RunArgs:
             "shift_mask",
             "filter_localizations",
             "register_localizations",
+            "merge_inputs",
             "build_traces",
             "build_matrix",
         )

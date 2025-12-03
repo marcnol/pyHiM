@@ -172,6 +172,20 @@ def main(command_line_arguments=None):
                 matrix_params,
             )
 
+        # [merge localization and registration tables before building traces]
+        if "merge_inputs" in pipe.cmds and label == "barcode":
+            segmentation_params = datam.labelled_params[label].segmentation
+            registration_params = datam.labelled_params[label].registration
+            merged_local_shifts = fc.merge_inputs(
+                current_param,
+                label,
+                datam.m_data_path,
+                segmentation_params,
+                registration_params,
+            )
+            if merged_local_shifts:
+                datam.local_shifts_path = merged_local_shifts
+
         # [registers barcode localization table]
         if "register_localizations" in pipe.cmds and label == "barcode":
             registration_params = datam.labelled_params[label].registration

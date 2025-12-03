@@ -34,6 +34,7 @@ from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
 from matrixOperations.build_matrix_tempo import BuildMatrixTempo
 from matrixOperations.build_traces import BuildTraces, BuildTracesTempo
+from matrixOperations.merge_inputs import MergeInputs
 from matrixOperations.filter_localizations import (
     FilterLocalizations,
     FilterLocalizationsTempo,
@@ -142,6 +143,15 @@ class Pipeline:
             ]:
                 cmds.append("register_localizations")
             elif cmd.lower() in [
+                "merge_inputs",
+                "mergeinputs",
+                "merge_traces_inputs",
+                "mergetracesinputs",
+                "merge_traces",
+                "mergetraces",
+            ]:
+                cmds.append("merge_inputs")
+            elif cmd.lower() in [
                 "build_traces",
                 "build_trace",
                 "buildtrace",
@@ -202,6 +212,7 @@ class Pipeline:
             "localize_3d",
             "filter_localizations",
             "register_localizations",
+            "merge_inputs",
             "build_traces",
         }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("segmentation")
@@ -256,6 +267,8 @@ class Pipeline:
         if "localize_3d" in self.cmds:
             self._init_labelled_feature(localize_3d.Localize3D, "segmentation")
             ordered_routines.append("localize_3d")
+        if "merge_inputs" in self.cmds:
+            ordered_routines.append("merge_inputs")
         if "filter_localizations" in self.cmds:
             self._init_labelled_feature(FilterLocalizationsTempo, "matrix")
             ordered_routines.append("filter_localizations")
@@ -587,6 +600,21 @@ def register_localizations(
         register_localizations_instance.register(
             data_path, local_shifts_path, segmentation_params, reg_params
         )
+
+
+def merge_inputs(
+    current_param,
+    label,
+    data_path,
+    segmentation_params: SegmentationParams,
+    reg_params: RegistrationParams,
+):
+    """Merge localization and registration tables prior to trace building."""
+
+    if label == "barcode":
+        merger = MergeInputs(current_param)
+        return merger.merge_all(data_path, segmentation_params, reg_params)
+    return None
 
 
 def build_traces(
