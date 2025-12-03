@@ -197,6 +197,7 @@ class Pipeline:
             "mask_3d",
             "shift_mask",
             "localize_3d",
+            "merge_inputs",
         }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("registration")
             self.labelled_sections["fiducial"].append("registration")
