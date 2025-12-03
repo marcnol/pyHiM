@@ -115,6 +115,7 @@ def main(command_line_arguments=None):
                 datam.dict_shifts_path,
                 datam.acquisition_params,
                 registration_params,
+                single_file_to_process=run_args.input_file,
             )
         # [align masks in 3D]
         if "shift_mask" in pipe.cmds and (label in ("DAPI", "mask")):

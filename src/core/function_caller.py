@@ -359,6 +359,7 @@ class Pipeline:
         dict_shifts_path,
         acq_params: AcquisitionParams,
         reg_params: RegistrationParams,
+        single_file_to_process=None,
     ):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
@@ -377,6 +378,7 @@ class Pipeline:
                 segmentation_params,
                 acq_params,
                 reg_params.referenceFiducial,
+                single_file_to_process=single_file_to_process,
             )
 
     def shift_mask(
