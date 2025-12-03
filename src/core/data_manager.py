@@ -503,8 +503,10 @@ def create_folder(folder_path: str):
         Path name of folder
     """
 
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print_log(f"$ Folder '{folder_path}' created successfully.")
-    else:
+    folder_already_exists = os.path.exists(folder_path)
+    os.makedirs(folder_path, exist_ok=True)
+
+    if folder_already_exists:
         print_log(f"! [INFO] Folder '{folder_path}' already exists.")
+    else:
+        print_log(f"$ Folder '{folder_path}' created successfully.")
