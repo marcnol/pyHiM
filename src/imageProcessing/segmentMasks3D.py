@@ -49,6 +49,7 @@ class Mask3D:
         self.dict_shifts_available = None
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
+        self.single_file_to_process = None
 
     def _segment_3d_volumes(self, image_3d, seg_params: SegmentationParams):
         if seg_params.stardist_basename is not None and os.path.exists(
@@ -256,6 +257,17 @@ class Mask3D:
                 in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
             )
         ]
+        if self.single_file_to_process:
+            self.filenames_to_process_list = [
+                x
+                for x in self.filenames_to_process_list
+                if os.path.basename(x) == os.path.basename(self.single_file_to_process)
+            ]
+            if not self.filenames_to_process_list:
+                raise SystemExit(
+                    f"Requested file '{self.single_file_to_process}' was not found"
+                    f" among the files to process in ROI [{roi_name}]."
+                )
         n_files_to_process = len(self.filenames_to_process_list)
         print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}]")
         print_log(
@@ -304,6 +316,7 @@ class Mask3D:
         seg_params,
         acq_params,
         reference_fiducial,
+        single_file_to_process=None,
     ):
         """
         segments 3D masks in root_folder
@@ -316,6 +329,8 @@ class Mask3D:
         session_name = "mask_3d"
 
         # processes folders and files
+
+        self.single_file_to_process = single_file_to_process
 
         print_session_name(session_name)
         write_string_to_file(
