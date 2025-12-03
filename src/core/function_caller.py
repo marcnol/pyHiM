@@ -299,6 +299,7 @@ class Pipeline:
         dict_shifts_path,
         roi_name,
         z_binning,
+        single_file_to_process=None,
     ):
         if label == "fiducial" and registration_params.localAlignment == "block3D":
             print_log(f"> Making 3D image registrations label: {label}")
@@ -306,7 +307,12 @@ class Pipeline:
                 current_param, registration_params, parallel=self.parallel
             )
             local_shifts_path = _drift_3d.align_fiducials_3d(
-                data_path, registration_params, dict_shifts_path, roi_name, z_binning
+                data_path,
+                registration_params,
+                dict_shifts_path,
+                roi_name,
+                z_binning,
+                single_file_to_process=single_file_to_process,
             )
             self.m_data_m.local_shifts_path = local_shifts_path
 

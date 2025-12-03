@@ -86,6 +86,7 @@ def main(command_line_arguments=None):
                 datam.dict_shifts_path,
                 datam.processed_roi,
                 datam.acquisition_params.zBinning,
+                single_file_to_process=run_args.input_file,
             )
 
         # [segments DAPI and sources in 2D]

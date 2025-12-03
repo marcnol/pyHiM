@@ -177,6 +177,7 @@ class Drift3D:
         params: RegistrationParams,
         roi_name,
         z_binning,
+        single_file_to_process=None,
     ):
         """
         Refits all the barcode files found in root_folder
@@ -214,6 +215,16 @@ class Drift3D:
             for x in self.current_param.files_to_process
             if (x != self.filenames_with_ref_barcode)
         ]
+        if single_file_to_process:
+            self.filenames_to_process_list = [
+                x
+                for x in self.filenames_to_process_list
+                if os.path.basename(x) == os.path.basename(single_file_to_process)
+            ]
+            if not self.filenames_to_process_list:
+                raise SystemExit(
+                    f"Requested file '{single_file_to_process}' was not found among the files to process."
+                )
         number_files = len(self.filenames_to_process_list)
 
         if client is None:
@@ -259,12 +270,20 @@ class Drift3D:
 
             # del futures
 
-        # Merges Tables for different cycles and appends results Table to that of previous ROI
-        alignment_results_table_global = vstack(
-            [alignment_results_table_global] + alignment_results_tables
-        )
+        output_prefix = params.outputFile
+        if single_file_to_process:
+            output_prefix = (
+                output_prefix
+                + "_"
+                + os.path.splitext(os.path.basename(single_file_to_process))[0]
+            )
 
-        # saves Table with all shifts
+        if single_file_to_process and alignment_results_tables:
+            alignment_results_table_global = alignment_results_tables[0]
+        else:
+            alignment_results_table_global = vstack(
+                [alignment_results_table_global] + alignment_results_tables
+            )
 
         path_name = (
             data_path
@@ -273,7 +292,7 @@ class Drift3D:
             + os.sep
             + "data"
             + os.sep
-            + params.outputFile
+            + output_prefix
         )
         local_shifts_path = path_name + "_block3D.dat"
 
@@ -295,6 +314,7 @@ class Drift3D:
         dict_shifts_path,
         roi_name,
         z_binning,
+        single_file_to_process=None,
     ):
         """
         runs refitting routine in root_folder
@@ -313,7 +333,12 @@ class Drift3D:
         # self.current_log.parallel = self.parallel
 
         local_shifts_path = self.align_fiducials_3d_in_folder(
-            data_path, dict_shifts_path, params, roi_name, z_binning
+            data_path,
+            dict_shifts_path,
+            params,
+            roi_name,
+            z_binning,
+            single_file_to_process=single_file_to_process,
         )
 
         print_log(f"HiM matrix in {data_path} processed")
