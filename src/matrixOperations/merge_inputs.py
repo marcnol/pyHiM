@@ -53,8 +53,17 @@ class MergeInputs:
             return False
 
         merged_table = vstack(tables, metadata_conflicts="silent")
+
+        merged_table.meta["comments"] = [""]
+
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        merged_table.write(output_path, format="ascii.ecsv", overwrite=True)
+
+        merged_table.write(
+            output_path,
+            format="ascii.ecsv",
+            overwrite=True,
+        )
+                
         print_log(
             f"$ Merged {len(tables)} {description} table(s) into: {output_path}"
         )

@@ -438,9 +438,11 @@ class RegisterLocalizations:
             + os.sep
             + seg_params.outputFile
         )
-        files = list(glob.glob(data_file_base_2d + "_*" + label + ".dat"))
-        files += list(glob.glob(data_file_base_3d + "_*" + label + ".dat"))
-
+#        files = list(glob.glob(data_file_base_2d + "_*" + label + ".dat"))
+#        files += list(glob.glob(data_file_base_3d + "_*" + label + ".dat"))
+        files = list(glob.glob(data_file_base_2d + "_2D_barcode.dat"))
+        files += list(glob.glob(data_file_base_3d + "_3D_barcode.dat"))
+        
         if not files:
             print_log("No localization table found to process!")
             return
