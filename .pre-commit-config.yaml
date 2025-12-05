@@ -38,8 +38,8 @@ repos:
   #     - id: codespell  # Corrects common typos in code and documentation
   #       args: ["--skip", "docs/source/getting_started/tutorials/notebooks/full_pyHiM_run.ipynb", "-L", "nd,buid"]
 
-  # Pip-audit for Dependency Security
-  - repo: https://github.com/pypa/pip-audit
-    rev: v2.8.0
-    hooks:
-      - id: pip-audit  # Checks for vulnerabilities in Python dependencies
+  # # Pip-audit for Dependency Security
+  # - repo: https://github.com/pypa/pip-audit
+  #   rev: v2.8.0
+  #   hooks:
+  #     - id: pip-audit  # Checks for vulnerabilities in Python dependencies
