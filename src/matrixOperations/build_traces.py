@@ -797,29 +797,17 @@ class BuildTraces:
 
         print_log(f"> Masks labels: {matrix_params.masks2process}")
 
-        # iterates over barcode localization tables in the current folder
-        data_file_base_2d = (
-            data_path
-            + os.sep
-            + seg_params.localize_2d_folder
-            + os.sep
-            + "data"
-            + os.sep
-            + seg_params.outputFile
-        )
-        data_file_base_3d = (
-            data_path
-            + os.sep
-            + seg_params.localize_3d_folder
-            + os.sep
-            + "data"
-            + os.sep
-            + seg_params.outputFile
-        )
-        files = list(glob.glob(data_file_base_2d + "_*" + self.label + ".dat"))
-        files += list(glob.glob(data_file_base_3d + "_*" + self.label + ".dat"))
-        # remove duplicate path, it's possible for example if 2d and 3d folder have same name
-        files = list(set(files))
+        # iterates over consolidated barcode localization tables in the current folder
+        files = []
+        for folder, suffix in (
+            (seg_params.localize_2d_folder, "_2D_barcode.dat"),
+            (seg_params.localize_3d_folder, "_3D_barcode.dat"),
+        ):
+            consolidated_path = os.path.join(
+                data_path, folder, "data", f"{seg_params.outputFile}{suffix}"
+            )
+            if os.path.exists(consolidated_path):
+                files.append(consolidated_path)
         if not files:
             print_log("$ No localization table found to process!", "WARN")
             return
