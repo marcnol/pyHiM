@@ -34,6 +34,7 @@
             "KDtree_distance_threshold_mum": 1,
             "flux_min": 2,
             "flux_min_3D": 10.0,
+            "barcode_coordinates_BEDfile": "",
             "folder": "tracing",
             "mask_expansion": 0,
             "masks2process": {

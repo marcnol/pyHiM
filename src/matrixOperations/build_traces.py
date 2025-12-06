@@ -36,6 +36,7 @@ Single-cell results are combined together to calculate:
 
 import glob
 import os
+import sys
 import uuid
 
 import numpy as np
@@ -82,6 +83,8 @@ class BuildTraces:
         self.current_folder = []
         self.mask_identifier = ["DAPI"]  # default mask label
         self.masks = np.zeros((2048, 2048))
+        self.barcode_coordinates_map = {}
+        self.barcode_coordinates_path = None
 
     def initializes_masks(self, masks):
         self.masks = masks
@@ -119,6 +122,69 @@ class BuildTraces:
             [],
             [],
             [],
+        )
+
+    def load_barcode_coordinates(self, data_path, matrix_params: MatrixParams):
+        """Load barcode genomic coordinates from an optional BED file."""
+
+        bed_filename = getattr(matrix_params, "barcode_coordinates_BEDfile", "")
+        if not bed_filename:
+            return
+
+        bed_path = (
+            bed_filename
+            if os.path.isabs(bed_filename)
+            else os.path.join(data_path, bed_filename)
+        )
+
+        if not os.path.exists(bed_path):
+            print_log(
+                f"! Barcode coordinates BED file not found: {bed_path}. Skipping barcode coordinate assignment.",
+                status="WARN",
+            )
+            return
+
+        self.barcode_coordinates_path = bed_path
+        self.barcode_coordinates_map = {}
+
+        with open(bed_path, "r", encoding="utf-8") as bed_file:
+            for line_number, line in enumerate(bed_file, start=1):
+                stripped = line.strip()
+                if not stripped or stripped.startswith(("#", "track", "browser")):
+                    continue
+
+                columns = stripped.split("\t")
+                if len(columns) < 4:
+                    print_log(
+                        f"! BED file {bed_path} line {line_number} has fewer than 4 columns.",
+                        status="ERROR",
+                    )
+                    sys.exit(1)
+
+                try:
+                    chrom = str(columns[0])
+                    chrom_start = np.int64(columns[1])
+                    chrom_end = np.int64(columns[2])
+                    barcode_number = np.int64(columns[3])
+                    barcode2_number = (
+                        np.int64(columns[4]) if len(columns) >= 5 and columns[4] != "" else None
+                    )
+                except ValueError as exc:
+                    print_log(
+                        f"! Could not parse BED file {bed_path} line {line_number}: {exc}",
+                        status="ERROR",
+                    )
+                    sys.exit(1)
+
+                self.barcode_coordinates_map[int(barcode_number)] = {
+                    "chrom": chrom,
+                    "start": chrom_start,
+                    "end": chrom_end,
+                    "barcode2_number": barcode2_number,
+                }
+
+        print_log(
+            f"$ Loaded {len(self.barcode_coordinates_map)} barcode entries from {self.barcode_coordinates_path}"
         )
 
     def align_by_masking(self, matrix_params: MatrixParams):
@@ -260,6 +326,41 @@ class BuildTraces:
                 z * self.pixel_size["z"],
             )
         )
+
+    def apply_barcode_coordinates(self):
+        """Assign genomic coordinates from the BED file to the trace table."""
+
+        if not self.barcode_coordinates_map:
+            return
+
+        if "Barcode #" not in self.trace_table.data.colnames:
+            print_log("! Trace table is missing 'Barcode #' column", status="ERROR")
+            sys.exit(1)
+
+        for index, barcode_value in enumerate(self.trace_table.data["Barcode #"]):
+            try:
+                barcode_int = int(barcode_value)
+            except (TypeError, ValueError):
+                print_log(
+                    f"! Invalid barcode value '{barcode_value}' found in trace table.",
+                    status="ERROR",
+                )
+                sys.exit(1)
+
+            if barcode_int not in self.barcode_coordinates_map:
+                print_log(
+                    f"! Barcode {barcode_int} not found in {self.barcode_coordinates_path}",
+                    status="ERROR",
+                )
+                sys.exit(1)
+
+            bed_entry = self.barcode_coordinates_map[barcode_int]
+            if bed_entry["barcode2_number"] is not None:
+                self.trace_table.data["Barcode #"][index] = bed_entry["barcode2_number"]
+
+            self.trace_table.data["Chrom"][index] = bed_entry["chrom"]
+            self.trace_table.data["Chrom_Start"][index] = bed_entry["start"]
+            self.trace_table.data["Chrom_End"][index] = bed_entry["end"]
 
     def builds_sc_distance_table(self):
         """
@@ -521,6 +622,7 @@ class BuildTraces:
                 )
 
                 if len(self.trace_table.data) > 0:
+                    self.apply_barcode_coordinates()
                     # saves trace table with results per ROI
                     output_table_filename = f"{output_filename}_{self.label}_mask-{str(self.mask_identifier.split('_')[0])}_ROI-{str(self.n_roi)}.ecsv"
 
@@ -712,6 +814,8 @@ class BuildTraces:
                     f"$ Number of entries in trace table: {len(self.trace_table.data)}"
                 )
 
+                self.apply_barcode_coordinates()
+
                 # saves trace table with results per ROI
                 output_table_filename = (
                     output_filename
@@ -796,6 +900,8 @@ class BuildTraces:
         self.current_folder = data_path
 
         print_log(f"> Masks labels: {matrix_params.masks2process}")
+
+        self.load_barcode_coordinates(data_path, matrix_params)
 
         # iterates over consolidated barcode localization tables in the current folder
         files = []
