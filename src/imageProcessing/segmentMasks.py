@@ -938,8 +938,9 @@ def _segment_3d_volumes_stardist(
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
     print_log(f"> Segmenting {number_planes} planes using 1 worker...")
     print_log(f"> Loading model {model_name} from {model_dir}...")
-    #os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
+    print_log(
+        "> Using CUDA_VISIBLE_DEVICES from the environment; set it externally to pin GPUs."
+    )
     model = StarDist3D(None, name=model_name, basedir=model_dir)
     #limit_gpu_memory(None, allow_growth=True)
 
@@ -1107,8 +1108,9 @@ def _segment_3d_masks(
     print_log("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
     print_log(f"> Segmenting {number_planes} planes using 1 worker...")
     print_log(f"> Loading model {model_name} from {model_dir}...")
-    os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # why do we need this?
-
+    print_log(
+        "> Using CUDA_VISIBLE_DEVICES from the environment; set it externally to pin GPUs."
+    )
     # Load the model
     # --------------
 
