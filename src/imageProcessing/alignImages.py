@@ -25,7 +25,15 @@ import numpy as np
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
-from photutils import Background2D, MedianBackground
+
+# Compatible with Photutils 1.x and 2.x
+try:
+    # Photutils 1.x (Background2D was exported at top level)
+    from photutils import Background2D, MedianBackground
+except ImportError:
+    # Photutils 2.x and later (must import from photutils.background)
+    from photutils.background import Background2D, MedianBackground
+
 from scipy.ndimage import shift as shift_image
 from skimage import exposure, measure
 from skimage.exposure import match_histograms

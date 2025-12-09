@@ -43,13 +43,20 @@ from csbdeep.utils.tf import limit_gpu_memory
 from dask.distributed import get_client
 from matplotlib.path import Path
 from photutils import (
-    Background2D,
     DAOStarFinder,
-    MedianBackground,
     deblend_sources,
     detect_sources,
     detect_threshold,
 )
+
+# Compatible with Photutils 1.x and 2.x
+try:
+    # Photutils 1.x (Background2D was exported at top level)
+    from photutils import Background2D, MedianBackground
+except ImportError:
+    # Photutils 2.x and later (must import from photutils.background)
+    from photutils.background import Background2D, MedianBackground
+
 from photutils.segmentation.core import SegmentationImage
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter

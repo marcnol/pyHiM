@@ -11,7 +11,15 @@ import numpy as np
 from astropy.stats import SigmaClip
 from astropy.visualization import SqrtStretch, simple_norm
 from astropy.visualization.mpl_normalize import ImageNormalize
-from photutils import Background2D, MedianBackground
+
+# Compatible with Photutils 1.x and 2.x
+try:
+    # Photutils 1.x (Background2D was exported at top level)
+    from photutils import Background2D, MedianBackground
+except ImportError:
+    # Photutils 2.x and later (must import from photutils.background)
+    from photutils.background import Background2D, MedianBackground
+
 from skimage import exposure, io
 from tqdm import trange
 
