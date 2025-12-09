@@ -6,6 +6,7 @@ Classes and functions for pyHiM logging
 
 import logging
 import os
+import uuid
 from datetime import datetime
 
 from dask.distributed.worker import logger
@@ -19,6 +20,7 @@ class Logger:
         self, root_folder, parallel=False, session_name="HiM_analysis", init_msg=""
     ):
         self.m_root_folder = root_folder
+        self.logs_path = ""
         self.log_file = ""
         self.md_filename = ""
         # Keeps the messages to be print in log until this is possible
@@ -33,8 +35,14 @@ class Logger:
         begin_time = datetime.now()
         now = datetime.now()
         date_time = now.strftime("%d%m%Y_%H%M%S")
+        unique_id = uuid.uuid4().hex
 
-        self.log_file = self.m_root_folder + os.sep + session_name + date_time + ".log"
+        self.logs_path = os.path.join(self.m_root_folder, "logs")
+        os.makedirs(self.logs_path, exist_ok=True)
+
+        self.log_file = os.path.join(
+            self.logs_path, f"{session_name}{date_time}_{unique_id}.log"
+        )
         self.md_filename = self.log_file.split(".")[0] + ".md"
         self.init_msg += f"$ {session_name} will be written to: {self.md_filename}"
 
