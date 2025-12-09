@@ -51,14 +51,22 @@ def main():
     TAR_FILENAME = "HiMrun.tar"
     print(f"creating archive: {TAR_FILENAME} in {root_folder}")
 
-    # tar files in root_folder
-    markdown_files = [
-        os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.md")
-    ]
-    log_files = [os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.log")]
-    session_files = [
-        os.path.basename(f) for f in glob.glob(root_folder + os.sep + "*.json")
-    ]
+    def collect_files(search_dirs, pattern):
+        files = []
+        for directory in search_dirs:
+            files.extend(
+                [os.path.relpath(f, root_folder) for f in glob.glob(directory + os.sep + pattern)]
+            )
+        return files
+
+    search_dirs = [root_folder]
+    logs_dir = root_folder + os.sep + "logs"
+    if os.path.isdir(logs_dir):
+        search_dirs.insert(0, logs_dir)
+
+    markdown_files = collect_files(search_dirs, "*.md")
+    log_files = collect_files(search_dirs, "*.log")
+    session_files = collect_files(search_dirs, "*.json")
 
     TARCMD = (
         "tar -cvf "
