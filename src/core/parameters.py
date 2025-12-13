@@ -133,6 +133,7 @@ class Parameters:
                 status="WARN",
             )
 
+        print_log(f'>>> label: {self.param_dict["acquisition"]["label"]}" == mask')
         # selects DAPI files
         if self.param_dict["acquisition"]["label"] == "DAPI":
             self.files_to_process = [
