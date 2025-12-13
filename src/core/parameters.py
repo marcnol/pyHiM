@@ -165,10 +165,13 @@ class Parameters:
 
         # selects mask files
         elif self.param_dict["acquisition"]["label"] == "mask":
+            # Accept any mask cycle, including numbered ones such as "mask1"
             self.files_to_process = [
                 file
                 for file in files_folder
-                if len([i for i in file.split("_") if "mask" in i]) > 0
+                if self.decode_file_parts(path.basename(file))["cycle"].startswith(
+                    "mask"
+                )
                 and self.decode_file_parts(path.basename(file))["channel"]
                 == channel_mask
             ]
