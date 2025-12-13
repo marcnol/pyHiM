@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 """Main file of pyHiM, include the top-level mechanism."""
 
-from datetime import datetime
-
 import core.function_caller as fc
 from _version import __version__
 from core.data_manager import DataManager
@@ -22,8 +20,6 @@ def main(command_line_arguments=None):
         For example, to test the pyHiM run from tests folder.
         By default None.
     """
-    begin_time = datetime.now()
-
     run_args = RunArgs(command_line_arguments)
 
     logger = Logger(
@@ -235,6 +231,7 @@ def main(command_line_arguments=None):
         pipe.m_dask.client.close()
 
     del pipe
+
 
 def _log_available_gpus():
     try:
