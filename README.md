@@ -7,6 +7,8 @@
 
 *pyHiM* implements the analysis of multiplexed DNA-FISH data, as described in our [Hi-M paper](https://www.nature.com/articles/s41596-019-0269-9).
 
+*pyHiM* has been published and is available as open-source here: [pyHiM paper](https://link.springer.com/article/10.1186/s13059-024-03178-x)
+
 ## Documentation
 
 Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/latest/) and [tutorials](https://pyhim.readthedocs.io/en/latest/getting_started/tutorials.html) illustrating the main steps of pyHiM analysis pipeline.
@@ -47,3 +49,4 @@ Packages used by *pyHiM* are licensed under the revised 3-clause BSD style licen
 Check COPYRIGHT.txt for a list of authors and the git history for their individual contributions.
 
 *pyHiM* is a software package developed by the [Nollmann Lab](http://www.nollmannlab.org) at the [Center of Structural Biology](http://www.cbs.cnrs.fr), a department of the [CNRS](http://www.cnrs.fr) and the [INSERM](http://www.inserm.fr).
+
