@@ -123,12 +123,8 @@ class Localize3D:
                 os.pardir,
                 "stardist_models",
             )
-        if seg_params.stardist_network3D is not None and os.path.exists(
-            os.path.join(base_dir, seg_params.stardist_network3D)
-        ):
-            model_name = seg_params.stardist_network3D
-        else:
-            model_name = "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+
+        model_name = self._select_stardist_model(None, seg_params, base_dir)
         self.p["stardist_basename"] = base_dir
         self.p["stardist_network"] = model_name
         # parameters used for 3D gaussian fitting
@@ -144,6 +140,27 @@ class Localize3D:
         # parameters used for plotting 3D image
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
         self.p["windowDisplay"] = 10
+
+    def _select_stardist_model(
+        self, label: Optional[str], seg_params: SegmentationParams, base_dir: str
+    ) -> str:
+        """Return the appropriate Stardist model name based on the label.
+
+        If a custom network is configured and present on disk it is used.
+        Otherwise, fall back to label-specific defaults.
+        """
+
+        if seg_params.stardist_network3D is not None:
+            candidate_path = os.path.join(base_dir, seg_params.stardist_network3D)
+            if os.path.exists(candidate_path):
+                return seg_params.stardist_network3D
+
+        if label == "DAPI":
+            return "DAPI_3D_stardist_17032021_deconvolved"
+        if label == "mask":
+            return "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+
+        return "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
 
     def plot_image_3d(self, image_3d, localizations=None, masks=None, normalize_b=None):
         """
@@ -207,6 +224,10 @@ class Localize3D:
             self.current_param.decode_file_parts(os.path.basename(filename_to_process))[
                 "cycle"
             ]
+        )
+
+        self.p["stardist_network"] = self._select_stardist_model(
+            label, seg_params, self.p["stardist_basename"]
         )
 
         # creates Table that will hold results
