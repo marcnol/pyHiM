@@ -133,6 +133,7 @@ class Parameters:
                 status="WARN",
             )
 
+        print_log(f'>>> label: {self.param_dict["acquisition"]["label"]} == mask')
         # selects DAPI files
         if self.param_dict["acquisition"]["label"] == "DAPI":
             self.files_to_process = [
@@ -165,13 +166,23 @@ class Parameters:
 
         # selects mask files
         elif self.param_dict["acquisition"]["label"] == "mask":
+            print_log(">>> entered mask selection")
+            # Accept any mask cycle, including numbered ones such as "mask1"
             self.files_to_process = [
                 file
                 for file in files_folder
-                if len([i for i in file.split("_") if "mask" in i]) > 0
+                if self.decode_file_parts(path.basename(file))["cycle"].startswith(
+                    "mask"
+                )
                 and self.decode_file_parts(path.basename(file))["channel"]
                 == channel_mask
             ]
+            for file in files_folder:
+                print_log(
+                    f'>>> file: {file}\n cycle: \
+                          {self.decode_file_parts(path.basename(file))["cycle"]}\n \
+                            channel: {self.decode_file_parts(path.basename(file))["channel"]}\n channel_mask: {channel_mask}'
+                )
 
         # selects fiducial files
         elif self.param_dict["acquisition"]["label"] == "fiducial":

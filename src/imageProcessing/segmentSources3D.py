@@ -29,6 +29,7 @@ import glob
 import os
 import uuid
 from datetime import datetime
+from typing import Optional
 
 import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
@@ -83,6 +84,7 @@ class Localize3D:
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
         self.output_filename = None
+        self.single_file_to_process = None
 
         # parameters from parameters.json
         self.p["referenceBarcode"] = reg_params.referenceFiducial
@@ -121,12 +123,8 @@ class Localize3D:
                 os.pardir,
                 "stardist_models",
             )
-        if seg_params.stardist_network3D is not None and os.path.exists(
-            os.path.join(base_dir, seg_params.stardist_network3D)
-        ):
-            model_name = seg_params.stardist_network3D
-        else:
-            model_name = "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+
+        model_name = self._select_stardist_model(None, seg_params, base_dir)
         self.p["stardist_basename"] = base_dir
         self.p["stardist_network"] = model_name
         # parameters used for 3D gaussian fitting
@@ -142,6 +140,27 @@ class Localize3D:
         # parameters used for plotting 3D image
         # sets the number of planes around the center of the image used to represent localizations in XZ and ZY
         self.p["windowDisplay"] = 10
+
+    def _select_stardist_model(
+        self, label: Optional[str], seg_params: SegmentationParams, base_dir: str
+    ) -> str:
+        """Return the appropriate Stardist model name based on the label.
+
+        If a custom network is configured and present on disk it is used.
+        Otherwise, fall back to label-specific defaults.
+        """
+
+        if seg_params.stardist_network3D is not None:
+            candidate_path = os.path.join(base_dir, seg_params.stardist_network3D)
+            if os.path.exists(candidate_path):
+                return seg_params.stardist_network3D
+
+        if label == "DAPI":
+            return "DAPI_3D_stardist_17032021_deconvolved"
+        if label == "mask":
+            return "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+
+        return "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
 
     def plot_image_3d(self, image_3d, localizations=None, masks=None, normalize_b=None):
         """
@@ -205,6 +224,10 @@ class Localize3D:
             self.current_param.decode_file_parts(os.path.basename(filename_to_process))[
                 "cycle"
             ]
+        )
+
+        self.p["stardist_network"] = self._select_stardist_model(
+            label, seg_params, self.p["stardist_basename"]
         )
 
         # creates Table that will hold results
@@ -434,6 +457,18 @@ class Localize3D:
             in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
         ]
 
+        if self.single_file_to_process:
+            self.filenames_to_process_list = [
+                x
+                for x in self.filenames_to_process_list
+                if os.path.basename(x) == self.single_file_to_process
+            ]
+            if not self.filenames_to_process_list:
+                raise SystemExit(
+                    f"Requested file '{self.single_file_to_process}' was not found"
+                    f" among the files to process in ROI [{self.roi}]."
+                )
+
         n_files_to_process = len(self.filenames_to_process_list)
         print_log(f"$ Found {n_files_to_process} files in ROI [{self.roi}]")
         print_log(
@@ -498,7 +533,11 @@ class Localize3D:
         )
 
     def segment_sources_3d(
-        self, data_path, dict_shifts_path, params: SegmentationParams
+        self,
+        data_path,
+        dict_shifts_path,
+        params: SegmentationParams,
+        single_file_to_process: Optional[str] = None,
     ):
         """
         runs 3D fitting routine in root_folder
@@ -520,6 +559,14 @@ class Localize3D:
         )
 
         # creates output folders and filenames
+        self.single_file_to_process = single_file_to_process
+        output_file_prefix = params.outputFile
+        if self.single_file_to_process:
+            base_name = os.path.splitext(
+                os.path.basename(self.single_file_to_process)
+            )[0]
+            output_file_prefix = f"{output_file_prefix}_{base_name}"
+
         self.output_filename = (
             data_path
             + os.sep
@@ -527,7 +574,7 @@ class Localize3D:
             + os.sep
             + "data"
             + os.sep
-            + params.outputFile
+            + output_file_prefix
             + "_3D_barcode.dat"
         )
 

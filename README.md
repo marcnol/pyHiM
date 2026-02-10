@@ -7,6 +7,8 @@
 
 *pyHiM* implements the analysis of multiplexed DNA-FISH data, as described in our [Hi-M paper](https://www.nature.com/articles/s41596-019-0269-9).
 
+pyHiM has been published and is available as open-source here: pyHiM paper
+
 ## Documentation
 
 Find the full documentation in [ReadtheDocs](https://pyhim.readthedocs.io/en/stable/) and [tutorials](https://pyhim.readthedocs.io/en/stable/getting_started/tutorials.html) illustrating the main steps of pyHiM analysis pipeline.

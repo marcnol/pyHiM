@@ -53,6 +53,28 @@ Run this command in your terminal:
 conda env create -f environment.yml
 ```
 
+### Verify GPU recognition
+
+After activating the conda environment, you can verify that TensorFlow detects your GPU by starting Python and running:
+
+```python
+import tensorflow as tf
+print(tf.__version__)
+print("Built with CUDA:", tf.test.is_built_with_cuda())
+print("Built with GPU support:", tf.test.is_built_with_gpu_support())
+print("Visible GPUs:", tf.config.list_physical_devices("GPU"))
+```
+
+### Selecting a GPU device
+
+If your machine has multiple GPUs, you can select which one pyHiM uses by setting `CUDA_VISIBLE_DEVICES` before launching the application. For example, to use device `2` on a machine with three GPUs, run the following in your shell prior to starting pyHiM:
+
+```bash
+export CUDA_VISIBLE_DEVICES=2
+```
+
+This environment variable limits visibility to the specified device index, letting you choose a different GPU than the default.
+
 ```{note}
 If you get this error:
 `ImportError: Dask\'s distributed scheduler is not installed.`

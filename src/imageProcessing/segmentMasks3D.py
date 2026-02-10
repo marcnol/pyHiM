@@ -49,8 +49,9 @@ class Mask3D:
         self.dict_shifts_available = None
         self.filenames_to_process_list = []
         self.inner_parallel_loop = None
+        self.single_file_to_process = None
 
-    def _segment_3d_volumes(self, image_3d, seg_params: SegmentationParams):
+    def _segment_3d_volumes(self, image_3d, seg_params: SegmentationParams, label: str):
         if seg_params.stardist_basename is not None and os.path.exists(
             seg_params.stardist_basename
         ):
@@ -62,12 +63,18 @@ class Mask3D:
                 "stardist_models",
             )
 
+        default_model_name = (
+            "DAPI_3D_stardist_17032021_deconvolved"
+            if "dapi" in label.lower()
+            else "PSF_3D_stardist_20210618_simu_deconvolved_thresh_0_01"
+        )
+
         if seg_params.stardist_network3D is not None and os.path.exists(
             os.path.join(base_dir, seg_params.stardist_network3D)
         ):
             model_name = seg_params.stardist_network3D
         else:
-            model_name = "DAPI_3D_stardist_17032021_deconvolved"
+            model_name = default_model_name
         binary, segmented_image_3d = _segment_3d_masks(
             image_3d,
             axis_norm=(0, 1, 2),
@@ -129,7 +136,9 @@ class Mask3D:
             }
 
         # segments 3D volumes
-        _, segmented_image_3d = self._segment_3d_volumes(image_3d, seg_params)
+        _, segmented_image_3d = self._segment_3d_volumes(
+            image_3d, seg_params, label
+        )
 
         number_masks = np.max(segmented_image_3d)
         print_log(f"$ Number of masks detected: {number_masks}")
@@ -256,6 +265,17 @@ class Mask3D:
                 in self.current_param.decode_file_parts(os.path.basename(x))["cycle"]
             )
         ]
+        if self.single_file_to_process:
+            self.filenames_to_process_list = [
+                x
+                for x in self.filenames_to_process_list
+                if os.path.basename(x) == os.path.basename(self.single_file_to_process)
+            ]
+            if not self.filenames_to_process_list:
+                raise SystemExit(
+                    f"Requested file '{self.single_file_to_process}' was not found"
+                    f" among the files to process in ROI [{roi_name}]."
+                )
         n_files_to_process = len(self.filenames_to_process_list)
         print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}]")
         print_log(
@@ -304,6 +324,7 @@ class Mask3D:
         seg_params,
         acq_params,
         reference_fiducial,
+        single_file_to_process=None,
     ):
         """
         segments 3D masks in root_folder
@@ -316,6 +337,8 @@ class Mask3D:
         session_name = "mask_3d"
 
         # processes folders and files
+
+        self.single_file_to_process = single_file_to_process
 
         print_session_name(session_name)
         write_string_to_file(

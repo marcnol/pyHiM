@@ -34,6 +34,7 @@ from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
 from matrixOperations.build_matrix_tempo import BuildMatrixTempo
 from matrixOperations.build_traces import BuildTraces, BuildTracesTempo
+from matrixOperations.merge_inputs import MergeInputs
 from matrixOperations.filter_localizations import (
     FilterLocalizations,
     FilterLocalizationsTempo,
@@ -47,7 +48,7 @@ from matrixOperations.register_localizations import (
 class Pipeline:
     """Class for high level function calling"""
 
-    def __init__(self, data_m, cmd_list, is_parallel, logger):
+    def __init__(self, data_m, cmd_list, is_parallel, logger, input_file=None):
         self.m_data_m = data_m
         self.cmds = self.interpret_cmd_list(cmd_list)
         self.set_params_from_cmds()
@@ -55,6 +56,7 @@ class Pipeline:
         self.m_logger = logger
         self.m_dask = None
         self.features = []
+        self.input_file = input_file
         self.init_features()
 
     def interpret_cmd_list(self, cmd_list):
@@ -141,6 +143,15 @@ class Pipeline:
             ]:
                 cmds.append("register_localizations")
             elif cmd.lower() in [
+                "merge_inputs",
+                "mergeinputs",
+                "merge_traces_inputs",
+                "mergetracesinputs",
+                "merge_traces",
+                "mergetraces",
+            ]:
+                cmds.append("merge_inputs")
+            elif cmd.lower() in [
                 "build_traces",
                 "build_trace",
                 "buildtrace",
@@ -186,6 +197,7 @@ class Pipeline:
             "mask_3d",
             "shift_mask",
             "localize_3d",
+            "merge_inputs",
         }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("registration")
             self.labelled_sections["fiducial"].append("registration")
@@ -201,6 +213,7 @@ class Pipeline:
             "localize_3d",
             "filter_localizations",
             "register_localizations",
+            "merge_inputs",
             "build_traces",
         }.intersection(set(self.cmds)):
             self.labelled_sections["barcode"].append("segmentation")
@@ -255,6 +268,8 @@ class Pipeline:
         if "localize_3d" in self.cmds:
             self._init_labelled_feature(localize_3d.Localize3D, "segmentation")
             ordered_routines.append("localize_3d")
+        if "merge_inputs" in self.cmds:
+            ordered_routines.append("merge_inputs")
         if "filter_localizations" in self.cmds:
             self._init_labelled_feature(FilterLocalizationsTempo, "matrix")
             ordered_routines.append("filter_localizations")
@@ -298,6 +313,7 @@ class Pipeline:
         dict_shifts_path,
         roi_name,
         z_binning,
+        single_file_to_process=None,
     ):
         if label == "fiducial" and registration_params.localAlignment == "block3D":
             print_log(f"> Making 3D image registrations label: {label}")
@@ -305,7 +321,12 @@ class Pipeline:
                 current_param, registration_params, parallel=self.parallel
             )
             local_shifts_path = _drift_3d.align_fiducials_3d(
-                data_path, registration_params, dict_shifts_path, roi_name, z_binning
+                data_path,
+                registration_params,
+                dict_shifts_path,
+                roi_name,
+                z_binning,
+                single_file_to_process=single_file_to_process,
             )
             self.m_data_m.local_shifts_path = local_shifts_path
 
@@ -352,6 +373,7 @@ class Pipeline:
         dict_shifts_path,
         acq_params: AcquisitionParams,
         reg_params: RegistrationParams,
+        single_file_to_process=None,
     ):
         if (label in ("DAPI", "mask")) and "3D" in current_param.param_dict[
             "segmentedObjects"
@@ -370,6 +392,7 @@ class Pipeline:
                 segmentation_params,
                 acq_params,
                 reg_params.referenceFiducial,
+                single_file_to_process=single_file_to_process,
             )
 
     def shift_mask(
@@ -430,7 +453,10 @@ class Pipeline:
                 parallel=self.parallel,
             )
             _segment_sources_3d.segment_sources_3d(
-                data_path, dict_shifts_path, segmentation_params
+                data_path,
+                dict_shifts_path,
+                segmentation_params,
+                single_file_to_process=self.input_file,
             )
 
     def run(self):  # sourcery skip: remove-pass-body
@@ -577,6 +603,21 @@ def register_localizations(
         register_localizations_instance.register(
             data_path, local_shifts_path, segmentation_params, reg_params
         )
+
+
+def merge_inputs(
+    current_param,
+    label,
+    data_path,
+    segmentation_params: SegmentationParams,
+    reg_params: RegistrationParams,
+):
+    """Merge localization and registration tables prior to trace building."""
+
+    if label == "barcode":
+        merger = MergeInputs(current_param)
+        return merger.merge_all(data_path, segmentation_params, reg_params)
+    return None
 
 
 def build_traces(

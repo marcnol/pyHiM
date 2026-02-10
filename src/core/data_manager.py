@@ -72,6 +72,7 @@ class DataManager:
         self.m_data_path = self.__set_data_path(data_path)
         self.out_path = self.m_data_path
         self.md_log_file = md_file
+        self.logs_path = self._determine_logs_path(md_file)
         self.params_filename = "parameters"
         self.all_files = extract_files(self.m_data_path)
         self.param_file_path = self.find_param_file(param_file)
@@ -110,6 +111,11 @@ class DataManager:
     @staticmethod
     def __set_data_path(data_path):
         return str(data_path) if data_path else os.getcwd()
+
+    def _determine_logs_path(self, md_file: str):
+        logs_path = os.path.dirname(md_file) if md_file else os.path.join(self.m_data_path, "logs")
+        os.makedirs(logs_path, exist_ok=True)
+        return logs_path
 
     def find_param_file(self, param_file: str = None):
         """Find the user parameters file like `parameters.json` inside extracted input files.
@@ -368,7 +374,7 @@ class DataManager:
                         )
                     else:
                         dict_struct["common"][section][key] = val
-        save_json(dict_struct, os.path.join(self.m_data_path, "parameters_loaded.json"))
+        save_json(dict_struct, os.path.join(self.logs_path, "parameters_loaded.json"))
 
     def set_labelled_params(self, labelled_sections):
         print_session_name("Parameters initialisation")
@@ -503,8 +509,10 @@ def create_folder(folder_path: str):
         Path name of folder
     """
 
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print_log(f"$ Folder '{folder_path}' created successfully.")
-    else:
+    folder_already_exists = os.path.exists(folder_path)
+    os.makedirs(folder_path, exist_ok=True)
+
+    if folder_already_exists:
         print_log(f"! [INFO] Folder '{folder_path}' already exists.")
+    else:
+        print_log(f"$ Folder '{folder_path}' created successfully.")
