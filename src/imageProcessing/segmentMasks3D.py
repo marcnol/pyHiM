@@ -123,7 +123,15 @@ class Mask3D:
             print_log("> Applying existing XY shift...")
             # applies XY shift to 3D stack
             if label != reference_fiducial:
-                print_log(f"$ Applies shift = [{shift[0]:.2f} ,{shift[1]:.2f}]")
+                shift_arr = np.asarray(shift)
+                if shift_arr.size >= 3:
+                    print_log(
+                        f"$ Applies shift (z,x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}, {shift_arr[2]:.2f}]"
+                    )
+                else:
+                    print_log(
+                        f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]"
+                    )
                 image_3d = apply_xy_shift_3d_images(
                     image_3d, shift, parallel_execution=self.inner_parallel_loop
                 )
@@ -471,7 +479,14 @@ class Mask3D:
 
         # applies XY shift to 3D stack
         if label != reference_fiducial:
-            print_log(f"$ Applies shift = [{shift[0]:.2f} ,{shift[1]:.2f}]")
+            
+            shift_arr = np.asarray(shift)
+            if shift_arr.size >= 3:
+                print_log(
+                    f"$ Applies shift (z,x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}, {shift_arr[2]:.2f}]"
+                )
+            else:
+                print_log(f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]")
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
             )

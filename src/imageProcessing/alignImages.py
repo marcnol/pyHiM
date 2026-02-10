@@ -20,6 +20,7 @@ image cross correlation
 import glob
 import os
 import sys
+from typing import Optional
 
 import numpy as np
 from astropy.stats import SigmaClip
@@ -54,7 +55,7 @@ from imageProcessing.imageProcessing import (
     reassemble_3d_image,
     scatter_3d_image,
 )
-from imageProcessing.makeProjections import Feature
+from imageProcessing.makeProjections import Feature, Project
 
 
 def preprocess_2d_img(img, background_sigma):
@@ -64,22 +65,305 @@ def preprocess_2d_img(img, background_sigma):
     return remove_inhomogeneous_background(norm_img, background_sigma)
 
 
+def project_3d_image(img, projection_params: Optional[ProjectionParams]):
+    """Builds a 2D projection from a 3D image.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Input 3D image (z, y, x).
+    projection_params : ProjectionParams or None
+        Projection settings. If None, falls back to max projection.
+
+    Returns
+    -------
+    np.ndarray
+        The projected 2D image.
+    """
+    if projection_params is None:
+        return np.max(img, axis=0)
+
+    projector = Project(projection_params)
+    if projection_params.mode == "laplacian":
+        img_projected, _ = projector._projection_laplacian(img)
+        return img_projected
+
+    img_reduce = projector.precise_z_planes(img, projection_params.mode)
+    return projector.projection_2d(img_reduce)
+
+
+def estimate_background_threshold(img):
+    """Estimates a robust background threshold from image intensities.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        Input image from which to estimate a background-like threshold.
+
+    Returns
+    -------
+    float
+        Intensity threshold above background based on median and MAD.
+    """
+    flattened = img[np.isfinite(img)]
+    if flattened.size == 0:
+        return 0
+    median = np.median(flattened)
+    mad = np.median(np.abs(flattened - median))
+    if mad == 0:
+        std = np.std(flattened)
+        return median + 2 * std
+    return median + 3 * 1.4826 * mad
+
+
+def slice_has_signal(img_slice, threshold, min_fraction):
+    """Checks whether a slice contains enough non-background signal.
+
+    Parameters
+    ----------
+    img_slice : np.ndarray
+        Slice volume to evaluate.
+    threshold : float
+        Background threshold.
+    min_fraction : float
+        Minimum fraction of pixels that must be above threshold.
+
+    Returns
+    -------
+    bool
+        True when the slice meets the minimum signal fraction.
+    """
+    if img_slice.size == 0:
+        return False
+    fraction = np.count_nonzero(img_slice > threshold) / img_slice.size
+    return fraction >= min_fraction
+
+
+def _split_axis_slices(axis_size, slice_size):
+    """Splits an axis into approximately equal slices.
+
+    Parameters
+    ----------
+    axis_size : int
+        Size of the axis to split.
+    slice_size : int
+        Target size for each slice.
+
+    Returns
+    -------
+    list[slice]
+        Slice objects partitioning the axis.
+    """
+    if slice_size <= 0:
+        return [slice(0, axis_size)]
+    number_slices = max(1, axis_size // slice_size)
+    number_slices = min(number_slices, axis_size)
+    indices = np.array_split(np.arange(axis_size), number_slices)
+    return [slice(idx[0], idx[-1] + 1) for idx in indices if idx.size > 0]
+
+
+def _filter_outlier_shifts(shifts):
+    """Removes outlier shifts with modified z-score based on MAD.
+
+    Parameters
+    ----------
+    shifts : list[float] | np.ndarray
+        Candidate shift estimates.
+
+    Returns
+    -------
+    np.ndarray
+        Filtered shift values.
+    """
+    if len(shifts) < 3:
+        return np.asarray(shifts)
+    shifts = np.asarray(shifts)
+    median = np.median(shifts)
+    mad = np.median(np.abs(shifts - median))
+    if mad == 0:
+        return shifts
+    modified_z_score = 0.6745 * (shifts - median) / mad
+    return shifts[np.abs(modified_z_score) <= 3.5]
+
+
+def _estimate_z_shift_from_axis_slices(
+    ref_img,
+    target_img,
+    axis,
+    slices,
+    ref_threshold,
+    target_threshold,
+    min_signal_fraction,
+    upsample_factor,
+):
+    """Estimates Z shifts from slices taken along one spatial axis.
+
+    Parameters
+    ----------
+    ref_img : np.ndarray
+        Reference 3D image in (z, y, x) order.
+    target_img : np.ndarray
+        Target 3D image in (z, y, x) order.
+    axis : int
+        Spatial axis used to define slices (1 for y, 2 for x).
+    slices : list[slice]
+        Slice intervals along the requested axis.
+    ref_threshold : float
+        Background threshold for reference image.
+    target_threshold : float
+        Background threshold for target image.
+    min_signal_fraction : float
+        Minimum fraction of signal pixels required to keep a slice.
+    upsample_factor : int
+        Subpixel upsampling factor for phase cross-correlation.
+
+    Returns
+    -------
+    list[float]
+        Candidate z-shifts measured for valid slices.
+    """
+    z_shifts = []
+    for current_slice in slices:
+        if axis == 2:
+            ref_slice = ref_img[:, :, current_slice]
+            target_slice = target_img[:, :, current_slice]
+            ref_proj = np.sum(ref_slice, axis=2)
+            target_proj = np.sum(target_slice, axis=2)
+        elif axis == 1:
+            ref_slice = ref_img[:, current_slice, :]
+            target_slice = target_img[:, current_slice, :]
+            ref_proj = np.sum(ref_slice, axis=1)
+            target_proj = np.sum(target_slice, axis=1)
+        else:
+            raise ValueError(f"Unsupported axis for z-shift slicing: {axis}")
+
+        if not (
+            slice_has_signal(ref_slice, ref_threshold, min_signal_fraction)
+            and slice_has_signal(target_slice, target_threshold, min_signal_fraction)
+        ):
+            continue
+
+        shift, _, _ = phase_cross_correlation(
+            ref_proj, target_proj, upsample_factor=upsample_factor
+        )
+        z_shifts.append(float(shift[0]))
+    return z_shifts
+
+
+def compute_global_z_shift_from_slices(
+    ref_img,
+    target_img,
+    slice_size,
+    min_signal_fraction=0.2,
+    upsample_factor=100,
+):
+    """Computes a robust global z-shift from x/y slice polling.
+
+    The function generates slices along x and y, keeps slices with enough
+    non-background signal in both reference and target, computes per-slice
+    z-shifts by phase correlation, removes outliers (MAD-based), and returns
+    the mean of the filtered estimates.
+
+    Parameters
+    ----------
+    ref_img : np.ndarray
+        Reference 3D image in (z, y, x) order.
+    target_img : np.ndarray
+        Target 3D image in (z, y, x) order (already xy-aligned).
+    slice_size : int
+        Target width for x/y slicing before z-shift polling.
+    min_signal_fraction : float, optional
+        Minimum fraction of above-background pixels to accept a slice.
+    upsample_factor : int, optional
+        Subpixel upsampling factor for phase correlation.
+
+    Returns
+    -------
+    tuple[float, int, int]
+        (global_z_shift, total_candidate_shifts, used_shifts_after_filter).
+    """
+    ref_threshold = estimate_background_threshold(ref_img)
+    target_threshold = estimate_background_threshold(target_img)
+
+    x_slices = _split_axis_slices(ref_img.shape[2], slice_size)
+    y_slices = _split_axis_slices(ref_img.shape[1], slice_size)
+
+    z_shifts = _estimate_z_shift_from_axis_slices(
+        ref_img,
+        target_img,
+        axis=2,
+        slices=x_slices,
+        ref_threshold=ref_threshold,
+        target_threshold=target_threshold,
+        min_signal_fraction=min_signal_fraction,
+        upsample_factor=upsample_factor,
+    )
+    z_shifts += _estimate_z_shift_from_axis_slices(
+        ref_img,
+        target_img,
+        axis=1,
+        slices=y_slices,
+        ref_threshold=ref_threshold,
+        target_threshold=target_threshold,
+        min_signal_fraction=min_signal_fraction,
+        upsample_factor=upsample_factor,
+    )
+
+    if not z_shifts:
+        print_log(
+            "$ No valid slices found for Z alignment; defaulting Z shift to 0.",
+            status="WARN",
+        )
+        return 0.0, 0, 0
+
+    filtered_shifts = _filter_outlier_shifts(z_shifts)
+    if len(filtered_shifts) == 0:
+        filtered_shifts = np.asarray(z_shifts)
+
+    return float(np.mean(filtered_shifts)), len(z_shifts), len(filtered_shifts)
+
+
 class RegisterGlobal(Feature):
-    def __init__(self, params: RegistrationParams):
+    def __init__(
+        self,
+        params: RegistrationParams,
+        projection_params: Optional[ProjectionParams] = None,
+    ):
         super().__init__(params)
-        self.npy_labels = ["fiducial"]
+        self.projection_params = projection_params
+        self.npy_labels = []
         self.required_ref = {
-            "data_type": "npy",
+            "data_type": "tif",
             "label_part": params.referenceFiducial,
             "label": "fiducial",
         }
+        self.tif_labels = ["fiducial"]
         self.out_folder = self.params.register_global_folder
         self.name = "RegisterGlobal"
 
-    def run(self, raw_2d_img, reference_2d_img):
-        if np.array_equal(raw_2d_img, reference_2d_img, equal_nan=True):
-            return [NpyFile(reference_2d_img, "_2d_registered")], None
+    def run(self, raw_3d_img, reference_3d_img):
+        """Computes global registration against the reference fiducial stack.
+
+        Parameters
+        ----------
+        raw_3d_img : np.ndarray
+            Target fiducial image stack in (z, y, x).
+        reference_3d_img : np.ndarray
+            Reference fiducial image stack in (z, y, x).
+
+        Returns
+        -------
+        tuple[list, dict]
+            Data files to save and metadata to merge in final outputs.
+        """
+        if raw_3d_img.shape != reference_3d_img.shape:
+            raise ValueError(
+                "Reference and target fiducial images must have identical shapes. "
+                f"Got target={raw_3d_img.shape}, reference={reference_3d_img.shape}."
+            )
         results_to_save = []
+        raw_2d_img = project_3d_image(raw_3d_img, self.projection_params)
+        reference_2d_img = project_3d_image(reference_3d_img, self.projection_params)
         preprocessed_img = preprocess_2d_img(raw_2d_img, self.params.background_sigma)
         preprocessed_ref = preprocess_2d_img(
             reference_2d_img, self.params.background_sigma
@@ -89,7 +373,7 @@ class RegisterGlobal(Feature):
             (
                 preprocessed_ref,
                 preprocessed_img,
-                shift,
+                shift_xy,
                 diffphase,
                 relative_shifts,
                 rms_image,
@@ -120,7 +404,27 @@ class RegisterGlobal(Feature):
                 EqualizationHistogramsFile(i_histogram, lower_threshold)
             )
 
-        shifted_img = shift_image(preprocessed_img, shift)
+        if not self.params.alignByBlock:
+            shift_xy = shift
+
+        shift = np.array([0.0, shift_xy[0], shift_xy[1]])
+        if self.params.globalAlignment == "3D":
+            target_xy_aligned = apply_xy_shift_3d_images(
+                raw_3d_img, shift_xy, parallel_execution=False
+            )
+            z_shift, total_slices, used_slices = compute_global_z_shift_from_slices(
+                reference_3d_img,
+                target_xy_aligned,
+                slice_size=self.params.sliceSize,
+                min_signal_fraction=0.2,
+                upsample_factor=100,
+            )
+            print_log(
+                f"$ Z-shift polling: {used_slices}/{total_slices} slices used."
+            )
+            shift = np.array([z_shift, shift_xy[0], shift_xy[1]])
+
+        shifted_img = shift_image(preprocessed_img, shift_xy)
         error = calcul_error(shifted_img, preprocessed_ref)
         # thresholds corrected images for better display and saves
         preprocessed_ref[preprocessed_ref < 0] = 0
@@ -136,28 +440,53 @@ class RegisterGlobal(Feature):
 
     def merge_results(self, results: list[dict]):
         dict_shift_roi = {}
-        alignment_results_table = Table(
-            names=(
-                "aligned file",
-                "reference file",
-                "shift_x",
-                "shift_y",
-                "error",
-                "diffphase",
-            ),
-            dtype=("S2", "S2", "f4", "f4", "f4", "f4"),
-        )
+        if self.params.globalAlignment == "3D":
+            alignment_results_table = Table(
+                names=(
+                    "aligned file",
+                    "reference file",
+                    "shift_z",
+                    "shift_x",
+                    "shift_y",
+                    "error",
+                    "diffphase",
+                ),
+                dtype=("S2", "S2", "f4", "f4", "f4", "f4", "f4"),
+            )
+        else:
+            alignment_results_table = Table(
+                names=(
+                    "aligned file",
+                    "reference file",
+                    "shift_x",
+                    "shift_y",
+                    "error",
+                    "diffphase",
+                ),
+                dtype=("S2", "S2", "f4", "f4", "f4", "f4"),
+            )
         for result_dict in results:
             label_part = result_dict["cycle"]
             shift = result_dict["shift"]
-            table_entry = [
-                result_dict["tif_name"],
-                result_dict["ref_tif_name"],
-                result_dict["shift"][0],
-                result_dict["shift"][1],
-                result_dict["error"],
-                result_dict["diffphase"],
-            ]
+            if self.params.globalAlignment == "3D" and len(shift) >= 3:
+                table_entry = [
+                    result_dict["tif_name"],
+                    result_dict["ref_tif_name"],
+                    shift[0],
+                    shift[1],
+                    shift[2],
+                    result_dict["error"],
+                    result_dict["diffphase"],
+                ]
+            else:
+                table_entry = [
+                    result_dict["tif_name"],
+                    result_dict["ref_tif_name"],
+                    shift[1] if len(shift) >= 3 else shift[0],
+                    shift[2] if len(shift) >= 3 else shift[1],
+                    result_dict["error"],
+                    result_dict["diffphase"],
+                ]
             dict_shift_roi[label_part] = shift.tolist()
             alignment_results_table.add_row(table_entry)
 
@@ -427,6 +756,8 @@ def apply_registrations_to_filename(
 
     if shift_array is not None:
         shift = np.asarray(shift_array)
+        if shift.size > 2:
+            shift = shift[1:3]
         # loads 2D image and applies registration
         im_obj = Image()
         im_obj.load_image_2d(
@@ -529,8 +860,11 @@ def apply_registrations_to_current_folder(
 
 
 def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
-    """
-    Applies XY shift to a 3D stack
+    """Applies a rigid shift to 2D or 3D images.
+
+    For 3D images, accepted shift orders are:
+    - (y, x): interpreted as XY-only shift with z=0
+    - (z, y, x): interpreted as full 3D shift
 
     Parameters
     ----------
@@ -550,26 +884,43 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
         if len(image.shape) == 2:
             output = shift_image(image, shift)
         elif len(image.shape) == 3:
-            shift_3d = np.zeros((3))
-            shift_3d[0], shift_3d[1], shift_3d[2] = 0, shift[0], shift[1]
+            shift_array = np.asarray(shift)
+            if shift_array.size == 2:
+                shift_3d = np.array([0, shift_array[0], shift_array[1]])
+            elif shift_array.size == 3:
+                shift_3d = shift_array
+            else:
+                raise ValueError(
+                    f"Shift for 3D image must have 2 or 3 values, got {shift_array.size}."
+                )
             output = shift_image(image, shift_3d)
         else:
             raise ValueError
     else:
-        print_log(
-            f"> Shifting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
-        )
+        shift_array = np.asarray(shift)
+        if len(image.shape) == 3 and shift_array.size == 3 and shift_array[0] != 0:
+            print_log(
+                "! Full 3D shifts with non-zero Z are applied in single-thread mode.",
+                status="WARN",
+            )
+            output = shift_image(image, shift_array)
+        else:
+            if len(image.shape) == 3 and shift_array.size == 3:
+                shift = shift_array[1:3]
+            print_log(
+                f"> Shifting {number_planes} planes using {len(client.scheduler_info()['workers'])} workers..."
+            )
 
-        image_list_scattered = scatter_3d_image(image)
+            image_list_scattered = scatter_3d_image(image)
 
-        futures = [
-            client.submit(shift_image, img, shift) for img in image_list_scattered
-        ]
+            futures = [
+                client.submit(shift_image, img, shift) for img in image_list_scattered
+            ]
 
-        output = reassemble_3d_image(client, futures, image.shape)
+            output = reassemble_3d_image(client, futures, image.shape)
 
-        del futures
-        del image_list_scattered
+            del futures
+            del image_list_scattered
 
     print_log("$ Done shifting 3D image.")
 

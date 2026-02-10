@@ -452,6 +452,7 @@ class RegistrationParams:
     )  # output folder
     outputFile: str = set_default("outputFile", "shifts")
     referenceFiducial: str = set_default("referenceFiducial", "RT27")
+    globalAlignment: str = set_default("globalAlignment", "2D")  # options: 2D, 3D
     localAlignment: str = set_default(
         "localAlignment", "block3D"
     )  # options: None, mask2D, block3D
@@ -478,6 +479,7 @@ class RegistrationParams:
         "background_sigma", 3.0
     )  # used to remove inhom background
     blockSize: int = set_default("blockSize", 256)  # register_global
+    sliceSize: int = set_default("sliceSize", 200)  # register_global z-shift polling
     blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
     upsample_factor: int = set_default("upsample_factor", 100)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})
