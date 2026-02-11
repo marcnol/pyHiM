@@ -513,6 +513,10 @@ class RegisterGlobal(Feature):
                 f"background thresholds ref/target={z_diag['ref_threshold']:.4g}/{z_diag['target_threshold']:.4g}."
             )
             shift = np.array([z_shift, shift_xy[0], shift_xy[1]])
+            print_log(
+                "$ Global 3D shift estimated (z, x, y): "
+                f"({shift[0]:.4f}, {shift[1]:.4f}, {shift[2]:.4f})"
+            )
 
         shifted_img = shift_image(preprocessed_img, shift_xy)
         error = calcul_error(shifted_img, preprocessed_ref)
