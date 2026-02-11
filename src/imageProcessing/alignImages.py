@@ -116,6 +116,26 @@ def estimate_background_threshold(img):
     return median + 3 * 1.4826 * mad
 
 
+def signal_fraction_above_threshold(img_slice, threshold):
+    """Computes the fraction of pixels above a threshold in a slice.
+
+    Parameters
+    ----------
+    img_slice : np.ndarray
+        Slice volume to evaluate.
+    threshold : float
+        Intensity threshold used to define signal pixels.
+
+    Returns
+    -------
+    float
+        Fraction of pixels above threshold.
+    """
+    if img_slice.size == 0:
+        return 0.0
+    return np.count_nonzero(img_slice > threshold) / img_slice.size
+
+
 def slice_has_signal(img_slice, threshold, min_fraction):
     """Checks whether a slice contains enough non-background signal.
 
@@ -130,13 +150,11 @@ def slice_has_signal(img_slice, threshold, min_fraction):
 
     Returns
     -------
-    bool
-        True when the slice meets the minimum signal fraction.
+    tuple[bool, float]
+        (is_valid, fraction_above_threshold).
     """
-    if img_slice.size == 0:
-        return False
-    fraction = np.count_nonzero(img_slice > threshold) / img_slice.size
-    return fraction >= min_fraction
+    fraction = signal_fraction_above_threshold(img_slice, threshold)
+    return fraction >= min_fraction, fraction
 
 
 def _split_axis_slices(axis_size, slice_size):
@@ -219,10 +237,14 @@ def _estimate_z_shift_from_axis_slices(
 
     Returns
     -------
-    list[float]
-        Candidate z-shifts measured for valid slices.
+    tuple[list[float], dict]
+        Candidate z-shifts and diagnostics for signal fractions/accepted slices.
     """
     z_shifts = []
+    ref_fractions = []
+    target_fractions = []
+    accepted_slices = 0
+
     for current_slice in slices:
         if axis == 2:
             ref_slice = ref_img[:, :, current_slice]
@@ -237,25 +259,45 @@ def _estimate_z_shift_from_axis_slices(
         else:
             raise ValueError(f"Unsupported axis for z-shift slicing: {axis}")
 
-        if not (
-            slice_has_signal(ref_slice, ref_threshold, min_signal_fraction)
-            and slice_has_signal(target_slice, target_threshold, min_signal_fraction)
-        ):
+        ref_ok, ref_fraction = slice_has_signal(
+            ref_slice, ref_threshold, min_signal_fraction
+        )
+        target_ok, target_fraction = slice_has_signal(
+            target_slice, target_threshold, min_signal_fraction
+        )
+        ref_fractions.append(ref_fraction)
+        target_fractions.append(target_fraction)
+
+        if not (ref_ok and target_ok):
             continue
 
+        accepted_slices += 1
         shift, _, _ = phase_cross_correlation(
             ref_proj, target_proj, upsample_factor=upsample_factor
         )
         z_shifts.append(float(shift[0]))
-    return z_shifts
+
+    diagnostics = {
+        "axis": axis,
+        "total_slices": len(slices),
+        "accepted_slices": accepted_slices,
+        "ref_fraction_min": float(np.min(ref_fractions)) if ref_fractions else 0.0,
+        "ref_fraction_median": float(np.median(ref_fractions)) if ref_fractions else 0.0,
+        "ref_fraction_max": float(np.max(ref_fractions)) if ref_fractions else 0.0,
+        "target_fraction_min": float(np.min(target_fractions)) if target_fractions else 0.0,
+        "target_fraction_median": float(np.median(target_fractions)) if target_fractions else 0.0,
+        "target_fraction_max": float(np.max(target_fractions)) if target_fractions else 0.0,
+    }
+    return z_shifts, diagnostics
 
 
 def compute_global_z_shift_from_slices(
     ref_img,
     target_img,
     slice_size,
-    min_signal_fraction=0.2,
+    min_signal_fraction=0.01,
     upsample_factor=100,
+    auto_relax=True,
 ):
     """Computes a robust global z-shift from x/y slice polling.
 
@@ -276,11 +318,13 @@ def compute_global_z_shift_from_slices(
         Minimum fraction of above-background pixels to accept a slice.
     upsample_factor : int, optional
         Subpixel upsampling factor for phase correlation.
+    auto_relax : bool, optional
+        If True, progressively relaxes min_signal_fraction when no valid slices exist.
 
     Returns
     -------
-    tuple[float, int, int]
-        (global_z_shift, total_candidate_shifts, used_shifts_after_filter).
+    tuple[float, int, int, dict]
+        (global_z_shift, total_candidate_shifts, used_shifts_after_filter, diagnostics).
     """
     ref_threshold = estimate_background_threshold(ref_img)
     target_threshold = estimate_background_threshold(target_img)
@@ -288,39 +332,80 @@ def compute_global_z_shift_from_slices(
     x_slices = _split_axis_slices(ref_img.shape[2], slice_size)
     y_slices = _split_axis_slices(ref_img.shape[1], slice_size)
 
-    z_shifts = _estimate_z_shift_from_axis_slices(
-        ref_img,
-        target_img,
-        axis=2,
-        slices=x_slices,
-        ref_threshold=ref_threshold,
-        target_threshold=target_threshold,
-        min_signal_fraction=min_signal_fraction,
-        upsample_factor=upsample_factor,
-    )
-    z_shifts += _estimate_z_shift_from_axis_slices(
-        ref_img,
-        target_img,
-        axis=1,
-        slices=y_slices,
-        ref_threshold=ref_threshold,
-        target_threshold=target_threshold,
-        min_signal_fraction=min_signal_fraction,
-        upsample_factor=upsample_factor,
-    )
+    fraction_schedule = [float(min_signal_fraction)]
+    if auto_relax:
+        fraction_schedule += [
+            max(0.001, min_signal_fraction / 2),
+            max(0.001, min_signal_fraction / 5),
+            0.001,
+        ]
+    # keep unique order
+    fraction_schedule = list(dict.fromkeys(fraction_schedule))
+
+    diagnostics = {
+        "ref_threshold": float(ref_threshold),
+        "target_threshold": float(target_threshold),
+        "x_total_slices": len(x_slices),
+        "y_total_slices": len(y_slices),
+        "attempts": [],
+    }
+
+    z_shifts = []
+    for candidate_fraction in fraction_schedule:
+        x_shifts, x_diag = _estimate_z_shift_from_axis_slices(
+            ref_img,
+            target_img,
+            axis=2,
+            slices=x_slices,
+            ref_threshold=ref_threshold,
+            target_threshold=target_threshold,
+            min_signal_fraction=candidate_fraction,
+            upsample_factor=upsample_factor,
+        )
+        y_shifts, y_diag = _estimate_z_shift_from_axis_slices(
+            ref_img,
+            target_img,
+            axis=1,
+            slices=y_slices,
+            ref_threshold=ref_threshold,
+            target_threshold=target_threshold,
+            min_signal_fraction=candidate_fraction,
+            upsample_factor=upsample_factor,
+        )
+        z_shifts = x_shifts + y_shifts
+        diagnostics["attempts"].append(
+            {
+                "min_signal_fraction": float(candidate_fraction),
+                "accepted_x": x_diag["accepted_slices"],
+                "accepted_y": y_diag["accepted_slices"],
+                "x_ref_fraction_median": x_diag["ref_fraction_median"],
+                "x_target_fraction_median": x_diag["target_fraction_median"],
+                "y_ref_fraction_median": y_diag["ref_fraction_median"],
+                "y_target_fraction_median": y_diag["target_fraction_median"],
+            }
+        )
+        if z_shifts:
+            diagnostics["selected_min_signal_fraction"] = float(candidate_fraction)
+            break
 
     if not z_shifts:
+        diagnostics["selected_min_signal_fraction"] = float(fraction_schedule[-1])
         print_log(
-            "$ No valid slices found for Z alignment; defaulting Z shift to 0.",
+            "$ No valid slices found for Z alignment; defaulting Z shift to 0. "
+            f"Thresholds ref/target={ref_threshold:.4g}/{target_threshold:.4g}; "
+            f"slice fractions medians (last try) x={diagnostics['attempts'][-1]['x_ref_fraction_median']:.4f}/"
+            f"{diagnostics['attempts'][-1]['x_target_fraction_median']:.4f}, "
+            f"y={diagnostics['attempts'][-1]['y_ref_fraction_median']:.4f}/"
+            f"{diagnostics['attempts'][-1]['y_target_fraction_median']:.4f}.",
             status="WARN",
         )
-        return 0.0, 0, 0
+        return 0.0, 0, 0, diagnostics
 
     filtered_shifts = _filter_outlier_shifts(z_shifts)
     if len(filtered_shifts) == 0:
         filtered_shifts = np.asarray(z_shifts)
 
-    return float(np.mean(filtered_shifts)), len(z_shifts), len(filtered_shifts)
+    return float(np.mean(filtered_shifts)), len(z_shifts), len(filtered_shifts), diagnostics
 
 
 class RegisterGlobal(Feature):
@@ -412,15 +497,20 @@ class RegisterGlobal(Feature):
             target_xy_aligned = apply_xy_shift_3d_images(
                 raw_3d_img, shift_xy, parallel_execution=False
             )
-            z_shift, total_slices, used_slices = compute_global_z_shift_from_slices(
+            z_shift, total_slices, used_slices, z_diag = compute_global_z_shift_from_slices(
                 reference_3d_img,
                 target_xy_aligned,
                 slice_size=self.params.sliceSize,
-                min_signal_fraction=0.2,
+                min_signal_fraction=self.params.zMinSignalFraction,
                 upsample_factor=100,
+                auto_relax=self.params.zMinSignalFractionAuto,
             )
+            selected_fraction = z_diag.get("selected_min_signal_fraction", self.params.zMinSignalFraction)
             print_log(
-                f"$ Z-shift polling: {used_slices}/{total_slices} slices used."
+                "$ Z-shift polling: "
+                f"{used_slices}/{total_slices} valid slices after outlier filtering; "
+                f"minSignalFraction used={selected_fraction:.4f}; "
+                f"background thresholds ref/target={z_diag['ref_threshold']:.4g}/{z_diag['target_threshold']:.4g}."
             )
             shift = np.array([z_shift, shift_xy[0], shift_xy[1]])
 

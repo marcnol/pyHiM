@@ -51,6 +51,8 @@ Each section in `common` represents a step of pyHiM processing. Parameters are d
 |blockSize|Define size in (X,Y) of block for global XY block alignment|
 |globalAlignment|Select global registration output mode: `2D` (default) or `3D`|
 |sliceSize|Target width (in pixels) of X/Y slices used for Z-shift polling when `globalAlignment=3D`|
+|zMinSignalFraction|Minimum fraction of above-background pixels required for a slice to be used in Z-shift polling|
+|zMinSignalFractionAuto|If `True`, automatically relaxes `zMinSignalFraction` when no valid slices are found|
 |folder|Give a name of output folder to save output data of register_global features|
 |higher_threshold|Set higher threshold to adjust image intensity levels before xcorrelation for `alignment in 2D`|
 |localAlignment|Select mode between global alignment (`None`), 2D local alignment (`mask2D`) and 3D local alignment ( `block3D`)|

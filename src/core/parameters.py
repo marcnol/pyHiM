@@ -480,6 +480,12 @@ class RegistrationParams:
     )  # used to remove inhom background
     blockSize: int = set_default("blockSize", 256)  # register_global
     sliceSize: int = set_default("sliceSize", 200)  # register_global z-shift polling
+    zMinSignalFraction: float = set_default(
+        "zMinSignalFraction", 0.01
+    )  # minimum fraction of above-background pixels for z-shift slice polling
+    zMinSignalFractionAuto: bool = set_default(
+        "zMinSignalFractionAuto", True
+    )  # automatically relax zMinSignalFraction if no valid slices are found
     blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
     upsample_factor: int = set_default("upsample_factor", 100)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})

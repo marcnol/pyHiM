@@ -29,6 +29,8 @@
             "register_global_folder": "register_global",
             "register_local_folder": "register_local",
             "sliceSize": 200,
+            "zMinSignalFraction": 0.01,
+            "zMinSignalFractionAuto": true,
             "tolerance": 0.1,
             "upsample_factor": 100
         },
