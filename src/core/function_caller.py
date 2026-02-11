@@ -250,7 +250,14 @@ class Pipeline:
             self._init_labelled_feature(Project, "projection")
             ordered_routines.append("project")
         if "register_global" in self.cmds:
-            self._init_labelled_feature(RegisterGlobal, "registration")
+            labelled_feature = {}
+            for label in self.m_data_m.get_processable_labels():
+                if "registration" in self.labelled_sections[label]:
+                    params = self.m_data_m.labelled_params[label]
+                    labelled_feature[label] = RegisterGlobal(
+                        params.registration, params.projection
+                    )
+            self.features.append(labelled_feature)
             self._init_labelled_feature(ApplyRegisterGlobal, "registration")
             ordered_routines.append("register_global")
         if "register_local" in self.cmds:
