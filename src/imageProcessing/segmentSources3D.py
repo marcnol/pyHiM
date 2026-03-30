@@ -296,6 +296,33 @@ class Localize3D:
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
+        # saves 3D drifted image
+
+        npy_labeled_image_base_3d = (
+                data_path
+                + os.sep
+                + seg_params.localize_3d_folder
+                + os.sep
+                + "data"
+                + os.sep
+                + os.path.basename(filename_to_process)
+        )
+
+        npy_raw_image_filename_3d = (
+            npy_labeled_image_base_3d.split(".")[0]
+            + output_extension["3D"]
+            + ".npy"
+        )
+        np.save(npy_raw_image_filename_3d, image_3d_aligned)
+
+        # saves 3D mask image
+        npy_labeled_image_filename_3d = (
+            npy_labeled_image_base_3d.split(".")[0]
+            + output_extension["3D"]
+            + ".npy"
+        )
+        np.save(npy_labeled_image_filename_3d, segmented_image_3d)
+
         # gets centroids and converts to spot int64 NPY array
         (
             spots,
