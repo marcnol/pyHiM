@@ -310,7 +310,7 @@ class Localize3D:
 
         npy_raw_image_filename_3d = (
             npy_labeled_image_base_3d.split(".")[0]
-            + output_extension["_raw_3D"]
+            + "_raw_3D"
             + ".npy"
         )
         np.save(npy_raw_image_filename_3d, image_3d_aligned)
@@ -318,7 +318,7 @@ class Localize3D:
         # saves 3D mask image
         npy_labeled_image_filename_3d = (
             npy_labeled_image_base_3d.split(".")[0]
-            + output_extension["_labeled_3D"]
+            + "_labeled_3D"
             + ".npy"
         )
         np.save(npy_labeled_image_filename_3d, segmented_image_3d)
