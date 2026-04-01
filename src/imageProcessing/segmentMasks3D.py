@@ -380,17 +380,9 @@ class Mask3D:
             + os.sep
             + "data"
             + os.sep
-            + "*_unregistered.npy"
+            + "*_3Dmasks_unregistered.npy"
         )
-        files_folder += glob.glob(
-            data_path
-            + os.sep
-            + "mask_2d"
-            + os.sep
-            + "data"
-            + os.sep
-            + "*_unregistered.npy"
-        )
+
         # loads dicShifts with shifts for all rois and all labels
         self.dict_shifts, self.dict_shifts_available = load_alignment_dict(
             dict_shifts_path
@@ -401,7 +393,7 @@ class Mask3D:
             x for x in files_folder if (label in os.path.basename(x).split("_")[2])
         ]
         n_files_to_process = len(self.filenames_to_process_list)
-        print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}]")
+        print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}], {self.filenames_to_process_list[0]}")
 
         self.inner_parallel_loop = True
         # processes files in this ROI
@@ -416,6 +408,7 @@ class Mask3D:
                 roi_name,
                 acq_params,
                 reference_fiducial,
+                label
             )
 
     def shift_mask_file(
@@ -426,24 +419,12 @@ class Mask3D:
         roi_name,
         acq_params,
         reference_fiducial,
+        label
     ):
-        if "_3Dmasks_unregistered" in filename_to_process:
-            original_filename = (
-                filename_to_process.split("_3Dmasks_unregistered")[0] + ".tif"
-            )
-            dim = 3
-        else:
-            original_filename = (
-                filename_to_process.split("_Masks_unregistered")[0] + ".tif"
-            )
-            dim = 2
-        bn = os.path.basename(original_filename)
-        print(bn)
-        dc = self.current_param.decode_file_parts(bn)
-        print(dc)
-        label = str(dc["cycle"])
 
-        # load  and preprocesses 3D fiducial file
+        dim = 3
+
+        # load 3D mask file
         print_log(f"\n\n>>>Processing roi:[{roi_name}] cycle:[{label}] dim:[{dim}]<<<")
         print_log(f"$ File:{os.path.basename(filename_to_process)}")
         image_3d = np.load(filename_to_process)
@@ -483,74 +464,26 @@ class Mask3D:
         number_masks = np.max(image_3d_aligned)
 
         if number_masks > 0:
-            output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
-            npy_labeled_image_base_2d = (
-                data_path
-                + os.sep
-                + seg_params.mask_2d_folder
-                + os.sep
-                + "data"
-                + os.sep
-            )
-            npy_labeled_image_filename_2d = (
-                npy_labeled_image_base_2d
-                + os.path.basename(original_filename).split(".")[0]
-                + output_extension["2D"]
-                + ".npy"
-            )
-            npy_labeled_image_base_3d = (
+
+            original_filename_root = os.path.basename(filename_to_process).split("_unregistered.npy")[0]
+
+            npy_labeled_image_shifted = (
                 data_path
                 + os.sep
                 + seg_params.mask_3d_folder
                 + os.sep
                 + "data"
                 + os.sep
-                + os.path.basename(original_filename)
-            )
-            npy_labeled_image_filename_3d = (
-                npy_labeled_image_base_3d.split(".")[0]
-                + output_extension["3D"]
+                + original_filename_root
                 + ".npy"
             )
-            print_log("> Saving output labeled images:")
-            if dim == 2:
-                print_log(f"\t2D:{npy_labeled_image_filename_2d}")
-                # saves 2D image
-                create_folder(npy_labeled_image_base_2d)
-                np.save(npy_labeled_image_filename_2d, image_3d_aligned)
-            else:
-                print_log(f"\t3D:{npy_labeled_image_filename_3d}")
-                # saves 3D image
-                np.save(npy_labeled_image_filename_3d, image_3d_aligned)
 
-                # represents image in 3D with localizations
-                print_log("> plotting outputs...")
+            print_log(f"> Saving output labeled image: {npy_labeled_image_shifted}")
 
-                # figures = []
-                # figures.append(
-                #     [
-                fig = plot_image_3d(image_3d_aligned, image_3d_aligned)
-                end_file = output_extension["3D"] + ".png"
-                #     ]
-                # )
+            np.save(npy_labeled_image_shifted, image_3d_aligned)
+        else:
+            print_log(f"> Warning, no masks detected in: {filename_to_process}")
 
-                # saves figures
-                # output_filenames = [
-                output_filename = (
-                    data_path
-                    + os.sep
-                    + seg_params.mask_3d_folder
-                    + os.sep
-                    + os.path.basename(original_filename)
-                    + end_file
-                )
-                #     + x[1]
-                #     for x in figures
-                # ]
-
-                # for fig, file in zip(figures, output_filenames):
-                # fig[0].savefig(file)
-                fig.savefig(output_filename)
 
         del image_3d_aligned, image_3d
 
