@@ -17,11 +17,10 @@ image cross correlation
 # IMPORTS
 # =============================================================================
 
-import glob
-import os
 import sys
 
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
@@ -503,6 +502,12 @@ def apply_registrations_to_current_folder(
         raise ValueError(f"# File with dictionary not found!: {dict_filename}")
     else:
         print_log(f"$ Dictionary File loaded: {dict_filename}")
+        
+    # generates shifts plot
+    table_plot = prepare_table_from_json(dict_shifts)
+    reference_number = params.referenceFiducial
+    output_path_plot = os.path.join(data_path, "register_global", "Shifts_barplot.png")
+    generate_shift_plot(table_plot, reference_number, output_path_plot)
 
     # generates lists of files to process
     current_param.find_files_to_process(files_folder)
@@ -795,3 +800,69 @@ def align_2_images_cross_correlation(
         image1_adjusted,
         image2_adjusted,
     )
+
+######################################## Functions for global_register shifts plot ########################################
+
+def prepare_table_from_json(json_data):
+    # Reads shifts JSON dictionary of format: {"ROI:001": { "RT10": [z,x,y] or "RT10": [x,y] }
+    roi_dict = next(iter(json_data.values()), {})
+    rows = []
+
+    for name, shifts in roi_dict.items():
+        match = re.search(r"\d+", name)
+        index_nb = int(match.group()) if match else None
+
+        # Handles 2D or 3D shifts
+        if len(shifts) == 2:
+            x, y = shifts
+            z = None
+        elif len(shifts) == 3:
+            z, x, y = shifts
+        else:
+            raise ValueError("Bad shift length")
+
+        rows.append(
+            {
+                "label": name,
+                "sort_num": index_nb,
+                "shift_x": x,
+                "shift_y": y,
+                "shift_z": z,
+            }
+        )
+
+    table = pd.DataFrame(rows)
+    table = table.sort_values(by="sort_num")
+    table = table.set_index("label").drop(columns="sort_num")
+    return table
+
+def extract_reference_cycle(ref):
+    if not ref:
+        return None
+    match = re.search(r"\d+", ref)
+    return int(match.group()) if match else None
+
+def generate_shift_plot(table, ref, output_path):
+    table.index = table.index.astype(str)
+    cols = [c for c in table.columns if table[c].notna().any()]
+    fig, axes = plt.subplots(len(cols), 1, figsize=(10, 3 * len(cols)))
+    ref = str(extract_reference_cycle(ref))
+
+    if len(cols) == 1:
+        axes = [axes]
+
+    colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
+
+    for ax, col in zip(axes, cols):
+        table[col].plot.bar(ax=ax, color=colors[col])
+        ax.set_title(col)
+        # highlights the reference cycle
+        if ref in table.index:
+            idx = table.index.get_loc(ref)
+            ax.get_xticklabels()[idx].set_color("red")
+
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    axes[-1].set_xlabel("Cycle Name")
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
