@@ -17,10 +17,14 @@ image cross correlation
 # IMPORTS
 # =============================================================================
 
+import glob
+import os
+import re
 import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
