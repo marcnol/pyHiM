@@ -1251,12 +1251,11 @@ def align_2_images_cross_correlation(
     )
 
 ######################################## Functions for global_register shifts plot ########################################
-
 def prepare_table_from_json(json_data):
     # Reads shifts JSON dictionary of format: {"ROI:001": { "RT10": [z,x,y] or "RT10": [x,y] }
     roi_dict = next(iter(json_data.values()), {})
     rows = []
-
+    z_axis = True
     for name, shifts in roi_dict.items():
         match = re.search(r"\d+", name)
         index_nb = int(match.group()) if match else None
@@ -1265,6 +1264,7 @@ def prepare_table_from_json(json_data):
         if len(shifts) == 2:
             x, y = shifts
             z = None
+            z_axis= False
         elif len(shifts) == 3:
             z, x, y = shifts
         else:
@@ -1283,6 +1283,12 @@ def prepare_table_from_json(json_data):
     table = pd.DataFrame(rows)
     table = table.sort_values(by="sort_num")
     table = table.set_index("label").drop(columns="sort_num")
+    print(z_axis)
+    if not z_axis:
+        table = table.drop(columns=["shift_z"])
+    if z_axis:
+    	 if table["shift_z"].isna().all() or (table["shift_z"].fillna(0) == 0).all():
+            table = table.drop(columns=["shift_z"])
     return table
 
 def extract_reference_cycle(ref):
@@ -1293,19 +1299,20 @@ def extract_reference_cycle(ref):
 
 def generate_shift_plot(table, ref, output_path):
     table.index = table.index.astype(str)
+    # Detect valid axes
     cols = [c for c in table.columns if table[c].notna().any()]
-
+    n_bars=len(table.index)
     # sie of graph
     fig_dx = max(10, n_bars * 0.6)
     fig_dy = 5 * len(cols)
-    fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy)))
+    fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy))
     ref = str(extract_reference_cycle(ref))
-
+    print(cols)
     if len(cols) == 1:
         axes = [axes]
 
     colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
-    
+
     # label rotation adn size
     if n_bars > 15:
         rotation = 45
@@ -1317,19 +1324,18 @@ def generate_shift_plot(table, ref, output_path):
         rotation = 0
         fontsize = 10
 
-    
     for ax, col in zip(axes, cols):
-        table[col].plot.bar(ax=ax, color=colors[col])
-        ax.set_title(col)
-        ax.set_xticklabels(table.index, rotation=rotation, fontsize=fontsize)
-        # highlights the reference cycle
-        if ref in table.index:
-            idx = table.index.get_loc(ref)
-            ax.get_xticklabels()[idx].set_color("red")*
+    	table[col].plot.bar(ax=ax, color=colors[col])
+    	ax.set_title(col)
+    	ax.set_xticklabels(table.index, rotation=rotation, fontsize=fontsize)
 
+    	if ref in table.index:
+        	idx = table.index.get_loc(ref)
+        	ax.get_xticklabels()[idx].set_color("red")
 
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    	ax.grid(axis="y", linestyle="--", alpha=0.7)
     axes[-1].set_xlabel("Cycle Name")
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
+
