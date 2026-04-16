@@ -495,6 +495,10 @@ class DataManager:
             return self.__find_file_with_this_part(
                 required_ref["label_part"], required_ref["label"], self.npy_files
             )
+        if required_ref["data_type"] == "tif":
+            return self.__find_file_with_this_part(
+                required_ref["label_part"], required_ref["label"], self.tif_files
+            )
         else:
             raise ValueError
 

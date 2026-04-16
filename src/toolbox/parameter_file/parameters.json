@@ -20,6 +20,7 @@
             "background_sigma": 3.0,
             "blockSize": 128,
             "blockSizeXY": 128,
+            "globalAlignment": "2D",
             "higher_threshold": 0.9999999,
             "localAlignment": "block3D",
             "lower_threshold": 0.999,
@@ -27,6 +28,9 @@
             "referenceFiducial": "RT26",
             "register_global_folder": "register_global",
             "register_local_folder": "register_local",
+            "sliceSize": 200,
+            "zMinSignalFraction": 0.01,
+            "zMinSignalFractionAuto": true,
             "tolerance": 0.1,
             "upsample_factor": 100
         },

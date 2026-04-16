@@ -12,12 +12,12 @@ pyhim -C register_global
 |Name shape|Quantity|Mandatory|Description|
 |---|---|---|---|
 |parameters.json|1|Yes|Parameter file.|
-|<image_name>.tif|2..n|Yes|2D images with a fiducial channel to align.|
+|<image_name>.tif|2..n|Yes|3D images with a fiducial channel to align. `register_global` now computes the required 2D projections internally.|
 
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-|register_global.ecsv|1|X, Y shift for each image|
+|register_global.ecsv|1|Global shift for each image (X,Y in `2D` mode; Z,X,Y in `3D` mode)|
 
 ## Relevant options
 
@@ -27,6 +27,10 @@ Parameters for this script will be read from the  ```register_global``` field of
 |:-:|:-:|:-:|
 |referenceFiducial| |Selects reference barcode image|
 |alignByBlock| | Sets to false if a block correction is not needed. Default: True|
+|globalAlignment|`2D`, `3D`|Selects whether global registration stores XY-only (`2D`) or ZXY (`3D`) shifts. Default: `2D`.|
+|sliceSize|integer|Target slice width (in pixels) used for Z-shift polling in `3D` mode. Default: `200`.|
+|zMinSignalFraction|float|Minimum fraction of above-background pixels required for a slice to be considered in Z polling. Default: `0.01`.|
+|zMinSignalFractionAuto|bool|If `True`, pyHiM automatically relaxes `zMinSignalFraction` when no valid slices are found. Default: `True`.|
 
 
 ## Description
@@ -46,3 +50,6 @@ The algorithm takes images one by one and aligns them with the reference.
 There are several ways to compute the shift:
 - Global alignment makes simple cross-correlation with two images
 - Splits image in blocks and makes cross-correlation block by block. The `alignByBlock` parameter in the `alignImages` field of `parameters.json` should be set to `True`. It calculates the optimal shift between fiducial and reference in each block. It estimates the root mean squared error (RMS) between the reference and the shifted image for each block, and uses the blocks in which the RMS is within `tolerance`. Mean and standard deviation of the XY shifts are calculated, and mean shifts are used for shifting the image and getting the final RMS error. This method is more robust against a bright noise spot.
+
+
+When `globalAlignment` is set to `3D`, the pipeline first computes the robust XY shift exactly as before, then computes a global Z shift by polling per-slice Z estimates from X/Y slices that contain at least `zMinSignalFraction` above-background pixels in both reference and target stacks. The saved shift is ordered as `(z, x, y)` to match NumPy/scikit-image axis order `(z, y, x)` for 3D shift operations.
