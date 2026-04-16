@@ -1294,21 +1294,39 @@ def extract_reference_cycle(ref):
 def generate_shift_plot(table, ref, output_path):
     table.index = table.index.astype(str)
     cols = [c for c in table.columns if table[c].notna().any()]
-    fig, axes = plt.subplots(len(cols), 1, figsize=(10, 3 * len(cols)))
+
+    # sie of graph
+    fig_dx = max(10, n_bars * 0.6)
+    fig_dy = 5 * len(cols)
+    fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy)))
     ref = str(extract_reference_cycle(ref))
 
     if len(cols) == 1:
         axes = [axes]
 
     colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
+    
+    # label rotation adn size
+    if n_bars > 15:
+        rotation = 45
+        fontsize = 7
+    elif n_bars > 8:
+        rotation = 30
+        fontsize = 9
+    else:
+        rotation = 0
+        fontsize = 10
 
+    
     for ax, col in zip(axes, cols):
         table[col].plot.bar(ax=ax, color=colors[col])
         ax.set_title(col)
+        ax.set_xticklabels(table.index, rotation=rotation, fontsize=fontsize)
         # highlights the reference cycle
         if ref in table.index:
             idx = table.index.get_loc(ref)
-            ax.get_xticklabels()[idx].set_color("red")
+            ax.get_xticklabels()[idx].set_color("red")*
+
 
     ax.grid(axis="y", linestyle="--", alpha=0.7)
     axes[-1].set_xlabel("Cycle Name")
