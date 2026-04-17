@@ -1302,7 +1302,7 @@ def generate_shift_plot(table, ref, output_path):
     # Detect valid axes
     cols = [c for c in table.columns if table[c].notna().any()]
     n_bars=len(table.index)
-    # sie of graph
+    # size of graph 
     fig_dx = max(10, n_bars * 0.6)
     fig_dy = 5 * len(cols)
     fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy))
