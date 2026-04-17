@@ -1283,7 +1283,7 @@ def prepare_table_from_json(json_data):
     table = pd.DataFrame(rows)
     table = table.sort_values(by="sort_num")
     table = table.set_index("label").drop(columns="sort_num")
-    print(z_axis)
+    
     if not z_axis:
         table = table.drop(columns=["shift_z"])
     if z_axis:
@@ -1307,13 +1307,12 @@ def generate_shift_plot(table, ref, output_path):
     fig_dy = 5 * len(cols)
     fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy))
     ref = str(extract_reference_cycle(ref))
-    print(cols)
+    
     if len(cols) == 1:
         axes = [axes]
-
     colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
 
-    # label rotation adn size
+    # label rotation and size depends on number of cycle 
     if n_bars > 15:
         rotation = 45
         fontsize = 7
