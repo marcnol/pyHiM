@@ -480,7 +480,7 @@ class Mask3D:
 
         if number_masks > 0:
 
-            original_filename_root = os.path.basename(filename_to_process).split("_unregistered.npy")[0]
+            original_filename_root = os.path.basename(filename_to_process).split("_3Dmasks_unregistered.npy")[0]
 
             npy_labeled_image_shifted = (
                 data_path
@@ -490,6 +490,7 @@ class Mask3D:
                 + "data"
                 + os.sep
                 + original_filename_root
+                + "_3Dmasks"
                 + ".npy"
             )
 
