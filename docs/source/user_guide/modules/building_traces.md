@@ -15,6 +15,8 @@ Two methods are used for pre-processing localization tables.
 
 The main method for building chromatin traces is `build_traces`.
 
+`build_traces` also supports optional BED-driven barcode/genomic annotation through the `barcode_coordinates_BEDfile` parameter in `buildsPWDmatrix` (see the detailed `build_traces` page below).
+
 Chromatin trace tables can be post-processed using multiple scripts:
 
 - `trace_analyser`: quantifies several quantities from a trace table.
