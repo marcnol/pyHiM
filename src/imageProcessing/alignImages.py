@@ -1030,6 +1030,43 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     return output
 
 
+def apply_shift_3d_images(image, shift):
+    """Applies a rigid shift to a 3D image in one interpolation call.
+
+    Parameters
+    ----------
+    image : np.ndarray
+        Input 3D image in (z, x, y) axis order.
+    shift : array-like
+        Shift values as either (x, y) or (z, x, y).
+        If only 2 values are provided, z-shift defaults to 0.
+
+    Returns
+    -------
+    np.ndarray
+        Shifted 3D image.
+    """
+    if image.ndim != 3:
+        raise ValueError(f"Expected a 3D image, got ndim={image.ndim}.")
+
+    shift_array = np.asarray(shift, dtype=float).flatten()
+    if shift_array.size == 2:
+        shift_3d = np.array([0.0, shift_array[0], shift_array[1]])
+    elif shift_array.size == 3:
+        shift_3d = shift_array
+    else:
+        raise ValueError(
+            f"Shift for 3D image must have 2 or 3 values, got {shift_array.size}."
+        )
+
+    print_log(
+        f"> Applying direct 3D shift with scipy.ndimage.shift: [{shift_3d[0]:.2f}, {shift_3d[1]:.2f}, {shift_3d[2]:.2f}]"
+    )
+    output = shift_image(image, shift_3d)
+    print_log("$ Done shifting 3D image.")
+    return output
+
+
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     # sanity checks
     if len(images) < 2:
