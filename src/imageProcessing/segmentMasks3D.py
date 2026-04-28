@@ -27,7 +27,7 @@ from core.data_manager import create_folder
 from core.parameters import AcquisitionParams, SegmentationParams, load_alignment_dict
 from core.pyhim_logging import print_log, print_session_name, write_string_to_file
 from core.saving import plot_raw_images_and_labels
-from imageProcessing.alignImages import apply_xy_shift_3d_images
+from imageProcessing.alignImages import apply_shift_3d_images
 from imageProcessing.makeProjections import reinterpolate_z
 from imageProcessing.segmentMasks import _segment_3d_masks
 
@@ -132,9 +132,7 @@ class Mask3D:
                     print_log(
                         f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]"
                     )
-                image_3d = apply_xy_shift_3d_images(
-                    image_3d, shift, parallel_execution=self.inner_parallel_loop
-                )
+                image_3d = apply_shift_3d_images(image_3d, shift)
             else:
                 print_log("$ Running reference fiducial cycle: no shift applied!")
         else:
@@ -468,9 +466,7 @@ class Mask3D:
                 )
             else:
                 print_log(f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]")
-            image_3d_aligned = apply_xy_shift_3d_images(
-                image_3d, shift, parallel_execution=self.inner_parallel_loop
-            )
+            image_3d_aligned = apply_shift_3d_images(image_3d, shift)
         else:
             print_log("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0, 0])
