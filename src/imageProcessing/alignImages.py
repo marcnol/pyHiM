@@ -26,6 +26,7 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
