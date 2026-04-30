@@ -1292,6 +1292,7 @@ def prepare_table_from_json(json_data):
     return table
 
 def extract_reference_cycle(ref):
+    ref = str(ref)
     if not ref:
         return None
     match = re.search(r"\d+", ref)
