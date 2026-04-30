@@ -1300,42 +1300,56 @@ def extract_reference_cycle(ref):
 
 def generate_shift_plot(table, ref, output_path):
     table.index = table.index.astype(str)
-    # Detect valid axes
     cols = [c for c in table.columns if table[c].notna().any()]
-    n_bars=len(table.index)
-    # size of graph 
-    fig_dx = max(10, n_bars * 0.6)
-    fig_dy = 5 * len(cols)
-    fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx,fig_dy))
+    n_bars = len(table.index)
     ref = str(extract_reference_cycle(ref))
-    
-    if len(cols) == 1:
-        axes = [axes]
-    colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
+    # max 50 rows
+    chunk_size = 50
+    n_chunks = math.ceil(n_bars / chunk_size)
 
-    # label rotation and size depends on number of cycle 
-    if n_bars > 15:
-        rotation = 45
-        fontsize = 7
-    elif n_bars > 8:
-        rotation = 30
-        fontsize = 9
-    else:
-        rotation = 0
-        fontsize = 10
+    for i in range(n_chunks):
+        chunk = table.iloc[i * chunk_size:(i + 1) * chunk_size]
+        n_chunk_bars = len(chunk.index)
 
-    for ax, col in zip(axes, cols):
-    	table[col].plot.bar(ax=ax, color=colors[col])
-    	ax.set_title(col)
-    	ax.set_xticklabels(table.index, rotation=rotation, fontsize=fontsize)
+        # figure size per chunk
+        fig_dx = max(10, n_chunk_bars * 0.6)
+        fig_dy = 5 * len(cols)
+        fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx, fig_dy))
 
-    	if ref in table.index:
-        	idx = table.index.get_loc(ref)
-        	ax.get_xticklabels()[idx].set_color("red")
+        if len(cols) == 1:
+            axes = [axes]
+        colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
 
-    	ax.grid(axis="y", linestyle="--", alpha=0.7)
-    axes[-1].set_xlabel("Cycle Name")
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
-    plt.close()
+        # label rotation and size
+        if n_chunk_bars > 15:
+            rotation = 45
+            fontsize = 7
+        elif n_chunk_bars > 8:
+            rotation = 30
+            fontsize = 9
+        else:
+            rotation = 0
+            fontsize = 10
 
+        for ax, col in zip(axes, cols):
+            chunk[col].plot.bar(ax=ax, color=colors[col])
+            ax.set_title(col)
+            ax.set_xticklabels(chunk.index, rotation=rotation, fontsize=fontsize)
+            if ref in chunk.index:
+                idx = chunk.index.get_loc(ref)
+                ax.get_xticklabels()[idx].set_color("red")
+
+            ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+        axes[-1].set_xlabel("Cycle Name")
+        plt.tight_layout()
+
+        # Save with suffix if multiple images
+        if n_chunks == 1:
+            save_path = output_path
+        else:
+            base, ext = output_path.rsplit(".", 1)
+            save_path = f"{base}_part{i+1}.{ext}"
+
+        plt.savefig(save_path, dpi=300)
+        plt.close()
