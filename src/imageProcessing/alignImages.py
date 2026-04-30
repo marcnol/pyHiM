@@ -1307,7 +1307,9 @@ def generate_shift_plot(table, ref, output_path):
     # max 50 rows
     chunk_size = 50
     n_chunks = math.ceil(n_bars / chunk_size)
-
+    # comparable axes
+    y_min = table[cols].min().min()
+    y_max = table[cols].max().max()
     for i in range(n_chunks):
         chunk = table.iloc[i * chunk_size:(i + 1) * chunk_size]
         n_chunk_bars = len(chunk.index)
@@ -1334,6 +1336,8 @@ def generate_shift_plot(table, ref, output_path):
 
         for ax, col in zip(axes, cols):
             chunk[col].plot.bar(ax=ax, color=colors[col])
+            pad = 0.05 * (y_max - y_min)
+            ax.set_ylim(y_min - pad, y_max + pad)
             ax.set_title(col)
             ax.set_xticklabels(chunk.index, rotation=rotation, fontsize=fontsize)
             if ref in chunk.index:
