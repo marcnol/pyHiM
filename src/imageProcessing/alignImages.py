@@ -1305,17 +1305,17 @@ def generate_shift_plot(table, ref, output_path):
     n_bars = len(table.index)
     ref = str(extract_reference_cycle(ref))
     # max 50 rows
-    chunk_size = 50
-    n_chunks = math.ceil(n_bars / chunk_size)
+    subplot_size = 50
+    n_subplot = math.ceil(n_bars / subplot_size )
     # comparable axes
     y_min = table[cols].min().min()
     y_max = table[cols].max().max()
-    for i in range(n_chunks):
-        chunk = table.iloc[i * chunk_size:(i + 1) * chunk_size]
-        n_chunk_bars = len(chunk.index)
+    for i in range(n_subplot):
+        subplot = table.iloc[i * subplot_size:(i + 1) * subplot_size]
+        n_subplot_bars = len(subplot.index)
 
-        # figure size per chunk
-        fig_dx = max(10, n_chunk_bars * 0.6)
+        # figure size per subplot
+        fig_dx = max(10, n_subplot_bars * 0.6)
         fig_dy = 5 * len(cols)
         fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx, fig_dy))
 
@@ -1324,10 +1324,10 @@ def generate_shift_plot(table, ref, output_path):
         colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
 
         # label rotation and size
-        if n_chunk_bars > 15:
+        if n_subplot_bars > 15:
             rotation = 45
             fontsize = 7
-        elif n_chunk_bars > 8:
+        elif n_subplot_bars > 8:
             rotation = 30
             fontsize = 9
         else:
@@ -1335,22 +1335,20 @@ def generate_shift_plot(table, ref, output_path):
             fontsize = 10
 
         for ax, col in zip(axes, cols):
-            chunk[col].plot.bar(ax=ax, color=colors[col])
+            subplot[col].plot.bar(ax=ax, color=colors[col])
             pad = 0.05 * (y_max - y_min)
             ax.set_ylim(y_min - pad, y_max + pad)
             ax.set_title(col)
-            ax.set_xticklabels(chunk.index, rotation=rotation, fontsize=fontsize)
-            if ref in chunk.index:
-                idx = chunk.index.get_loc(ref)
+            ax.set_xticklabels(subplot.index, rotation=rotation, fontsize=fontsize)
+            if ref in subplot.index:
+                idx = subplot.index.get_loc(ref)
                 ax.get_xticklabels()[idx].set_color("red")
 
             ax.grid(axis="y", linestyle="--", alpha=0.7)
 
         axes[-1].set_xlabel("Cycle Name")
         plt.tight_layout()
-
-        # Save with suffix if multiple images
-        if n_chunks == 1:
+        if n_subplot == 1:
             save_path = output_path
         else:
             base, ext = output_path.rsplit(".", 1)
