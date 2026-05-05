@@ -26,6 +26,7 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import math
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
@@ -1288,12 +1289,11 @@ def align_2_images_cross_correlation(
     )
 
 ######################################## Functions for global_register shifts plot ########################################
-
 def prepare_table_from_json(json_data):
     # Reads shifts JSON dictionary of format: {"ROI:001": { "RT10": [z,x,y] or "RT10": [x,y] }
     roi_dict = next(iter(json_data.values()), {})
     rows = []
-
+    z_axis = True
     for name, shifts in roi_dict.items():
         match = re.search(r"\d+", name)
         index_nb = int(match.group()) if match else None
@@ -1302,6 +1302,7 @@ def prepare_table_from_json(json_data):
         if len(shifts) == 2:
             x, y = shifts
             z = None
+            z_axis= False
         elif len(shifts) == 3:
             z, x, y = shifts
         else:
@@ -1320,9 +1321,16 @@ def prepare_table_from_json(json_data):
     table = pd.DataFrame(rows)
     table = table.sort_values(by="sort_num")
     table = table.set_index("label").drop(columns="sort_num")
+    
+    if not z_axis:
+        table = table.drop(columns=["shift_z"])
+    if z_axis:
+    	 if table["shift_z"].isna().all() or (table["shift_z"].fillna(0) == 0).all():
+            table = table.drop(columns=["shift_z"])
     return table
 
 def extract_reference_cycle(ref):
+    ref = str(ref)
     if not ref:
         return None
     match = re.search(r"\d+", ref)
@@ -1331,24 +1339,57 @@ def extract_reference_cycle(ref):
 def generate_shift_plot(table, ref, output_path):
     table.index = table.index.astype(str)
     cols = [c for c in table.columns if table[c].notna().any()]
-    fig, axes = plt.subplots(len(cols), 1, figsize=(10, 3 * len(cols)))
+    n_bars = len(table.index)
     ref = str(extract_reference_cycle(ref))
+    # max 50 rows
+    subplot_size = 50
+    n_subplot = math.ceil(n_bars / subplot_size )
+    # comparable axes
+    y_min = table[cols].min().min()
+    y_max = table[cols].max().max()
+    for i in range(n_subplot):
+        subplot = table.iloc[i * subplot_size:(i + 1) * subplot_size]
+        n_subplot_bars = len(subplot.index)
 
-    if len(cols) == 1:
-        axes = [axes]
+        # figure size per subplot
+        fig_dx = max(10, n_subplot_bars * 0.6)
+        fig_dy = 5 * len(cols)
+        fig, axes = plt.subplots(len(cols), 1, figsize=(fig_dx, fig_dy))
 
-    colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
+        if len(cols) == 1:
+            axes = [axes]
+        colors = dict(zip(cols, ["darkblue", "cornflowerblue", "mediumslateblue"]))
 
-    for ax, col in zip(axes, cols):
-        table[col].plot.bar(ax=ax, color=colors[col])
-        ax.set_title(col)
-        # highlights the reference cycle
-        if ref in table.index:
-            idx = table.index.get_loc(ref)
-            ax.get_xticklabels()[idx].set_color("red")
+        # label rotation and size
+        if n_subplot_bars > 15:
+            rotation = 45
+            fontsize = 7
+        elif n_subplot_bars > 8:
+            rotation = 30
+            fontsize = 9
+        else:
+            rotation = 0
+            fontsize = 10
 
-    ax.grid(axis="y", linestyle="--", alpha=0.7)
-    axes[-1].set_xlabel("Cycle Name")
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300)
-    plt.close()
+        for ax, col in zip(axes, cols):
+            subplot[col].plot.bar(ax=ax, color=colors[col])
+            pad = 0.05 * (y_max - y_min)
+            ax.set_ylim(y_min - pad, y_max + pad)
+            ax.set_title(col)
+            ax.set_xticklabels(subplot.index, rotation=rotation, fontsize=fontsize)
+            if ref in subplot.index:
+                idx = subplot.index.get_loc(ref)
+                ax.get_xticklabels()[idx].set_color("red")
+
+            ax.grid(axis="y", linestyle="--", alpha=0.7)
+
+        axes[-1].set_xlabel("Cycle Name")
+        plt.tight_layout()
+        if n_subplot == 1:
+            save_path = output_path
+        else:
+            base, ext = output_path.rsplit(".", 1)
+            save_path = f"{base}_part{i+1}.{ext}"
+
+        plt.savefig(save_path, dpi=300)
+        plt.close()
