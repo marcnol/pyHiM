@@ -13,6 +13,7 @@
 import os
 import sys
 
+nbsphinx_execute = "never"
 # Sphinx import all module with autodoc but don't need these modules to build API doc
 autodoc_mock_imports = [
     "pympler",
@@ -33,6 +34,8 @@ autodoc_mock_imports = [
     "seaborn",
     "roipoly",
     "cellpose",
+    "numpy",
+    "matplotlib",
 ]
 
 sys.path.insert(0, os.path.abspath("../../src/"))
