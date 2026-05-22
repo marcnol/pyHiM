@@ -381,8 +381,8 @@ class RefDiff3DSlicesFile(DataFile):
         target_corrected_3d,
         reference_cycle=None,
         target_cycle=None,
-        n_xz_slices=4,
-        n_yz_slices=4,
+        n_xz_slices=5,
+        n_yz_slices=5,
     ):
         super().__init__()
         self.extension = "png"
@@ -430,8 +430,8 @@ class RefDiff3DSlicesFile(DataFile):
             cor_rgb = self._overlay(ref[:, :, y], cor[:, :, y])
             axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
             axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
-            axes[row, 0].set_title(f"XZ @ y={y}", fontsize=14)
-            axes[row, 1].set_title(f"XZ @ y={y}", fontsize=14)
+            axes[row, 0].set_title(f"XZ @ y={y}", fontsize=20)
+            axes[row, 1].set_title(f"XZ @ y={y}", fontsize=20)
             row += 1
 
         for x in x_positions:
@@ -439,16 +439,16 @@ class RefDiff3DSlicesFile(DataFile):
             cor_rgb = self._overlay(ref[:, x, :], cor[:, x, :])
             axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
             axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
-            axes[row, 0].set_title(f"YZ @ x={x}", fontsize=14)
-            axes[row, 1].set_title(f"YZ @ x={x}", fontsize=14)
+            axes[row, 0].set_title(f"YZ @ x={x}", fontsize=20)
+            axes[row, 1].set_title(f"YZ @ x={x}", fontsize=20)
             row += 1
 
         for i in range(axes.shape[0]):
             for j in range(axes.shape[1]):
                 axes[i, j].axis("off")
 
-        axes[0, 0].set_ylabel("Uncorrected", fontsize=16)
-        axes[0, 1].set_ylabel("Corrected", fontsize=16)
+        axes[0, 0].set_ylabel("Uncorrected", fontsize=24)
+        axes[0, 1].set_ylabel("Corrected", fontsize=24)
         fig.tight_layout()
         fig.savefig(self.path_name)
         plt.close(fig)
