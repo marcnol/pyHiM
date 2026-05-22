@@ -8,6 +8,7 @@ Manage files operations, depending of DataManager.
 
 import json
 import os
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -277,12 +278,21 @@ class BothImgRbgFile(DataFile):
 
 
 class RefDiffFile(DataFile):
-    def __init__(self, preprocessed_ref, shifted_img, preprocessed_img):
+    def __init__(
+        self,
+        preprocessed_ref,
+        shifted_img,
+        preprocessed_img,
+        reference_cycle=None,
+        target_cycle=None,
+    ):
         super().__init__()
         self.extension = "png"
         self.preprocessed_ref = preprocessed_ref
         self.shifted_img = shifted_img
         self.preprocessed_img = preprocessed_img
+        self.reference_cycle = reference_cycle
+        self.target_cycle = target_cycle
         self.folder_path = ""
         self.basename = ""
         self.path_name = ""
@@ -291,6 +301,15 @@ class RefDiffFile(DataFile):
         self.preprocessed_ref = None
         self.shifted_img = None
         self.preprocessed_img = None
+        self.reference_cycle = None
+        self.target_cycle = None
+
+    @staticmethod
+    def _extract_cycle_label(value):
+        if value is None:
+            return None
+        match = re.search(r"(RT\d+)", str(value))
+        return match.group(1) if match else str(value)
 
     def save(self, folder_path, basename):
         """
@@ -324,21 +343,114 @@ class RefDiffFile(DataFile):
             img_4, lower_threshold=0.5, higher_threshold=0.9999
         )
 
-        cmap = "seismic"
-
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches((60, 30))
 
-        ax1.imshow(img_1 - img_2, cmap=cmap)
-        ax1.axis("off")
-        ax1.set_title("uncorrected")
+        null_image = np.zeros(self.preprocessed_ref.shape)
+        rgb_uncorrected = np.dstack([img_1, img_2, null_image])
+        rgb_corrected = np.dstack([img_3, img_4, null_image])
 
-        ax2.imshow(img_3 - img_4, cmap=cmap)
+        ax1.imshow(rgb_uncorrected)
+        ax1.axis("off")
+        ref_cycle = self._extract_cycle_label(self.reference_cycle)
+        target_cycle = self._extract_cycle_label(self.target_cycle)
+        if target_cycle is None:
+            target_cycle = self._extract_cycle_label(basename)
+        title_suffix = (
+            f" ({ref_cycle} vs {target_cycle})"
+            if ref_cycle is not None and target_cycle is not None
+            else ""
+        )
+
+        ax1.set_title(f"uncorrected{title_suffix}", fontsize=42)
+
+        ax2.imshow(rgb_corrected)
         ax2.axis("off")
-        ax2.set_title("corrected")
+        ax2.set_title(f"corrected{title_suffix}", fontsize=42)
 
         fig.savefig(self.path_name)
 
+        plt.close(fig)
+
+
+class RefDiff3DSlicesFile(DataFile):
+    def __init__(
+        self,
+        reference_3d,
+        target_uncorrected_3d,
+        target_corrected_3d,
+        reference_cycle=None,
+        target_cycle=None,
+        n_xz_slices=5,
+        n_yz_slices=5,
+    ):
+        super().__init__()
+        self.extension = "png"
+        self.reference_3d = reference_3d
+        self.target_uncorrected_3d = target_uncorrected_3d
+        self.target_corrected_3d = target_corrected_3d
+        self.reference_cycle = reference_cycle
+        self.target_cycle = target_cycle
+        self.n_xz_slices = n_xz_slices
+        self.n_yz_slices = n_yz_slices
+
+    def delete_data(self):
+        self.reference_3d = None
+        self.target_uncorrected_3d = None
+        self.target_corrected_3d = None
+
+    @staticmethod
+    def _normalize(image):
+        max_value = np.max(image)
+        return image / max_value if max_value > 0 else image
+
+    def _overlay(self, ref_slice, target_slice):
+        ref_slice, _, _, _, _ = image_adjust(ref_slice, lower_threshold=0.5, higher_threshold=0.9999)
+        target_slice, _, _, _, _ = image_adjust(target_slice, lower_threshold=0.5, higher_threshold=0.9999)
+        return np.dstack([ref_slice, target_slice, np.zeros_like(ref_slice)])
+
+    def save(self, folder_path, basename):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_referenceDifference3D"
+        self.path_name = self.folder_path + os.sep + self.basename + "." + self.extension
+
+        ref = self._normalize(self.reference_3d.astype(float))
+        unc = self._normalize(self.target_uncorrected_3d.astype(float))
+        cor = self._normalize(self.target_corrected_3d.astype(float))
+
+        _, sx, sy = ref.shape
+        y_positions = np.linspace(0, sy - 1, num=self.n_xz_slices + 2, dtype=int)[1:-1]
+        x_positions = np.linspace(0, sx - 1, num=self.n_yz_slices + 2, dtype=int)[1:-1]
+
+        fig, axes = plt.subplots(self.n_xz_slices + self.n_yz_slices, 2, figsize=(24, 48))
+
+        row = 0
+        for y in y_positions:
+            unc_rgb = self._overlay(ref[:, :, y], unc[:, :, y])
+            cor_rgb = self._overlay(ref[:, :, y], cor[:, :, y])
+            axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
+            axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
+            axes[row, 0].set_title(f"XZ @ y={y}", fontsize=20)
+            axes[row, 1].set_title(f"XZ @ y={y}", fontsize=20)
+            row += 1
+
+        for x in x_positions:
+            unc_rgb = self._overlay(ref[:, x, :], unc[:, x, :])
+            cor_rgb = self._overlay(ref[:, x, :], cor[:, x, :])
+            axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
+            axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
+            axes[row, 0].set_title(f"YZ @ x={x}", fontsize=20)
+            axes[row, 1].set_title(f"YZ @ x={x}", fontsize=20)
+            row += 1
+
+        for i in range(axes.shape[0]):
+            for j in range(axes.shape[1]):
+                axes[i, j].axis("off")
+
+        axes[0, 0].set_ylabel("Uncorrected", fontsize=24)
+        axes[0, 1].set_ylabel("Corrected", fontsize=24)
+        fig.tight_layout()
+        fig.savefig(self.path_name)
         plt.close(fig)
 
 

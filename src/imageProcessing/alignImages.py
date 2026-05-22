@@ -43,12 +43,12 @@ from tqdm import tqdm, trange
 from core.dask_cluster import try_get_client
 from core.data_file import (
     BlockAlignmentFile,
-    BothImgRbgFile,
     EcsvFile,
     EqualizationHistogramsFile,
     JsonFile,
     NpyFile,
     RefDiffFile,
+    RefDiff3DSlicesFile,
 )
 from core.data_manager import load_json
 from core.parameters import ProjectionParams, RegistrationParams
@@ -527,10 +527,24 @@ class RegisterGlobal(Feature):
         # thresholds corrected images for better display and saves
         preprocessed_ref[preprocessed_ref < 0] = 0
         preprocessed_img[preprocessed_img < 0] = 0
-        results_to_save.append(BothImgRbgFile(preprocessed_ref, shifted_img))
         results_to_save.append(
-            RefDiffFile(preprocessed_ref, shifted_img, preprocessed_img)
+            RefDiffFile(
+                preprocessed_ref,
+                shifted_img,
+                preprocessed_img,
+                reference_cycle=self.params.referenceFiducial,
+            )
         )
+        if self.params.globalAlignment == "3D":
+            shifted_target_3d = shift_image(raw_3d_img.astype(float), shift)
+            results_to_save.append(
+                RefDiff3DSlicesFile(
+                    reference_3d_img,
+                    raw_3d_img,
+                    shifted_target_3d,
+                    reference_cycle=self.params.referenceFiducial,
+                )
+            )
         results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
 
         results_to_keep = {"shift": shift, "diffphase": diffphase, "error": error}

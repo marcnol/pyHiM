@@ -17,7 +17,8 @@ pyhim -C register_global
 ## Outputs
 |Name shape|Quantity|Description|
 |---|---|---|
-|register_global.ecsv|1|Global shift for each image (X,Y in `2D` mode; Z,X,Y in `3D` mode)|
+|shifts.table|1|Text table containing the global shift dictionary for each image (X,Y in `2D` mode; Z,X,Y in `3D` mode).|
+|shifts.json|1|JSON file containing the global shift dictionary for each image (X,Y in `2D` mode; Z,X,Y in `3D` mode).|
 
 ## Relevant options
 
