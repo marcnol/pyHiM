@@ -8,6 +8,7 @@ Manage files operations, depending of DataManager.
 
 import json
 import os
+import re
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -277,12 +278,21 @@ class BothImgRbgFile(DataFile):
 
 
 class RefDiffFile(DataFile):
-    def __init__(self, preprocessed_ref, shifted_img, preprocessed_img):
+    def __init__(
+        self,
+        preprocessed_ref,
+        shifted_img,
+        preprocessed_img,
+        reference_cycle=None,
+        target_cycle=None,
+    ):
         super().__init__()
         self.extension = "png"
         self.preprocessed_ref = preprocessed_ref
         self.shifted_img = shifted_img
         self.preprocessed_img = preprocessed_img
+        self.reference_cycle = reference_cycle
+        self.target_cycle = target_cycle
         self.folder_path = ""
         self.basename = ""
         self.path_name = ""
@@ -291,6 +301,15 @@ class RefDiffFile(DataFile):
         self.preprocessed_ref = None
         self.shifted_img = None
         self.preprocessed_img = None
+        self.reference_cycle = None
+        self.target_cycle = None
+
+    @staticmethod
+    def _extract_cycle_label(value):
+        if value is None:
+            return None
+        match = re.search(r"(RT\d+)", str(value))
+        return match.group(1) if match else str(value)
 
     def save(self, folder_path, basename):
         """
@@ -333,11 +352,21 @@ class RefDiffFile(DataFile):
 
         ax1.imshow(rgb_uncorrected)
         ax1.axis("off")
-        ax1.set_title("uncorrected")
+        ref_cycle = self._extract_cycle_label(self.reference_cycle)
+        target_cycle = self._extract_cycle_label(self.target_cycle)
+        if target_cycle is None:
+            target_cycle = self._extract_cycle_label(basename)
+        title_suffix = (
+            f" ({ref_cycle} vs {target_cycle})"
+            if ref_cycle is not None and target_cycle is not None
+            else ""
+        )
+
+        ax1.set_title(f"uncorrected{title_suffix}", fontsize=42)
 
         ax2.imshow(rgb_corrected)
         ax2.axis("off")
-        ax2.set_title("corrected")
+        ax2.set_title(f"corrected{title_suffix}", fontsize=42)
 
         fig.savefig(self.path_name)
 
