@@ -543,7 +543,6 @@ class RegisterGlobal(Feature):
                     raw_3d_img,
                     shifted_target_3d,
                     reference_cycle=self.params.referenceFiducial,
-                    target_cycle=self.label,
                 )
             )
         results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
