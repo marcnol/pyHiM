@@ -324,16 +324,18 @@ class RefDiffFile(DataFile):
             img_4, lower_threshold=0.5, higher_threshold=0.9999
         )
 
-        cmap = "seismic"
-
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.set_size_inches((60, 30))
 
-        ax1.imshow(img_1 - img_2, cmap=cmap)
+        null_image = np.zeros(self.preprocessed_ref.shape)
+        rgb_uncorrected = np.dstack([img_1, img_2, null_image])
+        rgb_corrected = np.dstack([img_3, img_4, null_image])
+
+        ax1.imshow(rgb_uncorrected)
         ax1.axis("off")
         ax1.set_title("uncorrected")
 
-        ax2.imshow(img_3 - img_4, cmap=cmap)
+        ax2.imshow(rgb_corrected)
         ax2.axis("off")
         ax2.set_title("corrected")
 
