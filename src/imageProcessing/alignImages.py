@@ -48,6 +48,7 @@ from core.data_file import (
     JsonFile,
     NpyFile,
     RefDiffFile,
+    RefDiff3DSlicesFile,
 )
 from core.data_manager import load_json
 from core.parameters import ProjectionParams, RegistrationParams
@@ -534,6 +535,17 @@ class RegisterGlobal(Feature):
                 reference_cycle=self.params.referenceFiducial,
             )
         )
+        if self.params.globalAlignment == "3D":
+            shifted_target_3d = shift_image(raw_3d_img.astype(float), shift)
+            results_to_save.append(
+                RefDiff3DSlicesFile(
+                    reference_3d_img,
+                    raw_3d_img,
+                    shifted_target_3d,
+                    reference_cycle=self.params.referenceFiducial,
+                    target_cycle=self.label,
+                )
+            )
         results_to_save.append(NpyFile(shifted_img, "_2d_registered"))
 
         results_to_keep = {"shift": shift, "diffphase": diffphase, "error": error}

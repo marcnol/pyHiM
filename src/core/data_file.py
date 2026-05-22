@@ -373,6 +373,87 @@ class RefDiffFile(DataFile):
         plt.close(fig)
 
 
+class RefDiff3DSlicesFile(DataFile):
+    def __init__(
+        self,
+        reference_3d,
+        target_uncorrected_3d,
+        target_corrected_3d,
+        reference_cycle=None,
+        target_cycle=None,
+        n_xz_slices=4,
+        n_yz_slices=4,
+    ):
+        super().__init__()
+        self.extension = "png"
+        self.reference_3d = reference_3d
+        self.target_uncorrected_3d = target_uncorrected_3d
+        self.target_corrected_3d = target_corrected_3d
+        self.reference_cycle = reference_cycle
+        self.target_cycle = target_cycle
+        self.n_xz_slices = n_xz_slices
+        self.n_yz_slices = n_yz_slices
+
+    def delete_data(self):
+        self.reference_3d = None
+        self.target_uncorrected_3d = None
+        self.target_corrected_3d = None
+
+    @staticmethod
+    def _normalize(image):
+        max_value = np.max(image)
+        return image / max_value if max_value > 0 else image
+
+    def _overlay(self, ref_slice, target_slice):
+        ref_slice, _, _, _, _ = image_adjust(ref_slice, lower_threshold=0.5, higher_threshold=0.9999)
+        target_slice, _, _, _, _ = image_adjust(target_slice, lower_threshold=0.5, higher_threshold=0.9999)
+        return np.dstack([ref_slice, target_slice, np.zeros_like(ref_slice)])
+
+    def save(self, folder_path, basename):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_referenceDifference3D"
+        self.path_name = self.folder_path + os.sep + self.basename + "." + self.extension
+
+        ref = self._normalize(self.reference_3d.astype(float))
+        unc = self._normalize(self.target_uncorrected_3d.astype(float))
+        cor = self._normalize(self.target_corrected_3d.astype(float))
+
+        _, sx, sy = ref.shape
+        y_positions = np.linspace(0, sy - 1, num=self.n_xz_slices + 2, dtype=int)[1:-1]
+        x_positions = np.linspace(0, sx - 1, num=self.n_yz_slices + 2, dtype=int)[1:-1]
+
+        fig, axes = plt.subplots(self.n_xz_slices + self.n_yz_slices, 2, figsize=(24, 48))
+
+        row = 0
+        for y in y_positions:
+            unc_rgb = self._overlay(ref[:, :, y], unc[:, :, y])
+            cor_rgb = self._overlay(ref[:, :, y], cor[:, :, y])
+            axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
+            axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
+            axes[row, 0].set_title(f"XZ @ y={y}", fontsize=14)
+            axes[row, 1].set_title(f"XZ @ y={y}", fontsize=14)
+            row += 1
+
+        for x in x_positions:
+            unc_rgb = self._overlay(ref[:, x, :], unc[:, x, :])
+            cor_rgb = self._overlay(ref[:, x, :], cor[:, x, :])
+            axes[row, 0].imshow(unc_rgb, origin="lower", aspect="auto")
+            axes[row, 1].imshow(cor_rgb, origin="lower", aspect="auto")
+            axes[row, 0].set_title(f"YZ @ x={x}", fontsize=14)
+            axes[row, 1].set_title(f"YZ @ x={x}", fontsize=14)
+            row += 1
+
+        for i in range(axes.shape[0]):
+            for j in range(axes.shape[1]):
+                axes[i, j].axis("off")
+
+        axes[0, 0].set_ylabel("Uncorrected", fontsize=16)
+        axes[0, 1].set_ylabel("Corrected", fontsize=16)
+        fig.tight_layout()
+        fig.savefig(self.path_name)
+        plt.close(fig)
+
+
 class EqualizationHistogramsFile(DataFile):
     def __init__(self, i_histogram, lower_threshold):
         super().__init__()
