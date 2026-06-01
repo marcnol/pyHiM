@@ -417,13 +417,13 @@ def _align_fiducials_3d_file(
 
     del image_3d_0
 
-    # drifts 3D stack in XY
-    # ---------------------
+    # gets shift values from dictionary
+    # ---------------------------------
     if dict_shifts_available:
         # uses existing shift calculated by align_images
         try:
             shift = dict_shifts["ROI:" + roi][cycle_name]
-            print_log("> Applying existing XY shift...")
+            print_log("> Applying existing shift in {shift.shape} dimensions...")
         except KeyError:
             shift = None
             print_log(
@@ -431,19 +431,27 @@ def _align_fiducials_3d_file(
                 status="WARN",
             )
     if not dict_shifts_available or shift is None:
-        # if dictionary of shift or key for this cycle was not found, then it will recalculate XY shift
+        # if dictionary of shift or key for this cycle was not found, then it will exit
+        
+        '''
         images_2d = [np.sum(x, axis=0) for x in images]
 
         print_log("> Calculating XY shift...")
         shift, _, _ = phase_cross_correlation(
             images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
         )
-
+        '''
+        
+        raise SystemExit(
+            f"> Existing with ERROR: Could not find shift value \
+                for this ROI: {roi} and cycle: {cycle_name}"
+        )
+    
     # applies XY shift to 3D stack
     # ----------------------------
-    print_log(f"$ shifts XY = {shift}")
+    print_log(f"$ shift values that will be applied = {shift}")
 
-    # reinterpolate second file in XY using dictionary to get rough alignment
+    # reinterpolate second file in XY or XYZ using dictionary to get rough alignment
     images.append(
         apply_xy_shift_3d_images(
             image_3d, shift, parallel_execution=inner_parallel_loop
@@ -452,8 +460,8 @@ def _align_fiducials_3d_file(
 
     del images[1], image_3d  # removes unshifted image to save memory
 
-    # 3D image alignment by block
-    # ---------------------------
+    # Refines 3D image alignment by block decomposition
+    # -------------------------------------------------
     print_log("> Block-aligning images in 3D...")
     shift_matrices, block_ref, block_target = image_block_alignment_3d(
         images, block_size_xy=params.blockSizeXY, upsample_factor=params.upsample_factor
