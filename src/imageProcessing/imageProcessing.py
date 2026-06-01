@@ -14,6 +14,8 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from photutils import Background2D, MedianBackground
 from skimage import exposure, io
 from tqdm import trange
+from tqdm.auto import tqdm
+from concurrent.futures import ProcessPoolExecutor
 
 from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
@@ -330,6 +332,102 @@ def _remove_inhomogeneous_background_2d(im, filter_size=(3, 3), background=False
     return (im1_bkg_substracted, bkg) if background else im1_bkg_substracted
 
 
+def _process_plane_background(args):
+    z, image_2d, box_size, filter_size = args
+
+    sigma_clip = SigmaClip(sigma=3)
+    bkg_estimator = MedianBackground()
+
+    bkg = Background2D(
+        image_2d,
+        box_size,
+        filter_size=filter_size,
+        sigma_clip=sigma_clip,
+        bkg_estimator=bkg_estimator,
+    )
+
+    return z, image_2d - bkg.background, bkg.background
+
+
+def _remove_inhomogeneous_background_3d_nodask(
+    image_3d,
+    box_size=(64, 64),
+    filter_size=(3, 3),
+    parallel_execution=True,
+    background=False,
+    n_workers=None,
+):
+    """
+    Wrapper to remove inhomogeneous background in a 3D image by recursively calling _remove_inhomogeneous_background_2d():
+        - iterates over planes and calls _remove_inhomogeneous_background_2d in each plane
+        - reassembles results into a 3D image
+
+    Parameters
+    ----------
+    image_3d : numpy array
+        input 3D image.
+    box_size : tuple of ints, optional
+        size of box_size used for block decomposition. The default is (32, 32).
+    filter_size : tuple of ints, optional
+        Size of gaussian filter used for smoothing results. The default is (3, 3).
+
+    Returns
+    -------
+    output : numpy array
+        processed 3D image.
+
+    """
+    number_planes = image_3d.shape[0]
+
+    output = np.empty_like(image_3d)
+
+    if parallel_execution:
+        print_log(
+            f"> Removing inhomogeneous background from {number_planes} planes "
+            f"using local multiprocessing..."
+        )
+
+        tasks = [
+            (z, image_3d[z, :, :], box_size, filter_size)
+            for z in range(number_planes)
+        ]
+
+        last_background = None
+
+        with ProcessPoolExecutor(max_workers=n_workers) as executor:
+            for z, corrected, bkg_background in tqdm(
+                executor.map(_process_plane_background, tasks),
+                total=number_planes,
+            ):
+                output[z, :, :] = corrected
+                last_background = bkg_background
+
+    else:
+        print_log(
+            f"> Removing inhomogeneous background from {number_planes} planes "
+            "using 1 worker..."
+        )
+
+        sigma_clip = SigmaClip(sigma=3)
+        bkg_estimator = MedianBackground()
+        last_background = None
+
+        for z in trange(number_planes):
+            image_2d = image_3d[z, :, :]
+
+            bkg = Background2D(
+                image_2d,
+                box_size,
+                filter_size=filter_size,
+                sigma_clip=sigma_clip,
+                bkg_estimator=bkg_estimator,
+            )
+
+            output[z, :, :] = image_2d - bkg.background
+            last_background = bkg.background
+
+    return (output, last_background) if background else output
+
 def _remove_inhomogeneous_background_3d(
     image_3d,
     box_size=(64, 64),
@@ -392,6 +490,15 @@ def _remove_inhomogeneous_background_3d(
         # del image_list_scattered
 
     else:
+        output = _remove_inhomogeneous_background_3d_nodask(image_3d,
+            box_size=box_size,
+            filter_size=filter_size,
+            parallel_execution=True,
+            background=False,
+            n_workers=None,
+        )
+
+        """
         print_log(
             f"> Removing inhomogeneous background from {number_planes} planes using 1 worker..."
         )
@@ -406,5 +513,6 @@ def _remove_inhomogeneous_background_3d(
                 bkg_estimator=bkg_estimator,
             )
             output[z, :, :] = image_2d - bkg.background
+        """
 
     return (output, bkg.background) if background else output
