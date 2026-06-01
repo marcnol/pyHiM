@@ -1158,30 +1158,42 @@ def image_block_alignment_3d_fast(
     return [shift_z, shift_y, shift_x], block_ref, block_target
 
 
-def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
+def image_block_alignment_3d(
+    images, block_size_xy=256, upsample_factor=100, n_workers=None
+):
     # sanity checks
     if len(images) < 2:
         sys.exit(f"# Error, number of images must be 2, not {len(images)}")
+
+    if images[0].shape != images[1].shape:
+        raise ValueError(f"Image shapes differ: {images[0].shape} vs {images[1].shape}")
 
     # - break in blocks
     num_planes = images[0].shape[0]
     block_size = (num_planes, block_size_xy, block_size_xy)
 
     print_log("$ Breaking images into blocks")
-    blocks = [view_as_blocks(x, block_shape=block_size).squeeze() for x in images]
+    blocks = [view_as_blocks(x, block_shape=block_size)[:, :, 0] for x in images[:2]]
 
     block_ref = blocks[0]
     block_target = blocks[1]
 
     # - loop thru blocks and calculates block shift in xyz:
     shift_matrices = [np.zeros(block_ref.shape[:2]) for _ in range(3)]
+    number_blocks = block_ref.shape[0] * block_ref.shape[1]
+    tasks = (
+        (i, j, block_ref[i, j], block_target[i, j], upsample_factor)
+        for i in range(block_ref.shape[0])
+        for j in range(block_ref.shape[1])
+    )
 
-    for i in trange(block_ref.shape[0]):
-        for j in range(block_ref.shape[1]):
-            # - cross correlate in 3D to find 3D shift
-            shifts_xyz, _, _ = phase_cross_correlation(
-                block_ref[i, j], block_target[i, j], upsample_factor=upsample_factor
-            )
+    print_log(f"$ Estimating XYZ shifts for {number_blocks} blocks")
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        for i, j, shifts_xyz in tqdm(
+            executor.map(_register_3d_block, tasks),
+            total=number_blocks,
+        ):
             for matrix, _shift in zip(shift_matrices, shifts_xyz):
                 matrix[i, j] = _shift
 
