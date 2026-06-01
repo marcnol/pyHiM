@@ -267,7 +267,7 @@ class Localize3D:
                 parallel_execution=self.inner_parallel_loop,
             )
 
-        # drifts 3D stack in XY
+        # drifts 3D stack in XY or XYZ
         shift = None
         if self.dict_shifts_available and label != p["referenceBarcode"]:
             # uses existing shift calculated by align_images
@@ -283,7 +283,7 @@ class Localize3D:
                     parameters for this ROI: ROI:{self.roi}, label: {label}"
             )
 
-        # applies XY shift to 3D stack
+        # applies XY or XYZ shift to 3D stack
         if label != p["referenceBarcode"]:
             
             shift_arr = np.asarray(shift)
