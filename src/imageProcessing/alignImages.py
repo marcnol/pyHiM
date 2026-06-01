@@ -976,7 +976,6 @@ def apply_registrations_to_current_folder(
 # IMAGE ALIGNMENT
 # =============================================================================
 
-
 def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     """Applies a rigid shift to 2D or 3D images.
 
@@ -1012,6 +1011,7 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
                     f"Shift for 3D image must have 2 or 3 values, got {shift_array.size}."
                 )
             output = shift_image(image, shift_3d)
+
         else:
             raise ValueError
     else:
