@@ -38,7 +38,10 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.metrics import structural_similarity as ssim
 from skimage.registration import phase_cross_correlation
 from skimage.util.shape import view_as_blocks
-from tqdm import tqdm, trange
+from tqdm import trange
+from tqdm.auto import tqdm
+
+from concurrent.futures import ThreadPoolExecutor
 
 from core.dask_cluster import try_get_client
 from core.data_file import (
@@ -1080,6 +1083,79 @@ def apply_shift_3d_images(image, shift):
     output = shift_image(image, shift_3d)
     print_log("$ Done shifting 3D image.")
     return output
+
+
+def _register_3d_block(args):
+    i, j, ref_block, target_block, upsample_factor = args
+
+    shift_xyz, _, _ = phase_cross_correlation(
+        ref_block,
+        target_block,
+        upsample_factor=upsample_factor,
+    )
+
+    return i, j, shift_xyz
+
+
+def image_block_alignment_3d_fast(
+    images,
+    block_size_xy=256,
+    upsample_factor=100,
+    n_workers=None,
+    dtype=np.float32,
+):
+    """
+    Estimate local XYZ shifts between two 3D images using block-wise 3D phase correlation.
+    """
+
+    if len(images) != 2:
+        raise ValueError(f"Number of images must be 2, not {len(images)}")
+
+    ref_img = np.asarray(images[0], dtype=dtype)
+    target_img = np.asarray(images[1], dtype=dtype)
+
+    if ref_img.shape != target_img.shape:
+        raise ValueError(f"Image shapes differ: {ref_img.shape} vs {target_img.shape}")
+
+    num_planes, ny, nx = ref_img.shape
+
+    if ny % block_size_xy != 0 or nx % block_size_xy != 0:
+        raise ValueError(
+            f">>> Image XY dimensions {(ny, nx)} must be divisible by "
+            f"block_size_xy={block_size_xy}"
+        )
+
+    block_size = (num_planes, block_size_xy, block_size_xy)
+
+    print_log("$ Breaking images into 3D blocks")
+
+    block_ref = view_as_blocks(ref_img, block_shape=block_size)[:, :, 0]
+    block_target = view_as_blocks(target_img, block_shape=block_size)[:, :, 0]
+
+    nby, nbx = block_ref.shape[:2]
+
+    shift_z = np.empty((nby, nbx), dtype=dtype)
+    shift_y = np.empty((nby, nbx), dtype=dtype)
+    shift_x = np.empty((nby, nbx), dtype=dtype)
+
+    tasks = (
+        (i, j, block_ref[i, j], block_target[i, j], upsample_factor)
+        for i in range(nby)
+        for j in range(nbx)
+    )
+
+    print_log(f"$ Estimating XYZ shifts for {nby * nbx} blocks")
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        for i, j, shift_xyz in tqdm(
+            executor.map(_register_3d_block, tasks),
+            total=nby * nbx,
+        ):
+            shift_z[i, j] = shift_xyz[0]
+            shift_y[i, j] = shift_xyz[1]
+            shift_x[i, j] = shift_xyz[2]
+
+    return [shift_z, shift_y, shift_x], block_ref, block_target
 
 
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
