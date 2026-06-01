@@ -1234,22 +1234,26 @@ def combine_blocks_image_by_reprojection(
     ssim_as_blocks = NPY array of size number_blocks x number_blocks
         Structural similarity index between ref and target blocks
     """
-    number_blocks = block_ref.shape[0]
+    number_blocks_y, number_blocks_x = block_ref.shape[:2]
     block_sizes = list(block_ref.shape[2:])
     block_sizes.pop(axis1)
-    img_sizes = [x * number_blocks for x in block_sizes]
+    block_counts = [number_blocks_y, number_blocks_x]
+    img_sizes = [
+        block_size * block_count
+        for block_size, block_count in zip(block_sizes, block_counts)
+    ]
 
     # gets ranges for slicing
     slice_coordinates = [
-        [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
-        for block_size in block_sizes
+        [range(x * block_size, (x + 1) * block_size) for x in range(block_count)]
+        for block_size, block_count in zip(block_sizes, block_counts)
     ]
 
     # creates output images
     output = np.zeros((img_sizes[0], img_sizes[1], 3))
-    ssim_as_blocks = np.zeros((number_blocks, number_blocks))
-    mse_as_blocks = np.zeros((number_blocks, number_blocks))
-    nrmse_as_blocks = np.zeros((number_blocks, number_blocks))
+    ssim_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    mse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    nrmse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
 
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(block_sizes)
