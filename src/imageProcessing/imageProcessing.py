@@ -358,23 +358,53 @@ def _remove_inhomogeneous_background_3d_nodask(
     n_workers=None,
 ):
     """
-    Wrapper to remove inhomogeneous background in a 3D image by recursively calling _remove_inhomogeneous_background_2d():
-        - iterates over planes and calls _remove_inhomogeneous_background_2d in each plane
-        - reassembles results into a 3D image
+    Remove slowly varying background from a 3D image stack on a plane-by-plane basis.
+
+    This function applies ``photutils.Background2D`` independently to each
+    z-plane of a 3D image, estimates the local background using block-wise
+    statistics, and subtracts the resulting background model from the original
+    image. Processing can be performed either sequentially or in parallel using
+    local multiprocessing.
 
     Parameters
     ----------
-    image_3d : numpy array
-        input 3D image.
-    box_size : tuple of ints, optional
-        size of box_size used for block decomposition. The default is (32, 32).
-    filter_size : tuple of ints, optional
-        Size of gaussian filter used for smoothing results. The default is (3, 3).
+    image_3d : ndarray
+        Input image stack with shape ``(n_planes, ny, nx)``.
+    box_size : tuple of int, optional
+        Size of the box used by ``Background2D`` to estimate the local
+        background. Larger values capture broader background variations but
+        may miss local features. Default is ``(64, 64)``.
+    filter_size : tuple of int, optional
+        Size of the median filter applied to the low-resolution background map
+        before interpolation. Default is ``(3, 3)``.
+    parallel_execution : bool, optional
+        If ``True``, process image planes in parallel using a
+        ``ProcessPoolExecutor``. If ``False``, process planes sequentially.
+        Default is ``True``.
+    background : bool, optional
+        If ``True``, also return the background map estimated for the last
+        processed plane. Default is ``False``.
+    n_workers : int or None, optional
+        Number of worker processes to use when ``parallel_execution=True``.
+        If ``None``, the default number of workers selected by Python is used.
 
     Returns
     -------
-    output : numpy array
-        processed 3D image.
+    output : ndarray
+        Background-corrected image stack with the same shape and dtype as
+        ``image_3d``.
+    bkg_background : ndarray, optional
+        Background image estimated for the last processed plane. Returned only
+        when ``background=True``.
+
+    Notes
+    -----
+    - Background estimation is performed independently on each z-plane.
+    - The background model is computed using ``photutils.Background2D`` with
+      sigma clipping (3σ) and a median background estimator.
+    - Parallel execution is advantageous for large image stacks but increases
+      memory usage because individual planes must be transferred to worker
+      processes.
 
     """
     number_planes = image_3d.shape[0]
