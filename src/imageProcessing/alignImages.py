@@ -241,8 +241,8 @@ def _filter_outlier_shifts(shifts):
         return shifts
     modified_z_score = 0.6745 * (shifts - median) / mad
     shifts_returned = shifts[np.abs(modified_z_score) <= 3.5]
-    print_log(f"> shifts: {shifts}")
-    print_log(f"> shifts that passed the filter: {shifts_returned}")
+    print_log(f"> {len(shifts)} shifts: {shifts}")
+    print_log(f"> {len(shifts_returned)} shifts that passed the filter: {shifts_returned}")
     return shifts_returned
 
 
