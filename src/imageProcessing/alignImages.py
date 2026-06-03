@@ -209,8 +209,8 @@ def _filter_outlier_shifts(shifts):
         return shifts
     modified_z_score = 0.6745 * (shifts - median) / mad
     print_log(f"> shifts: {shifts}")
-    print_log(f"> shifts that passed the filter: {shifts_returned}")
     shifts_returned = shifts[np.abs(modified_z_score) <= 3.5]
+    print_log(f"> shifts that passed the filter: {shifts_returned}")
     return shifts_returned
 
 
@@ -513,7 +513,7 @@ class RegisterGlobal(Feature):
                 target_xy_aligned,
                 slice_size=self.params.sliceSize,
                 min_signal_fraction=self.params.zMinSignalFraction,
-                upsample_factor=100,
+                upsample_factor=20,
                 auto_relax=self.params.zMinSignalFractionAuto,
             )
             selected_fraction = z_diag.get("selected_min_signal_fraction", self.params.zMinSignalFraction)
