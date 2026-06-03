@@ -38,7 +38,10 @@ from skimage.metrics import mean_squared_error, normalized_root_mse
 from skimage.metrics import structural_similarity as ssim
 from skimage.registration import phase_cross_correlation
 from skimage.util.shape import view_as_blocks
-from tqdm import tqdm, trange
+from tqdm import trange
+from tqdm.auto import tqdm
+
+from concurrent.futures import ThreadPoolExecutor
 
 from core.dask_cluster import try_get_client
 from core.data_file import (
@@ -205,7 +208,11 @@ def _filter_outlier_shifts(shifts):
     if mad == 0:
         return shifts
     modified_z_score = 0.6745 * (shifts - median) / mad
-    return shifts[np.abs(modified_z_score) <= 3.5]
+    print_log(f"> shifts: {shifts}")
+    print_log(f"> shifts that passed the filter: {shifts_returned}")
+    shifts_returned = shifts[np.abs(modified_z_score) <= 3.5]
+    return shifts_returned
+
 
 
 def _estimate_z_shift_from_axis_slices(
@@ -976,7 +983,6 @@ def apply_registrations_to_current_folder(
 # IMAGE ALIGNMENT
 # =============================================================================
 
-
 def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     """Applies a rigid shift to 2D or 3D images.
 
@@ -1012,6 +1018,7 @@ def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
                     f"Shift for 3D image must have 2 or 3 values, got {shift_array.size}."
                 )
             output = shift_image(image, shift_3d)
+
         else:
             raise ValueError
     else:
@@ -1080,7 +1087,6 @@ def apply_shift_3d_images(image, shift):
     output = shift_image(image, shift_3d)
     print_log("$ Done shifting 3D image.")
     return output
-
 
 def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
     # sanity checks
