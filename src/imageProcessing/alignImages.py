@@ -1129,8 +1129,8 @@ def image_block_alignment_3d_fast(
 
     print_log("$ Breaking images into 3D blocks")
 
-    block_ref = view_as_blocks(ref_img, block_shape=block_size)[:, :, 0]
-    block_target = view_as_blocks(target_img, block_shape=block_size)[:, :, 0]
+    block_ref = view_as_blocks(ref_img, block_shape=block_size)[0]
+    block_target = view_as_blocks(target_img, block_shape=block_size)[0]
 
     nby, nbx = block_ref.shape[:2]
 
@@ -1173,7 +1173,7 @@ def image_block_alignment_3d(
     block_size = (num_planes, block_size_xy, block_size_xy)
 
     print_log("$ Breaking images into blocks")
-    blocks = [view_as_blocks(x, block_shape=block_size)[:, :, 0] for x in images[:2]]
+    blocks = [view_as_blocks(x, block_shape=block_size)[0] for x in images[:2]]
 
     block_ref = blocks[0]
     block_target = blocks[1]
