@@ -17,9 +17,9 @@ help_dic = {
     "referenceFiducial": "Define the name of the reference fiducial cycle which corresponds to the first cycle \
     acquired during the experience\n\nDefault Value = RT1",
     "globalAlignment": "Select whether register_global stores XY-only (2D) or ZXY (3D) global shifts\n\nDefault Value = 2D",
-    "sliceSize": "Define the target width of X/Y slices used to estimate Z-shift by polling in register_global\n\nDefault Value = 200",
-    "zMinSignalFraction": "Minimum fraction of pixels above background required for a slice to be used in Z-shift polling\n\nDefault Value = 0.01",
-    "zMinSignalFractionAuto": "If True, automatically relaxes zMinSignalFraction when no valid slices are found\n\nDefault Value = True",
+    "sliceSize": "Define the XY width of random full-Z volumes used to estimate Z-shift by polling in register_global\n\nDefault Value = 200",
+    "zMinSignalFraction": "Minimum fraction of globally bright pixels required for a random volume to be used in Z-shift polling\n\nDefault Value = 0.01",
+    "zMinSignalFractionAuto": "If True, automatically relaxes zMinSignalFraction when no valid bright volumes are found\n\nDefault Value = True",
     "flux_min": "Set minimum flux per spot for 2D. If the flux is smaller than the threshold the localization will be \
     discarded\n\nDefault Value = 10",
     "flux_min_3D": "Set minimum flux per spot for 3D. If the flux is smaller than the threshold the localization will \
