@@ -491,11 +491,15 @@ def _align_fiducials_3d_file(
         fig3.add_subplot(grid_spec[1, 1]),
     ]
 
-    titles = ["Z-projection", "X-projection", "Y-projection"]
+    titles = ["XY Z-projection", "XZ slices across Y", "YZ slices across X"]
 
     for axis, output, i in zip(ax, outputs, range(3)):
-        axis.imshow(output[0])
+        if i == 0:
+            axis.imshow(output[0])
+        else:
+            axis.imshow(output[0], origin="lower", aspect="auto")
         axis.set_title(titles[i])
+        axis.axis("off")
 
     fig3.tight_layout()
 
