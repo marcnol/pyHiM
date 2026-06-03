@@ -1247,7 +1247,12 @@ def _slice_positions(length, number_slices):
 
 
 def _combine_blocks_image_by_slices(
-    block_ref, block_target, shift_matrices=None, axis1=1, number_slices=5
+    block_ref,
+    block_target,
+    shift_matrices=None,
+    axis1=1,
+    number_slices=5,
+    return_slice_positions=False,
 ):
     ref_volume, target_volume = _reassemble_shifted_block_volumes(
         block_ref, block_target, shift_matrices=shift_matrices
@@ -1280,7 +1285,11 @@ def _combine_blocks_image_by_slices(
     for overlay in overlays:
         output_rows.extend([overlay, separator])
 
-    return np.vstack(output_rows[:-1])
+    output = np.vstack(output_rows[:-1])
+    if return_slice_positions:
+        return output, positions
+
+    return output
 
 
 def _calculate_block_similarity_matrices(
@@ -1319,7 +1328,12 @@ def _calculate_block_similarity_matrices(
 
 
 def combine_blocks_image_by_reprojection(
-    block_ref, block_target, shift_matrices=None, axis1=0
+    block_ref,
+    block_target,
+    shift_matrices=None,
+    axis1=0,
+    number_slices=5,
+    return_slice_positions=False,
 ):
     """
     This routine will overlap block_ref and block_target images block by block.
@@ -1346,6 +1360,11 @@ def combine_blocks_image_by_reprojection(
         - 0 means an XY projection
         - 1 a montage of XZ slices sampled across Y
         - 2 a montage of YZ slices sampled across X
+    number_slices : int
+        number of XZ/YZ slices to sample for the montage when axis1 is 1 or 2.
+    return_slice_positions : bool
+        when True for XZ/YZ montages, append the sampled Y/X pixel positions
+        to the returned tuple.
 
     Returns
     -------
@@ -1355,9 +1374,18 @@ def combine_blocks_image_by_reprojection(
         Structural similarity index between ref and target blocks
     """
     if axis1 in (1, 2):
-        output = _combine_blocks_image_by_slices(
-            block_ref, block_target, shift_matrices=shift_matrices, axis1=axis1
+        slice_output = _combine_blocks_image_by_slices(
+            block_ref,
+            block_target,
+            shift_matrices=shift_matrices,
+            axis1=axis1,
+            number_slices=number_slices,
+            return_slice_positions=return_slice_positions,
         )
+        if return_slice_positions:
+            output, slice_positions = slice_output
+        else:
+            output = slice_output
         ssim_as_blocks, mse_as_blocks, nrmse_as_blocks = (
             _calculate_block_similarity_matrices(
                 block_ref,
@@ -1366,6 +1394,15 @@ def combine_blocks_image_by_reprojection(
                 axis1=axis1,
             )
         )
+        if return_slice_positions:
+            return (
+                output,
+                ssim_as_blocks,
+                mse_as_blocks,
+                nrmse_as_blocks,
+                slice_positions,
+            )
+
         return output, ssim_as_blocks, mse_as_blocks, nrmse_as_blocks
 
     number_blocks_y, number_blocks_x = block_ref.shape[:2]
