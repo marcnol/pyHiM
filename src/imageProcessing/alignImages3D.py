@@ -423,7 +423,6 @@ def _align_fiducials_3d_file(
         # uses existing shift calculated by align_images
         try:
             shift = dict_shifts["ROI:" + roi][cycle_name]
-            print_log("> Applying existing shift in {shift.shape} dimensions...")
         except KeyError:
             shift = None
             print_log(
@@ -441,7 +440,7 @@ def _align_fiducials_3d_file(
             images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
         )
         '''
-        
+
         raise SystemExit(
             f"> Existing with ERROR: Could not find shift value \
                 for this ROI: {roi} and cycle: {cycle_name}"
