@@ -706,7 +706,7 @@ class RegisterGlobal(Feature):
                 target_xy_aligned,
                 slice_size=self.params.sliceSize,
                 min_signal_fraction=self.params.zMinSignalFraction,
-                upsample_factor=100,
+                upsample_factor=20,
                 auto_relax=self.params.zMinSignalFractionAuto,
             )
             selected_fraction = z_diag.get(
