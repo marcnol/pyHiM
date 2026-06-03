@@ -123,6 +123,36 @@ def estimate_background_threshold(img):
     return median + 3 * 1.4826 * mad
 
 
+def estimate_bright_signal_threshold(img, bright_fraction):
+    """Estimate a threshold for the globally brightest pixels in an image.
+
+    The threshold is constrained to stay above the robust background estimate and
+    above the percentile that selects approximately ``bright_fraction`` of the
+    brightest finite pixels from the full 3D image. This makes Z-shift polling
+    prefer sub-volumes enriched in real high-intensity structures instead of
+    large empty regions that can otherwise vote for a zero shift.
+    """
+    flattened = img[np.isfinite(img)]
+    background_threshold = estimate_background_threshold(img)
+    if flattened.size == 0:
+        return background_threshold
+
+    bright_fraction = float(np.clip(bright_fraction, 0.0, 1.0))
+    if bright_fraction <= 0:
+        return background_threshold
+
+    bright_percentile = 100 * (1 - bright_fraction)
+    percentile_threshold = np.percentile(flattened, bright_percentile)
+    return max(float(background_threshold), float(percentile_threshold))
+
+
+def count_bright_pixels(img_slice, threshold):
+    """Counts finite pixels brighter than ``threshold`` in a slice or volume."""
+    if img_slice.size == 0:
+        return 0
+    return int(np.count_nonzero(np.isfinite(img_slice) & (img_slice > threshold)))
+
+
 def signal_fraction_above_threshold(img_slice, threshold):
     """Computes the fraction of pixels above a threshold in a slice.
 
@@ -140,28 +170,30 @@ def signal_fraction_above_threshold(img_slice, threshold):
     """
     if img_slice.size == 0:
         return 0.0
-    return np.count_nonzero(img_slice > threshold) / img_slice.size
+    return count_bright_pixels(img_slice, threshold) / img_slice.size
 
 
 def slice_has_signal(img_slice, threshold, min_fraction):
-    """Checks whether a slice contains enough non-background signal.
+    """Checks whether a slice contains enough globally bright pixels.
 
     Parameters
     ----------
     img_slice : np.ndarray
         Slice volume to evaluate.
     threshold : float
-        Background threshold.
+        Bright-pixel threshold estimated from the whole image.
     min_fraction : float
-        Minimum fraction of pixels that must be above threshold.
+        Minimum fraction of bright pixels that must be present in this slice.
 
     Returns
     -------
-    tuple[bool, float]
-        (is_valid, fraction_above_threshold).
+    tuple[bool, float, int, int]
+        (is_valid, fraction_above_threshold, bright_pixel_count, minimum_count).
     """
-    fraction = signal_fraction_above_threshold(img_slice, threshold)
-    return fraction >= min_fraction, fraction
+    bright_count = count_bright_pixels(img_slice, threshold)
+    min_count = int(math.ceil(img_slice.size * min_fraction)) if img_slice.size else 0
+    fraction = bright_count / img_slice.size if img_slice.size else 0.0
+    return bright_count >= min_count, fraction, bright_count, min_count
 
 
 def _split_axis_slices(axis_size, slice_size):
@@ -208,11 +240,117 @@ def _filter_outlier_shifts(shifts):
     if mad == 0:
         return shifts
     modified_z_score = 0.6745 * (shifts - median) / mad
-    print_log(f"> shifts: {shifts}")
     shifts_returned = shifts[np.abs(modified_z_score) <= 3.5]
-    print_log(f"> shifts that passed the filter: {shifts_returned}")
+    print_log(f"> {len(shifts)} shifts: {shifts}")
+    print_log(f"> {len(shifts_returned)} shifts that passed the filter: {shifts_returned}")
     return shifts_returned
 
+
+def _estimate_z_shift_for_volume(ref_volume, target_volume, upsample_factor):
+    """Estimates the z component of a shift for one XY-limited 3D volume."""
+    ref_proj = np.sum(ref_volume, axis=2)
+    target_proj = np.sum(target_volume, axis=2)
+    shift, _, _ = phase_cross_correlation(
+        ref_proj, target_proj, upsample_factor=upsample_factor
+    )
+    return float(shift[0])
+
+
+def _random_xy_volume_bounds(image_shape, volume_size, rng):
+    """Returns random XY bounds for a volume spanning the full Z range."""
+    _, y_size, x_size = image_shape
+    y_width = min(max(1, volume_size), y_size)
+    x_width = min(max(1, volume_size), x_size)
+    y_start = int(rng.integers(0, y_size - y_width + 1))
+    x_start = int(rng.integers(0, x_size - x_width + 1))
+    return y_start, y_start + y_width, x_start, x_start + x_width
+
+
+def _estimate_z_shift_from_random_volumes(
+    ref_img,
+    target_img,
+    volume_size,
+    ref_threshold,
+    target_threshold,
+    min_signal_fraction,
+    upsample_factor,
+    target_volume_count,
+    max_attempts,
+    random_seed,
+    parallel_execution,
+):
+    """Polls z-shifts from random full-Z, XY-limited bright volumes."""
+    rng = np.random.default_rng(random_seed)
+    accepted_volumes = []
+    ref_fractions = []
+    target_fractions = []
+    rejected_low_signal = 0
+
+    for _ in range(max_attempts):
+        if len(accepted_volumes) >= target_volume_count:
+            break
+
+        y0, y1, x0, x1 = _random_xy_volume_bounds(ref_img.shape, volume_size, rng)
+        ref_volume = ref_img[:, y0:y1, x0:x1]
+        target_volume = target_img[:, y0:y1, x0:x1]
+
+        ref_ok, ref_fraction, ref_bright_count, ref_min_count = slice_has_signal(
+            ref_volume, ref_threshold, min_signal_fraction
+        )
+        (
+            target_ok,
+            target_fraction,
+            target_bright_count,
+            target_min_count,
+        ) = slice_has_signal(target_volume, target_threshold, min_signal_fraction)
+        ref_fractions.append(ref_fraction)
+        target_fractions.append(target_fraction)
+
+        if not (ref_ok and target_ok):
+            rejected_low_signal += 1
+            continue
+
+        accepted_volumes.append(
+            {
+                "bounds": (y0, y1, x0, x1),
+                "ref_bright_count": ref_bright_count,
+                "target_bright_count": target_bright_count,
+                "ref_min_count": ref_min_count,
+                "target_min_count": target_min_count,
+            }
+        )
+
+    def compute_volume_shift(volume_info):
+        y0, y1, x0, x1 = volume_info["bounds"]
+        return _estimate_z_shift_for_volume(
+            ref_img[:, y0:y1, x0:x1],
+            target_img[:, y0:y1, x0:x1],
+            upsample_factor,
+        )
+
+    if parallel_execution and len(accepted_volumes) > 1:
+        with ThreadPoolExecutor() as executor:
+            z_shifts = list(executor.map(compute_volume_shift, accepted_volumes))
+    else:
+        z_shifts = [compute_volume_shift(volume_info) for volume_info in accepted_volumes]
+
+    diagnostics = {
+        "mode": "random_volumes",
+        "volume_size_xy": int(volume_size),
+        "target_volume_count": int(target_volume_count),
+        "max_attempts": int(max_attempts),
+        "attempted_volumes": len(ref_fractions),
+        "accepted_volumes": len(accepted_volumes),
+        "rejected_low_signal": rejected_low_signal,
+        "parallel_execution": bool(parallel_execution),
+        "ref_fraction_min": float(np.min(ref_fractions)) if ref_fractions else 0.0,
+        "ref_fraction_median": float(np.median(ref_fractions)) if ref_fractions else 0.0,
+        "ref_fraction_max": float(np.max(ref_fractions)) if ref_fractions else 0.0,
+        "target_fraction_min": float(np.min(target_fractions)) if target_fractions else 0.0,
+        "target_fraction_median": float(np.median(target_fractions)) if target_fractions else 0.0,
+        "target_fraction_max": float(np.max(target_fractions)) if target_fractions else 0.0,
+    }
+    return z_shifts, diagnostics
 
 
 def _estimate_z_shift_from_axis_slices(
@@ -270,10 +408,10 @@ def _estimate_z_shift_from_axis_slices(
         else:
             raise ValueError(f"Unsupported axis for z-shift slicing: {axis}")
 
-        ref_ok, ref_fraction = slice_has_signal(
+        ref_ok, ref_fraction, _, _ = slice_has_signal(
             ref_slice, ref_threshold, min_signal_fraction
         )
-        target_ok, target_fraction = slice_has_signal(
+        target_ok, target_fraction, _, _ = slice_has_signal(
             target_slice, target_threshold, min_signal_fraction
         )
         ref_fractions.append(ref_fraction)
@@ -309,13 +447,24 @@ def compute_global_z_shift_from_slices(
     min_signal_fraction=0.01,
     upsample_factor=100,
     auto_relax=True,
+    random_volume_count=32,
+    max_random_volume_attempts=None,
+    random_seed=0,
+    parallel_execution=True,
 ):
-    """Computes a robust global z-shift from x/y slice polling.
+    """Computes a robust global z-shift from bright random XY volumes.
 
-    The function generates slices along x and y, keeps slices with enough
-    non-background signal in both reference and target, computes per-slice
-    z-shifts by phase correlation, removes outliers (MAD-based), and returns
-    the mean of the filtered estimates.
+    The function estimates a bright-pixel threshold from each whole 3D image,
+    then randomly samples XY-limited volumes that span the full Z range. Only
+    volumes containing enough globally bright pixels in both the reference and
+    target images are used for phase-correlation polling. This rejects empty or
+    low-signal sample regions whose correlations frequently vote for a zero
+    shift. Per-volume z-shifts are computed in parallel when possible, outliers
+    are removed with a MAD-based filter, and the mean of the remaining shifts is
+    returned.
+
+    If no random volume passes the bright-pixel gate, the implementation falls
+    back to the legacy x/y slice polling path with the same bright-pixel gate.
 
     Parameters
     ----------
@@ -324,21 +473,30 @@ def compute_global_z_shift_from_slices(
     target_img : np.ndarray
         Target 3D image in (z, y, x) order (already xy-aligned).
     slice_size : int
-        Target width for x/y slicing before z-shift polling.
+        XY width of random volumes before z-shift polling.
     min_signal_fraction : float, optional
-        Minimum fraction of above-background pixels to accept a slice.
+        Minimum fraction of globally bright pixels required to accept a volume.
     upsample_factor : int, optional
         Subpixel upsampling factor for phase correlation.
     auto_relax : bool, optional
-        If True, progressively relaxes min_signal_fraction when no valid slices exist.
+        If True, progressively relaxes min_signal_fraction when no valid volumes exist.
+    random_volume_count : int, optional
+        Number of accepted random volumes to poll for z shifts.
+    max_random_volume_attempts : int or None, optional
+        Maximum number of random candidates to try per signal-fraction attempt.
+    random_seed : int, optional
+        Seed used to make random volume selection reproducible.
+    parallel_execution : bool, optional
+        If True, computes accepted volume shifts concurrently using threads.
 
     Returns
     -------
     tuple[float, int, int, dict]
         (global_z_shift, total_candidate_shifts, used_shifts_after_filter, diagnostics).
     """
-    ref_threshold = estimate_background_threshold(ref_img)
-    target_threshold = estimate_background_threshold(target_img)
+    bright_fraction = max(float(min_signal_fraction), 1e-6)
+    ref_threshold = estimate_bright_signal_threshold(ref_img, bright_fraction)
+    target_threshold = estimate_bright_signal_threshold(target_img, bright_fraction)
 
     x_slices = _split_axis_slices(ref_img.shape[2], slice_size)
     y_slices = _split_axis_slices(ref_img.shape[1], slice_size)
@@ -350,64 +508,99 @@ def compute_global_z_shift_from_slices(
             max(0.001, min_signal_fraction / 5),
             0.001,
         ]
-    # keep unique order
     fraction_schedule = list(dict.fromkeys(fraction_schedule))
+
+    random_volume_count = max(1, int(random_volume_count))
+    if max_random_volume_attempts is None:
+        max_random_volume_attempts = max(random_volume_count * 5, random_volume_count)
 
     diagnostics = {
         "ref_threshold": float(ref_threshold),
         "target_threshold": float(target_threshold),
+        "bright_fraction_for_threshold": float(bright_fraction),
         "x_total_slices": len(x_slices),
         "y_total_slices": len(y_slices),
         "attempts": [],
     }
 
     z_shifts = []
-    for candidate_fraction in fraction_schedule:
-        x_shifts, x_diag = _estimate_z_shift_from_axis_slices(
+    for attempt_index, candidate_fraction in enumerate(fraction_schedule):
+        volume_shifts, volume_diag = _estimate_z_shift_from_random_volumes(
             ref_img,
             target_img,
-            axis=2,
-            slices=x_slices,
+            volume_size=slice_size,
             ref_threshold=ref_threshold,
             target_threshold=target_threshold,
             min_signal_fraction=candidate_fraction,
             upsample_factor=upsample_factor,
+            target_volume_count=random_volume_count,
+            max_attempts=max_random_volume_attempts,
+            random_seed=None if random_seed is None else random_seed + attempt_index,
+            parallel_execution=parallel_execution,
         )
-        y_shifts, y_diag = _estimate_z_shift_from_axis_slices(
-            ref_img,
-            target_img,
-            axis=1,
-            slices=y_slices,
-            ref_threshold=ref_threshold,
-            target_threshold=target_threshold,
-            min_signal_fraction=candidate_fraction,
-            upsample_factor=upsample_factor,
-        )
-        z_shifts = x_shifts + y_shifts
+        z_shifts = volume_shifts
         diagnostics["attempts"].append(
             {
                 "min_signal_fraction": float(candidate_fraction),
-                "accepted_x": x_diag["accepted_slices"],
-                "accepted_y": y_diag["accepted_slices"],
-                "x_ref_fraction_median": x_diag["ref_fraction_median"],
-                "x_target_fraction_median": x_diag["target_fraction_median"],
-                "y_ref_fraction_median": y_diag["ref_fraction_median"],
-                "y_target_fraction_median": y_diag["target_fraction_median"],
+                "mode": "random_volumes",
+                "accepted_volumes": volume_diag["accepted_volumes"],
+                "attempted_volumes": volume_diag["attempted_volumes"],
+                "rejected_low_signal": volume_diag["rejected_low_signal"],
+                "ref_fraction_median": volume_diag["ref_fraction_median"],
+                "target_fraction_median": volume_diag["target_fraction_median"],
             }
         )
         if z_shifts:
             diagnostics["selected_min_signal_fraction"] = float(candidate_fraction)
+            diagnostics["selected_mode"] = "random_volumes"
             break
 
     if not z_shifts:
+        for candidate_fraction in fraction_schedule:
+            x_shifts, x_diag = _estimate_z_shift_from_axis_slices(
+                ref_img,
+                target_img,
+                axis=2,
+                slices=x_slices,
+                ref_threshold=ref_threshold,
+                target_threshold=target_threshold,
+                min_signal_fraction=candidate_fraction,
+                upsample_factor=upsample_factor,
+            )
+            y_shifts, y_diag = _estimate_z_shift_from_axis_slices(
+                ref_img,
+                target_img,
+                axis=1,
+                slices=y_slices,
+                ref_threshold=ref_threshold,
+                target_threshold=target_threshold,
+                min_signal_fraction=candidate_fraction,
+                upsample_factor=upsample_factor,
+            )
+            z_shifts = x_shifts + y_shifts
+            diagnostics["attempts"].append(
+                {
+                    "min_signal_fraction": float(candidate_fraction),
+                    "mode": "axis_slices_fallback",
+                    "accepted_x": x_diag["accepted_slices"],
+                    "accepted_y": y_diag["accepted_slices"],
+                    "x_ref_fraction_median": x_diag["ref_fraction_median"],
+                    "x_target_fraction_median": x_diag["target_fraction_median"],
+                    "y_ref_fraction_median": y_diag["ref_fraction_median"],
+                    "y_target_fraction_median": y_diag["target_fraction_median"],
+                }
+            )
+            if z_shifts:
+                diagnostics["selected_min_signal_fraction"] = float(candidate_fraction)
+                diagnostics["selected_mode"] = "axis_slices_fallback"
+                break
+
+    if not z_shifts:
         diagnostics["selected_min_signal_fraction"] = float(fraction_schedule[-1])
+        diagnostics["selected_mode"] = "none"
         print_log(
-            "$ No valid slices found for Z alignment; defaulting Z shift to 0. "
-            f"Thresholds ref/target={ref_threshold:.4g}/{target_threshold:.4g}; "
-            f"slice fractions medians (last try) x={diagnostics['attempts'][-1]['x_ref_fraction_median']:.4f}/"
-            f"{diagnostics['attempts'][-1]['x_target_fraction_median']:.4f}, "
-            f"y={diagnostics['attempts'][-1]['y_ref_fraction_median']:.4f}/"
-            f"{diagnostics['attempts'][-1]['y_target_fraction_median']:.4f}.",
+            "$ No valid bright volumes found for Z alignment; defaulting Z shift to 0. "
+            f"Thresholds ref/target={ref_threshold:.4g}/{target_threshold:.4g}.",
             status="WARN",
         )
         return 0.0, 0, 0, diagnostics
@@ -516,10 +709,12 @@ class RegisterGlobal(Feature):
                 upsample_factor=20,
                 auto_relax=self.params.zMinSignalFractionAuto,
             )
-            selected_fraction = z_diag.get("selected_min_signal_fraction", self.params.zMinSignalFraction)
+            selected_fraction = z_diag.get(
+                "selected_min_signal_fraction", self.params.zMinSignalFraction
+            )
             print_log(
                 "$ Z-shift polling: "
-                f"{used_slices}/{total_slices} valid slices after outlier filtering; "
+                f"{used_slices}/{total_slices} valid bright volumes after outlier filtering; "
                 f"minSignalFraction used={selected_fraction:.4f}; "
                 f"background thresholds ref/target={z_diag['ref_threshold']:.4g}/{z_diag['target_threshold']:.4g}."
             )

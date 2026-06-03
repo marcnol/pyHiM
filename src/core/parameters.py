@@ -479,13 +479,13 @@ class RegistrationParams:
         "background_sigma", 3.0
     )  # used to remove inhom background
     blockSize: int = set_default("blockSize", 256)  # register_global
-    sliceSize: int = set_default("sliceSize", 200)  # register_global z-shift polling
+    sliceSize: int = set_default("sliceSize", 200)  # register_global z-shift volume polling
     zMinSignalFraction: float = set_default(
         "zMinSignalFraction", 0.01
-    )  # minimum fraction of above-background pixels for z-shift slice polling
+    )  # minimum fraction of globally bright pixels for z-shift volume polling
     zMinSignalFractionAuto: bool = set_default(
         "zMinSignalFractionAuto", True
-    )  # automatically relax zMinSignalFraction if no valid slices are found
+    )  # automatically relax zMinSignalFraction if no valid bright volumes are found
     blockSizeXY: int = set_default("blockSizeXY", 128)  # register_local
     upsample_factor: int = set_default("upsample_factor", 100)  # register_local
     unknown_params: CatchAll = field(default_factory=lambda: {})
