@@ -107,10 +107,11 @@ def image_show_with_values_single(
     ax, matrix, cbarlabel, fontsize, cbar_kw, valfmt="{x:.0f}", cmap="YlGn"
 ):
     row = [str(x) for x in range(matrix.shape[0])]
+    column = [str(x) for x in range(matrix.shape[1])]
     im, _ = heatmap(
         matrix,
         row,
-        row,
+        column,
         ax=ax,
         cmap=cmap,
         cbarlabel=cbarlabel,

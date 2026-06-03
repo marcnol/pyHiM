@@ -1129,8 +1129,8 @@ def image_block_alignment_3d_fast(
 
     print_log("$ Breaking images into 3D blocks")
 
-    block_ref = view_as_blocks(ref_img, block_shape=block_size)[:, :, 0]
-    block_target = view_as_blocks(target_img, block_shape=block_size)[:, :, 0]
+    block_ref = view_as_blocks(ref_img, block_shape=block_size)[0]
+    block_target = view_as_blocks(target_img, block_shape=block_size)[0]
 
     nby, nbx = block_ref.shape[:2]
 
@@ -1158,30 +1158,42 @@ def image_block_alignment_3d_fast(
     return [shift_z, shift_y, shift_x], block_ref, block_target
 
 
-def image_block_alignment_3d(images, block_size_xy=256, upsample_factor=100):
+def image_block_alignment_3d(
+    images, block_size_xy=256, upsample_factor=100, n_workers=None
+):
     # sanity checks
     if len(images) < 2:
         sys.exit(f"# Error, number of images must be 2, not {len(images)}")
+
+    if images[0].shape != images[1].shape:
+        raise ValueError(f"Image shapes differ: {images[0].shape} vs {images[1].shape}")
 
     # - break in blocks
     num_planes = images[0].shape[0]
     block_size = (num_planes, block_size_xy, block_size_xy)
 
     print_log("$ Breaking images into blocks")
-    blocks = [view_as_blocks(x, block_shape=block_size).squeeze() for x in images]
+    blocks = [view_as_blocks(x, block_shape=block_size)[0] for x in images[:2]]
 
     block_ref = blocks[0]
     block_target = blocks[1]
 
     # - loop thru blocks and calculates block shift in xyz:
     shift_matrices = [np.zeros(block_ref.shape[:2]) for _ in range(3)]
+    number_blocks = block_ref.shape[0] * block_ref.shape[1]
+    tasks = (
+        (i, j, block_ref[i, j], block_target[i, j], upsample_factor)
+        for i in range(block_ref.shape[0])
+        for j in range(block_ref.shape[1])
+    )
 
-    for i in trange(block_ref.shape[0]):
-        for j in range(block_ref.shape[1]):
-            # - cross correlate in 3D to find 3D shift
-            shifts_xyz, _, _ = phase_cross_correlation(
-                block_ref[i, j], block_target[i, j], upsample_factor=upsample_factor
-            )
+    print_log(f"$ Estimating XYZ shifts for {number_blocks} blocks")
+
+    with ThreadPoolExecutor(max_workers=n_workers) as executor:
+        for i, j, shifts_xyz in tqdm(
+            executor.map(_register_3d_block, tasks),
+            total=number_blocks,
+        ):
             for matrix, _shift in zip(shift_matrices, shifts_xyz):
                 matrix[i, j] = _shift
 
@@ -1222,22 +1234,26 @@ def combine_blocks_image_by_reprojection(
     ssim_as_blocks = NPY array of size number_blocks x number_blocks
         Structural similarity index between ref and target blocks
     """
-    number_blocks = block_ref.shape[0]
+    number_blocks_y, number_blocks_x = block_ref.shape[:2]
     block_sizes = list(block_ref.shape[2:])
     block_sizes.pop(axis1)
-    img_sizes = [x * number_blocks for x in block_sizes]
+    block_counts = [number_blocks_y, number_blocks_x]
+    img_sizes = [
+        block_size * block_count
+        for block_size, block_count in zip(block_sizes, block_counts)
+    ]
 
     # gets ranges for slicing
     slice_coordinates = [
-        [range(x * block_size, (x + 1) * block_size) for x in range(number_blocks)]
-        for block_size in block_sizes
+        [range(x * block_size, (x + 1) * block_size) for x in range(block_count)]
+        for block_size, block_count in zip(block_sizes, block_counts)
     ]
 
     # creates output images
     output = np.zeros((img_sizes[0], img_sizes[1], 3))
-    ssim_as_blocks = np.zeros((number_blocks, number_blocks))
-    mse_as_blocks = np.zeros((number_blocks, number_blocks))
-    nrmse_as_blocks = np.zeros((number_blocks, number_blocks))
+    ssim_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    mse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    nrmse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
 
     # blank image for blue channel to show borders between blocks
     blue = np.zeros(block_sizes)
