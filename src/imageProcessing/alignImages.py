@@ -1200,6 +1200,124 @@ def image_block_alignment_3d(
     return shift_matrices, block_ref, block_target
 
 
+def _normalize_image_for_overlay(image):
+    max_value = np.max(image)
+    return image / max_value if max_value > 0 else image
+
+
+def _overlay_ref_target_slice(ref_slice, target_slice):
+    ref_slice, _, _, _, _ = image_adjust(
+        ref_slice, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    target_slice, _, _, _, _ = image_adjust(
+        target_slice, lower_threshold=0.5, higher_threshold=0.9999
+    )
+    return np.dstack([ref_slice, target_slice, np.zeros_like(ref_slice)])
+
+
+def _reassemble_shifted_block_volumes(block_ref, block_target, shift_matrices=None):
+    number_blocks_y, number_blocks_x = block_ref.shape[:2]
+    number_planes, block_size_y, block_size_x = block_ref.shape[2:]
+
+    image_shape = (
+        number_planes,
+        number_blocks_y * block_size_y,
+        number_blocks_x * block_size_x,
+    )
+    ref_volume = np.zeros(image_shape)
+    target_volume = np.zeros(image_shape)
+
+    for i in range(number_blocks_y):
+        y_slice = slice(i * block_size_y, (i + 1) * block_size_y)
+        for j in range(number_blocks_x):
+            x_slice = slice(j * block_size_x, (j + 1) * block_size_x)
+            ref_volume[:, y_slice, x_slice] = block_ref[i, j]
+
+            target_block = block_target[i, j]
+            if shift_matrices is not None:
+                shift_3d = np.array([matrix[i, j] for matrix in shift_matrices])
+                target_block = shift_image(target_block, shift_3d)
+            target_volume[:, y_slice, x_slice] = target_block
+
+    return ref_volume, target_volume
+
+
+def _slice_positions(length, number_slices):
+    return np.linspace(0, length - 1, num=number_slices + 2, dtype=int)[1:-1]
+
+
+def _combine_blocks_image_by_slices(
+    block_ref, block_target, shift_matrices=None, axis1=1, number_slices=5
+):
+    ref_volume, target_volume = _reassemble_shifted_block_volumes(
+        block_ref, block_target, shift_matrices=shift_matrices
+    )
+
+    ref_volume = _normalize_image_for_overlay(ref_volume.astype(float))
+    target_volume = _normalize_image_for_overlay(target_volume.astype(float))
+
+    if axis1 == 1:
+        positions = _slice_positions(ref_volume.shape[1], number_slices)
+        overlays = [
+            _overlay_ref_target_slice(ref_volume[:, y, :], target_volume[:, y, :])
+            for y in positions
+        ]
+    elif axis1 == 2:
+        positions = _slice_positions(ref_volume.shape[2], number_slices)
+        overlays = [
+            _overlay_ref_target_slice(ref_volume[:, :, x], target_volume[:, :, x])
+            for x in positions
+        ]
+    else:
+        raise ValueError(
+            f"Slice rendering is only available for axis1=1 or 2, not {axis1}"
+        )
+
+    separator = np.zeros((1, overlays[0].shape[1], 3))
+    separator[:, :, 2] = 0.5
+
+    output_rows = []
+    for overlay in overlays:
+        output_rows.extend([overlay, separator])
+
+    return np.vstack(output_rows[:-1])
+
+
+def _calculate_block_similarity_matrices(
+    block_ref, block_target, shift_matrices=None, axis1=0
+):
+    number_blocks_y, number_blocks_x = block_ref.shape[:2]
+    ssim_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    mse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+    nrmse_as_blocks = np.zeros((number_blocks_y, number_blocks_x))
+
+    for i in range(number_blocks_y):
+        for j in range(number_blocks_x):
+            imgs = [block_ref[i, j]]
+            if shift_matrices is not None:
+                shift_3d = np.array([matrix[i, j] for matrix in shift_matrices])
+                imgs.append(shift_image(block_target[i, j], shift_3d))
+            else:
+                imgs.append(block_target[i, j])
+
+            imgs = [np.sum(x, axis=axis1) for x in imgs]
+            imgs = [exposure.rescale_intensity(x, out_range=(0, 1)) for x in imgs]
+            imgs = [
+                image_adjust(x, lower_threshold=0.5, higher_threshold=0.9999)[0]
+                for x in imgs
+            ]
+
+            nrmse_as_blocks[i, j] = normalized_root_mse(
+                imgs[0], imgs[1], normalization="euclidean"
+            )
+            mse_as_blocks[i, j] = mean_squared_error(imgs[0], imgs[1])
+            ssim_as_blocks[i, j] = ssim(
+                imgs[0], imgs[1], data_range=imgs[1].max() - imgs[1].min()
+            )
+
+    return ssim_as_blocks, mse_as_blocks, nrmse_as_blocks
+
+
 def combine_blocks_image_by_reprojection(
     block_ref, block_target, shift_matrices=None, axis1=0
 ):
@@ -1210,7 +1328,9 @@ def combine_blocks_image_by_reprojection(
     to realign each block
     - then an rgb image will be created with block_ref in the red channel, and the reinterpolated
     block_target block in the green channel.
-    - the Blue channel is used for the grid to improve visualization of blocks.
+    - for XY projections, the Blue channel is used for the grid to improve visualization of blocks.
+    - for XZ and YZ views, evenly-spaced slices are displayed as a montage, following the
+    reference/target overlay style used by RefDiff3DSlicesFile.
 
 
     Parameters
@@ -1224,8 +1344,8 @@ def combine_blocks_image_by_reprojection(
     axis1 : int
         axis used for the reprojection: The default is 0.
         - 0 means an XY projection
-        - 1 an ZX projection
-        - 2 an ZY projection
+        - 1 a montage of XZ slices sampled across Y
+        - 2 a montage of YZ slices sampled across X
 
     Returns
     -------
@@ -1234,6 +1354,20 @@ def combine_blocks_image_by_reprojection(
     ssim_as_blocks = NPY array of size number_blocks x number_blocks
         Structural similarity index between ref and target blocks
     """
+    if axis1 in (1, 2):
+        output = _combine_blocks_image_by_slices(
+            block_ref, block_target, shift_matrices=shift_matrices, axis1=axis1
+        )
+        ssim_as_blocks, mse_as_blocks, nrmse_as_blocks = (
+            _calculate_block_similarity_matrices(
+                block_ref,
+                block_target,
+                shift_matrices=shift_matrices,
+                axis1=axis1,
+            )
+        )
+        return output, ssim_as_blocks, mse_as_blocks, nrmse_as_blocks
+
     number_blocks_y, number_blocks_x = block_ref.shape[:2]
     block_sizes = list(block_ref.shape[2:])
     block_sizes.pop(axis1)
