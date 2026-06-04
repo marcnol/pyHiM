@@ -14,6 +14,8 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from photutils import Background2D, MedianBackground
 from skimage import exposure, io
 from tqdm import trange
+from tqdm.auto import tqdm
+from concurrent.futures import ProcessPoolExecutor
 
 from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
@@ -330,6 +332,132 @@ def _remove_inhomogeneous_background_2d(im, filter_size=(3, 3), background=False
     return (im1_bkg_substracted, bkg) if background else im1_bkg_substracted
 
 
+def _process_plane_background(args):
+    z, image_2d, box_size, filter_size = args
+
+    sigma_clip = SigmaClip(sigma=3)
+    bkg_estimator = MedianBackground()
+
+    bkg = Background2D(
+        image_2d,
+        box_size,
+        filter_size=filter_size,
+        sigma_clip=sigma_clip,
+        bkg_estimator=bkg_estimator,
+    )
+
+    return z, image_2d - bkg.background, bkg.background
+
+
+def _remove_inhomogeneous_background_3d_nodask(
+    image_3d,
+    box_size=(64, 64),
+    filter_size=(3, 3),
+    parallel_execution=True,
+    background=False,
+    n_workers=None,
+):
+    """
+    Remove slowly varying background from a 3D image stack on a plane-by-plane basis.
+
+    This function applies ``photutils.Background2D`` independently to each
+    z-plane of a 3D image, estimates the local background using block-wise
+    statistics, and subtracts the resulting background model from the original
+    image. Processing can be performed either sequentially or in parallel using
+    local multiprocessing.
+
+    Parameters
+    ----------
+    image_3d : ndarray
+        Input image stack with shape ``(n_planes, ny, nx)``.
+    box_size : tuple of int, optional
+        Size of the box used by ``Background2D`` to estimate the local
+        background. Larger values capture broader background variations but
+        may miss local features. Default is ``(64, 64)``.
+    filter_size : tuple of int, optional
+        Size of the median filter applied to the low-resolution background map
+        before interpolation. Default is ``(3, 3)``.
+    parallel_execution : bool, optional
+        If ``True``, process image planes in parallel using a
+        ``ProcessPoolExecutor``. If ``False``, process planes sequentially.
+        Default is ``True``.
+    background : bool, optional
+        If ``True``, also return the background map estimated for the last
+        processed plane. Default is ``False``.
+    n_workers : int or None, optional
+        Number of worker processes to use when ``parallel_execution=True``.
+        If ``None``, the default number of workers selected by Python is used.
+
+    Returns
+    -------
+    output : ndarray
+        Background-corrected image stack with the same shape and dtype as
+        ``image_3d``.
+    bkg_background : ndarray, optional
+        Background image estimated for the last processed plane. Returned only
+        when ``background=True``.
+
+    Notes
+    -----
+    - Background estimation is performed independently on each z-plane.
+    - The background model is computed using ``photutils.Background2D`` with
+      sigma clipping (3σ) and a median background estimator.
+    - Parallel execution is advantageous for large image stacks but increases
+      memory usage because individual planes must be transferred to worker
+      processes.
+
+    """
+    number_planes = image_3d.shape[0]
+
+    output = np.empty_like(image_3d)
+
+    if parallel_execution:
+        print_log(
+            f"> Removing inhomogeneous background from {number_planes} planes "
+            f"using local multiprocessing..."
+        )
+
+        tasks = [
+            (z, image_3d[z, :, :], box_size, filter_size)
+            for z in range(number_planes)
+        ]
+
+        last_background = None
+
+        with ProcessPoolExecutor(max_workers=n_workers) as executor:
+            for z, corrected, bkg_background in tqdm(
+                executor.map(_process_plane_background, tasks),
+                total=number_planes,
+            ):
+                output[z, :, :] = corrected
+                last_background = bkg_background
+
+    else:
+        print_log(
+            f"> Removing inhomogeneous background from {number_planes} planes "
+            "using 1 worker..."
+        )
+
+        sigma_clip = SigmaClip(sigma=3)
+        bkg_estimator = MedianBackground()
+        last_background = None
+
+        for z in trange(number_planes):
+            image_2d = image_3d[z, :, :]
+
+            bkg = Background2D(
+                image_2d,
+                box_size,
+                filter_size=filter_size,
+                sigma_clip=sigma_clip,
+                bkg_estimator=bkg_estimator,
+            )
+
+            output[z, :, :] = image_2d - bkg.background
+            last_background = bkg.background
+
+    return (output, last_background) if background else output
+
 def _remove_inhomogeneous_background_3d(
     image_3d,
     box_size=(64, 64),
@@ -392,6 +520,15 @@ def _remove_inhomogeneous_background_3d(
         # del image_list_scattered
 
     else:
+        output = _remove_inhomogeneous_background_3d_nodask(image_3d,
+            box_size=box_size,
+            filter_size=filter_size,
+            parallel_execution=True,
+            background=False,
+            n_workers=None,
+        )
+
+        """
         print_log(
             f"> Removing inhomogeneous background from {number_planes} planes using 1 worker..."
         )
@@ -406,5 +543,6 @@ def _remove_inhomogeneous_background_3d(
                 bkg_estimator=bkg_estimator,
             )
             output[z, :, :] = image_2d - bkg.background
+        """
 
     return (output, bkg.background) if background else output

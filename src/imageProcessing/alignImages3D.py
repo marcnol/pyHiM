@@ -381,6 +381,53 @@ def load_n_preprocess_image(
     return image_3d_0, image_3d
 
 
+def _format_xy_alignment_axis(axis):
+    axis.set_xlabel("X pixel")
+    axis.set_ylabel("Y pixel")
+    axis.tick_params(axis="both", which="both", labelsize=8)
+
+
+def _format_slice_alignment_axis(
+    axis,
+    image,
+    slice_positions,
+    number_z_planes,
+    slice_axis_label,
+    horizontal_axis_label,
+):
+    axis.set_xlabel(f"{horizontal_axis_label} pixel")
+    axis.set_ylabel("Z slice (per montage row)")
+    if slice_positions is None or len(slice_positions) == 0:
+        return
+
+    slice_height = number_z_planes
+    separator_height = 1
+    row_stride = slice_height + separator_height
+    tick_positions = [
+        i * row_stride + (slice_height - 1) / 2 for i in range(len(slice_positions))
+    ]
+    z_last = number_z_planes - 1
+    axis.set_yticks(tick_positions)
+    axis.set_yticklabels(
+        [f"{slice_axis_label}={position}\nZ=0-{z_last}" for position in slice_positions]
+    )
+    axis.tick_params(axis="both", which="both", labelsize=8)
+
+    sampled_positions = ", ".join(str(position) for position in slice_positions)
+    axis.text(
+        0.99,
+        0.02,
+        f"sampled {slice_axis_label}: {sampled_positions}",
+        transform=axis.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=8,
+        color="white",
+        bbox={"facecolor": "black", "alpha": 0.55, "edgecolor": "none"},
+    )
+    axis.set_ylim(-0.5, image.shape[0] - 0.5)
+
+
 def _align_fiducials_3d_file(
     filename_to_process,
     alignment_results_table,
@@ -417,13 +464,12 @@ def _align_fiducials_3d_file(
 
     del image_3d_0
 
-    # drifts 3D stack in XY
-    # ---------------------
+    # gets shift values from dictionary
+    # ---------------------------------
     if dict_shifts_available:
         # uses existing shift calculated by align_images
         try:
             shift = dict_shifts["ROI:" + roi][cycle_name]
-            print_log("> Applying existing XY shift...")
         except KeyError:
             shift = None
             print_log(
@@ -431,19 +477,27 @@ def _align_fiducials_3d_file(
                 status="WARN",
             )
     if not dict_shifts_available or shift is None:
-        # if dictionary of shift or key for this cycle was not found, then it will recalculate XY shift
+        # if dictionary of shift or key for this cycle was not found, then it will exit
+        
+        '''
         images_2d = [np.sum(x, axis=0) for x in images]
 
         print_log("> Calculating XY shift...")
         shift, _, _ = phase_cross_correlation(
             images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
         )
+        '''
 
+        raise SystemExit(
+            f"> Existing with ERROR: Could not find shift value \
+                for this ROI: {roi} and cycle: {cycle_name}"
+        )
+    
     # applies XY shift to 3D stack
     # ----------------------------
-    print_log(f"$ shifts XY = {shift}")
+    print_log(f"$ shift values that will be applied = {shift}")
 
-    # reinterpolate second file in XY using dictionary to get rough alignment
+    # reinterpolate second file in XY or XYZ using dictionary to get rough alignment
     images.append(
         apply_xy_shift_3d_images(
             image_3d, shift, parallel_execution=inner_parallel_loop
@@ -452,8 +506,8 @@ def _align_fiducials_3d_file(
 
     del images[1], image_3d  # removes unshifted image to save memory
 
-    # 3D image alignment by block
-    # ---------------------------
+    # Refines 3D image alignment by block decomposition
+    # -------------------------------------------------
     print_log("> Block-aligning images in 3D...")
     shift_matrices, block_ref, block_target = image_block_alignment_3d(
         images, block_size_xy=params.blockSizeXY, upsample_factor=params.upsample_factor
@@ -463,14 +517,30 @@ def _align_fiducials_3d_file(
     # [plots shift matrices]
     fig2 = plot_3d_shift_matrices(shift_matrices, fontsize=8)
 
-    # combines blocks into a single matrix for display instead of plotting a matrix of subplots each with a block
-    outputs = []
-    for axis in range(3):
-        outputs.append(
-            combine_blocks_image_by_reprojection(
-                block_ref, block_target, shift_matrices=shift_matrices, axis1=axis
-            )
-        )
+    # combines blocks into a single matrix for display instead of plotting a matrix
+    # of subplots each with a block
+    number_blocks_y, number_blocks_x = block_ref.shape[:2]
+    output_xy = combine_blocks_image_by_reprojection(
+        block_ref, block_target, shift_matrices=shift_matrices, axis1=0
+    )
+    output_xz = combine_blocks_image_by_reprojection(
+        block_ref,
+        block_target,
+        shift_matrices=shift_matrices,
+        axis1=1,
+        number_slices=number_blocks_y,
+        return_slice_positions=True,
+    )
+    output_yz = combine_blocks_image_by_reprojection(
+        block_ref,
+        block_target,
+        shift_matrices=shift_matrices,
+        axis1=2,
+        number_slices=number_blocks_x,
+        return_slice_positions=True,
+    )
+    outputs = [output_xy, output_xz[:4], output_yz[:4]]
+    slice_positions = [None, output_xz[4], output_yz[4]]
 
     mse_matrices = [x[2] for x in outputs]
     nrmse_matrices = [x[3] for x in outputs]
@@ -484,10 +554,22 @@ def _align_fiducials_3d_file(
         fig3.add_subplot(grid_spec[1, 1]),
     ]
 
-    titles = ["Z-projection", "X-projection", "Y-projection"]
+    titles = ["XY Z-projection", "XZ slices across Y", "YZ slices across X"]
 
     for axis, output, i in zip(ax, outputs, range(3)):
-        axis.imshow(output[0])
+        if i == 0:
+            axis.imshow(output[0])
+            _format_xy_alignment_axis(axis)
+        else:
+            axis.imshow(output[0], origin="lower", aspect="auto")
+            _format_slice_alignment_axis(
+                axis,
+                output[0],
+                slice_positions[i],
+                block_ref.shape[2],
+                slice_axis_label="Y" if i == 1 else "X",
+                horizontal_axis_label="X" if i == 1 else "Y",
+            )
         axis.set_title(titles[i])
 
     fig3.tight_layout()
