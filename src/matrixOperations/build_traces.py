@@ -123,9 +123,8 @@ class BuildTraces:
 
     def align_by_masking(self, matrix_params: MatrixParams):
         """
-        Assigns barcodes to masks and creates <n_barcodes_in_mask>
-        And by filling in the "Cell #" key of barcode_map_roi
-        This routine will only select which barcodes go to each cell mask
+        Assigns barcodes to masks by selecting which barcodes go to each cell mask
+        Fills in the "Cell #" key of the chromatin trace table (barcode_map_roi)
 
         Returns
         -------
@@ -168,12 +167,13 @@ class BuildTraces:
             if self.ndims == 2:
                 z_corrected = self.barcode_map_roi.groups[0]["zcentroid"][i] = 0.0
             else:
+                # this adds offset to coordinates to account for chromatin drift between the mask channel and the barcode channel
                 z_corrected = (
                     self.barcode_map_roi.groups[0]["zcentroid"][i]
                     + matrix_params.z_offset / self.z_binning
                 )
 
-            # binarizes coordinates and project them in the mask referential
+            # binarizes coordinates and projects them in the mask referential
             x_int, y_int, z_int = project_spot_coord_in_mask_ref(
                 x_corrected,
                 y_corrected,
@@ -451,7 +451,7 @@ class BuildTraces:
     ):
         """
         Main function that:
-            loads and processes barcode localization files, local alignment file, and masks
+            loads and processes barcode localization files and masks
             initializes <cell_roi> class and assigns barcode localizations to masks
             then constructs the single cell PWD matrix and outputs it together with the contact map and the N-map.
 
@@ -465,12 +465,12 @@ class BuildTraces:
             pixel_size = {'x': pixelSizeXY,
                         'y': pixelSizeXY,
                         'z': pixel_size_z}
-            The default is 0.1 for x and y, 0.0 for z. Pixelsize in um
+            The default is 0.1 for x and y, 0.25 for z. Pixelsize in um
 
         self.log_name_md : str, optional
             Filename of Markdown output. The default is "log.md".
         self.ndims : int, optional
-            indicates whether barcodes were localized in 2 or 3D. The default is 2.
+            indicates whether barcodes were localized in 2 or 3D. The default is 3.
         self.mask_identifier:
 
         Returns
@@ -841,10 +841,8 @@ def debug_mask_filename(
                 ROI: {int(os.path.basename(file).split("_")[3])}'
         )
 
-
 def binarize_coordinate(x):
     return np.nan if np.isnan(x) else int(x)
-
 
 def project_spot_coord_in_mask_ref(
     x, y, z, pixel_size_xy, pixel_size_z, mask_pixel_size_xy, mask_pixel_size_z

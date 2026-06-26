@@ -707,8 +707,8 @@ class MatrixParams:
         "remove_uncorrected_localizations", True
     )
     z_offset: float = set_default("z_offset", 2.0)
-    mask_pixel_size_xy: float = set_default("mask_pixel_size_xy", 0)
-    mask_pixel_size_z: float = set_default("mask_pixel_size_z", 0)
+    mask_pixel_size_xy: float = set_default("mask_pixel_size_xy", 0.1)
+    mask_pixel_size_z: float = set_default("mask_pixel_size_z", 0.25)
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
