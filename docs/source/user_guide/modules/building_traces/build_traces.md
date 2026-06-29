@@ -28,9 +28,18 @@ Parameters to run this script will be read from the ```buildsPWDmatrix``` field 
 "tracing_method": ["masking","clustering"], # list of methods it will use
 "mask_expansion": 8,# number of pixels masks will be expanded to assign localizations
 "masks2process":{"nuclei":"DAPI","mask1":"mask0"}, # masks identities to process
+"mask_pixel_size_xy": 0.1, # XY pixel size, in um, of the mask image
+"mask_pixel_size_z": 0.25, # Z pixel size, in um, of the mask image
 "KDtree_distance_threshold_mum": 1, # threshold distance used for KDtree clustering
 "barcode_coordinates_BEDfile": "", # optional BED file used to annotate barcodes with genomic coordinates
 ```
+
+
+### Mask pixel size options
+
+Set `mask_pixel_size_xy` and `mask_pixel_size_z` to the pixel size, in micrometers, of the mask image used for assigning localizations to masks. These values can differ from the localization image pixel size when masks are imported from an external segmentation workflow or from images that were not binned in the same way as the localization stack.
+
+`build_traces` converts localization coordinates from micrometers to mask pixel coordinates using the ratio between the localization image pixel size and the mask image pixel size. In Z, the localization pixel size is computed from the acquisition settings as `pixelSizeZ * zBinning`. Therefore, if the mask was generated from an unbinned external image, for example a Cellpose mask with `pixelSizeZ = 0.25` µm while localizations use `zBinning = 2`, set `mask_pixel_size_z` to `0.25` rather than the binned value `0.5`. Otherwise, Z coordinates in the trace table can be assigned to the wrong mask plane.
 
 ### Optional BED-driven barcode annotation
 
@@ -43,6 +52,8 @@ Example in `parameters.json` (`buildsPWDmatrix` section):
   "tracing_method": ["masking", "clustering"],
   "mask_expansion": 8,
   "masks2process": {"nuclei": "DAPI"},
+  "mask_pixel_size_xy": 0.1,
+  "mask_pixel_size_z": 0.25,
   "KDtree_distance_threshold_mum": 1,
   "barcode_coordinates_BEDfile": "resources/barcode_coordinates.bed"
 }
