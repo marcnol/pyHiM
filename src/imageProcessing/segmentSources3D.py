@@ -37,6 +37,8 @@ from apifish.image import projection
 from astropy.table import Table, vstack
 from skimage import exposure, io
 from skimage.measure import regionprops
+from skimage.filters import threshold_otsu
+from scipy.stats import skew
 
 from core.dask_cluster import try_get_client
 from core.parameters import (

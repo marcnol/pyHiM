@@ -54,13 +54,11 @@ from photutils.segmentation.core import SegmentationImage
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import Voronoi
-from scipy.stats import skew
 from skimage import measure
 from skimage.feature import peak_local_max
 from skimage.measure import label, regionprops
 from skimage.segmentation import watershed
 from skimage.util.apply_parallel import apply_parallel
-from skimage.filters import threshold_otsu
 from stardist import random_label_cmap
 from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
