@@ -845,7 +845,7 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
         for idx, row in mask_properties.iterrows():
 
             # Convert spot coordinates into integer voxel coordinates
-            x_int = int(round(rorow["z_min"]w["x"]))
+            x_int = int(round(row["x"]))
             y_int = int(round(row["y"]))
             z_int = int(round(row["z"]))
 
