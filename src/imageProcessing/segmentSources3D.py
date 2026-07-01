@@ -917,7 +917,7 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
                 )
 
             # Compute intensity distribution asymmetry
-            skew_list.append(skew(patch.ravel()), 2)
+            skew_list.append(skew(patch.ravel()))
 
             # Classify each patch as a spot or background
         type_object = [
