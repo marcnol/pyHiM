@@ -54,11 +54,13 @@ from photutils.segmentation.core import SegmentationImage
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import Voronoi
+from scipy.stats import skew
 from skimage import measure
 from skimage.feature import peak_local_max
-from skimage.measure import regionprops
+from skimage.measure import label, regionprops
 from skimage.segmentation import watershed
 from skimage.util.apply_parallel import apply_parallel
+from skimage.filters import threshold_otsu
 from stardist import random_label_cmap
 from stardist.models import StarDist2D, StarDist3D
 from tqdm import trange
@@ -68,6 +70,8 @@ from core.parameters import SegmentationParams
 from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
+
+import pandas as pd
 
 np.seterr(divide="ignore", invalid="ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # ignore tensorflow logging
@@ -928,7 +932,6 @@ def _segment_2d_image_by_thresholding(
 
 def _segment_3d_volumes_stardist(
     image_3d,
-    deblend_3d=False,
     axis_norm=(0, 1, 2),
     model_dir="/mnt/PALM_dataserv/DATA/JB/2021/Data_single_loci/Annotated_data/data_loci_small/models/",
     model_name="stardist_18032021_single_loci",
@@ -960,9 +963,7 @@ def _segment_3d_volumes_stardist(
 
     mask = np.array(labels > 0, dtype=int)
 
-    # Now we want to separate objects in 3D using watersheding
-    labeled_image = _deblend_3d_segmentation(mask) if deblend_3d else labels
-    return mask, labeled_image
+    return mask
 
 
 def _segment_3d_volumes_by_thresholding(
@@ -1078,6 +1079,144 @@ def _deblend_3d_segmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
+def _deblend_3d_segmentation_advanced(binary):
+    """
+    Split touching 3D objects using a two-step watershed approach.
+
+    Steps:
+    1. Global watershed on distance transform to separate main objects.
+    2. Refined watershed on elongated objects to split merged spots.
+
+    Parameters
+    ----------
+    binary : ndarray (3D)
+        Binary mask of objects.
+
+    Returns
+    -------
+    ndarray
+        Labeled 3D segmentation.
+    """
+
+    print_log(" > Constructing distance matrix from 3D binary mask...")
+    binary = binary > 0
+
+    # First watershed
+    print_log(" > Deblending sources in 3D by watersheding (part 1)...")
+    distance = apply_parallel(ndi.distance_transform_edt, binary)
+
+    coords_1 = peak_local_max(
+        distance,
+        footprint=np.ones((10, 10, 25)),
+        labels=binary,
+        exclude_border=True,
+    )
+
+    peak_values = distance[tuple(coords_1.T)]
+    min_dist = int(np.median(peak_values))
+
+    coords_2 = peak_local_max(
+        distance,
+        footprint=np.ones((10, 10, 25)),
+        min_distance=(min_dist*2),
+        labels=binary,
+        exclude_border=True,
+    )
+
+    marker_mask = np.zeros(distance.shape, dtype=bool)
+    marker_mask[tuple(coords_2.T)] = True
+
+    markers, _ = ndi.label(marker_mask)
+
+    initial_labels = watershed(-distance, markers, mask=binary)
+
+    # Second watershed
+    print_log(" > Deblending sources in 3D by watersheding (part 2)...")
+    region_properties = regionprops(initial_labels)
+
+    elongated_labels = []
+    regular_labels = []
+
+    for region in region_properties:
+
+        minor_axis = region.axis_minor_length
+        major_axis = region.axis_major_length
+
+        if not np.isfinite(minor_axis) or minor_axis <= 0:
+            continue
+
+        elongation = major_axis / minor_axis
+
+        if elongation >= 2.5:
+            elongated_labels.append(region.label)
+        else:
+            regular_labels.append(region.label)
+
+    if len(elongated_labels)>0:
+
+        elongated_mask = np.isin(initial_labels, elongated_labels)
+        regular_mask = np.isin(initial_labels, regular_labels)
+
+        normal_mask_labeled = label(regular_mask)
+        normal_mask_props = regionprops(normal_mask_labeled)
+
+        normal_size_object = []
+
+        for p in normal_mask_props:
+            if p.area < 50:
+                continue
+
+            diameter = p.axis_major_length
+            rayon = diameter / 2
+
+            normal_size_object.append(rayon)
+
+        footprint_values = round(np.mean(normal_size_object))
+
+        # Second watershed (elongated objects only)
+        elongated_distance = ndi.distance_transform_edt(elongated_mask)
+
+        elongated_peaks = peak_local_max(
+            elongated_distance,
+            footprint=np.ones(
+                (
+                    footprint_values,
+                    footprint_values,
+                    footprint_values,
+                )
+            ),
+            min_distance=min_dist,
+            labels=elongated_mask,
+            exclude_border=True,
+        )
+
+        elongated_mask_markers = np.zeros(elongated_distance.shape, dtype=bool)
+        elongated_mask_markers[tuple(elongated_peaks.T)] = True
+
+        elongated_markers, _ = ndi.label(elongated_mask_markers)
+
+        corrected_elongated_labels = watershed(
+            -elongated_distance,
+            elongated_markers,
+            mask=elongated_mask,
+        )
+
+        # Merge results
+        regular_objects = np.where(regular_mask, initial_labels, 0)
+
+        label_offset = regular_objects.max()
+
+        corrected_elongated_labels = np.where(
+            corrected_elongated_labels > 0,
+            corrected_elongated_labels + label_offset,
+            0,
+        )
+
+        labels = regular_objects + corrected_elongated_labels
+    else:
+        labels = initial_labels 
+
+    return labels
 
 def _segment_3d_masks(
     image_3d,
