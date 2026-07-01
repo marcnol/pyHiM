@@ -36,7 +36,7 @@ from apifish.identification.spot_modeling import fit_subpixel
 from apifish.image import projection
 from astropy.table import Table, vstack
 from skimage import exposure, io
-from skimage.measure import regionprops
+from skimage.measure import label, regionprops
 from skimage.filters import threshold_otsu
 from scipy.stats import skew
 
@@ -826,7 +826,15 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
     Returns
     -------
     tuple
-        (spots, snr, spot_fraction, mean_intensity, skewness, patch_size, labels)
+            (spots,
+            snr_list,
+            spot_pixel_percentage,
+            mean_intensity_list,
+            skew_list,
+            patch_size,
+            type_object,
+            flux,
+            roundness)
     """
        
     mask_properties = mask_properties.to_pandas()
