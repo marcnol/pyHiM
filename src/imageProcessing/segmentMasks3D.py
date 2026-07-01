@@ -120,7 +120,7 @@ class Mask3D:
         if label in self.dict_shifts[f"ROI:{roi_name}"]:
             output_extension = {"2D": "_Masks", "3D": "_3Dmasks"}
             shift = self.dict_shifts[f"ROI:{roi_name}"][label]
-            print_log("> Applying existing XY shift...")
+            print_log("> Applying existing shift...")
             # applies XY shift to 3D stack
             if label != reference_fiducial:
                 shift_arr = np.asarray(shift)
@@ -440,7 +440,7 @@ class Mask3D:
         # uses existing shift calculated by align_images
         try:
             shift = self.dict_shifts[f"ROI:{roi_name}"][label]
-            print_log("> Applying existing XY shift...")
+            print_log("> Applying existing shift...")
             # Round shift value because we align a mask file
             shift = [round(value) for value in shift]
         except KeyError:

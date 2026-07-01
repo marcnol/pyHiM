@@ -90,7 +90,7 @@ def shift_3d_mask(mask_3d_path):
     # uses existing shift calculated by align_images
     try:
         shift = dict_shifts[f"ROI:{roi_name}"][label]
-        print("> Applying existing XY shift...")
+        print("> Applying existing shift...")
     except KeyError as e:
         shift = None
         raise SystemExit(

@@ -276,7 +276,7 @@ class Localize3D:
             # uses existing shift calculated by align_images
             try:
                 shift = self.dict_shifts[f"ROI:{roi}"][label]
-                print_log("> Applying existing XY shift...")
+                print_log("> Applying existing shift...")
             except KeyError:
                 shift = None
 
