@@ -1137,8 +1137,15 @@ def _deblend_3d_segmentation_advanced(binary):
 
     for region in region_properties:
 
-        minor_axis = region.axis_minor_length
-        major_axis = region.axis_major_length
+        try:
+            minor_axis = region.axis_minor_length
+        except ValueError:
+            continue
+
+        try:
+            major_axis = region.axis_major_length
+        except ValueError:
+            continue
 
         if not np.isfinite(minor_axis) or minor_axis <= 0:
             continue
