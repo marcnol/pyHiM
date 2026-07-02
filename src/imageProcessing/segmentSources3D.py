@@ -34,7 +34,8 @@ from typing import Optional
 import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
 from apifish.image import projection
-from astropy.table import Table, vstack
+from astropy.table import vstack
+from astropy.table import Table
 from skimage import exposure, io
 from skimage.measure import label, regionprops
 from skimage.filters import threshold_otsu
@@ -734,8 +735,6 @@ def get_mask_properties(
         return [], [], [], [], [], [], [], [], []
 
 
-
-
 def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
     """
     Extract shape and position features from 3D labeled objects.
@@ -948,45 +947,3 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
     else: 
         return [], [], [], [], [], [], [], [], []
     
-"""
-def create_output_table():
-    output = Table(
-        names=(
-            "Buid",
-            "ROI #",
-            "CellID #",
-            "Barcode #",
-            "id",
-            "zcentroid",
-            "xcentroid",
-            "ycentroid",
-            "snr",
-            "spot_pixel_percentage",
-            "skew",
-            "patch_size",
-            "object_class",
-            "mean_intensity",
-            "flux",
-            "roundness",
-        ),
-        dtype=(
-            "S2",
-            "int",
-            "int",
-            "int",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "int",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-        ),
-    )
-    return output
-"""
