@@ -478,15 +478,6 @@ def _align_fiducials_3d_file(
             )
     if not dict_shifts_available or shift is None:
         # if dictionary of shift or key for this cycle was not found, then it will exit
-        
-        '''
-        images_2d = [np.sum(x, axis=0) for x in images]
-
-        print_log("> Calculating XY shift...")
-        shift, _, _ = phase_cross_correlation(
-            images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
-        )
-        '''
 
         raise SystemExit(
             f"> Existing with ERROR: Could not find shift value \
