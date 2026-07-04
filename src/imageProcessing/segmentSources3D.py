@@ -735,6 +735,45 @@ def get_mask_properties(
         return [], [], [], [], [], [], [], [], []
 
 
+
+def _safe_region_axis_lengths(region):
+    """Return finite 3D region axis lengths, falling back for degenerate objects.
+
+    scikit-image derives axis lengths from inertia-tensor eigenvalues. Very
+    small, flat, or numerically degenerate 3D labels can produce a slightly
+    negative value inside the square-root used for ``axis_minor_length`` or
+    ``axis_major_length``, which raises ``ValueError: math domain error``.
+    Treat those labels as valid detections but mark their unavailable axis
+    length as 0 so downstream roundness/elongation metrics remain safe.
+    """
+
+    try:
+        minor_axis = region.minor_axis_length
+    except ValueError:
+        print_log(
+            f"$ Warning: could not compute minor axis length for label "
+            f"{region.label}; using 0. This usually indicates a degenerate "
+            "or very small 3D object."
+        )
+        minor_axis = 0
+
+    try:
+        major_axis = region.major_axis_length
+    except ValueError:
+        print_log(
+            f"$ Warning: could not compute major axis length for label "
+            f"{region.label}; using 0. This usually indicates a degenerate "
+            "or very small 3D object."
+        )
+        major_axis = 0
+
+    if not np.isfinite(minor_axis) or minor_axis < 0:
+        minor_axis = 0
+    if not np.isfinite(major_axis) or major_axis < 0:
+        major_axis = 0
+
+    return minor_axis, major_axis
+
 def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
     """
     Extract shape and position features from 3D labeled objects.
@@ -775,8 +814,13 @@ def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
 
     bbox = [p.bbox for p in properties]
     area = [p.area for p in properties]
-    minor_axis_length = [p.minor_axis_length for p in properties]
-    major_axis_length = [p.major_axis_length for p in properties]
+    minor_axis_length = []
+    major_axis_length = []
+
+    for prop in properties:
+        minor_axis, major_axis = _safe_region_axis_lengths(prop)
+        minor_axis_length.append(minor_axis)
+        major_axis_length.append(major_axis)
 
     elongation = [
         major_axis_length[i] / minor_axis_length[i] if minor_axis_length[i] > 0 else 0
