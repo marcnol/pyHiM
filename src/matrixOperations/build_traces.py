@@ -747,9 +747,16 @@ class BuildTraces:
         matrix_params: MatrixParams,
         acq_params: AcquisitionParams,
     ):
-        # loads barcode coordinate Tables
+        # loads barcode coordinate table and plots statistics
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
+
+        filepath_split = file.split(".")[0].split(os.sep).remove("data")
+        filepath_without_data_folder = (os.sep).join(filepath_split)
+        table.plot_distribution_fluxes(barcode_map, 
+                                       [filepath_without_data_folder, "_stats", ".png"]
+                                        )        
+        
         print_log(f"$ {len(barcode_map)} localizations in {os.path.basename(file)}")
         if "3D" in os.path.basename(file):
             self.ndims = 3
@@ -769,7 +776,7 @@ class BuildTraces:
 
         if (
             "clustering" in matrix_params.tracing_method and self.ndims == 3
-        ):  # for now it only runs for 3D data
+        ):  
             self.build_trace_by_clustering(barcode_map, data_path, matrix_params)
         elif self.ndims == 2:
             print_log(
