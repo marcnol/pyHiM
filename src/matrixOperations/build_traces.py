@@ -751,12 +751,14 @@ class BuildTraces:
         table = LocalizationTable()
         barcode_map, self.unique_barcodes = table.load(file)
 
-        filepath_split = file.split(".")[0].split(os.sep).remove("data")
+        filepath_split = file.split(".")[0].split(os.sep)  # remove ext + split path
+        filepath_split.remove("data")
         filepath_without_data_folder = (os.sep).join(filepath_split)
-        table.plot_distribution_fluxes(barcode_map, 
-                                       [filepath_without_data_folder, "_stats", ".png"]
-                                        )        
-        
+
+        table.plot_distribution_fluxes(
+            barcode_map, [filepath_without_data_folder, "_stats", ".png"]
+        )
+
         print_log(f"$ {len(barcode_map)} localizations in {os.path.basename(file)}")
         if "3D" in os.path.basename(file):
             self.ndims = 3
@@ -774,9 +776,7 @@ class BuildTraces:
                 barcode_map, data_path, seg_params, matrix_params, acq_params
             )
 
-        if (
-            "clustering" in matrix_params.tracing_method and self.ndims == 3
-        ):  
+        if "clustering" in matrix_params.tracing_method and self.ndims == 3:
             self.build_trace_by_clustering(barcode_map, data_path, matrix_params)
         elif self.ndims == 2:
             print_log(
@@ -848,8 +848,10 @@ def debug_mask_filename(
                 ROI: {int(os.path.basename(file).split("_")[3])}'
         )
 
+
 def binarize_coordinate(x):
     return np.nan if np.isnan(x) else int(x)
+
 
 def project_spot_coord_in_mask_ref(
     x, y, z, pixel_size_xy, pixel_size_z, mask_pixel_size_xy, mask_pixel_size_z
