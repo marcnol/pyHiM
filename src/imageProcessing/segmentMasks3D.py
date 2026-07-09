@@ -142,9 +142,7 @@ class Mask3D:
             }
 
         # segments 3D volumes
-        _, segmented_image_3d = self._segment_3d_volumes(
-            image_3d, seg_params, label
-        )
+        _, segmented_image_3d = self._segment_3d_volumes(image_3d, seg_params, label)
 
         number_masks = np.max(segmented_image_3d)
         print_log(f"$ Number of masks detected: {number_masks}")
@@ -399,7 +397,9 @@ class Mask3D:
             x for x in files_folder if (label in os.path.basename(x).split("_")[2])
         ]
         n_files_to_process = len(self.filenames_to_process_list)
-        print_log(f"$ Found {n_files_to_process} files in ROI [{roi_name}], {self.filenames_to_process_list[0]}")
+        print_log(
+            f"$ Found {n_files_to_process} files in ROI [{roi_name}], {self.filenames_to_process_list[0]}"
+        )
 
         self.inner_parallel_loop = True
         # processes files in this ROI
@@ -414,7 +414,7 @@ class Mask3D:
                 roi_name,
                 acq_params,
                 reference_fiducial,
-                label
+                label,
             )
 
     def shift_mask_file(
@@ -425,7 +425,7 @@ class Mask3D:
         roi_name,
         acq_params,
         reference_fiducial,
-        label
+        label,
     ):
 
         dim = 3
@@ -458,14 +458,16 @@ class Mask3D:
 
         # applies XY shift to 3D stack
         if label != reference_fiducial:
-            
+
             shift_arr = np.asarray(shift)
             if shift_arr.size >= 3:
                 print_log(
                     f"$ Applies shift (z,x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}, {shift_arr[2]:.2f}]"
                 )
             else:
-                print_log(f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]")
+                print_log(
+                    f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]"
+                )
             image_3d_aligned = apply_shift_3d_images(image_3d, shift)
         else:
             print_log("$ Running reference fiducial cycle: no shift applied!")
@@ -476,7 +478,9 @@ class Mask3D:
 
         if number_masks > 0:
 
-            original_filename_root = os.path.basename(filename_to_process).split("_3Dmasks_unregistered.npy")[0]
+            original_filename_root = os.path.basename(filename_to_process).split(
+                "_3Dmasks_unregistered.npy"
+            )[0]
 
             npy_labeled_image_shifted = (
                 data_path
@@ -495,7 +499,6 @@ class Mask3D:
             np.save(npy_labeled_image_shifted, image_3d_aligned)
         else:
             print_log(f"> Warning, no masks detected in: {filename_to_process}")
-
 
         del image_3d_aligned, image_3d
 

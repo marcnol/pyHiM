@@ -34,12 +34,12 @@ from typing import Optional
 import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
 from apifish.image import projection
-from astropy.table import vstack
-from astropy.table import Table
-from skimage import exposure, io
-from skimage.measure import label, regionprops
-from skimage.filters import threshold_otsu
+from astropy.table import Table, vstack
 from scipy.stats import skew
+from skimage import exposure, io
+from skimage.filters import threshold_otsu
+from skimage.measure import label, regionprops
+from traceratops.core.localization_table import create_output_table
 
 from core.dask_cluster import try_get_client
 from core.parameters import (
@@ -56,12 +56,10 @@ from imageProcessing.alignImages import apply_xy_shift_3d_images
 from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image
 from imageProcessing.makeProjections import reinterpolate_z
 from imageProcessing.segmentMasks import (
+    _deblend_3d_segmentation_advanced,
     _segment_3d_volumes_by_thresholding,
     _segment_3d_volumes_stardist,
-    _deblend_3d_segmentation_advanced,
 )
-
-from traceratops.core.localization_table import create_output_table
 
 # =============================================================================
 # CLASSES
@@ -291,14 +289,16 @@ class Localize3D:
 
         # applies XY or XYZ shift to 3D stack
         if label != p["referenceBarcode"]:
-            
+
             shift_arr = np.asarray(shift)
             if shift_arr.size >= 3:
                 print_log(
                     f"$ Applies shift (z,x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}, {shift_arr[2]:.2f}]"
                 )
             else:
-                print_log(f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]")
+                print_log(
+                    f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]"
+                )
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
             )
@@ -363,7 +363,7 @@ class Localize3D:
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
             try:
-                # version 0.4 
+                # version 0.4
                 spots_subpixel = fit_subpixel(
                     image_3d_aligned,
                     spots,
@@ -595,9 +595,9 @@ class Localize3D:
         self.single_file_to_process = single_file_to_process
         output_file_prefix = params.outputFile
         if self.single_file_to_process:
-            base_name = os.path.splitext(
-                os.path.basename(self.single_file_to_process)
-            )[0]
+            base_name = os.path.splitext(os.path.basename(self.single_file_to_process))[
+                0
+            ]
             output_file_prefix = f"{output_file_prefix}_{base_name}"
 
         self.output_filename = (
@@ -735,7 +735,6 @@ def get_mask_properties(
         return [], [], [], [], [], [], [], [], []
 
 
-
 def _safe_region_axis_lengths(region):
     """Return finite 3D region axis lengths, falling back for degenerate objects.
 
@@ -774,6 +773,7 @@ def _safe_region_axis_lengths(region):
 
     return minor_axis, major_axis
 
+
 def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
     """
     Extract shape and position features from 3D labeled objects.
@@ -791,20 +791,26 @@ def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
         One row per object with centroid, bbox, area, and shape metrics.
     """
 
-    properties = regionprops(segmented_image_3d, intensity_image= image_3d_aligned)
+    properties = regionprops(segmented_image_3d, intensity_image=image_3d_aligned)
 
     if len(properties) == 0:
         return Table(
             names=[
-                "z", "y", "x",
-                "z_min", "y_min", "x_min",
-                "z_max", "y_max", "x_max",
+                "z",
+                "y",
+                "x",
+                "z_min",
+                "y_min",
+                "x_min",
+                "z_max",
+                "y_max",
+                "x_max",
                 "area",
                 "minor_axis_length",
                 "major_axis_length",
                 "elongation",
             ],
-            rows=[]
+            rows=[],
         )
 
     try:
@@ -847,6 +853,7 @@ def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
 
     return spot_quality_metrics(image_3d_aligned, mask_properties)
 
+
 def spot_quality_metrics(image_3d_aligned, mask_properties):
     """
     Compute intensity and quality metrics for each segmented spot.
@@ -879,7 +886,7 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
             flux,
             roundness)
     """
-       
+
     mask_properties = mask_properties.to_pandas()
 
     snr_list = []
@@ -963,10 +970,7 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
             skew_list.append(skew(patch.ravel()))
 
             # Classify each patch as a spot or background
-        type_object = [
-            1 if not np.isnan(v) else 0
-            for v in spot_pixel_percentage
-        ]
+        type_object = [1 if not np.isnan(v) else 0 for v in spot_pixel_percentage]
 
         spots = np.zeros((len(mask_properties), 3), dtype=np.int64)
 
@@ -987,7 +991,6 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
             flux,
             roundness,
         )
-    
-    else: 
+
+    else:
         return [], [], [], [], [], [], [], [], []
-    

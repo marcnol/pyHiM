@@ -69,8 +69,6 @@ from core.pyhim_logging import print_log, write_string_to_file
 from core.saving import save_image_2d_cmd
 from imageProcessing.imageProcessing import Image, reassemble_3d_image, scatter_3d_image
 
-import pandas as pd
-
 np.seterr(divide="ignore", invalid="ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"  # ignore tensorflow logging
 matplotlib.rcParams["image.interpolation"] = "none"
@@ -522,12 +520,12 @@ def segment_mask_inhomog_background(im, seg_params: SegmentationParams):
     )
 
     # removes Masks too big or too small
-    for label in segm_deblend.labels:
+    for label1 in segm_deblend.labels:
         # take regions with large enough areas
-        area = segm_deblend.get_area(label)
+        area = segm_deblend.get_area(label1)
         # print_log('label {}, with area {}'.format(label,area))
         if area < seg_params.area_min or area > seg_params.area_max:
-            segm_deblend.remove_label(label=label)
+            segm_deblend.remove_label(label=label1)
             # print_log('label {} removed'.format(label))
 
     # relabel so masks numbers are consecutive
@@ -590,11 +588,11 @@ def segment_mask_stardist(im, seg_params: SegmentationParams):
     segm_deblend = segm
 
     # removes Masks too big or too small
-    for label in segm_deblend.labels:
+    for label1 in segm_deblend.labels:
         # take regions with large enough areas
-        area = segm_deblend.get_area(label)
+        area = segm_deblend.get_area(label1)
         if area < seg_params.area_min or area > seg_params.area_max:
-            segm_deblend.remove_label(label=label)
+            segm_deblend.remove_label(label=label1)
 
     # relabel so masks numbers are consecutive
     segm_deblend.relabel_consecutive()
@@ -912,11 +910,11 @@ def _segment_2d_image_by_thresholding(
     )
     if segm_deblend.nlabels > 0:
         # removes Masks too big or too small
-        for label in segm_deblend.labels:
+        for label1 in segm_deblend.labels:
             # take regions with large enough areas
-            area = segm_deblend.get_area(label)
+            area = segm_deblend.get_area(label1)
             if area < area_min or area > area_max:
-                segm_deblend.remove_label(label=label)
+                segm_deblend.remove_label(label=label1)
 
         # relabel so masks numbers are consecutive
         # segm_deblend.relabel_consecutive()
@@ -943,7 +941,7 @@ def _segment_3d_volumes_stardist(
         "> Using CUDA_VISIBLE_DEVICES from the environment; set it externally to pin GPUs."
     )
     model = StarDist3D(None, name=model_name, basedir=model_dir)
-    #limit_gpu_memory(None, allow_growth=True)
+    # limit_gpu_memory(None, allow_growth=True)
 
     im = normalize(image_3d, 1, 99.8, axis=axis_norm)
     l_x = im.shape[1]
@@ -1077,6 +1075,7 @@ def _deblend_3d_segmentation(binary):
     labels = watershed(-distance, markers, mask=binary)
     return labels
 
+
 def _deblend_3d_segmentation_advanced(binary):
     """
     Split touching 3D objects using a two-step watershed approach.
@@ -1116,7 +1115,7 @@ def _deblend_3d_segmentation_advanced(binary):
     coords_2 = peak_local_max(
         distance,
         footprint=np.ones((10, 10, 25)),
-        min_distance=(min_dist*2),
+        min_distance=(min_dist * 2),
         labels=binary,
         exclude_border=True,
     )
@@ -1157,7 +1156,7 @@ def _deblend_3d_segmentation_advanced(binary):
         else:
             regular_labels.append(region.label)
 
-    if len(elongated_labels)>0:
+    if len(elongated_labels) > 0:
 
         elongated_mask = np.isin(initial_labels, elongated_labels)
         regular_mask = np.isin(initial_labels, regular_labels)
@@ -1219,9 +1218,10 @@ def _deblend_3d_segmentation_advanced(binary):
 
         labels = regular_objects + corrected_elongated_labels
     else:
-        labels = initial_labels 
+        labels = initial_labels
 
     return labels
+
 
 def _segment_3d_masks(
     image_3d,

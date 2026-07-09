@@ -63,10 +63,8 @@ class MergeInputs:
             format="ascii.ecsv",
             overwrite=True,
         )
-                
-        print_log(
-            f"$ Merged {len(tables)} {description} table(s) into: {output_path}"
-        )
+
+        print_log(f"$ Merged {len(tables)} {description} table(s) into: {output_path}")
         return True
 
     def merge_localization_tables(
@@ -124,7 +122,10 @@ class MergeInputs:
         return output_path if merged else None
 
     def merge_all(
-        self, data_path: str, seg_params: SegmentationParams, reg_params: RegistrationParams
+        self,
+        data_path: str,
+        seg_params: SegmentationParams,
+        reg_params: RegistrationParams,
     ) -> Optional[str]:
         """Merge both localization and registration tables.
 

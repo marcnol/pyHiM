@@ -55,7 +55,10 @@ def main():
         files = []
         for directory in search_dirs:
             files.extend(
-                [os.path.relpath(f, root_folder) for f in glob.glob(directory + os.sep + pattern)]
+                [
+                    os.path.relpath(f, root_folder)
+                    for f in glob.glob(directory + os.sep + pattern)
+                ]
             )
         return files
 

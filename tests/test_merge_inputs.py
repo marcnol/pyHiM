@@ -1,12 +1,11 @@
-import pytest
-
-pytest.importorskip("astropy")
-
 from types import SimpleNamespace
 
+import pytest
 from astropy.table import Table
 
 from matrixOperations.merge_inputs import MergeInputs
+
+pytest.importorskip("astropy")
 
 
 def _write_dummy_table(path, value):
@@ -43,7 +42,10 @@ def test_merge_inputs_creates_expected_outputs(tmp_path):
     merged_local_shifts = merger.merge_all(data_path, seg_params, reg_params)
 
     merged_localizations = (
-        data_path / seg_params.localize_3d_folder / "data" / "localizations_3D_barcode.dat"
+        data_path
+        / seg_params.localize_3d_folder
+        / "data"
+        / "localizations_3D_barcode.dat"
     )
     merged_registration = (
         data_path / reg_params.register_local_folder / "data" / "shifts_block3D.dat"
@@ -71,7 +73,10 @@ def test_merge_inputs_skips_when_outputs_present(tmp_path):
     )
 
     existing_localization = (
-        data_path / seg_params.localize_3d_folder / "data" / "localizations_3D_barcode.dat"
+        data_path
+        / seg_params.localize_3d_folder
+        / "data"
+        / "localizations_3D_barcode.dat"
     )
     existing_localization.parent.mkdir(parents=True, exist_ok=True)
     _write_dummy_table(existing_localization, 10)

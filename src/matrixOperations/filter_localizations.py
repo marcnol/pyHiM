@@ -155,8 +155,8 @@ class FilterLocalizations:
             + os.sep
             + seg_params.outputFile
         )
-#        files = list(glob.glob(data_file_base_2d + "_*barcode.dat"))
-#        files += list(glob.glob(data_file_base_3d + "_*barcode.dat"))
+        #        files = list(glob.glob(data_file_base_2d + "_*barcode.dat"))
+        #        files += list(glob.glob(data_file_base_3d + "_*barcode.dat"))
         files = list(glob.glob(data_file_base_2d + "_2D_barcode.dat"))
         files += list(glob.glob(data_file_base_3d + "_3D_barcode.dat"))
         if files:

@@ -113,7 +113,11 @@ class DataManager:
         return str(data_path) if data_path else os.getcwd()
 
     def _determine_logs_path(self, md_file: str):
-        logs_path = os.path.dirname(md_file) if md_file else os.path.join(self.m_data_path, "logs")
+        logs_path = (
+            os.path.dirname(md_file)
+            if md_file
+            else os.path.join(self.m_data_path, "logs")
+        )
         os.makedirs(logs_path, exist_ok=True)
         return logs_path
 
