@@ -31,7 +31,6 @@ nano $HOME/.bashrc
 export PATH="$PATH:$HOME/Repositories/pyHiM/src"
 export PATH="$PATH:$HOME/Repositories/pyHiM/src/toolbox/file_handling"
 export PATH="$PATH:$HOME/Repositories/pyHiM/src/postProcessing"
-
 export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/pyHiM/src"
 export MPLBACKEND=agg
 ```
@@ -40,17 +39,51 @@ export MPLBACKEND=agg
 Make sure you change ```.../Repositories/...``` with your directory name (step 1.) if this is not where you put *pyHiM* !
 ```
 
-## Install conda
+
+## Installation using uv
+
+This is much faster than conda or mamba and is now the preferred installation method.
+
+To install using `uv` just go to the Repository folder and run the bash script:
+
+```sh
+cd $HOME/Repositories/pyHiM
+bash install_pyhim_uv.sh
+```
+
+Make sure you added the environmental variables in `.bashrc'.
+
+Everytime you run pyHiM you need to activate the environment doing:
+
+```sh
+source $HOME/Repositories/pyHiM/.venv/bin/activate
+```
+
+## Install using conda/mamba
 
 Follow the Miniconda instructions:
 [Installing miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install#quickstart-install-instructions)
+
+Or follow these instructions to install mamba:
+
+```bash
+curl -Ls https://micro.mamba.pm/api/micromamba/$(uname)-$(uname -m)/latest | tar -xvj bin/micromamba
+```
 
 ## Automatically configure pyHiM
 
 Run this command in your terminal:
 
 ```sh
+cd $HOME/Repositories/pyHiM
 conda env create -f environment.yml
+```
+
+or
+
+```sh
+cd $HOME/Repositories/pyHiM
+mamba env create -f environment.yml
 ```
 
 ### Verify GPU recognition
@@ -84,7 +117,11 @@ You solve by running `pip install dask[complete] distributed --upgrade`.
 
 ## Install **traceratops**
 
-- For latest version user:
+If you installed `pyHiM` using `uv` you can ignore this section as the bash script already installs traceratops.
+
+Otherwise run one of the following:
+
+### Latest master version [stable]
 
 ```sh
 conda activate pyhim39
@@ -94,7 +131,7 @@ cd $HOME/Repositories/traceratops
 pip install -e .
 ```
 
-- ONLY for developer:
+### Latest dev version [stable]
 
 ```sh
 conda activate pyhim39
@@ -105,6 +142,10 @@ pip install -e ".[dev]"
 ```
 
 ## Install **apifish**
+
+If you installed `pyHiM` using `uv` you can ignore this section as the bash script already installs traceratops.
+
+Otherwise run one of the following:
 
 1. Navigate where you want install apifish
 ```bash
@@ -121,6 +162,7 @@ cd $HOME/Repositories
       git clone git@github.com:apiFISH/apiFISH.git
       ```
 3. Switch on `development` branch
+
 ```bash
 cd apiFISH && git checkout development
 ```
@@ -143,9 +185,33 @@ export PYTHONPATH="$PYTHONPATH:$HOME/Repositories/apiFISH"
 
 - To run the tests:
 
+### Using uv
+
+If you used `uv` to install `pyHiM` run:
+
+```bash
+cd $HOME/Repositories/pyHiM
+source .venv/bin/activate
+pytest tests/ -vv
+```
+
+### Using conda
+
+If you used `conda` to install `pyHiM` run:
+
 ```bash
 cd ~Repositories/pyHiM/
 conda activate pyhim39
+pytest tests/ -vv
+```
+
+### Using mamba
+
+If you used `mamba` to install `pyHiM` run:
+
+```bash
+cd ~Repositories/pyHiM/
+mamba activate pyhim39
 pytest tests/ -vv
 ```
 
