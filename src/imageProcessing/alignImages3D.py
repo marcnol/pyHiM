@@ -42,7 +42,6 @@ import matplotlib.pylab as plt
 import numpy as np
 from astropy.table import Table, vstack
 from skimage import io
-from skimage.registration import phase_cross_correlation
 
 from core.dask_cluster import try_get_client
 from core.parameters import RegistrationParams, load_alignment_dict, print_dict
@@ -55,6 +54,9 @@ from imageProcessing.alignImages import (
 )
 from imageProcessing.imageProcessing import preprocess_3d_image
 from imageProcessing.makeProjections import reinterpolate_z
+
+# from skimage.registration import phase_cross_correlation
+
 
 # =============================================================================
 # CLASSES
@@ -478,21 +480,12 @@ def _align_fiducials_3d_file(
             )
     if not dict_shifts_available or shift is None:
         # if dictionary of shift or key for this cycle was not found, then it will exit
-        
-        '''
-        images_2d = [np.sum(x, axis=0) for x in images]
-
-        print_log("> Calculating XY shift...")
-        shift, _, _ = phase_cross_correlation(
-            images_2d[0], images_2d[1], upsample_factor=params.upsample_factor
-        )
-        '''
 
         raise SystemExit(
             f"> Existing with ERROR: Could not find shift value \
                 for this ROI: {roi} and cycle: {cycle_name}"
         )
-    
+
     # applies XY shift to 3D stack
     # ----------------------------
     print_log(f"$ shift values that will be applied = {shift}")

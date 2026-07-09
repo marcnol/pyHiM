@@ -405,14 +405,20 @@ class RefDiff3DSlicesFile(DataFile):
         return image / max_value if max_value > 0 else image
 
     def _overlay(self, ref_slice, target_slice):
-        ref_slice, _, _, _, _ = image_adjust(ref_slice, lower_threshold=0.5, higher_threshold=0.9999)
-        target_slice, _, _, _, _ = image_adjust(target_slice, lower_threshold=0.5, higher_threshold=0.9999)
+        ref_slice, _, _, _, _ = image_adjust(
+            ref_slice, lower_threshold=0.5, higher_threshold=0.9999
+        )
+        target_slice, _, _, _, _ = image_adjust(
+            target_slice, lower_threshold=0.5, higher_threshold=0.9999
+        )
         return np.dstack([ref_slice, target_slice, np.zeros_like(ref_slice)])
 
     def save(self, folder_path, basename):
         self.folder_path = folder_path
         self.basename = f"{basename}_referenceDifference3D"
-        self.path_name = self.folder_path + os.sep + self.basename + "." + self.extension
+        self.path_name = (
+            self.folder_path + os.sep + self.basename + "." + self.extension
+        )
 
         ref = self._normalize(self.reference_3d.astype(float))
         unc = self._normalize(self.target_uncorrected_3d.astype(float))
@@ -422,7 +428,9 @@ class RefDiff3DSlicesFile(DataFile):
         y_positions = np.linspace(0, sy - 1, num=self.n_xz_slices + 2, dtype=int)[1:-1]
         x_positions = np.linspace(0, sx - 1, num=self.n_yz_slices + 2, dtype=int)[1:-1]
 
-        fig, axes = plt.subplots(self.n_xz_slices + self.n_yz_slices, 2, figsize=(24, 48))
+        fig, axes = plt.subplots(
+            self.n_xz_slices + self.n_yz_slices, 2, figsize=(24, 48)
+        )
 
         row = 0
         for y in y_positions:

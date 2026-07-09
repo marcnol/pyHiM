@@ -5,6 +5,7 @@ Classes for common image processing
 """
 
 import os
+from concurrent.futures import ProcessPoolExecutor
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +16,6 @@ from photutils import Background2D, MedianBackground
 from skimage import exposure, io
 from tqdm import trange
 from tqdm.auto import tqdm
-from concurrent.futures import ProcessPoolExecutor
 
 from core.dask_cluster import try_get_client
 from core.pyhim_logging import print_log
@@ -418,8 +418,7 @@ def _remove_inhomogeneous_background_3d_nodask(
         )
 
         tasks = [
-            (z, image_3d[z, :, :], box_size, filter_size)
-            for z in range(number_planes)
+            (z, image_3d[z, :, :], box_size, filter_size) for z in range(number_planes)
         ]
 
         last_background = None
@@ -457,6 +456,7 @@ def _remove_inhomogeneous_background_3d_nodask(
             last_background = bkg.background
 
     return (output, last_background) if background else output
+
 
 def _remove_inhomogeneous_background_3d(
     image_3d,
@@ -520,7 +520,8 @@ def _remove_inhomogeneous_background_3d(
         # del image_list_scattered
 
     else:
-        output = _remove_inhomogeneous_background_3d_nodask(image_3d,
+        output = _remove_inhomogeneous_background_3d_nodask(
+            image_3d,
             box_size=box_size,
             filter_size=filter_size,
             parallel_execution=True,

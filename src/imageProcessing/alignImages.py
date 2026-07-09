@@ -18,15 +18,16 @@ image cross correlation
 # =============================================================================
 
 import glob
+import math
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import math
 from astropy.stats import SigmaClip
 from astropy.table import Table
 from numpy import linalg as LA
@@ -41,8 +42,6 @@ from skimage.util.shape import view_as_blocks
 from tqdm import trange
 from tqdm.auto import tqdm
 
-from concurrent.futures import ThreadPoolExecutor
-
 from core.dask_cluster import try_get_client
 from core.data_file import (
     BlockAlignmentFile,
@@ -50,8 +49,8 @@ from core.data_file import (
     EqualizationHistogramsFile,
     JsonFile,
     NpyFile,
-    RefDiffFile,
     RefDiff3DSlicesFile,
+    RefDiffFile,
 )
 from core.data_manager import load_json
 from core.parameters import ProjectionParams, RegistrationParams
@@ -289,11 +288,19 @@ def _estimate_z_shift_from_axis_slices(
         "total_slices": len(slices),
         "accepted_slices": accepted_slices,
         "ref_fraction_min": float(np.min(ref_fractions)) if ref_fractions else 0.0,
-        "ref_fraction_median": float(np.median(ref_fractions)) if ref_fractions else 0.0,
+        "ref_fraction_median": (
+            float(np.median(ref_fractions)) if ref_fractions else 0.0
+        ),
         "ref_fraction_max": float(np.max(ref_fractions)) if ref_fractions else 0.0,
-        "target_fraction_min": float(np.min(target_fractions)) if target_fractions else 0.0,
-        "target_fraction_median": float(np.median(target_fractions)) if target_fractions else 0.0,
-        "target_fraction_max": float(np.max(target_fractions)) if target_fractions else 0.0,
+        "target_fraction_min": (
+            float(np.min(target_fractions)) if target_fractions else 0.0
+        ),
+        "target_fraction_median": (
+            float(np.median(target_fractions)) if target_fractions else 0.0
+        ),
+        "target_fraction_max": (
+            float(np.max(target_fractions)) if target_fractions else 0.0
+        ),
     }
     return z_shifts, diagnostics
 
@@ -412,7 +419,12 @@ def compute_global_z_shift_from_slices(
     if len(filtered_shifts) == 0:
         filtered_shifts = np.asarray(z_shifts)
 
-    return float(np.mean(filtered_shifts)), len(z_shifts), len(filtered_shifts), diagnostics
+    return (
+        float(np.mean(filtered_shifts)),
+        len(z_shifts),
+        len(filtered_shifts),
+        diagnostics,
+    )
 
 
 class RegisterGlobal(Feature):
@@ -504,15 +516,19 @@ class RegisterGlobal(Feature):
             target_xy_aligned = apply_xy_shift_3d_images(
                 raw_3d_img, shift_xy, parallel_execution=False
             )
-            z_shift, total_slices, used_slices, z_diag = compute_global_z_shift_from_slices(
-                reference_3d_img,
-                target_xy_aligned,
-                slice_size=self.params.sliceSize,
-                min_signal_fraction=self.params.zMinSignalFraction,
-                upsample_factor=100,
-                auto_relax=self.params.zMinSignalFractionAuto,
+            z_shift, total_slices, used_slices, z_diag = (
+                compute_global_z_shift_from_slices(
+                    reference_3d_img,
+                    target_xy_aligned,
+                    slice_size=self.params.sliceSize,
+                    min_signal_fraction=self.params.zMinSignalFraction,
+                    upsample_factor=100,
+                    auto_relax=self.params.zMinSignalFractionAuto,
+                )
             )
-            selected_fraction = z_diag.get("selected_min_signal_fraction", self.params.zMinSignalFraction)
+            selected_fraction = z_diag.get(
+                "selected_min_signal_fraction", self.params.zMinSignalFraction
+            )
             print_log(
                 "$ Z-shift polling: "
                 f"{used_slices}/{total_slices} valid slices after outlier filtering; "
@@ -949,7 +965,7 @@ def apply_registrations_to_current_folder(
         raise ValueError(f"# File with dictionary not found!: {dict_filename}")
     else:
         print_log(f"$ Dictionary File loaded: {dict_filename}")
-        
+
     # generates shifts plot
     table_plot = prepare_table_from_json(dict_shifts)
     reference_number = params.referenceFiducial
@@ -978,6 +994,7 @@ def apply_registrations_to_current_folder(
 # =============================================================================
 # IMAGE ALIGNMENT
 # =============================================================================
+
 
 def apply_xy_shift_3d_images(image, shift, parallel_execution=True):
     """Applies a rigid shift to 2D or 3D images.
@@ -1565,7 +1582,8 @@ def align_2_images_cross_correlation(
         image2_adjusted,
     )
 
-######################################## Functions for global_register shifts plot ########################################
+
+# Functions for global_register shifts plot
 def prepare_table_from_json(json_data):
     # Reads shifts JSON dictionary of format: {"ROI:001": { "RT10": [z,x,y] or "RT10": [x,y] }
     roi_dict = next(iter(json_data.values()), {})
@@ -1579,7 +1597,7 @@ def prepare_table_from_json(json_data):
         if len(shifts) == 2:
             x, y = shifts
             z = None
-            z_axis= False
+            z_axis = False
         elif len(shifts) == 3:
             z, x, y = shifts
         else:
@@ -1598,13 +1616,14 @@ def prepare_table_from_json(json_data):
     table = pd.DataFrame(rows)
     table = table.sort_values(by="sort_num")
     table = table.set_index("label").drop(columns="sort_num")
-    
+
     if not z_axis:
         table = table.drop(columns=["shift_z"])
     if z_axis:
-    	 if table["shift_z"].isna().all() or (table["shift_z"].fillna(0) == 0).all():
+        if table["shift_z"].isna().all() or (table["shift_z"].fillna(0) == 0).all():
             table = table.drop(columns=["shift_z"])
     return table
+
 
 def extract_reference_cycle(ref):
     ref = str(ref)
@@ -1613,6 +1632,7 @@ def extract_reference_cycle(ref):
     match = re.search(r"\d+", ref)
     return int(match.group()) if match else None
 
+
 def generate_shift_plot(table, ref, output_path):
     table.index = table.index.astype(str)
     cols = [c for c in table.columns if table[c].notna().any()]
@@ -1620,12 +1640,12 @@ def generate_shift_plot(table, ref, output_path):
     ref = str(extract_reference_cycle(ref))
     # max 50 rows
     subplot_size = 50
-    n_subplot = math.ceil(n_bars / subplot_size )
+    n_subplot = math.ceil(n_bars / subplot_size)
     # comparable axes
     y_min = table[cols].min().min()
     y_max = table[cols].max().max()
     for i in range(n_subplot):
-        subplot = table.iloc[i * subplot_size:(i + 1) * subplot_size]
+        subplot = table.iloc[i * subplot_size : (i + 1) * subplot_size]
         n_subplot_bars = len(subplot.index)
 
         # figure size per subplot

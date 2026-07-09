@@ -34,11 +34,11 @@ from imageProcessing.segmentMasks3D import Mask3D
 from imageProcessing.segmentSources3D import Localize3D
 from matrixOperations.build_matrix_tempo import BuildMatrixTempo
 from matrixOperations.build_traces import BuildTraces, BuildTracesTempo
-from matrixOperations.merge_inputs import MergeInputs
 from matrixOperations.filter_localizations import (
     FilterLocalizations,
     FilterLocalizationsTempo,
 )
+from matrixOperations.merge_inputs import MergeInputs
 from matrixOperations.register_localizations import (
     RegisterLocalizations,
     RegisterLocalizationsTempo,

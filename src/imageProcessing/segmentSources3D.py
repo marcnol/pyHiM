@@ -35,8 +35,11 @@ import numpy as np
 from apifish.identification.spot_modeling import fit_subpixel
 from apifish.image import projection
 from astropy.table import Table, vstack
+from scipy.stats import skew
 from skimage import exposure, io
-from skimage.measure import regionprops
+from skimage.filters import threshold_otsu
+from skimage.measure import label, regionprops
+from traceratops.core.localization_table import create_output_table
 
 from core.dask_cluster import try_get_client
 from core.parameters import (
@@ -53,6 +56,7 @@ from imageProcessing.alignImages import apply_xy_shift_3d_images
 from imageProcessing.imageProcessing import image_adjust, preprocess_3d_image
 from imageProcessing.makeProjections import reinterpolate_z
 from imageProcessing.segmentMasks import (
+    _deblend_3d_segmentation_advanced,
     _segment_3d_volumes_by_thresholding,
     _segment_3d_volumes_stardist,
 )
@@ -191,13 +195,13 @@ class Localize3D:
         p = self.p
 
         if p["3Dmethod"] == "stardist":
-            binary, segmented_image_3d = _segment_3d_volumes_stardist(
+            binary = _segment_3d_volumes_stardist(
                 image_3d_aligned,
-                deblend_3d=True,
                 axis_norm=(0, 1, 2),
                 model_dir=p["stardist_basename"],
                 model_name=p["stardist_network"],
             )
+            segmented_image_3d = binary
         else:
             binary, segmented_image_3d = _segment_3d_volumes_by_thresholding(
                 image_3d_aligned,
@@ -273,7 +277,7 @@ class Localize3D:
             # uses existing shift calculated by align_images
             try:
                 shift = self.dict_shifts[f"ROI:{roi}"][label]
-                print_log("> Applying existing XY shift...")
+                print_log("> Applying existing shift...")
             except KeyError:
                 shift = None
 
@@ -285,14 +289,16 @@ class Localize3D:
 
         # applies XY or XYZ shift to 3D stack
         if label != p["referenceBarcode"]:
-            
+
             shift_arr = np.asarray(shift)
             if shift_arr.size >= 3:
                 print_log(
                     f"$ Applies shift (z,x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}, {shift_arr[2]:.2f}]"
                 )
             else:
-                print_log(f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]")
+                print_log(
+                    f"$ Applies shift (x,y) = [{shift_arr[0]:.2f}, {shift_arr[1]:.2f}]"
+                )
             image_3d_aligned = apply_xy_shift_3d_images(
                 image_3d, shift, parallel_execution=self.inner_parallel_loop
             )
@@ -300,10 +306,15 @@ class Localize3D:
             print_log("$ Running reference fiducial cycle: no shift applied!")
             shift = np.array([0.0, 0.0])
             image_3d_aligned = image_3d
+
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d_aligned)
 
+        # deblend 3D volumes
+        segmented_image_3d = _deblend_3d_segmentation_advanced(segmented_image_3d)
+
         # gets centroids and converts to spot int64 NPY array
+        """
         (
             spots,
             sharpness,
@@ -320,8 +331,24 @@ class Localize3D:
             threshold=p["threshold_over_std"],
             n_tolerance=p["brightest"],
         )
+        """
 
-        number_sources = len(peak)
+        (
+            spots,
+            snr_list,
+            spot_pixel_percentage,
+            mean_intensity_list,
+            skew_list,
+            patch_size,
+            object_class,
+            flux_list,
+            roundness_list,
+        ) = get_mask_properties_advanced(
+            segmented_image_3d,
+            image_3d_aligned,
+        )
+
+        number_sources = len(mean_intensity_list)
         print_log(
             f"$ Number of sources detected by image segmentation: {number_sources}"
         )
@@ -335,10 +362,8 @@ class Localize3D:
             )  # removes negative intensity levels
 
             # calls bigfish to get 3D sub-pixel coordinates based on 3D gaussian fitting
-            # compatibility with latest version of bigfish. To be removed if stable.
-            # TODO: Is it stable ? I think we can remove it.
             try:
-                # version 0.4 commit fa0df4f
+                # version 0.4
                 spots_subpixel = fit_subpixel(
                     image_3d_aligned,
                     spots,
@@ -361,6 +386,7 @@ class Localize3D:
                 )  # spot radius
 
             print_log(" > Updating table and saving results")
+
             # updates table
             for i in range(spots_subpixel.shape[0]):
                 z, x, y = spots_subpixel[i, :]
@@ -373,14 +399,14 @@ class Localize3D:
                     z + z_correction,
                     y,
                     x,
-                    sharpness[i],
-                    roundness1[i],
-                    roundness2[i],
-                    npix[i],
-                    sky[i],
-                    peak[i],
-                    flux[i],
-                    mag[i],
+                    snr_list[i],
+                    spot_pixel_percentage[i],
+                    skew_list[i],
+                    patch_size[i],
+                    object_class[i],
+                    mean_intensity_list[i],
+                    flux_list[i],
+                    roundness_list[i],
                 ]
                 output_table.add_row(table_entry)
 
@@ -569,9 +595,9 @@ class Localize3D:
         self.single_file_to_process = single_file_to_process
         output_file_prefix = params.outputFile
         if self.single_file_to_process:
-            base_name = os.path.splitext(
-                os.path.basename(self.single_file_to_process)
-            )[0]
+            base_name = os.path.splitext(os.path.basename(self.single_file_to_process))[
+                0
+            ]
             output_file_prefix = f"{output_file_prefix}_{base_name}"
 
         self.output_filename = (
@@ -709,43 +735,262 @@ def get_mask_properties(
         return [], [], [], [], [], [], [], [], []
 
 
-def create_output_table():
-    output = Table(
-        names=(
-            "Buid",
-            "ROI #",
-            "CellID #",
-            "Barcode #",
-            "id",
-            "zcentroid",
-            "xcentroid",
-            "ycentroid",
-            "sharpness",
-            "roundness1",
-            "roundness2",
-            "npix",
-            "sky",
-            "peak",
-            "flux",
-            "mag",
-        ),
-        dtype=(
-            "S2",
-            "int",
-            "int",
-            "int",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-            "int",
-            "f4",
-            "f4",
-            "f4",
-            "f4",
-        ),
+def _safe_region_axis_lengths(region):
+    """Return finite 3D region axis lengths, falling back for degenerate objects.
+
+    scikit-image derives axis lengths from inertia-tensor eigenvalues. Very
+    small, flat, or numerically degenerate 3D labels can produce a slightly
+    negative value inside the square-root used for ``axis_minor_length`` or
+    ``axis_major_length``, which raises ``ValueError: math domain error``.
+    Treat those labels as valid detections but mark their unavailable axis
+    length as 0 so downstream roundness/elongation metrics remain safe.
+    """
+
+    try:
+        minor_axis = region.minor_axis_length
+    except ValueError:
+        print_log(
+            f"$ Warning: could not compute minor axis length for label "
+            f"{region.label}; using 0. This usually indicates a degenerate "
+            "or very small 3D object."
+        )
+        minor_axis = 0
+
+    try:
+        major_axis = region.major_axis_length
+    except ValueError:
+        print_log(
+            f"$ Warning: could not compute major axis length for label "
+            f"{region.label}; using 0. This usually indicates a degenerate "
+            "or very small 3D object."
+        )
+        major_axis = 0
+
+    if not np.isfinite(minor_axis) or minor_axis < 0:
+        minor_axis = 0
+    if not np.isfinite(major_axis) or major_axis < 0:
+        major_axis = 0
+
+    return minor_axis, major_axis
+
+
+def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
+    """
+    Extract shape and position features from 3D labeled objects.
+
+    Parameters
+    ----------
+    segmented_image_3d : ndarray
+        Labeled 3D segmentation.
+    image_3d_aligned : ndarray
+        Intensity image.
+
+    Returns
+    -------
+    astropy.table.Table
+        One row per object with centroid, bbox, area, and shape metrics.
+    """
+
+    properties = regionprops(segmented_image_3d, intensity_image=image_3d_aligned)
+
+    if len(properties) == 0:
+        return Table(
+            names=[
+                "z",
+                "y",
+                "x",
+                "z_min",
+                "y_min",
+                "x_min",
+                "z_max",
+                "y_max",
+                "x_max",
+                "area",
+                "minor_axis_length",
+                "major_axis_length",
+                "elongation",
+            ],
+            rows=[],
+        )
+
+    try:
+        centroids = [p.weighted_centroid for p in properties]
+    except AttributeError:
+        centroids = [p.centroid_weighted for p in properties]
+
+    bbox = [p.bbox for p in properties]
+    area = [p.area for p in properties]
+    minor_axis_length = []
+    major_axis_length = []
+
+    for prop in properties:
+        minor_axis, major_axis = _safe_region_axis_lengths(prop)
+        minor_axis_length.append(minor_axis)
+        major_axis_length.append(major_axis)
+
+    elongation = [
+        major_axis_length[i] / minor_axis_length[i] if minor_axis_length[i] > 0 else 0
+        for i in range(len(properties))
+    ]
+
+    mask_properties = Table(
+        {
+            "z": [c[0] for c in centroids],
+            "y": [c[1] for c in centroids],
+            "x": [c[2] for c in centroids],
+            "z_min": [b[0] for b in bbox],
+            "y_min": [b[1] for b in bbox],
+            "x_min": [b[2] for b in bbox],
+            "z_max": [b[3] for b in bbox],
+            "y_max": [b[4] for b in bbox],
+            "x_max": [b[5] for b in bbox],
+            "area": area,
+            "minor_axis_length": minor_axis_length,
+            "major_axis_length": major_axis_length,
+            "elongation": elongation,
+        }
     )
-    return output
+
+    return spot_quality_metrics(image_3d_aligned, mask_properties)
+
+
+def spot_quality_metrics(image_3d_aligned, mask_properties):
+    """
+    Compute intensity and quality metrics for each segmented spot.
+
+    Metrics include:
+    - SNR
+    - Mean spot intensity
+    - Spot pixel fraction
+    - Patch skewness
+    - Patch size
+    - Object classification (spot/background)
+
+    Parameters
+    ----------
+    image_3d_aligned : ndarray or str
+        3D image or path to numpy file.
+    mask_properties : Table or DataFrame
+        Spot properties (bbox, centroid).
+
+    Returns
+    -------
+    tuple
+            (spots,
+            snr_list,
+            spot_pixel_percentage,
+            mean_intensity_list,
+            skew_list,
+            patch_size,
+            type_object,
+            flux,
+            roundness)
+    """
+
+    mask_properties = mask_properties.to_pandas()
+
+    snr_list = []
+    spot_pixel_percentage = []
+    mean_intensity_list = []
+    object_count_list = []
+    skew_list = []
+    patch_size = []
+    xmin, xmax = [], []
+    ymin, ymax = [], []
+    zmin, zmax = [], []
+    roundness = []
+
+    if len(mask_properties) > 0:
+
+        for idx, row in mask_properties.iterrows():
+
+            # Convert spot coordinates into integer voxel coordinates
+            x_int = int(round(row["x"]))
+            y_int = int(round(row["y"]))
+            z_int = int(round(row["z"]))
+
+            # Extract the local 3D patch using the bounding box coordinates
+            y_min, y_max = round(row["y_min"]), round(row["y_max"])
+            x_min, x_max = round(row["x_min"]), round(row["x_max"])
+            z_min, z_max = round(row["z_min"]), round(row["z_max"])
+
+            xmin.append(x_min)
+            xmax.append(x_max)
+            ymin.append(y_min)
+            ymax.append(y_max)
+            zmin.append(z_min)
+            zmax.append(z_max)
+
+            roundness.append(row["elongation"])
+
+            patch = image_3d_aligned[z_min:z_max, y_min:y_max, x_min:x_max]
+            patch_size.append(round((patch.size)))
+
+            # Segment the patch using Otsu thresholding
+            threshold = threshold_otsu(patch)
+            mask_spot = patch > threshold
+
+            # Compute signal-to-noise (SNR) ratio using the local background
+            background = patch[patch <= threshold]
+
+            if background.size == 0 or np.std(background) == 0:
+                snr_list.append(np.nan)
+            else:
+                I_spot = image_3d_aligned[z_int, y_int, x_int]
+                snr = (I_spot - np.mean(background)) / np.std(background)
+                snr_list.append(snr)
+
+            # Identify connected components inside the segmented patch
+            labeled_mask = label(mask_spot)
+            regions = regionprops(labeled_mask)
+            object_count_list.append(len(regions))
+
+            # Convert global coordinates into local patch coordinates
+            z_local = z_int - z_min
+            y_local = y_int - y_min
+            x_local = x_int - x_min
+
+            label_at_point = labeled_mask[z_local, y_local, x_local]
+
+            if label_at_point == 0:
+                spot_pixel_percentage.append(np.nan)
+                mean_intensity_list.append(np.nan)
+
+            else:
+                region = next(r for r in regions if r.label == label_at_point)
+
+                # Compute spot size and mean intensity
+                spot_pixel_percentage.append(region.area / patch.size * 100)
+
+                mean_intensity_list.append(
+                    round(np.mean(patch[labeled_mask == region.label]))
+                )
+
+            # Compute intensity distribution asymmetry
+            skew_list.append(skew(patch.ravel()))
+
+            # Classify each patch as a spot or background
+        type_object = [1 if not np.isnan(v) else 0 for v in spot_pixel_percentage]
+
+        spots = np.zeros((len(mask_properties), 3), dtype=np.int64)
+
+        spots[:, 0] = mask_properties["z"].round().astype(int)
+        spots[:, 1] = mask_properties["y"].round().astype(int)
+        spots[:, 2] = mask_properties["x"].round().astype(int)
+
+        flux = snr_list
+
+        return (
+            spots,
+            snr_list,
+            spot_pixel_percentage,
+            mean_intensity_list,
+            skew_list,
+            patch_size,
+            type_object,
+            flux,
+            roundness,
+        )
+
+    else:
+        return [], [], [], [], [], [], [], [], []
