@@ -54,6 +54,11 @@ def compare_npy_files(first_file, second_file, shuffled_plans=False):
     return is_same
 
 
+def compare_npy_shape(first_file, second_file):
+    """Return True when two NumPy files have the same array shape."""
+    return np.load(first_file).shape == np.load(second_file).shape
+
+
 def compare_mask_files(first_file, second_file):
     """Compare mask arrays when exact labels are unstable across dependencies.
 

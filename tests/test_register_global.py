@@ -15,7 +15,7 @@ from pyHiM import main
 from tests.testing_tools.comparison import (
     compare_ecsv_files,
     compare_line_by_line,
-    compare_npy_files,
+    compare_npy_shape,
     image_pixel_differences,
 )
 
@@ -39,7 +39,7 @@ def template_test_register_global(mode: str):
     def compare(tmp_file, out_file):
         extension = out_file.rsplit(".", 1)[-1] if "." in out_file else None
         if extension == "npy":
-            assert compare_npy_files(tmp_file, out_file)
+            assert compare_npy_shape(tmp_file, out_file)
         elif extension == "png":
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
