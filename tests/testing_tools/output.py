@@ -3,13 +3,13 @@
 """Helpers for checking generated files against reference outputs."""
 
 import os
-from collections.abc import Callable
+from typing import Callable, Optional
 
 from core.data_manager import extract_files
 
 
 def relative_output_name(
-    filepath: str, short_filename: str, extension: str | None
+    filepath: str, short_filename: str, extension: Optional[str]
 ) -> str:
     """Return the relative output name used by the regression fixtures."""
     filename = short_filename if extension is None else f"{short_filename}.{extension}"
@@ -30,7 +30,7 @@ def assert_reference_outputs_exist(
     generated_root: str,
     reference_outputs: str,
     compare: Callable[[str, str], None],
-    aliases: dict[str, str] | None = None,
+    aliases: Optional[dict[str, str]] = None,
 ):
     """Assert every reference output exists in generated outputs and compare it.
 
