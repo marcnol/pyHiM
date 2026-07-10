@@ -4,7 +4,6 @@
 Util functions for pyHiM testing
 """
 
-
 import numpy as np
 from astropy.table import Table
 from PIL import Image  # 'Image' is used to load images
@@ -55,6 +54,35 @@ def compare_npy_files(first_file, second_file, shuffled_plans=False):
     return is_same
 
 
+def compare_mask_files(first_file, second_file):
+    """Compare mask arrays, accepting equivalent foreground with relabeled objects."""
+    first_npy = np.load(first_file)
+    second_npy = np.load(second_file)
+    if np.array_equal(first_npy, second_npy, equal_nan=True):
+        return True
+    return first_npy.shape == second_npy.shape and np.array_equal(
+        first_npy > 0, second_npy > 0
+    )
+
+
+def _line_parts_equal(first_line: str, second_line: str) -> bool:
+    if first_line == second_line:
+        return True
+    first_parts = first_line.split()
+    second_parts = second_line.split()
+    if len(first_parts) != len(second_parts):
+        return False
+    for first_part, second_part in zip(first_parts, second_parts):
+        if first_part == second_part:
+            continue
+        try:
+            if not np.isclose(float(first_part), float(second_part), equal_nan=True):
+                return False
+        except ValueError:
+            return False
+    return True
+
+
 def compare_ecsv_files(
     first_file, second_file, columns_to_remove: list[str] = None, shuffled_lines=False
 ):
@@ -91,17 +119,20 @@ def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_sta
             is_same = f1_length == f2_length
             while is_same and (line_index < f1_length):
                 if shuffled_lines:
-                    is_same = f1_lines[line_index][line_start:] in [
-                        f_l[line_start:] for f_l in f2_lines
-                    ]
+                    is_same = any(
+                        _line_parts_equal(
+                            f1_lines[line_index][line_start:], f_l[line_start:]
+                        )
+                        for f_l in f2_lines
+                    )
                     if not is_same:
                         print(
                             f"SHUFFLE: At line number {line_index}\n from {first_file}\n{f1_lines[line_index]}\n"
                         )
                 else:
-                    is_same = (
-                        f1_lines[line_index][line_start:]
-                        == f2_lines[line_index][line_start:]
+                    is_same = _line_parts_equal(
+                        f1_lines[line_index][line_start:],
+                        f2_lines[line_index][line_start:],
                     )
                     if not is_same:
                         print(

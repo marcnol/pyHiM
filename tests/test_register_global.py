@@ -8,8 +8,6 @@ import os
 import shutil
 import tempfile
 
-from core.data_manager import extract_files
-
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
@@ -18,6 +16,7 @@ from tests.testing_tools.comparison import (
     compare_npy_files,
     image_pixel_differences,
 )
+from tests.testing_tools.output import assert_reference_outputs_exist
 
 # Build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
@@ -33,17 +32,11 @@ def template_test_register_global(mode: str):
     main(["-F", inputs, "-C", "register_global"])
     generated_align_images = os.path.join(inputs, "register_global")
     reference_outputs = f"pyhim-small-dataset/register_global/OUT/{mode}/alignImages/"
-    generated_files = extract_files(generated_align_images)
-    reference_files = extract_files(reference_outputs)
-    assert len(generated_files) == len(reference_files)
-    for filepath, short_filename, extension in generated_files:
-        if "data" in filepath.split(os.sep):
-            filename = f"data{os.sep}{short_filename}.{extension}"
-        else:
-            filename = f"{short_filename}.{extension}"
-        tmp_file = os.path.join(generated_align_images, filename)
-        out_file = os.path.join(reference_outputs, filename)
-        assert os.path.exists(out_file)
+
+    aliases = {"data/shifts.json": "data/register_global.json"}
+
+    def compare(tmp_file, out_file):
+        extension = out_file.rsplit(".", 1)[-1] if "." in out_file else None
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
         elif extension == "png":
@@ -53,7 +46,11 @@ def template_test_register_global(mode: str):
         elif extension == "table":
             assert compare_ecsv_files(tmp_file, out_file)
         else:
-            raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")
+            raise ValueError(f"Extension file UNRECOGNIZED: {out_file}")
+
+    assert_reference_outputs_exist(
+        generated_align_images, reference_outputs, compare, aliases=aliases
+    )
 
 
 def test_global_alignement():

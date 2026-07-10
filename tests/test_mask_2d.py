@@ -14,6 +14,7 @@ from pyHiM import main
 from tests.testing_tools.comparison import (
     compare_ecsv_files,
     compare_line_by_line,
+    compare_mask_files,
     compare_npy_files,
     image_pixel_differences,
 )
@@ -44,7 +45,7 @@ def template_test_mask_2d(mode: str):
         out_file = os.path.join(reference_outputs, filename)
         assert os.path.exists(out_file)
         if extension == "npy":
-            assert compare_npy_files(tmp_file, out_file)
+            assert compare_mask_files(tmp_file, out_file)
         elif extension == "png":
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":

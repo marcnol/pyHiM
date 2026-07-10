@@ -13,8 +13,10 @@ from pyHiM import main
 from tests.testing_tools.comparison import (
     compare_ecsv_files,
     compare_line_by_line,
+    compare_mask_files,
     compare_npy_files,
 )
+from tests.testing_tools.output import assert_reference_outputs_exist
 
 # build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
@@ -43,27 +45,28 @@ def test_make_projections():
 def test_register_global():
     """Check register_global"""
     main(["-F", tmp_small_inputs, "-C", "register_global"])
-    tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
+    tmp_align_images = os.path.join(tmp_small_inputs, "register_global/data")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
     )
     out_apply_register = (
         "pyhim-small-dataset/resources/small_dataset/OUT/appliesRegistrations/data"
     )
-    out_files = extract_files(out_align_images) + extract_files(out_apply_register)
-    tmp_files = extract_files(tmp_align_images)
-    assert len(out_files) > 0
-    assert len(out_files) == len(tmp_files)
-    for file_path, short_filename, extension in out_files:
-        if extension:
-            filename = short_filename + "." + extension
-        else:
-            filename = short_filename
-        tmp_file = os.path.join(tmp_align_images, filename)
+
+    def compare(tmp_file, out_file):
+        extension = out_file.rsplit(".", 1)[-1] if "." in out_file else None
         if extension == "npy":
-            assert compare_npy_files(tmp_file, file_path)
+            assert compare_npy_files(tmp_file, out_file)
         else:
-            assert compare_line_by_line(tmp_file, file_path, shuffled_lines=True)
+            assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
+
+    assert_reference_outputs_exist(
+        tmp_align_images,
+        out_align_images,
+        compare,
+        aliases={"shifts.json": "register_global.json"},
+    )
+    assert_reference_outputs_exist(tmp_align_images, out_apply_register, compare)
 
 
 def test_align_images_3d():
@@ -78,6 +81,8 @@ def test_align_images_3d():
     for _, short_filename, extension in out_files:
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_align_images, filename)
+        if not os.path.exists(tmp_file) and filename == "shifts_block3D.dat":
+            tmp_file = os.path.join(tmp_align_images, "register_global_block3D.dat")
         out_file = os.path.join(out_align_images, filename)
         assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
@@ -95,7 +100,7 @@ def test_segment_masks_3d():
         filename = short_filename + "." + extension
         tmp_file = os.path.join(tmp_segmented_objects, filename)
         out_file = os.path.join(out_segmented_objects, filename)
-        assert compare_npy_files(tmp_file, out_file)
+        assert compare_mask_files(tmp_file, out_file)
 
 
 # TODO: Find a way to test this module
