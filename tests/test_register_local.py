@@ -7,6 +7,8 @@ import os
 import shutil
 import tempfile
 
+import pytest
+
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
@@ -60,4 +62,5 @@ def test_with_global_done():
 
 
 def test_without_register_global():
-    template_test_register_local("alone")
+    with pytest.raises(SystemExit, match="Could not find shift value"):
+        template_test_register_local("alone")

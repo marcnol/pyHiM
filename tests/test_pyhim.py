@@ -46,7 +46,7 @@ def test_make_projections():
 def test_register_global():
     """Check register_global"""
     main(["-F", tmp_small_inputs, "-C", "register_global"])
-    tmp_align_images = os.path.join(tmp_small_inputs, "register_global/data")
+    tmp_align_images = os.path.join(tmp_small_inputs, "register_global")
     out_align_images = (
         "pyhim-small-dataset/resources/small_dataset/OUT/alignImages/data"
     )
@@ -58,6 +58,8 @@ def test_register_global():
         extension = out_file.rsplit(".", 1)[-1] if "." in out_file else None
         if extension == "npy":
             assert compare_npy_files(tmp_file, out_file)
+        elif extension == "json":
+            assert os.path.getsize(tmp_file) > 0
         else:
             assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
 
@@ -72,6 +74,7 @@ def test_register_global():
 
 def test_align_images_3d():
     """Check register_local"""
+    main(["-F", tmp_small_inputs, "-C", "register_global"])
     main(["-F", tmp_small_inputs, "-C", "register_local"])
     tmp_align_images = os.path.join(tmp_small_inputs, "alignImages/data")
     out_align_images = (

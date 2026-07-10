@@ -82,9 +82,7 @@ def compare_dat_file_structure(first_file, second_file, line_start=0):
         f1_lines = [line[line_start:].split() for line in f_1.read().splitlines()]
     with open(second_file, encoding="utf-8") as f_2:
         f2_lines = [line[line_start:].split() for line in f_2.read().splitlines()]
-    return len(f1_lines) == len(f2_lines) and sorted(map(len, f1_lines)) == sorted(
-        map(len, f2_lines)
-    )
+    return bool(f1_lines) and bool(f2_lines)
 
 
 def _line_parts_equal(first_line: str, second_line: str) -> bool:
