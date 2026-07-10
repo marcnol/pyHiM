@@ -969,7 +969,10 @@ def apply_registrations_to_current_folder(
     # generates shifts plot
     table_plot = prepare_table_from_json(dict_shifts)
     reference_number = params.referenceFiducial
-    output_path_plot = os.path.join(data_path, "register_global", "Shifts_barplot.png")
+    output_path_plot = os.path.join(
+        data_path, params.register_global_folder, "Shifts_barplot.png"
+    )
+    os.makedirs(os.path.dirname(output_path_plot), exist_ok=True)
     generate_shift_plot(table_plot, reference_number, output_path_plot)
 
     # generates lists of files to process

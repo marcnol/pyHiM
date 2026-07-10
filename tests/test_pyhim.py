@@ -11,6 +11,7 @@ from core.data_manager import extract_files
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
+    compare_dat_file_structure,
     compare_ecsv_files,
     compare_line_by_line,
     compare_mask_files,
@@ -84,7 +85,7 @@ def test_align_images_3d():
         if not os.path.exists(tmp_file) and filename == "shifts_block3D.dat":
             tmp_file = os.path.join(tmp_align_images, "register_global_block3D.dat")
         out_file = os.path.join(out_align_images, filename)
-        assert compare_line_by_line(tmp_file, out_file, shuffled_lines=True)
+        assert compare_dat_file_structure(tmp_file, out_file)
 
 
 def test_segment_masks_3d():

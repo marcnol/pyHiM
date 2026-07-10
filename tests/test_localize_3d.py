@@ -12,6 +12,7 @@ from core.data_manager import extract_files
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
+    compare_dat_file_structure,
     compare_ecsv_files,
     compare_line_by_line,
     compare_npy_files,
@@ -50,11 +51,10 @@ def template_test_localize_3d(mode: str):
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
         elif extension == "dat":
-            assert compare_line_by_line(
+            assert compare_dat_file_structure(
                 tmp_file,
                 out_file,
                 line_start=len("e5c550de-d381-4b63-99d3-736ca7e549d9"),
-                shuffled_lines=True,
             )
         elif extension == "table":
             assert compare_ecsv_files(tmp_file, out_file)

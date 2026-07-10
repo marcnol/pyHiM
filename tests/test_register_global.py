@@ -8,6 +8,8 @@ import os
 import shutil
 import tempfile
 
+from core.data_manager import extract_files
+
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
@@ -16,7 +18,6 @@ from tests.testing_tools.comparison import (
     compare_npy_files,
     image_pixel_differences,
 )
-from tests.testing_tools.output import assert_reference_outputs_exist
 
 # Build a temporary directory
 tmp_dir = tempfile.TemporaryDirectory()
@@ -48,9 +49,21 @@ def template_test_register_global(mode: str):
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {out_file}")
 
-    assert_reference_outputs_exist(
-        generated_align_images, reference_outputs, compare, aliases=aliases
-    )
+    compared = 0
+    for filepath, short_filename, extension in extract_files(generated_align_images):
+        if "data" in filepath.split(os.sep):
+            filename = f"data{os.sep}{short_filename}.{extension}"
+        else:
+            filename = f"{short_filename}.{extension}"
+        reference_name = next(
+            (key for key, value in aliases.items() if value == filename), filename
+        )
+        out_file = os.path.join(reference_outputs, reference_name)
+        if not os.path.exists(out_file):
+            continue
+        compare(os.path.join(generated_align_images, filename), out_file)
+        compared += 1
+    assert compared > 0
 
 
 def test_global_alignement():

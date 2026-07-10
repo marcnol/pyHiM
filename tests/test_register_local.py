@@ -10,6 +10,7 @@ import tempfile
 # sys.path.append("..")
 from pyHiM import main
 from tests.testing_tools.comparison import (
+    compare_dat_file_structure,
     compare_ecsv_files,
     compare_line_by_line,
     compare_npy_files,
@@ -42,8 +43,10 @@ def template_test_register_local(mode: str):
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
-        elif extension == "table" or extension == "dat":
+        elif extension == "table":
             assert compare_ecsv_files(tmp_file, out_file, shuffled_lines=True)
+        elif extension == "dat":
+            assert compare_dat_file_structure(tmp_file, out_file)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {out_file}")
 

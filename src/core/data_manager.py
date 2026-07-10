@@ -256,7 +256,8 @@ class DataManager:
                 name_to_find = (
                     str(register_out_file) + "_" + str(register_local_alignment)
                 )
-                if ext == "dat" and name == name_to_find:
+                legacy_name_to_find = "shifts_" + str(register_local_alignment)
+                if ext == "dat" and name in (name_to_find, legacy_name_to_find):
                     self.local_shifts_path = path
                 elif "barcode" in name:
                     self.add_to_processable_labels("barcode")
@@ -284,9 +285,12 @@ class DataManager:
                         )
                 except ValueError:
                     unrecognized += 1
-            elif ext == "json" and name == self.raw_dict.get("common", {}).get(
-                "alignImages", {}
-            ).get("outputFile"):
+            elif ext == "json" and name in (
+                self.raw_dict.get("common", {})
+                .get("alignImages", {})
+                .get("outputFile"),
+                "shifts",
+            ):
                 self.dict_shifts_path = path
             elif ext in ["log", "md"] or (
                 ext == "json" and name == self.params_filename
