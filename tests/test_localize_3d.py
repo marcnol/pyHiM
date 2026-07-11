@@ -13,7 +13,7 @@ from core.data_manager import extract_files
 from pyHiM import main
 from tests.testing_tools.comparison import (
     compare_ecsv_files,
-    compare_line_by_line,
+    compare_json_files,
     compare_localization_tables,
     compare_npy_files,
     image_pixel_differences,
@@ -49,7 +49,7 @@ def template_test_localize_3d(mode: str):
         elif extension == "png":
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
-            assert compare_line_by_line(tmp_file, out_file)
+            assert compare_json_files(tmp_file, out_file)
         elif extension == "dat":
             assert compare_localization_tables(tmp_file, out_file)
         elif extension == "table":

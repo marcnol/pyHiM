@@ -5,6 +5,8 @@ Util functions for pyHiM testing
 """
 
 
+import json
+
 import numpy as np
 from astropy.table import Table
 from PIL import Image  # 'Image' is used to load images
@@ -80,9 +82,53 @@ def compare_ecsv_files(
     return is_same
 
 
+def compare_json_files(first_file, second_file):
+    """Compare JSON files by their parsed content instead of text formatting."""
+    with open(first_file, encoding="utf-8") as f_1:
+        first_json = json.load(f_1)
+    with open(second_file, encoding="utf-8") as f_2:
+        second_json = json.load(f_2)
+    return first_json == second_json
+
+
 def compare_localization_tables(first_file, second_file):
-    """Compare localization tables while ignoring run-specific BUID values."""
-    return compare_ecsv_files(first_file, second_file, columns_to_remove=["BUID"])
+    """Compare localization tables while ignoring run-specific Buid values."""
+    first_table = Table.read(first_file, format="ascii.ecsv")
+    second_table = Table.read(second_file, format="ascii.ecsv")
+
+    buid_column = "Buid"
+    if (
+        buid_column not in first_table.colnames
+        or buid_column not in second_table.colnames
+    ):
+        print(
+            f"Column {buid_column!r} not found in both localization tables: "
+            f"{first_file} columns={first_table.colnames}, "
+            f"{second_file} columns={second_table.colnames}"
+        )
+        return False
+
+    first_table.remove_column(buid_column)
+    second_table.remove_column(buid_column)
+
+    if first_table.colnames != second_table.colnames:
+        print(
+            "Localization table columns differ after removing Buid:\n"
+            f"{first_file}: {first_table.colnames}\n"
+            f"{second_file}: {second_table.colnames}"
+        )
+        return False
+
+    is_same = np.array_equal(
+        first_table.as_array(), second_table.as_array(), equal_nan=True
+    )
+    if not is_same:
+        print(
+            "Localization tables differ after removing Buid:\n"
+            f"{first_file}\n"
+            f"{second_file}"
+        )
+    return is_same
 
 
 def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
