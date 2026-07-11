@@ -5,6 +5,8 @@ Util functions for pyHiM testing
 """
 
 
+import difflib
+
 import numpy as np
 from astropy.table import Table
 from PIL import Image  # 'Image' is used to load images
@@ -78,6 +80,33 @@ def compare_ecsv_files(
         comparison = first_npy == second_npy
         is_same = comparison.all()
     return is_same
+
+
+def compare_text_files(first_file, second_file):
+    """Compare two text files exactly and print a unified diff on mismatch.
+
+    This helper is intended for tests where the generated and reference text
+    outputs must be identical. Unlike ``compare_line_by_line``, it compares the
+    complete file contents, so differences in trailing newlines or other line
+    terminators are not silently ignored.
+    """
+    with open(first_file, encoding="utf-8", newline="") as f_1:
+        first_content = f_1.read()
+    with open(second_file, encoding="utf-8", newline="") as f_2:
+        second_content = f_2.read()
+
+    if first_content == second_content:
+        return True
+
+    diff = difflib.unified_diff(
+        first_content.splitlines(keepends=True),
+        second_content.splitlines(keepends=True),
+        fromfile=first_file,
+        tofile=second_file,
+        lineterm="",
+    )
+    print("Text files differ:\n" + "".join(diff))
+    return False
 
 
 def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
