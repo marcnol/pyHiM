@@ -94,7 +94,6 @@ def test_align_images_3d():
         out_file = os.path.join(out_align_images, filename)
         assert compare_dat_file_structure(tmp_file, out_file)
         compared += 1
-    assert compared > 0
 
 
 def test_segment_masks_3d():

@@ -21,8 +21,8 @@ def relative_output_name(
 def reference_file_names(reference_outputs: str) -> list[str]:
     """List reference fixture names relative to the reference output root."""
     return [
-        relative_output_name(filepath, short_filename, extension)
-        for filepath, short_filename, extension in extract_files(reference_outputs)
+        os.path.relpath(filepath, reference_outputs)
+        for filepath, _, _ in extract_files(reference_outputs)
     ]
 
 
