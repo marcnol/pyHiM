@@ -55,6 +55,18 @@ def compare_npy_files(first_file, second_file, shuffled_plans=False):
     return is_same
 
 
+def _values_equal(first_value, second_value):
+    """Compare scalar table values while tolerating ECSV float round-tripping."""
+    try:
+        return bool(np.isclose(first_value, second_value, equal_nan=True))
+    except TypeError:
+        return first_value == second_value
+
+
+def _table_rows_equal(first_row, second_row, colnames):
+    return all(_values_equal(first_row[col], second_row[col]) for col in colnames)
+
+
 def compare_ecsv_files(
     first_file, second_file, columns_to_remove: list[str] = None, shuffled_lines=False
 ):
@@ -63,21 +75,36 @@ def compare_ecsv_files(
 
     if columns_to_remove:
         for col in columns_to_remove:
-            first_ecsv.remove_column(col)
-            second_ecsv.remove_column(col)
-    first_npy = first_ecsv.as_array()
-    second_npy = second_ecsv.as_array()
-    is_same = True
+            if col in first_ecsv.colnames:
+                first_ecsv.remove_column(col)
+            if col in second_ecsv.colnames:
+                second_ecsv.remove_column(col)
+
+    if first_ecsv.colnames != second_ecsv.colnames or len(first_ecsv) != len(second_ecsv):
+        return False
+
+    colnames = first_ecsv.colnames
     if shuffled_lines:
-        for line in first_npy:
-            if line not in second_npy:
+        unmatched_rows = list(second_ecsv)
+        for line in first_ecsv:
+            match_index = next(
+                (
+                    index
+                    for index, candidate in enumerate(unmatched_rows)
+                    if _table_rows_equal(line, candidate, colnames)
+                ),
+                None,
+            )
+            if match_index is None:
                 print(f"SHUFFLE: At line {line}\n from {first_file}\n\n")
-                is_same = False
-                break
-    else:
-        comparison = first_npy == second_npy
-        is_same = comparison.all()
-    return is_same
+                return False
+            unmatched_rows.pop(match_index)
+        return True
+
+    for first_row, second_row in zip(first_ecsv, second_ecsv):
+        if not _table_rows_equal(first_row, second_row, colnames):
+            return False
+    return True
 
 
 def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
