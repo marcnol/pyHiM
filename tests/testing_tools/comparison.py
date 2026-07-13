@@ -92,7 +92,12 @@ def compare_json_files(first_file, second_file):
 
 
 def compare_localization_tables(first_file, second_file):
-    """Compare localization tables while ignoring run-specific Buid values."""
+    """Compare localization tables while ignoring run-specific Buid values.
+
+    Localization outputs are ECSV tables. The ``Buid`` column is generated
+    independently for every run, and row order is not part of the localization
+    table contract, so both are excluded from the comparison.
+    """
     first_table = Table.read(first_file, format="ascii.ecsv")
     second_table = Table.read(second_file, format="ascii.ecsv")
 
@@ -119,16 +124,40 @@ def compare_localization_tables(first_file, second_file):
         )
         return False
 
-    is_same = np.array_equal(
-        first_table.as_array(), second_table.as_array(), equal_nan=True
-    )
-    if not is_same:
+    if len(first_table) != len(second_table):
         print(
-            "Localization tables differ after removing Buid:\n"
-            f"{first_file}\n"
-            f"{second_file}"
+            "Localization table row counts differ after removing Buid:\n"
+            f"{first_file}: {len(first_table)} rows\n"
+            f"{second_file}: {len(second_table)} rows"
         )
-    return is_same
+        return False
+
+    first_table.sort(first_table.colnames)
+    second_table.sort(second_table.colnames)
+
+    for column in first_table.colnames:
+        first_values = np.asarray(first_table[column])
+        second_values = np.asarray(second_table[column])
+        if np.issubdtype(first_values.dtype, np.floating):
+            is_same = np.allclose(
+                first_values,
+                second_values,
+                rtol=1e-6,
+                atol=1e-6,
+                equal_nan=True,
+            )
+        else:
+            is_same = np.array_equal(first_values, second_values)
+        if not is_same:
+            print(
+                "Localization table column differs after removing Buid "
+                f"and sorting rows: {column!r}\n"
+                f"{first_file}\n"
+                f"{second_file}"
+            )
+            return False
+
+    return True
 
 
 def compare_line_by_line(first_file, second_file, shuffled_lines=False, line_start=0):
