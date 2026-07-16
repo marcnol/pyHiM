@@ -608,7 +608,7 @@ class Localize3D:
             + "data"
             + os.sep
             + output_file_prefix
-            + "_3D_barcode.dat"
+            + "_3D_barcode.ecsv"
         )
 
         print_log(f"> Processing Folder: {data_path}")

@@ -296,7 +296,7 @@ class Drift3D:
             + os.sep
             + output_prefix
         )
-        local_shifts_path = path_name + "_block3D.dat"
+        local_shifts_path = path_name + "_block3D.ecsv"
 
         alignment_results_table_global.write(
             local_shifts_path,

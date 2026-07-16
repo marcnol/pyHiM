@@ -1,11 +1,11 @@
 from types import SimpleNamespace
 
 import pytest
+
+pytest.importorskip("astropy")
 from astropy.table import Table
 
 from matrixOperations.merge_inputs import MergeInputs
-
-pytest.importorskip("astropy")
 
 
 def _write_dummy_table(path, value):
@@ -25,8 +25,8 @@ def test_merge_inputs_creates_expected_outputs(tmp_path):
     )
 
     for folder, suffix, values in (
-        (seg_params.localize_3d_folder, "_3D_barcode.dat", [1, 2]),
-        (reg_params.register_local_folder, "_block3D.dat", [3, 4]),
+        (seg_params.localize_3d_folder, "_3D_barcode.ecsv", [1, 2]),
+        (reg_params.register_local_folder, "_block3D.ecsv", [3, 4]),
     ):
         for idx, val in enumerate(values):
             file_path = (
@@ -45,10 +45,10 @@ def test_merge_inputs_creates_expected_outputs(tmp_path):
         data_path
         / seg_params.localize_3d_folder
         / "data"
-        / "localizations_3D_barcode.dat"
+        / "localizations_3D_barcode.ecsv"
     )
     merged_registration = (
-        data_path / reg_params.register_local_folder / "data" / "shifts_block3D.dat"
+        data_path / reg_params.register_local_folder / "data" / "shifts_block3D.ecsv"
     )
 
     assert merged_localizations.exists()
@@ -76,13 +76,13 @@ def test_merge_inputs_skips_when_outputs_present(tmp_path):
         data_path
         / seg_params.localize_3d_folder
         / "data"
-        / "localizations_3D_barcode.dat"
+        / "localizations_3D_barcode.ecsv"
     )
     existing_localization.parent.mkdir(parents=True, exist_ok=True)
     _write_dummy_table(existing_localization, 10)
 
     existing_registration = (
-        data_path / reg_params.register_local_folder / "data" / "shifts_block3D.dat"
+        data_path / reg_params.register_local_folder / "data" / "shifts_block3D.ecsv"
     )
     existing_registration.parent.mkdir(parents=True, exist_ok=True)
     _write_dummy_table(existing_registration, 20)
