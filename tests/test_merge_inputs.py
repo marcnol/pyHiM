@@ -1,11 +1,11 @@
 from types import SimpleNamespace
 
 import pytest
-
-pytest.importorskip("astropy")
 from astropy.table import Table
 
 from matrixOperations.merge_inputs import MergeInputs
+
+pytest.importorskip("astropy")
 
 
 def _write_dummy_table(path, value):
