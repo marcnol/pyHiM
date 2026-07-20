@@ -49,7 +49,7 @@ def template_test_register_local(mode: str):
             assert image_pixel_differences(tmp_file, out_file)
         elif extension == "json":
             assert compare_line_by_line(tmp_file, out_file)
-        elif extension == "table" or extension == "dat":
+        elif extension in ["ecsv", "table", "dat"]:
             assert compare_ecsv_files(tmp_file, out_file, shuffled_lines=True)
         else:
             raise ValueError(f"Extension file UNRECOGNIZED: {filepath}")

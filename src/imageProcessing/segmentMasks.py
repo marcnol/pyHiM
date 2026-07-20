@@ -786,7 +786,7 @@ def segment_masks(
         + params.outputFile
         + "_"
         + label
-        + ".dat"
+        + ".ecsv"
     )
     if current_param.param_dict["parallel"]:
         # running in parallel mode

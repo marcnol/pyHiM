@@ -110,7 +110,7 @@ class JsonFile(DataFile):
 class EcsvFile(DataFile):
     def __init__(self, data):
         super().__init__(data)
-        self.extension = "table"
+        self.extension = "ecsv"
         self.folder_path = ""
         self.basename = ""
         self.path_name = ""

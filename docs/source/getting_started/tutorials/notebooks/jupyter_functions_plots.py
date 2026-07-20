@@ -16,13 +16,13 @@ from matplotlib import rcParams
 
 
 def copy_localization_table(input_folder):
-    source = os.path.join(input_folder, "localizations_3D_barcode_example.dat")
+    source = os.path.join(input_folder, "localizations_3D_barcode_example.ecsv")
     dest = os.path.join(
         input_folder,
         "analysis_localizations",
         "localize_3d",
         "data",
-        "localizations_3D_barcode.dat",
+        "localizations_3D_barcode.ecsv",
     )
     folder_path = os.path.join(
         input_folder, "analysis_localizations", "localize_3d", "data"

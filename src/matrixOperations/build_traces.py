@@ -587,7 +587,7 @@ class BuildTraces:
     def group_localizations_by_coordinate(self, matrix_params: MatrixParams):
         """
         Uses a KDTree to group detections by it's coordinates, given a certain distance threshold
-        Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.dat)
+        Returns a list of lists. Each list contains the lines if the input data (segmentedObjects_3D_barcode.ecsv)
         where the detections are less than a pixel away from each other
 
         Parameters
@@ -807,8 +807,8 @@ class BuildTraces:
         # iterates over consolidated barcode localization tables in the current folder
         files = []
         for folder, suffix in (
-            (seg_params.localize_2d_folder, "_2D_barcode.dat"),
-            (seg_params.localize_3d_folder, "_3D_barcode.dat"),
+            (seg_params.localize_2d_folder, "_2D_barcode.ecsv"),
+            (seg_params.localize_3d_folder, "_3D_barcode.ecsv"),
         ):
             consolidated_path = os.path.join(
                 data_path, folder, "data", f"{seg_params.outputFile}{suffix}"

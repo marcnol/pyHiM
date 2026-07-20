@@ -256,7 +256,7 @@ class DataManager:
                 name_to_find = (
                     str(register_out_file) + "_" + str(register_local_alignment)
                 )
-                if ext == "dat" and name == name_to_find:
+                if ext in ("ecsv", "dat") and name == name_to_find:
                     self.local_shifts_path = path
                 elif "barcode" in name:
                     self.add_to_processable_labels("barcode")

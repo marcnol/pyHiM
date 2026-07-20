@@ -73,8 +73,8 @@ class MergeInputs:
         """Merge per-file localization tables into the expected filenames."""
 
         for folder, suffix in (
-            (seg_params.localize_2d_folder, "_2D_barcode.dat"),
-            (seg_params.localize_3d_folder, "_3D_barcode.dat"),
+            (seg_params.localize_2d_folder, "_2D_barcode.ecsv"),
+            (seg_params.localize_3d_folder, "_3D_barcode.ecsv"),
         ):
             output_path = os.path.join(
                 data_path, folder, "data", f"{seg_params.outputFile}{suffix}"
@@ -103,7 +103,7 @@ class MergeInputs:
             data_path,
             reg_params.register_local_folder,
             "data",
-            f"{reg_params.outputFile}_block3D.dat",
+            f"{reg_params.outputFile}_block3D.ecsv",
         )
         if os.path.exists(output_path):
             print_log(
@@ -115,7 +115,7 @@ class MergeInputs:
             data_path,
             reg_params.register_local_folder,
             "data",
-            f"{reg_params.outputFile}_*_block3D.dat",
+            f"{reg_params.outputFile}_*_block3D.ecsv",
         )
         files = sorted(glob.glob(pattern))
         merged = self._merge_tables(files, output_path, "registration")
