@@ -38,11 +38,24 @@ import glob
 import os
 from datetime import datetime
 
+import gc
+import cupy as cp
+import tifffile as tiff
+
 import matplotlib.pylab as plt
 import numpy as np
 from astropy.table import Table, vstack
 from skimage import io
+from skimage import exposure
+from numpy.typing import ArrayLike
+from scipy.ndimage import zoom
 
+#import warpfield 3D registartions 
+from warpfield.warp import warp_volume
+from warpfield import Recipe, register_volumes
+from warpfield.register import WarpMap
+
+# from skimage.registration import phase_cross_correlation
 from core.dask_cluster import try_get_client
 from core.parameters import RegistrationParams, load_alignment_dict, print_dict
 from core.pyhim_logging import print_log, print_session_name
@@ -55,7 +68,7 @@ from imageProcessing.alignImages import (
 from imageProcessing.imageProcessing import preprocess_3d_image
 from imageProcessing.makeProjections import reinterpolate_z
 
-# from skimage.registration import phase_cross_correlation
+from pyHiM_tools import BothImgRbgFile
 
 
 # =============================================================================
@@ -654,3 +667,150 @@ def create_output_table():
             "f4",
         ),
     )
+
+def compute_warpfield(
+    img_ref: ArrayLike, 
+    img_trg: ArrayLike,
+    tomove_image: ArrayLike,
+    h5_path: str,
+    gpu_id: int = 0
+) -> tuple[ArrayLike, ArrayLike, ArrayLike, ArrayLike, ArrayLike | None] :
+    """
+    Compute the warpfield to warp a target image to a reference image. Applies warp_map to tomoveimage.
+    """
+
+    cp.cuda.Device(gpu_id).use()
+
+    recipe = ( Recipe() )  # initialized with a translation level, followed by an affine registration level
+    recipe.pre_filter.clip_thresh = 0  # clip DC background, if present
+    
+    recipe.pre_filter.soft_edge = [4,33,33]
+
+    # affine level properties
+    recipe.levels[-1].repeats = 0
+
+    # add non-rigid registration levels:
+    recipe.add_level(block_size=[15, 33, 33]) # adjust block_size to make blocks roughly isotropic in real space. 
+    recipe.levels[-1].block_stride = 0.75
+    recipe.levels[-1].smooth.sigmas = [1.0, 1.0, 1.0] 
+    recipe.levels[-1].smooth.long_range_ratio = 0.1
+    recipe.levels[-1].repeats = 2
+        
+    recipe.add_level(block_size=[5,11,11])
+    recipe.levels[-1].block_stride = 0.70
+    recipe.levels[-1].smooth.sigmas = [0.5,0.5,0.5] 
+    recipe.levels[-1].smooth.long_range_ratio = 0.05 # Long range ratio for double gaussian kernel.
+    recipe.levels[-1].repeats = 2
+
+    #register moving volume
+    warped_image, warp_map, _ = register_volumes(
+        ref=img_ref,
+        vol=img_trg,
+        recipe=recipe )
+
+    # save warpfield as h5 
+    warp_map.to_h5(
+        h5_path,
+        group="warp_map",
+        compression="gzip",
+        overwrite=True,
+        )
+    # save as np
+    warped_image = cp.asnumpy(warped_image).astype(np.float32)
+    warp_field = cp.asnumpy(warp_map.warp_field).astype(np.float32)
+    block_size = cp.asnumpy(warp_map.block_size).astype(np.float32)
+    block_stride = cp.asnumpy(warp_map.block_stride).astype(np.float32)
+
+    tomove_registered = None
+    
+    # apply warp to other channel.s
+    if tomove_image is not None:
+        offset = -(block_size/ block_stride/ 2)
+        tomove_registered_cp = warp_volume(
+            cp.asarray(tomove_image, dtype=cp.float32),
+            cp.asarray(warp_field),
+            cp.asarray(block_stride),
+            cp.asarray(offset, dtype=cp.float32)
+            )
+        
+        tomove_registered = cp.asnumpy(tomove_registered_cp).astype(np.float32)
+        del tomove_registered_cp 
+
+    
+    del warp_map
+    gc.collect()
+    cp.cuda.Stream.null.synchronize()
+    cp.get_default_memory_pool().free_all_blocks()
+    cp.get_default_pinned_memory_pool().free_all_blocks()
+
+    return (warped_image, warp_field, tomove_registered)
+
+def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output):
+    moving = tiff.imread(moving)
+    moving_dtype = moving.dtype
+    original_shape=moving.shape
+    reference = tiff.imread(reference)
+    tomove_dtype = None
+    tomove_image = None
+    
+    if tomove is not None:
+        tomove_image = tiff.imread(tomove)
+        tomove_dtype = tomove_image.dtype
+
+    # binning
+    if xybin > 1 or zbin > 1 :
+        moving = zoom(moving, (1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
+        reference = zoom(reference, (1.0 / zbin,  1.0 / xybin,  1.0 / xybin), order=1)
+        if tomove is not None :
+            tomove_image = zoom(tomove_image, ( 1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
+            
+    # save warpfield
+    h5_path = os.path.join(output, {f"{base}}_warp_map.h5")
+    
+    moving_registered, warp_field, tomove_registered = compute_warpfield(
+        reference,
+        moving,
+        tomove_image,
+        h5_path,
+        gpu_id=gpu )
+    
+    # RGB overlay
+    os.makedirs(output, exist_ok=True)
+    overlay = BothImgRbgFile(reference.max(axis=0), moving.max(axis=0), tag='reference_original')
+    overlay.save(output, f"{base}_registered")
+    overlay = BothImgRbgFile(reference.max(axis=0), moving_registered.max(axis=0), tag='reference_aligned')
+    overlay.save(output,  f"{base}_registered")
+    
+    # Plot the intensity and direction of the deformation field at the center z-plane
+    z_plane = warp_field.shape[1] // 2 # (3,z,x,y)
+    plot_deformation_intensity_xyz(warp_field, z_plane, f"{base}")
+    plot_deformation_direction(warp_field, z_plane, f"{base}")
+    
+    # Upsample back to the original shape if binning was applied
+    if zbin > 1 or xybin > 1 :
+        zoom_factors = [original_shape[0] / moving_registered.shape[0],  # Z upsampling
+                        original_shape[1] / moving_registered.shape[1],  # Y upsampling
+                        original_shape[2] / moving_registered.shape[2]]  # X upsampling
+
+        print(f"Zoom factors: {zoom_factors}")
+        moving_registered = zoom(moving_registered, zoom_factors, order=1)
+        if tomove_registered is not None :
+            tomove_registered = zoom(tomove_registered, zoom_factors, order=1)
+            
+    # Restore moving image dtype
+    if np.issubdtype(moving_dtype, np.integer):
+        info = np.iinfo(moving_dtype)
+        moving_registered = np.clip(moving_registered,info.min,  info.max).astype(moving_dtype)
+    else:
+        moving_registered = moving_registered.astype(moving_dtype)
+
+    # Restore tomove image dtype
+    if tomove_registered is not None and tomove_dtype is not None:
+        if np.issubdtype(tomove_dtype, np.integer):
+            info = np.iinfo(tomove_dtype)
+            tomove_registered = np.clip(tomove_registered,info.min, info.max).astype(tomove_dtype)
+        else:
+            tomove_registered = tomove_registered.astype(tomove_dtype) 
+            
+   return moving_registered,tomove_registered 
+
