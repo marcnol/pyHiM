@@ -141,13 +141,27 @@ class Mask3D:
                 "3D": "_3Dmasks_unregistered",
             }
         # apply 3D anisotropic registration (warpfield) if True
-        if seg_params.Mask_aniso_registration is not "False" or "false":
-                moving = open(filename_to_process)
-                reference = ch00 refrt
-                tomove =ch01
-                tomove_reg = moving.WarpfieldRegistration(self, path, reference, tomove)
-                save(tomove_reg) 
-            print_log("> Saving registered mask :")
+        if str(seg_params.Mask_aniso_registration).lower() != "false":
+            tomove = tiffread(filename_to_process)
+            base = os.path.splitext(os.path.basename(filename_to_process))[0]
+            moving_name = base.replace(
+                f"ch{acq_param.mask_channel:02d}",
+                f"ch{acq_param.fiducialmask_channel:02d}")
+            reference = glob.glob(os.path.join( path, f"*referencefiducial*{acq_param.fiducialBarcode_channel}*.tif" ))
+            reference = tiffread(reference) 
+            moving = tiffread(os.path.join(path, moving_name))
+
+    # Compute warp field from fiducials and apply it to the mask
+    tomove_reg = moving.WarpfieldRegistration(
+        path=path,
+        reference=reference,
+        moving=moving,
+        image_to_warp=tomove,
+    )
+
+    # Save registered mask
+    save(tomove_reg)
+    print_log("> Saving registered mask:")
             
             
         # segments 3D volumes
