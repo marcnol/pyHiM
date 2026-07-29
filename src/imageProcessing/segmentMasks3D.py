@@ -142,8 +142,7 @@ class Mask3D:
             }
         # apply 3D anisotropic registration (warpfield) if True
         if seg_params.Mask_aniso_registration is not "False" or "false":
-            for mask in ROI:
-                moving = ch00
+                moving = open(filename_to_process)
                 reference = ch00 refrt
                 tomove =ch01
                 tomove_reg = moving.WarpfieldRegistration(self, path, reference, tomove)
