@@ -360,21 +360,22 @@ class Drift3D:
 
         return local_shifts_path
 
-    def alignMaskAniso(self,
+    def WarpfieldRegistration(self,
         data_path,
         reg_param: RegistrationParams,
-        roi_name,
-        single_file_to_process=None,
+        moving,
+        tomove,
+        reference,
     ):
         """
-        runs warpfield registration on masks 
+        runs warpfield registration for one image 
 
         Returns
         -------
         None.
 
         """
-        session_name = "Mask3d"
+        session_name = ""
         zbin = 2
         xybin = 2
         gpu = 0
@@ -383,16 +384,74 @@ class Drift3D:
 
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
-        for mask in ROI :
-            reference = RTref
-            moving = reg_param.
-            tomove = reg_param.
-            moving_reg  , tomove_reg = applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, data_path, gpu)
-            save(tomove as ch01)
-            
-        return something
         
-
+        moving = tiff.imread(moving)
+        moving_dtype = moving.dtype
+        original_shape=moving.shape
+        reference = tiff.imread(reference)
+        tomove_dtype = None
+        tomove_image = None
+        
+        if tomove is not None:
+            tomove_image = tiff.imread(tomove)
+            tomove_dtype = tomove_image.dtype
+    
+        # binning
+        if xybin > 1 or zbin > 1 :
+            moving = zoom(moving, (1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
+            reference = zoom(reference, (1.0 / zbin,  1.0 / xybin,  1.0 / xybin), order=1)
+            if tomove is not None :
+                tomove_image = zoom(tomove_image, ( 1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
+                
+        # save warpfield
+        base = os.path.splitext(os.path.basename(moving_path))[0]
+        h5_path = os.path.join(output, f"{base}_warp_map.h5")
+        moving_registered, warp_field, tomove_registered = compute_warpfield(
+            reference,
+            moving,
+            tomove_image,
+            h5_path,
+            gpu_id=gpu )
+        
+        # RGB overlay
+        os.makedirs(output, exist_ok=True)
+        overlay = BothImgRbgFile(reference.max(axis=0), moving.max(axis=0), tag='reference_original')
+        overlay.save(output, f"{base}_registered")
+        overlay = BothImgRbgFile(reference.max(axis=0), moving_registered.max(axis=0), tag='reference_aligned')
+        overlay.save(output,  f"{base}_registered")
+        
+        # Plot the intensity and direction of the deformation field at the center z-plane
+        z_plane = warp_field.shape[1] // 2 # (3,z,x,y)
+        plot_deformation_intensity_xyz(warp_field, z_plane, f"{base}")
+        plot_deformation_direction(warp_field, z_plane, f"{base}")
+        
+        # Upsample back to the original shape if binning was applied
+        if zbin > 1 or xybin > 1 :
+            zoom_factors = [original_shape[0] / moving_registered.shape[0],  # Z upsampling
+                            original_shape[1] / moving_registered.shape[1],  # Y upsampling
+                            original_shape[2] / moving_registered.shape[2]]  # X upsampling
+    
+            print(f"Zoom factors: {zoom_factors}")
+            moving_registered = zoom(moving_registered, zoom_factors, order=1)
+            if tomove_registered is not None :
+                tomove_registered = zoom(tomove_registered, zoom_factors, order=1)
+                
+        # Restore moving image dtype
+        if np.issubdtype(moving_dtype, np.integer):
+            info = np.iinfo(moving_dtype)
+            moving_registered = np.clip(moving_registered,info.min,  info.max).astype(moving_dtype)
+        else:
+            moving_registered = moving_registered.astype(moving_dtype)
+    
+        # Restore tomove image dtype
+        if tomove_registered is not None and tomove_dtype is not None:
+            if np.issubdtype(tomove_dtype, np.integer):
+                info = np.iinfo(tomove_dtype)
+                tomove_registered = np.clip(tomove_registered,info.min, info.max).astype(tomove_dtype)
+            else:
+                tomove_registered = tomove_registered.astype(tomove_dtype) 
+                
+       return moving_registered, tomove_registered 
 
 # =============================================================================
 #   FUNCTIONS
@@ -777,75 +836,6 @@ def compute_warpfield(
     cp.get_default_pinned_memory_pool().free_all_blocks()
 
     return (warped_image, warp_field, tomove_registered)
-
-def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output,gpu):
-    moving = tiff.imread(moving)
-    moving_dtype = moving.dtype
-    original_shape=moving.shape
-    reference = tiff.imread(reference)
-    tomove_dtype = None
-    tomove_image = None
-    
-    if tomove is not None:
-        tomove_image = tiff.imread(tomove)
-        tomove_dtype = tomove_image.dtype
-
-    # binning
-    if xybin > 1 or zbin > 1 :
-        moving = zoom(moving, (1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
-        reference = zoom(reference, (1.0 / zbin,  1.0 / xybin,  1.0 / xybin), order=1)
-        if tomove is not None :
-            tomove_image = zoom(tomove_image, ( 1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
-            
-    # save warpfield
-    base = os.path.splitext(os.path.basename(moving_path))[0]
-    h5_path = os.path.join(output, f"{base}_warp_map.h5")
-    moving_registered, warp_field, tomove_registered = compute_warpfield(
-        reference,
-        moving,
-        tomove_image,
-        h5_path,
-        gpu_id=gpu )
-    
-    # RGB overlay
-    os.makedirs(output, exist_ok=True)
-    overlay = BothImgRbgFile(reference.max(axis=0), moving.max(axis=0), tag='reference_original')
-    overlay.save(output, f"{base}_registered")
-    overlay = BothImgRbgFile(reference.max(axis=0), moving_registered.max(axis=0), tag='reference_aligned')
-    overlay.save(output,  f"{base}_registered")
-    
-    # Plot the intensity and direction of the deformation field at the center z-plane
-    z_plane = warp_field.shape[1] // 2 # (3,z,x,y)
-    plot_deformation_intensity_xyz(warp_field, z_plane, f"{base}")
-    plot_deformation_direction(warp_field, z_plane, f"{base}")
-    
-    # Upsample back to the original shape if binning was applied
-    if zbin > 1 or xybin > 1 :
-        zoom_factors = [original_shape[0] / moving_registered.shape[0],  # Z upsampling
-                        original_shape[1] / moving_registered.shape[1],  # Y upsampling
-                        original_shape[2] / moving_registered.shape[2]]  # X upsampling
-
-        print(f"Zoom factors: {zoom_factors}")
-        moving_registered = zoom(moving_registered, zoom_factors, order=1)
-        if tomove_registered is not None :
-            tomove_registered = zoom(tomove_registered, zoom_factors, order=1)
-            
-    # Restore moving image dtype
-    if np.issubdtype(moving_dtype, np.integer):
-        info = np.iinfo(moving_dtype)
-        moving_registered = np.clip(moving_registered,info.min,  info.max).astype(moving_dtype)
-    else:
-        moving_registered = moving_registered.astype(moving_dtype)
-
-    # Restore tomove image dtype
-    if tomove_registered is not None and tomove_dtype is not None:
-        if np.issubdtype(tomove_dtype, np.integer):
-            info = np.iinfo(tomove_dtype)
-            tomove_registered = np.clip(tomove_registered,info.min, info.max).astype(tomove_dtype)
-        else:
-            tomove_registered = tomove_registered.astype(tomove_dtype) 
-            
-   return moving_registered,tomove_registered 
 
 class BothImgRbgFile:
     def __init__(self, image1, image2, tag='', title=''):
