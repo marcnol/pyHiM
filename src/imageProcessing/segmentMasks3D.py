@@ -147,6 +147,9 @@ class Mask3D:
                 reference = ch00 refrt
                 tomove =ch01
                 tomove_reg = moving.WarpfieldRegistration(self, path, reference, tomove)
+                save(tomove_reg) 
+            print_log("> Saving registered mask :")
+            
             
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d, seg_params, label)
