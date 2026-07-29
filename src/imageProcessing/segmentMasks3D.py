@@ -142,6 +142,11 @@ class Mask3D:
             }
         # apply 3D anisotropic registration (warpfield) if True
         if seg_params.Mask_aniso_registration is not "False" or "false":
+            for mask in ROI:
+                moving = ch00
+                reference = ch00 refrt
+                tomove =ch01
+                tomove_reg = moving.WarpfieldRegistration(self, path, reference, tomove)
             
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d, seg_params, label)
