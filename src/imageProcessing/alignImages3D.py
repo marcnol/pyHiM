@@ -438,8 +438,8 @@ class Drift3D:
                 tomove_registered = np.clip(tomove_registered,info.min, info.max).astype(tomove_dtype)
             else:
                 tomove_registered = tomove_registered.astype(tomove_dtype) 
-                
-       return tomove_registered 
+        
+        return tomove_registered 
 
 # =============================================================================
 #   FUNCTIONS
