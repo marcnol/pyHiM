@@ -362,10 +362,8 @@ class Drift3D:
 
     def WarpfieldRegistration(self,
         data_path,
-        reg_param: RegistrationParams,
-        moving,
-        tomove,
         reference,
+        tomove,
     ):
         """
         runs warpfield registration for one image 
@@ -385,7 +383,7 @@ class Drift3D:
         print_log(f"-------> Processing Folder: {data_path}")
         # self.current_log.parallel = self.parallel
         
-        moving = tiff.imread(moving)
+        moving = tiff.imread(self)
         moving_dtype = moving.dtype
         original_shape=moving.shape
         reference = tiff.imread(reference)
@@ -430,19 +428,9 @@ class Drift3D:
             zoom_factors = [original_shape[0] / moving_registered.shape[0],  # Z upsampling
                             original_shape[1] / moving_registered.shape[1],  # Y upsampling
                             original_shape[2] / moving_registered.shape[2]]  # X upsampling
-    
-            print(f"Zoom factors: {zoom_factors}")
-            moving_registered = zoom(moving_registered, zoom_factors, order=1)
             if tomove_registered is not None :
                 tomove_registered = zoom(tomove_registered, zoom_factors, order=1)
                 
-        # Restore moving image dtype
-        if np.issubdtype(moving_dtype, np.integer):
-            info = np.iinfo(moving_dtype)
-            moving_registered = np.clip(moving_registered,info.min,  info.max).astype(moving_dtype)
-        else:
-            moving_registered = moving_registered.astype(moving_dtype)
-    
         # Restore tomove image dtype
         if tomove_registered is not None and tomove_dtype is not None:
             if np.issubdtype(tomove_dtype, np.integer):
@@ -451,7 +439,7 @@ class Drift3D:
             else:
                 tomove_registered = tomove_registered.astype(tomove_dtype) 
                 
-       return moving_registered, tomove_registered 
+       return tomove_registered 
 
 # =============================================================================
 #   FUNCTIONS
