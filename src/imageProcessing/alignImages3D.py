@@ -360,6 +360,39 @@ class Drift3D:
 
         return local_shifts_path
 
+    def alignMaskAniso(self,
+        data_path,
+        reg_param: RegistrationParams,
+        roi_name,
+        single_file_to_process=None,
+    ):
+        """
+        runs warpfield registration on masks 
+
+        Returns
+        -------
+        None.
+
+        """
+        session_name = "Mask3d"
+        zbin = 2
+        xybin = 2
+        gpu = 0
+        # processes folders and files
+        print_session_name(session_name)
+
+        print_log(f"-------> Processing Folder: {data_path}")
+        # self.current_log.parallel = self.parallel
+        for mask in ROI :
+            reference = RTref
+            moving = reg_param.
+            tomove = reg_param.
+            moving_reg  , tomove_reg = applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, data_path, gpu)
+            save(tomove as ch01)
+            
+        return something
+        
+
 
 # =============================================================================
 #   FUNCTIONS
@@ -745,7 +778,7 @@ def compute_warpfield(
 
     return (warped_image, warp_field, tomove_registered)
 
-def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output):
+def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output,gpu):
     moving = tiff.imread(moving)
     moving_dtype = moving.dtype
     original_shape=moving.shape
@@ -765,8 +798,8 @@ def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output):
             tomove_image = zoom(tomove_image, ( 1.0 / zbin, 1.0 / xybin, 1.0 / xybin), order=1)
             
     # save warpfield
-    h5_path = os.path.join(output, {f"{base}}_warp_map.h5")
-    
+    base = os.path.splitext(os.path.basename(moving_path))[0]
+    h5_path = os.path.join(output, f"{base}_warp_map.h5")
     moving_registered, warp_field, tomove_registered = compute_warpfield(
         reference,
         moving,
