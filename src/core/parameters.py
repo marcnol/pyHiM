@@ -588,6 +588,8 @@ class SegmentationParams:
     _3D_higher_threshold: Union[float, str] = set_default(
         "_3D_higher_threshold", "None"
     )
+    # mask anisotropic 3D registration (warpfield)
+    mask_aniso_registration : str = set_default("mask_aniso_registration", False)  # True for registration
     unknown_params: CatchAll = field(default_factory=lambda: {})
 
     def __post_init__(self):
