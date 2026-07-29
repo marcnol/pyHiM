@@ -62,7 +62,7 @@ class Mask3D:
                 os.pardir,
                 "stardist_models",
             )
-
+            
         default_model_name = (
             "DAPI_3D_stardist_17032021_deconvolved"
             if "dapi" in label.lower()
@@ -140,7 +140,9 @@ class Mask3D:
                 "2D": "_Masks_unregistered",
                 "3D": "_3Dmasks_unregistered",
             }
-
+        # apply 3D anisotropic registration (warpfield) if True
+        if seg_params.Mask_aniso_registration is not "False" or "false":
+            
         # segments 3D volumes
         _, segmented_image_3d = self._segment_3d_volumes(image_3d, seg_params, label)
 
