@@ -814,3 +814,111 @@ def applyWarpfieldRegistration(moving, reference, tomove, zbin, xybin, output):
             
    return moving_registered,tomove_registered 
 
+class BothImgRbgFile:
+    def __init__(self, image1, image2, tag='', title=''):
+        self.image1 = image1
+        self.image2 = image2
+        self.tag = tag
+        if title is None:
+            self.title = tag  # gets title from tag
+        else:
+            self.title = title  # New attribute to hold the title
+
+    def save(self, folder_path, basename):
+        self.folder_path = folder_path
+        self.basename = f"{basename}_{self.tag}_overlay"
+        self.path_name = os.path.join(self.folder_path, self.basename + ".png")
+        
+        # Normalize images and rescale intensity
+        img_1 = self.image1 / self.image1.max()
+        img_2 = self.image2 / self.image2.max()
+        img_1 = exposure.rescale_intensity(img_1, out_range=(0, 1))
+        img_2 = exposure.rescale_intensity(img_2, out_range=(0, 1))
+        
+        # Create the figure and axis
+        fig, ax1 = plt.subplots()
+        fig.set_size_inches((30, 30))
+        
+        # Create RGB overlay image
+        null_image = np.zeros(img_1.shape)
+        rgb = np.dstack([img_1, img_2, null_image])
+        
+        # Display the image and set the title
+        ax1.imshow(rgb)
+        ax1.axis("off")
+        ax1.set_title(self.title)  # Set the title of the figure
+        
+        # Save the figure
+        fig.savefig(self.path_name)
+        plt.close(fig)
+
+def compute_intensity_np(displacement_field, z_plane):
+    dx = displacement_field[0, z_plane, :, :]
+    dy = displacement_field[1, z_plane, :, :]
+    dz = displacement_field[2, z_plane, :, :]
+
+    intensity = np.sqrt(dx**2 + dy**2 + dz**2)
+    return [intensity, dx, dy, dz]
+
+def plot_deformation_intensity(displacement_field, z_plane, output_prefix):
+    intensity,_,_,_ = compute_intensity_np(displacement_field, z_plane)
+    plt.figure(figsize=(10, 8))
+    plt.imshow(intensity, cmap='Reds')
+    plt.colorbar(label='Vector Field Intensity')
+    plt.title(f'Intensity of Vector Field at Z-plane {z_plane}')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.savefig(f"{output_prefix}_intensity_z{z_plane}.png")
+    plt.close()
+
+def plot_deformation_intensity_xyz(displacement_field, z_plane, output_prefix):
+    data = compute_intensity_np(displacement_field, z_plane)
+    titles = ["magnitude", "dx", "dy", "dz"]
+
+    fig, axes = plt.subplots(2, 2)
+    fig.set_size_inches((10, 10))
+    ax = axes.ravel()
+
+    for axis, img, title in zip(ax, data, titles):
+        vmin, vmax = 0, np.max(img)
+        cmap="YlOrRd"
+        im = axis.imshow(img, cmap=cmap, vmin=vmin, vmax=vmax)
+        axis.set_title(title)    
+        axis.set_xlabel('X-axis')
+        axis.set_ylabel('Y-axis')
+        cbar1 = fig.colorbar(im, ax=axis, shrink=0.5)
+        cbar1.set_label('pixels')
+
+    fig.tight_layout()
+    fig.suptitle(f'Intensity of Vector Field at Z-plane {z_plane}')
+
+    fig.savefig(f"{output_prefix}_DF_intensity_z{z_plane}.png")
+
+
+def compute_direction_np(warp, z_plane):
+    dx = warp[0, z_plane, :, :]
+    dy = warp[1, z_plane, :, :]
+    
+    # Compute the direction in the XY plane (arctangent of dy/dx)
+    direction = np.arctan2(dy, dx)
+    
+    # Normalize the direction to the range [0, 1] for color mapping
+    norm = plt.Normalize(-np.pi, np.pi)
+    direction_normalized = norm(direction)
+    
+    return direction_normalized
+
+def plot_deformation_direction(displacement_field, z_plane, output_prefix):
+    direction = compute_direction_np(displacement_field, z_plane)
+    plt.figure(figsize=(10, 8))
+    plt.imshow(direction, cmap='twilight', alpha=0.9, norm=plt.Normalize(-np.pi, np.pi))
+    cbar = plt.colorbar(ticks=[-np.pi, -np.pi/2, 0, np.pi/2, np.pi])
+    cbar.ax.set_yticklabels(['-π', '-π/2', '0', 'π/2', 'π'])
+    cbar.set_label('Vector Field Direction (radians)')
+    plt.title(f'Direction of Vector Field at Z-plane {z_plane}')
+    plt.xlabel('X-axis')
+    plt.ylabel('Y-axis')
+    plt.savefig(f"{output_prefix}_DF_direction_z{z_plane}.png")
+    plt.close()
+
+
