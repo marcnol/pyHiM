@@ -151,17 +151,17 @@ class Mask3D:
             reference = tiffread(reference) 
             moving = tiffread(os.path.join(path, moving_name))
 
-    # Compute warp field from fiducials and apply it to the mask
-    tomove_reg = moving.WarpfieldRegistration(
-        path=path,
-        reference=reference,
-        moving=moving,
-        image_to_warp=tomove,
-    )
+        # Compute warp field from fiducials and apply it to the mask
+        tomove_reg = moving.WarpfieldRegistration(
+            path=path,
+            reference=reference,
+            moving=moving,
+            image_to_warp=tomove,
+        )
 
-    # Save registered mask
-    save(tomove_reg)
-    print_log("> Saving registered mask:")
+        # Save registered mask
+        save(tomove_reg)
+        print_log(f"> Saving registered mask: {roi_name}")
             
             
         # segments 3D volumes
