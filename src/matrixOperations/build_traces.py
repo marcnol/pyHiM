@@ -143,7 +143,7 @@ class BuildTraces:
             f"$ Parameters: \nmask_pixel_size_xy: {self.mask_pixel_size_xy}, mask_pixel_size_z: {self.mask_pixel_size_z}"
         )
         print_log(
-            f"\nbarcode_pixel_size_xy: {self.pixel_size_xy}, barcode_pixel_size_z: {self.pixel_size_z}"
+            f"$ barcode_pixel_size_xy: {self.pixel_size_xy}, barcode_pixel_size_z: {self.pixel_size_z}"
         )
 
         image_size_array = self.masks.shape
@@ -162,7 +162,7 @@ class BuildTraces:
                 "y": image_size_array[2],
             }
 
-        print_log(f"\nimage_size: {image_size}")
+        print_log(f"image_size: {image_size}")
 
         # loops over barcode Table rows in a given ROI
         n_localizations = len(self.barcode_map_roi.groups[0])
