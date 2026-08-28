@@ -6,7 +6,9 @@ import core.function_caller as fc
 from _version import __version__
 from core.data_manager import DataManager
 from core.parameters import Parameters
-from core.pyhim_logging import Logger, print_analyzing_label, print_log
+from core.pyhim_logging import Logger, print_log
+
+# from core.pyhim_logging import print_analyzing_label
 from core.run_args import RunArgs
 
 
@@ -53,7 +55,7 @@ def main(command_line_arguments=None):
         # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
-        print_analyzing_label(f"Analyzing label: {label}")
+        # print_analyzing_label(f"Analyzing label: {label}")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
@@ -152,7 +154,7 @@ def main(command_line_arguments=None):
         # sets parameters with old way (temporary during pyHiM restructuration)
         current_param = Parameters(raw_dict, root_folder=datam.m_data_path, label=label)
 
-        print_analyzing_label(f"Analyzing label: {label}")
+        # print_analyzing_label(f"Analyzing label: {label}")
 
         current_param.param_dict["parallel"] = pipe.parallel
         current_param.param_dict["fileNameMD"] = logger.md_filename
