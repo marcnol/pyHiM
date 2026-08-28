@@ -49,7 +49,7 @@ from traceratops.core.chromatin_trace_table import ChromatinTraceTable
 from traceratops.core.localization_table import LocalizationTable
 
 from core.parameters import AcquisitionParams, MatrixParams
-from core.pyhim_logging import print_dashes, print_log
+from core.pyhim_logging import print_analyzing_label, print_dashes, print_log
 from imageProcessing.makeProjections import Feature
 
 
@@ -139,6 +139,13 @@ class BuildTraces:
         n_barcodes_in_mask = np.zeros(self.number_masks + 2)
         n_barcodes_roi = 0
 
+        print_log(
+            f"$ Parameters: \nmask_pixel_size_xy: {self.mask_pixel_size_xy}, mask_pixel_size_z: {self.mask_pixel_size_z}"
+        )
+        print_log(
+            f"$ barcode_pixel_size_xy: {self.pixel_size_xy}, barcode_pixel_size_z: {self.pixel_size_z}"
+        )
+
         image_size_array = self.masks.shape
         if len(image_size_array) == 2:
             # 2d
@@ -155,8 +162,16 @@ class BuildTraces:
                 "y": image_size_array[2],
             }
 
+        print_log(f"image_size: {image_size}")
+
         # loops over barcode Table rows in a given ROI
-        print_log(f"> Aligning localizations to {self.number_masks} masks...")
+        n_localizations = len(self.barcode_map_roi.groups[0])
+        print_log(
+            f"> Aligning {n_localizations} localizations to {self.number_masks} masks..."
+        )
+
+        n_localizations_assigned, counter_hit, counter_out_of_image = 0, 0, 0
+
         for i in trange(
             len(self.barcode_map_roi.groups[0])
         ):  # i is the index of the barcode in barcode_map_roi
@@ -201,16 +216,20 @@ class BuildTraces:
                     if len(image_size_array) == 2
                     else self.masks[z_int, x_int, y_int]
                 )
-
+                counter_hit += 1
             else:
                 # if a barcode has coordinates outside the image, it is assigned to background
                 mask_id = 0
+                counter_out_of_image += 1
 
             # attributes CellID to a barcode
             self.barcode_map_roi["CellID #"][i] = mask_id
 
             # if it is not background,
             if mask_id > 0:
+                # increments counter on the number of localizations assined to a mask
+                n_localizations_assigned += 1
+
                 # increments counter of number of barcodes in the cell mask attributed
                 n_barcodes_in_mask[mask_id] += 1
 
@@ -229,8 +248,15 @@ class BuildTraces:
         self.n_barcodes_in_mask = n_barcodes_in_mask
 
         print_log(
-            f"$ Number of cells assigned: {self.n_cells_assigned} \
-                | discarded: {self.n_cells_unassigned}"
+            f"$ Statistics:\n\t Number of masks assigned: {self.n_cells_assigned}, discarded: {self.n_cells_unassigned}"
+        )
+
+        print_log(
+            f"\t Number of localizations assigned: {n_localizations_assigned} ,discarded: {n_localizations-n_localizations_assigned}"
+        )
+
+        print_log(
+            f"\t in/out localizations ratio: {counter_hit/(counter_out_of_image+counter_hit):.2f}"
         )
 
     def build_vector(self, x, y, z):
@@ -279,7 +305,7 @@ class BuildTraces:
         self.initialize_lists()
 
         # iterates over all traces in an ROI
-        print_log("> Building single traces")
+        print_log("> Building trace tables...")
         for key, group in tzip(
             barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups
         ):
@@ -382,16 +408,16 @@ class BuildTraces:
 
             if "3D" in self.mask_identifier.split("_"):
                 full_filename_masks = full_filename_masks_3d
-                print_log("3D masks used !")
+                print_log("$ 3D masks used !")
             elif "2D" in self.mask_identifier.split("_"):
                 full_filename_masks = full_filename_masks_2d
-                print_log("2D masks used !")
+                print_log("$ 2D masks used !")
             elif self.ndims == 3 and os.path.exists(full_filename_masks_3d):
                 full_filename_masks = full_filename_masks_3d
-                print_log("3D masks used !")
+                print_log("$ 3D masks used !")
             else:
                 full_filename_masks = full_filename_masks_2d
-                print_log("2D masks used !")
+                print_log("$ 2D masks used !")
 
             if os.path.exists(full_filename_masks):
                 # loads and initializes masks
@@ -485,7 +511,7 @@ class BuildTraces:
 
         print_dashes()
         print_log(
-            f"> Loading masks and pre-processing barcodes for Mask <{self.mask_identifier}> for {number_rois} rois"
+            f"> Loading masks and pre-processing barcodes for Mask <{self.mask_identifier}> for {number_rois} ROIs"
         )
 
         # finds TIFs in current_folder
@@ -510,9 +536,6 @@ class BuildTraces:
 
                 # finds what barcodes are in each cell mask
                 self.align_by_masking(matrix_params)
-                print_log(
-                    f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1} out of {self.number_masks}\n"
-                )
 
                 # builds sc_distance_table
                 self.builds_sc_distance_table()
@@ -703,7 +726,7 @@ class BuildTraces:
 
             # build traces by spatial clustering
             self.group_localizations_by_coordinate(matrix_params)
-            print_log(f"$ ROI: {roi}, N cells assigned: {self.n_cells_assigned - 1}\n")
+            print_log(f"$ ROI: {roi}, N masks assigned: {self.n_cells_assigned - 1}\n")
 
             # builds sc_distance_table
             self.builds_sc_distance_table()
@@ -802,6 +825,7 @@ class BuildTraces:
         self.label = "barcode"
         self.current_folder = data_path
 
+        print_analyzing_label(f"Analyzing label: {self.label}")
         print_log(f"> Masks labels: {matrix_params.masks2process}")
 
         # iterates over consolidated barcode localization tables in the current folder
