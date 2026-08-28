@@ -305,7 +305,7 @@ class BuildTraces:
         self.initialize_lists()
 
         # iterates over all traces in an ROI
-        print_log("> Building single traces")
+        print_log("> Building trace tables...")
         for key, group in tzip(
             barcode_map_roi_cell_id.groups.keys, barcode_map_roi_cell_id.groups
         ):
