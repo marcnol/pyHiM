@@ -774,6 +774,30 @@ def _safe_region_axis_lengths(region):
 
     return minor_axis, major_axis
 
+def _safe_region_centroid(region):
+    """Return a finite (z, y, x) centroid whose rounded voxel is in the bbox.
+
+    Signed intensities (e.g. cubic interpolation undershoot) can place a
+    weighted centroid outside its own region. Zero total intensity can make
+    it non-finite. Keep valid weighted centroids; use the geometric centroid
+    for invalid ones, rather than clipping a meaningless coordinate.
+    """
+    with np.errstate(divide="ignore", invalid="ignore"):
+        centroid = np.asarray(region.centroid_weighted, dtype=float)
+    lower = np.asarray(region.bbox[:3])
+    upper = np.asarray(region.bbox[3:])
+    voxel = np.rint(centroid)
+    if (np.all(np.isfinite(centroid))
+            and np.all(voxel >= lower) and np.all(voxel < upper)):
+        return centroid
+
+    print_log(
+        f"$ Warning: invalid weighted centroid for label {region.label}: "
+        f"{centroid.tolist()}, bbox={region.bbox}; using geometric centroid."
+    )
+    return np.asarray(region.centroid, dtype=float)
+
+
 def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
     """
     Extract shape and position features from 3D labeled objects.
@@ -794,23 +818,9 @@ def get_mask_properties_advanced(segmented_image_3d, image_3d_aligned):
     properties = regionprops(segmented_image_3d, intensity_image= image_3d_aligned)
 
     if len(properties) == 0:
-        return Table(
-            names=[
-                "z", "y", "x",
-                "z_min", "y_min", "x_min",
-                "z_max", "y_max", "x_max",
-                "area",
-                "minor_axis_length",
-                "major_axis_length",
-                "elongation",
-            ],
-            rows=[]
-        )
+        return ([], [], [], [], [], [], [], [], [])
 
-    try:
-        centroids = [p.weighted_centroid for p in properties]
-    except AttributeError:
-        centroids = [p.centroid_weighted for p in properties]
+    centroids = [_safe_region_centroid(p) for p in properties]
 
     bbox = [p.bbox for p in properties]
     area = [p.area for p in properties]
@@ -897,15 +907,34 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
 
         for idx, row in mask_properties.iterrows():
 
-            # Convert spot coordinates into integer voxel coordinates
-            x_int = int(round(row["x"]))
-            y_int = int(round(row["y"]))
-            z_int = int(round(row["z"]))
+            # Coordinates and boxes use image array order (z, y, x).
+            centroid = np.asarray([row["z"], row["y"], row["x"]], dtype=float)
+            if not np.all(np.isfinite(centroid)):
+                raise ValueError(f"Non-finite spot centroid at row {idx}: {centroid}")
+            z_int, y_int, x_int = np.rint(centroid).astype(np.int64)
 
             # Extract the local 3D patch using the bounding box coordinates
             y_min, y_max = round(row["y_min"]), round(row["y_max"])
             x_min, x_max = round(row["x_min"]), round(row["x_max"])
             z_min, z_max = round(row["z_min"]), round(row["z_max"])
+
+            # Bbox maxima are exclusive. Validate before slicing: NumPy can
+            # silently truncate oversized slices or wrap negative indices.
+            lower = np.asarray([z_min, y_min, x_min])
+            upper = np.asarray([z_max, y_max, x_max])
+            if (np.any(lower < 0) or np.any(upper > image_3d_aligned.shape)
+                    or np.any(upper <= lower)):
+                raise ValueError(
+                    f"Invalid 3D bounding box at row {idx}: "
+                    f"{lower.tolist()}:{upper.tolist()}, "
+                    f"image shape={image_3d_aligned.shape}"
+                )
+            local = np.asarray([z_int, y_int, x_int]) - lower
+            if np.any(local < 0) or np.any(local >= upper - lower):
+                raise ValueError(
+                    f"Spot centroid outside bounding box at row {idx}: "
+                    f"local={local.tolist()}, patch shape={(upper - lower).tolist()}"
+                )
 
             xmin.append(x_min)
             xmax.append(x_max)
@@ -920,7 +949,9 @@ def spot_quality_metrics(image_3d_aligned, mask_properties):
             patch_size.append(round((patch.size)))
 
             # Segment the patch using Otsu thresholding
-            threshold = threshold_otsu(patch)
+            # Otsu uses the scalar histogram, independent of spatial shape.
+            # Flattening avoids mistaking a 3/4-voxel X axis for RGB(A).
+            threshold = threshold_otsu(patch.ravel())
             mask_spot = patch > threshold
 
             # Compute signal-to-noise (SNR) ratio using the local background
